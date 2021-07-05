@@ -3,8 +3,8 @@ package v3
 import (
 	net_url "net/url"
 
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -18,6 +18,10 @@ import (
 
 type TracingConfigurer struct {
 	Backend *mesh_proto.TracingBackend
+
+	// Opaque string which envoy will assign to tracer collector cluster, on those
+	// which support association of named "service" tags on traces. Consumed by datadog.
+	Service string
 }
 
 var _ FilterChainConfigurer = &TracingConfigurer{}
@@ -41,9 +45,38 @@ func (c *TracingConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 				return err
 			}
 			hcm.Tracing.Provider = tracing
+		case mesh_proto.TracingDatadogType:
+			tracing, err := datadogConfig(c.Backend.Conf, c.Backend.Name, c.Service)
+			if err != nil {
+				return err
+			}
+			hcm.Tracing.Provider = tracing
 		}
 		return nil
 	})
+}
+
+func datadogConfig(cfgStr *structpb.Struct, backendName string, serviceName string) (*envoy_trace.Tracing_Http, error) {
+	cfg := mesh_proto.DatadogTracingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		return nil, errors.Wrap(err, "could not convert backend")
+	}
+
+	datadogConfig := envoy_trace.DatadogConfig{
+		CollectorCluster: names.GetTracingClusterName(backendName),
+		ServiceName:      serviceName,
+	}
+	datadogConfigAny, err := proto.MarshalAnyDeterministic(&datadogConfig)
+	if err != nil {
+		return nil, err
+	}
+	tracingConfig := &envoy_trace.Tracing_Http{
+		Name: "envoy.datadog",
+		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
+			TypedConfig: datadogConfigAny,
+		},
+	}
+	return tracingConfig, nil
 }
 
 func zipkinConfig(cfgStr *structpb.Struct, backendName string) (*envoy_trace.Tracing_Http, error) {

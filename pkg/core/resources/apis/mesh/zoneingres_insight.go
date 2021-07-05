@@ -17,12 +17,12 @@ var _ model.Resource = &ZoneIngressInsightResource{}
 
 type ZoneIngressInsightResource struct {
 	Meta model.ResourceMeta
-	Spec *mesh_proto.DataplaneInsight
+	Spec *mesh_proto.ZoneIngressInsight
 }
 
 func NewZoneIngressInsightResource() *ZoneIngressInsightResource {
 	return &ZoneIngressInsightResource{
-		Spec: &mesh_proto.DataplaneInsight{},
+		Spec: &mesh_proto.ZoneIngressInsight{},
 	}
 }
 
@@ -39,7 +39,7 @@ func (t *ZoneIngressInsightResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 func (t *ZoneIngressInsightResource) SetSpec(spec model.ResourceSpec) error {
-	status, ok := spec.(*mesh_proto.DataplaneInsight)
+	status, ok := spec.(*mesh_proto.ZoneIngressInsight)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {

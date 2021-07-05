@@ -6,9 +6,9 @@ import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -44,10 +44,10 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		req := v2.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.backend-01",
-				Metadata: &pstruct.Struct{
-					Fields: map[string]*pstruct.Value{
-						"dataplane.resource": &pstruct.Value{
-							Kind: &pstruct.Value_StringValue{
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"dataplane.resource": &structpb.Value{
+							Kind: &structpb.Value_StringValue{
 								StringValue: `
                                 {
                                   "type": "Dataplane",
@@ -142,10 +142,10 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		req := v2.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.backend-01",
-				Metadata: &pstruct.Struct{
-					Fields: map[string]*pstruct.Value{
-						"dataplane.resource": &pstruct.Value{
-							Kind: &pstruct.Value_StringValue{
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"dataplane.resource": &structpb.Value{
+							Kind: &structpb.Value_StringValue{
 								StringValue: `
                                 {
                                   "type": "Dataplane",

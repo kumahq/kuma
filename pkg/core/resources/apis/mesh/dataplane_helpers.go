@@ -4,7 +4,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -140,7 +140,11 @@ func (d *DataplaneResource) GetIP() string {
 	if d == nil {
 		return ""
 	}
-	return d.Spec.Networking.Address
+	if d.Spec.Networking.AdvertisedAddress != "" {
+		return d.Spec.Networking.AdvertisedAddress
+	} else {
+		return d.Spec.Networking.Address
+	}
 }
 
 func (d *DataplaneResource) IsIPv6() bool {

@@ -268,6 +268,32 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: zoneingressinsights.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: ZoneIngressInsight
+    plural: zoneingressinsights
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: ZoneIngressInsight is the Schema for the zone ingress insight API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -320,32 +346,6 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: zoneingresses.kuma.io
-spec:
-  group: kuma.io
-  names:
-    kind: ZoneIngress
-    plural: zoneingresses
-  scope: Namespaced
-  versions:
-    - name: v1alpha1
-      served: true
-      storage: true
-      schema:
-        openAPIV3Schema:
-          description: ZoneIngress is the Schema for the zone ingress API
-          properties:
-            mesh:
-              type: string
-            spec:
-              x-kubernetes-preserve-unknown-fields: true
-              type: object
-          type: object
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  creationTimestamp: null
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -364,6 +364,32 @@ spec:
             mesh:
               type: string
             status:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: zoneingresses.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: ZoneIngress
+    plural: zoneingresses
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: ZoneIngress is the Schema for the zone ingress API
+          properties:
+            mesh:
+              type: string
+            spec:
               x-kubernetes-preserve-unknown-fields: true
               type: object
           type: object
@@ -593,6 +619,7 @@ rules:
       - zones
       - zoneinsights
       - zoneingresses
+      - zoneingressinsights
       - meshinsights
       - serviceinsights
       - proxytemplates
@@ -772,8 +799,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: d1c664f501bb90f5b0a83d706641d1eb3e5680c282d03869afd843e5a0b0db9d
-        checksum/tls-secrets: 655322cadf4e0494c359282f2c3ca6a3bf97e72d98e2e66aae7bbac0784650dc
+        checksum/config: 45f3cab94024a94e69823d0522ed71904e1faa3c033011d9cbbaff073698a00d
+        checksum/tls-secrets: 318455bec7a180b1de850769df7445b573d9a51e54424796d5a03dd2dd91c501
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma

@@ -22,7 +22,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 		type testCase struct {
 			proxy *model.Proxy
 			raw   []*mesh_proto.ProxyTemplateRawResource
-			err   interface{}
+			err   string
 		}
 
 		DescribeTable("Avoid producing invalid Envoy xDS resources",
@@ -38,7 +38,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 
 				// then
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(given.err))
+				Expect(err.Error()).To(ContainSubstring(given.err))
 				Expect(rs).To(BeNil())
 			},
 			Entry("should fail when `resource` field is empty", testCase{
@@ -63,12 +63,11 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
-					Name:    "raw-name",
-					Version: "raw-version",
-					Resource: `
-`,
+					Name:     "raw-name",
+					Version:  "raw-version",
+					Resource: ``,
 				}},
-				err: "raw.resources[0]{name=\"raw-name\"}.resource: message type url \"\" is invalid",
+				err: "invalid empty type URL",
 			}),
 			Entry("should fail when `resource` field is neither a YAML nor a JSON", testCase{
 				proxy: &model.Proxy{

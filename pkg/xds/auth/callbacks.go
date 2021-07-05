@@ -28,7 +28,7 @@ type DPNotFoundRetry struct {
 	MaxTimes uint
 }
 
-func NewCallbacks(resManager core_manager.ResourceManager, authenticator Authenticator, dpNotFoundRetry DPNotFoundRetry) util_xds.Callbacks {
+func NewCallbacks(resManager core_manager.ReadOnlyResourceManager, authenticator Authenticator, dpNotFoundRetry DPNotFoundRetry) util_xds.Callbacks {
 	if dpNotFoundRetry.Backoff == 0 { // backoff cannot be 0
 		dpNotFoundRetry.Backoff = 1 * time.Millisecond
 	}
@@ -44,7 +44,7 @@ func NewCallbacks(resManager core_manager.ResourceManager, authenticator Authent
 // authCallback checks if the DiscoveryRequest is authorized, ie. if it has a valid Dataplane Token/Service Account Token.
 type authCallbacks struct {
 	util_xds.NoopCallbacks
-	resManager      core_manager.ResourceManager
+	resManager      core_manager.ReadOnlyResourceManager
 	authenticator   Authenticator
 	dpNotFoundRetry DPNotFoundRetry
 
@@ -119,30 +119,34 @@ func (a *authCallbacks) credential(streamID core_xds.StreamID) (Credential, erro
 
 func (a *authCallbacks) authenticate(credential Credential, req util_xds.DiscoveryRequest) error {
 	md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
-	switch md.GetProxyType() {
-	case mesh_proto.IngressProxyType:
-		return a.authenticateZoneIngress(credential, req)
-	default:
-		return a.authenticateDataplane(credential, req)
-	}
-}
 
-func (a *authCallbacks) authenticateZoneIngress(credential Credential, req util_xds.DiscoveryRequest) error {
-	zoneIngress := core_mesh.NewZoneIngressResource()
-	md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
-	if md.GetZoneIngressResource() != nil {
-		zoneIngress = md.GetZoneIngressResource()
-	} else {
+	// If we already have a resource from the xDS bootstrap, we can use that.
+	resource := md.Resource
+
+	// Otherwise, search for the pre-created resource.
+	if resource == nil {
 		proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId())
 		if err != nil {
-			return errors.Wrap(err, "request must have a valid Proxy Id")
+			return errors.Wrap(err, "request must have a valid Proxy ID")
 		}
+
+		switch md.GetProxyType() {
+		case mesh_proto.IngressProxyType:
+			resource = core_mesh.NewZoneIngressResource()
+		case mesh_proto.DataplaneProxyType:
+			resource = core_mesh.NewDataplaneResource()
+		default:
+			return errors.Errorf("unsupported proxy type %q", md.GetProxyType())
+		}
+
 		backoff, _ := retry.NewConstant(a.dpNotFoundRetry.Backoff)
 		backoff = retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), backoff)
 		err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
-			err := a.resManager.Get(ctx, zoneIngress, core_store.GetBy(proxyId.ToResourceKey()))
+			err := a.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
 			if core_store.IsResourceNotFound(err) {
-				return retry.RetryableError(errors.New("zoneIngress not found. Create ZoneIngress in Kuma CP first or pass it as an argument to kuma-dp"))
+				return retry.RetryableError(errors.Errorf(
+					"resource %q not found; create a %s in Kuma CP first or pass it as an argument to kuma-dp",
+					proxyId, resource.GetType()))
 			}
 			return err
 		})
@@ -151,40 +155,8 @@ func (a *authCallbacks) authenticateZoneIngress(credential Credential, req util_
 		}
 	}
 
-	if err := a.authenticator.AuthenticateZoneIngress(context.Background(), zoneIngress, credential); err != nil {
-		return errors.Wrap(err, "authentication failed")
-	}
-	return nil
-}
-
-func (a *authCallbacks) authenticateDataplane(credential Credential, req util_xds.DiscoveryRequest) error {
-	dataplane := core_mesh.NewDataplaneResource()
-	md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
-	if md.GetDataplaneResource() != nil {
-		dataplane = md.GetDataplaneResource()
-	} else {
-		proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId())
-		if err != nil {
-			return errors.Wrap(err, "request must have a valid Proxy Id")
-		}
-		backoff, _ := retry.NewConstant(a.dpNotFoundRetry.Backoff)
-		backoff = retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), backoff)
-		err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
-			err := a.resManager.Get(ctx, dataplane, core_store.GetBy(proxyId.ToResourceKey()))
-			if core_store.IsResourceNotFound(err) {
-				return retry.RetryableError(errors.New("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
-			}
-			return err
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	if err := a.authenticator.Authenticate(context.Background(), dataplane, credential); err != nil {
-		return errors.Wrap(err, "authentication failed")
-	}
-	return nil
+	return errors.Wrap(a.authenticator.Authenticate(context.Background(), resource, credential),
+		"authentication failed")
 }
 
 func extractCredential(ctx context.Context) (Credential, error) {

@@ -16,7 +16,7 @@ docker run --rm -ti \
   --workdir /go/src/github.com/kumahq/kuma/api \
   --env HOME=/tmp/home \
   --env GO111MODULE=on \
-  golang:1.12.12 bash
+  golang:1.16 bash
 export PATH=$HOME/bin:$PATH
 apt update && apt install unzip
 ```

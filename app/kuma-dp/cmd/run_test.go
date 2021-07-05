@@ -357,6 +357,27 @@ var _ = Describe("run", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("--name and --mesh cannot be specified when dataplane definition is provided"))
+		Expect(err.Error()).To(ContainSubstring("--name and --mesh cannot be specified"))
 	})
+
+	It("should fail when the proxy type is unknown", func() {
+		// given
+		cmd := NewRootCmd(DefaultRootContext())
+		cmd.SetArgs([]string{
+			"run",
+			"--cp-address", "http://localhost:1234",
+			"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+			"--dataplane-file", filepath.Join("testdata", "dataplane_template.yaml"),
+			"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
+			"--proxy-type", "phoney",
+		})
+
+		// when
+		err := cmd.Execute()
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("invalid proxy type"))
+	})
+
 })

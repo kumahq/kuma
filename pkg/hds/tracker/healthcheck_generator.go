@@ -6,8 +6,8 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -63,16 +63,16 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 			interval = serviceProbe.Interval
 		}
 
-		var healthyThreshold *wrappers.UInt32Value
+		var healthyThreshold *wrapperspb.UInt32Value
 		if serviceProbe.HealthyThreshold == nil {
-			healthyThreshold = &wrappers.UInt32Value{Value: g.config.CheckDefaults.HealthyThreshold}
+			healthyThreshold = &wrapperspb.UInt32Value{Value: g.config.CheckDefaults.HealthyThreshold}
 		} else {
 			healthyThreshold = serviceProbe.HealthyThreshold
 		}
 
-		var unhealthyThreshold *wrappers.UInt32Value
+		var unhealthyThreshold *wrapperspb.UInt32Value
 		if serviceProbe.UnhealthyThreshold == nil {
-			unhealthyThreshold = &wrappers.UInt32Value{Value: g.config.CheckDefaults.UnhealthyThreshold}
+			unhealthyThreshold = &wrapperspb.UInt32Value{Value: g.config.CheckDefaults.UnhealthyThreshold}
 		} else {
 			unhealthyThreshold = serviceProbe.UnhealthyThreshold
 		}

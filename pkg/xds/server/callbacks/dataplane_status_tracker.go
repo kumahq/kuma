@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	pstruct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/golang/protobuf/proto"
 
@@ -181,7 +181,7 @@ func (s *streamState) Close() {
 	close(s.stop)
 }
 
-func readVersion(metadata *pstruct.Struct, version *mesh_proto.Version) error {
+func readVersion(metadata *structpb.Struct, version *mesh_proto.Version) error {
 	if metadata == nil {
 		return nil
 	}

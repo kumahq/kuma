@@ -93,7 +93,6 @@ spec:
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Zone, optsZoneKube...)).
-			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
 			Setup(zoneKube)

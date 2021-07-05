@@ -2,17 +2,18 @@ package auth_test
 
 import (
 	"context"
-	"errors"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -32,19 +33,22 @@ type testAuthenticator struct {
 
 var _ auth.Authenticator = &testAuthenticator{}
 
-func (t *testAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
-	t.callCounter++
-	if credential == "pass" {
-		return nil
+func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resource, credential auth.Credential) error {
+	switch resource := resource.(type) {
+	case *core_mesh.DataplaneResource:
+		t.callCounter++
+		if credential == "pass" {
+			return nil
+		}
+	case *core_mesh.ZoneIngressResource:
+		t.zoneCallCounter++
+		if credential == "zone pass" {
+			return nil
+		}
+	default:
+		return errors.Errorf("no matching authenticator for %s resource", resource.GetType())
 	}
-	return errors.New("invalid credential")
-}
 
-func (t *testAuthenticator) AuthenticateZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
-	t.zoneCallCounter++
-	if credential == "zone pass" {
-		return nil
-	}
 	return errors.New("invalid credential")
 }
 
@@ -152,10 +156,10 @@ var _ = Describe("Auth Callbacks", func() {
 		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-01",
-				Metadata: &pstruct.Struct{
-					Fields: map[string]*pstruct.Value{
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
 						"dataplane.resource": {
-							Kind: &pstruct.Value_StringValue{
+							Kind: &structpb.Value_StringValue{
 								StringValue: string(json),
 							},
 						},
@@ -219,7 +223,7 @@ var _ = Describe("Auth Callbacks", func() {
 		})
 
 		// then
-		Expect(err).To(MatchError("retryable: dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
+		Expect(err.Error()).To(ContainSubstring("not found"))
 	})
 
 	It("should throw an error on authentication fail", func() {
@@ -259,10 +263,10 @@ var _ = Describe("Auth Callbacks", func() {
 		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: ".ingress",
-				Metadata: &pstruct.Struct{
-					Fields: map[string]*pstruct.Value{
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
 						"dataplane.proxyType": {
-							Kind: &pstruct.Value_StringValue{
+							Kind: &structpb.Value_StringValue{
 								StringValue: "ingress",
 							},
 						},

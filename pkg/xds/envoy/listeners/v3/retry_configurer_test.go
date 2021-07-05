@@ -1,11 +1,11 @@
 package v3_test
 
 import (
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 
@@ -79,7 +79,7 @@ var _ = Describe("RetryConfigurer", func() {
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
-							NumRetries: &wrappers.UInt32Value{
+							NumRetries: &wrapperspb.UInt32Value{
 								Value: 7,
 							},
 						},
@@ -147,17 +147,17 @@ var _ = Describe("RetryConfigurer", func() {
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
-							NumRetries: &wrappers.UInt32Value{
+							NumRetries: &wrapperspb.UInt32Value{
 								Value: 3,
 							},
-							PerTryTimeout: &duration.Duration{
+							PerTryTimeout: &durationpb.Duration{
 								Seconds: 1,
 							},
 							BackOff: &mesh_proto.Retry_Conf_BackOff{
-								BaseInterval: &duration.Duration{
+								BaseInterval: &durationpb.Duration{
 									Nanos: 200000000,
 								},
-								MaxInterval: &duration.Duration{
+								MaxInterval: &durationpb.Duration{
 									Nanos: 500000000,
 								},
 							},
@@ -234,7 +234,7 @@ var _ = Describe("RetryConfigurer", func() {
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Grpc: &mesh_proto.Retry_Conf_Grpc{
-							NumRetries: &wrappers.UInt32Value{
+							NumRetries: &wrapperspb.UInt32Value{
 								Value: 18,
 							},
 						},
@@ -302,17 +302,17 @@ var _ = Describe("RetryConfigurer", func() {
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Grpc: &mesh_proto.Retry_Conf_Grpc{
-							NumRetries: &wrappers.UInt32Value{
+							NumRetries: &wrapperspb.UInt32Value{
 								Value: 2,
 							},
-							PerTryTimeout: &duration.Duration{
+							PerTryTimeout: &durationpb.Duration{
 								Seconds: 2,
 							},
 							BackOff: &mesh_proto.Retry_Conf_BackOff{
-								BaseInterval: &duration.Duration{
+								BaseInterval: &durationpb.Duration{
 									Nanos: 400000000,
 								},
-								MaxInterval: &duration.Duration{
+								MaxInterval: &durationpb.Duration{
 									Seconds: 1,
 								},
 							},

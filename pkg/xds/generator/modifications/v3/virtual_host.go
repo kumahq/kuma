@@ -5,9 +5,8 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -33,7 +32,7 @@ func (c *virtualHostModificator) apply(resources *core_xds.ResourceSet) error {
 			for _, networkFilter := range chain.Filters {
 				if networkFilter.Name == "envoy.filters.network.http_connection_manager" {
 					hcm := &envoy_hcm.HttpConnectionManager{}
-					err := ptypes.UnmarshalAny(networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig, hcm)
+					err := util_proto.UnmarshalAnyTo(networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig, hcm)
 					if err != nil {
 						return err
 					}

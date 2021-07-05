@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/url"
 
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
@@ -54,14 +54,14 @@ func (ds *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Tim
 	if ds.MTLS == nil {
 		ds.MTLS = &DataplaneInsight_MTLS{}
 	}
-	ts, err := ptypes.TimestampProto(expiration)
-	if err != nil {
+	ts := timestamppb.New(expiration)
+	if err := ts.CheckValid(); err != nil {
 		return err
 	}
 	ds.MTLS.CertificateExpirationTime = ts
 	ds.MTLS.CertificateRegenerations++
-	ts, err = ptypes.TimestampProto(generation)
-	if err != nil {
+	ts = timestamppb.New(generation)
+	if err := ts.CheckValid(); err != nil {
 		return err
 	}
 	ds.MTLS.LastCertificateRegeneration = ts
@@ -76,7 +76,20 @@ func (ds *DataplaneInsight) UpdateSubscription(s *DiscoverySubscription) {
 	if old != nil {
 		ds.Subscriptions[i] = s
 	} else {
+		ds.finalizeSubscriptions()
 		ds.Subscriptions = append(ds.Subscriptions, s)
+	}
+}
+
+// If Kuma CP was killed ungracefully then we can get a subscription without a DisconnectTime.
+// Because of the way we process subscriptions the lack of DisconnectTime on old subscription
+// will cause wrong status.
+func (ds *DataplaneInsight) finalizeSubscriptions() {
+	now := timestamppb.Now()
+	for _, subscription := range ds.GetSubscriptions() {
+		if subscription.DisconnectTime == nil {
+			subscription.DisconnectTime = now
+		}
 	}
 }
 
@@ -87,10 +100,10 @@ func (ds *DataplaneInsight) GetLatestSubscription() (*DiscoverySubscription, *ti
 	var idx int = 0
 	var latest *time.Time
 	for i, s := range ds.GetSubscriptions() {
-		t, err := ptypes.Timestamp(s.ConnectTime)
-		if err != nil {
+		if err := s.ConnectTime.CheckValid(); err != nil {
 			continue
 		}
+		t := s.ConnectTime.AsTime()
 		if latest == nil || latest.Before(t) {
 			idx = i
 			latest = &t

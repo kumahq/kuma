@@ -14,8 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 
-	"github.com/golang/protobuf/ptypes"
-	pduration "github.com/golang/protobuf/ptypes/duration"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 type SelectorValidatorFunc func(path validators.PathBuilder, selector map[string]string) validators.ValidationError
@@ -119,17 +118,16 @@ func Keys(tags map[string]string) []string {
 	return keys
 }
 
-func ValidateDuration(path validators.PathBuilder, duration *pduration.Duration) (errs validators.ValidationError) {
+func ValidateDuration(path validators.PathBuilder, duration *durationpb.Duration) (errs validators.ValidationError) {
 	if duration == nil {
 		errs.AddViolationAt(path, "must have a positive value")
 		return
 	}
-	d, err := ptypes.Duration(duration)
-	if err != nil {
+	if err := duration.CheckValid(); err != nil {
 		errs.AddViolationAt(path, "must have a valid value")
 		return
 	}
-	if d == 0 {
+	if duration.AsDuration() == 0 {
 		errs.AddViolationAt(path, "must have a positive value")
 	}
 	return

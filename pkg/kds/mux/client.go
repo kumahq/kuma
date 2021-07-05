@@ -44,6 +44,10 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		return err
 	}
 	dialOpts := c.metrics.GRPCClientInterceptors()
+	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(
+		grpc.MaxCallSendMsgSize(int(c.config.MaxMsgSize)),
+		grpc.MaxCallRecvMsgSize(int(c.config.MaxMsgSize))),
+	)
 	switch u.Scheme {
 	case "grpc":
 		dialOpts = append(dialOpts, grpc.WithInsecure())

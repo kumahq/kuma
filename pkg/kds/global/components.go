@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -30,11 +30,13 @@ import (
 )
 
 var (
-	kdsGlobalLog  = core.Log.WithName("kds-global")
+	kdsGlobalLog = core.Log.WithName("kds-global")
+
+	// ProvidedTypes lists the resource types provided by the Global
+	// CP to the Zone CP.
 	ProvidedTypes = []model.ResourceType{
 		core_mesh.CircuitBreakerType,
 		core_mesh.DataplaneType,
-		core_mesh.ZoneIngressType,
 		core_mesh.ExternalServiceType,
 		core_mesh.FaultInjectionType,
 		core_mesh.HealthCheckType,
@@ -47,14 +49,19 @@ var (
 		core_mesh.TrafficPermissionType,
 		core_mesh.TrafficRouteType,
 		core_mesh.TrafficTraceType,
-		system.SecretType,
-		system.GlobalSecretType,
-		system.ConfigType,
-	}
-	ConsumedTypes = []model.ResourceType{
-		core_mesh.DataplaneType,
 		core_mesh.ZoneIngressType,
+		system.ConfigType,
+		system.GlobalSecretType,
+		system.SecretType,
+	}
+
+	// ConsumedTypes lists the resource types consumed from the Zone
+	// CP by the Global CP.
+	ConsumedTypes = []model.ResourceType{
 		core_mesh.DataplaneInsightType,
+		core_mesh.DataplaneType,
+		core_mesh.ZoneIngressInsightType,
+		core_mesh.ZoneIngressType,
 	}
 )
 
@@ -100,7 +107,7 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 		kdsGlobalLog.Info("creating Zone", "name", name)
 		zone := &system.ZoneResource{
 			Spec: &system_proto.Zone{
-				Enabled: &wrappers.BoolValue{Value: true},
+				Enabled: &wrapperspb.BoolValue{Value: true},
 			},
 		}
 		if err := resManager.Create(context.Background(), zone, store.CreateByKey(name, model.NoMesh)); err != nil {

@@ -7,10 +7,10 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
@@ -24,9 +24,9 @@ var _ = Describe("ParseFormat()", func() {
 
 		commonProperties := &accesslog_data.AccessLogCommon{
 			StartTime:                  util_proto.MustTimestampProto(time.Unix(1582062737, 987654321)),
-			TimeToLastRxByte:           ptypes.DurationProto(57000 * time.Microsecond),
-			TimeToFirstUpstreamRxByte:  ptypes.DurationProto(102000 * time.Microsecond),
-			TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+			TimeToLastRxByte:           durationpb.New(57000 * time.Microsecond),
+			TimeToFirstUpstreamRxByte:  durationpb.New(102000 * time.Microsecond),
+			TimeToLastDownstreamTxByte: durationpb.New(123000 * time.Microsecond),
 			ResponseFlags: &accesslog_data.ResponseFlags{
 				UpstreamConnectionFailure:  true,
 				UpstreamRetryLimitExceeded: true,
@@ -63,7 +63,7 @@ var _ = Describe("ParseFormat()", func() {
 				},
 				TlsSessionId: "b10662bf6bd4e6a068f0910d3d60c50f000355840fea4ce6844626b61c973901",
 				TlsVersion:   accesslog_data.TLSProperties_TLSv1_2,
-				TlsCipherSuite: &wrappers.UInt32Value{
+				TlsCipherSuite: &wrapperspb.UInt32Value{
 					Value: uint32(TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305),
 				},
 			},
@@ -79,7 +79,7 @@ var _ = Describe("ParseFormat()", func() {
 				RequestBodyBytes: 234,
 			},
 			Response: &accesslog_data.HTTPResponseProperties{
-				ResponseCode: &wrappers.UInt32Value{
+				ResponseCode: &wrapperspb.UInt32Value{
 					Value: 200,
 				},
 				ResponseCodeDetails: "response code details",

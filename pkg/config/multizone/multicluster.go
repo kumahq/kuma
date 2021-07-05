@@ -16,7 +16,6 @@ var _ config.Config = &MultizoneConfig{}
 
 // Global configuration
 type GlobalConfig struct {
-	PollTimeout time.Duration `yaml:"pollTimeout,omitempty" envconfig:"kuma_multizone_global_poll_timeout"`
 	// KDS Configuration
 	KDS *KdsServerConfig `yaml:"kds,omitempty"`
 }
@@ -31,11 +30,11 @@ func (g *GlobalConfig) Validate() error {
 
 func DefaultGlobalConfig() *GlobalConfig {
 	return &GlobalConfig{
-		PollTimeout: 500 * time.Millisecond,
 		KDS: &KdsServerConfig{
 			GrpcPort:                 5685,
 			RefreshInterval:          1 * time.Second,
 			ZoneInsightFlushInterval: 10 * time.Second,
+			MaxMsgSize:               10 * 1024 * 1024,
 		},
 	}
 }
@@ -94,6 +93,7 @@ func DefaultZoneConfig() *ZoneConfig {
 		Name:          "",
 		KDS: &KdsClientConfig{
 			RefreshInterval: 1 * time.Second,
+			MaxMsgSize:      10 * 1024 * 1024,
 		},
 	}
 }

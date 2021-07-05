@@ -6,9 +6,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -90,7 +90,7 @@ var _ = Describe("KubernetesStore", func() {
 			// given
 			secret := &secret_model.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: &wrappers.BytesValue{
+					Data: &wrapperspb.BytesValue{
 						Value: []byte("example"),
 					},
 				},
@@ -131,7 +131,7 @@ var _ = Describe("KubernetesStore", func() {
 			// given
 			secret := &secret_model.GlobalSecretResource{
 				Spec: &system_proto.Secret{
-					Data: &wrappers.BytesValue{
+					Data: &wrapperspb.BytesValue{
 						Value: []byte("example"),
 					},
 				},
@@ -353,7 +353,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			secret1.Spec = &system_proto.Secret{
-				Data: &wrappers.BytesValue{
+				Data: &wrapperspb.BytesValue{
 					Value: []byte("example"),
 				},
 			}
@@ -363,7 +363,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			secret2.Spec = &system_proto.Secret{
-				Data: &wrappers.BytesValue{
+				Data: &wrapperspb.BytesValue{
 					Value: []byte("another"),
 				},
 			}

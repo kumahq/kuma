@@ -7,8 +7,8 @@ import (
 	"net/url"
 
 	"github.com/kumahq/kuma/pkg/mads/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
@@ -126,7 +126,7 @@ func (s *Stream) WaitForAssignments() ([]*observability_proto.MonitoringAssignme
 	assignments := make([]*observability_proto.MonitoringAssignment, len(resp.Resources))
 	for i := range resp.Resources {
 		assignment := &observability_proto.MonitoringAssignment{}
-		if err := ptypes.UnmarshalAny(resp.Resources[i], assignment); err != nil {
+		if err := util_proto.UnmarshalAnyTo(resp.Resources[i], assignment); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal MADS response: %v", resp)
 		}
 		assignments[i] = assignment

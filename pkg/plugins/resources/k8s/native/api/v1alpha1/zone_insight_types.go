@@ -32,7 +32,7 @@ type ZoneInsight struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec ZoneInsightSpec `json:"spec,omitempty"`
+	Spec ZoneIngressInsightSpec `json:"spec,omitempty"`
 }
 
 // ZoneInsightList contains a list of Zone

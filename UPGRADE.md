@@ -6,6 +6,11 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `1.2.1`
+
+When Global is upgraded to `1.2.1` and Zone CP is still `1.2.0`, ZoneIngresses will always be listed as offline.
+After Zone CPs are upgraded to `1.2.1`, the status will work again. ZoneIngress status does not affect cross-zone traffic.
+
 ## Upgrade to `1.2.0`
 
 One of the changes introduced by Kuma 1.2.0 is renaming `Remote Control Planes` to `Zone Control Planes` and `Dataplane Ingress` to `Zone Ingress`. 
@@ -24,7 +29,7 @@ As a result of this renaming, some values and arguments in multizone/kubernetes 
 2. Service `kuma-global-remote-sync` changed to `kuma-global-zone-sync` so after upgrading `global` control plane you have to manually remote old service. For example:
 
    ```sh
-   kubectl delete -n kuma-system service/kuma-global-zone-sync 
+   kubectl delete -n kuma-system service/kuma-global-remote-sync 
    ```
 
     Hint: It's worth to remember that often at this point the IP address/hostname which is used as a KDS address when installing Kuma Zone Control Planes will change. Make sure that you update the address when upgrading the Remote CPs to the newest version.

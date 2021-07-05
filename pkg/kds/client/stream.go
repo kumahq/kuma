@@ -7,8 +7,8 @@ import (
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -60,9 +60,9 @@ func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 		ResponseNonce: "",
 		Node: &envoy_core.Node{
 			Id: s.clientId,
-			Metadata: &pstruct.Struct{
-				Fields: map[string]*pstruct.Value{
-					"version": {Kind: &pstruct.Value_StructValue{StructValue: cpVersion}},
+			Metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"version": {Kind: &structpb.Value_StructValue{StructValue: cpVersion}},
 				},
 			},
 		},

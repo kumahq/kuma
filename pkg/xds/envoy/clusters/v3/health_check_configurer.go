@@ -6,8 +6,8 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kumahq/kuma/pkg/core"
 
@@ -104,7 +104,7 @@ func httpHealthCheck(
 	}
 }
 
-func healthPanicThreshold(cluster *envoy_cluster.Cluster, value *wrappers.FloatValue) {
+func healthPanicThreshold(cluster *envoy_cluster.Cluster, value *wrapperspb.FloatValue) {
 	if value == nil {
 		return
 	}
@@ -114,7 +114,7 @@ func healthPanicThreshold(cluster *envoy_cluster.Cluster, value *wrappers.FloatV
 	cluster.CommonLbConfig.HealthyPanicThreshold = &envoy_type.Percent{Value: float64(value.Value)}
 }
 
-func failTrafficOnPanic(cluster *envoy_cluster.Cluster, value *wrappers.BoolValue) {
+func failTrafficOnPanic(cluster *envoy_cluster.Cluster, value *wrapperspb.BoolValue) {
 	if value == nil {
 		return
 	}
@@ -146,8 +146,8 @@ func buildHealthCheck(conf *mesh_proto.HealthCheck_Conf) *envoy_core.HealthCheck
 		},
 		Interval:                     conf.Interval,
 		Timeout:                      conf.Timeout,
-		UnhealthyThreshold:           &wrappers.UInt32Value{Value: conf.UnhealthyThreshold},
-		HealthyThreshold:             &wrappers.UInt32Value{Value: conf.HealthyThreshold},
+		UnhealthyThreshold:           &wrapperspb.UInt32Value{Value: conf.UnhealthyThreshold},
+		HealthyThreshold:             &wrapperspb.UInt32Value{Value: conf.HealthyThreshold},
 		InitialJitter:                conf.InitialJitter,
 		IntervalJitter:               conf.IntervalJitter,
 		IntervalJitterPercent:        conf.IntervalJitterPercent,

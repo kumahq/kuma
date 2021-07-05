@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // GetSplitWithDestination returns unified list of split regardless if split or destination is used
@@ -14,7 +14,7 @@ func (x *TrafficRoute_Conf) GetSplitWithDestination() []*TrafficRoute_Split {
 	if len(x.GetDestination()) > 0 {
 		return []*TrafficRoute_Split{
 			{
-				Weight: &wrappers.UInt32Value{
+				Weight: &wrapperspb.UInt32Value{
 					Value: 1,
 				},
 				Destination: x.GetDestination(),
@@ -28,7 +28,7 @@ func (x *TrafficRoute_Http) GetSplitWithDestination() []*TrafficRoute_Split {
 	if len(x.GetDestination()) > 0 {
 		return []*TrafficRoute_Split{
 			{
-				Weight: &wrappers.UInt32Value{
+				Weight: &wrapperspb.UInt32Value{
 					Value: 1,
 				},
 				Destination: x.GetDestination(),

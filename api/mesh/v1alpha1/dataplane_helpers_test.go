@@ -138,8 +138,8 @@ var _ = Describe("Dataplane_Networking", func() {
 						},
 					},
 					expected: []InboundInterface{
-						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "127.0.0.1", WorkloadPort: 80},
-						{DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
+						{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "127.0.0.1", WorkloadPort: 80},
+						{DataplaneAdvertisedIP: "192.168.0.2", DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
 					},
 				}),
 			)
@@ -352,6 +352,42 @@ var _ = Describe("Dataplane with inbound", func() {
 
 			// then
 			Expect(d.MatchTags(selector)).To(BeFalse())
+		})
+	})
+})
+
+var _ = Describe("Dataplane classification", func() {
+	Describe("with normal networking", func() {
+		It("should be a dataplane", func() {
+			dp := Dataplane{
+				Networking: &Dataplane_Networking{},
+			}
+			Expect(dp.IsGateway()).To(BeFalse())
+			Expect(dp.IsIngress()).To(BeFalse())
+		})
+	})
+
+	Describe("with gateway networking", func() {
+		It("should be a gateway", func() {
+			gw := Dataplane{
+				Networking: &Dataplane_Networking{
+					Gateway: &Dataplane_Networking_Gateway{},
+				},
+			}
+			Expect(gw.IsGateway()).To(BeTrue())
+			Expect(gw.IsIngress()).To(BeFalse())
+		})
+	})
+
+	Describe("with ingress networking", func() {
+		It("should be an ingress gateway", func() {
+			in := Dataplane{
+				Networking: &Dataplane_Networking{
+					Ingress: &Dataplane_Networking_Ingress{},
+				},
+			}
+			Expect(in.IsGateway()).To(BeFalse())
+			Expect(in.IsIngress()).To(BeTrue())
 		})
 	})
 })

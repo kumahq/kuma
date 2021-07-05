@@ -2,6 +2,9 @@ package hybrid
 
 import (
 	"fmt"
+	"regexp"
+
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 
@@ -79,7 +82,7 @@ metadata:
 			WithIngress(),
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithCNI(),
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"))
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false")) // check if old resolving still works
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone1...)).
@@ -95,7 +98,8 @@ metadata:
 		zone2 = k8sClusters.GetCluster(Kuma2)
 		optsZone2 = append(optsZone2,
 			WithIngress(),
-			WithGlobalAddress(globalCP.GetKDSServerAddress()))
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false"))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone2...)).
@@ -117,8 +121,8 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone3...)).
-			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal", echoServerToken, WithTransparentProxy(true))).
-			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
+			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal", echoServerToken, WithTransparentProxy(true), WithBuiltinDNS(false))).
+			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(false))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone3)
 		Expect(err).ToNot(HaveOccurred())
@@ -174,6 +178,35 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 		err = global.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should correctly synchronize Dataplanes and ZoneIngresses and their statuses", func() {
+		Eventually(func() error {
+			output, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
+			if err != nil {
+				return err
+			}
+
+			re := regexp.MustCompile(`Online`)
+			if len(re.FindAllString(output, -1)) != 4 {
+				return errors.New("not all zone-ingresses are online")
+			}
+			return nil
+		}, "30s", "1s").ShouldNot(HaveOccurred())
+
+		// todo (lobkovilya): echo-server is restarting because of ncat problem, uncomment this as soon as it will be replaces with test-server
+		// Eventually(func() error {
+		//	output, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes", "--mesh", "non-default")
+		//	if err != nil {
+		//		return err
+		//	}
+		//
+		//	re := regexp.MustCompile(`Online`)
+		//	if len(re.FindAllString(output, -1)) != 6 {
+		//		return errors.New("not all dataplanes are online")
+		//	}
+		//	return nil
+		// }, "30s", "1s").ShouldNot(HaveOccurred())
 	})
 
 	It("should access allservices", func() {

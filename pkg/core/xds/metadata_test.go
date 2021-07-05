@@ -1,11 +1,10 @@
 package xds_test
 
 import (
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	pstruct "google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -15,7 +14,7 @@ import (
 )
 
 type testCase struct {
-	node     *_struct.Struct
+	node     *structpb.Struct
 	expected xds.DataplaneMetadata
 }
 
@@ -29,29 +28,29 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 			Expect(*metadata).To(Equal(given.expected))
 		},
 		Entry("from empty node", testCase{
-			node:     &_struct.Struct{},
+			node:     &structpb.Struct{},
 			expected: xds.DataplaneMetadata{},
 		}),
 		Entry("from non-empty node", testCase{
-			node: &pstruct.Struct{
-				Fields: map[string]*pstruct.Value{
-					"dataplaneTokenPath": &pstruct.Value{
-						Kind: &pstruct.Value_StringValue{
+			node: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"dataplaneTokenPath": &structpb.Value{
+						Kind: &structpb.Value_StringValue{
 							StringValue: "/tmp/token",
 						},
 					},
-					"dataplane.admin.port": &pstruct.Value{
-						Kind: &pstruct.Value_StringValue{
+					"dataplane.admin.port": &structpb.Value{
+						Kind: &structpb.Value_StringValue{
 							StringValue: "1234",
 						},
 					},
-					"dataplane.dns.port": &pstruct.Value{
-						Kind: &pstruct.Value_StringValue{
+					"dataplane.dns.port": &structpb.Value{
+						Kind: &structpb.Value_StringValue{
 							StringValue: "8000",
 						},
 					},
-					"dataplane.dns.empty.port": &pstruct.Value{
-						Kind: &pstruct.Value_StringValue{
+					"dataplane.dns.empty.port": &structpb.Value{
+						Kind: &structpb.Value_StringValue{
 							StringValue: "8001",
 						},
 					},
@@ -81,10 +80,10 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 			},
 		}
 
-		node := &_struct.Struct{
-			Fields: map[string]*pstruct.Value{
-				"version": &pstruct.Value{
-					Kind: &pstruct.Value_StructValue{
+		node := &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"version": &structpb.Value{
+					Kind: &structpb.Value_StructValue{
 						StructValue: util_proto.MustToStruct(version),
 					},
 				},
