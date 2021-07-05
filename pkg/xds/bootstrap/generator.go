@@ -94,7 +94,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if err != nil {
 			return nil, "", err
 		}
-		b.hdsEnabled = false
 		return b.generateFor(*proxyId, request, "ingress", adminPort)
 	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
 		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
@@ -264,6 +263,11 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, request types
 		return nil, "", err
 	}
 
+	proxyType := mesh_proto.ProxyType(request.ProxyType)
+	if request.ProxyType == "" {
+		proxyType = mesh_proto.DataplaneProxyType
+	}
+
 	accessLogSocket := envoy_common.AccessLogSocketName(request.Name, request.Mesh)
 	xdsHost := b.xdsHost(request)
 	xdsUri := net.JoinHostPort(xdsHost, strconv.FormatUint(uint64(b.config.Params.XdsPort), 10))
@@ -290,7 +294,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, request types
 		KumaDpBuildDate:    request.Version.KumaDp.BuildDate,
 		EnvoyVersion:       request.Version.Envoy.Version,
 		EnvoyBuild:         request.Version.Envoy.Build,
-		HdsEnabled:         b.hdsEnabled,
+		HdsEnabled:         proxyType == mesh_proto.DataplaneProxyType && b.hdsEnabled,
 		DynamicMetadata:    request.DynamicMetadata,
 		DNSPort:            request.DNSPort,
 		EmptyDNSPort:       request.EmptyDNSPort,
