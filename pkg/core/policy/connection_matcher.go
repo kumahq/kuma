@@ -18,7 +18,7 @@ func (f ServiceIteratorFunc) Next() (core_xds.ServiceName, bool) {
 	return f()
 }
 
-func ToOutboundServicesOf(dataplane *mesh_core.DataplaneResource) ServiceIteratorFunc {
+func ToOutboundServicesOf(dataplane *mesh_core.DataplaneResource) ServiceIterator {
 	idx := 0
 	return ServiceIteratorFunc(func() (core_xds.ServiceName, bool) {
 		if len(dataplane.Spec.Networking.GetOutbound()) < idx {
@@ -34,7 +34,7 @@ func ToOutboundServicesOf(dataplane *mesh_core.DataplaneResource) ServiceIterato
 	})
 }
 
-func ToServicesOf(destinations core_xds.DestinationMap) ServiceIteratorFunc {
+func ToServicesOf(destinations core_xds.DestinationMap) ServiceIterator {
 	services := make([]core_xds.ServiceName, 0, len(destinations))
 	for service := range destinations {
 		services = append(services, service)
@@ -42,7 +42,7 @@ func ToServicesOf(destinations core_xds.DestinationMap) ServiceIteratorFunc {
 	return ToServices(services)
 }
 
-func ToServices(services []core_xds.ServiceName) ServiceIteratorFunc {
+func ToServices(services []core_xds.ServiceName) ServiceIterator {
 	idx := 0
 	return ServiceIteratorFunc(func() (core_xds.ServiceName, bool) {
 		if len(services) <= idx {
