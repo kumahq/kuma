@@ -1,7 +1,15 @@
 EXAMPLE_NAMESPACE ?= kuma-example
-KIND_KUBECONFIG_DIR ?= $(HOME)/.kube
-KIND_KUBECONFIG ?= $(KIND_KUBECONFIG_DIR)/kind-kuma-config
 KIND_CLUSTER_NAME ?= kuma
+
+# The e2e tests depend on Kind kubeconfigs being in this directory,
+# so this is location should not be changed by developers.
+KIND_KUBECONFIG_DIR := $(HOME)/.kube
+
+# This is the name of the current config file to use.
+KIND_KUBECONFIG := $(KIND_KUBECONFIG_DIR)/kind-$(KIND_CLUSTER_NAME)-config
+
+# Ensure Kubernetes tooling only gets the config we explicity specify.
+unexport KUBECONFIG
 
 METRICS_SERVER_VERSION := 0.4.1
 
@@ -37,12 +45,8 @@ KIND_PATH := $(CI_TOOLS_DIR)/kind
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
 
-.PHONY: ${KIND_KUBECONFIG_DIR}
-${KIND_KUBECONFIG_DIR}:
-	@mkdir -p ${KIND_KUBECONFIG_DIR}
-
 .PHONY: kind/start
-kind/start: ${KIND_KUBECONFIG_DIR}
+kind/start: ${KUBECONFIG_DIR}
 	@kind get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
 		(kind create cluster \
 			--name "$(KIND_CLUSTER_NAME)" \
@@ -57,7 +61,7 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
-	@echo export KUBECONFIG="${KIND_KUBECONFIG}"
+	@echo export KUBECONFIG="$(KIND_KUBECONFIG)"
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
@@ -65,10 +69,12 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 .PHONY: kind/stop
 kind/stop:
 	@kind delete cluster --name $(KIND_CLUSTER_NAME)
+	@rm -f $(KUBECONFIG_DIR)/$(KIND_KUBECONFIG)
 
 .PHONY: kind/stop/all
 kind/stop/all:
 	@kind delete clusters --all
+	@rm -f $(KUBECONFIG_DIR)/kind-kuma-*
 
 .PHONY: kind/load/control-plane
 kind/load/control-plane:
@@ -114,10 +120,10 @@ kind/load/test: images/test kind/load/images/test
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load
-	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
+	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
-	@KUBECONFIG=$(KIND_KUBECONFIG) kumactl install dns | kubectl apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) kumactl install dns | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
 	@until \
     	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
@@ -152,7 +158,7 @@ kind/deploy/kuma/local: kind/deploy/kuma
 
 .PHONY: kind/deploy/metrics
 kind/deploy/metrics: build/kumactl
-	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install metrics $(KUMACTL_INSTALL_METRICS_IMAGES) | kubectl apply -f -
+	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install metrics $(KUMACTL_INSTALL_METRICS_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-metrics pods -l app=prometheus
 
 .PHONY: kind/deploy/metrics-server
