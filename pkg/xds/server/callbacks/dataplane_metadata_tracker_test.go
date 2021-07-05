@@ -22,9 +22,9 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 			Id: "default.example",
 			Metadata: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
-					"dataplaneTokenPath": &structpb.Value{
+					"dataplane.token": &structpb.Value{
 						Kind: &structpb.Value_StringValue{
-							StringValue: "/tmp/token",
+							StringValue: "token",
 						},
 					},
 				},
@@ -44,7 +44,7 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		metadata := tracker.Metadata(streamId)
 
 		// then
-		Expect(metadata.GetDataplaneTokenPath()).To(Equal("/tmp/token"))
+		Expect(metadata.GetDataplaneToken()).To(Equal("token"))
 
 		// when
 		tracker.OnStreamClosed(streamId)
@@ -71,6 +71,6 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		metadata := tracker.Metadata(streamId)
 
 		// then
-		Expect(metadata.GetDataplaneTokenPath()).To(Equal("/tmp/token"))
+		Expect(metadata.GetDataplaneToken()).To(Equal("token"))
 	})
 })

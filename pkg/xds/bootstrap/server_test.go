@@ -153,17 +153,17 @@ var _ = Describe("Bootstrap Server", func() {
 		},
 		Entry("minimal data provided (universal)", testCase{
 			dataplaneName:      "dp-1",
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneTokenPath": "/tmp/token", %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneToken": "token", %s }`, version),
 			expectedConfigFile: "bootstrap.universal.golden.yaml",
 		}),
 		Entry("minimal data provided (k8s)", testCase{
 			dataplaneName:      "dp-1.default",
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneTokenPath": "/tmp/token", %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneToken": "token", %s }`, version),
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
 			dataplaneName:      "dp-1.default",
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneTokenPath": "/tmp/token", %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneToken": "token", %s }`, version),
 			expectedConfigFile: "bootstrap.overridden.golden.yaml",
 		}),
 	)
@@ -174,7 +174,7 @@ var _ = Describe("Bootstrap Server", func() {
 		{
 			"mesh": "default",
 			"name": "dp-1.default",
-			"dataplaneTokenPath": "/tmp/token"
+			"dataplaneToken": "token"
 		}
 		`
 

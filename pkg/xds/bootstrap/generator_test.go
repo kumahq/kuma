@@ -190,10 +190,10 @@ var _ = Describe("bootstrapGenerator", func() {
 				}
 			},
 			request: types.BootstrapRequest{
-				Mesh:               "mesh",
-				Name:               "name.namespace",
-				AdminPort:          1234,
-				DataplaneTokenPath: "/tmp/token",
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				AdminPort:      1234,
+				DataplaneToken: "token",
 				DynamicMetadata: map[string]string{
 					"test": "value",
 				},
@@ -234,11 +234,11 @@ var _ = Describe("bootstrapGenerator", func() {
 				return cfg
 			},
 			request: types.BootstrapRequest{
-				Mesh:               "mesh",
-				Name:               "name.namespace",
-				AdminPort:          1234,
-				DataplaneTokenPath: "/tmp/token",
-				Version:            defaultVersion,
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				AdminPort:      1234,
+				DataplaneToken: "token",
+				Version:        defaultVersion,
 			},
 			expectedConfigFile:       "generator.default-config.kubernetes.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV3,
@@ -254,11 +254,11 @@ var _ = Describe("bootstrapGenerator", func() {
 				return cfg
 			},
 			request: types.BootstrapRequest{
-				Mesh:               "mesh",
-				Name:               "name.namespace",
-				AdminPort:          1234,
-				DataplaneTokenPath: "/tmp/token",
-				Version:            defaultVersion,
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				AdminPort:      1234,
+				DataplaneToken: "token",
+				Version:        defaultVersion,
 			},
 			expectedConfigFile:       "generator.default-config.kubernetes.ipv6.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV3,
@@ -430,17 +430,6 @@ var _ = Describe("bootstrapGenerator", func() {
 				BootstrapVersion: "5",
 			},
 			expected: `Invalid BootstrapVersion. Available values are: "3"`,
-		}),
-		Entry("when both dataplane and dataplane token path are defined", errTestCase{
-			request: types.BootstrapRequest{
-				Host:               "localhost",
-				Mesh:               "mesh",
-				Name:               "name.namespace",
-				AdminPort:          9901,
-				DataplaneTokenPath: "/tmp",
-				DataplaneToken:     "token",
-			},
-			expected: `dataplaneToken: only one of dataplaneToken and dataplaneTokenField can be defined`,
 		}),
 		Entry("when CaCert is not a CA and EnvoyGRPC is used", errTestCase{
 			request: types.BootstrapRequest{

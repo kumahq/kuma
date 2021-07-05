@@ -135,18 +135,13 @@ func ISSANMismatchErr(err error) bool {
 }
 
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
-	if b.dpAuthEnabled && request.DataplaneTokenPath == "" && request.DataplaneToken == "" {
+	if b.dpAuthEnabled && request.DataplaneToken == "" {
 		return DpTokenRequired
 	}
 	if b.config.Params.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
 		if !b.hostsAndIps[request.Host] {
 			return SANMismatchErr(request.Host, b.hostsAndIps.slice())
 		}
-	}
-	if request.DataplaneToken != "" && request.DataplaneTokenPath != "" {
-		verr := validators.ValidationError{}
-		verr.AddViolation("dataplaneToken", "only one of dataplaneToken and dataplaneTokenField can be defined")
-		return verr.OrNil()
 	}
 	if b.bootstrapVersion(request.BootstrapVersion) == types.BootstrapV2 && request.DNSPort != 0 {
 		verr := validators.ValidationError{}
@@ -284,7 +279,6 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, request types
 		XdsUri:             xdsUri,
 		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout,
 		AccessLogPipe:      accessLogSocket,
-		DataplaneTokenPath: request.DataplaneTokenPath,
 		DataplaneToken:     request.DataplaneToken,
 		DataplaneResource:  request.DataplaneResource,
 		CertBytes:          base64.StdEncoding.EncodeToString(cert),
@@ -305,12 +299,6 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, request types
 }
 
 func (b *bootstrapGenerator) validateCaCert(cert []byte, origin string, request types.BootstrapRequest) error {
-	if request.DataplaneTokenPath != "" {
-		// when using GoogleGRPC it is valid to put non-CA certificate therefore we should only verify this for EnvoyGRPC
-		// EnvoyGRPC is used when DataplaneToken is passed via request as inline value, not as a file.
-		return nil
-	}
-
 	pemCert, _ := pem.Decode(cert)
 	if pemCert == nil {
 		return errors.New("could not parse certificate from " + origin)

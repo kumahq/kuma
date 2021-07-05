@@ -219,9 +219,9 @@ var _ = Describe("DataplaneStatusTracker", func() {
 					Id: "default.example-001",
 					Metadata: &structpb.Struct{
 						Fields: map[string]*structpb.Value{
-							"dataplaneTokenPath": {
+							"dataplane.token": {
 								Kind: &structpb.Value_StringValue{
-									StringValue: "/tmp/token",
+									StringValue: "token",
 								},
 							},
 							"version": {

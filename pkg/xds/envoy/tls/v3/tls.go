@@ -2,15 +2,12 @@ package v3
 
 import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
-	"github.com/kumahq/kuma/pkg/tls"
-	"github.com/kumahq/kuma/pkg/util/proto"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/kumahq/kuma/pkg/tls"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -67,14 +64,8 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Datapl
 }
 
 func createCommonTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, validationSANMatcher *envoy_type_matcher.StringMatcher) (*envoy_tls.CommonTlsContext, error) {
-	meshCaSecret, err := sdsSecretConfig(ctx, xds_tls.MeshCaResource, metadata)
-	if err != nil {
-		return nil, err
-	}
-	identitySecret, err := sdsSecretConfig(ctx, xds_tls.IdentityCertResource, metadata)
-	if err != nil {
-		return nil, err
-	}
+	meshCaSecret := sdsSecretConfig(ctx, xds_tls.MeshCaResource, metadata)
+	identitySecret := sdsSecretConfig(ctx, xds_tls.IdentityCertResource, metadata)
 	return &envoy_tls.CommonTlsContext{
 		ValidationContextType: &envoy_tls.CommonTlsContext_CombinedValidationContext{
 			CombinedValidationContext: &envoy_tls.CommonTlsContext_CombinedCertificateValidationContext{
@@ -90,23 +81,14 @@ func createCommonTlsContext(ctx xds_context.Context, metadata *core_xds.Dataplan
 	}, nil
 }
 
-func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) (*envoy_tls.SdsSecretConfig, error) {
-	sdsConfig := &envoy_tls.SdsSecretConfig{
+func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) *envoy_tls.SdsSecretConfig {
+	return &envoy_tls.SdsSecretConfig{
 		Name: name,
 		SdsConfig: &envoy_core.ConfigSource{
-			ResourceApiVersion: envoy_core.ApiVersion_V3,
+			ResourceApiVersion:    envoy_core.ApiVersion_V3,
+			ConfigSourceSpecifier: envoyGrpcSdsSpecifier(metadata),
 		},
 	}
-	if metadata.GetDataplaneTokenPath() != "" {
-		specifier, err := googleGrpcSdsSpecifier(context, name, metadata)
-		if err != nil {
-			return nil, err
-		}
-		sdsConfig.SdsConfig.ConfigSourceSpecifier = specifier
-	} else {
-		sdsConfig.SdsConfig.ConfigSourceSpecifier = envoyGrpcSdsSpecifier(metadata)
-	}
-	return sdsConfig, nil
 }
 
 func envoyGrpcSdsSpecifier(metadata *core_xds.DataplaneMetadata) *envoy_core.ConfigSource_ApiConfigSource {
@@ -134,71 +116,6 @@ func envoyGrpcSdsSpecifier(metadata *core_xds.DataplaneMetadata) *envoy_core.Con
 		}
 	}
 	return specifier
-}
-
-func googleGrpcSdsSpecifier(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) (*envoy_core.ConfigSource_ApiConfigSource, error) {
-	withCallCredentials := func(grpc *envoy_core.GrpcService_GoogleGrpc) (*envoy_core.GrpcService_GoogleGrpc, error) {
-		if metadata.GetDataplaneTokenPath() == "" {
-			return grpc, nil
-		}
-
-		config := &envoy_grpc_credential.FileBasedMetadataConfig{
-			SecretData: &envoy_core.DataSource{
-				Specifier: &envoy_core.DataSource_Filename{
-					Filename: metadata.GetDataplaneTokenPath(),
-				},
-			},
-		}
-		typedConfig, err := proto.MarshalAnyDeterministic(config)
-		if err != nil {
-			return nil, err
-		}
-
-		grpc.CallCredentials = append(grpc.CallCredentials, &envoy_core.GrpcService_GoogleGrpc_CallCredentials{
-			CredentialSpecifier: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
-				FromPlugin: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
-					Name: "envoy.grpc_credentials.file_based_metadata",
-					ConfigType: &envoy_core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
-						TypedConfig: typedConfig,
-					},
-				},
-			},
-		})
-		grpc.CredentialsFactoryName = "envoy.grpc_credentials.file_based_metadata"
-
-		return grpc, nil
-	}
-	googleGrpc, err := withCallCredentials(&envoy_core.GrpcService_GoogleGrpc{
-		TargetUri:  context.SDSLocation(),
-		StatPrefix: util_xds.SanitizeMetric("sds_" + name),
-		ChannelCredentials: &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials{
-			CredentialSpecifier: &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{
-				SslCredentials: &envoy_core.GrpcService_GoogleGrpc_SslCredentials{
-					RootCerts: &envoy_core.DataSource{
-						Specifier: &envoy_core.DataSource_InlineBytes{
-							InlineBytes: context.ControlPlane.SdsTlsCert,
-						},
-					},
-				},
-			},
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &envoy_core.ConfigSource_ApiConfigSource{
-		ApiConfigSource: &envoy_core.ApiConfigSource{
-			ApiType:             envoy_core.ApiConfigSource_GRPC,
-			TransportApiVersion: envoy_core.ApiVersion_V3,
-			GrpcServices: []*envoy_core.GrpcService{
-				{
-					TargetSpecifier: &envoy_core.GrpcService_GoogleGrpc_{
-						GoogleGrpc: googleGrpc,
-					},
-				},
-			},
-		},
-	}, nil
 }
 
 func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool, hostname string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
