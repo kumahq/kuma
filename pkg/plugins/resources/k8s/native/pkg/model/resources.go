@@ -15,6 +15,7 @@ const (
 type KubernetesObject interface {
 	runtime.Object
 	metav1.Object
+
 	GetObjectMeta() *metav1.ObjectMeta
 	SetObjectMeta(*metav1.ObjectMeta)
 	GetMesh() string
@@ -28,4 +29,12 @@ type KubernetesList interface {
 	runtime.Object
 	GetItems() []KubernetesObject
 	GetContinue() string
+}
+
+// RawMessage is a carrier for an untyped JSON payload.
+type RawMessage map[string]interface{}
+
+// DeepCopy ...
+func (in RawMessage) DeepCopy() RawMessage {
+	return runtime.DeepCopyJSON(in)
 }

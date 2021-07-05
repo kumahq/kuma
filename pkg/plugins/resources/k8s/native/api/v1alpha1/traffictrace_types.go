@@ -18,24 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// TrafficTraceSpec defines the desired state of TrafficTrace
-type TrafficTraceSpec = map[string]interface{}
-
-// TrafficTrace is the Schema for the traffictraces API
+// TrafficTrace is the Schema for the TrafficTrace API.
+//
+// +kubebuilder:object:root=true
 type TrafficTrace struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec TrafficTraceSpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// TrafficTraceList contains a list of TrafficTrace
+// TrafficTraceList contains a list of TrafficTraces.
+//
+// +kubebuilder:object:root=true
 type TrafficTraceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

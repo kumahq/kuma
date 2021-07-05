@@ -18,20 +18,23 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// MeshSpec defines the desired state of Mesh
-type MeshSpec = map[string]interface{}
-
-// Mesh is the Schema for the meshes API
+// Mesh is the Schema for the Mesh API.
+//
+// +kubebuilder:object:root=true
 type Mesh struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec MeshSpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// MeshList contains a list of Mesh
+// MeshList contains a list of Mesh.
+//
+// +kubebuilder:object:root=true
 type MeshList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
