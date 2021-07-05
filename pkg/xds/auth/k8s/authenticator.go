@@ -10,6 +10,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
@@ -24,7 +25,20 @@ type kubeAuthenticator struct {
 	client kube_client.Client
 }
 
-func (k *kubeAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
+var _ auth.Authenticator = &kubeAuthenticator{}
+
+func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
+	switch resource := resource.(type) {
+	case *core_mesh.DataplaneResource:
+		return k.authDataplane(ctx, resource, credential)
+	case *core_mesh.ZoneIngressResource:
+		return k.authZoneIngress(ctx, resource, credential)
+	default:
+		return errors.Errorf("no matching authenticator for %s resource", resource.GetType())
+	}
+}
+
+func (k *kubeAuthenticator) authDataplane(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
 	if credential == "" {
 		return errors.New("authentication failed: k8s token is missing")
 	}
@@ -57,7 +71,7 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, dataplane *core_me
 	return nil
 }
 
-func (k *kubeAuthenticator) AuthenticateZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
+func (k *kubeAuthenticator) authZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
 	if credential == "" {
 		return errors.New("authentication failed: k8s token is missing")
 	}
