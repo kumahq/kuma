@@ -33,6 +33,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/test"
 )
 
@@ -72,4 +73,25 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
+})
+
+var _ = Describe("RawMessage", func() {
+	It("should deep copy", func() {
+		r1 := model.RawMessage(
+			map[string]interface{}{
+				"int": int64(2),
+				"str": "one",
+				"map": map[string]interface{}{
+					"true":  true,
+					"false": false,
+				},
+			},
+		)
+
+		r2 := r1.DeepCopy()
+		Expect(r1).To(Equal(r2))
+
+		r1["int"] = int64(32)
+		Expect(r1).ToNot(Equal(r2))
+	})
 })

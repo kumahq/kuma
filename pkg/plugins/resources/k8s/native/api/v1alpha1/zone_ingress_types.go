@@ -18,24 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// ZoneIngress defines the desired state of ZoneIngress
-type ZoneIngressSpec = map[string]interface{}
-
-// ZoneIngress is the Schema for the zone ingress API
+// ZoneIngress is the Schema for the Zone Ingress API.
+//
+// +kubebuilder:object:root=true
 type ZoneIngress struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec ZoneIngressSpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// ZoneIngressList contains a list of ZoneIngress
+// ZoneIngressList contains a list of ZoneIngresses.
+//
+// +kubebuilder:object:root=true
 type ZoneIngressList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

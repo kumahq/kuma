@@ -18,24 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// CircuitBreaker defines the desired state of CircuitBreaker
-type CircuitBreakerSpec = map[string]interface{}
-
-// CircuitBreaker is the Schema for the circuitbreaker API
+// CircuitBreaker is the Schema for the circuitbreaker API.
+//
+// +kubebuilder:object:root=true
 type CircuitBreaker struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec CircuitBreakerSpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// CircuitBreakerList contains a list of CircuitBreaker
+// CircuitBreakerList contains a list of CircuitBreaker.
+//
+// +kubebuilder:object:root=true
 type CircuitBreakerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

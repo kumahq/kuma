@@ -18,23 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// Important: Run "make" to regenerate code after modifying this file
-
-// HealthCheckSpec defines the desired state of HealthCheck
-type HealthCheckSpec = map[string]interface{}
-
-// HealthCheck is the Schema for the traffic routes API
+// HealthCheck is the Schema for the HealthCheck API.
+//
+// +kubebuilder:object:root=true
 type HealthCheck struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec HealthCheckSpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// HealthCheckList contains a list of HealthCheck
+// HealthCheckList contains a list of HealthChecks.
+//
+// +kubebuilder:object:root=true
 type HealthCheckList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

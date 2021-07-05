@@ -18,23 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// Important: Run "make" to regenerate code after modifying this file
-
-// ProxyTemplateSpec defines the desired state of ProxyTemplate
-type ProxyTemplateSpec = map[string]interface{}
-
-// ProxyTemplate is the Schema for the proxytemplates API
+// ProxyTemplate is the Schema for the ProxyTemplate API.
+//
+// +kubebuilder:object:root=true
 type ProxyTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec ProxyTemplateSpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// ProxyTemplateList contains a list of ProxyTemplate
+// ProxyTemplateList contains a list of ProxyTemplates.
+//
+// +kubebuilder:object:root=true
 type ProxyTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

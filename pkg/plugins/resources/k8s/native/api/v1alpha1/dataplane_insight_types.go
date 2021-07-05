@@ -18,21 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// DataplaneInsightStatus defines the observed state of Dataplane
-type DataplaneInsightStatus = map[string]interface{}
-
-// DataplaneInsight is the Schema for the Dataplane Insights API
+// DataplaneInsight is the Schema for the Dataplane Insights API.
+//
+// +kubebuilder:object:root=true
 type DataplaneInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh   string                 `json:"mesh,omitempty"`
-	Status DataplaneInsightStatus `json:"status,omitempty"`
+	Mesh   string           `json:"mesh,omitempty"`
+	Status model.RawMessage `json:"status,omitempty"`
 }
 
-// DataplaneInsightList contains a list of Dataplane
+// DataplaneInsightList contains a list of Dataplane.
+//
+// +kubebuilder:object:root=true
 type DataplaneInsightList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
