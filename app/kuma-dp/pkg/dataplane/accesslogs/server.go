@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	v2 "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs/v2"
 	v3 "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 
@@ -40,7 +39,6 @@ func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
 }
 
 func (s *accessLogServer) Start(stop <-chan struct{}) error {
-	v2.RegisterAccessLogServer(s.server)
 	v3.RegisterAccessLogServer(s.server)
 
 	_, err := os.Stat(s.address)
