@@ -5,7 +5,6 @@
 
 Changes:
 * fix: Dataplane/ZoneIngress/Zone status problem when control plane forcefully exits [#2246](https://github.com//kumahq/kuma/pull/2246)
-* chore: change default Kuma images convention (all images has v prefix) [#2237](https://github.com//kumahq/kuma/pull/2237)
 * chore: reduce memory usage by reducing cache key size [#2214](https://github.com//kumahq/kuma/pull/2214) [#2230](https://github.com//kumahq/kuma/pull/2230) 
   👍contributed by nhamlh
 * fix: ZoneIngress always shows up as 'offline' [#2209](https://github.com//kumahq/kuma/pull/2209)

@@ -6,6 +6,157 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `1.2.1`
+
+When Global is upgraded to `1.2.1` and Zone CP is still `1.2.0`, ZoneIngresses will always be listed as offline.
+After Zone CPs are upgraded to `1.2.1`, the status will work again. ZoneIngress status does not affect cross-zone traffic.
+
+## Upgrade to `1.2.0`
+
+One of the changes introduced by Kuma 1.2.0 is renaming `Remote Control Planes` to `Zone Control Planes` and `Dataplane Ingress` to `Zone Ingress`.
+We think this change makes the naming more consistent with the rest of the application and also removes some of unnecessary confusion.
+
+As a result of this renaming, some values and arguments in multizone/kubernetes environment changed. You can read below more.
+
+### Upgrading with `kumactl` on Kubernetes
+
+1. Changes in arguments/flags for `kumactl install control-plane`
+
+    * `--mode` accepts now values: `standalone`, `zone` and `global` (`remote` changed to `zone`)
+
+    * `--tls-kds-remote-client-secret` flag was renamed to `--tls-kds-zone-client-secret`
+
+2. Service `kuma-global-remote-sync` changed to `kuma-global-zone-sync` so after upgrading `global` control plane you have to manually remote old service. For example:
+
+   ```sh
+   kubectl delete -n kuma-system service/kuma-global-remote-sync 
+   ```
+
+   Hint: It's worth to remember that often at this point the IP address/hostname which is used as a KDS address when installing Kuma Zone Control Planes will change. Make sure that you update the address when upgrading the Remote CPs to the newest version.
+
+### Upgrading with `helm` on Kubernetes
+
+Changes in values in Kuma's HELM chart
+
+* `controlPlane.mode` accepts now values: `standalone`, `zone` and `global` (`remote` changed to `zone`)
+
+* `controlPlane.globalRemoteSyncService` was renamed to `controlPlane.globalZoneSyncService`
+
+* `controlPlane.tls.kdsRemoteClient` was renamed to `controlPlane.tls.kdsZoneClient`
+
+### Suggested Upgrade Path on Universal
+
+1. Zone Control Planes should be started using new environment variables
+
+    * `KUMA_MODE` accepts now values: `standalone`, `zone` and `global` (`remote` changed to `zone`)
+
+      Old:
+      ```sh
+      KUMA_MODE="remote" [...] kuma-cp run
+      ```
+
+      New:
+      ```sh
+      KUMA_MODE="zone" [...] kuma-cp run
+      ```
+
+    * `KUMA_MULTIZONE_REMOTE_ZONE` was renamed to `KUMA_MULTIZONE_ZONE_NAME`
+
+      Old:
+      ```sh
+      KUMA_MULTIZONE_REMOTE_ZONE="remote-1" [...] kuma-cp run
+      ```
+
+      New:
+      ```sh
+      KUMA_MULTIZONE_ZONE_NAME="remote-1" [...] kuma-cp run
+      ```
+
+    * `KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS` was renamed to `KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS`
+
+      Old:
+      ```sh
+      KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="grpcs://localhost:5685" [...] kuma-cp run
+      ```
+
+      New:
+      ```sh
+      KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS="grpcs://localhost:5685" [...]  kuma-cp run
+      ```
+
+    * `KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE` was renamed to `KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE`
+
+      Old:
+      ```sh
+      KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE="/rootCa" [...] kuma-cp run
+      ```
+
+      New:
+      ```sh
+      KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE="/rootCa" [...] kuma-cp run
+      ```
+
+    * `KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE` was renamed to `KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE`
+
+      Old:
+      ```sh
+      KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL="9s" [...] kuma-cp run
+      ```
+
+      New:
+      ```sh
+      KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL="9s" [...] kuma-cp run
+      ```
+
+2. Dataplane Ingress resource should be replaced with ZoneIngress resource:
+
+   Old:
+    ```yaml
+    type: Dataplane
+    name: dp-ingress
+    mesh: default
+    networking:
+      address: <ADDRESS>
+      ingress:
+        publicAddress: <PUBLIC_ADDRESS>
+        publicPort: <PUBLIC_PORT>
+      inbound:
+      - port: <PORT>
+        tags:
+          kuma.io/service: ingress
+    ```
+
+   New:
+    ```yaml
+    type: ZoneIngress
+    name: zone-ingress
+    networking:
+      address: <ADDRESS>
+      port: <PORT>
+      advertisedAddress: <PUBLIC_ADDRESS>
+      advertisedPort: <PUBLIC_PORT>
+    ```
+
+   NOTE: ZoneIngress resource is a global scoped resource, it's not bound to a Mesh
+   The old Dataplane resource is still supported but it's considered deprecated and will be removed in the next major version of Kuma
+
+
+3. Since ZoneIngress resource is not bound to a Mesh, it requires another token type that is bound to a Zone:
+
+    ```shell
+    kumactl generate zone-ingress-token --zone=zone-1 > /tmp/zone-ingress-token
+    ```
+
+4. `kuma-dp run` command should be updated with a new flag `--proxy-type=ingress`:
+
+    ```sh
+    kuma-dp run \
+      --proxy-type=ingress \
+      --dataplane-token-file=/tmp/zone-ingress-token \
+      --dataplane-file=zone-ingress.yaml
+    ```
+
+
 ## Upgrade to `1.1.0`
 
 The major change in this release is the migration to XDSv3 for the `kuma-cp` to `envoy` data plane proxy communication. The
@@ -23,76 +174,76 @@ This version removes the deprecated `--dataplane` flag in `kumactl generate data
 This release introduces a number of breaking changes. If Kuma is being deployed in production we strongly suggest to backup the current configuration, tear down the whole cluster and zones, and install in a clean setup. However, we enumerate the details of these changes below.
 
 ### Suggested Upgrade Path on Kubernetes
- * Drop k8s 1.13 support
+* Drop k8s 1.13 support
 
-    Take this into account if you run Kuma on an old Kubernetes version.
+  Take this into account if you run Kuma on an old Kubernetes version.
 
- * `kumactl` merged `install ingress` into `install control-plane`
+* `kumactl` merged `install ingress` into `install control-plane`
 
-    This change impacts any deployment pipelines that are based on `kumactl` and are used for multi-zone deployments.
+  This change impacts any deployment pipelines that are based on `kumactl` and are used for multi-zone deployments.
 
- * Change policies on K8S to scope global
+* Change policies on K8S to scope global
 
-    All the CRDs are now in the global scope, therefore all policies need to be backed up. The relevant CRDs need to be deleted, which will clear all the policies. After the upgrade, you can apply the policies again. We do recommend to keep all the Kuma Control Planes down while doing these operations.
+  All the CRDs are now in the global scope, therefore all policies need to be backed up. The relevant CRDs need to be deleted, which will clear all the policies. After the upgrade, you can apply the policies again. We do recommend to keep all the Kuma Control Planes down while doing these operations.
 
- * Autoconfigure single cert for all services
+* Autoconfigure single cert for all services
 
-    Deployment flags for providing TLS certificates in Helm and `kumactl` have changed, refer to the relevant [documentation](https://github.com/kumahq/kuma/blob/release-1.0/deployments/charts/kuma/README.md#values) to verify the new naming.
+  Deployment flags for providing TLS certificates in Helm and `kumactl` have changed, refer to the relevant [documentation](https://github.com/kumahq/kuma/blob/release-1.0/deployments/charts/kuma/README.md#values) to verify the new naming.
 
- * Create default resources for Mesh
+* Create default resources for Mesh
 
-    The following default resources will be created upon the first start of Kuma Control Plane
-        - default signing key
-        - default [Allow All traffic permission](https://kuma.io/docs/1.0.0/policies/traffic-permissions/#traffic-permissions) policy `allow-all-<mesh name>`
-        - Default [Allow All traffic route](https://kuma.io/docs/1.0.0/policies/traffic-route/#default-trafficroute) policy `allow-all-<mesh name>`
-    
-    Please verify if this conflicts with your deployment and expected policies.
+  The following default resources will be created upon the first start of Kuma Control Plane
+  - default signing key
+  - default [Allow All traffic permission](https://kuma.io/docs/1.0.0/policies/traffic-permissions/#traffic-permissions) policy `allow-all-<mesh name>`
+  - Default [Allow All traffic route](https://kuma.io/docs/1.0.0/policies/traffic-route/#default-trafficroute) policy `allow-all-<mesh name>`
 
- * New Multizone deployment flow
-
-    Deploying Multizone clusters is now simplified, please refer to the deployment [documentation](https://kuma.io/docs/1.0.0/documentation/deployments/#multi-zone-mode) of the updated procedure.
-   
- * Improved control plane communication security
-   
-    Kuma Control Plane exposed ports are reduced, please revise the [documentation](https://kuma.io/docs/1.0.0/documentation/networking/#kuma-cp-ports) for detailed list.
-    Consider reinstalling the metrics due to the port changes in Kuma Prometheus SD.
- 
- * Traffic route format
- 
-    The format of the [TrafficRoute](https://kuma.io/docs/1.0.0/policies/traffic-route) has changed. Please check the documentation and adapt your resources. 
-
-### Suggested Upgrade Path on Universal
- * Get rid of advertised hostname
-    `KUMA_GENERAL_ADVERTISED_HOSTNAME` was removed and not needed now.
- 
- * Autoconfigure single cert for all services
-    Deployment flags for providing TLS certificates in Helm and `kumactl` have changed, refer to the [documentation](https://github.com/kumahq/kuma/blob/release-1.0/pkg/config/app/kuma-cp/kuma-cp.defaults.yaml) to verify the new naming.
-
- * Create default resources for Mesh
-    
-    The following default resources will be created upon the first start of Kuma Control Plane
-        - default signing key
-        - default [Allow All traffic permission](https://kuma.io/docs/1.0.0/policies/traffic-permissions/#traffic-permissions) policy `allow-all-<mesh name>`
-        - Default [Allow All traffic route](https://kuma.io/docs/1.0.0/policies/traffic-route/#default-trafficroute) policy `allow-all-<mesh name>`
-    
-    Please verify if this conflicts with your deployment and expected policies.
+  Please verify if this conflicts with your deployment and expected policies.
 
 * New Multizone deployment flow
 
-    Deploying Multizone clusters is now simplified, please refer to the deployment [documentation](https://kuma.io/docs/1.0.0/documentation/deployments/#multi-zone-mode) of the updated procedure.
-   
- * Improved control plane communication security
-   
-    `kuma-dp` invocation has changed and now [allows](https://kuma.io/docs/1.0.1/documentation/dps-and-data-model/#dataplane-entity) for a more flexible usage leveraging automated, template based Dataplane resource creation, customizable data-plane token boundaries and additional CA ceritficate validation for the Kuma Control plane boostrap server.
-    Kuma Control Plane exposed ports are reduced, please revise the [documentation](https://kuma.io/docs/1.0.0/documentation/networking/#kuma-cp-ports) for detailed list.
- 
-  * Traffic route format
-  
-     The format of the [TrafficRoute](https://kuma.io/docs/1.0.0/policies/traffic-route) has changed. Please check the documentation and adapt your resources. 
+  Deploying Multizone clusters is now simplified, please refer to the deployment [documentation](https://kuma.io/docs/1.0.0/documentation/deployments/#multi-zone-mode) of the updated procedure.
 
- 
+* Improved control plane communication security
+
+  Kuma Control Plane exposed ports are reduced, please revise the [documentation](https://kuma.io/docs/1.0.0/documentation/networking/#kuma-cp-ports) for detailed list.
+  Consider reinstalling the metrics due to the port changes in Kuma Prometheus SD.
+
+* Traffic route format
+
+  The format of the [TrafficRoute](https://kuma.io/docs/1.0.0/policies/traffic-route) has changed. Please check the documentation and adapt your resources.
+
+### Suggested Upgrade Path on Universal
+* Get rid of advertised hostname
+  `KUMA_GENERAL_ADVERTISED_HOSTNAME` was removed and not needed now.
+
+* Autoconfigure single cert for all services
+  Deployment flags for providing TLS certificates in Helm and `kumactl` have changed, refer to the [documentation](https://github.com/kumahq/kuma/blob/release-1.0/pkg/config/app/kuma-cp/kuma-cp.defaults.yaml) to verify the new naming.
+
+* Create default resources for Mesh
+
+  The following default resources will be created upon the first start of Kuma Control Plane
+  - default signing key
+  - default [Allow All traffic permission](https://kuma.io/docs/1.0.0/policies/traffic-permissions/#traffic-permissions) policy `allow-all-<mesh name>`
+  - Default [Allow All traffic route](https://kuma.io/docs/1.0.0/policies/traffic-route/#default-trafficroute) policy `allow-all-<mesh name>`
+
+  Please verify if this conflicts with your deployment and expected policies.
+
+* New Multizone deployment flow
+
+  Deploying Multizone clusters is now simplified, please refer to the deployment [documentation](https://kuma.io/docs/1.0.0/documentation/deployments/#multi-zone-mode) of the updated procedure.
+
+* Improved control plane communication security
+
+  `kuma-dp` invocation has changed and now [allows](https://kuma.io/docs/1.0.1/documentation/dps-and-data-model/#dataplane-entity) for a more flexible usage leveraging automated, template based Dataplane resource creation, customizable data-plane token boundaries and additional CA ceritficate validation for the Kuma Control plane boostrap server.
+  Kuma Control Plane exposed ports are reduced, please revise the [documentation](https://kuma.io/docs/1.0.0/documentation/networking/#kuma-cp-ports) for detailed list.
+
+* Traffic route format
+
+  The format of the [TrafficRoute](https://kuma.io/docs/1.0.0/policies/traffic-route) has changed. Please check the documentation and adapt your resources.
+
+
 ## Upgrade to `0.7.0`
-Support for `kuma.io/sidecar-injection` annotation. On Kubernetes change the namespace resources that host Kuma mesh services with the aforementioned annotation and delete the label. 
+Support for `kuma.io/sidecar-injection` annotation. On Kubernetes change the namespace resources that host Kuma mesh services with the aforementioned annotation and delete the label.
 
 Prefix the Kuma built-in tags with `kuma.io/` as follows: `kuma.io/service`, `kuma.io/protocol`, `kuma.io/zone`.
 
@@ -166,11 +317,11 @@ metadata:
 mesh: default
 spec:
   sources:
-  - match:
-      service: web
+    - match:
+        service: web
   destinations:
-  - match:
-      service: backend
+    - match:
+        service: backend
   conf:
     activeChecks:
       interval: 10s
@@ -181,7 +332,7 @@ spec:
       unhealthyThreshold: 3
       penaltyInterval: 5s
 ```
-to 
+to
 ```yaml
 apiVersion: kuma.io/v1alpha1
 kind: HealthCheck
@@ -192,11 +343,11 @@ metadata:
 mesh: default
 spec:
   sources:
-  - match:
-      service: web
+    - match:
+        service: web
   destinations:
-  - match:
-      service: backend
+    - match:
+        service: backend
   conf:
     interval: 10s
     timeout: 2s
@@ -218,10 +369,10 @@ spec:
   metrics:
     enabledBackend: prometheus-1
     backends:
-    - name: prometheus-1
-      type: prometheus
-      conf:
-        skipMTLS: false
+      - name: prometheus-1
+        type: prometheus
+        conf:
+          skipMTLS: false
 ```
 
 ### Suggested Upgrade Path on Universal
@@ -234,10 +385,10 @@ name: default
 metrics:
   enabledBackend: prometheus-1
   backends:
-  - name: prometheus-1
-    type: prometheus
-    conf:
-      skipMTLS: true
+    - name: prometheus-1
+      type: prometheus
+      conf:
+        skipMTLS: true
 ```
 
 
@@ -261,14 +412,14 @@ spec:
     prometheus: {}
   logging:
     backends:
-    - name: file-1
-      file:
-        path: /var/log/access.log
+      - name: file-1
+        file:
+          path: /var/log/access.log
   tracing:
     backends:
-    - name: zipkin-1
-      zipkin:
-        url: http://zipkin.local:9411/api/v1/spans
+      - name: zipkin-1
+        zipkin:
+          url: http://zipkin.local:9411/api/v1/spans
 ```
 to
 ```yaml
@@ -280,37 +431,37 @@ spec:
   mtls:
     enabledBackend: ca-1
     backends:
-    - name: ca-1
-      type: builtin
+      - name: ca-1
+        type: builtin
   metrics:
     enabledBackend: prom-1
     backends:
-    - name: prom-1
-      type: prometheus
+      - name: prom-1
+        type: prometheus
   logging:
     backends:
-    - name: file-1
-      type: file
-      conf:
-        path: /var/log/access.log
+      - name: file-1
+        type: file
+        conf:
+          path: /var/log/access.log
   tracing:
     backends:
-    - name: zipkin-1
-      type: zipkin
-      conf:
-        url: http://zipkin.local:9411/api/v1/spans
+      - name: zipkin-1
+        type: zipkin
+        conf:
+          url: http://zipkin.local:9411/api/v1/spans
 ```
 
 #### Removing `kuma-injector`
 
 Kuma 0.5.0 ships with `kuma-injector` embedded into the `kuma-cp`, which makes its previously created resources obsolete and potentially
- can cause problems with the deployments. Before deploying the new version, it is strongly advised to run a cleanup script [kuma-0.5.0-k8s-remove_injector_resources.sh](tools/migrations/0.5.0/kuma-0.5.0-k8s-remove_injector_resources.sh).
- 
- NOTE: if Kuma was deployed in a namespace other than `kuma-system`, please run `export KUMA_SYSTEM=<othernamespace` before running the cleanup script.
+can cause problems with the deployments. Before deploying the new version, it is strongly advised to run a cleanup script [kuma-0.5.0-k8s-remove_injector_resources.sh](tools/migrations/0.5.0/kuma-0.5.0-k8s-remove_injector_resources.sh).
 
-#### Kuma resources `ownerReferences` 
-Kuma 0.5.0 introduce webhook for setting `ownerReferences` to the Kuma resources. If you have some 
-Kuma resources in your k8s cluster, then you can use our script [kuma-0.5.0-k8s-set_owner_references.sh](tools/migrations/0.5.0/kuma-0.5.0-k8s-set_owner_references.sh) 
+NOTE: if Kuma was deployed in a namespace other than `kuma-system`, please run `export KUMA_SYSTEM=<othernamespace` before running the cleanup script.
+
+#### Kuma resources `ownerReferences`
+Kuma 0.5.0 introduce webhook for setting `ownerReferences` to the Kuma resources. If you have some
+Kuma resources in your k8s cluster, then you can use our script [kuma-0.5.0-k8s-set_owner_references.sh](tools/migrations/0.5.0/kuma-0.5.0-k8s-set_owner_references.sh)
 in order to properly set `ownerReferences` .
 
 ### Suggested Upgrade Path on Universal
@@ -328,14 +479,14 @@ metrics:
   prometheus: {}
 logging:
   backends:
-  - name: file-1
-    file:
-      path: /var/log/access.log
+    - name: file-1
+      file:
+        path: /var/log/access.log
 tracing:
   backends:
-  - name: zipkin-1
-    zipkin:
-      url: http://zipkin.local:9411/api/v1/spans
+    - name: zipkin-1
+      zipkin:
+        url: http://zipkin.local:9411/api/v1/spans
 ```
 to
 ```yaml
@@ -344,25 +495,25 @@ name: default
 mtls:
   enabledBackend: ca-1
   backends:
-  - name: ca-1
-    type: builtin
+    - name: ca-1
+      type: builtin
 metrics:
   enabledBackend: prom-1
   backends:
-  - name: prom-1
-    type: prometheus
+    - name: prom-1
+      type: prometheus
 logging:
   backends:
-  - name: file-1
-    type: file
-    conf:
-      path: /var/log/access.log
+    - name: file-1
+      type: file
+      conf:
+        path: /var/log/access.log
 tracing:
   backends:
-  - name: zipkin-1
-    type: zipkin
-    conf:
-      url: http://zipkin.local:9411/api/v1/spans
+    - name: zipkin-1
+      type: zipkin
+      conf:
+        url: http://zipkin.local:9411/api/v1/spans
 ```
 
 ## Upgrade to `0.4.0`
@@ -384,7 +535,7 @@ All existing data will be preserved.
 
 #### New Dataplane Entity format
 
-Kuma 0.4.0 introduces new Dataplane entity format to improve readability as well as add support for scraping metrics of Gateway Dataplanes. 
+Kuma 0.4.0 introduces new Dataplane entity format to improve readability as well as add support for scraping metrics of Gateway Dataplanes.
 
 Here is example of migration to the new format.
 
@@ -397,12 +548,12 @@ mesh: default
 name: web-01
 networking:
   inbound:
-  - interface: 192.168.0.1:21011:21012
-    tags:
-      service: web
+    - interface: 192.168.0.1:21011:21012
+      tags:
+        service: web
   outbound:
-  - interface: :3000
-    service: backend
+    - interface: :3000
+      service: backend
 ```
 
 New format
@@ -413,13 +564,13 @@ name: web-01
 networking:
   address: 192.168.0.1
   inbound:
-  - port: 21011
-    servicePort: 21012
-    tags:
-      service: web
+    - port: 21011
+      servicePort: 21012
+      tags:
+        service: web
   outbound:
-  - port: 3000
-    service: backend
+    - port: 3000
+      service: backend
 ```
 
 **Gateway Dataplane**
@@ -459,33 +610,33 @@ Although the old format is still supported, it is recommended to migrate since t
 
 `kumactl`:
 * a few options in `kumactl config control-planes add` command have been renamed:
-  * `--dataplane-token-client-cert` has been renamed into `--admin-client-cert`
-  * `--dataplane-token-client-key` has been renamed into `--admin-client-key`
+    * `--dataplane-token-client-cert` has been renamed into `--admin-client-cert`
+    * `--dataplane-token-client-key` has been renamed into `--admin-client-key`
 
 ### Suggested Upgrade Path on Kubernetes
 
 * Users on Kubernetes will have to re-install `Kuma`:
 
-  1. Export all `Kuma` resources
-     ```shell
-     kubectl get meshes,trafficpermissions,trafficroutes,trafficlogs,proxytemplates --all-namespaces -oyaml > backup.yaml
-     ```
-  2. Uninstall previous version of `Kuma Control Plane`
-     ```shell
-     # using previous version of `kumactl`
-
-     kumactl install control-plane | kubectl delete -f -
-     ```
-  3. Install new version of `Kuma Control Plane`
-     ```shell
-     # using new version of `kumactl`
-
-     kumactl install control-plane | kubectl apply -f -
-     ```
-  4. Re-apply `Kuma` resources back again
-     ```shell
-     kubectl apply -f backup.yaml
-     ```
+    1. Export all `Kuma` resources
+       ```shell
+       kubectl get meshes,trafficpermissions,trafficroutes,trafficlogs,proxytemplates --all-namespaces -oyaml > backup.yaml
+       ```
+    2. Uninstall previous version of `Kuma Control Plane`
+       ```shell
+       # using previous version of `kumactl`
+  
+       kumactl install control-plane | kubectl delete -f -
+       ```
+    3. Install new version of `Kuma Control Plane`
+       ```shell
+       # using new version of `kumactl`
+  
+       kumactl install control-plane | kubectl apply -f -
+       ```
+    4. Re-apply `Kuma` resources back again
+       ```shell
+       kubectl apply -f backup.yaml
+       ```
 
 ### Suggested Upgrade Path on Universal
 
@@ -495,7 +646,7 @@ Although the old format is still supported, it is recommended to migrate since t
    kumactl config control-planes add
    ```
 
-   this time with
+  this time with
 
     ```shell
     --admin-client-cert <CERT> --admin-client-cert <KEY> --overwrite
