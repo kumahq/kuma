@@ -2,6 +2,7 @@ package components
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	metrics "github.com/kumahq/kuma/pkg/metrics/store"
@@ -42,10 +43,10 @@ func Setup(rt runtime.Runtime) error {
 		return err
 	}
 
-	if err := rt.Metrics().Register(prometheus.NewGoCollector()); err != nil {
+	if err := rt.Metrics().Register(collectors.NewGoCollector()); err != nil {
 		return err
 	}
-	if err := rt.Metrics().Register(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{})); err != nil {
+	if err := rt.Metrics().Register(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{})); err != nil {
 		return err
 	}
 
