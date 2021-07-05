@@ -18,24 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// TrafficLogSpec defines the desired state of TrafficLog
-type TrafficLogSpec = map[string]interface{}
-
-// TrafficLog is the Schema for the trafficlogs API
+// TrafficLog is the Schema for the TrafficLog API.
+//
+// +kubebuilder:object:root=true
 type TrafficLog struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec TrafficLogSpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// TrafficLogList contains a list of TrafficLog
+// TrafficLogList contains a list of TrafficLogs.
+//
+// +kubebuilder:object:root=true
 type TrafficLogList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

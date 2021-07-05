@@ -18,23 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// Important: Run "make" to regenerate code after modifying this file
-
-// TrafficPermissionSpec defines the desired state of TrafficPermission
-type TrafficPermissionSpec = map[string]interface{}
-
-// TrafficPermission is the Schema for the proxypermissions API
+// TrafficPermission is the Schema for the TrafficPermission API.
+//
+// +kubebuilder:object:root=true
 type TrafficPermission struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec TrafficPermissionSpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// TrafficPermissionList contains a list of TrafficPermission
+// TrafficPermissionList contains a list of TrafficPermissions.
+//
+// +kubebuilder:object:root=true
 type TrafficPermissionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
