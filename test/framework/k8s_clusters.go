@@ -62,6 +62,10 @@ func (cs *K8sClusters) WithTimeout(timeout time.Duration) Cluster {
 	return cs
 }
 
+func (c *K8sClusters) Verbose() bool {
+	return c.verbose
+}
+
 func (cs *K8sClusters) WithRetries(retries int) Cluster {
 	for _, c := range cs.clusters {
 		c.WithRetries(retries)

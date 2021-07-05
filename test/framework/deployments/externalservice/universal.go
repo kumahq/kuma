@@ -20,17 +20,19 @@ type universalDeployment struct {
 	ports     map[string]string
 	name      string
 	cert      string
-	args      []string
+	commands  []Command
 	app       *framework.SshApp
+	verbose   bool
 }
 
 var _ Deployment = &universalDeployment{}
 
-var UniversalAppEchoServer = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
-var UniversalAppHttpsEchoServer = []string{"ncat",
+var UniversalAppEchoServer = Command([]string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo 80\n\"'"})
+var UniversalAppEchoServer81 = Command([]string{"ncat", "-lk", "-p", "81", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo 81\n\"'"})
+var UniversalAppHttpsEchoServer = Command([]string{"ncat",
 	"-lk", "-p", "443",
 	"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",
-	"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"}
+	"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"})
 
 func (u *universalDeployment) Name() string {
 	return DeploymentName + u.name
@@ -65,7 +67,6 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 	u.ip = ip
 	u.container = container
 
-	verbose := false
 	port := u.ports["22"]
 	env := []string{}
 
@@ -75,22 +76,23 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
-	err = framework.NewSshApp(verbose, port, env, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
+	err = framework.NewSshApp(u.verbose, port, env, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
-	err = framework.NewSshApp(verbose, port, env, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
+	err = framework.NewSshApp(u.verbose, port, env, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
 	u.cert = cert
-	u.app = framework.NewSshApp(verbose, port, env, u.args)
-
-	err = u.app.Start()
-	if err != nil {
-		return err
+	for _, arg := range u.commands {
+		u.app = framework.NewSshApp(u.verbose, port, env, arg)
+		err = u.app.Start()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
