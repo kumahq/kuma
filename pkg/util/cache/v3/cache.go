@@ -3,10 +3,10 @@ package v3
 import (
 	"sort"
 
-	"github.com/golang/protobuf/ptypes"
-
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	ctl_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func ToDeltaDiscoveryResponse(s ctl_cache.Snapshot) (*v3.DeltaDiscoveryResponse, error) {
@@ -14,7 +14,7 @@ func ToDeltaDiscoveryResponse(s ctl_cache.Snapshot) (*v3.DeltaDiscoveryResponse,
 	for _, rs := range s.Resources {
 		for _, name := range sortedResourceNames(rs) {
 			r := rs.Items[name]
-			pbany, err := ptypes.MarshalAny(r.Resource)
+			pbany, err := anypb.New(proto.MessageV2(r.Resource))
 			if err != nil {
 				return nil, err
 			}

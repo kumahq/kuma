@@ -1,11 +1,10 @@
 package cache_test
 
 import (
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/any"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -15,8 +14,11 @@ import (
 )
 
 var _ = Describe("Snapshot", func() {
-	mustMarshalAny := func(pb proto.Message) *any.Any {
-		a, _ := ptypes.MarshalAny(pb)
+	mustMarshalAny := func(pb proto.Message) *anypb.Any {
+		a, err := anypb.New(pb)
+		if err != nil {
+			panic(err)
+		}
 		return a
 	}
 

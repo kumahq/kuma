@@ -6,7 +6,7 @@ import (
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/golang/protobuf/proto"
-	_struct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/util/xds"
 )
@@ -52,7 +52,7 @@ type discoveryRequest struct {
 	*envoy_api_v2.DiscoveryRequest
 }
 
-func (d *discoveryRequest) Metadata() *_struct.Struct {
+func (d *discoveryRequest) Metadata() *structpb.Struct {
 	return d.GetNode().GetMetadata()
 }
 

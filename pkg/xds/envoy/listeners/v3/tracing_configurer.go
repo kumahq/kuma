@@ -3,8 +3,8 @@ package v3
 import (
 	net_url "net/url"
 
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"

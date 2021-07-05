@@ -1,9 +1,9 @@
 package v1alpha1
 
 import (
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 var _ = Describe("TrafficRouteHelper", func() {
@@ -11,7 +11,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 		It("should return splits in consistent order", func() {
 			tr1 := &TrafficRoute{Conf: &TrafficRoute_Conf{Split: []*TrafficRoute_Split{
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 10,
 					},
 					Destination: map[string]string{
@@ -19,7 +19,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 					},
 				},
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 20,
 					},
 					Destination: map[string]string{
@@ -27,7 +27,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 					},
 				},
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 1,
 					},
 					Destination: map[string]string{
@@ -36,7 +36,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 					},
 				},
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 1,
 					},
 					Destination: map[string]string{
@@ -45,7 +45,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 					},
 				},
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 10,
 					},
 					Destination: map[string]string{
@@ -53,7 +53,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 					},
 				},
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 20,
 					},
 					Destination: map[string]string{
@@ -64,7 +64,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 
 			tr2 := &TrafficRoute{Conf: &TrafficRoute_Conf{Split: []*TrafficRoute_Split{
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 20,
 					},
 					Destination: map[string]string{
@@ -72,7 +72,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 					},
 				},
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 20,
 					},
 					Destination: map[string]string{
@@ -80,7 +80,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 					},
 				},
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 10,
 					},
 					Destination: map[string]string{
@@ -88,7 +88,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 					},
 				},
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 1,
 					},
 					Destination: map[string]string{
@@ -97,7 +97,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 					},
 				},
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 1,
 					},
 					Destination: map[string]string{
@@ -106,7 +106,7 @@ var _ = Describe("TrafficRouteHelper", func() {
 					},
 				},
 				{
-					Weight: &wrappers.UInt32Value{
+					Weight: &wrapperspb.UInt32Value{
 						Value: 10,
 					},
 					Destination: map[string]string{

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -221,7 +221,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi1 := core_mesh.NewDataplaneInsightResource()
 		dpi1.Spec.Subscriptions = append(dpi1.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamp.Timestamp{
+			ConnectTime: &timestamppb.Timestamp{
 				Seconds: 100,
 				Nanos:   200,
 			},
@@ -253,7 +253,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi2 := core_mesh.NewDataplaneInsightResource()
 		dpi2.Spec.Subscriptions = append(dpi2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamp.Timestamp{
+			ConnectTime: &timestamppb.Timestamp{
 				Seconds: 100,
 				Nanos:   200,
 			},
@@ -294,7 +294,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi3 := core_mesh.NewDataplaneInsightResource()
 		dpi3.Spec.Subscriptions = append(dpi3.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamp.Timestamp{
+			ConnectTime: &timestamppb.Timestamp{
 				Seconds: 100,
 				Nanos:   200,
 			},
@@ -326,11 +326,11 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi4 := core_mesh.NewDataplaneInsightResource()
 		dpi4.Spec.Subscriptions = append(dpi4.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamp.Timestamp{
+			ConnectTime: &timestamppb.Timestamp{
 				Seconds: 100,
 				Nanos:   200,
 			},
-			DisconnectTime: &timestamp.Timestamp{
+			DisconnectTime: &timestamppb.Timestamp{
 				Seconds: 101,
 				Nanos:   202,
 			},
@@ -386,7 +386,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi1 := core_mesh.NewDataplaneInsightResource()
 		dpi1.Spec.Subscriptions = append(dpi1.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamp.Timestamp{
+			ConnectTime: &timestamppb.Timestamp{
 				Seconds: 100,
 				Nanos:   200,
 			},
@@ -427,7 +427,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi2 := core_mesh.NewDataplaneInsightResource()
 		dpi2.Spec.Subscriptions = append(dpi2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamp.Timestamp{
+			ConnectTime: &timestamppb.Timestamp{
 				Seconds: 100,
 				Nanos:   200,
 			},
@@ -468,7 +468,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi3 := core_mesh.NewDataplaneInsightResource()
 		dpi3.Spec.Subscriptions = append(dpi3.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamp.Timestamp{
+			ConnectTime: &timestamppb.Timestamp{
 				Seconds: 100,
 				Nanos:   200,
 			},
@@ -500,11 +500,11 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi4 := core_mesh.NewDataplaneInsightResource()
 		dpi4.Spec.Subscriptions = append(dpi4.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamp.Timestamp{
+			ConnectTime: &timestamppb.Timestamp{
 				Seconds: 100,
 				Nanos:   200,
 			},
-			DisconnectTime: &timestamp.Timestamp{
+			DisconnectTime: &timestamppb.Timestamp{
 				Seconds: 101,
 				Nanos:   202,
 			},

@@ -3,7 +3,7 @@ package clusters
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -52,7 +52,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 			}
 			cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
 				Name: sni,
-				Match: &pstruct.Struct{
+				Match: &structpb.Struct{
 					Fields: envoy_metadata.MetadataFields(tags),
 				},
 				TransportSocket: transportSocket,

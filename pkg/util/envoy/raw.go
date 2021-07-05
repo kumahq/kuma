@@ -8,7 +8,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 )
 
@@ -22,11 +21,11 @@ func ResourceFromYaml(resYaml string) (proto.Message, error) {
 	if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), &anything); err != nil {
 		return nil, err
 	}
-	var dyn ptypes.DynamicAny
-	if err := ptypes.UnmarshalAny(&anything, &dyn); err != nil {
+	msg, err := anything.UnmarshalNew()
+	if err != nil {
 		return nil, err
 	}
-	p, ok := dyn.Message.(envoy_types.Resource)
+	p, ok := msg.(envoy_types.Resource)
 	if !ok {
 		return nil, errors.New("xDS resource doesn't implement all required interfaces")
 	}

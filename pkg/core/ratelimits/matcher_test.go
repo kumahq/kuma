@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -49,7 +49,7 @@ var _ = Describe("Match", func() {
 				Conf: &mesh_proto.RateLimit_Conf{
 					Http: &mesh_proto.RateLimit_Conf_Http{
 						Requests: 100,
-						Interval: &duration.Duration{
+						Interval: &durationpb.Duration{
 							Seconds: 3,
 						},
 					},
