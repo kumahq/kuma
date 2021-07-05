@@ -59,13 +59,15 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 
+			proxyType := mesh_proto.ProxyType(cfg.Dataplane.ProxyType)
+
 			// Map the resource types that are acceptable depending on the value of the `--proxy-type` flag.
-			proxyTypeMap := map[string]model.ResourceType{
-				string(mesh_proto.DataplaneProxyType): mesh.DataplaneType,
-				string(mesh_proto.IngressProxyType):   mesh.ZoneIngressType,
+			proxyTypes := map[mesh_proto.ProxyType]bool{
+				mesh_proto.DataplaneProxyType: true,
+				mesh_proto.IngressProxyType:   true,
 			}
 
-			if _, ok := proxyTypeMap[cfg.Dataplane.ProxyType]; !ok {
+			if !proxyTypes[proxyType] {
 				return errors.Errorf("invalid proxy type %q", cfg.Dataplane.ProxyType)
 			}
 
@@ -76,9 +78,9 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 
 			if proxyResource != nil {
-				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.GetType() {
+				if proxyResource.GetType() != mesh.ResourceTypeForProxy(proxyType) {
 					return errors.Errorf("invalid proxy resource type %q, expected %s",
-						proxyResource.GetType(), resType)
+						proxyResource.GetType(), mesh.ResourceTypeForProxy(proxyType))
 				}
 
 				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {

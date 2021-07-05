@@ -9,9 +9,9 @@ import (
 	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc/metadata"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -125,18 +125,16 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 
 	// Otherwise, search for the pre-created resource.
 	if resource == nil {
+		var err error
+
 		proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId())
 		if err != nil {
 			return errors.Wrap(err, "request must have a valid Proxy ID")
 		}
 
-		switch md.GetProxyType() {
-		case mesh_proto.IngressProxyType:
-			resource = core_mesh.NewZoneIngressResource()
-		case mesh_proto.DataplaneProxyType:
-			resource = core_mesh.NewDataplaneResource()
-		default:
-			return errors.Errorf("unsupported proxy type %q", md.GetProxyType())
+		resource, err = registry.Global().NewObject(core_mesh.ResourceTypeForProxy(md.GetProxyType()))
+		if err != nil {
+			return nil
 		}
 
 		backoff, _ := retry.NewConstant(a.dpNotFoundRetry.Backoff)

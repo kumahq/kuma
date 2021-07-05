@@ -15,25 +15,24 @@ import (
 	"text/template"
 
 	"github.com/asaskevich/govalidator"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 	_ "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshalling Envoy protobuf works in tests (normally it is imported in root.go)
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type BootstrapGenerator interface {
@@ -83,23 +82,28 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		proxyType = mesh_proto.DataplaneProxyType
 	}
 
+	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
+
+	proxyResource, err := b.modelResourceFor(ctx, core_mesh.ResourceTypeForProxy(proxyType), request, proxyId)
+	if err != nil {
+		return nil, "", err
+	}
+
 	switch proxyType {
 	case mesh_proto.IngressProxyType:
-		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
-		zoneIngress, err := b.zoneIngressFor(ctx, request, proxyId)
-		if err != nil {
-			return nil, "", err
-		}
+		zoneIngress := proxyResource.(*core_mesh.ZoneIngressResource)
 		adminPort, err := b.adminPortForIngress(request, zoneIngress)
 		if err != nil {
 			return nil, "", err
 		}
 		return b.generateFor(*proxyId, request, "ingress", adminPort)
 	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
-		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
-		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
-		if err != nil {
-			return nil, "", err
+		dataplane := proxyResource.(*core_mesh.DataplaneResource)
+		// This part of validation works only for Universal scenarios with TransparentProxying.
+		if dataplane.Spec.Networking.TransparentProxying != nil && len(dataplane.Spec.Networking.Outbound) != 0 {
+			var err validators.ValidationError
+			err.AddViolation("outbound", "should be empty since dataplane is in Transparent Proxying mode")
+			return nil, "", err.OrNil()
 		}
 		service := dataplane.Spec.GetIdentifyingService()
 		adminPort, err := b.adminPortForDataplane(request, dataplane)
@@ -151,62 +155,51 @@ func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) err
 	return nil
 }
 
-// dataplaneFor returns dataplane for two flows
+// modelResourceFor returns a model.Resource for two flows:
 // 1) Dataplane is passed to kuma-dp run, in this case we just read DP from the BootstrapRequest
 // 2) Dataplane is created before kuma-dp run, in this case we access storage to fetch it (ex. Kubernetes)
-func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {
-	if request.DataplaneResource != "" {
-		res, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
+func (b *bootstrapGenerator) modelResourceFor(
+	ctx context.Context,
+	resourceType core_model.ResourceType,
+	request types.BootstrapRequest,
+	proxyId *core_xds.ProxyId,
+) (core_model.Resource, error) {
+	// (2) We don't have a resource in the bootstrap request, find the named resource in the manager.
+	if request.DataplaneResource == "" {
+		resource, err := registry.Global().NewObject(resourceType)
 		if err != nil {
 			return nil, err
 		}
-		dp, ok := res.(*core_mesh.DataplaneResource)
-		if !ok {
-			return nil, errors.Errorf("invalid resource")
-		}
-		if err := dp.Validate(); err != nil {
-			return nil, err
-		}
-		// this part of validation works only for Universal scenarios with TransparentProxying
-		if dp.Spec.Networking.TransparentProxying != nil && len(dp.Spec.Networking.Outbound) != 0 {
-			var err validators.ValidationError
-			err.AddViolation("outbound", "should be empty since dataplane is in Transparent Proxying mode")
-			return nil, err.OrNil()
-		}
-		if err := b.validateMeshExist(ctx, dp.Meta.GetMesh()); err != nil {
-			return nil, err
-		}
-		return dp, nil
-	} else {
-		dataplane := core_mesh.NewDataplaneResource()
-		if err := b.resManager.Get(ctx, dataplane, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
-			return nil, err
-		}
-		return dataplane, nil
-	}
-}
 
-func (b *bootstrapGenerator) zoneIngressFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.ZoneIngressResource, error) {
-	if request.DataplaneResource != "" {
-		res, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
-		if err != nil {
+		if err := b.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
 			return nil, err
 		}
-		zoneIngress, ok := res.(*core_mesh.ZoneIngressResource)
-		if !ok {
-			return nil, errors.Errorf("invalid resource")
-		}
-		if err := zoneIngress.Validate(); err != nil {
-			return nil, err
-		}
-		return zoneIngress, nil
-	} else {
-		zoneIngress := core_mesh.NewZoneIngressResource()
-		if err := b.resManager.Get(ctx, zoneIngress, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
-			return nil, err
-		}
-		return zoneIngress, nil
+
+		return resource, nil
 	}
+
+	// (1) We did get a resource in the bootstrap. Unmarshal and validate it.
+	resource, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
+	if err != nil {
+		return nil, err
+	}
+
+	if resource.GetType() != resourceType {
+		return nil, errors.Errorf("invalid resource type %q, wanted %q",
+			resource.GetType(), resourceType)
+	}
+
+	if err := resource.Validate(); err != nil {
+		return nil, err
+	}
+
+	if resource.Scope() == core_model.ScopeMesh {
+		if err := b.validateMeshExist(ctx, resource.GetMeta().GetMesh()); err != nil {
+			return nil, err
+		}
+	}
+
+	return resource, nil
 }
 
 func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string) error {
