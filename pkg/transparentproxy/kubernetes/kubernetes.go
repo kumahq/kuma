@@ -27,15 +27,17 @@ import (
 )
 
 type PodRedirect struct {
-	BuiltinDNSEnabled     bool
-	BuiltinDNSPort        uint32
-	ExcludeOutboundPorts  string
-	RedirectPortOutbound  uint32
-	RedirectInbound       bool
-	ExcludeInboundPorts   string
-	RedirectPortInbound   uint32
-	RedirectPortInboundV6 uint32
-	UID                   string
+	BuiltinDNSEnabled      bool
+	BuiltinDNSPort         uint32
+	ExcludeOutboundPorts   string
+	RedirectPortOutbound   uint32
+	RedirectInbound        bool
+	ExcludeInboundPorts    string
+	RedirectPortInbound    uint32
+	RedirectPortInboundV6  uint32
+	UID                    string
+	RedirectAllDNSTraffic  bool
+	DNSUpstreamTargetChain string
 }
 
 func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
@@ -45,6 +47,12 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	podRedirect.BuiltinDNSEnabled, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaBuiltinDNS)
 	if err != nil {
 		return nil, err
+	}
+
+	if podRedirect.BuiltinDNSEnabled {
+		// default to redirect all DNS traffic, as this is what we need in Kubernetes.
+		// if this code is used in Universal, override this in the caller.
+		podRedirect.RedirectAllDNSTraffic = true
 	}
 
 	podRedirect.BuiltinDNSPort, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaBuiltinDNSPort)
@@ -86,8 +94,12 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 }
 
 func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig {
-	return &config.TransparentProxyConfig{
+	dnsUpstreamTargetChain := pr.DNSUpstreamTargetChain
+	if dnsUpstreamTargetChain == "" {
+		dnsUpstreamTargetChain = "RETURN"
+	}
 
+	return &config.TransparentProxyConfig{
 		DryRun:                 false,
 		Verbose:                false,
 		RedirectPortOutBound:   fmt.Sprintf("%d", pr.RedirectPortOutbound),
@@ -99,9 +111,9 @@ func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig
 		UID:                    pr.UID,
 		GID:                    pr.UID, // TODO: shall we have a separate annotation here?
 		RedirectDNS:            pr.BuiltinDNSEnabled,
-		RedirectAllDNSTraffic:  false,
-		AgentDNSListenerPort:   fmt.Sprintf("%d", pr.BuiltinDNSPort),
-		DNSUpstreamTargetChain: "RETURN",
+		RedirectAllDNSTraffic:  pr.RedirectAllDNSTraffic,
+		AgentDNSListenerPort:   strconv.FormatInt(int64(pr.BuiltinDNSPort), 10),
+		DNSUpstreamTargetChain: dnsUpstreamTargetChain,
 	}
 }
 
@@ -125,9 +137,19 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	}
 
 	if pr.BuiltinDNSEnabled {
+		if pr.RedirectAllDNSTraffic {
+			result = append(result,
+				"--redirect-all-dns-traffic",
+			)
+		}
 		result = append(result,
-			"--redirect-all-dns-traffic",
 			"--redirect-dns-port", strconv.FormatInt(int64(pr.BuiltinDNSPort), 10),
+		)
+	}
+
+	if pr.DNSUpstreamTargetChain != "" {
+		result = append(result,
+			"--redirect-dns-upstream-target-chain", pr.DNSUpstreamTargetChain,
 		)
 	}
 
