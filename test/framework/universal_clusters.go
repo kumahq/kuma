@@ -201,3 +201,12 @@ func (cs *UniversalClusters) Deploy(deployment Deployment) error {
 	}
 	return nil
 }
+
+func (cs *UniversalClusters) DeleteDeployment(deploymentName string) error {
+	for name, c := range cs.clusters {
+		if err := c.DeleteDeployment(deploymentName); err != nil {
+			return errors.Wrapf(err, "delete deployment %s failed on %s cluster", deploymentName, name)
+		}
+	}
+	return nil
+}
