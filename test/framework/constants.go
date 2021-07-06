@@ -61,6 +61,7 @@ var KumaImageRegistry = "kumahq"
 var KumaCPImageRepo = "kuma-cp"
 var KumaDPImageRepo = "kuma-dp"
 var KumaInitImageRepo = "kuma-init"
+var KumaCNIImageRepo = "kuma-cni"
 
 var KumaUniversalDeployOpts []DeployOptionsFunc
 var KumaK8sDeployOpts []DeployOptionsFunc

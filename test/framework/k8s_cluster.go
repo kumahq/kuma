@@ -383,11 +383,16 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 	}
 
 	if opts.cni {
+		values["cni.image.repository"] = KumaCNIImageRepo
 		values["cni.enabled"] = "true"
 		values["cni.chained"] = "true"
 		values["cni.netDir"] = "/etc/cni/net.d"
 		values["cni.binDir"] = "/opt/cni/bin"
 		values["cni.confName"] = "10-kindnet.conflist"
+
+		if HasCniImageRegistry() {
+			values["cni.image.repository"] = GetCniImageRegistry()
+		}
 
 		if HasCniConfName() {
 			values["cni.confName"] = GetCniConfName()

@@ -71,6 +71,14 @@ func HasDpInitImageRegistry() bool {
 	return envIsPresent("KUMA_DP_INIT_IMAGE_REPOSITORY")
 }
 
+func GetCniImageRegistry() string {
+	return os.Getenv("KUMA_CNI_IMAGE_REPOSITORY")
+}
+
+func HasCniImageRegistry() bool {
+	return envIsPresent("KUMA_CNI_IMAGE_REPOSITORY")
+}
+
 func GetUniversalImage() string {
 	if envIsPresent("KUMA_UNIVERSAL_IMAGE") {
 		return os.Getenv("KUMA_UNIVERSAL_IMAGE")
