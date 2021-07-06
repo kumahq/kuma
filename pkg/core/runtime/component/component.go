@@ -96,14 +96,14 @@ func (cm *manager) startLeaderComponents(stop <-chan struct{}, errCh chan error)
 	closeLeaderCh := func() {
 		mutex.Lock()
 		defer mutex.Unlock()
-		if channels.IsClosed(leaderStopCh) {
+		if !channels.IsClosed(leaderStopCh) {
 			close(leaderStopCh)
 		}
 	}
 
 	cm.leaderElector.AddCallbacks(LeaderCallbacks{
 		OnStartedLeading: func() {
-			log.Info("Leader acquired")
+			log.Info("leader acquired")
 			mutex.Lock()
 			defer mutex.Unlock()
 			leaderStopCh = make(chan struct{})
@@ -118,7 +118,7 @@ func (cm *manager) startLeaderComponents(stop <-chan struct{}, errCh chan error)
 			}
 		},
 		OnStoppedLeading: func() {
-			log.Info("Leader lost")
+			log.Info("leader lost")
 			closeLeaderCh()
 		},
 	})
