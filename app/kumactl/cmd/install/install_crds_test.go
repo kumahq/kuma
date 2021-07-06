@@ -38,7 +38,7 @@ var _ = Describe("kumactl install crds", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(stderr.Bytes()).To(BeNil())
+			Expect(stderr.String()).To(BeEmpty())
 
 			// when
 			actual := stdout.Bytes()
