@@ -21,3 +21,7 @@ Fix #XXX
 - [ ] E2E tests
 - [ ] Manual testing on Universal
 - [ ] Manual testing on Kubernetes 
+
+### Backwards compatibility
+
+- [ ] Add `backport-to-stable` label if the code is backwards compatible. Otherwise, list breaking changes.
