@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -14,6 +15,9 @@ type CustomizableResourceManager interface {
 }
 
 func NewCustomizableResourceManager(defaultManager ResourceManager, customManagers map[model.ResourceType]ResourceManager) CustomizableResourceManager {
+	if customManagers == nil {
+		customManagers = map[model.ResourceType]ResourceManager{}
+	}
 	return &customizableResourceManager{
 		defaultManager: defaultManager,
 		customManagers: customManagers,
@@ -28,6 +32,9 @@ type customizableResourceManager struct {
 }
 
 func (m *customizableResourceManager) Customize(resourceType model.ResourceType, manager ResourceManager) {
+	if _, ok := m.customManagers[resourceType]; ok {
+		panic(fmt.Sprintf("resource type %q is already customized", resourceType))
+	}
 	m.customManagers[resourceType] = manager
 }
 
