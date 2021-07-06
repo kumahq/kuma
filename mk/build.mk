@@ -30,7 +30,7 @@ COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 
 # List of binaries that we have release build rules for.
-BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-prometheus-sd coredns
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-cni kuma-prometheus-sd coredns
 
 .PHONY: build
 build: build/release build/test
@@ -65,6 +65,10 @@ build/kuma-dp: ## Dev: Build `kuma-dp` binary
 build/kumactl: ## Dev: Build `kumactl` binary
 	$(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl ./app/kumactl
 
+.PHONY: build/kuma-cni
+build/kuma-cni:
+	$(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/kuma-cni/kuma-cni ./app/kuma-cni
+
 .PHONY: build/coredns
 build/coredns:
 	rm -rf "$(COREDNS_TMP_DIRECTORY)"
@@ -95,6 +99,10 @@ build/kuma-dp/linux-amd64:
 .PHONY: build/kumactl/linux-amd64
 build/kumactl/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/kumactl
+
+.PHONY: build/kuma-cni/linux-amd64
+build/kuma-cni/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cni
 
 .PHONY: build/kuma-prometheus-sd/linux-amd64
 build/kuma-prometheus-sd/linux-amd64:

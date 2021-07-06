@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
+	github.com/containernetworking/cni v0.8.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210310174751-14ce79b5761d
@@ -36,7 +37,9 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.29.0
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
+	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sethvargo/go-retry v0.1.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/slok/go-http-metrics v0.9.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.1.3

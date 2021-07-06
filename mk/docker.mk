@@ -14,12 +14,14 @@ KUMA_CP_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-cp
 KUMA_DP_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-dp
 KUMACTL_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kumactl
 KUMA_INIT_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-init
+KUMA_CNI_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-cni
 KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-prometheus-sd
 
 export KUMA_CP_DOCKER_IMAGE ?= $(KUMA_CP_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_DP_DOCKER_IMAGE ?= $(KUMA_DP_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMACTL_DOCKER_IMAGE ?= $(KUMACTL_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_INIT_DOCKER_IMAGE ?= $(KUMA_INIT_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
+export KUMA_CNI_DOCKER_IMAGE ?= $(KUMA_CNI_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_PROMETHEUS_SD_DOCKER_IMAGE ?= $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_UNIVERSAL_DOCKER_IMAGE ?= $(DOCKER_REGISTRY)/kuma-universal:$(BUILD_INFO_VERSION)
 
@@ -31,7 +33,7 @@ export DOCKER_BUILDKIT := 1
 docker/build: docker/build/release docker/build/test
 
 .PHONY: docker/build/release
-docker/build/release: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-init docker/build/kuma-prometheus-sd ## Dev: Build all Docker images using existing artifacts from build
+docker/build/release: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-init docker/build/kuma-cni docker/build/kuma-prometheus-sd ## Dev: Build all Docker images using existing artifacts from build
 
 .PHONY: docker/build/test
 docker/build/test: docker/build/kuma-universal
@@ -51,6 +53,10 @@ docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl ## Dev: Build 
 .PHONY: docker/build/kuma-init
 docker/build/kuma-init: ## Dev: Build `kuma-init` Docker image using existing artifact
 	docker build -t $(KUMA_INIT_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-init .
+
+.PHONY: docker/build/kuma-cni
+docker/build/kuma-cni:
+	docker build -t $(KUMA_CNI_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cni .
 
 .PHONY: docker/build/kuma-prometheus-sd
 docker/build/kuma-prometheus-sd: build/artifacts-linux-amd64/kuma-prometheus-sd/kuma-prometheus-sd ## Dev: Build `kuma-prometheus-sd` Docker image using existing artifact
@@ -74,6 +80,9 @@ image/kumactl: build/kumactl/linux-amd64 docker/build/kumactl ## Dev: Rebuild `k
 .PHONY: image/kuma-init
 image/kuma-init: docker/build/kuma-init ## Dev: Rebuild `kuma-init` Docker image
 
+.PHONY: image/kuma-cni
+image/kuma-cni: build/kuma-cni/linux-amd64 docker/build/kuma-cni
+
 .PHONY: image/kuma-prometheus-sd
 image/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-amd64 docker/build/kuma-prometheus-sd ## Dev: Rebuild `kuma-prometheus-sd` Docker image
 
@@ -84,7 +93,7 @@ image/kuma-universal: build/linux-amd64 docker/build/kuma-universal
 images: images/release images/test ## Dev: Rebuild release and tesst Docker images
 
 .PHONY: images/release
-images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd ## Dev: Rebuild release Docker images
+images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-cni image/kuma-prometheus-sd ## Dev: Rebuild release Docker images
 
 .PHONY: images/test
 images/test: image/kuma-universal ## Dev: Rebuild test Docker images
@@ -96,7 +105,7 @@ ${BUILD_DOCKER_IMAGES_DIR}:
 docker/save: docker/save/release docker/save/test
 
 .PHONY: docker/save/release
-docker/save/release: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-prometheus-sd
+docker/save/release: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-cni docker/save/kuma-prometheus-sd
 
 .PHONY: docker/save/test
 docker/save/test: docker/save/kuma-universal
@@ -116,6 +125,10 @@ docker/save/kumactl: ${BUILD_DOCKER_IMAGES_DIR}
 .PHONY: docker/save/kuma-init
 docker/save/kuma-init: ${BUILD_DOCKER_IMAGES_DIR}
 	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar $(KUMA_INIT_DOCKER_IMAGE)
+
+.PHONY: docker/save/kuma-cni
+docker/save/kuma-cni: ${BUILD_DOCKER_IMAGES_DIR}
+	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar $(KUMA_CNI_DOCKER_IMAGE)
 
 .PHONY: docker/save/kuma-prometheus-sd
 docker/save/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}
@@ -150,6 +163,10 @@ docker/load/kumactl: ${BUILD_DOCKER_IMAGES_DIR}/kumactl.tar
 docker/load/kuma-init: ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
 	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-init.tar
 
+.PHONY: docker/load/kuma-cni
+docker/load/kuma-cni: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar
+	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-cni.tar
+
 .PHONY: docker/load/kuma-prometheus-sd
 docker/load/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
 	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.tar
@@ -173,6 +190,10 @@ docker/tag/kumactl:
 .PHONY: docker/tag/kuma-init
 docker/tag/kuma-init:
 	docker tag $(KUMA_INIT_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-init:$(KUMA_VERSION)
+
+.PHONY: docker/tag/kuma-cni
+docker/tag/kuma-cni:
+	docker tag $(KUMA_CNI_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-cni:$(KUMA_VERSION)
 
 .PHONY: docker/tag/kuma-universal
 docker/tag/kuma-universal:

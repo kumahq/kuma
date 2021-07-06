@@ -1,0 +1,16 @@
+FROM alpine:3.14
+
+LABEL description="Kuma CNI plugin installer."
+
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cni/kuma-cni /opt/cni/bin/
+# ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cni/kuma-cni-install /usr/local/bin/
+
+COPY $KUMA_ROOT/tools/releases/templates/LICENSE \
+    $KUMA_ROOT/tools/releases/templates/README \
+    /kuma/
+
+COPY $KUMA_ROOT/tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
+
+ENV PATH=$PATH:/opt/cni/bin
+WORKDIR /opt/cni/bin
+CMD ["/usr/local/bin/kuma-cni-install"]

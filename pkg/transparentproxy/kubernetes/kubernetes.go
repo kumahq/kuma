@@ -87,6 +87,7 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig {
 	return &config.TransparentProxyConfig{
+
 		DryRun:                 false,
 		Verbose:                true,
 		RedirectPortOutBound:   fmt.Sprintf("%d", pr.RedirectPortOutbound),
@@ -100,7 +101,7 @@ func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig
 		RedirectDNS:            pr.BuiltinDNSEnabled,
 		RedirectAllDNSTraffic:  false,
 		AgentDNSListenerPort:   fmt.Sprintf("%d", pr.BuiltinDNSPort),
-		DNSUpstreamTargetChain: "",
+		DNSUpstreamTargetChain: "RETURN",
 	}
 }
 
