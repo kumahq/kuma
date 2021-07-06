@@ -18,24 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// FaultInjectionSpec defines the desired state of FaultInjection
-type FaultInjectionSpec = map[string]interface{}
-
-// FaultInjection is the Schema for the faultinjection API
+// FaultInjection is the Schema for the FaultInjection API.
+//
+// +kubebuilder:object:root=true
 type FaultInjection struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec FaultInjectionSpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// FaultInjectionList contains a list of FaultInjection
+// FaultInjectionList contains a list of FaultInjections.
+//
+// +kubebuilder:object:root=true
 type FaultInjectionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

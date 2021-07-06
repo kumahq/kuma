@@ -18,23 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// Important: Run "make" to regenerate code after modifying this file
-
-// TrafficRouteSpec defines the desired state of TrafficRoute
-type TrafficRouteSpec = map[string]interface{}
-
-// TrafficRoute is the Schema for the traffic routes API
+// TrafficRoute is the Schema for the Traffic Routes API.
+//
+// +kubebuilder:object:root=true
 type TrafficRoute struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec TrafficRouteSpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// TrafficRouteList contains a list of TrafficRoute
+// TrafficRouteList contains a list of TrafficRoutes.
+//
+// +kubebuilder:object:root=true
 type TrafficRouteList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
