@@ -4,12 +4,19 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "mesh/v1alpha1/dataplane.proto";
 import "mesh/v1alpha1/dataplane_insight.proto";
 import "validate/validate.proto";
 
 // DataplaneOverview defines the projected state of a Dataplane.
 message DataplaneOverview {
+
+  option (kuma.mesh.resource).name = "DataplaneOverviewResource";
+  option (kuma.mesh.resource).type = "DataplaneOverview";
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).skip_registration = true;
+  option (kuma.mesh.resource).skip_validation = true;
 
   Dataplane dataplane = 1 [ (validate.rules).message.required = true ];
 

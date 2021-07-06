@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package kuma.mesh;
+
+option go_package = "github.com/kumahq/kuma/api/mesh";
+
+import "google/protobuf/descriptor.proto";
+
+message KumaResourceOptions {
+  // Name of the Kuma resource struct.
+  string name = 1;
+
+  // Name and value of the modelResourceType constant.
+  string type = 2;
+
+  // True if this resoure has global scope. Otherwise it will be mesh scope.
+  bool global = 3;
+
+  // Name of the resource's Go package.
+  string package = 4;
+
+  // Whether to generate a no-op validation function.
+  bool skip_validation = 5;
+
+  // Whether to skip type registration for this resource.
+  bool skip_registration = 6;
+}
+
+extend google.protobuf.MessageOptions {
+  KumaResourceOptions resource = 43534533; // 'kuma'
+}

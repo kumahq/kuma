@@ -4,6 +4,7 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "google/protobuf/wrappers.proto";
 import "mesh/v1alpha1/selector.proto";
 import "validate/validate.proto";
@@ -17,6 +18,10 @@ option (doc.config) = {
 
 // TrafficRoute defines routing rules for the traffic in the mesh.
 message TrafficRoute {
+
+  option (kuma.mesh.resource).name = "TrafficRouteResource";
+  option (kuma.mesh.resource).type = "TrafficRoute";
+  option (kuma.mesh.resource).package = "mesh";
 
   // List of selectors to match data plane proxies that are sources of traffic.
   repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
