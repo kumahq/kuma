@@ -15,16 +15,15 @@ import (
 	"text/template"
 
 	"github.com/asaskevich/govalidator"
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
-	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -78,14 +77,23 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, "", err
 	}
 
+	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
+
 	proxyType := mesh_proto.ProxyType(request.ProxyType)
 	if request.ProxyType == "" {
 		proxyType = mesh_proto.DataplaneProxyType
 	}
 
+	// The bootstrap request might not contain the marshaled resource,
+	// in which case we look up the named model resource in the store.
+	// We want to generate the bootstrap metadata consistently, however,
+	// so ensure that we populate whichever copy of the resource we
+	// ended up using. This ensures that the Envoy node metadata is
+	// populated with a consistent set of information, regardless of
+	// how we bootstrapped.
+
 	switch proxyType {
 	case mesh_proto.IngressProxyType:
-		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 		zoneIngress, err := b.zoneIngressFor(ctx, request, proxyId)
 		if err != nil {
 			return nil, "", err
@@ -94,9 +102,13 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if err != nil {
 			return nil, "", err
 		}
+		if b, err := rest.NewFromModel(zoneIngress).MarshalJSON(); err != nil {
+			return nil, "", err
+		} else {
+			request.DataplaneResource = string(b)
+		}
 		return b.generateFor(*proxyId, request, "ingress", adminPort)
 	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
-		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
 		if err != nil {
 			return nil, "", err
@@ -105,6 +117,11 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		adminPort, err := b.adminPortForDataplane(request, dataplane)
 		if err != nil {
 			return nil, "", err
+		}
+		if b, err := rest.NewFromModel(dataplane).MarshalJSON(); err != nil {
+			return nil, "", err
+		} else {
+			request.DataplaneResource = string(b)
 		}
 		return b.generateFor(*proxyId, request, service, adminPort)
 	default:

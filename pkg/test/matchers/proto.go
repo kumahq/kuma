@@ -2,6 +2,7 @@ package matchers
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/onsi/gomega/format"
@@ -56,13 +57,13 @@ func (p *ProtoMatcher) yamls(actual interface{}) (string, string, error) {
 	actualProto := actual.(proto.Message)
 	actualYAML, err := util_proto.ToYAML(actualProto)
 	if err != nil {
-		return "", "", errors.New("Proto are not equal (could not parse actual proto to present differences)")
+		return "", "", fmt.Errorf("Proto are not equal (could not convert to YAML: %w)", err)
 	}
 
 	expectedProto := p.Expected.(proto.Message)
 	expectedYAML, err := util_proto.ToYAML(expectedProto)
 	if err != nil {
-		return "", "", errors.New("Proto are not equal (could not parse expected proto to present differences)")
+		return "", "", fmt.Errorf("Proto are not equal (could not convert to YAML: %w)", err)
 	}
 	return string(actualYAML), string(expectedYAML), nil
 }
