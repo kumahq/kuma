@@ -4,11 +4,18 @@ package kuma.system.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 
+import "mesh/options.proto";
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
 // ZoneInsight defines the observed state of a Zone Kuma CP.
 message ZoneInsight {
+
+  option (kuma.mesh.resource).name = "ZoneInsightResource";
+  option (kuma.mesh.resource).type = "ZoneInsight";
+  option (kuma.mesh.resource).package = "system";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).skip_validation = true;
 
   // List of KDS subscriptions created by a given Zone Kuma CP.
   repeated KDSSubscription subscriptions = 1;

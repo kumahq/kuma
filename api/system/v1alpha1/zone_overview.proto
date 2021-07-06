@@ -4,11 +4,19 @@ package kuma.system.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 
+import "mesh/options.proto";
 import "system/v1alpha1/zone.proto";
 import "system/v1alpha1/zone_insight.proto";
 
 // ZoneOverview defines the projected state of a Zone.
 message ZoneOverview {
+
+  option (kuma.mesh.resource).name = "ZoneOverviewResource";
+  option (kuma.mesh.resource).type = "ZoneOverview";
+  option (kuma.mesh.resource).package = "system";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).skip_registration = true;
+  option (kuma.mesh.resource).skip_validation = true;
 
   Zone zone = 1;
 
