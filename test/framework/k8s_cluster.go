@@ -799,10 +799,11 @@ func (c *K8sCluster) GetTesting() testing.TestingT {
 }
 
 func (c *K8sCluster) DismissCluster() (errs error) {
-	for _, deployment := range c.deployments {
+	for name, deployment := range c.deployments {
 		if err := deployment.Delete(c); err != nil {
 			errs = multierr.Append(errs, err)
 		}
+		delete(c.deployments, name)
 	}
 	return nil
 }
@@ -810,6 +811,18 @@ func (c *K8sCluster) DismissCluster() (errs error) {
 func (c *K8sCluster) Deploy(deployment Deployment) error {
 	c.deployments[deployment.Name()] = deployment
 	return deployment.Deploy(c)
+}
+
+func (c *K8sCluster) DeleteDeployment(name string) error {
+	deployment, ok := c.deployments[name]
+	if !ok {
+		return errors.Errorf("deployment %s not found", name)
+	}
+	if err := deployment.Delete(c); err != nil {
+		return err
+	}
+	delete(c.deployments, name)
+	return nil
 }
 
 func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
