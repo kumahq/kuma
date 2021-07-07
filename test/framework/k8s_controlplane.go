@@ -247,6 +247,10 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 		pod.Status.HostIP, strconv.FormatUint(uint64(kdsPort), 10))
 }
 
+func (c *K8sControlPlane) GetMetrics() (string, error) {
+	panic("not implemented")
+}
+
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
 	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
 }
