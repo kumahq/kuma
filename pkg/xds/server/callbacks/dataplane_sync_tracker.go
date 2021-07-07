@@ -28,8 +28,7 @@ func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) util_xds.Call
 var _ util_xds.Callbacks = &dataplaneSyncTracker{}
 
 type streams struct {
-	watchdogCancel context.CancelFunc
-	activeStreams  map[core_xds.StreamID]bool
+	activeStreams map[core_xds.StreamID]context.CancelFunc
 }
 
 // dataplaneSyncTracker tracks XDS streams that are connected to the CP and fire up a watchdog.
@@ -62,11 +61,12 @@ func (t *dataplaneSyncTracker) OnStreamClosed(streamID core_xds.StreamID) {
 		delete(t.streamsAssociation, streamID)
 
 		streams := t.dpStreams[dp]
+		cancelStream, ok := streams.activeStreams[streamID]
+		if ok {
+			cancelStream()
+		}
 		delete(streams.activeStreams, streamID)
 		if len(streams.activeStreams) == 0 { // no stream is active, cancel watchdog
-			if streams.watchdogCancel != nil {
-				streams.watchdogCancel()
-			}
 			delete(t.dpStreams, dp)
 		}
 	}
@@ -89,18 +89,16 @@ func (t *dataplaneSyncTracker) OnStreamRequest(streamID core_xds.StreamID, req u
 		defer t.Unlock()
 		streams := t.dpStreams[dataplaneKey]
 		if streams.activeStreams == nil {
-			streams.activeStreams = map[core_xds.StreamID]bool{}
+			streams.activeStreams = map[core_xds.StreamID]context.CancelFunc{}
 		}
-		streams.activeStreams[streamID] = true
-		if streams.watchdogCancel == nil { // watchdog was not started yet
-			stopCh := make(chan struct{})
-			streams.watchdogCancel = func() {
-				close(stopCh)
-			}
-			// kick off watchdog for that Dataplane
-			go t.newDataplaneWatchdog(proxyId, streamID).Start(stopCh)
-			dataplaneSyncTrackerLog.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
+		stopCh := make(chan struct{})
+		streams.activeStreams[streamID] = func() {
+			close(stopCh)
+			dataplaneSyncTrackerLog.V(1).Info("Stopping active stream for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
 		}
+		// kick off watchdog for that Dataplane
+		go t.newDataplaneWatchdog(proxyId, streamID).Start(stopCh)
+		dataplaneSyncTrackerLog.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
 		t.dpStreams[dataplaneKey] = streams
 		t.streamsAssociation[streamID] = dataplaneKey
 	} else {

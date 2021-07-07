@@ -5,6 +5,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -20,7 +22,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
-	"github.com/pkg/errors"
 )
 
 var syncLog = core.Log.WithName("sync")

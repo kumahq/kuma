@@ -3,6 +3,8 @@ package sync
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -12,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
-	"github.com/pkg/errors"
 )
 
 type IngressProxyBuilder struct {

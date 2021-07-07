@@ -3,9 +3,10 @@ package callbacks
 import (
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	"github.com/pkg/errors"
 )
 
 type DataplaneMetadataTracker struct {
