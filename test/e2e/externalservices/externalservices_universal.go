@@ -123,29 +123,37 @@ networking:
 			"false", ""))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
+		// when access the first external service with .mesh
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
+		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("Echo 80"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 
+		// when access the first external service using hostname
 		stdout, _, err = cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server-80-81:80")
+		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("Echo 80"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 
+		// when access the second external service name using .mesh
 		stdout, _, err = cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "external-service-2.mesh")
+		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("Echo 81"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 
+		// when access the second external service using the same hostname as first but with different port
 		stdout, _, err = cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server-80-81:81")
+		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("Echo 81"))

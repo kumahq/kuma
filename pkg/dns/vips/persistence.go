@@ -80,6 +80,7 @@ func (m *Persistence) unmarshal(config string) (List, error) {
 	if err := json.Unmarshal([]byte(config), &v); err == nil {
 		return v, nil
 	}
+	// backwards compatibility
 	backwardCompatible := map[string]string{}
 	if err := json.Unmarshal([]byte(config), &backwardCompatible); err != nil {
 		return nil, err

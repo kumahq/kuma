@@ -24,9 +24,9 @@ func VIPOutbounds(
 	externalServices []*core_mesh.ExternalServiceResource,
 ) []*mesh_proto.Dataplane_Networking_Outbound {
 	type vipEntry struct {
-		ip   string
-		port uint32
-		host bool
+		ip        string
+		port      uint32
+		entryType vips.EntryType
 	}
 	serviceVIPMap := map[string][]vipEntry{}
 	services := []string{}
@@ -40,7 +40,7 @@ func VIPOutbounds(
 					if _, found := serviceVIPMap[inService]; !found {
 						vip, err := ForwardLookup(vipList, vips.NewServiceEntry(inService))
 						if err == nil {
-							serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip, VIPListenPort, false})
+							serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip, VIPListenPort, vips.Service})
 							services = append(services, inService)
 						}
 					}
@@ -52,7 +52,7 @@ func VIPOutbounds(
 				if _, found := serviceVIPMap[inService]; !found {
 					vip, err := ForwardLookup(vipList, vips.NewServiceEntry(inService))
 					if err == nil {
-						serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip, VIPListenPort, false})
+						serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip, VIPListenPort, vips.Service})
 						services = append(services, inService)
 					}
 				}
@@ -68,7 +68,7 @@ func VIPOutbounds(
 				if _, found := serviceVIPMap[inService]; !found {
 					vip, err := ForwardLookup(vipList, vips.NewServiceEntry(inService))
 					if err == nil {
-						serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip, VIPListenPort, false})
+						serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip, VIPListenPort, vips.Service})
 						services = append(services, inService)
 					}
 				}
@@ -89,7 +89,7 @@ func VIPOutbounds(
 				} else {
 					p32 = uint32(p64)
 				}
-				serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip1, p32, true})
+				serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip1, p32, vips.Host})
 				services = append(services, inService)
 			}
 			vip2, err := ForwardLookup(vipList, vips.NewServiceEntry(inService))
@@ -101,7 +101,7 @@ func VIPOutbounds(
 				} else {
 					p32 = uint32(p64)
 				}
-				serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip2, p32, false})
+				serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip2, p32, vips.Service})
 				services = append(services, inService)
 			}
 		}
@@ -118,7 +118,7 @@ func VIPOutbounds(
 				Tags:    map[string]string{mesh_proto.ServiceTag: service},
 			})
 
-			if !entry.host {
+			if entry.entryType != vips.Host {
 				// todo (lobkovilya): backwards compatibility, could be deleted in the next major release Kuma 1.2.x
 				if entry.port != VIPListenPort {
 					outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
