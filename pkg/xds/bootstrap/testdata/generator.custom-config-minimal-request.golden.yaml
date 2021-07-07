@@ -36,6 +36,7 @@ node:
   id: mesh.name.namespace
   metadata:
     dataplane.admin.port: "9902"
+    dataplane.resource: '{"type":"Dataplane","mesh":"mesh","name":"name.namespace","creationTime":"2018-07-17T16:05:36.995Z","modificationTime":"2018-07-17T16:05:36.995Z","networking":{"address":"8.8.8.8","inbound":[{"port":443,"servicePort":8443,"tags":{"kuma.io/service":"backend"}}]}}'
     version:
       envoy:
         build: hash/1.15.0/RELEASE
