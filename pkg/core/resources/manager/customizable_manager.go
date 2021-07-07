@@ -2,7 +2,6 @@ package manager
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -31,10 +30,9 @@ type customizableResourceManager struct {
 	customManagers map[model.ResourceType]ResourceManager
 }
 
+// Customize installs a new manager for the given type, overwriting any
+// existing manager for that type.
 func (m *customizableResourceManager) Customize(resourceType model.ResourceType, manager ResourceManager) {
-	if _, ok := m.customManagers[resourceType]; ok {
-		panic(fmt.Sprintf("resource type %q is already customized", resourceType))
-	}
 	m.customManagers[resourceType] = manager
 }
 
