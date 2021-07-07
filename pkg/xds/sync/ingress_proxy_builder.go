@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	"github.com/pkg/errors"
 )
 
 type IngressProxyBuilder struct {
@@ -46,11 +47,15 @@ func (p *IngressProxyBuilder) build(key core_model.ResourceKey, streamId int64) 
 		return nil, err
 	}
 
+	metadata := p.MetadataTracker.Metadata(streamId)
+	if metadata == nil {
+		return nil, errors.New("Metadata is empty for stream")
+	}
 	proxy := &xds.Proxy{
 		Id:          xds.FromResourceKey(key),
 		APIVersion:  p.apiVersion,
 		ZoneIngress: zoneIngress,
-		Metadata:    p.MetadataTracker.Metadata(streamId),
+		Metadata:    metadata,
 		Routing:     *routing,
 	}
 	return proxy, nil

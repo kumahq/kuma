@@ -20,6 +20,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	"github.com/pkg/errors"
 )
 
 var syncLog = core.Log.WithName("sync")
@@ -56,12 +57,16 @@ func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64
 	if err != nil {
 		return nil, err
 	}
+	metadata := p.MetadataTracker.Metadata(streamId)
+	if metadata == nil {
+		return nil, errors.New("Metadata is empty for stream")
+	}
 
 	proxy := &xds.Proxy{
 		Id:         xds.FromResourceKey(key),
 		APIVersion: p.apiVersion,
 		Dataplane:  dp,
-		Metadata:   p.MetadataTracker.Metadata(streamId),
+		Metadata:   metadata,
 		Routing:    *routing,
 		Policies:   *matchedPolicies,
 	}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	"github.com/pkg/errors"
 )
 
 type DataplaneMetadataTracker struct {
@@ -27,7 +28,7 @@ func (d *DataplaneMetadataTracker) Metadata(streamId int64) *xds.DataplaneMetada
 	if found {
 		return metadata
 	} else {
-		return &xds.DataplaneMetadata{}
+		return nil
 	}
 }
 
@@ -47,6 +48,9 @@ func (d *DataplaneMetadataTracker) OnStreamRequest(stream int64, req util_xds.Di
 		// This holds true regardless of the acceptance of the discovery responses on the same stream.
 		// The node identifier should always be identical if present more than once on the stream.
 		// It is sufficient to only check the first message for the node identifier as a result.
+		if d.Metadata(stream) == nil {
+			return errors.New("Metadata is empty for stream")
+		}
 		return nil
 	}
 
