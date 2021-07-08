@@ -21,6 +21,7 @@ import (
 type countingConfigManager struct {
 	create    int
 	update    int
+	updates   []*system.ConfigResource
 	delete    int
 	deleteAll int
 	get       int
@@ -40,6 +41,7 @@ func (t *countingConfigManager) Create(ctx context.Context, resource *system.Con
 
 func (t *countingConfigManager) Update(ctx context.Context, resource *system.ConfigResource, optionsFunc ...core_store.UpdateOptionsFunc) error {
 	t.update++
+	t.updates = append(t.updates, resource)
 	return nil
 }
 
@@ -113,18 +115,18 @@ var _ = Describe("Meshed Persistence", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			expected := vips.List{
-				"backend":    "240.0.0.1",
-				"backend_2":  "240.0.1.1",
-				"backend_3":  "240.0.2.1",
-				"frontend":   "240.0.0.3",
-				"frontend_2": "240.0.1.3",
-				"frontend_3": "240.0.2.3",
-				"postgres":   "240.0.0.0",
-				"postgres_2": "240.0.1.0",
-				"postgres_3": "240.0.2.0",
-				"redis":      "240.0.0.2",
-				"redis_2":    "240.0.1.2",
-				"redis_3":    "240.0.2.2",
+				vips.NewServiceEntry("backend"):    "240.0.0.1",
+				vips.NewServiceEntry("backend_2"):  "240.0.1.1",
+				vips.NewServiceEntry("backend_3"):  "240.0.2.1",
+				vips.NewServiceEntry("frontend"):   "240.0.0.3",
+				vips.NewServiceEntry("frontend_2"): "240.0.1.3",
+				vips.NewServiceEntry("frontend_3"): "240.0.2.3",
+				vips.NewServiceEntry("postgres"):   "240.0.0.0",
+				vips.NewServiceEntry("postgres_2"): "240.0.1.0",
+				vips.NewServiceEntry("postgres_3"): "240.0.2.0",
+				vips.NewServiceEntry("redis"):      "240.0.0.2",
+				vips.NewServiceEntry("redis_2"):    "240.0.1.2",
+				vips.NewServiceEntry("redis_3"):    "240.0.2.2",
 			}
 			Expect(actual).To(Equal(expected))
 		})
@@ -133,10 +135,10 @@ var _ = Describe("Meshed Persistence", func() {
 			actual, err := meshedPersistence.GetByMesh("mesh-2")
 			Expect(err).ToNot(HaveOccurred())
 			expected := vips.List{
-				"backend_2":  "240.0.1.1",
-				"frontend_2": "240.0.1.3",
-				"postgres_2": "240.0.1.0",
-				"redis_2":    "240.0.1.2",
+				vips.NewServiceEntry("backend_2"):  "240.0.1.1",
+				vips.NewServiceEntry("frontend_2"): "240.0.1.3",
+				vips.NewServiceEntry("postgres_2"): "240.0.1.0",
+				vips.NewServiceEntry("redis_2"):    "240.0.1.2",
 			}
 			Expect(actual).To(Equal(expected))
 		})
@@ -154,7 +156,7 @@ var _ = Describe("Meshed Persistence", func() {
 
 		It("should create a new config", func() {
 			vipsMesh1 := vips.List{
-				"backend": "240.0.0.1",
+				vips.NewServiceEntry("backend"): "240.0.0.1",
 			}
 			err := meshedPersistence.Set("mesh-1", vipsMesh1)
 			Expect(err).ToNot(HaveOccurred())
@@ -163,7 +165,7 @@ var _ = Describe("Meshed Persistence", func() {
 			Expect(countingCm.update).To(Equal(0))
 
 			vipsMesh2 := vips.List{
-				"frontend": "240.0.0.2",
+				vips.NewServiceEntry("frontend"): "240.0.0.2",
 			}
 			err = meshedPersistence.Set("mesh-2", vipsMesh2)
 			Expect(err).ToNot(HaveOccurred())
@@ -174,7 +176,7 @@ var _ = Describe("Meshed Persistence", func() {
 
 		It("should update existing config", func() {
 			vipsMesh1 := vips.List{
-				"backend": "240.0.0.1",
+				vips.NewServiceEntry("backend"): "240.0.0.1",
 			}
 			err := meshedPersistence.Set("mesh-1", vipsMesh1)
 			Expect(err).ToNot(HaveOccurred())
@@ -182,12 +184,80 @@ var _ = Describe("Meshed Persistence", func() {
 			Expect(countingCm.create).To(Equal(1))
 			Expect(countingCm.update).To(Equal(0))
 
-			vipsMesh1["frontend"] = "240.0.0.2"
+			vipsMesh1[vips.NewServiceEntry("frontend")] = "240.0.0.2"
 			err = meshedPersistence.Set("mesh-1", vipsMesh1)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(countingCm.get).To(Equal(2))
 			Expect(countingCm.create).To(Equal(1))
 			Expect(countingCm.update).To(Equal(1))
+		})
+	})
+
+	Context("Old and new configs at the same time", func() {
+		var countingCm *countingConfigManager
+
+		BeforeEach(func() {
+			countingCm = &countingConfigManager{
+				configs: map[string]*system.ConfigResource{
+					"kuma-mesh-1-dns-vips": {
+						Meta: &model.ResourceMeta{Name: "kuma-mesh-1-dns-vips"},
+						Spec: &config_proto.Config{Config: `{"backend":"240.0.0.1","frontend":"240.0.0.3","postgres":"240.0.0.0","redis":"240.0.0.2"}`},
+					},
+					"kuma-mesh-2-dns-vips": {
+						Meta: &model.ResourceMeta{Name: "kuma-mesh-2-dns-vips"},
+						Spec: &config_proto.Config{Config: `{"0:backend_2":"240.0.1.1","0:frontend_2":"240.0.1.3","1:host.com":"240.0.1.4"}`},
+					},
+				},
+			}
+			meshedPersistence = vips.NewPersistence(rm, countingCm)
+		})
+
+		It("should return global and meshed vips", func() {
+			// when
+			global, meshed, err := meshedPersistence.Get()
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			expectedGlobal := vips.List{
+				vips.NewServiceEntry("backend"):    "240.0.0.1",
+				vips.NewServiceEntry("frontend"):   "240.0.0.3",
+				vips.NewServiceEntry("postgres"):   "240.0.0.0",
+				vips.NewServiceEntry("redis"):      "240.0.0.2",
+				vips.NewServiceEntry("backend_2"):  "240.0.1.1",
+				vips.NewServiceEntry("frontend_2"): "240.0.1.3",
+				vips.NewHostEntry("host.com"):      "240.0.1.4",
+			}
+			Expect(global).To(Equal(expectedGlobal))
+			// and then
+			expectedMesh1 := vips.List{
+				vips.NewServiceEntry("backend"):  "240.0.0.1",
+				vips.NewServiceEntry("frontend"): "240.0.0.3",
+				vips.NewServiceEntry("postgres"): "240.0.0.0",
+				vips.NewServiceEntry("redis"):    "240.0.0.2",
+			}
+			Expect(meshed["mesh-1"]).To(Equal(expectedMesh1))
+			// and then
+			expectedMesh2 := vips.List{
+				vips.NewServiceEntry("backend_2"):  "240.0.1.1",
+				vips.NewServiceEntry("frontend_2"): "240.0.1.3",
+				vips.NewHostEntry("host.com"):      "240.0.1.4",
+			}
+			Expect(meshed["mesh-2"]).To(Equal(expectedMesh2))
+		})
+
+		It("should update old version with new one", func() {
+			newVIPs := vips.List{
+				vips.NewServiceEntry("backend"):  "240.0.0.1",
+				vips.NewServiceEntry("frontend"): "240.0.0.3",
+				vips.NewServiceEntry("postgres"): "240.0.0.0",
+				vips.NewServiceEntry("redis"):    "240.0.0.2",
+				vips.NewHostEntry("kuma.io"):     "240.0.1.4",
+			}
+			err := meshedPersistence.Set("mesh-1", newVIPs)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(countingCm.updates).To(HaveLen(1))
+			Expect(countingCm.updates[0].Spec.Config).To(Equal(`{"0:backend":"240.0.0.1","0:frontend":"240.0.0.3","0:postgres":"240.0.0.0","0:redis":"240.0.0.2","1:kuma.io":"240.0.1.4"}`))
 		})
 	})
 })

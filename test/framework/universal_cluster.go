@@ -70,6 +70,10 @@ func (c *UniversalCluster) DismissCluster() (errs error) {
 	return
 }
 
+func (c *UniversalCluster) Verbose() bool {
+	return c.verbose
+}
+
 func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	c.controlplane = NewUniversalControlPlane(c.t, mode, c.name, c, c.verbose)
 	opts := newDeployOpt(fs...)
