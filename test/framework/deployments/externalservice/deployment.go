@@ -16,6 +16,8 @@ type Deployment interface {
 	ExternalService
 }
 
+type Command []string
+
 const (
 	DeploymentName = "externalservice-"
 	HttpServer     = "http-server"
@@ -26,20 +28,24 @@ func From(cluster framework.Cluster, name string) ExternalService {
 	return cluster.Deployment(DeploymentName + name).(ExternalService)
 }
 
-func Install(name string, args []string) framework.InstallFunc {
+func Install(name string, commands ...Command) framework.InstallFunc {
 	return func(cluster framework.Cluster) error {
 		var deployment Deployment
+		if len(commands) < 1 {
+			return errors.New("command list can't be empty")
+		}
 		switch cluster.(type) {
 		case *framework.K8sCluster:
 			deployment = &k8SDeployment{
 				name: name,
-				args: args,
+				cmd:  commands[0],
 			}
 		case *framework.UniversalCluster:
 			deployment = &universalDeployment{
-				name:  name,
-				args:  args,
-				ports: map[string]string{},
+				name:     name,
+				commands: commands,
+				ports:    map[string]string{},
+				verbose:  cluster.Verbose(),
 			}
 		default:
 			return errors.New("invalid cluster")
