@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -29,7 +28,6 @@ func (g *Generator) filteredTags() []string {
 	tags := g.log.Keys()
 	if g.endTag != "" {
 		for _, tag := range tags {
-			//fmt.Println(g.formatTag(tag)," ", g.endTag, " ", tag == g.endTag)
 			if g.formatTag(tag) == g.endTag {
 				break
 			}
@@ -48,31 +46,9 @@ func (g *Generator) filteredTags() []string {
 	return tags
 }
 
-func (g *Generator) getPRNum(c *object.Commit) int {
-	// Split the message, taking various new line formats
-	splitMessage := strings.Split(strings.Replace(c.Message, "\r\n", "\n", -1), "\n")
-	// The title is the first lien
-	title := splitMessage[0]
-
-	// generate a Markdown link to the pull request
-	re := regexp.MustCompile(`\(#(?P<num>[0-9]*)\)`)
-	match := re.FindStringSubmatch(title)
-	if len(match) < 2 {
-		return 0
-	}
-
-	pr, err := strconv.Atoi(match[1])
-	if err != nil {
-		Warning("Unable to get PR from %s [%v]", title, match)
-		return 0
-	}
-
-	return pr
-}
-
 func (g *Generator) formatTitle(c *object.Commit) string {
 	// Split the message, taking various new line formats
-	splitMessage := strings.Split(strings.Replace(c.Message, "\r\n", "\n", -1), "\n")
+	splitMessage := strings.Split(strings.ReplaceAll(c.Message, "\r\n", "\n"), "\n")
 	// The title is the first lien
 	title := splitMessage[0]
 
@@ -102,18 +78,6 @@ func (g *Generator) addToLog(tag string, c *object.Commit) error {
 	g.log.Set(tag, entry)
 	return nil
 }
-
-//func (g *Generator) getGithubName(c *object.Commit) string {
-//	client := github.NewClient(nil)
-//	prNum := g.getPRNum(c)
-//	pr, resp, err := client.PullRequests.Get(context.Background(), "kumahq", "kuma", prNum)
-//	if err != nil {
-//		Warning("Was not able to get PR %d with response [%v]", prNum, resp)
-//		return ""
-//	}
-//
-//	return *pr.User.Login
-//}
 
 func (g *Generator) addChangelog(add string) {
 	g.changelog += add
