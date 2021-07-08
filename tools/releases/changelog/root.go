@@ -55,7 +55,7 @@ var rootCmd = &cobra.Command{
 		refHash := plumbing.Hash{}
 		startRef, err := r.Reference(plumbing.ReferenceName(config.startTag), false)
 		if err != nil {
-			Info("error", err)
+			Info("error: %s", err)
 		} else {
 			refHash = startRef.Hash()
 		}
