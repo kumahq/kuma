@@ -20,14 +20,15 @@ func VIPOutbounds(
 	resourceKey model.ResourceKey,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
-	vips vips.List,
+	vipList vips.List,
 	externalServices []*core_mesh.ExternalServiceResource,
 ) []*mesh_proto.Dataplane_Networking_Outbound {
 	type vipEntry struct {
-		ip   string
-		port uint32
+		ip        string
+		port      uint32
+		entryType vips.EntryType
 	}
-	serviceVIPMap := map[string]vipEntry{}
+	serviceVIPMap := map[string][]vipEntry{}
 	services := []string{}
 	for _, dataplane := range dataplanes {
 		// backwards compatibility
@@ -37,9 +38,9 @@ func VIPOutbounds(
 					// Only add outbounds for services in the same mesh
 					inService := service.Tags[mesh_proto.ServiceTag]
 					if _, found := serviceVIPMap[inService]; !found {
-						vip, err := ForwardLookup(vips, inService)
+						vip, err := ForwardLookup(vipList, vips.NewServiceEntry(inService))
 						if err == nil {
-							serviceVIPMap[inService] = vipEntry{vip, VIPListenPort}
+							serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip, VIPListenPort, vips.Service})
 							services = append(services, inService)
 						}
 					}
@@ -49,9 +50,9 @@ func VIPOutbounds(
 			for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 				inService := inbound.GetTags()[mesh_proto.ServiceTag]
 				if _, found := serviceVIPMap[inService]; !found {
-					vip, err := ForwardLookup(vips, inService)
+					vip, err := ForwardLookup(vipList, vips.NewServiceEntry(inService))
 					if err == nil {
-						serviceVIPMap[inService] = vipEntry{vip, VIPListenPort}
+						serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip, VIPListenPort, vips.Service})
 						services = append(services, inService)
 					}
 				}
@@ -65,9 +66,9 @@ func VIPOutbounds(
 				// Only add outbounds for services in the same mesh
 				inService := service.Tags[mesh_proto.ServiceTag]
 				if _, found := serviceVIPMap[inService]; !found {
-					vip, err := ForwardLookup(vips, inService)
+					vip, err := ForwardLookup(vipList, vips.NewServiceEntry(inService))
 					if err == nil {
-						serviceVIPMap[inService] = vipEntry{vip, VIPListenPort}
+						serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip, VIPListenPort, vips.Service})
 						services = append(services, inService)
 					}
 				}
@@ -77,8 +78,9 @@ func VIPOutbounds(
 
 	for _, externalService := range externalServices {
 		inService := externalService.Spec.Tags[mesh_proto.ServiceTag]
+		host := externalService.Spec.GetHost()
 		if _, found := serviceVIPMap[inService]; !found {
-			vip, err := ForwardLookup(vips, inService)
+			vip1, err := ForwardLookup(vipList, vips.NewHostEntry(host))
 			if err == nil {
 				port := externalService.Spec.GetPort()
 				var p32 uint32
@@ -87,7 +89,19 @@ func VIPOutbounds(
 				} else {
 					p32 = uint32(p64)
 				}
-				serviceVIPMap[inService] = vipEntry{vip, p32}
+				serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip1, p32, vips.Host})
+				services = append(services, inService)
+			}
+			vip2, err := ForwardLookup(vipList, vips.NewServiceEntry(inService))
+			if err == nil {
+				port := externalService.Spec.GetPort()
+				var p32 uint32
+				if p64, err := strconv.ParseUint(port, 10, 32); err != nil {
+					p32 = VIPListenPort
+				} else {
+					p32 = uint32(p64)
+				}
+				serviceVIPMap[inService] = append(serviceVIPMap[inService], vipEntry{vip2, p32, vips.Service})
 				services = append(services, inService)
 			}
 		}
@@ -96,30 +110,34 @@ func VIPOutbounds(
 	sort.Strings(services)
 	outbounds := []*mesh_proto.Dataplane_Networking_Outbound{}
 	for _, service := range services {
-		entry := serviceVIPMap[service]
-		outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
-			Address: entry.ip,
-			Port:    entry.port,
-			Tags:    map[string]string{mesh_proto.ServiceTag: service},
-		})
-
-		// todo (lobkovilya): backwards compatibility, could be deleted in the next major release Kuma 1.2.x
-		if entry.port != VIPListenPort {
+		entries := serviceVIPMap[service]
+		for _, entry := range entries {
 			outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 				Address: entry.ip,
-				Port:    VIPListenPort,
+				Port:    entry.port,
 				Tags:    map[string]string{mesh_proto.ServiceTag: service},
 			})
+
+			if entry.entryType != vips.Host {
+				// todo (lobkovilya): backwards compatibility, could be deleted in the next major release Kuma 1.2.x
+				if entry.port != VIPListenPort {
+					outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+						Address: entry.ip,
+						Port:    VIPListenPort,
+						Tags:    map[string]string{mesh_proto.ServiceTag: service},
+					})
+				}
+			}
 		}
 	}
 
 	return outbounds
 }
 
-func ForwardLookup(vips vips.List, service string) (string, error) {
-	ip, found := vips[service]
+func ForwardLookup(vips vips.List, entry vips.Entry) (string, error) {
+	ip, found := vips[entry]
 	if !found {
-		return "", errors.Errorf("service [%s] not found", service)
+		return "", errors.Errorf("entry name [%s] not found", entry.Name)
 	}
 	return ip, nil
 }

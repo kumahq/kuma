@@ -70,6 +70,7 @@ networking:
 		err = NewClusterSetup().
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
+			Install(externalservice.Install("http-server-80-81", externalservice.UniversalAppEchoServer, externalservice.UniversalAppEchoServer81)).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -106,6 +107,56 @@ networking:
 			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server:80")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+	})
+
+	It("should route to external-service", func() {
+		err := YamlUniversal(fmt.Sprintf(externalService,
+			es1, es1,
+			"kuma-3_externalservice-http-server-80-81:80",
+			"false", ""))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = YamlUniversal(fmt.Sprintf(externalService,
+			es2, es2,
+			"kuma-3_externalservice-http-server-80-81:81",
+			"false", ""))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when access the first external service with .mesh
+		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).To(ContainSubstring("Echo 80"))
+		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+
+		// when access the first external service using hostname
+		stdout, _, err = cluster.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server-80-81:80")
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).To(ContainSubstring("Echo 80"))
+		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+
+		// when access the second external service name using .mesh
+		stdout, _, err = cluster.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "external-service-2.mesh")
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).To(ContainSubstring("Echo 81"))
+		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+
+		// when access the second external service using the same hostname as first but with different port
+		stdout, _, err = cluster.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server-80-81:81")
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).To(ContainSubstring("Echo 81"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 	})
 

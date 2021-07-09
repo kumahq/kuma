@@ -78,18 +78,18 @@ var _ = Describe("DNS sync", func() {
 		It("should sync web to DNS resolver and to the follower", func() {
 			// then service "web" is synchronized to DNS Resolver
 			Eventually(func() error {
-				_, err := dnsResolver.ForwardLookup("web")
+				_, err := dnsResolver.ForwardLookupFQDN("web.mesh")
 				return err
 			}, "5s").ShouldNot(HaveOccurred())
-			ip, _ := dnsResolver.ForwardLookup("web")
+			ip, _ := dnsResolver.ForwardLookupFQDN("web.mesh")
 			Expect(ip).Should(HavePrefix("240.0.0"))
 
 			// and replicated to a follower
 			Eventually(func() error {
-				_, err := dnsResolverFollower.ForwardLookup("web")
+				_, err := dnsResolverFollower.ForwardLookupFQDN("web.mesh")
 				return err
 			}, "5s").ShouldNot(HaveOccurred())
-			ip2, _ := dnsResolverFollower.ForwardLookup("web")
+			ip2, _ := dnsResolverFollower.ForwardLookupFQDN("web.mesh")
 			Expect(ip).To(Equal(ip2))
 		})
 
@@ -125,18 +125,18 @@ var _ = Describe("DNS sync", func() {
 
 			// then service "backend" is synchronized to DNS Resolver
 			Eventually(func() error {
-				_, err := dnsResolver.ForwardLookup("backend")
+				_, err := dnsResolver.ForwardLookupFQDN("backend.mesh")
 				return err
 			}, "5s").ShouldNot(HaveOccurred())
-			ip, _ := dnsResolver.ForwardLookup("backend")
+			ip, _ := dnsResolver.ForwardLookupFQDN("backend.mesh")
 			Expect(ip).Should(HavePrefix("240.0.0"))
 
 			// and replicated to a follower
 			Eventually(func() error {
-				_, err := dnsResolverFollower.ForwardLookup("backend")
+				_, err := dnsResolverFollower.ForwardLookupFQDN("backend.mesh")
 				return err
 			}, "5s").ShouldNot(HaveOccurred())
-			ip2, _ := dnsResolverFollower.ForwardLookup("backend")
+			ip2, _ := dnsResolverFollower.ForwardLookupFQDN("backend.mesh")
 			Expect(ip).To(Equal(ip2))
 		})
 
@@ -147,13 +147,13 @@ var _ = Describe("DNS sync", func() {
 
 			// then service "web" is removed from DNS Resolver
 			Eventually(func() error {
-				_, err := dnsResolver.ForwardLookup("web")
+				_, err := dnsResolver.ForwardLookupFQDN("web.mesh")
 				return err
 			}, "5s").Should(MatchError("service [web] not found in domain [mesh]."))
 
 			// and replicated to a follower
 			Eventually(func() error {
-				_, err := dnsResolverFollower.ForwardLookup("web")
+				_, err := dnsResolverFollower.ForwardLookupFQDN("web.mesh")
 				return err
 			}, "5s").Should(MatchError("service [web] not found in domain [mesh]."))
 		})
