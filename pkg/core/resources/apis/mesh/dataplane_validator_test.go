@@ -340,6 +340,7 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.address
                   message:  address has to be valid IP address or domain name`,
 		}),
+
 		Entry("networking: both inbounds and gateway are defined", testCase{
 			dataplane: `
                 type: Dataplane
@@ -361,9 +362,95 @@ var _ = Describe("Dataplane", func() {
                       service: redis`,
 			expected: `
                 violations:
-                - field: networking
-                  message: inbound cannot be defined both with gateway`,
+                - field: networking.inbound
+                  message: inbound cannot be defined for delegated gateways`,
 		}),
+
+		Entry("networking: builtin gateway must have inbounds", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  gateway:
+                    type: BUILTIN
+                    tags:
+                      kuma.io/service: kong`,
+			expected: `
+                violations:
+                - field: networking.inbound
+                  message: builtin gateways must contain at least one inbound interface`,
+		}),
+
+		Entry("networking: builtin gateway must not have outbounds", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  gateway:
+                    type: BUILTIN
+                    tags:
+                      kuma.io/service: kong
+                  inbound:
+                    - port: 8080
+                      servicePort: 7777
+                  outbound:
+                    - port: 3333
+                      service: redis`,
+			expected: `
+                violations:
+                - field: networking.outbound
+                  message: outbound cannot be defined for builtin gateways`,
+		}),
+
+		Entry("networking: builtin gateway must not have inbound tags", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  gateway:
+                    type: BUILTIN
+                    tags:
+                      kuma.io/service: kong
+                  inbound:
+                    - port: 9090
+                      servicePort: 9999
+                    - port: 8080
+                      servicePort: 7777
+                      tags:
+                        kuma.io/service: backend
+                        version: "1"`,
+			expected: `
+                violations:
+                - field: networking.inbound[1]
+                  message: builtin gateways must not have inbound interface tags`,
+		}),
+
+		Entry("networking: builtin gateway must have a service tag", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  gateway:
+                    type: BUILTIN
+                    tags:
+                      foo: bar
+                  inbound:
+                    - port: 9090
+                      servicePort: 9999`,
+			expected: `
+                violations:
+                - field: networking.gateway.tags["kuma.io/service"]
+                  message: tag has to exist`,
+		}),
+
 		Entry("networking.inbound: port of the range", testCase{
 			dataplane: `
                 type: Dataplane

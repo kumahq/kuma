@@ -13,13 +13,46 @@ import (
 
 func (d *DataplaneResource) Validate() error {
 	var err validators.ValidationError
-	if d.Spec.IsIngress() {
+
+	net := validators.RootedAt("networking")
+
+	switch {
+	case d.Spec.IsIngress():
 		err.Add(validateIngressNetworking(d.Spec.GetNetworking()))
-		err.Add(validateIngress(validators.RootedAt("networking").Field("ingress"), d.Spec.GetNetworking().GetIngress()))
-	} else {
+		err.Add(validateIngress(net.Field("ingress"), d.Spec.GetNetworking().GetIngress()))
+
+	case d.Spec.IsDelegatedGateway():
+		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
+			err.AddViolationAt(net.Field("inbound"),
+				"inbound cannot be defined for delegated gateways")
+		}
+
+		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
+		err.Add(validateNetworking(d.Spec.GetNetworking()))
+		err.Add(validateProbes(d.Spec.GetProbes()))
+
+	case d.Spec.IsBuiltinGateway():
+		if len(d.Spec.GetNetworking().GetInbound()) == 0 {
+			err.AddViolationAt(net.Field("inbound"), "builtin gateways must contain at least one inbound interface")
+		}
+
+		if len(d.Spec.GetNetworking().GetOutbound()) > 0 {
+			err.AddViolationAt(net.Field("outbound"), "outbound cannot be defined for builtin gateways")
+		}
+
+		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
+		err.Add(validateNetworking(d.Spec.GetNetworking()))
+
+		// TODO(jpeach) builtin gateway probably should not have probes.
+
+	default:
+		if len(d.Spec.GetNetworking().GetInbound()) == 0 {
+			err.AddViolationAt(net, "has to contain at least one inbound interface or gateway")
+		}
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 		err.Add(validateProbes(d.Spec.GetProbes()))
 	}
+
 	return err.OrNil()
 }
 
@@ -30,20 +63,21 @@ func (d *DataplaneResource) Validate() error {
 func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
 	var err validators.ValidationError
 	path := validators.RootedAt("networking")
-	if len(networking.GetInbound()) == 0 && networking.Gateway == nil {
-		err.AddViolationAt(path, "has to contain at least one inbound interface or gateway")
-	}
-	if len(networking.GetInbound()) > 0 && networking.Gateway != nil {
-		err.AddViolationAt(path, "inbound cannot be defined both with gateway")
-	}
 	err.Add(validateAddress(path, networking.Address))
-	if networking.Gateway != nil {
-		result := validateGateway(networking.Gateway)
-		err.AddErrorAt(path.Field("gateway"), result)
-	}
 	for i, inbound := range networking.GetInbound() {
+		field := path.Field("inbound").Index(i)
 		result := validateInbound(inbound, networking.Address)
-		err.AddErrorAt(path.Field("inbound").Index(i), result)
+		err.AddErrorAt(field, result)
+		// Delegated gateways only have one set of tags, so at least for now, builtin gateways should as well.
+		if networking.GetGateway().GetType() == mesh_proto.Dataplane_Networking_Gateway_BUILTIN {
+			if len(inbound.Tags) > 0 {
+				err.AddViolationAt(field, "builtin gateways must not have inbound interface tags")
+			}
+		} else {
+			if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
+				err.AddViolationAt(field.Field("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
+			}
+		}
 	}
 	for i, outbound := range networking.GetOutbound() {
 		result := validateOutbound(outbound)
@@ -178,9 +212,6 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 				result.AddViolationAt(validators.RootedAt("serviceAddress"), `serviceAddress and servicePort has to differ from address and port`)
 			}
 		}
-	}
-	if _, exist := inbound.Tags[mesh_proto.ServiceTag]; !exist {
-		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
 	}
 	if value, exist := inbound.Tags[mesh_proto.ProtocolTag]; exist {
 		if ParseProtocol(value) == ProtocolUnknown {
