@@ -39,7 +39,7 @@ var _ = Describe("kumactl install tracing", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr.Bytes()).To(BeNil())
+			Expect(stderr.String()).To(BeEmpty())
 
 			// and output matches golden files
 			actual := stdout.Bytes()

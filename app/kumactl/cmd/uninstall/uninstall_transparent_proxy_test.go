@@ -41,7 +41,7 @@ var _ = Describe("kumactl install tracing", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(stderr.Bytes()).To(BeNil())
+			Expect(stderr.String()).To(BeEmpty())
 
 			// when
 			regex, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
