@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/universal/outbound"
 
 	. "github.com/onsi/ginkgo"
@@ -40,9 +41,9 @@ var _ = Describe("UpdateOutbound", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		r := resolver.NewDNSResolver("mesh")
-		r.SetVIPs(map[string]string{
-			"service-1": "240.0.0.1",
-			"service-2": "240.0.0.2",
+		r.SetVIPs(vips.List{
+			vips.NewServiceEntry("service-1"): "240.0.0.1",
+			vips.NewServiceEntry("service-2"): "240.0.0.2",
 		})
 		// and
 		vipOutboundsReconciler, err = outbound.NewVIPOutboundsReconciler(rm, rm, r, time.Second)

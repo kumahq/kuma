@@ -21,6 +21,7 @@ func Info(format string, args ...interface{}) {
 }
 
 // Warning should be used to display a warning
+// nolint:unused,deadcode
 func Warning(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "\x1b[36;1m%s\x1b[0m\n", fmt.Sprintf(format, args...))
 }

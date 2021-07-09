@@ -71,7 +71,7 @@ var _ = Describe("kumactl install control-plane", func() {
 
 			// then command succeed
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr.Bytes()).To(BeNil())
+			Expect(stderr.String()).To(BeEmpty())
 
 			// and output matches golden files
 			actual := stdout.Bytes()

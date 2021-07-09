@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/dns/vips"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
@@ -33,9 +35,9 @@ var _ = Describe("DNSGenerator", func() {
 			gen := &generator.DNSGenerator{}
 
 			dnsResolver := resolver.NewDNSResolver("mesh")
-			dnsResolver.SetVIPs(map[string]string{
-				"backend_test-ns_svc_8080": "240.0.0.0",
-				"httpbin":                  "240.0.0.1",
+			dnsResolver.SetVIPs(vips.List{
+				vips.NewServiceEntry("backend_test-ns_svc_8080"): "240.0.0.0",
+				vips.NewServiceEntry("httpbin"):                  "240.0.0.1",
 			})
 			ctx := xds_context.Context{
 				ConnectionInfo: xds_context.ConnectionInfo{
