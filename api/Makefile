@@ -22,9 +22,9 @@ endef
 PROTOC_VERSION := 3.14.0
 PROTOC_PGV_VERSION := v0.4.1
 GOLANG_PROTOBUF_VERSION := v1.5.2
-DATAPLANE_API_LATEST_VERSION := master
+DATAPLANE_API_LATEST_VERSION := main
 DATAPLANE_API_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/envoyproxy,data-plane-api))
-UDPA_LATEST_VERSION := master
+UDPA_LATEST_VERSION := main
 UDPA_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/cncf,udpa))
 GOOGLEAPIS_LATEST_VERSION := master
 GOOGLEAPIS_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/googleapis,googleapis))
@@ -67,8 +67,9 @@ go_import_mapping_entries := \
 	envoy/config/core/v3/http_uri.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
 	envoy/type/v3/percent.proto=github.com/envoyproxy/go-control-plane/envoy/type/v3 \
 	envoy/type/v3/semantic_version.proto=github.com/envoyproxy/go-control-plane/envoy/type/v3 \
-	envoy/config/core/v3/base.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3
-
+	envoy/config/core/v3/base.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
+	xds/core/v3/context_params.proto=github.com/cncf/udpa/go/xds/core/v3 \
+	envoy/annotations/deprecation.proto=github.com/envoyproxy/go-control-plane/envoy/annotations
 
 # see https://makefiletutorial.com/
 comma := ,
