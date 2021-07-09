@@ -23,7 +23,7 @@ type IngressProxyBuilder struct {
 	apiVersion envoy.APIVersion
 }
 
-func (p *IngressProxyBuilder) build(key core_model.ResourceKey, streamId int64) (*xds.Proxy, error) {
+func (p *IngressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, error) {
 	ctx := context.Background()
 
 	zoneIngress, err := p.getZoneIngress(key)
@@ -50,7 +50,7 @@ func (p *IngressProxyBuilder) build(key core_model.ResourceKey, streamId int64) 
 		Id:          xds.FromResourceKey(key),
 		APIVersion:  p.apiVersion,
 		ZoneIngress: zoneIngress,
-		Metadata:    p.MetadataTracker.Metadata(streamId),
+		Metadata:    p.MetadataTracker.Metadata(key),
 		Routing:     *routing,
 	}
 	return proxy, nil
