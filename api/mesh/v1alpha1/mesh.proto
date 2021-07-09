@@ -124,11 +124,8 @@ message TracingBackend {
 }
 
 message DatadogTracingBackendConfig {
-  // Address of datadog collector.
+  // Address of datadog collector. Either host:port or unix:/path/to/socket
   string address = 1;
-
-  // Port of datadog collector
-  uint32 port = 2;
 }
 
 message ZipkinTracingBackendConfig {

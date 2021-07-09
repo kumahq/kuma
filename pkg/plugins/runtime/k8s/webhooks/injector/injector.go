@@ -33,6 +33,7 @@ import (
 const (
 	// serviceAccountTokenMountPath is a well-known location where Kubernetes mounts a ServiceAccount token.
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
+	datadogMountPath             = "/var/run/datadog"
 )
 
 var log = core.Log.WithName("injector")
@@ -389,8 +390,28 @@ func (i *KumaInjector) sidecarEnvVars(mesh string, podAnnotations map[string]str
 }
 
 func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) []kube_core.VolumeMount {
+	volumeMounts := []kube_core.VolumeMount{}
 	if tokenVolumeMount := i.FindServiceAccountToken(pod); tokenVolumeMount != nil {
-		return []kube_core.VolumeMount{*tokenVolumeMount}
+		volumeMounts = append(volumeMounts, *tokenVolumeMount)
+	}
+	if datadogVolumeMount := i.FindDatadogMountPath(pod); datadogVolumeMount != nil {
+		volumeMounts = append(volumeMounts, *datadogVolumeMount)
+	}
+
+	if len(volumeMounts) < 1 {
+		return nil
+	}
+
+	return volumeMounts
+}
+
+func (i *KumaInjector) FindDatadogMountPath(pod *kube_core.Pod) *kube_core.VolumeMount {
+	for i := range pod.Spec.Containers {
+		for j := range pod.Spec.Containers[i].VolumeMounts {
+			if pod.Spec.Containers[i].VolumeMounts[j].MountPath == datadogMountPath {
+				return &pod.Spec.Containers[i].VolumeMounts[j]
+			}
+		}
 	}
 	return nil
 }
