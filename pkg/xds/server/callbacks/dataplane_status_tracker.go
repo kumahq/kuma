@@ -119,20 +119,16 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 		var dpType core_model.ResourceType
 		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
 
-		// Kuma versions earlier than 1.2.2 didn't always serialize
-		// the DP resource into the Envoy node metadata, so it will
-		// only be available in later kuma-dp versions. In that case,
-		// we can derive the resource type from the proxy type, which
-		// is always present.
-		if md.Resource != nil {
-			dpType = md.Resource.GetType()
-		} else {
-			switch md.GetProxyType() {
-			case mesh_proto.IngressProxyType:
-				dpType = core_mesh.ZoneIngressType
-			case mesh_proto.DataplaneProxyType:
-				dpType = core_mesh.DataplaneType
-			}
+		// If the dataplane was started with a resource YAML, then it
+		// will be serialized in the node metadata and we would know
+		// the underlying type directly. Since that is optional, we
+		// can't depend on it here, so we map from the proxy type,
+		// which is guaranteed.
+		switch md.GetProxyType() {
+		case mesh_proto.IngressProxyType:
+			dpType = core_mesh.ZoneIngressType
+		case mesh_proto.DataplaneProxyType:
+			dpType = core_mesh.DataplaneType
 		}
 
 		// Infer the Dataplane ID.

@@ -44,7 +44,6 @@ node:
     dataplane.admin.port: "1234"
     dataplane.dns.empty.port: "53002"
     dataplane.dns.port: "53001"
-    dataplane.resource: '{"type":"Dataplane","mesh":"mesh","name":"name.namespace","creationTime":"2018-07-17T16:05:36.995Z","modificationTime":"2018-07-17T16:05:36.995Z","networking":{"address":"8.8.8.8","inbound":[{"port":443,"servicePort":8443,"tags":{"kuma.io/service":"backend"}}]}}'
     dataplane.token: token
     version:
       envoy:
