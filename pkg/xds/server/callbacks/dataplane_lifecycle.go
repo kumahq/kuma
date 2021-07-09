@@ -67,8 +67,6 @@ func (d *DataplaneLifecycle) register(streamID core_xds.StreamID, dpKey model.Re
 }
 
 func (d *DataplaneLifecycle) OnProxyDisconnected(streamID core_xds.StreamID, dpKey model.ResourceKey) {
-	// We use OnProxyDisconnected, because we want to unregister Dataplane only if all streams are closed.
-
 	// OnStreamClosed method could be called either in case data plane proxy is down or
 	// Kuma CP is gracefully shutting down. If Kuma CP is gracefully shutting down we
 	// must not delete Dataplane resource, data plane proxy will be reconnected to another
