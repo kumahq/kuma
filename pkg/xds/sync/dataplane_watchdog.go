@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -49,9 +50,13 @@ func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, dpKey core_model.R
 
 func (d *DataplaneWatchdog) Sync() error {
 	ctx := context.Background()
+	metadata := d.metadataTracker.Metadata(d.key)
+	if metadata == nil {
+		return errors.New("metadata cannot be nil")
+	}
 
 	if d.dpType == "" {
-		d.dpType = d.metadataTracker.Metadata(d.key).GetProxyType()
+		d.dpType = metadata.GetProxyType()
 	}
 	// backwards compatibility
 	if d.dpType == mesh_proto.DataplaneProxyType && !d.proxyTypeSettled {
