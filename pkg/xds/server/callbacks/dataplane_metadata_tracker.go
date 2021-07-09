@@ -9,7 +9,6 @@ import (
 )
 
 type DataplaneMetadataTracker struct {
-	NoopDataplaneCallbacks
 	sync.RWMutex
 	metadataForDp map[core_model.ResourceKey]*core_xds.DataplaneMetadata
 }
@@ -28,15 +27,23 @@ func (d *DataplaneMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_
 	return d.metadataForDp[dpKey]
 }
 
-func (d *DataplaneMetadataTracker) OnStreamConnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, metadata core_xds.DataplaneMetadata) error {
-	// We use OnStreamConnected, not OnFirstStreamConnected because if there are many xDS streams, we want to follow metadata from the newest stream.
-	d.Lock()
-	defer d.Unlock()
-	d.metadataForDp[dpKey] = &metadata
+func (d *DataplaneMetadataTracker) OnProxyReconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, metadata core_xds.DataplaneMetadata) error {
+	d.storeMetadata(dpKey, metadata)
 	return nil
 }
 
-func (d *DataplaneMetadataTracker) OnLastStreamDisconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey) {
+func (d *DataplaneMetadataTracker) OnProxyConnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, metadata core_xds.DataplaneMetadata) error {
+	d.storeMetadata(dpKey, metadata)
+	return nil
+}
+
+func (d *DataplaneMetadataTracker) storeMetadata(dpKey core_model.ResourceKey, metadata core_xds.DataplaneMetadata) {
+	d.Lock()
+	defer d.Unlock()
+	d.metadataForDp[dpKey] = &metadata
+}
+
+func (d *DataplaneMetadataTracker) OnProxyDisconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey) {
 	d.Lock()
 	defer d.Unlock()
 	delete(d.metadataForDp, dpKey)

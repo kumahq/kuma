@@ -17,28 +17,23 @@ import (
 )
 
 type countingDpCallbacks struct {
-	OnStreamConnectedCounter        int
-	OnFirstStreamConnectedCounter   int
-	OnStreamDisconnectedCounter     int
-	OnLastStreamDisconnectedCounter int
+	OnProxyConnectedCounter    int
+	OnProxyReconnectedCounter  int
+	OnProxyDisconnectedCounter int
 }
 
-func (c *countingDpCallbacks) OnStreamConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error {
-	c.OnStreamConnectedCounter++
+func (c *countingDpCallbacks) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error {
+	c.OnProxyConnectedCounter++
 	return nil
 }
 
-func (c *countingDpCallbacks) OnFirstStreamConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error {
-	c.OnFirstStreamConnectedCounter++
+func (c *countingDpCallbacks) OnProxyReconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error {
+	c.OnProxyReconnectedCounter++
 	return nil
 }
 
-func (c *countingDpCallbacks) OnStreamDisconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
-	c.OnStreamDisconnectedCounter++
-}
-
-func (c *countingDpCallbacks) OnLastStreamDisconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
-	c.OnLastStreamDisconnectedCounter++
+func (c *countingDpCallbacks) OnProxyDisconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
+	c.OnProxyDisconnectedCounter++
 }
 
 var _ DataplaneCallbacks = &countingDpCallbacks{}
@@ -68,25 +63,25 @@ var _ = Describe("Dataplane Callbacks", func() {
 		err := callbacks.OnStreamOpen(context.Background(), 1, "")
 		Expect(err).ToNot(HaveOccurred())
 
-		// then OnStreamConnected and OnFirstStreamConnectedCounter is not yet called
-		Expect(countingCallbacks.OnStreamConnectedCounter).To(Equal(0))
-		Expect(countingCallbacks.OnFirstStreamConnectedCounter).To(Equal(0))
+		// then OnProxyConnected and OnProxyReconnected is not yet called
+		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(0))
+		Expect(countingCallbacks.OnProxyReconnectedCounter).To(Equal(0))
 
 		// when OnStreamRequest is sent
 		err = callbacks.OnStreamRequest(1, &req)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then both OnStreamConnected and OnFirstStreamConnected should be called
-		Expect(countingCallbacks.OnStreamConnectedCounter).To(Equal(1))
-		Expect(countingCallbacks.OnFirstStreamConnectedCounter).To(Equal(1))
+		// then only OnProxyConnected should be called
+		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(1))
+		Expect(countingCallbacks.OnProxyReconnectedCounter).To(Equal(0))
 
 		// when next OnStreamRequest on the same stream is sent
 		err = callbacks.OnStreamRequest(1, &req)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then OnStreamConnected and OnFirstStreamConnectedCounter are not called again, they should be only called on the first DiscoveryRequest
-		Expect(countingCallbacks.OnStreamConnectedCounter).To(Equal(1))
-		Expect(countingCallbacks.OnFirstStreamConnectedCounter).To(Equal(1))
+		// then OnProxyReconnected and OnProxyReconnected are not called again, they should be only called on the first DiscoveryRequest
+		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(1))
+		Expect(countingCallbacks.OnProxyReconnectedCounter).To(Equal(0))
 
 		// when next stream for given data plane proxy is connected
 		err = callbacks.OnStreamOpen(context.Background(), 2, "")
@@ -94,22 +89,20 @@ var _ = Describe("Dataplane Callbacks", func() {
 		err = callbacks.OnStreamRequest(2, &req)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then only OnStreamConnected should be called
-		Expect(countingCallbacks.OnStreamConnectedCounter).To(Equal(2))
-		Expect(countingCallbacks.OnFirstStreamConnectedCounter).To(Equal(1))
+		// then only OnProxyReconnected should be called
+		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(1))
+		Expect(countingCallbacks.OnProxyReconnectedCounter).To(Equal(1))
 
 		// when first stream is closed
 		callbacks.OnStreamClosed(1)
 
-		// then only OnStreamDisconnected should be called
-		Expect(countingCallbacks.OnStreamDisconnectedCounter).To(Equal(1))
-		Expect(countingCallbacks.OnLastStreamDisconnectedCounter).To(Equal(0))
+		// then OnProxyDisconnected should not yet be called
+		Expect(countingCallbacks.OnProxyDisconnectedCounter).To(Equal(0))
 
 		// when last stream is closed
 		callbacks.OnStreamClosed(2)
 
-		// then both OnStreamDisconnected and OnLastStreamDisconnected are called
-		Expect(countingCallbacks.OnStreamDisconnectedCounter).To(Equal(2))
-		Expect(countingCallbacks.OnLastStreamDisconnectedCounter).To(Equal(1))
+		// then OnProxyDisconnected should be called
+		Expect(countingCallbacks.OnProxyDisconnectedCounter).To(Equal(1))
 	})
 })

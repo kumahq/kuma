@@ -28,8 +28,6 @@ var lifecycleLog = core.Log.WithName("xds").WithName("dp-lifecycle")
 //
 // This flow is optional, you may still want to go with 1. an example of this is Kubernetes deployment.
 type DataplaneLifecycle struct {
-	NoopDataplaneCallbacks
-
 	resManager manager.ResourceManager
 
 	sync.RWMutex         // protects createdDpByCallbacks
@@ -37,8 +35,15 @@ type DataplaneLifecycle struct {
 	shutdownCh           <-chan struct{}
 }
 
-func (d *DataplaneLifecycle) OnStreamConnected(streamID core_xds.StreamID, dpKey model.ResourceKey, _ context.Context, md core_xds.DataplaneMetadata) error {
-	// We use OnStreamConnected, not OnFirstStreamConnected, because we want to use Dataplane from the newest stream.
+func (d *DataplaneLifecycle) OnProxyConnected(streamID core_xds.StreamID, dpKey model.ResourceKey, _ context.Context, md core_xds.DataplaneMetadata) error {
+	return d.register(streamID, dpKey, md)
+}
+
+func (d *DataplaneLifecycle) OnProxyReconnected(streamID core_xds.StreamID, dpKey model.ResourceKey, _ context.Context, md core_xds.DataplaneMetadata) error {
+	return d.register(streamID, dpKey, md)
+}
+
+func (d *DataplaneLifecycle) register(streamID core_xds.StreamID, dpKey model.ResourceKey, md core_xds.DataplaneMetadata) error {
 	if md.GetProxyType() == mesh_proto.DataplaneProxyType && md.GetDataplaneResource() != nil {
 		dp := md.GetDataplaneResource()
 		lifecycleLog.Info("registering dataplane", "dataplane", dp, "dataplaneKey", dpKey, "streamID", streamID)
@@ -61,8 +66,8 @@ func (d *DataplaneLifecycle) OnStreamConnected(streamID core_xds.StreamID, dpKey
 	return nil
 }
 
-func (d *DataplaneLifecycle) OnLastStreamDisconnected(streamID core_xds.StreamID, dpKey model.ResourceKey) {
-	// We use OnLastStreamDisconnected, because we want to unregister Dataplane only if all streams are closed.
+func (d *DataplaneLifecycle) OnProxyDisconnected(streamID core_xds.StreamID, dpKey model.ResourceKey) {
+	// We use OnProxyDisconnected, because we want to unregister Dataplane only if all streams are closed.
 
 	// OnStreamClosed method could be called either in case data plane proxy is down or
 	// Kuma CP is gracefully shutting down. If Kuma CP is gracefully shutting down we

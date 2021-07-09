@@ -40,8 +40,8 @@ type dataplaneSyncTracker struct {
 	watchdogs       map[core_model.ResourceKey]context.CancelFunc
 }
 
-func (t *dataplaneSyncTracker) OnFirstStreamConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, _ core_xds.DataplaneMetadata) error {
-	// We use OnFirstStreamConnected because there should be only one watchdog for given dataplane.
+func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, _ core_xds.DataplaneMetadata) error {
+	// We use OnProxyConnected because there should be only one watchdog for given dataplane.
 	t.Lock()
 	defer t.Unlock()
 
@@ -56,7 +56,7 @@ func (t *dataplaneSyncTracker) OnFirstStreamConnected(streamID core_xds.StreamID
 	return nil
 }
 
-func (t *dataplaneSyncTracker) OnLastStreamDisconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey) {
+func (t *dataplaneSyncTracker) OnProxyDisconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey) {
 	t.Lock()
 	defer t.Unlock()
 	if cancelFn := t.watchdogs[dpKey]; cancelFn != nil {

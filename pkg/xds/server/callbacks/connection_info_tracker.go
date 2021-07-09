@@ -16,7 +16,6 @@ const authorityHeader = ":authority"
 
 // ConnectionInfoTracker tracks the information about the connection itself from the data plane to the control plane
 type ConnectionInfoTracker struct {
-	NoopDataplaneCallbacks
 	sync.RWMutex
 	connectionInfos map[core_model.ResourceKey]*xds_context.ConnectionInfo
 }
@@ -35,8 +34,15 @@ func (c *ConnectionInfoTracker) ConnectionInfo(dpKey core_model.ResourceKey) *xd
 	return c.connectionInfos[dpKey]
 }
 
-func (c *ConnectionInfoTracker) OnStreamConnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, _ core_xds.DataplaneMetadata) error {
-	// We use OnStreamConnected, not OnFirstStreamConnected because if there are many xDS streams, we want to follow ConnectionInfo from the newest stream.
+func (c *ConnectionInfoTracker) OnProxyReconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, _ core_xds.DataplaneMetadata) error {
+	return c.processConnectionInfo(dpKey, ctx)
+}
+
+func (c *ConnectionInfoTracker) OnProxyConnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, _ core_xds.DataplaneMetadata) error {
+	return c.processConnectionInfo(dpKey, ctx)
+}
+
+func (c *ConnectionInfoTracker) processConnectionInfo(dpKey core_model.ResourceKey, ctx context.Context) error {
 	metadata, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return errors.New("request has no metadata")
@@ -54,7 +60,7 @@ func (c *ConnectionInfoTracker) OnStreamConnected(_ core_xds.StreamID, dpKey cor
 	return nil
 }
 
-func (c *ConnectionInfoTracker) OnLastStreamDisconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey) {
+func (c *ConnectionInfoTracker) OnProxyDisconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey) {
 	c.Lock()
 	delete(c.connectionInfos, dpKey)
 	c.Unlock()

@@ -22,20 +22,16 @@ import (
 //
 // Those callbacks may be also used with SDS. In case of SDS, at this moment Envoy creates many SDS streams to the Control Plane.
 type DataplaneCallbacks interface {
-	// OnStreamConnected is executed when Dataplane is connected to the control plane (go-control-plane's OnStreamOpen)
-	// and Dataplane executes the first request (go-control-plane's OnStreamRequest, only in this phase we can extract Dataplane and DataplaneMetadata).
-	// If there are many xDS stream this callback is executed for every new xDS stream.
-	OnStreamConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error
-	// OnFirstStreamConnected is similar to OnStreamConnected but if there are many xDS streams, it is only executed for the first stream.
-	OnFirstStreamConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error
-
-	// OnStreamDisconnected is executed when Dataplane stream disconnects.
-	OnStreamDisconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey)
-	// OnLastStreamDisconnected is executed only when the last stream of Dataplane disconnects.
-	OnLastStreamDisconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey)
+	// OnProxyConnected is executed when proxy is connected after it was disconnected before.
+	OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error
+	// OnProxyReconnected is executed when proxy is already connected, but there is another stream.
+	// This can happen when there is a delay with closing the old connection from the proxy to the control plane.
+	OnProxyReconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error
+	// OnProxyDisconnected is executed only when the last stream of the proxy disconnects.
+	OnProxyDisconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey)
 }
 
-type dpCallbacks struct {
+type xdsCallbacks struct {
 	callbacks DataplaneCallbacks
 	util_xds.NoopCallbacks
 
@@ -45,7 +41,7 @@ type dpCallbacks struct {
 }
 
 func DataplaneCallbacksToXdsCallbacks(callbacks DataplaneCallbacks) util_xds.Callbacks {
-	return &dpCallbacks{
+	return &xdsCallbacks{
 		callbacks:     callbacks,
 		dpStreams:     map[core_xds.StreamID]dpStream{},
 		activeStreams: map[core_model.ResourceKey]int{},
@@ -57,24 +53,23 @@ type dpStream struct {
 	ctx context.Context
 }
 
-var _ util_xds.Callbacks = &dpCallbacks{}
+var _ util_xds.Callbacks = &xdsCallbacks{}
 
-func (d *dpCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
+func (d *xdsCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 	d.Lock()
 	defer d.Unlock()
 	dpStream := d.dpStreams[streamID]
 	if dpKey := dpStream.dp; dpKey != nil {
 		d.activeStreams[*dpKey]--
-		d.callbacks.OnStreamDisconnected(streamID, *dpKey)
 		if d.activeStreams[*dpKey] == 0 {
-			d.callbacks.OnLastStreamDisconnected(streamID, *dpKey)
+			d.callbacks.OnProxyDisconnected(streamID, *dpKey)
 			delete(d.activeStreams, *dpKey)
 		}
 	}
 	delete(d.dpStreams, streamID)
 }
 
-func (d *dpCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_xds.DiscoveryRequest) error {
+func (d *xdsCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_xds.DiscoveryRequest) error {
 	if request.NodeId() == "" {
 		// from https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#ack-nack-and-versioning:
 		// Only the first request on a stream is guaranteed to carry the node identifier.
@@ -111,19 +106,19 @@ func (d *dpCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_x
 	d.activeStreams[dpKey]++
 	d.Unlock()
 
-	if err := d.callbacks.OnStreamConnected(streamID, dpKey, dpStream.ctx, *metadata); err != nil {
-		return err
-	}
-
 	if activeStreams == 0 {
-		if err := d.callbacks.OnFirstStreamConnected(streamID, dpKey, dpStream.ctx, *metadata); err != nil {
+		if err := d.callbacks.OnProxyConnected(streamID, dpKey, dpStream.ctx, *metadata); err != nil {
+			return err
+		}
+	} else {
+		if err := d.callbacks.OnProxyReconnected(streamID, dpKey, dpStream.ctx, *metadata); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (d *dpCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
+func (d *xdsCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
 	d.Lock()
 	defer d.Unlock()
 	dps := dpStream{
@@ -137,18 +132,15 @@ func (d *dpCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.Stream
 type NoopDataplaneCallbacks struct {
 }
 
-func (n *NoopDataplaneCallbacks) OnStreamConnected(core_xds.StreamID, core_model.ResourceKey, context.Context, core_xds.DataplaneMetadata) error {
+func (n *NoopDataplaneCallbacks) OnProxyReconnected(core_xds.StreamID, core_model.ResourceKey, context.Context, core_xds.DataplaneMetadata) error {
 	return nil
 }
 
-func (n *NoopDataplaneCallbacks) OnFirstStreamConnected(core_xds.StreamID, core_model.ResourceKey, context.Context, core_xds.DataplaneMetadata) error {
+func (n *NoopDataplaneCallbacks) OnProxyConnected(core_xds.StreamID, core_model.ResourceKey, context.Context, core_xds.DataplaneMetadata) error {
 	return nil
 }
 
-func (n *NoopDataplaneCallbacks) OnStreamDisconnected(core_xds.StreamID, core_model.ResourceKey) {
-}
-
-func (n *NoopDataplaneCallbacks) OnLastStreamDisconnected(core_xds.StreamID, core_model.ResourceKey) {
+func (n *NoopDataplaneCallbacks) OnProxyDisconnected(core_xds.StreamID, core_model.ResourceKey) {
 }
 
 var _ DataplaneCallbacks = &NoopDataplaneCallbacks{}
