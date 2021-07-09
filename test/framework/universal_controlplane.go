@@ -53,6 +53,21 @@ func (c *UniversalControlPlane) GetGlobaStatusAPI() string {
 	panic("not implemented")
 }
 
+func (c *UniversalControlPlane) GetMetrics() (string, error) {
+	return retry.DoWithRetryE(c.t, "fetching CP metrics", DefaultRetries, DefaultTimeout, func() (string, error) {
+		sshApp := NewSshApp(c.verbose, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
+			"--fail", "--show-error",
+			"http://localhost:5680/metrics"})
+		if err := sshApp.Run(); err != nil {
+			return "", err
+		}
+		if sshApp.Err() != "" {
+			return "", errors.New(sshApp.Err())
+		}
+		return sshApp.Out(), nil
+	})
+}
+
 func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, error) {
 	dpType := ""
 	if service == "ingress" {

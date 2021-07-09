@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns"
 )
 
-var log = core.Log.WithName("dns-vips-allocator")
+var log = core.Log.WithName("vip-outbounds-reconciler")
 
 type VIPOutboundsReconciler struct {
 	rorm      manager.ReadOnlyResourceManager
