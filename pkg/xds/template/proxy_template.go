@@ -15,6 +15,14 @@ var (
 		},
 	}
 
+	GatewayProxyTemplate = &kuma_mesh.ProxyTemplate{
+		Conf: &kuma_mesh.ProxyTemplate_Conf{
+			Imports: []string{
+				core_mesh.ProfileGatewayProxy,
+			},
+		},
+	}
+
 	IngressProxyTemplate = &kuma_mesh.ProxyTemplate{
 		Conf: &kuma_mesh.ProxyTemplate_Conf{
 			Imports: []string{

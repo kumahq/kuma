@@ -80,8 +80,24 @@ func NewDefaultProxyProfile() ResourceGenerator {
 	}
 }
 
+// NewGatewayProxyProfile returns a ResourceGenerate=or that configures a gateway proxy.
+func NewGatewayProxyProfile() ResourceGenerator {
+	return CompositeResourceGenerator{
+		AdminProxyGenerator{},
+		PrometheusEndpointGenerator{},
+		// TODO(jpeach) TransparentProxyGenerator{},
+		// TODO(jpeach) InboundProxyGenerator{},
+		// TODO(jpeach) OutboundProxyGenerator{},
+		// TODO(jpeach) DirectAccessProxyGenerator{},
+		// TODO(jpeach) ProbeProxyGenerator{},
+		TracingProxyGenerator{},
+		DNSGenerator{},
+	}
+}
+
 func init() {
 	RegisterProfile(mesh_core.ProfileDefaultProxy, NewDefaultProxyProfile())
+	RegisterProfile(mesh_core.ProfileDefaultProxy, NewGatewayProxyProfile())
 	RegisterProfile(IngressProxy, CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
 }
 
