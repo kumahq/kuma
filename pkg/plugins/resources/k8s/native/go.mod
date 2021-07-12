@@ -6,8 +6,8 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/golang/protobuf v1.5.2
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
-	github.com/onsi/ginkgo v1.16.2
-	github.com/onsi/gomega v1.13.0
+	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/gomega v1.14.0
 	github.com/pkg/errors v0.9.1
 	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
 	k8s.io/apimachinery v0.18.14
