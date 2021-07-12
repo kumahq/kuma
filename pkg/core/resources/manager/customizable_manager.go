@@ -14,6 +14,9 @@ type CustomizableResourceManager interface {
 }
 
 func NewCustomizableResourceManager(defaultManager ResourceManager, customManagers map[model.ResourceType]ResourceManager) CustomizableResourceManager {
+	if customManagers == nil {
+		customManagers = map[model.ResourceType]ResourceManager{}
+	}
 	return &customizableResourceManager{
 		defaultManager: defaultManager,
 		customManagers: customManagers,
@@ -27,6 +30,8 @@ type customizableResourceManager struct {
 	customManagers map[model.ResourceType]ResourceManager
 }
 
+// Customize installs a new manager for the given type, overwriting any
+// existing manager for that type.
 func (m *customizableResourceManager) Customize(resourceType model.ResourceType, manager ResourceManager) {
 	m.customManagers[resourceType] = manager
 }
