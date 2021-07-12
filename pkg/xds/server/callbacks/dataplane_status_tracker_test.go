@@ -64,7 +64,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	})
 
 	BeforeEach(func() {
-		tracker = NewDataplaneStatusTracker(runtimeInfo, func(accessor SubscriptionStatusAccessor) DataplaneInsightSink {
+		tracker = NewDataplaneStatusTracker(runtimeInfo, func(dataplaneType core_model.ResourceType, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 			return DataplaneInsightSinkFunc(func(<-chan struct{}) {})
 		})
 		callbacks = v2.AdaptCallbacks(tracker)
@@ -671,6 +671,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			// and
 			accessor, _ := tracker.GetStatusAccessor(streamID)
 			_, sub := accessor.GetStatus()
+			Expect(sub.GetVersion()).ToNot(BeNil())
 			Expect(sub.GetVersion()).To(MatchProto(mesh_proto.NewVersion()))
 		},
 		Entry("when version is a nil struct", versionTestCase{
