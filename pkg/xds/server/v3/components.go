@@ -8,6 +8,7 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
 	"github.com/kumahq/kuma/pkg/core"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	v3 "github.com/kumahq/kuma/pkg/core/xds/v3"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -95,14 +96,16 @@ func DefaultIngressReconciler(rt core_runtime.Runtime, xdsContext v3.XdsContext)
 }
 
 func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) xds_callbacks.DataplaneStatusTracker {
-	return xds_callbacks.NewDataplaneStatusTracker(rt, func(accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
-		return xds_callbacks.NewDataplaneInsightSink(
-			accessor,
-			func() *time.Ticker {
-				return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval)
-			},
-			rt.Config().XdsServer.DataplaneStatusFlushInterval/10,
-			xds_callbacks.NewDataplaneInsightStore(rt.ResourceManager()),
-		)
-	})
+	return xds_callbacks.NewDataplaneStatusTracker(rt,
+		func(dataplaneType core_model.ResourceType, accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
+			return xds_callbacks.NewDataplaneInsightSink(
+				dataplaneType,
+				accessor,
+				func() *time.Ticker {
+					return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval)
+				},
+				rt.Config().XdsServer.DataplaneStatusFlushInterval/10,
+				xds_callbacks.NewDataplaneInsightStore(rt.ResourceManager()),
+			)
+		})
 }
