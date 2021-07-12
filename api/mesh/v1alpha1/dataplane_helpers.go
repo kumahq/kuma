@@ -184,6 +184,17 @@ func (d *Dataplane_Networking_Gateway) MatchTags(selector TagSelector) bool {
 	return selector.Matches(d.Tags)
 }
 
+// GetService returns a service represented by this gateway.
+//
+// The purpose of this method is to encapsulate implementation detail
+// that service is modeled as a tag rather than a separate field.
+func (d *Dataplane_Networking_Gateway) GetService() string {
+	if d == nil {
+		return ""
+	}
+	return d.Tags[ServiceTag]
+}
+
 // GetService returns a service represented by this inbound interface.
 //
 // The purpose of this method is to encapsulate implementation detail

@@ -170,10 +170,19 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (vips.Entr
 				}
 				serviceSet[vips.NewServiceEntry(service.Tags[mesh_proto.ServiceTag])] = true
 			}
-		} else {
-			for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
-				serviceSet[vips.NewServiceEntry(inbound.GetService())] = true
+
+			continue
+		}
+
+		for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
+			// Delegated gateways don't have inbound networking, but builtin gateways do.
+			if svc := inbound.GetService(); svc != "" {
+				serviceSet[vips.NewServiceEntry(svc)] = true
 			}
+		}
+
+		if dp.Spec.IsBuiltinGateway() {
+			serviceSet[vips.NewServiceEntry(dp.Spec.GetNetworking().GetGateway().GetService())] = true
 		}
 	}
 
@@ -203,34 +212,48 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (vips.Entr
 	return serviceSet, nil
 }
 
-func UpdateMeshedVIPs(global, meshed vips.List, ipam IPAM, entrySet vips.EntrySet) (updated bool, errs error) {
+// UpdateMeshedVIPs reconciles the current set of services, allocating
+// new VIP addresses if necessary. global and meshed are the persisted
+// VIP entries that we know about, and entrySet is the current set of
+// service we have calculated. We allocate new VIP addresses for new
+// services (i.e. those that aren't already in the global or mesh lists),
+// and we delete IP addresses for stale list entries (i.e. that are in the
+// mesh list but no longer available).
+func UpdateMeshedVIPs(global, meshed vips.List, ipam IPAM, entrySet vips.EntrySet) (bool, error) {
+	var updated bool
+	var errs error
+
 	for _, service := range entrySet.ToArray() {
-		_, found := meshed[service]
-		if found {
+		if _, ok := meshed[service]; ok {
 			continue
 		}
-		ip, found := global[service]
-		if found {
+
+		if ip, ok := global[service]; ok {
 			meshed[service] = ip
 			updated = true
 			continue
 		}
+
 		ip, err := ipam.AllocateIP()
 		if err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, "unable to allocate an ip for service %s", service))
+			vipsAllocatorLog.Error(err, "unable to allocate an IP", "service", service)
+			errs = multierr.Append(errs, errors.Wrapf(err, "unable to allocate an IP for service %s", service))
 			continue
 		}
+
 		meshed[service] = ip
 		updated = true
 		vipsAllocatorLog.Info("adding", "service", service, "ip", ip)
 	}
+
 	for service, ip := range meshed {
-		if _, found := entrySet[service]; !found {
+		if _, ok := entrySet[service]; !ok {
 			updated = true
 			_ = ipam.FreeIP(ip)
 			delete(meshed, service)
 			vipsAllocatorLog.Info("deleting", "service", service, "ip", ip)
 		}
 	}
-	return
+
+	return updated, errs
 }
