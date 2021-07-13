@@ -8,29 +8,22 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 var (
 	dataplaneSyncTrackerLog = core.Log.WithName("xds-server").WithName("dataplane-sync-tracker")
 )
 
-type NewDataplaneWatchdogFunc func(proxyId *core_xds.ProxyId, streamId core_xds.StreamID) util_watchdog.Watchdog
+type NewDataplaneWatchdogFunc func(key core_model.ResourceKey) util_watchdog.Watchdog
 
-func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) util_xds.Callbacks {
+func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
 		newDataplaneWatchdog: factoryFunc,
-		streamsAssociation:   make(map[core_xds.StreamID]core_model.ResourceKey),
-		dpStreams:            make(map[core_model.ResourceKey]streams),
+		watchdogs:            map[core_model.ResourceKey]context.CancelFunc{},
 	}
 }
 
-var _ util_xds.Callbacks = &dataplaneSyncTracker{}
-
-type streams struct {
-	watchdogCancel context.CancelFunc
-	activeStreams  map[core_xds.StreamID]bool
-}
+var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 
 // dataplaneSyncTracker tracks XDS streams that are connected to the CP and fire up a watchdog.
 // Watchdog should be run only once for given dataplane regardless of the number of streams.
@@ -39,77 +32,35 @@ type streams struct {
 // Node info can be (but does not have to be) carried only on the first XDS request. That's why need streamsAssociation map
 // that indicates that the stream was already associated
 type dataplaneSyncTracker struct {
+	NoopDataplaneCallbacks
+
 	newDataplaneWatchdog NewDataplaneWatchdogFunc
 
-	stdsync.RWMutex    // protects access to the fields below
-	streamsAssociation map[core_xds.StreamID]core_model.ResourceKey
-	dpStreams          map[core_model.ResourceKey]streams
+	stdsync.RWMutex // protects access to the fields below
+	watchdogs       map[core_model.ResourceKey]context.CancelFunc
 }
 
-// OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
-// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (t *dataplaneSyncTracker) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, typ string) error {
-	return nil
-}
-
-// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (t *dataplaneSyncTracker) OnStreamClosed(streamID core_xds.StreamID) {
+func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, _ core_xds.DataplaneMetadata) error {
+	// We use OnProxyConnected because there should be only one watchdog for given dataplane.
 	t.Lock()
 	defer t.Unlock()
 
-	dp, hasAssociation := t.streamsAssociation[streamID]
-	if hasAssociation {
-		delete(t.streamsAssociation, streamID)
+	stopCh := make(chan struct{})
 
-		streams := t.dpStreams[dp]
-		delete(streams.activeStreams, streamID)
-		if len(streams.activeStreams) == 0 { // no stream is active, cancel watchdog
-			if streams.watchdogCancel != nil {
-				streams.watchdogCancel()
-			}
-			delete(t.dpStreams, dp)
-		}
+	t.watchdogs[dpKey] = func() {
+		dataplaneSyncTrackerLog.V(1).Info("stopping Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
+		close(stopCh)
 	}
-}
-
-// OnStreamRequest is called once a request is received on a stream.
-// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (t *dataplaneSyncTracker) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
-	t.RLock()
-	_, alreadyAssociated := t.streamsAssociation[streamID]
-	t.RUnlock()
-
-	if alreadyAssociated {
-		return nil
-	}
-
-	if proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
-		dataplaneKey := proxyId.ToResourceKey()
-		t.Lock()
-		defer t.Unlock()
-		streams := t.dpStreams[dataplaneKey]
-		if streams.activeStreams == nil {
-			streams.activeStreams = map[core_xds.StreamID]bool{}
-		}
-		streams.activeStreams[streamID] = true
-		if streams.watchdogCancel == nil { // watchdog was not started yet
-			stopCh := make(chan struct{})
-			streams.watchdogCancel = func() {
-				close(stopCh)
-			}
-			// kick off watchdog for that Dataplane
-			go t.newDataplaneWatchdog(proxyId, streamID).Start(stopCh)
-			dataplaneSyncTrackerLog.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
-		}
-		t.dpStreams[dataplaneKey] = streams
-		t.streamsAssociation[streamID] = dataplaneKey
-	} else {
-		dataplaneSyncTrackerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "req", req)
-	}
-
+	dataplaneSyncTrackerLog.V(1).Info("starting Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
+	go t.newDataplaneWatchdog(dpKey).Start(stopCh)
 	return nil
 }
 
-// OnStreamResponse is called immediately prior to sending a response on a stream.
-func (t *dataplaneSyncTracker) OnStreamResponse(streamID core_xds.StreamID, req util_xds.DiscoveryRequest, resp util_xds.DiscoveryResponse) {
+func (t *dataplaneSyncTracker) OnProxyDisconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey) {
+	t.Lock()
+	defer t.Unlock()
+	if cancelFn := t.watchdogs[dpKey]; cancelFn != nil {
+		cancelFn()
+	}
+	delete(t.watchdogs, dpKey)
 }

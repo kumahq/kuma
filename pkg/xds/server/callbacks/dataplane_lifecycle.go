@@ -13,8 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/xds"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 var lifecycleLog = core.Log.WithName("xds").WithName("dp-lifecycle")
@@ -29,28 +28,45 @@ var lifecycleLog = core.Log.WithName("xds").WithName("dp-lifecycle")
 //
 // This flow is optional, you may still want to go with 1. an example of this is Kubernetes deployment.
 type DataplaneLifecycle struct {
-	util_xds.NoopCallbacks
 	resManager manager.ResourceManager
-	// createdDpForStream stores map from StreamID to created ResourceKey of Dataplane.
-	// we store nil values for streams without Dataplane in metadata to avoid accessing metadata with every DiscoveryRequest
-	createdDpForStream map[xds.StreamID]*model.ResourceKey
-	proxyTypeForStream map[xds.StreamID]mesh_proto.ProxyType
-	sync.RWMutex       // protects createdDpForStream
-	shutdownCh         <-chan struct{}
+
+	sync.RWMutex         // protects createdDpByCallbacks
+	createdDpByCallbacks map[model.ResourceKey]mesh_proto.ProxyType
+	shutdownCh           <-chan struct{}
 }
 
-var _ util_xds.Callbacks = &DataplaneLifecycle{}
+func (d *DataplaneLifecycle) OnProxyConnected(streamID core_xds.StreamID, dpKey model.ResourceKey, _ context.Context, md core_xds.DataplaneMetadata) error {
+	return d.register(streamID, dpKey, md)
+}
 
-func NewDataplaneLifecycle(resManager manager.ResourceManager, shutdownCh <-chan struct{}) *DataplaneLifecycle {
-	return &DataplaneLifecycle{
-		resManager:         resManager,
-		createdDpForStream: map[xds.StreamID]*model.ResourceKey{},
-		proxyTypeForStream: map[xds.StreamID]mesh_proto.ProxyType{},
-		shutdownCh:         shutdownCh,
+func (d *DataplaneLifecycle) OnProxyReconnected(streamID core_xds.StreamID, dpKey model.ResourceKey, _ context.Context, md core_xds.DataplaneMetadata) error {
+	return d.register(streamID, dpKey, md)
+}
+
+func (d *DataplaneLifecycle) register(streamID core_xds.StreamID, dpKey model.ResourceKey, md core_xds.DataplaneMetadata) error {
+	if md.GetProxyType() == mesh_proto.DataplaneProxyType && md.GetDataplaneResource() != nil {
+		dp := md.GetDataplaneResource()
+		lifecycleLog.Info("registering dataplane", "dataplane", dp, "dataplaneKey", dpKey, "streamID", streamID)
+		if err := d.registerDataplane(dp); err != nil {
+			return errors.Wrap(err, "could not register dataplane passed in kuma-dp run")
+		}
+		d.createdDpByCallbacks[dpKey] = mesh_proto.DataplaneProxyType
+		return nil
 	}
+
+	if md.GetProxyType() == mesh_proto.IngressProxyType && md.GetZoneIngressResource() != nil {
+		zi := md.GetZoneIngressResource()
+		lifecycleLog.Info("registering zone ingress", "zoneIngress", zi, "zoneIngressKey", dpKey, "streamID", streamID)
+		if err := d.registerZoneIngress(zi); err != nil {
+			return errors.Wrap(err, "could not register zone ingress passed in kuma-dp run")
+		}
+		d.createdDpByCallbacks[dpKey] = mesh_proto.IngressProxyType
+		return nil
+	}
+	return nil
 }
 
-func (d *DataplaneLifecycle) OnStreamClosed(streamID int64) {
+func (d *DataplaneLifecycle) OnProxyDisconnected(streamID core_xds.StreamID, dpKey model.ResourceKey) {
 	// OnStreamClosed method could be called either in case data plane proxy is down or
 	// Kuma CP is gracefully shutting down. If Kuma CP is gracefully shutting down we
 	// must not delete Dataplane resource, data plane proxy will be reconnected to another
@@ -64,79 +80,37 @@ func (d *DataplaneLifecycle) OnStreamClosed(streamID int64) {
 
 	d.Lock()
 	defer d.Unlock()
-	key := d.createdDpForStream[streamID]
-	proxyType := d.proxyTypeForStream[streamID]
-	delete(d.createdDpForStream, streamID)
-	delete(d.proxyTypeForStream, streamID)
-
-	if key == nil {
+	proxyType, createdByCallbacks := d.createdDpByCallbacks[dpKey]
+	if !createdByCallbacks {
 		return
 	}
+	delete(d.createdDpByCallbacks, dpKey)
 
 	if proxyType == mesh_proto.DataplaneProxyType {
-		lifecycleLog.Info("unregistering dataplane", "dataplaneKey", key, "streamID", streamID)
-		if err := d.unregisterDataplane(*key); err != nil {
+		lifecycleLog.Info("unregistering dataplane", "dataplaneKey", dpKey, "streamID", streamID)
+		if err := d.unregisterDataplane(dpKey); err != nil {
 			lifecycleLog.Error(err, "could not unregister dataplane")
 		}
 		return
 	}
 
 	if proxyType == mesh_proto.IngressProxyType {
-		lifecycleLog.Info("unregistering zone ingress", "zoneIngressKey", key, "streamID", streamID)
-		if err := d.unregisterZoneIngress(*key); err != nil {
+		lifecycleLog.Info("unregistering zone ingress", "zoneIngressKey", dpKey, "streamID", streamID)
+		if err := d.unregisterZoneIngress(dpKey); err != nil {
 			lifecycleLog.Error(err, "could not unregister zone ingress")
 		}
 		return
 	}
 }
 
-func (d *DataplaneLifecycle) OnStreamRequest(streamID int64, request util_xds.DiscoveryRequest) error {
-	if request.NodeId() == "" { // Only the first request on a stream is guaranteed to carry the node identifier.
-		return nil
+var _ DataplaneCallbacks = &DataplaneLifecycle{}
+
+func NewDataplaneLifecycle(resManager manager.ResourceManager, shutdownCh <-chan struct{}) *DataplaneLifecycle {
+	return &DataplaneLifecycle{
+		resManager:           resManager,
+		createdDpByCallbacks: map[model.ResourceKey]mesh_proto.ProxyType{},
+		shutdownCh:           shutdownCh,
 	}
-
-	if d.streamProcessed(streamID) {
-		return nil
-	}
-
-	d.Lock()
-	defer d.Unlock()
-
-	md := xds.DataplaneMetadataFromXdsMetadata(request.Metadata())
-
-	if md.GetProxyType() == mesh_proto.DataplaneProxyType && md.GetDataplaneResource() != nil {
-		dp := md.GetDataplaneResource()
-		lifecycleLog.Info("registering dataplane", "dataplane", dp, "streamID", streamID, "nodeID", request.NodeId())
-		if err := d.registerDataplane(dp); err != nil {
-			return errors.Wrap(err, "could not register dataplane passed in kuma-dp run")
-		}
-		key := model.MetaToResourceKey(dp.GetMeta())
-		d.createdDpForStream[streamID] = &key
-		d.proxyTypeForStream[streamID] = mesh_proto.DataplaneProxyType
-		return nil
-	}
-
-	if md.GetProxyType() == mesh_proto.IngressProxyType && md.GetZoneIngressResource() != nil {
-		zi := md.GetZoneIngressResource()
-		lifecycleLog.Info("registering zone ingress", "zoneIngress", zi, "streamID", streamID, "nodeID", request.NodeId())
-		if err := d.registerZoneIngress(zi); err != nil {
-			return errors.Wrap(err, "could not register zone ingress passed in kuma-dp run")
-		}
-		key := model.MetaToResourceKey(zi.GetMeta())
-		d.createdDpForStream[streamID] = &key
-		d.proxyTypeForStream[streamID] = mesh_proto.IngressProxyType
-		return nil
-	}
-
-	d.createdDpForStream[streamID] = nil // put nil so we don't have to read metadata every time
-	return nil
-}
-
-func (d *DataplaneLifecycle) streamProcessed(streamID int64) bool {
-	d.RLock()
-	defer d.RUnlock()
-	_, ok := d.createdDpForStream[streamID]
-	return ok
 }
 
 func (d *DataplaneLifecycle) registerDataplane(dp *core_mesh.DataplaneResource) error {

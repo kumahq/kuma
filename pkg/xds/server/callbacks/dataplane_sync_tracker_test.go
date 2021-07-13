@@ -8,8 +8,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/test"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
@@ -25,7 +23,7 @@ var _ = Describe("Sync", func() {
 	Describe("dataplaneSyncTracker", func() {
 		It("should not fail when ADS stream is closed before Watchdog is even created", func() {
 			// setup
-			tracker := NewDataplaneSyncTracker(nil)
+			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(nil))
 
 			// given
 			ctx := context.Background()
@@ -49,7 +47,7 @@ var _ = Describe("Sync", func() {
 		It("should not fail when Envoy presents invalid Node ID", func() {
 			// setup
 			tracker := NewDataplaneSyncTracker(nil)
-			callbacks := util_xds_v2.AdaptCallbacks(tracker)
+			callbacks := util_xds_v2.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
 			ctx := context.Background()
@@ -81,14 +79,14 @@ var _ = Describe("Sync", func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
-			tracker := NewDataplaneSyncTracker(func(proxyId *core_xds.ProxyId, streamId int64) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
-					watchdogCh <- proxyId.ToResourceKey()
+					watchdogCh <- key
 					<-stop
 					close(watchdogCh)
 				})
 			})
-			callbacks := util_xds_v2.AdaptCallbacks(tracker)
+			callbacks := util_xds_v2.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
 			ctx := context.Background()
@@ -138,14 +136,14 @@ var _ = Describe("Sync", func() {
 		It("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
-			tracker := NewDataplaneSyncTracker(func(proxyId *core_xds.ProxyId, streamId int64) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-stop
 					atomic.AddInt32(&activeWatchdogs, -1)
 				})
 			})
-			callbacks := util_xds_v2.AdaptCallbacks(tracker)
+			callbacks := util_xds_v2.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent
 			streamID := int64(1)
