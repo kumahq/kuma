@@ -1187,8 +1187,8 @@ var file_mesh_v1alpha1_mesh_proto_goTypes = []interface{}{
 	(*Networking_Outbound)(nil),                         // 15: kuma.mesh.v1alpha1.Networking.Outbound
 	(*Metrics)(nil),                                     // 16: kuma.mesh.v1alpha1.Metrics
 	(*structpb.Struct)(nil),                             // 17: google.protobuf.Struct
-	(*wrappers.DoubleValue)(nil),                        // 18: google.protobuf.DoubleValue
-	(*wrappers.BoolValue)(nil),                          // 19: google.protobuf.BoolValue
+	(*wrapperspb.DoubleValue)(nil),                      // 18: google.protobuf.DoubleValue
+	(*wrapperspb.BoolValue)(nil),                        // 19: google.protobuf.BoolValue
 }
 var file_mesh_v1alpha1_mesh_proto_depIdxs = []int32{
 	12, // 0: kuma.mesh.v1alpha1.Mesh.mtls:type_name -> kuma.mesh.v1alpha1.Mesh.Mtls
