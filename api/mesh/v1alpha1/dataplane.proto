@@ -15,6 +15,7 @@ message Dataplane {
 
   option (kuma.mesh.resource).name = "DataplaneResource";
   option (kuma.mesh.resource).type = "Dataplane";
+  option (kuma.mesh.resource).package = "mesh";
 
   // Networking describes inbound and outbound interfaces of a dataplane.
   message Networking {
