@@ -85,6 +85,7 @@ func NewGatewayProxyProfile() ResourceGenerator {
 	return CompositeResourceGenerator{
 		AdminProxyGenerator{},
 		PrometheusEndpointGenerator{},
+		InboundGatewayGenerator{},
 		// TODO(jpeach) TransparentProxyGenerator{},
 		// TODO(jpeach) InboundProxyGenerator{},
 		// TODO(jpeach) OutboundProxyGenerator{},

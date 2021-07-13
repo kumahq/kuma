@@ -11,6 +11,32 @@ type ListenerConfigurer interface {
 	Configure(listener *envoy_listener.Listener) error
 }
 
+// ListenerConfigureFunc adapts a configuration function to the
+// ListenerConfigurer interface.
+type ListenerConfigureFunc func(listener *envoy_listener.Listener) error
+
+// Configure ...
+func (f ListenerConfigureFunc) Configure(listener *envoy_listener.Listener) error {
+	if f != nil {
+		return f(listener)
+	}
+
+	return nil
+}
+
+// ListenerMustConfigureFunc adapts a configuration function that never
+// fails to the ListenerConfigurer interface.
+type ListenerMustConfigureFunc func(listener *envoy_listener.Listener)
+
+// Configure ...
+func (f ListenerMustConfigureFunc) Configure(listener *envoy_listener.Listener) error {
+	if f != nil {
+		f(listener)
+	}
+
+	return nil
+}
+
 // FilterChainConfigurer is responsible for configuring a single aspect of the entire Envoy filter chain,
 // such as TcpProxy filter, RBAC filter, access log, etc.
 type FilterChainConfigurer interface {

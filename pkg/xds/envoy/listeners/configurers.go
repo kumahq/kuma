@@ -1,6 +1,7 @@
 package listeners
 
 import (
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -9,6 +10,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func GrpcStats() FilterChainBuilderOpt {
@@ -302,5 +304,21 @@ func DNS(vips map[string]string, emptyDnsPort uint32) ListenerBuilderOpt {
 			VIPs:         vips,
 			EmptyDNSPort: emptyDnsPort,
 		})
+	})
+}
+
+func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {
+	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+		config.AddV3(v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
+			l.PerConnectionBufferLimitBytes = wrapperspb.UInt32(bytes)
+		}))
+	})
+}
+
+func EnableReusePort(enable bool) ListenerBuilderOpt {
+	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+		config.AddV3(v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
+			l.ReusePort = enable
+		}))
 	})
 }
