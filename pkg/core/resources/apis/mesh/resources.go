@@ -111,6 +111,96 @@ func init() {
 }
 
 const (
+	DataplaneType model.ResourceType = "Dataplane"
+)
+
+var _ model.Resource = &DataplaneResource{}
+
+type DataplaneResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.Dataplane
+}
+
+func NewDataplaneResource() *DataplaneResource {
+	return &DataplaneResource{
+		Spec: &mesh_proto.Dataplane{},
+	}
+}
+
+func (t *DataplaneResource) GetType() model.ResourceType {
+	return DataplaneType
+}
+
+func (t *DataplaneResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *DataplaneResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *DataplaneResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.Dataplane)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		t.Spec = protoType
+		return nil
+	}
+}
+
+func (t *DataplaneResource) Scope() model.ResourceScope {
+
+	return model.ScopeMesh
+
+}
+
+var _ model.ResourceList = &DataplaneResourceList{}
+
+type DataplaneResourceList struct {
+	Items      []*DataplaneResource
+	Pagination model.Pagination
+}
+
+func (l *DataplaneResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *DataplaneResourceList) GetItemType() model.ResourceType {
+	return DataplaneType
+}
+
+func (l *DataplaneResourceList) NewItem() model.Resource {
+	return NewDataplaneResource()
+}
+
+func (l *DataplaneResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*DataplaneResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*DataplaneResource)(nil), r)
+	}
+}
+
+func (l *DataplaneResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+func init() {
+	registry.RegisterType(NewDataplaneResource())
+	registry.RegistryListType(&DataplaneResourceList{})
+}
+
+const (
 	DataplaneInsightType model.ResourceType = "DataplaneInsight"
 )
 
@@ -479,6 +569,104 @@ func (l *FaultInjectionResourceList) GetPagination() *model.Pagination {
 func init() {
 	registry.RegisterType(NewFaultInjectionResource())
 	registry.RegistryListType(&FaultInjectionResourceList{})
+}
+
+const (
+	HealthCheckType model.ResourceType = "HealthCheck"
+)
+
+var _ model.Resource = &HealthCheckResource{}
+
+type HealthCheckResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.HealthCheck
+}
+
+func NewHealthCheckResource() *HealthCheckResource {
+	return &HealthCheckResource{
+		Spec: &mesh_proto.HealthCheck{},
+	}
+}
+
+func (t *HealthCheckResource) GetType() model.ResourceType {
+	return HealthCheckType
+}
+
+func (t *HealthCheckResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *HealthCheckResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *HealthCheckResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *HealthCheckResource) Sources() []*mesh_proto.Selector {
+	return t.Spec.GetSources()
+}
+
+func (t *HealthCheckResource) Destinations() []*mesh_proto.Selector {
+	return t.Spec.GetDestinations()
+}
+
+func (t *HealthCheckResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.HealthCheck)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		t.Spec = protoType
+		return nil
+	}
+}
+
+func (t *HealthCheckResource) Scope() model.ResourceScope {
+
+	return model.ScopeMesh
+
+}
+
+var _ model.ResourceList = &HealthCheckResourceList{}
+
+type HealthCheckResourceList struct {
+	Items      []*HealthCheckResource
+	Pagination model.Pagination
+}
+
+func (l *HealthCheckResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *HealthCheckResourceList) GetItemType() model.ResourceType {
+	return HealthCheckType
+}
+
+func (l *HealthCheckResourceList) NewItem() model.Resource {
+	return NewHealthCheckResource()
+}
+
+func (l *HealthCheckResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*HealthCheckResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*HealthCheckResource)(nil), r)
+	}
+}
+
+func (l *HealthCheckResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+func init() {
+	registry.RegisterType(NewHealthCheckResource())
+	registry.RegistryListType(&HealthCheckResourceList{})
 }
 
 const (
@@ -1712,6 +1900,100 @@ func (l *ZoneIngressResourceList) GetPagination() *model.Pagination {
 func init() {
 	registry.RegisterType(NewZoneIngressResource())
 	registry.RegistryListType(&ZoneIngressResourceList{})
+}
+
+const (
+	ZoneIngressInsightType model.ResourceType = "ZoneIngressInsight"
+)
+
+var _ model.Resource = &ZoneIngressInsightResource{}
+
+type ZoneIngressInsightResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.ZoneIngressInsight
+}
+
+func NewZoneIngressInsightResource() *ZoneIngressInsightResource {
+	return &ZoneIngressInsightResource{
+		Spec: &mesh_proto.ZoneIngressInsight{},
+	}
+}
+
+func (t *ZoneIngressInsightResource) GetType() model.ResourceType {
+	return ZoneIngressInsightType
+}
+
+func (t *ZoneIngressInsightResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *ZoneIngressInsightResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *ZoneIngressInsightResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *ZoneIngressInsightResource) Validate() error {
+	return nil
+}
+
+func (t *ZoneIngressInsightResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.ZoneIngressInsight)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		t.Spec = protoType
+		return nil
+	}
+}
+
+func (t *ZoneIngressInsightResource) Scope() model.ResourceScope {
+
+	return model.ScopeGlobal
+
+}
+
+var _ model.ResourceList = &ZoneIngressInsightResourceList{}
+
+type ZoneIngressInsightResourceList struct {
+	Items      []*ZoneIngressInsightResource
+	Pagination model.Pagination
+}
+
+func (l *ZoneIngressInsightResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *ZoneIngressInsightResourceList) GetItemType() model.ResourceType {
+	return ZoneIngressInsightType
+}
+
+func (l *ZoneIngressInsightResourceList) NewItem() model.Resource {
+	return NewZoneIngressInsightResource()
+}
+
+func (l *ZoneIngressInsightResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*ZoneIngressInsightResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*ZoneIngressInsightResource)(nil), r)
+	}
+}
+
+func (l *ZoneIngressInsightResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+func init() {
+	registry.RegisterType(NewZoneIngressInsightResource())
+	registry.RegistryListType(&ZoneIngressInsightResourceList{})
 }
 
 const (
