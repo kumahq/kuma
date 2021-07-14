@@ -69,14 +69,6 @@ rules:
 - apiGroups:
   - kuma.io
   resources:
-  - proxytemplates/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - kuma.io
-  resources:
   - retries
   verbs:
   - get
