@@ -71,9 +71,8 @@ kumactl install transparent-proxy [flags]
       --kuma-cp-ip ip                                                                   the IP address of the Kuma CP which exposes the DNS service on port 53. (default 0.0.0.0)
       --kuma-dp-uid string                                                              the UID of the user that will run kuma-dp
       --kuma-dp-user string                                                             the user that will run kuma-dp
-      --modify-iptables                                                                 modify the host iptables to redirect the traffic to Envoy (default true)
-      --redirect-all-dns-traffic                                                        redirect all DNS requests to a specified port. Implies --redirect-dns.
-      --redirect-dns                                                                    redirect all DNS requests to the servers in /etc/resolv.conf to a specified port
+      --redirect-all-dns-traffic                                                        redirect all DNS requests to a specified port
+      --redirect-dns                                                                    redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port
       --redirect-dns-port string                                                        the port where the DNS agent is listening (default "15053")
       --redirect-dns-upstream-target-chain string                                       (optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care. (default "RETURN")
       --redirect-inbound                                                                redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies. (default true)
