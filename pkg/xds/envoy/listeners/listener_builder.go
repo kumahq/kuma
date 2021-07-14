@@ -59,7 +59,7 @@ type ListenerBuilderConfig struct {
 	ConfigurersV3 []v3.ListenerConfigurer
 }
 
-// Add appends a given ListenerConfigurer to the end of the chain.
+// AddV3 appends a given ListenerConfigurer to the end of the chain.
 func (c *ListenerBuilderConfig) AddV3(configurer v3.ListenerConfigurer) {
 	c.ConfigurersV3 = append(c.ConfigurersV3, configurer)
 }
@@ -68,5 +68,15 @@ func (c *ListenerBuilderConfig) AddV3(configurer v3.ListenerConfigurer) {
 type ListenerBuilderOptFunc func(config *ListenerBuilderConfig)
 
 func (f ListenerBuilderOptFunc) ApplyTo(config *ListenerBuilderConfig) {
-	f(config)
+	if f != nil {
+		f(config)
+	}
+}
+
+// AddListenerConfigurer produces an option that applies the given
+// configurer to the listener.
+func AddListenerConfigurer(c v3.ListenerConfigurer) ListenerBuilderOpt {
+	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+		config.AddV3(c)
+	})
 }
