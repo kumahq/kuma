@@ -33,7 +33,6 @@ import (
 const (
 	// serviceAccountTokenMountPath is a well-known location where Kubernetes mounts a ServiceAccount token.
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
-	datadogMountPath             = "/var/run/datadog"
 )
 
 var log = core.Log.WithName("injector")
@@ -85,7 +84,22 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	if pod.Spec.Containers == nil {
 		pod.Spec.Containers = []kube_core.Container{}
 	}
-	container, err := i.NewSidecarContainer(pod, ns)
+
+	mount_dir, need_dd_mount := datadogHostMountDir(pod, ns)
+	if need_dd_mount {
+		pod.Spec.Volumes = []kube_core.Volume{
+			kube_core.Volume{
+				Name: "datadog-vol",
+				VolumeSource: kube_core.VolumeSource{
+					HostPath: &kube_core.HostPathVolumeSource{
+						Path: mount_dir,
+					},
+				},
+			},
+		}
+	}
+
+	container, err := i.NewSidecarContainer(pod, ns, need_dd_mount)
 	if err != nil {
 		return err
 	}
@@ -167,6 +181,16 @@ func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
 	return false
 }
 
+func datadogHostMountDir(pod *kube_core.Pod, ns *kube_core.Namespace) (string, bool) {
+	if path, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaDatadogSocketHostPath); exist {
+		return path, true
+	}
+	if path, exist := metadata.Annotations(ns.Annotations).GetString(metadata.KumaDatadogSocketHostPath); exist {
+		return path, true
+	}
+	return "", false
+}
+
 func meshName(pod *kube_core.Pod, ns *kube_core.Namespace) string {
 	if mesh, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
 		return mesh
@@ -202,7 +226,7 @@ func (i *KumaInjector) namespaceFor(pod *kube_core.Pod) (*kube_core.Namespace, e
 	return ns, nil
 }
 
-func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Namespace) (kube_core.Container, error) {
+func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Namespace, need_dd_mount bool) (kube_core.Container, error) {
 	mesh := meshName(pod, ns)
 	env, err := i.sidecarEnvVars(mesh, pod.GetAnnotations())
 	if err != nil {
@@ -265,7 +289,7 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 		// ServiceAccount admission plugin is called only once, prior to any mutating web hook.
 		// That's why it is a responsibility of every mutating web hook to copy
 		// ServiceAccount volume mount into containers it creates.
-		VolumeMounts: i.NewVolumeMounts(pod),
+		VolumeMounts: i.NewVolumeMounts(pod, need_dd_mount),
 	}, nil
 }
 
@@ -389,31 +413,24 @@ func (i *KumaInjector) sidecarEnvVars(mesh string, podAnnotations map[string]str
 	return result, nil
 }
 
-func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) []kube_core.VolumeMount {
-	volumeMounts := []kube_core.VolumeMount{}
+func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod, need_dd_mount bool) []kube_core.VolumeMount {
+	var volumeMounts []kube_core.VolumeMount
 	if tokenVolumeMount := i.FindServiceAccountToken(pod); tokenVolumeMount != nil {
 		volumeMounts = append(volumeMounts, *tokenVolumeMount)
 	}
-	if datadogVolumeMount := i.FindDatadogMountPath(pod); datadogVolumeMount != nil {
-		volumeMounts = append(volumeMounts, *datadogVolumeMount)
-	}
 
-	if len(volumeMounts) < 1 {
-		return nil
+	if need_dd_mount {
+		volumeMounts = append(volumeMounts, *i.buildDatadogVolumeMount())
 	}
 
 	return volumeMounts
 }
 
-func (i *KumaInjector) FindDatadogMountPath(pod *kube_core.Pod) *kube_core.VolumeMount {
-	for i := range pod.Spec.Containers {
-		for j := range pod.Spec.Containers[i].VolumeMounts {
-			if pod.Spec.Containers[i].VolumeMounts[j].MountPath == datadogMountPath {
-				return &pod.Spec.Containers[i].VolumeMounts[j]
-			}
-		}
+func (i *KumaInjector) buildDatadogVolumeMount() *kube_core.VolumeMount {
+	return &kube_core.VolumeMount{
+		Name:      "datadog-vol",
+		MountPath: "/datadog-mount",
 	}
-	return nil
 }
 
 func (i *KumaInjector) FindServiceAccountToken(pod *kube_core.Pod) *kube_core.VolumeMount {

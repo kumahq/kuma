@@ -89,7 +89,11 @@ func (t TracingProxyGenerator) datadogCluster(backend *mesh_proto.TracingBackend
 	clusterName := names.GetTracingClusterName(backend.Name)
 
 	if strings.HasPrefix(cfg.Address, "unix:") {
-		socket_path := strings.TrimPrefix(cfg.Address, "unix:")
+		prefix := ""
+		if cfg.HostVolumeRelative {
+			prefix = "/datadog-mount"
+		}
+		socket_path := fmt.Sprintf("%s/%s", prefix, strings.TrimPrefix(cfg.Address, "unix:"))
 		cluster, err = clusters.NewClusterBuilder(apiVersion).
 			Configure(clusters.StaticClusterUnixSocket(clusterName, socket_path)).
 			Build()
