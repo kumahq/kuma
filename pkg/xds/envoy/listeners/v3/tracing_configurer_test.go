@@ -114,8 +114,7 @@ var _ = Describe("TracingConfigurer", func() {
 				Name: "datadog",
 				Type: mesh_proto.TracingDatadogType,
 				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
-					Address: "1.1.1.1",
-					Port:    1111,
+					Address: "1.1.1.1:1234",
 				}),
 			},
 			expected: `
