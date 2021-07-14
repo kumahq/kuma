@@ -94,4 +94,29 @@ var _ = Describe("kumactl install tracing", func() {
 			goldenFile: "install-transparent-proxy.overrides.golden.txt",
 		}),
 	)
+
+	DescribeTable("should return error",
+		func(given testCase) {
+			// given
+			rootCmd := cmd.DefaultRootCmd()
+			rootCmd.SetArgs(append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...))
+			rootCmd.SetOut(stdout)
+			rootCmd.SetErr(stderr)
+
+			// when
+			err := rootCmd.Execute()
+			// then
+			Expect(err).To(HaveOccurred())
+			// and
+			Expect(stderr.String()).To(ContainSubstring("one of --redirect-dns or --redirect-all-dns-traffic should be specified"))
+		},
+		Entry("should generate defaults with username", testCase{
+			extraArgs: []string{
+				"--kuma-dp-user", "root",
+				"--redirect-dns",
+				"--redirect-all-dns-traffic",
+			},
+			goldenFile: "install-transparent-proxy.defaults.golden.txt",
+		}),
+	)
 })
