@@ -57,6 +57,7 @@ type RootContext struct {
 	InstallDemoContext                  install_context.InstallDemoContext
 	InstallGatewayKongContext           install_context.InstallGatewayKongContext
 	InstallGatewayKongEnterpriseContext install_context.InstallGatewayKongEnterpriseContext
+	InstallTracingContext               install_context.InstallTracingContext
 }
 
 func DefaultRootContext() *RootContext {
@@ -97,6 +98,7 @@ func DefaultRootContext() *RootContext {
 		InstallDemoContext:                  install_context.DefaultInstallDemoContext(),
 		InstallGatewayKongContext:           install_context.DefaultInstallGatewayKongContext(),
 		InstallGatewayKongEnterpriseContext: install_context.DefaultInstallGatewayKongEnterpriseContext(),
+		InstallTracingContext:               install_context.DefaultInstallTracingContext(),
 	}
 }
 
