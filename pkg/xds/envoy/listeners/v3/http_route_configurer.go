@@ -18,7 +18,6 @@ type HttpStaticRouteConfigurer struct {
 
 var _ FilterChainConfigurer = &HttpStaticRouteConfigurer{}
 
-// Configure ...
 func (c *HttpStaticRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	routeConfig, err := c.Builder.Build()
 	if err != nil {
@@ -33,7 +32,7 @@ func (c *HttpStaticRouteConfigurer) Configure(filterChain *envoy_listener.Filter
 	})
 }
 
-// HttpDynamicRouteConfigurer configures the HTTPconnectionManager in the
+// HttpDynamicRouteConfigurer configures the HttpconnectionManager in the
 // filter chain to accept its routes dynamically via ADS.
 type HttpDynamicRouteConfigurer struct {
 	// RouteName is the globally unique name for the RouteConfiguration
@@ -43,7 +42,6 @@ type HttpDynamicRouteConfigurer struct {
 
 var _ FilterChainConfigurer = &HttpDynamicRouteConfigurer{}
 
-// Configure ...
 func (c *HttpDynamicRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	return UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
 		hcm.RouteSpecifier = &envoy_hcm.HttpConnectionManager_Rds{
@@ -69,7 +67,6 @@ type HttpScopedRouteConfigurer struct {
 
 var _ FilterChainConfigurer = &HttpScopedRouteConfigurer{}
 
-// Configure ...
 func (c *HttpScopedRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	return errors.New("scoped routes not implemented")
 }
