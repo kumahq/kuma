@@ -62,7 +62,7 @@ const (
 	KumaTrafficExcludeInboundPorts  = "traffic.kuma.io/exclude-inbound-ports"
 	KumaTrafficExcludeOutboundPorts = "traffic.kuma.io/exclude-outbound-ports"
 
-	//KumaDatadogSocketHostPath  is the name of a directory on host to
+	// KumaDatadogSocketHostPath  is the name of a directory on host to
 	// mount into envoy container which holds path to Datadog unix domain socket
 	KumaDatadogSocketHostPath = "datadog.tracing.kuma.io/socket-host-path"
 )
