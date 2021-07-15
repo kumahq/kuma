@@ -32,7 +32,7 @@ func (c *HttpStaticRouteConfigurer) Configure(filterChain *envoy_listener.Filter
 	})
 }
 
-// HttpDynamicRouteConfigurer configures the HttpconnectionManager in the
+// HttpDynamicRouteConfigurer configures the HttpConnectionManager in the
 // filter chain to accept its routes dynamically via ADS.
 type HttpDynamicRouteConfigurer struct {
 	// RouteName is the globally unique name for the RouteConfiguration
