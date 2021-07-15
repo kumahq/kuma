@@ -395,8 +395,8 @@ type DatadogTracingBackendConfig struct {
 
 	// Address of datadog collector. Either host:port or unix:/path/to/socket
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	// If true, when using unix domain socket, path is relative to root of volume mounted via datadog.tracing.kuma.io/socket-host-path.
-	// Default false.
+	// If true, when using unix domain socket, path is relative to root of volume
+	// mounted via datadog.tracing.kuma.io/socket-host-path. Default false.
 	HostVolumeRelative bool `protobuf:"varint,2,opt,name=hostVolumeRelative,proto3" json:"hostVolumeRelative,omitempty"`
 }
 
