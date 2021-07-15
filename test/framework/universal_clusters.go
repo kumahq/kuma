@@ -47,6 +47,10 @@ func (cs *UniversalClusters) WithTimeout(timeout time.Duration) Cluster {
 	return cs
 }
 
+func (cs *UniversalClusters) Verbose() bool {
+	return cs.verbose
+}
+
 func (cs *UniversalClusters) WithRetries(retries int) Cluster {
 	for _, c := range cs.clusters {
 		c.WithRetries(retries)

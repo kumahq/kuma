@@ -48,7 +48,7 @@ var _ = Describe("VIPOutbounds", func() {
 		for i := 1; i <= 5; i++ {
 			service := "service-" + strconv.Itoa(i)
 			vip := fmt.Sprintf("240.0.0.%d", i)
-			vipList[service] = vip
+			vipList[vips.NewServiceEntry(service)] = vip
 
 			dataplanes.Items = append(dataplanes.Items, &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
@@ -104,8 +104,8 @@ var _ = Describe("VIPOutbounds", func() {
 
 		// given
 		vipList := vips.List{
-			"service-a": "240.0.0.1",
-			"service-b": "240.0.0.2",
+			vips.NewServiceEntry("service-a"): "240.0.0.1",
+			vips.NewServiceEntry("service-b"): "240.0.0.2",
 		}
 		services := []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 			{
@@ -171,7 +171,7 @@ var _ = Describe("VIPOutbounds", func() {
 		for i := 1; i <= 5; i++ {
 			service := "service-" + strconv.Itoa(i)
 			vip := fmt.Sprintf("240.0.0.%d", i)
-			vipList[service] = vip
+			vipList[vips.NewServiceEntry(service)] = vip
 
 			otherDataplanes = append(otherDataplanes, &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
@@ -229,9 +229,9 @@ var _ = Describe("VIPOutbounds", func() {
 				},
 			},
 		}
-		vipList["first-external-service"] = "240.0.0.6"
-		vipList["second-external-service"] = "240.0.0.7"
-		vipList["third-external-service"] = "240.0.0.8"
+		vipList[vips.NewServiceEntry("first-external-service")] = "240.0.0.6"
+		vipList[vips.NewServiceEntry("second-external-service")] = "240.0.0.7"
+		vipList[vips.NewServiceEntry("third-external-service")] = "240.0.0.8"
 
 		actual := &mesh_proto.Dataplane_Networking{}
 		actual.Outbound = dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, nil, vipList, externalServices)
@@ -299,10 +299,10 @@ var _ = Describe("VIPOutbounds", func() {
 		}
 
 		vipList := vips.List{
-			"old-ingress-svc-1": "240.0.0.0",
-			"old-ingress-svc-2": "240.0.0.1",
-			"new-ingress-svc-1": "240.0.0.2",
-			"new-ingress-svc-2": "240.0.0.3",
+			vips.NewServiceEntry("old-ingress-svc-1"): "240.0.0.0",
+			vips.NewServiceEntry("old-ingress-svc-2"): "240.0.0.1",
+			vips.NewServiceEntry("new-ingress-svc-1"): "240.0.0.2",
+			vips.NewServiceEntry("new-ingress-svc-2"): "240.0.0.3",
 		}
 
 		otherDataplanes := []*core_mesh.DataplaneResource{{

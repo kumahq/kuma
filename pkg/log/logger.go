@@ -69,7 +69,11 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 	case OffLevel:
 		return zap.NewNop()
 	case DebugLevel:
-		lvl = zap.NewAtomicLevelAt(zap.DebugLevel)
+		// The value we pass here is the most verbose level that
+		// will end up being emitted through the `V(level int)`
+		// accessor. Passing -10 ensures that levels up to `V(10)`
+		// will work, which seems like plenty.
+		lvl = zap.NewAtomicLevelAt(-10)
 		opts = append(opts, zap.Development(), zap.AddStacktrace(zap.ErrorLevel))
 	default:
 		lvl = zap.NewAtomicLevelAt(zap.InfoLevel)

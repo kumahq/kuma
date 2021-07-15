@@ -296,6 +296,7 @@ type Cluster interface {
 	DeleteDeployment(name string) error
 	WithTimeout(timeout time.Duration) Cluster
 	WithRetries(retries int) Cluster
+	Verbose() bool
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions

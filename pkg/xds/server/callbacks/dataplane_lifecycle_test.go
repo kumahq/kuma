@@ -24,7 +24,6 @@ import (
 var _ = Describe("Dataplane Lifecycle", func() {
 
 	var resManager core_manager.ResourceManager
-	var dpLifecycle *DataplaneLifecycle
 	var callbacks envoy_server.Callbacks
 	var shutdown chan struct{}
 
@@ -32,8 +31,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		store := memory.NewStore()
 		resManager = core_manager.NewResourceManager(store)
 		shutdown = make(chan struct{})
-		dpLifecycle = NewDataplaneLifecycle(resManager, shutdown)
-		callbacks = util_xds_v2.AdaptCallbacks(dpLifecycle)
+		callbacks = util_xds_v2.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(NewDataplaneLifecycle(resManager, shutdown)))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -84,7 +82,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		dpLifecycle.OnStreamClosed(streamId)
+		callbacks.OnStreamClosed(streamId)
 
 		// then dataplane should be deleted
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
@@ -130,7 +128,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		dpLifecycle.OnStreamClosed(streamId)
+		callbacks.OnStreamClosed(streamId)
 
 		// then DP is not deleted because it was not carried in metadata
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
@@ -180,7 +178,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 		close(shutdown)
 		// when
-		dpLifecycle.OnStreamClosed(streamId)
+		callbacks.OnStreamClosed(streamId)
 
 		// then DP is not deleted because Kuma CP was shutting down
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))

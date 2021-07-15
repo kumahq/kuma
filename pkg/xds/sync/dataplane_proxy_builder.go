@@ -39,7 +39,7 @@ type DataplaneProxyBuilder struct {
 	apiVersion envoy.APIVersion
 }
 
-func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64, meshCtx *xds_context.MeshContext) (*xds.Proxy, error) {
+func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, meshCtx *xds_context.MeshContext) (*xds.Proxy, error) {
 	ctx := context.Background()
 
 	dp, err := p.resolveDataplane(ctx, key)
@@ -61,7 +61,7 @@ func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64
 		Id:         xds.FromResourceKey(key),
 		APIVersion: p.apiVersion,
 		Dataplane:  dp,
-		Metadata:   p.MetadataTracker.Metadata(streamId),
+		Metadata:   p.MetadataTracker.Metadata(key),
 		Routing:    *routing,
 		Policies:   *matchedPolicies,
 	}

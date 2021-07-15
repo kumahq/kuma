@@ -88,6 +88,10 @@ func (c *K8sCluster) WithTimeout(timeout time.Duration) Cluster {
 	return c
 }
 
+func (c *K8sCluster) Verbose() bool {
+	return c.verbose
+}
+
 func (c *K8sCluster) WithRetries(retries int) Cluster {
 	c.defaultRetries = retries
 

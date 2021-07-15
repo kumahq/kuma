@@ -5,6 +5,8 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
+	"github.com/kumahq/kuma/pkg/dns/vips"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -51,16 +53,21 @@ func (g DNSGenerator) computeVIPs(ctx xds_context.Context, proxy *core_xds.Proxy
 	domainsByIPs := ctx.ControlPlane.DNSResolver.GetVIPs().FQDNsByIPs()
 	meshedVips := map[string]string{}
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
-		if domain, ok := domainsByIPs[outbound.Address]; ok {
-			// add regular .mesh domain
-			meshedVips[domain+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
-			meshedVips[strings.ReplaceAll(domain, "_", ".")+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
-			// add hostname from address in external service
-			endpoints := proxy.Routing.OutboundTargets[outbound.Tags[mesh_proto.ServiceTag]]
-			for _, endpoint := range endpoints {
-				if govalidator.IsDNSName(endpoint.Target) {
-					if endpoint.ExternalService != nil && endpoint.Target != "" {
-						meshedVips[endpoint.Target] = outbound.Address
+		if entry, ok := domainsByIPs[outbound.Address]; ok {
+			switch entry.Type {
+			case vips.Service:
+				domain := outbound.Tags[mesh_proto.ServiceTag]
+				// add regular .mesh domain
+				meshedVips[domain+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
+				meshedVips[strings.ReplaceAll(domain, "_", ".")+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
+			case vips.Host:
+				// add hostname from address in external service
+				endpoints := proxy.Routing.OutboundTargets[outbound.Tags[mesh_proto.ServiceTag]]
+				for _, endpoint := range endpoints {
+					if govalidator.IsDNSName(endpoint.Target) {
+						if endpoint.ExternalService != nil && endpoint.Target != "" {
+							meshedVips[endpoint.Target] = outbound.Address
+						}
 					}
 				}
 			}

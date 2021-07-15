@@ -40,7 +40,7 @@ var _ = Describe("kumactl completion", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr.Bytes()).To(BeNil())
+			Expect(stderr.String()).To(BeEmpty())
 
 			// and
 			actual := stdout.Bytes()

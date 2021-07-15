@@ -8,6 +8,7 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
 	"github.com/kumahq/kuma/pkg/core"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	v3 "github.com/kumahq/kuma/pkg/core/xds/v3"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -52,11 +53,11 @@ func RegisterXDS(
 	callbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
-		util_xds_v3.AdaptCallbacks(connectionInfoTracker),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(connectionInfoTracker)),
 		util_xds_v3.AdaptCallbacks(authCallbacks),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory.New)),
-		util_xds_v3.AdaptCallbacks(metadataTracker),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.NewDataplaneLifecycle(rt.ResourceManager(), rt.ShutdownCh())),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory.New))),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(metadataTracker)),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneLifecycle(rt.ResourceManager(), rt.ShutdownCh()))),
 		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt)),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff)),
 		newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
@@ -95,14 +96,16 @@ func DefaultIngressReconciler(rt core_runtime.Runtime, xdsContext v3.XdsContext)
 }
 
 func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) xds_callbacks.DataplaneStatusTracker {
-	return xds_callbacks.NewDataplaneStatusTracker(rt, func(accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
-		return xds_callbacks.NewDataplaneInsightSink(
-			accessor,
-			func() *time.Ticker {
-				return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval)
-			},
-			rt.Config().XdsServer.DataplaneStatusFlushInterval/10,
-			xds_callbacks.NewDataplaneInsightStore(rt.ResourceManager()),
-		)
-	})
+	return xds_callbacks.NewDataplaneStatusTracker(rt,
+		func(dataplaneType core_model.ResourceType, accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
+			return xds_callbacks.NewDataplaneInsightSink(
+				dataplaneType,
+				accessor,
+				func() *time.Ticker {
+					return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval)
+				},
+				rt.Config().XdsServer.DataplaneStatusFlushInterval/10,
+				xds_callbacks.NewDataplaneInsightStore(rt.ResourceManager()),
+			)
+		})
 }
