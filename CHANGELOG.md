@@ -4,7 +4,7 @@
 > Released on 2021/07/16
 
 Changes:
-* feat: Add datadog traffic tracing [#2269](https://github.com//kumahq/kuma/pull/2247)
+* feat: add datadog traffic tracing [#2269](https://github.com//kumahq/kuma/pull/2247)
 * refactor: add kumactl install tracing context [#2343](https://github.com//kumahq/kuma/pull/2343)
 * chore: improve kumactl install transparent-proxy flags description, add extra validation [#2352](https://github.com//kumahq/kuma/pull/2352)
 * fix: broken SDS auth and XDS generation on rapid DP restarts [#2342](https://github.com//kumahq/kuma/pull/2342)
