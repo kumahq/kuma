@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -167,9 +166,10 @@ func validateDatadog(cfgStr *structpb.Struct) validators.ValidationError {
 		verr.AddViolation("address", "cannot be empty")
 	}
 
-	if elms := strings.Split(cfg.Address, ":"); len(elms) < 2 {
-		verr.AddViolation("address", "must be of format address:port")
-	} else if port, err := strconv.Atoi(elms[len(elms)-1]); err != nil || port < 1 || port > 0xFFFF {
+	host, port_str, err := net.SplitHostPort(cfg.Address)
+	if host == "" || port_str == "" || err != nil {
+		verr.AddViolation("address", "has to be in format of HOST:PORT")
+	} else if port, err := strconv.Atoi(port_str); err != nil || port < 1 || port > 0xFFFF {
 		verr.AddViolation("address", "port must be number in range 1-65535")
 	}
 
