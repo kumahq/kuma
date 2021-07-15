@@ -61,6 +61,10 @@ var _ = Describe("Mesh", func() {
                 type: zipkin
                 conf:
                   url: http://zipkin.local:9411/v2/spans
+              - name: datadog-backend
+                type: datadog
+                conf:
+                  address: 127.0.0.1:3000
               defaultBackend: zipkin-us
             metrics:
               enabledBackend: prom-1
@@ -248,6 +252,59 @@ var _ = Describe("Mesh", func() {
                 - field: logging.defaultBackend
                   message: has to be set to one of the logging backend in mesh`,
 			}),
+			Entry("datadog tracing with empty address", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name: datadog-trace
+                    type: datadog
+                    conf:
+                      address:`,
+				expected: `
+                violations:
+                - field: tracing.backends[0].config.address
+                  message: cannot be empty`,
+			}),
+			Entry("datadog tracing with missing port in address", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name: datadog-trace
+                    type: datadog
+                    conf:
+                      address: 127.0.0.1`,
+				expected: `
+                violations:
+                - field: tracing.backends[0].config.address
+                  message: has to be in format of HOST:PORT`,
+			}),
+			Entry("datadog tracing with invalid port", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name: datadog-tracing
+                    type: datadog
+                    conf:
+                      address: 127.0.0.1:notport`,
+				expected: `
+                violations:
+                - field: tracing.backends[0].config.address
+                  message: port must be number in range 1-65535`,
+			}),
+			Entry("datadog tracing with port number out of range", testCase{
+				mesh: `
+                tracing:
+                  backends:
+                  - name: datadog-tracing
+                    type: datadog
+                    conf:
+                      address: 127.0.0.1:65536`,
+				expected: `
+                violations:
+                - field: tracing.backends[0].config.address
+                  message: port must be number in range 1-65535`,
+			}),
+
 			Entry("tracing backend with empty name", testCase{
 				mesh: `
                 tracing:

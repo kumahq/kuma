@@ -164,6 +164,7 @@ func validateDatadog(cfgStr *structpb.Struct) validators.ValidationError {
 
 	if cfg.Address == "" {
 		verr.AddViolation("address", "cannot be empty")
+		return verr
 	}
 
 	host, port_str, err := net.SplitHostPort(cfg.Address)
