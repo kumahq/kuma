@@ -78,7 +78,6 @@ resources:
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
-        '@type': type.googleapis.com/google.protobuf.Empty
-        value: {}
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: inbound:10.0.0.1:10001
     trafficDirection: INBOUND
