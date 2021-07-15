@@ -1,10 +1,9 @@
 package generator
 
 import (
-	"fmt"
+	"net"
 	net_url "net/url"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -83,21 +82,19 @@ func (t TracingProxyGenerator) datadogCluster(backend *mesh_proto.TracingBackend
 		return nil, errors.Wrap(err, "could not convert backend")
 	}
 
-	elms := strings.Split(cfg.Address, ":")
-	if len(elms) < 2 {
+	host, port_str, err := net.SplitHostPort(cfg.Address)
+	if host == "" || port_str == "" || err != nil {
 		return nil, errors.Errorf("invalid Datadog agent address '%s'", cfg.Address)
 	}
-	port_str := elms[len(elms)-1]
+
 	port, err := strconv.ParseUint(port_str, 10, 16)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid Datadog port")
 	}
 
-	address := strings.TrimSuffix(cfg.Address, fmt.Sprintf(":%s", port_str))
-
 	clusterName := names.GetTracingClusterName(backend.Name)
 	cluster, err := clusters.NewClusterBuilder(apiVersion).
-		Configure(clusters.DNSCluster(clusterName, address, uint32(port))).
+		Configure(clusters.DNSCluster(clusterName, host, uint32(port))).
 		Build()
 	if err != nil {
 		return nil, err
