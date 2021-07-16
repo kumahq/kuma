@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## [1.2.2]
+> Released on 2021/07/16
+
+Changes:
+* feat: add datadog traffic tracing [#2269](https://github.com//kumahq/kuma/pull/2247)
+* refactor: add kumactl install tracing context [#2343](https://github.com//kumahq/kuma/pull/2343)
+* chore: improve kumactl install transparent-proxy flags description, add extra validation [#2352](https://github.com//kumahq/kuma/pull/2352)
+* fix: broken SDS auth and XDS generation on rapid DP restarts [#2342](https://github.com//kumahq/kuma/pull/2342)
+* fix: allow verbose log levels [#2351](https://github.com//kumahq/kuma/pull/2351)
+* chore: use resource types for DataplaneInsight tracking [#2324](https://github.com//kumahq/kuma/pull/2324)
+* chore: improve resource manager initialization readability [#2316](https://github.com//kumahq/kuma/pull/2316)
+* chore: upgrade gui to new version [#2340](https://github.com//kumahq/kuma/pull/2340), [#2325](https://github.com//kumahq/kuma/pull/2325), [#2315](https://github.com//kumahq/kuma/pull/2315)
+* fix: allocate a new VIP for ExternalService host [#2302](https://github.com//kumahq/kuma/pull/2302)
+* fix: stop components on leader election lost [#2318](https://github.com//kumahq/kuma/pull/2318)
+* chore: generate system resource wrappers [#2282](https://github.com//kumahq/kuma/pull/2282), [#2311](https://github.com//kumahq/kuma/pull/2311)
+* chore: remove access log V2 [#2301](https://github.com//kumahq/kuma/pull/2301)
+* chore: generate DeepCopy interfaces [#2222](https://github.com//kumahq/kuma/pull/2222)
+* chore: disable log sampling [#2273](https://github.com//kumahq/kuma/pull/2273)
+* chore: upgrade Protocol Buffers [#2244](https://github.com//kumahq/kuma/pull/2244)
+* chore: change default number of insights subscriptions [#2266](https://github.com//kumahq/kuma/pull/2266)
+* chore: make the authentication interface type oblivious [#2271](https://github.com//kumahq/kuma/pull/2271)
+* fix: fix hds disabled on dpserver [#2268](https://github.com//kumahq/kuma/pull/2268)
+ 👍contributed by Bastien Chatelard
+* chore: refactor xDS metadata to store a generic resource [#2264](https://github.com//kumahq/kuma/pull/2264)
+* feat: change KDS max message limit [#2265](https://github.com//kumahq/kuma/pull/2265)
+
 ## [1.2.1]
 > Released on  2021/06/30
 
