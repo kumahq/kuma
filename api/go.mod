@@ -13,7 +13,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.38.0
-	google.golang.org/protobuf v1.27.0
+	google.golang.org/protobuf v1.27.1
 // When running `make generate` in this folder, one can get into errors of missing proto dependecies
 // To solve the issue, uncomment the section below and run `go mod download`
 //github.com/cncf/udpa latest
