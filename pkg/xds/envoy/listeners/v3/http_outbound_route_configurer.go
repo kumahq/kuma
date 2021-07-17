@@ -2,8 +2,6 @@ package v3
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -17,22 +15,17 @@ type HttpOutboundRouteConfigurer struct {
 	DpTags  mesh_proto.MultiValueTagSet
 }
 
+var _ FilterChainConfigurer = &HttpOutboundRouteConfigurer{}
+
 func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	routeConfig, err := envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3).
-		Configure(envoy_routes.CommonRouteConfiguration(envoy_names.GetOutboundRouteName(c.Service))).
-		Configure(envoy_routes.TagsHeader(c.DpTags)).
-		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder(envoy_common.APIV3).
-			Configure(envoy_routes.CommonVirtualHost(c.Service)).
-			Configure(envoy_routes.Routes(c.Routes)))).
-		Build()
-	if err != nil {
-		return err
+	static := HttpStaticRouteConfigurer{
+		Builder: envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3).
+			Configure(envoy_routes.CommonRouteConfiguration(envoy_names.GetOutboundRouteName(c.Service))).
+			Configure(envoy_routes.TagsHeader(c.DpTags)).
+			Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder(envoy_common.APIV3).
+				Configure(envoy_routes.CommonVirtualHost(c.Service)).
+				Configure(envoy_routes.Routes(c.Routes)))),
 	}
 
-	return UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
-		hcm.RouteSpecifier = &envoy_hcm.HttpConnectionManager_RouteConfig{
-			RouteConfig: routeConfig.(*envoy_route.RouteConfiguration),
-		}
-		return nil
-	})
+	return static.Configure(filterChain)
 }
