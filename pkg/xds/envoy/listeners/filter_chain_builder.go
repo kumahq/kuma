@@ -60,7 +60,7 @@ type FilterChainBuilderConfig struct {
 	ConfigurersV3 []v3.FilterChainConfigurer
 }
 
-// Add appends a given FilterChainConfigurer to the end of the chain.
+// AddV3 appends a given FilterChainConfigurer to the end of the chain.
 func (c *FilterChainBuilderConfig) AddV3(configurer v3.FilterChainConfigurer) {
 	c.ConfigurersV3 = append(c.ConfigurersV3, configurer)
 }
@@ -69,5 +69,15 @@ func (c *FilterChainBuilderConfig) AddV3(configurer v3.FilterChainConfigurer) {
 type FilterChainBuilderOptFunc func(config *FilterChainBuilderConfig)
 
 func (f FilterChainBuilderOptFunc) ApplyTo(config *FilterChainBuilderConfig) {
-	f(config)
+	if f != nil {
+		f(config)
+	}
+}
+
+// AddFilterChainConfigurer produces an option that applies the given
+// configurer to the filter chain.
+func AddFilterChainConfigurer(c v3.FilterChainConfigurer) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+		config.AddV3(c)
+	})
 }
