@@ -6,8 +6,6 @@ fmt: fmt/go fmt/proto ## Dev: Run various format tools
 .PHONY: fmt/go
 fmt/go: ## Dev: Run go fmt
 	go fmt $(GOFLAGS) ./...
-	@# apparently, it's not possible to simply use `go fmt ./pkg/plugins/resources/k8s/native/...`
-	$(MAKE) fmt -C pkg/plugins/resources/k8s/native
 
 .PHONY: fmt/proto
 fmt/proto: ## Dev: Run clang-format on .proto files
@@ -16,13 +14,11 @@ fmt/proto: ## Dev: Run clang-format on .proto files
 .PHONY: vet
 vet: ## Dev: Run go vet
 	go vet $(GOFLAGS) ./...
-	@# for consistency with `fmt`
-	$(MAKE) vet -C pkg/plugins/resources/k8s/native
 
 .PHONY: tidy
 tidy:
 	@TOP=$(shell pwd) && \
-	for m in . ./api/ ./pkg/plugins/resources/k8s/native; do \
+	for m in . ./api/ ; do \
 		cd $$m ; \
 		rm go.sum ; \
 		go mod tidy ; \

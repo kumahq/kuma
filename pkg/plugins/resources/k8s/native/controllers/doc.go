@@ -12,3 +12,5 @@ package controllers
 // +kubebuilder:rbac:groups=kuma.io,resources=trafficroutes,verbs=get;list;watch
 
 // +kubebuilder:rbac:groups=kuma.io,resources=retries,verbs=get;list;watch
+
+// +kubebuilder:rbac:groups=kuma.io,resources=proxytemplates,verbs=get;list;watch;create;update;patch;delete
