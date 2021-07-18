@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
@@ -146,7 +145,7 @@ var _ = Describe("Config", func() {
 		Expect(config.Load(filepath.Join("testdata", "valid-config.input.yaml"), &cfg)).Should(Succeed())
 
 		// when
-		cfg.Dataplane.ProxyType = string(mesh_proto.GatewayProxyType)
+		cfg.Dataplane.ProxyType = string("gateway")
 		Expect(cfg.Validate()).ShouldNot(Succeed())
 	})
 
