@@ -36,7 +36,7 @@ coverage: ${COVERAGE_PROFILE}
 
 .PHONY: test/kuma
 test/kuma: # Dev: Run tests for the module github.com/kumahq/kuma
-	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
+	$(GO_TEST) $(GO_TEST_OPTS) --tags=gateway -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 
 .PHONY: test/api
 test/api: \
@@ -71,6 +71,6 @@ ${COVERAGE_INTEGRATION_PROFILE}:
 
 .PHONY: integration
 integration: ${COVERAGE_INTEGRATION_PROFILE} ## Dev: Run integration tests
-	tools/test/run-integration-tests.sh '$(GO_TEST) -race -covermode=atomic -tags=integration -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
+	tools/test/run-integration-tests.sh '$(GO_TEST) -tags=integration,gateway -race -covermode=atomic -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
 	GOFLAGS='${GOFLAGS}' go tool cover -html="$(COVERAGE_INTEGRATION_PROFILE)" -o "$(COVERAGE_INTEGRATION_REPORT_HTML)"
 
