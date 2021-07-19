@@ -282,7 +282,7 @@ jobs:
         command: |
           export PATH="$HOME/go/bin:$PATH"
           export KUMA_UNIVERSAL_IMAGE="${ECR_REGISTRY}/kuma-universal:${TAG}";
-          export E2E_PKG_LIST="./test/e2e/helm";
+          export E2E_PKG_LIST="./test/e2e/helm/...";
           export API_VERSION="<< parameters.api_version >>"
 
           make test/e2e/test \
@@ -290,7 +290,7 @@ jobs:
             KUMA_GLOBAL_IMAGE_TAG="${TAG}" \
             KUMA_CNI_CONF_NAME="10-aws.conflist" \
             KUMA_USE_LOAD_BALANCER=true \
-            KUMA_IN_EKS=true \
+            KUMA_USE_HOSTNAME_INSTEAD_OF_IP=true \
             KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}" \
             KUMA_DEFAULT_RETRIES=60 \
             KUMA_DEFAULT_TIMEOUT="6s"
@@ -526,7 +526,7 @@ jobs:
         command: |
           export PATH="$HOME/go/bin:$PATH"
           export KUMA_UNIVERSAL_IMAGE="${AZURE_ACR_REGISTRY_FULLNAME}/kuma-universal:${TAG}";
-          export E2E_PKG_LIST="./test/e2e/helm";
+          export E2E_PKG_LIST="./test/e2e/helm/...";
           export API_VERSION="<< parameters.api_version >>"
 
           make test/e2e/test \
@@ -1290,18 +1290,18 @@ workflows:
         cron: "0 0 * * 1"
         <<: *master_only_workflow_filters
     jobs:
-    - go_cache: *master_workflow_filters
+    - go_cache: *master_only_workflow_filters
     - build:
-        <<: *master_workflow_filters
+        <<: *master_only_workflow_filters
         requires:
         - go_cache
     - images:
-        <<: *master_workflow_filters
+        <<: *master_only_workflow_filters
         requires:
         - build
         docker_registry: ${ECR_REGISTRY}
     - eks-e2e:
-        <<: *master_workflow_filters
+        <<: *master_only_workflow_filters
         name: test/e2e/eks
         requires:
         - images
