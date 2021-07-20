@@ -56,9 +56,7 @@ var _ = Describe("HttpScopedRouteConfigurer", func() {
 			InboundListener("inbound", "127.0.0.1", 99, xds.SocketAddressProtocolTCP),
 			FilterChain(NewFilterChainBuilder(envoy_common.APIV3).Configure(
 				HttpConnectionManager("inbound", false),
-				FilterChainBuilderOptFunc(func(c *FilterChainBuilderConfig) {
-					c.AddV3(&HttpScopedRouteConfigurer{})
-				}),
+				AddFilterChainConfigurer(&HttpScopedRouteConfigurer{}),
 			)),
 		).Build()
 
