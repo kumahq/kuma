@@ -70,7 +70,7 @@ func (d *DataplaneWatchdog) Sync() error {
 		d.proxyTypeSettled = true
 	}
 	switch d.dpType {
-	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
+	case mesh_proto.DataplaneProxyType:
 		return d.syncDataplane()
 	case mesh_proto.IngressProxyType:
 		return d.syncIngress()
@@ -83,7 +83,7 @@ func (d *DataplaneWatchdog) Sync() error {
 func (d *DataplaneWatchdog) Cleanup() error {
 	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
-	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
+	case mesh_proto.DataplaneProxyType:
 		return d.dataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
 		return d.ingressReconciler.Clear(&proxyID)

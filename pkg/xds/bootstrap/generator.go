@@ -95,7 +95,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			return nil, "", err
 		}
 		return b.generateFor(*proxyId, request, "ingress", adminPort)
-	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
+	case mesh_proto.DataplaneProxyType:
 		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
 		if err != nil {
