@@ -572,6 +572,99 @@ func init() {
 }
 
 const (
+	GatewayType model.ResourceType = "Gateway"
+)
+
+var _ model.Resource = &GatewayResource{}
+
+type GatewayResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.Gateway
+}
+
+func NewGatewayResource() *GatewayResource {
+	return &GatewayResource{
+		Spec: &mesh_proto.Gateway{},
+	}
+}
+
+func (t *GatewayResource) GetType() model.ResourceType {
+	return GatewayType
+}
+
+func (t *GatewayResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *GatewayResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *GatewayResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *GatewayResource) Validate() error {
+	return nil
+}
+
+func (t *GatewayResource) Sources() []*mesh_proto.Selector {
+	return t.Spec.GetSources()
+}
+
+func (t *GatewayResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.Gateway)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		t.Spec = protoType
+		return nil
+	}
+}
+
+func (t *GatewayResource) Scope() model.ResourceScope {
+
+	return model.ScopeMesh
+
+}
+
+var _ model.ResourceList = &GatewayResourceList{}
+
+type GatewayResourceList struct {
+	Items      []*GatewayResource
+	Pagination model.Pagination
+}
+
+func (l *GatewayResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *GatewayResourceList) GetItemType() model.ResourceType {
+	return GatewayType
+}
+
+func (l *GatewayResourceList) NewItem() model.Resource {
+	return NewGatewayResource()
+}
+
+func (l *GatewayResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*GatewayResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*GatewayResource)(nil), r)
+	}
+}
+
+func (l *GatewayResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+const (
 	HealthCheckType model.ResourceType = "HealthCheck"
 )
 
