@@ -1,6 +1,9 @@
 package listeners
 
 import (
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -266,4 +269,26 @@ func DNS(vips map[string]string, emptyDnsPort uint32) ListenerBuilderOpt {
 		VIPs:         vips,
 		EmptyDNSPort: emptyDnsPort,
 	})
+}
+
+func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {
+	return AddListenerConfigurer(
+		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
+			l.PerConnectionBufferLimitBytes = wrapperspb.UInt32(bytes)
+		}))
+}
+
+func EnableReusePort(enable bool) ListenerBuilderOpt {
+	return AddListenerConfigurer(
+		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
+			// TODO(jpeach) in Envoy 1.20, this field is deprecated in favor of EnableReusePort.
+			l.ReusePort = enable
+		}))
+}
+
+func EnableFreebind(enable bool) ListenerBuilderOpt {
+	return AddListenerConfigurer(
+		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
+			l.Freebind = wrapperspb.Bool(enable)
+		}))
 }
