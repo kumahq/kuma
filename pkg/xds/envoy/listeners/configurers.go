@@ -207,10 +207,8 @@ func HttpStaticRoute(builder *envoy_routes.RouteConfigurationBuilder) FilterChai
 // HttpDynamicRoute configures the listener filter chain to dynamically request
 // the named RouteConfiguration.
 func HttpDynamicRoute(name string) FilterChainBuilderOpt {
-	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
-		config.AddV3(&v3.HttpDynamicRouteConfigurer{
-			RouteName: name,
-		})
+	return AddFilterChainConfigurer(&v3.HttpDynamicRouteConfigurer{
+		RouteName: name,
 	})
 }
 
