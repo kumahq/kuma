@@ -39,12 +39,11 @@ type ProxyType string
 const (
 	DataplaneProxyType ProxyType = "dataplane"
 	IngressProxyType   ProxyType = "ingress"
-	GatewayProxyType   ProxyType = "gateway"
 )
 
 func (t ProxyType) IsValid() error {
 	switch t {
-	case DataplaneProxyType, IngressProxyType, GatewayProxyType:
+	case DataplaneProxyType, IngressProxyType:
 		return nil
 	}
 	return errors.Errorf("%s is not a valid proxy type", t)
