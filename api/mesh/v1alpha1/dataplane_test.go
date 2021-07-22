@@ -80,7 +80,7 @@ var _ = Describe("Dataplane", func() {
 				// given
 				var pretty bytes.Buffer
 				// when
-				json.Indent(&pretty, actual, "", "  ")
+				Expect(json.Indent(&pretty, actual, "", "  ")).To(Succeed())
 				// and
 				Expect(pretty.String()).To(Equal(given.expected))
 			},
