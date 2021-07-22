@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/kumahq/kuma/pkg/test"
+
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/jsonpb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/config"
-
-	"github.com/kumahq/kuma/pkg/util/net"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/mads"
@@ -67,7 +67,7 @@ var _ = Describe("MADS Server", func() {
 			metrics: m,
 		}
 
-		port, err = net.PickTCPPort("127.0.0.1", 10000, 20000)
+		port, err = test.FindFreePort("127.0.0.1")
 		Expect(err).ToNot(HaveOccurred())
 
 		rt.config.MonitoringAssignmentServer.Port = port
