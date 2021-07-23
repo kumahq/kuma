@@ -1,20 +1,21 @@
-package dns_test
+package topology_test
 
 import (
 	"fmt"
 	"strconv"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/kumahq/kuma/pkg/dns/vips"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/dns"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -72,13 +73,16 @@ var _ = Describe("VIPOutbounds", func() {
 		}
 
 		// when
-		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, nil, vipList, externalServices.Items)
+		domains, outbounds := topology.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, nil, vipList, "mesh", externalServices.Items)
 		// and
 		Expect(outbounds).To(HaveLen(5))
 		// and
 		Expect(outbounds[4].GetTags()[mesh_proto.ServiceTag]).To(Equal("service-5"))
 		// and
-		Expect(outbounds[4].Port).To(Equal(dns.VIPListenPort))
+		Expect(outbounds[4].Port).To(Equal(topology.VIPListenPort))
+		// and
+		Expect(domains).To(HaveLen(5))
+		Expect(domains[4].Domains).To(Equal([]string{"service-5.mesh"}))
 	})
 
 	It("shouldn't add outbounds from other meshes", func() {
@@ -141,13 +145,16 @@ var _ = Describe("VIPOutbounds", func() {
 		}
 
 		// when
-		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, nil, vipList, externalServices.Items)
+		domains, outbounds := topology.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, nil, vipList, "mesh", externalServices.Items)
 		// and
 		Expect(outbounds).To(HaveLen(1))
 		// and
 		Expect(outbounds[0].GetTags()[mesh_proto.ServiceTag]).To(Equal("service-a"))
 		// and
-		Expect(outbounds[0].Port).To(Equal(dns.VIPListenPort))
+		Expect(outbounds[0].Port).To(Equal(topology.VIPListenPort))
+		// and
+		Expect(domains).To(HaveLen(1))
+		Expect(domains[0].Domains).To(Equal([]string{"service-a.mesh"}))
 	})
 
 	It("should preserve ExternalService port", func() {
@@ -233,53 +240,32 @@ var _ = Describe("VIPOutbounds", func() {
 		vipList[vips.NewServiceEntry("second-external-service")] = "240.0.0.7"
 		vipList[vips.NewServiceEntry("third-external-service")] = "240.0.0.8"
 
-		actual := &mesh_proto.Dataplane_Networking{}
-		actual.Outbound = dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, nil, vipList, externalServices)
+		actualVips, actualOutbounds := topology.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, nil, vipList, "mesh", externalServices)
 
-		expected := `
-     outbound:
-      - address: 240.0.0.6
-        port: 1234
-        tags:
-          kuma.io/service: first-external-service
-      - address: 240.0.0.6
-        port: 80
-        tags:
-          kuma.io/service: first-external-service
-      - address: 240.0.0.7
-        port: 4321
-        tags:
-          kuma.io/service: second-external-service
-      - address: 240.0.0.7
-        port: 80
-        tags:
-          kuma.io/service: second-external-service
-      - address: 240.0.0.1
-        port: 80
-        tags:
-          kuma.io/service: service-1
-      - address: 240.0.0.2
-        port: 80
-        tags:
-          kuma.io/service: service-2
-      - address: 240.0.0.3
-        port: 80
-        tags:
-          kuma.io/service: service-3
-      - address: 240.0.0.4
-        port: 80
-        tags:
-          kuma.io/service: service-4
-      - address: 240.0.0.5
-        port: 80
-        tags:
-          kuma.io/service: service-5
-      - address: 240.0.0.8
-        port: 80
-        tags:
-          kuma.io/service: third-external-service
-`
-		Expect(proto.ToYAML(actual)).To(MatchYAML(expected))
+		expectedVips := []xds.VipDomains{
+			{Address: "240.0.0.6", Domains: []string{"first-external-service.mesh"}},
+			{Address: "240.0.0.7", Domains: []string{"second-external-service.mesh"}},
+			{Address: "240.0.0.1", Domains: []string{"service-1.mesh"}},
+			{Address: "240.0.0.2", Domains: []string{"service-2.mesh"}},
+			{Address: "240.0.0.3", Domains: []string{"service-3.mesh"}},
+			{Address: "240.0.0.4", Domains: []string{"service-4.mesh"}},
+			{Address: "240.0.0.5", Domains: []string{"service-5.mesh"}},
+			{Address: "240.0.0.8", Domains: []string{"third-external-service.mesh"}},
+		}
+		Expect(actualVips).To(Equal(expectedVips))
+		expectedOutbounds := []*mesh_proto.Dataplane_Networking_Outbound{
+			{Address: "240.0.0.6", Port: 1234, Tags: map[string]string{mesh_proto.ServiceTag: "first-external-service"}},
+			{Address: "240.0.0.6", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "first-external-service"}},
+			{Address: "240.0.0.7", Port: 4321, Tags: map[string]string{mesh_proto.ServiceTag: "second-external-service"}},
+			{Address: "240.0.0.7", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "second-external-service"}},
+			{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "service-1"}},
+			{Address: "240.0.0.2", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "service-2"}},
+			{Address: "240.0.0.3", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "service-3"}},
+			{Address: "240.0.0.4", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "service-4"}},
+			{Address: "240.0.0.5", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "service-5"}},
+			{Address: "240.0.0.8", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "third-external-service"}},
+		}
+		Expect(actualOutbounds).To(Equal(expectedOutbounds))
 	})
 
 	It("should take ingresses into account", func() {
@@ -340,28 +326,21 @@ var _ = Describe("VIPOutbounds", func() {
 			},
 		}}
 
-		actual := &mesh_proto.Dataplane_Networking{}
-		actual.Outbound = dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, zoneIngresses, vipList, nil)
+		actualVips, actualOutbounds := topology.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, zoneIngresses, vipList, "mesh", nil)
 
-		expected := `
-     outbound:
-      - address: 240.0.0.2
-        port: 80
-        tags:
-          kuma.io/service: new-ingress-svc-1
-      - address: 240.0.0.3
-        port: 80
-        tags:
-          kuma.io/service: new-ingress-svc-2
-      - address: 240.0.0.0
-        port: 80
-        tags:
-          kuma.io/service: old-ingress-svc-1
-      - address: 240.0.0.1
-        port: 80
-        tags:
-          kuma.io/service: old-ingress-svc-2
-`
-		Expect(proto.ToYAML(actual)).To(MatchYAML(expected))
+		expectedVips := []xds.VipDomains{
+			{Address: "240.0.0.2", Domains: []string{"new-ingress-svc-1.mesh"}},
+			{Address: "240.0.0.3", Domains: []string{"new-ingress-svc-2.mesh"}},
+			{Address: "240.0.0.0", Domains: []string{"old-ingress-svc-1.mesh"}},
+			{Address: "240.0.0.1", Domains: []string{"old-ingress-svc-2.mesh"}},
+		}
+		Expect(actualVips).To(Equal(expectedVips))
+		expectedOutbounds := []*mesh_proto.Dataplane_Networking_Outbound{
+			{Address: "240.0.0.2", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "new-ingress-svc-1"}},
+			{Address: "240.0.0.3", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "new-ingress-svc-2"}},
+			{Address: "240.0.0.0", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "old-ingress-svc-1"}},
+			{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "old-ingress-svc-2"}},
+		}
+		Expect(actualOutbounds).To(Equal(expectedOutbounds))
 	})
 })

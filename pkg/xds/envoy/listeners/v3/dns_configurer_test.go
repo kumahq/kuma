@@ -17,7 +17,7 @@ import (
 var _ = Describe("DNSConfigurer", func() {
 
 	type testCase struct {
-		vips         map[string]string
+		vips         map[string][]string
 		emptyDnsPort uint32
 		expected     string
 	}
@@ -39,10 +39,10 @@ var _ = Describe("DNSConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic TCP listener", testCase{
-			vips: map[string]string{
-				"something.mesh": "240.0.0.0",
-				"something.com":  "240.0.0.0",
-				"backend.mesh":   "240.0.0.1",
+			vips: map[string][]string{
+				"something.mesh": {"240.0.0.0"},
+				"something.com":  {"240.0.0.0"},
+				"backend.mesh":   {"240.0.0.1", "::1"},
 			},
 			emptyDnsPort: 53002,
 			expected: `
@@ -73,6 +73,7 @@ var _ = Describe("DNSConfigurer", func() {
                         addressList:
                           address:
                           - 240.0.0.1
+                          - ::1
                       name: backend.mesh
                     - answerTtl: 30s
                       endpoint:
