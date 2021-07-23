@@ -3,11 +3,9 @@ package outbound_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestOutbound(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Universal outbound test")
+	test.RunSpecs(t, "Universal outbound test")
 }

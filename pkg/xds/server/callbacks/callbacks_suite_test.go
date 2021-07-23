@@ -3,11 +3,9 @@ package callbacks_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestCallbacks(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "XDS Callbacks Suite")
+	test.RunSpecs(t, "XDS Callbacks Suite")
 }

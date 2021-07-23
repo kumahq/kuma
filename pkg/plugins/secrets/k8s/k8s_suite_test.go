@@ -20,18 +20,13 @@ import (
 	"testing"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	kube_core "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/kumahq/kuma/pkg/test"
 	// +kubebuilder:scaffold:imports
@@ -42,16 +37,10 @@ var testEnv *envtest.Environment
 var k8sClientScheme = runtime.NewScheme()
 
 func TestKubernetes(t *testing.T) {
-	RegisterFailHandler(Fail)
-
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Kubernetes Secrets Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	test.RunSpecs(t, "Kubernetes Secrets Suite")
 }
 
 var _ = BeforeSuite(test.Within(time.Minute, func() {
-	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
-
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{}
 

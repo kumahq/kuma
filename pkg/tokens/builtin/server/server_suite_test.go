@@ -3,11 +3,9 @@ package server_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestServer(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Dataplane Token Server Suite")
+	test.RunSpecs(t, "Dataplane Token Server Suite")
 }

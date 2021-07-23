@@ -3,11 +3,9 @@ package postgres_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestPostgresConfig(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Postgres Config Suite")
+	test.RunSpecs(t, "Postgres Config Suite")
 }

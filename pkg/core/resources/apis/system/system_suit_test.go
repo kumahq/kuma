@@ -3,11 +3,9 @@ package system_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestSystem(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "System Suite")
+	test.RunSpecs(t, "System Suite")
 }

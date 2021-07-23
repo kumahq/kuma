@@ -3,11 +3,9 @@ package metrics_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestMetrics(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Metrics Suite")
+	test.RunSpecs(t, "Metrics Suite")
 }
