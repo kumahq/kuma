@@ -18,7 +18,7 @@ import (
 
 var _ = Describe("Reconcile", func() {
 	Describe("SimpleProxyTemplateResolver", func() {
-		It("should fallback to the default ProxyTemplate when there are no other candidates", func() {
+		It("should return nil when there no other candidates", func() {
 			// given
 			proxy := &model.Proxy{
 				Dataplane: &mesh_core.DataplaneResource{
@@ -31,14 +31,13 @@ var _ = Describe("Reconcile", func() {
 			// setup
 			resolver := &SimpleProxyTemplateResolver{
 				ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
-				DefaultProxyTemplate:    &mesh_proto.ProxyTemplate{},
 			}
 
 			// when
 			actual := resolver.GetTemplate(proxy)
 
 			// then
-			Expect(actual).To(BeIdenticalTo(resolver.DefaultProxyTemplate))
+			Expect(actual).To(BeNil())
 		})
 
 		It("should use Client to list ProxyTemplates in the same Mesh as Dataplane", func() {
@@ -95,7 +94,6 @@ var _ = Describe("Reconcile", func() {
 
 			resolver := &SimpleProxyTemplateResolver{
 				ReadOnlyResourceManager: manager.NewResourceManager(memStore),
-				DefaultProxyTemplate:    &mesh_proto.ProxyTemplate{},
 			}
 
 			// when
@@ -109,7 +107,7 @@ var _ = Describe("Reconcile", func() {
 			}))
 		})
 
-		It("should fallback to the default ProxyTemplate if there are no custom templates in a given Mesh", func() {
+		It("should return nil if there are no custom templates in a given Mesh", func() {
 			// given
 			proxy := &model.Proxy{
 				Dataplane: &mesh_core.DataplaneResource{
@@ -122,14 +120,13 @@ var _ = Describe("Reconcile", func() {
 			// setup
 			resolver := &SimpleProxyTemplateResolver{
 				ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
-				DefaultProxyTemplate:    &mesh_proto.ProxyTemplate{},
 			}
 
 			// when
 			actual := resolver.GetTemplate(proxy)
 
 			// then
-			Expect(actual).To(BeIdenticalTo(resolver.DefaultProxyTemplate))
+			Expect(actual).To(BeNil())
 		})
 
 	})
