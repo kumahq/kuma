@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -19,8 +18,7 @@ import (
 )
 
 func TestWs(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "API Server Customization")
+	test.RunSpecs(t, "API Server Customization")
 }
 
 func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, enableGUI bool, metrics core_metrics.Metrics, wsManager customization.APIManager) *api_server.ApiServer {

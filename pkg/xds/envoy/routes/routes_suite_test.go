@@ -3,11 +3,9 @@ package routes_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestRoutes(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Routes Suite")
+	test.RunSpecs(t, "Routes Suite")
 }

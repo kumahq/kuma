@@ -3,11 +3,9 @@ package authn_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestAuthn(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "HDS Authn Suite")
+	test.RunSpecs(t, "HDS Authn Suite")
 }

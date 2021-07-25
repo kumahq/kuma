@@ -19,11 +19,9 @@ package kubernetes_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestKubernetes(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Kubernetes Suite")
+	test.RunSpecs(t, "Kubernetes Suite")
 }
