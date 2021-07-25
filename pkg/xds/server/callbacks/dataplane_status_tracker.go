@@ -16,7 +16,7 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
-var statusTrackerLog = core.Log.WithName("xds").WithName("statusTracker")
+var statusTrackerLog = core.Log.WithName("xds").WithName("status-tracker")
 
 type DataplaneStatusTracker interface {
 	util_xds.Callbacks
