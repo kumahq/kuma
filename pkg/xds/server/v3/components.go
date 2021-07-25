@@ -11,7 +11,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	v3 "github.com/kumahq/kuma/pkg/core/xds/v3"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/auth"
@@ -35,7 +34,7 @@ func RegisterXDS(
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	rt core_runtime.Runtime,
 ) error {
-	xdsContext := v3.NewXdsContext()
+	xdsContext := NewXdsContext()
 
 	authenticator, err := auth_components.DefaultAuthenticator(rt)
 	if err != nil {
@@ -72,7 +71,7 @@ func RegisterXDS(
 	return nil
 }
 
-func DefaultReconciler(rt core_runtime.Runtime, xdsContext v3.XdsContext) xds_sync.SnapshotReconciler {
+func DefaultReconciler(rt core_runtime.Runtime, xdsContext XdsContext) xds_sync.SnapshotReconciler {
 	resolver := xds_template.SequentialResolver(
 		&xds_template.SimpleProxyTemplateResolver{
 			ReadOnlyResourceManager: rt.ReadOnlyResourceManager(),
@@ -89,7 +88,7 @@ func DefaultReconciler(rt core_runtime.Runtime, xdsContext v3.XdsContext) xds_sy
 	}
 }
 
-func DefaultIngressReconciler(rt core_runtime.Runtime, xdsContext v3.XdsContext) xds_sync.SnapshotReconciler {
+func DefaultIngressReconciler(rt core_runtime.Runtime, xdsContext XdsContext) xds_sync.SnapshotReconciler {
 	resolver := &xds_template.StaticProxyTemplateResolver{
 		Template: &mesh_proto.ProxyTemplate{
 			Conf: &mesh_proto.ProxyTemplate_Conf{
