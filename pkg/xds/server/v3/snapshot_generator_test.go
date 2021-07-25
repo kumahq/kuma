@@ -7,18 +7,18 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/test/matchers"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_cache_v3 "github.com/kumahq/kuma/pkg/util/cache/v3"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
@@ -26,10 +26,12 @@ var _ = Describe("Reconcile", func() {
 	Describe("templateSnapshotGenerator", func() {
 
 		gen := templateSnapshotGenerator{
-			ProxyTemplateResolver: &template.SimpleProxyTemplateResolver{
-				ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
-				DefaultProxyTemplate:    template.DefaultProxyTemplate,
-			},
+			ProxyTemplateResolver: template.SequentialResolver(
+				&template.SimpleProxyTemplateResolver{
+					ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
+				},
+				generator.DefaultTemplateResolver,
+			),
 		}
 
 		It("Generate Snapshot per Envoy Node", func() {

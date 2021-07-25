@@ -7,6 +7,7 @@ import (
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -18,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 	xds_callbacks "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
@@ -71,25 +73,37 @@ func RegisterXDS(
 }
 
 func DefaultReconciler(rt core_runtime.Runtime, xdsContext v3.XdsContext) xds_sync.SnapshotReconciler {
+	resolver := xds_template.SequentialResolver(
+		&xds_template.SimpleProxyTemplateResolver{
+			ReadOnlyResourceManager: rt.ReadOnlyResourceManager(),
+		},
+		generator.DefaultTemplateResolver,
+	)
+
 	return &reconciler{
 		&templateSnapshotGenerator{
-			ResourceSetHooks: rt.XDSHooks().ResourceSetHooks(),
-			ProxyTemplateResolver: &xds_template.SimpleProxyTemplateResolver{
-				ReadOnlyResourceManager: rt.ReadOnlyResourceManager(),
-				DefaultProxyTemplate:    xds_template.DefaultProxyTemplate,
-			},
+			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
+			ProxyTemplateResolver: resolver,
 		},
 		&simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 	}
 }
 
 func DefaultIngressReconciler(rt core_runtime.Runtime, xdsContext v3.XdsContext) xds_sync.SnapshotReconciler {
+	resolver := &xds_template.StaticProxyTemplateResolver{
+		Template: &mesh_proto.ProxyTemplate{
+			Conf: &mesh_proto.ProxyTemplate_Conf{
+				Imports: []string{
+					generator.IngressProxy,
+				},
+			},
+		},
+	}
+
 	return &reconciler{
 		generator: &templateSnapshotGenerator{
-			ResourceSetHooks: rt.XDSHooks().ResourceSetHooks(),
-			ProxyTemplateResolver: &xds_template.StaticProxyTemplateResolver{
-				Template: xds_template.IngressProxyTemplate,
-			},
+			ResourceSetHooks:      rt.XDSHooks().ResourceSetHooks(),
+			ProxyTemplateResolver: resolver,
 		},
 		cacher: &simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 	}
