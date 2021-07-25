@@ -22,8 +22,7 @@ type ProxyTemplateResolver interface {
 }
 
 type SimpleProxyTemplateResolver struct {
-	manager.ReadOnlyResourceManager
-	DefaultProxyTemplate *mesh_proto.ProxyTemplate
+	ReadOnlyResourceManager manager.ReadOnlyResourceManager
 }
 
 func (r *SimpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
@@ -44,8 +43,9 @@ func (r *SimpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 		log.V(2).Info("found the best matching ProxyTemplate", "proxytemplate", core_model.MetaToResourceKey(bestMatchTemplate.GetMeta()))
 		return bestMatchTemplate.(*mesh_core.ProxyTemplateResource).Spec
 	}
-	log.V(2).Info("falling back to the default ProxyTemplate since there is no best match", "templates", templateList.Items)
-	return r.DefaultProxyTemplate
+
+	log.V(2).Info("no matching ProxyTemplate")
+	return nil
 }
 
 type StaticProxyTemplateResolver struct {
@@ -54,4 +54,23 @@ type StaticProxyTemplateResolver struct {
 
 func (r *StaticProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
 	return r.Template
+}
+
+type sequentialResolver []ProxyTemplateResolver
+
+func (s sequentialResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
+	for _, r := range s {
+		if t := r.GetTemplate(proxy); t != nil {
+			return t
+		}
+	}
+
+	return nil
+}
+
+// SequentialResolver returns a new ProxyTemplate resolver that applies
+// each of the resolvers given as arguments in turn. The result of the
+// first successful resolver is returned.
+func SequentialResolver(r ...ProxyTemplateResolver) ProxyTemplateResolver {
+	return sequentialResolver(r)
 }
