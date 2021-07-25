@@ -3,11 +3,9 @@ package mux_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestMultiplexKDS(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Multiplex KDS Suite")
+	test.RunSpecs(t, "Multiplex KDS Suite")
 }

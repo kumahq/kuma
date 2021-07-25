@@ -3,11 +3,9 @@ package dns_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestDNS(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "DNS Suite")
+	test.RunSpecs(t, "DNS Suite")
 }

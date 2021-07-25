@@ -3,11 +3,9 @@ package http_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestHttp(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Http Suite")
+	test.RunSpecs(t, "Http Suite")
 }

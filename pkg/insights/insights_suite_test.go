@@ -3,11 +3,9 @@ package insights_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestInsights(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Insights Suite")
+	test.RunSpecs(t, "Insights Suite")
 }

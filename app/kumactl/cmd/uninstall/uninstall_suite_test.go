@@ -3,11 +3,9 @@ package uninstall_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestInstallCmd(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Uninstall Cmd Suite")
+	test.RunSpecs(t, "Uninstall Cmd Suite")
 }

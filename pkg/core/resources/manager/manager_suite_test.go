@@ -3,11 +3,9 @@ package manager_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestManager(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Resources Manager")
+	test.RunSpecs(t, "Resources Manager")
 }

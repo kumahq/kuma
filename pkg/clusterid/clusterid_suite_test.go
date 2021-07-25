@@ -3,11 +3,9 @@ package clusterid_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestClusterID(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Cluster ID Suite")
+	test.RunSpecs(t, "Cluster ID Suite")
 }
