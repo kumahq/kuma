@@ -137,68 +137,70 @@ var _ = Describe("InboundProxyGenerator", func() {
 						},
 					},
 					RateLimits: model.RateLimitsMap{
-						mesh_proto.InboundInterface{
-							DataplaneAdvertisedIP: "192.168.0.1",
-							DataplaneIP:           "192.168.0.1",
-							DataplanePort:         80,
-							WorkloadIP:            "127.0.0.1",
-							WorkloadPort:          8080,
-						}: []*mesh_proto.RateLimit{
-							{
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"kuma.io/service": "frontend",
-										},
-									},
-								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"kuma.io/service": "backend1",
-										},
-									},
-								},
-								Conf: &mesh_proto.RateLimit_Conf{
-									Http: &mesh_proto.RateLimit_Conf_Http{
-										Requests: 200,
-										Interval: &durationpb.Duration{
-											Seconds: 10,
-										},
-									},
-								},
-							},
-							{
-								Sources: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"kuma.io/service": "*",
-										},
-									},
-								},
-								Destinations: []*mesh_proto.Selector{
-									{
-										Match: map[string]string{
-											"kuma.io/service": "backend1",
-										},
-									},
-								},
-								Conf: &mesh_proto.RateLimit_Conf{
-									Http: &mesh_proto.RateLimit_Conf_Http{
-										Requests: 100,
-										Interval: &durationpb.Duration{
-											Seconds: 2,
-										},
-										OnRateLimit: &mesh_proto.RateLimit_Conf_Http_OnRateLimit{
-											Status: &wrapperspb.UInt32Value{
-												Value: 404,
+						Inbound: model.InboundRateLimitsMap{
+							mesh_proto.InboundInterface{
+								DataplaneAdvertisedIP: "192.168.0.1",
+								DataplaneIP:           "192.168.0.1",
+								DataplanePort:         80,
+								WorkloadIP:            "127.0.0.1",
+								WorkloadPort:          8080,
+							}: []*mesh_proto.RateLimit{
+								{
+									Sources: []*mesh_proto.Selector{
+										{
+											Match: map[string]string{
+												"kuma.io/service": "frontend",
 											},
-											Headers: []*mesh_proto.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
-												{
-													Key:   "x-rate-limited",
-													Value: "true",
-													Append: &wrapperspb.BoolValue{
-														Value: false,
+										},
+									},
+									Destinations: []*mesh_proto.Selector{
+										{
+											Match: map[string]string{
+												"kuma.io/service": "backend1",
+											},
+										},
+									},
+									Conf: &mesh_proto.RateLimit_Conf{
+										Http: &mesh_proto.RateLimit_Conf_Http{
+											Requests: 200,
+											Interval: &durationpb.Duration{
+												Seconds: 10,
+											},
+										},
+									},
+								},
+								{
+									Sources: []*mesh_proto.Selector{
+										{
+											Match: map[string]string{
+												"kuma.io/service": "*",
+											},
+										},
+									},
+									Destinations: []*mesh_proto.Selector{
+										{
+											Match: map[string]string{
+												"kuma.io/service": "backend1",
+											},
+										},
+									},
+									Conf: &mesh_proto.RateLimit_Conf{
+										Http: &mesh_proto.RateLimit_Conf_Http{
+											Requests: 100,
+											Interval: &durationpb.Duration{
+												Seconds: 2,
+											},
+											OnRateLimit: &mesh_proto.RateLimit_Conf_Http_OnRateLimit{
+												Status: &wrapperspb.UInt32Value{
+													Value: 404,
+												},
+												Headers: []*mesh_proto.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
+													{
+														Key:   "x-rate-limited",
+														Value: "true",
+														Append: &wrapperspb.BoolValue{
+															Value: false,
+														},
 													},
 												},
 											},

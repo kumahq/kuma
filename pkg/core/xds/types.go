@@ -101,8 +101,16 @@ type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjectio
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResource
 
-// RateLimitsMap holds all RateLimitResources for each InboundInterface
-type RateLimitsMap map[mesh_proto.InboundInterface][]*mesh_proto.RateLimit
+// InboundRateLimitsMap holds all RateLimitResources for each InboundInterface
+type InboundRateLimitsMap map[mesh_proto.InboundInterface][]*mesh_proto.RateLimit
+
+// OutboundRateLimitsMap holds all RateLimitResources for each OutboundInterface
+type OutboundRateLimitsMap map[mesh_proto.OutboundInterface][]*mesh_proto.RateLimit
+
+type RateLimitsMap struct {
+	Inbound  InboundRateLimitsMap
+	Outbound OutboundRateLimitsMap
+}
 
 type CLACache interface {
 	GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error)

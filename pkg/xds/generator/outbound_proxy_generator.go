@@ -9,6 +9,7 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 
 	kuma_mesh "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -108,12 +109,14 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, routes envoy_com
 				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, sourceService)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Policies.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
+				Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits.Outbound[oface])).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
 		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
 				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, sourceService)).
+				Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits.Outbound[oface])).
 				Configure(envoy_listeners.HttpAccessLog(
 					meshName,
 					envoy_common.TrafficDirectionOutbound,
@@ -315,22 +318,36 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 		return clusters
 	}
 
-	for _, http := range route.Spec.GetConf().GetHttp() {
-		route := envoy_common.Route{
-			Match:    http.Match,
-			Modify:   http.Modify,
-			Clusters: clustersFromSplit(http.GetSplitWithDestination()),
+	addRoutes := func(route *mesh_core.TrafficRouteResource, rateLimit *mesh_proto.RateLimit, routes envoy_common.Routes) envoy_common.Routes {
+		for _, http := range route.Spec.GetConf().GetHttp() {
+			route := envoy_common.Route{
+				Match:     http.Match,
+				Modify:    http.Modify,
+				RateLimit: rateLimit,
+				Clusters:  clustersFromSplit(http.GetSplitWithDestination()),
+			}
+			routes = append(routes, route)
 		}
-		routes = append(routes, route)
+
+		if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) > 0 {
+			cfs := clustersFromSplit(defaultDestination)
+			route := envoy_common.Route{
+				Match:     nil,
+				Clusters:  cfs,
+				RateLimit: rateLimit,
+			}
+			routes = append(routes, route)
+		}
+		return routes
 	}
 
-	if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) > 0 {
-		cfs := clustersFromSplit(defaultDestination)
-		route := envoy_common.Route{
-			Match:    nil,
-			Clusters: cfs,
+	if len(proxy.Policies.RateLimits.Outbound[oface]) < 1 {
+		routes = addRoutes(route, nil, routes)
+	} else {
+		for _, rateLimit := range proxy.Policies.RateLimits.Outbound[oface] {
+			routes = addRoutes(route, rateLimit, routes)
 		}
-		routes = append(routes, route)
 	}
+
 	return
 }
