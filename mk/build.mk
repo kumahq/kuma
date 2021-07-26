@@ -32,6 +32,10 @@ COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 # List of binaries that we have release build rules for.
 BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-prometheus-sd coredns
 
+# Setting this variable to any value other than 'N', enables the experimental Kuma
+# gateway plugin. Experimental means "for experiments", NOT "for production".
+BUILD_WITH_EXPERIMENTAL_GATEWAY ?= N
+
 .PHONY: build
 build: build/release build/test
 
@@ -55,7 +59,11 @@ build/test/linux-amd64:
 
 .PHONY: build/kuma-cp
 build/kuma-cp: ## Dev: Build `Control Plane` binary
+ifeq ($(BUILD_WITH_EXPERIMENTAL_GATEWAY),N)
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-cp/kuma-cp ./app/kuma-cp
+else
+	$(GO_BUILD) -tags gateway -o ${BUILD_ARTIFACTS_DIR}/kuma-cp/kuma-cp ./app/kuma-cp
+endif
 
 .PHONY: build/kuma-dp
 build/kuma-dp: ## Dev: Build `kuma-dp` binary

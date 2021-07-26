@@ -172,6 +172,7 @@ func GatewayFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Se
 		return nil, err
 	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
+		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 		Tags: interfaces[0].Tags, // InboundInterfacesFor() returns either a non-empty list or an error
 	}, nil
 }
