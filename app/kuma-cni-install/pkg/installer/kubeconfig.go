@@ -42,20 +42,17 @@ type kubeconfigFields struct {
 }
 
 func createKubeconfigFile(cfg *Config, saToken string) (kubeconfigFilepath string, err error) {
-	if len(cfg.K8sServiceHost) == 0 {
-		err = errors.New("KUBERNETES_SERVICE_HOST not set. Is this not running within a pod?")
-		return
+	if cfg.K8sServiceHost == "" {
+		return "", errors.New("KUBERNETES_SERVICE_HOST not set. Is this not running within a pod?")
 	}
 
-	if len(cfg.K8sServicePort) == 0 {
-		err = errors.New("KUBERNETES_SERVICE_PORT not set. Is this not running within a pod?")
-		return
+	if cfg.K8sServicePort == "" {
+		return "", errors.New("KUBERNETES_SERVICE_PORT not set. Is this not running within a pod?")
 	}
 
-	var tpl *template.Template
-	tpl, err = template.New("kubeconfig").Parse(kubeconfigTemplate)
+	tpl, err := template.New("kubeconfig").Parse(kubeconfigTemplate)
 	if err != nil {
-		return
+		return "", err
 	}
 
 	protocol := cfg.K8sServiceProtocol
@@ -75,11 +72,12 @@ func createKubeconfigFile(cfg *Config, saToken string) (kubeconfigFilepath strin
 		if !fileExists(caFile) {
 			return "", fmt.Errorf("file does not exist: %s", caFile)
 		}
-		var caContents []byte
-		caContents, err = ioutil.ReadFile(caFile)
+
+		caContents, err := ioutil.ReadFile(caFile)
 		if err != nil {
-			return
+			return "", err
 		}
+
 		caBase64 := base64.StdEncoding.EncodeToString(caContents)
 		tlsConfig = "certificate-authority-data: " + caBase64
 	}
@@ -97,17 +95,21 @@ func createKubeconfigFile(cfg *Config, saToken string) (kubeconfigFilepath strin
 		return "", err
 	}
 
-	var kcbbToPrint bytes.Buffer
 	fields.ServiceAccountToken = "<redacted>"
+
 	if !cfg.SkipTLSVerify {
 		fields.TLSConfig = fmt.Sprintf("certificate-authority-data: <CA cert from %s>", caFile)
 	}
+
+	var kcbbToPrint bytes.Buffer
 	if err := tpl.Execute(&kcbbToPrint, fields); err != nil {
 		return "", err
 	}
 
 	kubeconfigFilepath = filepath.Join(cfg.MountedCNINetDir, cfg.KubeconfigFilename)
+
 	log.Printf("write kubeconfig file %s with: \n%+v", kubeconfigFilepath, kcbbToPrint.String())
+
 	if err = fileAtomicWrite(kubeconfigFilepath, kcbb.Bytes(), os.FileMode(cfg.KubeconfigMode)); err != nil {
 		return "", err
 	}
