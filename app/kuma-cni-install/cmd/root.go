@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	"github.com/kumahq/kuma/app/kuma-cni-install/pkg/health"
-	"github.com/kumahq/kuma/app/kuma-cni-install/pkg/installer"
-
 	"log"
 	"os"
 	"strings"
+
+	"github.com/kumahq/kuma/app/kuma-cni-install/pkg/health"
+	"github.com/kumahq/kuma/app/kuma-cni-install/pkg/installer"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
