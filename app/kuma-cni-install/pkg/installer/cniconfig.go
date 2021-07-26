@@ -78,12 +78,15 @@ func readCNIConfigTemplate(template cniConfigTemplate) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		log.Printf("Using CNI config template from %s", template.cniNetworkConfigFile)
+
 		return cniConfig, nil
 	}
 
-	if len(template.cniNetworkConfig) > 0 {
+	if template.cniNetworkConfig == "" {
 		log.Printf("Using CNI config template from CNI_NETWORK_CONFIG environment variable.")
+
 		return []byte(template.cniNetworkConfig), nil
 	}
 
@@ -119,11 +122,13 @@ func writeCNIConfig(ctx context.Context, cniConfig []byte, cfg pluginConfig) (st
 		if !fileExists(cniConfigFilepath) {
 			return "", fmt.Errorf("CNI config file %s removed during configuration", cniConfigFilepath)
 		}
+
 		// This section overwrites an existing plugins list entry for kuma-cni
 		existingCNIConfig, err := ioutil.ReadFile(cniConfigFilepath)
 		if err != nil {
 			return "", err
 		}
+
 		cniConfig, err = insertCNIConfig(cniConfig, existingCNIConfig)
 		if err != nil {
 			return "", err
@@ -145,6 +150,7 @@ func writeCNIConfig(ctx context.Context, cniConfig []byte, cfg pluginConfig) (st
 	}
 
 	log.Printf("Created CNI config %s", cniConfigFilepath)
+
 	return cniConfigFilepath, nil
 }
 
@@ -154,9 +160,10 @@ func getCNIConfigFilepath(ctx context.Context, cfg pluginConfig) (string, error)
 	filename := cfg.cniConfName
 
 	if !cfg.chainedCNIPlugin {
-		if len(filename) == 0 {
+		if filename == "" {
 			filename = "YYY-kuma-cni.conf"
 		}
+
 		return filepath.Join(cfg.mountedCNINetDir, filename), nil
 	}
 
@@ -164,9 +171,7 @@ func getCNIConfigFilepath(ctx context.Context, cfg pluginConfig) (string, error)
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		_ = watcher.Close()
-	}()
+	defer watcher.Close()
 
 	for len(filename) == 0 {
 		filename, err = getDefaultCNINetwork(cfg.mountedCNINetDir)
@@ -215,6 +220,7 @@ func getDefaultCNINetwork(confDir string) (string, error) {
 	}
 
 	sort.Strings(files)
+
 	for _, confFile := range files {
 		var confList *libcni.NetworkConfigList
 		if strings.HasSuffix(confFile, ".conflist") {
@@ -256,14 +262,12 @@ func getDefaultCNINetwork(confDir string) (string, error) {
 // newCNIConfig = kuma-cni config, that should be inserted into existingCNIConfig
 func insertCNIConfig(newCNIConfig, existingCNIConfig []byte) ([]byte, error) {
 	var kumaMap map[string]interface{}
-	err := json.Unmarshal(newCNIConfig, &kumaMap)
-	if err != nil {
+	if err := json.Unmarshal(newCNIConfig, &kumaMap); err != nil {
 		return nil, fmt.Errorf("error loading Kuma CNI config (JSON error): %v", err)
 	}
 
 	var existingMap map[string]interface{}
-	err = json.Unmarshal(existingCNIConfig, &existingMap)
-	if err != nil {
+	if err := json.Unmarshal(existingCNIConfig, &existingMap); err != nil {
 		return nil, fmt.Errorf("error loading existing CNI config (JSON error): %v", err)
 	}
 
@@ -275,14 +279,13 @@ func insertCNIConfig(newCNIConfig, existingCNIConfig []byte) ([]byte, error) {
 		// Assume it is a regular network conf file
 		delete(existingMap, "cniVersion")
 
-		plugins := make([]map[string]interface{}, 2)
-		plugins[0] = existingMap
-		plugins[1] = kumaMap
-
 		newMap = map[string]interface{}{
 			"name":       "k8s-pod-network",
 			"cniVersion": "0.3.1",
-			"plugins":    plugins,
+			"plugins":    []map[string]interface{}{
+				existingMap,
+				kumaMap,
+			},
 		}
 	} else {
 		// Assume it is a network list file
