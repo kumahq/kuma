@@ -193,7 +193,7 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 	}
 	DescribeTable("MatchTags()",
 		func(given testCase) {
-			//given
+			// given
 			outbound := Dataplane_Networking_Outbound{
 				Service: given.serviceTag,
 			}
@@ -456,7 +456,7 @@ var _ = Describe("TagSelector", func() {
 				// when
 				match := TagSelector(given.tags).Matches(dpTags)
 
-				//then
+				// then
 				Expect(match).To(Equal(given.match))
 			},
 			Entry("should match 0 tags", testCase{
