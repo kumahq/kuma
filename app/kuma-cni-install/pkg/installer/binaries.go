@@ -23,12 +23,12 @@ func copyDir(srcDir string, dstDir string) error {
 
 	for _, f := range files {
 		filename := f.Name()
-
 		srcFilepath := filepath.Join(srcDir, filename)
-		err := fileAtomicCopy(srcFilepath, dstDir, filename)
-		if err != nil {
+
+		if err := fileAtomicCopy(srcFilepath, dstDir, filename); err != nil {
 			return err
 		}
+
 		log.Printf("Successful copy %s to %s.", filename, dstDir)
 	}
 
