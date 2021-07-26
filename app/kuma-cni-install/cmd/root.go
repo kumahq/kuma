@@ -19,19 +19,17 @@ var rootCmd = &cobra.Command{
 	Use:   "install-cni",
 	Short: "Install and configure Kuma CNI plugin on a node",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-
-		var cfg *installer.Config
-		if cfg, err = constructConfig(); err != nil {
-			return
+		cfg, err := constructConfig()
+		if err != nil {
+			return err
 		}
+
 		log.Printf("install cni with configuration: \n%+v", cfg)
 
 		isReady := health.Start()
-
 		installer := installer.NewInstaller(cfg, isReady)
 
-		if err = installer.Run(ctx); err != nil {
+		if err = installer.Run(cmd.Context()); err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				// Error was caused by interrupt/termination signal
 				err = nil
@@ -39,14 +37,14 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cleanErr := installer.Cleanup(); cleanErr != nil {
-			if err != nil {
-				err = fmt.Errorf("%v; %v", err, cleanErr.Error())
-			} else {
-				err = cleanErr
+			if err == nil {
+				return cleanErr
 			}
+
+			return fmt.Errorf("%v; %v", err, cleanErr.Error())
 		}
 
-		return
+		return nil
 	},
 }
 
@@ -120,12 +118,13 @@ func constructConfig() (*installer.Config, error) {
 		CNIBinDestinationDir: installer.HostCNIBinDir,
 	}
 
-	if len(cfg.K8sNodeName) == 0 {
-		var err error
-		cfg.K8sNodeName, err = os.Hostname()
+	if cfg.K8sNodeName == "" {
+		hostname, err := os.Hostname()
 		if err != nil {
 			return nil, err
 		}
+
+		cfg.K8sNodeName = hostname
 	}
 
 	return cfg, nil
