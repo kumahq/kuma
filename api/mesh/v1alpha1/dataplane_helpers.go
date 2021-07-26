@@ -402,14 +402,14 @@ func (d *Dataplane) IsIngress() bool {
 	return d.GetNetworking().GetIngress() != nil
 }
 
-// IsDataplane returns true if this Dataplane specifies a gateway
-// configuration.
-func (d *Dataplane) IsGateway() bool {
-	if d.GetNetworking() == nil {
-		return false
-	}
+func (d *Dataplane) IsDelegatedGateway() bool {
+	return d.GetNetworking().GetGateway() != nil &&
+		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED
+}
 
-	return d.GetNetworking().GetGateway() != nil
+func (d *Dataplane) IsBuiltinGateway() bool {
+	return d.GetNetworking().GetGateway() != nil &&
+		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
 }
 
 func (d *Dataplane) HasPublicAddress() bool {
