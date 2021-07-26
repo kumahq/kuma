@@ -4,21 +4,21 @@ import (
 	"context"
 	"testing"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/defaults/mesh"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/runtime"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 func TestEnvoyAdmin(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "EnvoyAdmin Suite")
+	test.RunSpecs(t, "EnvoyAdmin Suite")
 }
 
 const (

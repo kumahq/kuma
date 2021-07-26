@@ -3,11 +3,9 @@ package names_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestNames(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Names Suite")
+	test.RunSpecs(t, "Names Suite")
 }

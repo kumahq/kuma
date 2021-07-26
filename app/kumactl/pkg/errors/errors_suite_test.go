@@ -3,11 +3,9 @@ package errors_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestWs(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Errors")
+	test.RunSpecs(t, "Errors")
 }

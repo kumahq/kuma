@@ -3,11 +3,9 @@ package store_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestSyncResourceStore(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "SyncResourceStore Suite")
+	test.RunSpecs(t, "SyncResourceStore Suite")
 }
