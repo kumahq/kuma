@@ -159,7 +159,10 @@ static_resources:
     upstream_connection_options:
       # configure a TCP keep-alive to detect and reconnect to the admin
       # server in the event of a TCP socket half open connection
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_probes: 3
+        keepalive_time: 10
+        keepalive_interval: 10
     load_assignment:
       cluster_name: access_log_sink
       endpoints:
@@ -176,7 +179,10 @@ static_resources:
     upstream_connection_options:
       # configure a TCP keep-alive to detect and reconnect to the admin
       # server in the event of a TCP socket half open connection
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_probes: 3
+        keepalive_time: 10
+        keepalive_interval: 10
     load_assignment:
       cluster_name: ads_cluster
       endpoints:
