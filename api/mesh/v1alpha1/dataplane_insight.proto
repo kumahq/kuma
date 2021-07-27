@@ -67,7 +67,8 @@ message DiscoverySubscription {
   // Version of Envoy and Kuma dataplane
   Version version = 6;
 
-  // CandidateForDisconnect is an indicator if the data plane proxy should be disconnected in the near future
+  // CandidateForDisconnect is an indicator if the data plane proxy should be
+  // disconnected in the near future
   bool candidate_for_disconnect = 7;
 }
 
