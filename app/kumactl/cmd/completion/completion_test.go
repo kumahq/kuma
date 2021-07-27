@@ -8,7 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/pkg/util/test"
+
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
@@ -30,7 +31,7 @@ var _ = Describe("kumactl completion", func() {
 	DescribeTable("should generate completion code",
 		func(given testCase) {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs(append([]string{"completion"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)

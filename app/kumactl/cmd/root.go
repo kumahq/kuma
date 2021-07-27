@@ -74,10 +74,15 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				kumactlLog.Error(err, "Unable to get index client")
 			} else {
-				kumaBuildVersion, _ = client.GetVersion(context.Background())
+				kumaBuildVersion, err = client.GetVersion(context.Background())
+				if err != nil {
+					kumactlLog.Error(err, "Unable to retrieve server version")
+				}
 			}
 
-			if kumaBuildVersion != nil && (kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product) {
+			if kumaBuildVersion == nil {
+				cmd.PrintErr("WARNING: Unable to confirm the server supports this kumactl version\n")
+			} else if kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product {
 				cmd.PrintErr("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version + "\n")
 			}
 			return nil

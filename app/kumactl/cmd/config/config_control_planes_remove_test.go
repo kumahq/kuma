@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/pkg/util/test"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -36,7 +36,7 @@ var _ = Describe("kumactl config control-planes remove", func() {
 	var outbuf *bytes.Buffer
 
 	BeforeEach(func() {
-		rootCmd = cmd.DefaultRootCmd()
+		rootCmd = test.DefaultTestingRootCmd()
 
 		// Different versions of cobra might emit errors to stdout
 		// or stderr. It's too fragile to depend on precidely what
@@ -59,7 +59,7 @@ var _ = Describe("kumactl config control-planes remove", func() {
 			// then
 			Expect(err.Error()).To(MatchRegexp(requiredFlagNotSet("name")))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "name" not set
+			Expect(outbuf.String()).To(ContainSubstring(`Error: required flag(s) "name" not set
 `))
 		})
 
@@ -73,7 +73,7 @@ var _ = Describe("kumactl config control-planes remove", func() {
 			// then
 			Expect(err).To(MatchError(`there is no Control Plane with name "example"`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: there is no Control Plane with name "example"
+			Expect(outbuf.String()).To(ContainSubstring(`Error: there is no Control Plane with name "example"
 `))
 		})
 	})

@@ -8,9 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -19,14 +16,15 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl get external-services", func() {
@@ -84,7 +82,7 @@ var _ = Describe("kumactl get external-services", func() {
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+					NewAPIServerClient: test.GetMockNewAPIServerClient(),
 				},
 			}
 
