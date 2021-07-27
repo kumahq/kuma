@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"path/filepath"
 
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
 
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 )

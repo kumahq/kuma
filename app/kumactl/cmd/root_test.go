@@ -4,9 +4,10 @@ import (
 	"io/ioutil"
 	"os"
 
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"

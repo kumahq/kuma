@@ -23,8 +23,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
 	"github.com/spf13/cobra"
+
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl config control-planes add", func() {
