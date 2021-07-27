@@ -70,7 +70,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// then
 			Expect(err.Error()).To(MatchRegexp(requiredFlagNotSet("name")))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "address", "name" not set
+			Expect(outbuf.String()).To(ContainSubstring(`Error: required flag(s) "address", "name" not set
 `))
 		})
 
@@ -84,7 +84,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// then
 			Expect(err.Error()).To(MatchRegexp(requiredFlagNotSet("address")))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "address" not set
+			Expect(outbuf.String()).To(ContainSubstring(`Error: required flag(s) "address" not set
 `))
 		})
 
