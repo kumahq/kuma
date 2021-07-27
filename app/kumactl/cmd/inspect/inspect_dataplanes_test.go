@@ -8,13 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
-
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -24,11 +18,15 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type testDataplaneOverviewClient struct {
@@ -404,7 +402,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 					NewDataplaneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.DataplaneOverviewClient, error) {
 						return testClient, nil
 					},
-					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
+					NewAPIServerClient: test.GetMockNewAPIServerClient(),
 				},
 			}
 

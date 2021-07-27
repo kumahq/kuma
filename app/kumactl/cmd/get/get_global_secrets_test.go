@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
-
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo"
@@ -16,16 +14,16 @@ import (
 	"github.com/spf13/cobra"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl get global-secrets", func() {
@@ -74,7 +72,7 @@ var _ = Describe("kumactl get global-secrets", func() {
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
-					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
+					NewAPIServerClient: test.GetMockNewAPIServerClient(),
 				},
 			}
 

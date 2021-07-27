@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -24,6 +22,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type testServiceOverviewClient struct {
@@ -92,7 +91,7 @@ var _ = Describe("kumactl inspect services", func() {
 						overviews: serviceOverviewResources,
 					}, nil
 				},
-				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
+				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
 		}
 

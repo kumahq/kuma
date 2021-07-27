@@ -15,7 +15,7 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type staticDataplaneTokenGenerator struct {
@@ -44,7 +44,7 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 				NewDataplaneTokenClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error) {
 					return generator, nil
 				},
-				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
+				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
 		}
 

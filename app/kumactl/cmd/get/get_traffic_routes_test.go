@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -25,8 +23,8 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl get traffic-routes", func() {
@@ -74,7 +72,7 @@ var _ = Describe("kumactl get traffic-routes", func() {
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
-					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
+					NewAPIServerClient: test.GetMockNewAPIServerClient(),
 				},
 			}
 

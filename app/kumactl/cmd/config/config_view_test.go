@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
+	"github.com/kumahq/kuma/pkg/util/test"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,7 +15,7 @@ var _ = Describe("kumactl config view", func() {
 
 	It("should display configuration from a given file", func() {
 		// setup
-		rootCmd := kuma_test.DefaultTestingRootCmd()
+		rootCmd := test.DefaultTestingRootCmd()
 		buf := &bytes.Buffer{}
 		rootCmd.SetOut(buf)
 

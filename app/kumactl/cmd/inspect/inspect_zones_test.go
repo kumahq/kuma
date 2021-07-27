@@ -7,20 +7,7 @@ import (
 	"strings"
 	"time"
 
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
-
-	"github.com/kumahq/kuma/pkg/test/matchers"
-
 	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	system_core "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-
-	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -29,10 +16,17 @@ import (
 
 	"github.com/spf13/cobra"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	system_core "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type testZoneOverviewClient struct {
@@ -242,7 +236,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					NewZoneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneOverviewClient, error) {
 						return testClient, nil
 					},
-					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
+					NewAPIServerClient: test.GetMockNewAPIServerClient(),
 				},
 			}
 

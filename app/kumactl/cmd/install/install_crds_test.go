@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	kuma_test "github.com/kumahq/kuma/pkg/util/test"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl install crds", func() {
@@ -28,7 +28,7 @@ var _ = Describe("kumactl install crds", func() {
 	DescribeTable("should generate Kubernetes CRD resources",
 		func(given testCase) {
 			// given
-			rootCmd := kuma_test.DefaultTestingRootCmd()
+			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs(append([]string{"install", "crds"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
