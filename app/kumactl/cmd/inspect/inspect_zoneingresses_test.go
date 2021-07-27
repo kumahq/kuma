@@ -7,25 +7,24 @@ import (
 	"strings"
 	"time"
 
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
+
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/test/matchers"
-
-	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
-	. "github.com/onsi/ginkgo"
-
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type testZoneIngressOverviewClient struct {
@@ -262,7 +261,7 @@ var _ = Describe("kumactl inspect zone-ingresses", func() {
 					NewZoneIngressOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneIngressOverviewClient, error) {
 						return testClient, nil
 					},
-					NewAPIServerClient: resources.NewAPIServerClient,
+					NewAPIServerClient: test.GetMockNewAPIServerClient(),
 				},
 			}
 
