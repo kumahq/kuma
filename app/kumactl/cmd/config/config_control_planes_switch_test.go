@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/pkg/util/test"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -36,7 +36,7 @@ var _ = Describe("kumactl config control-planes use", func() {
 	var outbuf *bytes.Buffer
 
 	BeforeEach(func() {
-		rootCmd = cmd.DefaultRootCmd()
+		rootCmd = test.DefaultTestingRootCmd()
 
 		// Different versions of cobra might emit errors to stdout
 		// or stderr. It's too fragile to depend on precidely what

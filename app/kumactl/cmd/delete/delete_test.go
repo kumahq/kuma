@@ -20,6 +20,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl delete ", func() {
@@ -32,6 +33,7 @@ var _ = Describe("kumactl delete ", func() {
 		BeforeEach(func() {
 			// setup
 			rootCtx = kumactl_cmd.DefaultRootContext()
+			rootCtx.Runtime.NewAPIServerClient = test.GetMockNewAPIServerClient()
 			rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 				return store, nil
 			}
