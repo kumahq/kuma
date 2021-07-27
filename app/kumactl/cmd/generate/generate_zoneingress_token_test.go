@@ -44,7 +44,7 @@ var _ = Describe("kumactl generate zone-ingress-token", func() {
 				NewZoneIngressTokenClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.ZoneIngressTokenClient, error) {
 					return generator, nil
 				},
-				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
+				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
 			},
 		}
 

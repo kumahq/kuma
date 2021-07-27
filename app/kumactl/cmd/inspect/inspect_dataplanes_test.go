@@ -404,7 +404,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 					NewDataplaneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.DataplaneOverviewClient, error) {
 						return testClient, nil
 					},
-					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
 				},
 			}
 

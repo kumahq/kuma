@@ -76,7 +76,7 @@ var _ = Describe("kumactl get retries", func() {
 					) (core_store.ResourceStore, error) {
 						return store, nil
 					},
-					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
 				},
 			}
 

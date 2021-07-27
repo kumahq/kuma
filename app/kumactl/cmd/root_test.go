@@ -34,7 +34,7 @@ var _ = Describe("kumactl root cmd", func() {
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
+				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
 			},
 		}
 		rootCmd := cmd.NewRootCmd(rootCtx)
@@ -67,7 +67,7 @@ currentContext: local
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
+				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
 			},
 		}
 		rootCmd := cmd.NewRootCmd(rootCtx)

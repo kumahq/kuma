@@ -264,7 +264,7 @@ var _ = Describe("kumactl inspect zone-ingresses", func() {
 					NewZoneIngressOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneIngressOverviewClient, error) {
 						return testClient, nil
 					},
-					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
 				},
 			}
 

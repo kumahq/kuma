@@ -33,7 +33,7 @@ var _ = Describe("kumactl delete ", func() {
 		BeforeEach(func() {
 			// setup
 			rootCtx = kumactl_cmd.DefaultRootContext()
-			rootCtx.Runtime.NewAPIServerClient = kuma_test.GetMockNewAPIServerClient(nil)
+			rootCtx.Runtime.NewAPIServerClient = kuma_test.GetMockNewAPIServerClient()
 			rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 				return store, nil
 			}

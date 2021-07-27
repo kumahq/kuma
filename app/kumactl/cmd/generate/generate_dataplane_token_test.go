@@ -44,7 +44,7 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 				NewDataplaneTokenClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error) {
 					return generator, nil
 				},
-				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
+				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
 			},
 		}
 

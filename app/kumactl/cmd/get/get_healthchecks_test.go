@@ -73,7 +73,7 @@ var _ = Describe("kumactl get healthchecks", func() {
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
-					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
 				},
 			}
 

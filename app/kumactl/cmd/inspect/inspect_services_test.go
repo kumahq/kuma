@@ -92,7 +92,7 @@ var _ = Describe("kumactl inspect services", func() {
 						overviews: serviceOverviewResources,
 					}, nil
 				},
-				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
+				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(),
 			},
 		}
 
