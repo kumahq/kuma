@@ -54,6 +54,7 @@ type deployOptions struct {
 	serviceVersion string
 	mesh           string
 	dpVersion      string
+	kumactlFlow    bool
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -69,6 +70,12 @@ func WithPostgres(envVars map[string]string) DeployOptionsFunc {
 		for key, value := range envVars {
 			o.env[key] = value
 		}
+	}
+}
+
+func WithKumactlFlow() DeployOptionsFunc {
+	return func(options *deployOptions) {
+		options.kumactlFlow = true
 	}
 }
 

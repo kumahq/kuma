@@ -55,16 +55,9 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	ticker := s.newTicker()
 	defer ticker.Stop()
 
-	var lastStoredState *mesh_proto.DiscoverySubscription
-
 	flush := func(closing bool) {
 		dataplaneID, currentState := s.accessor.GetStatus()
-		if proto.Equal(currentState, lastStoredState) {
-			return
-		}
-
-		copy := proto.Clone(currentState).(*mesh_proto.DiscoverySubscription)
-		if err := s.store.Upsert(s.dataplaneType, dataplaneID, copy); err != nil {
+		if err := s.store.Upsert(s.dataplaneType, dataplaneID, currentState); err != nil {
 			switch {
 			case closing:
 				// When XDS stream is closed, Dataplane Status Tracker executes OnStreamClose which closes stop channel
@@ -90,7 +83,6 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			}
 		} else {
 			sinkLog.V(1).Info("DataplaneInsight saved", "dataplaneid", dataplaneID, "subscription", currentState)
-			lastStoredState = currentState
 		}
 	}
 
@@ -127,14 +119,26 @@ func (s *dataplaneInsightStore) Upsert(
 ) error {
 	switch dataplaneType {
 	case core_mesh.ZoneIngressType:
-		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) {
+		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) bool {
 			insight := resource.(*core_mesh.ZoneIngressInsightResource)
+			if proto.Equal(subscription, insight.Spec.GetLastSubscription()) {
+				sinkLog.Info("zone-ingress, no update")
+				return false
+			}
 			insight.Spec.UpdateSubscription(subscription)
+			sinkLog.Info("zone-ingress, update")
+			return true
 		})
 	case core_mesh.DataplaneType:
-		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) {
+		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) bool {
 			insight := resource.(*core_mesh.DataplaneInsightResource)
+			if proto.Equal(subscription, insight.Spec.GetLastSubscription()) {
+				sinkLog.Info("no update")
+				return false
+			}
 			insight.Spec.UpdateSubscription(subscription)
+			sinkLog.Info("update")
+			return true
 		})
 	default:
 		// Return a designated precondition error since we don't expect other dataplane types.

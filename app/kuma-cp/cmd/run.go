@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/gc"
+
 	"github.com/spf13/cobra"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -17,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/diagnostics"
 	"github.com/kumahq/kuma/pkg/dns"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
-	"github.com/kumahq/kuma/pkg/gc"
 	"github.com/kumahq/kuma/pkg/hds"
 	"github.com/kumahq/kuma/pkg/insights"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
@@ -103,10 +104,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DNS")
 					return err
 				}
-				if err := gc.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up GC")
-					return err
-				}
 				if err := xds.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up XDS")
 					return err
@@ -142,10 +139,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := dns.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up DNS")
-					return err
-				}
-				if err := gc.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up GC")
 					return err
 				}
 				if err := xds.Setup(rt); err != nil {
@@ -193,6 +186,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			if err := metrics.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Metrics")
+				return err
+			}
+			if err := gc.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up GC")
 				return err
 			}
 

@@ -192,10 +192,11 @@ func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneRes
 }
 
 func (d *DataplaneReconciler) updateInsights(dataplaneId core_model.ResourceKey, info snapshotInfo) error {
-	return core_manager.Upsert(d.resManager, dataplaneId, mesh_core.NewDataplaneInsightResource(), func(resource core_model.Resource) {
+	return core_manager.Upsert(d.resManager, dataplaneId, mesh_core.NewDataplaneInsightResource(), func(resource core_model.Resource) bool {
 		insight := resource.(*mesh_core.DataplaneInsightResource)
 		if err := insight.Spec.UpdateCert(core.Now(), info.expiration); err != nil {
 			sdsServerLog.Error(err, "could not update the certificate", "dataplaneId", dataplaneId)
 		}
+		return true
 	}, core_manager.WithConflictRetry(d.upsertConfig.ConflictRetryBaseBackoff, d.upsertConfig.ConflictRetryMaxTimes)) // retry because DataplaneInsight could be updated from other parts of the code
 }

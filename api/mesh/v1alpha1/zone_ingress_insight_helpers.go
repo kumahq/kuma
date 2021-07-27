@@ -49,6 +49,13 @@ func (x *ZoneIngressInsight) IsOnline() bool {
 	return false
 }
 
+func (x *ZoneIngressInsight) GetLastSubscription() *DiscoverySubscription {
+	if len(x.GetSubscriptions()) == 0 {
+		return nil
+	}
+	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
+}
+
 func (x *ZoneIngressInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil, nil
