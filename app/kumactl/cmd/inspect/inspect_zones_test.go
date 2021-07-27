@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
+
 	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -25,7 +27,6 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -241,7 +242,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					NewZoneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneOverviewClient, error) {
 						return testClient, nil
 					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
 				},
 			}
 

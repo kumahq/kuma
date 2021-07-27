@@ -6,10 +6,11 @@ import (
 	"io/ioutil"
 	"os"
 
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/cmd/generate"
 	"github.com/kumahq/kuma/pkg/tls"
 )
@@ -57,7 +58,7 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 		It("should generate client certificate", func() {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := kuma_test.DefaultTestingRootCmd()
 			rootCmd.SetArgs([]string{"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
@@ -91,7 +92,7 @@ Cert was saved in: %s
 
 		It("should not allow to specify control plane hostname", func() {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := kuma_test.DefaultTestingRootCmd()
 			rootCmd.SetArgs([]string{"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
@@ -125,7 +126,7 @@ Cert was saved in: %s
 
 		It("should generate server certificate", func() {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := kuma_test.DefaultTestingRootCmd()
 			rootCmd.SetArgs([]string{"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
@@ -161,7 +162,7 @@ Cert was saved in: %s
 
 		It("should validate that cp-hostname is present", func() {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := kuma_test.DefaultTestingRootCmd()
 			rootCmd.SetArgs([]string{"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -74,7 +74,7 @@ var _ = Describe("kumactl get global-secrets", func() {
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
 				},
 			}
 

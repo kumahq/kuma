@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -21,8 +22,6 @@ import (
 	gomega_types "github.com/onsi/gomega/types"
 
 	"github.com/spf13/cobra"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -405,7 +404,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 					NewDataplaneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.DataplaneOverviewClient, error) {
 						return testClient, nil
 					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
 				},
 			}
 

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
+
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
@@ -262,7 +264,7 @@ var _ = Describe("kumactl inspect zone-ingresses", func() {
 					NewZoneIngressOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneIngressOverviewClient, error) {
 						return testClient, nil
 					},
-					NewAPIServerClient: resources.NewAPIServerClient,
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
 				},
 			}
 

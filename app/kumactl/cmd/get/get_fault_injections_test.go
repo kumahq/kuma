@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -15,8 +17,6 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
@@ -123,7 +123,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
 				},
 			}
 

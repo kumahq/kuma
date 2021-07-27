@@ -4,10 +4,9 @@ import (
 	"io/ioutil"
 	"os"
 
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
@@ -35,7 +34,7 @@ var _ = Describe("kumactl root cmd", func() {
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
 			},
 		}
 		rootCmd := cmd.NewRootCmd(rootCtx)
@@ -68,7 +67,7 @@ currentContext: local
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+				NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
 			},
 		}
 		rootCmd := cmd.NewRootCmd(rootCtx)

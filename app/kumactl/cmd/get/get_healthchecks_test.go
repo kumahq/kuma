@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
 	"github.com/spf13/cobra"
 
@@ -73,7 +73,7 @@ var _ = Describe("kumactl get healthchecks", func() {
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
 				},
 			}
 

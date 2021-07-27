@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
+
 	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	. "github.com/onsi/ginkgo"
@@ -14,8 +16,6 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
@@ -92,7 +92,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
 				},
 			}
 

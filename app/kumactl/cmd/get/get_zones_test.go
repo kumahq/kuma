@@ -8,8 +8,9 @@ import (
 	"strings"
 	"time"
 
+	kuma_test "github.com/kumahq/kuma/pkg/util/test"
+
 	"github.com/kumahq/kuma/api/system/v1alpha1"
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	. "github.com/onsi/ginkgo"
@@ -59,7 +60,7 @@ var _ = Describe("kumactl get zones", func() {
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+					NewAPIServerClient: kuma_test.GetMockNewAPIServerClient(nil),
 				},
 			}
 
