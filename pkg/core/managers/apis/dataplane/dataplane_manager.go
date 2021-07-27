@@ -85,7 +85,7 @@ func (m *dataplaneManager) setInboundsClusterTag(dp *core_mesh.DataplaneResource
 }
 
 func (m *dataplaneManager) setGatewayClusterTag(dp *core_mesh.DataplaneResource) {
-	if m.zone == "" || dp.Spec.Networking == nil || dp.Spec.Networking.Gateway == nil {
+	if m.zone == "" || dp.Spec.GetNetworking().GetGateway() == nil {
 		return
 	}
 	if dp.Spec.Networking.Gateway.Tags == nil {

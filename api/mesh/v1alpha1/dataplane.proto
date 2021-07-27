@@ -135,10 +135,24 @@ message Dataplane {
 
     // Gateway describes a service that ingress should not be proxied.
     message Gateway {
+      enum GatewayType {
+        // A DELEGATED gateway is a independently deployed proxy that
+        // receives inbound traffic that is not proxied by Kuma, and
+        // sends outbound traffic into the Kuma dataplane proxy.
+        DELEGATED = 0;
+        // The BUILTIN gateway type is experimental and unsupported.
+        BUILTIN = 1;
+      }
+
       // Tags associated with a gateway (e.g., Kong, Contour, etc) this
       // dataplane is deployed next to, e.g. service=gateway, env=prod.
       // `service` tag is mandatory.
       map<string, string> tags = 1 [ (validate.rules).map.min_pairs = 1 ];
+
+      // Type of gateway this dataplane manages. The default is a DELEGATED
+      // gateway, which is an external proxy. The BUILTIN gateway type causes
+      // the dataplane proxy itself to be configured as a gateway.
+      GatewayType type = 2;
     }
 
     // TransparentProxying describes configuration for transparent proxying.
