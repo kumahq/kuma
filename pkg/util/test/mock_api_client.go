@@ -23,7 +23,6 @@ func (m *MockAPIServerClient) GetVersion(ctx context.Context) (*types.IndexRespo
 }
 
 func GetMockNewAPIServerClient(version *types.IndexResponse) func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error) {
-
 	var indexResponse types.IndexResponse
 	if version == nil {
 		indexResponse = types.IndexResponse{
