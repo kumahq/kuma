@@ -59,7 +59,7 @@ var _ = Describe("kumactl config control-planes remove", func() {
 			// then
 			Expect(err.Error()).To(MatchRegexp(requiredFlagNotSet("name")))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "name" not set
+			Expect(outbuf.String()).To(ContainSubstring(`Error: required flag(s) "name" not set
 `))
 		})
 
@@ -73,7 +73,7 @@ var _ = Describe("kumactl config control-planes remove", func() {
 			// then
 			Expect(err).To(MatchError(`there is no Control Plane with name "example"`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: there is no Control Plane with name "example"
+			Expect(outbuf.String()).To(ContainSubstring(`Error: there is no Control Plane with name "example"
 `))
 		})
 	})
