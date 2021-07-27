@@ -394,7 +394,7 @@ func (d *Dataplane) GetIdentifyingService() string {
 // IsIngress returns true if this Dataplane specifies an ingress
 // configuration.
 //
-// Deprecated in favor of ZoneIngress.
+// Deprecated: use ZoneIngress instead.
 func (d *Dataplane) IsIngress() bool {
 	if d.GetNetworking() == nil {
 		return false
