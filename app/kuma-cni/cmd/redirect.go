@@ -15,34 +15,46 @@ func redirect(netNS string, pod *PodInfo) error {
 	hostNs, err := netns.Get()
 	if err != nil {
 		Log.Errorf("failed getting host namespace: %v", err)
+
 		return err
 	}
+
 	Log.Info("host namespace: ", hostNs)
+
 	defer func() {
-		if err = hostNs.Close(); err != nil {
+		if err := hostNs.Close(); err != nil {
 			Log.Error("failed closing host namespace handle: ", err)
+
+			return
 		}
+
 		Log.Info("closed host namespace handle: ", hostNs)
 	}()
 
 	targetNs, err := netns.GetFromPath(netNS)
 	if err != nil {
 		Log.Errorf("failed switching to desired namespace: %v", err)
+
 		return err
 	}
 
 	/* Switch to the desired namespace */
-	if err = netns.Set(targetNs); err != nil {
+	if err := netns.Set(targetNs); err != nil {
 		Log.Errorf("failed switching to desired namespace: %v", err)
+
 		return err
 	}
+
 	Log.Info("switched to desired namespace: ", targetNs)
 
 	/* Don't forget to switch back to the host namespace */
 	defer func() {
-		if err = netns.Set(hostNs); err != nil {
+		if err := netns.Set(hostNs); err != nil {
 			Log.Errorf("failed switching back to host namespace: %v", err)
+
+			return
 		}
+
 		Log.Info("switched back to host namespace: ", hostNs)
 	}()
 
@@ -50,30 +62,35 @@ func redirect(netNS string, pod *PodInfo) error {
 	currentNs, err := netns.Get()
 	if err != nil {
 		Log.Errorf("failed getting current namespace: %v", err)
+
 		return err
 	}
+
 	Log.Info("current namespace: ", currentNs)
 
 	if hostNs == currentNs {
 		Log.Errorf("unable to switch from %v to %v", hostNs, currentNs)
+
 		return fmt.Errorf("unable to switch from %v to %v", hostNs, currentNs)
 	}
-
-	tp := transparentproxy.DefaultTransparentProxy()
 
 	tpRedirect, err := kubernetes.NewPodRedirectForPod(pod.pod)
 	if err != nil {
 		Log.Errorf("failed generate pod redirect: %v", err)
+
 		return err
 	}
 
-	Log.Info("tpRedirect.AsTransparentProxyConfig(): ", tpRedirect.AsTransparentProxyConfig())
+	tp := transparentproxy.DefaultTransparentProxy()
+	tpConfig := tpRedirect.AsTransparentProxyConfig()
 
-	_, err = tp.Setup(tpRedirect.AsTransparentProxyConfig())
-	if err != nil {
+	Log.Info("transparent proxy config: ", tpConfig)
+
+	if _, err := tp.Setup(tpConfig); err != nil {
 		Log.Errorf("failed to setup transparent proxy: %v", err)
+
 		return err
 	}
 
-	return err
+	return nil
 }
