@@ -604,10 +604,6 @@ func (t *GatewayResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *GatewayResource) Validate() error {
-	return nil
-}
-
 func (t *GatewayResource) Sources() []*mesh_proto.Selector {
 	return t.Spec.GetSources()
 }
