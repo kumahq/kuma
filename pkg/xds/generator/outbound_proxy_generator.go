@@ -9,7 +9,6 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 
 	kuma_mesh "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -254,7 +253,8 @@ func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []env
 	return InferServiceProtocol(allEndpoints)
 }
 
-func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *kuma_mesh.Dataplane_Networking_Outbound, splitCounter *splitCounter) (routes envoy_common.Routes, err error) {
+func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *kuma_mesh.Dataplane_Networking_Outbound, splitCounter *splitCounter) (envoy_common.Routes, error) {
+	var routes envoy_common.Routes
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 	route := proxy.Routing.TrafficRoutes[oface]
@@ -273,8 +273,10 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 	// If we have same split in many HTTP matches we can use the same cluster with different weight
 	clusterCache := map[string]string{}
 
-	clustersFromSplit := func(splits []*kuma_mesh.TrafficRoute_Split) []envoy_common.Cluster {
-		var clusters []envoy_common.Cluster
+	// Return internal, external
+	clustersFromSplit := func(splits []*kuma_mesh.TrafficRoute_Split) ([]envoy_common.Cluster, []envoy_common.Cluster) {
+		var clusters_internal []envoy_common.Cluster
+		var clusters_external []envoy_common.Cluster
 		for _, destination := range splits {
 			service := destination.Destination[kuma_mesh.ServiceTag]
 			if destination.GetWeight().GetValue() == 0 {
@@ -313,41 +315,71 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 				clusterCache[cluster.Tags().String()] = cluster.Name()
 			}
 
-			clusters = append(clusters, cluster)
+			if isExternalService {
+				clusters_external = append(clusters_external, cluster)
+			} else {
+				clusters_internal = append(clusters_internal, cluster)
+			}
 		}
-		return clusters
+		return clusters_internal, clusters_external
 	}
 
-	addRoutes := func(route *mesh_core.TrafficRouteResource, rateLimit *mesh_proto.RateLimit, routes envoy_common.Routes) envoy_common.Routes {
-		for _, http := range route.Spec.GetConf().GetHttp() {
+	for _, http := range route.Spec.GetConf().GetHttp() {
+		clusters_internal, clusters_external := clustersFromSplit(http.GetSplitWithDestination())
+		route := envoy_common.Route{
+			Match:    http.Match,
+			Modify:   http.Modify,
+			Clusters: clusters_internal,
+		}
+		routes = append(routes, route)
+
+		if len(proxy.Policies.RateLimits.Outbound[oface]) == 0 {
 			route := envoy_common.Route{
-				Match:     http.Match,
-				Modify:    http.Modify,
-				RateLimit: rateLimit,
-				Clusters:  clustersFromSplit(http.GetSplitWithDestination()),
+				Match:    http.Match,
+				Modify:   http.Modify,
+				Clusters: clusters_external,
 			}
 			routes = append(routes, route)
+		} else {
+			for _, rateLimit := range proxy.Policies.RateLimits.Outbound[oface] {
+				route := envoy_common.Route{
+					Match:     http.Match,
+					Modify:    http.Modify,
+					RateLimit: rateLimit,
+					Clusters:  clusters_external,
+				}
+				routes = append(routes, route)
+			}
 		}
 
-		if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) > 0 {
-			cfs := clustersFromSplit(defaultDestination)
+	}
+
+	if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) > 0 {
+		clusters_internal, clusters_external := clustersFromSplit(defaultDestination)
+		route := envoy_common.Route{
+			Match:    nil,
+			Clusters: clusters_internal,
+		}
+		routes = append(routes, route)
+
+		if len(proxy.Policies.RateLimits.Outbound[oface]) == 0 {
 			route := envoy_common.Route{
-				Match:     nil,
-				Clusters:  cfs,
-				RateLimit: rateLimit,
+				Match:    nil,
+				Clusters: clusters_external,
 			}
 			routes = append(routes, route)
+		} else {
+			for _, rateLimit := range proxy.Policies.RateLimits.Outbound[oface] {
+				route := envoy_common.Route{
+					Match:     nil,
+					RateLimit: rateLimit,
+					Clusters:  clusters_external,
+				}
+				routes = append(routes, route)
+			}
 		}
-		return routes
+
 	}
 
-	if len(proxy.Policies.RateLimits.Outbound[oface]) < 1 {
-		routes = addRoutes(route, nil, routes)
-	} else {
-		for _, rateLimit := range proxy.Policies.RateLimits.Outbound[oface] {
-			routes = addRoutes(route, rateLimit, routes)
-		}
-	}
-
-	return
+	return routes, nil
 }

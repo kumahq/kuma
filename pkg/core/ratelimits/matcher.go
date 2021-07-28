@@ -52,7 +52,6 @@ func buildRateLimitMap(
 		Outbound: core_xds.OutboundRateLimitsMap{},
 	}
 	for inbound, connectionPolicies := range policyMap {
-		result.Inbound[inbound] = []*mesh_proto.RateLimit{}
 		for _, policy := range connectionPolicies {
 			result.Inbound[inbound] = append(result.Inbound[inbound], policy.(*mesh_core.RateLimitResource).Spec)
 		}
@@ -60,7 +59,7 @@ func buildRateLimitMap(
 
 	outboundMap := policy.SelectOutboundConnectionPolicies(dataplane, policies)
 
-	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
+	for _, outbound := range dataplane.Spec.GetNetworking().GetOutbound() {
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 		oface := dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
 		if policy, exists := outboundMap[serviceName]; exists {
