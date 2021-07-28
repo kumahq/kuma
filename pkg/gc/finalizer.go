@@ -86,10 +86,10 @@ func (f *subscriptionFinalizer) finalize(typ core_model.ResourceType) error {
 			continue
 		}
 		if insight.GetLastSubscription().GetCandidateForDisconnect() {
-			log.Info("mark subscription as disconnected")
+			log.V(1).Info("mark subscription as disconnected")
 			insight.GetLastSubscription().SetDisconnectTime(core.Now())
 		} else {
-			log.Info("mark subscription as a candidate for disconnect")
+			log.V(1).Info("mark subscription as a candidate for disconnect")
 			insight.GetLastSubscription().SetCandidateForDisconnect(true)
 		}
 		upsertInsight, _ := registry.Global().NewObject(typ)

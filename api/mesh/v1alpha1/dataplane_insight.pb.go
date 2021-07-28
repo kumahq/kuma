@@ -107,7 +107,8 @@ type DiscoverySubscription struct {
 	Status *DiscoverySubscriptionStatus `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
 	// Version of Envoy and Kuma dataplane
 	Version *Version `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
-	// CandidateForDisconnect is an indicator if the data plane proxy should be disconnected in the near future
+	// CandidateForDisconnect is an indicator if the data plane proxy should be
+	// disconnected in the near future
 	CandidateForDisconnect bool `protobuf:"varint,7,opt,name=candidate_for_disconnect,json=candidateForDisconnect,proto3" json:"candidate_for_disconnect,omitempty"`
 }
 

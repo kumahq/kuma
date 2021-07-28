@@ -122,22 +122,18 @@ func (s *dataplaneInsightStore) Upsert(
 		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) bool {
 			insight := resource.(*core_mesh.ZoneIngressInsightResource)
 			if proto.Equal(subscription, insight.Spec.GetLastSubscription()) {
-				sinkLog.Info("zone-ingress, no update")
 				return false
 			}
 			insight.Spec.UpdateSubscription(subscription)
-			sinkLog.Info("zone-ingress, update")
 			return true
 		})
 	case core_mesh.DataplaneType:
 		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) bool {
 			insight := resource.(*core_mesh.DataplaneInsightResource)
 			if proto.Equal(subscription, insight.Spec.GetLastSubscription()) {
-				sinkLog.Info("no update")
 				return false
 			}
 			insight.Spec.UpdateSubscription(subscription)
-			sinkLog.Info("update")
 			return true
 		})
 	default:
