@@ -26,6 +26,7 @@ func ResilienceStandaloneUniversal() {
 
 		optsUniversal = []DeployOptionsFunc{
 			WithPostgres(postgres.From(universal, Kuma1).GetEnvVars()),
+			WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "30s"),
 		}
 
 		err = NewClusterSetup().
@@ -76,6 +77,6 @@ func ResilienceStandaloneUniversal() {
 		// then DPP is offline
 		Eventually(func() (string, error) {
 			return universal.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes")
-		}, "180s", "1s").Should(ContainSubstring("Offline"))
+		}, "40s", "1s").Should(ContainSubstring("Offline"))
 	})
 }

@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kumahq/kuma/api/helpers"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -68,16 +70,20 @@ func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time
 	return nil
 }
 
-func (x *DataplaneInsight) UpdateSubscription(s *DiscoverySubscription) {
+func (x *DataplaneInsight) UpdateSubscription(s helpers.Subscription) {
 	if x == nil {
 		return
 	}
-	i, old := x.GetSubscription(s.Id)
+	discoverySubscription, ok := s.(*DiscoverySubscription)
+	if !ok {
+		return
+	}
+	i, old := x.GetSubscription(discoverySubscription.Id)
 	if old != nil {
-		x.Subscriptions[i] = s
+		x.Subscriptions[i] = discoverySubscription
 	} else {
 		x.finalizeSubscriptions()
-		x.Subscriptions = append(x.Subscriptions, s)
+		x.Subscriptions = append(x.Subscriptions, discoverySubscription)
 	}
 }
 
@@ -93,6 +99,7 @@ func (x *DataplaneInsight) finalizeSubscriptions() {
 	}
 }
 
+// todo(lobkovilya): delete GetLatestSubscription, use GetLastSubscription instead
 func (x *DataplaneInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil, nil
@@ -112,11 +119,19 @@ func (x *DataplaneInsight) GetLatestSubscription() (*DiscoverySubscription, *tim
 	return x.Subscriptions[idx], latest
 }
 
-func (x *DataplaneInsight) GetLastSubscription() *DiscoverySubscription {
+func (x *DataplaneInsight) GetLastSubscription() helpers.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil
 	}
 	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
+}
+
+func (x *DiscoverySubscription) SetCandidateForDisconnect(b bool) {
+	x.CandidateForDisconnect = b
+}
+
+func (x *DiscoverySubscription) SetDisconnectTime(t time.Time) {
+	x.DisconnectTime = timestamppb.New(t)
 }
 
 func (x *DataplaneInsight) Sum(v func(*DiscoverySubscription) uint64) uint64 {

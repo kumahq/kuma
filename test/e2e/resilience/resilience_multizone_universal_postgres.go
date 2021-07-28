@@ -13,7 +13,7 @@ import (
 
 func ResilienceMultizoneUniversalPostgres() {
 	var global, zoneUniversal Cluster
-	var optsGlobal, optsRemote1 []DeployOptionsFunc
+	var optsGlobal, optsZone1 []DeployOptionsFunc
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -32,6 +32,7 @@ func ResilienceMultizoneUniversalPostgres() {
 
 		optsGlobal = []DeployOptionsFunc{
 			WithPostgres(postgres.From(global, Kuma1).GetEnvVars()),
+			WithEnv("KUMA_METRICS_ZONE_IDLE_TIMEOUT", "30s"),
 		}
 
 		err = NewClusterSetup().
@@ -51,13 +52,14 @@ func ResilienceMultizoneUniversalPostgres() {
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
 
-		optsRemote1 = []DeployOptionsFunc{
+		optsZone1 = []DeployOptionsFunc{
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithPostgres(postgres.From(zoneUniversal, Kuma2).GetEnvVars()),
+			WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "30s"),
 		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsRemote1...)).
+			Install(Kuma(core.Zone, optsZone1...)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -66,7 +68,7 @@ func ResilienceMultizoneUniversalPostgres() {
 	})
 
 	E2EAfterEach(func() {
-		err := zoneUniversal.DeleteKuma(optsRemote1...)
+		err := zoneUniversal.DeleteKuma(optsZone1...)
 		Expect(err).ToNot(HaveOccurred())
 		err = zoneUniversal.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
@@ -105,7 +107,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		// then zone is offline
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "180s", "1s").Should(ContainSubstring("Offline"))
+		}, "40s", "1s").Should(ContainSubstring("Offline"))
 	})
 
 	It("should mark zone as offline after global control-plane is ungracefully restarted", func() {
@@ -171,6 +173,6 @@ func ResilienceMultizoneUniversalPostgres() {
 		// then zone-ingress is offline
 		Eventually(func() (string, error) {
 			return zoneUniversal.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
-		}, "180s", "1s").Should(ContainSubstring("Offline"))
+		}, "40s", "1s").Should(ContainSubstring("Offline"))
 	})
 }

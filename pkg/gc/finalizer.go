@@ -4,13 +4,14 @@ import (
 	"context"
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/pkg/errors"
+
+	kuma_interfaces "github.com/kumahq/kuma/api/helpers"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 
 	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
@@ -18,33 +19,51 @@ var (
 	finalizerLog = core.Log.WithName("finalizer")
 )
 
-type finalizer struct {
-	rm      manager.ResourceManager
-	polling time.Duration
+// subscriptionFinalizer is a component that allows to finalize subscriptions for Insights.
+// The component iterates over all online Insights on every tick and marks their last
+// subscriptions as a candidate for disconnection. If subscription has already been marked as
+// a candidate then component finalizes the subscription by setting DisconnectTime.
+//
+// Every Insight has a statusSink that periodically updates Subscriptions. That's why if there
+// is an active connection between Kuma CP and DPP (or Global CP and Zone CP) then Subscription
+// will be unmarked back from the candidate status. If there is no active connection then after 2 ticks
+// Insight will be considered Offline.
+//
+// This component allows to solve the corner case we had with Insights:
+// 1. Kuma CP is down
+// 2. DPP is down
+// 3. Kuma CP is up
+// 4. DPP status is Online whereas it should be Offline
+type subscriptionFinalizer struct {
+	rm        manager.ResourceManager
+	newTicker func() *time.Ticker
+	types     []core_model.ResourceType
 }
 
-func NewFinalizer(rm manager.ResourceManager, polling time.Duration) component.Component {
-	return &finalizer{
-		rm:      rm,
-		polling: polling,
+func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time.Ticker, types ...core_model.ResourceType) component.Component {
+	return &subscriptionFinalizer{
+		rm:        rm,
+		types:     types,
+		newTicker: newTicker,
 	}
 }
 
-func (f *finalizer) Start(stop <-chan struct{}) error {
-	ticker := time.NewTicker(f.polling)
+func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
+	ticker := f.newTicker()
 	defer ticker.Stop()
+	for _, typ := range f.types {
+		if err := validateType(typ); err != nil {
+			return err
+		}
+	}
 	finalizerLog.Info("started")
 	for {
 		select {
 		case <-ticker.C:
-			if err := f.finalizeDataplaneInsights(); err != nil {
-				finalizerLog.Error(err, "unable to finalize Dataplane Insights")
-			}
-			if err := f.finalizeZoneInsights(); err != nil {
-				finalizerLog.Error(err, "unable to finalize Zone Insights")
-			}
-			if err := f.finalizeZoneIngressInsights(); err != nil {
-				finalizerLog.Error(err, "unable to finalize Zone Ingress Insights")
+			for _, typ := range f.types {
+				if err := f.finalize(typ); err != nil {
+					finalizerLog.Error(err, "unable to finalize subscription", "type", typ)
+				}
 			}
 		case <-stop:
 			finalizerLog.Info("stopped")
@@ -53,97 +72,50 @@ func (f *finalizer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (f *finalizer) finalizeDataplaneInsights() error {
+func (f *subscriptionFinalizer) finalize(typ core_model.ResourceType) error {
 	ctx := context.Background()
-	dataplaneInsights := &core_mesh.DataplaneInsightResourceList{}
-	if err := f.rm.List(ctx, dataplaneInsights); err != nil {
+	insights, _ := registry.Global().NewList(typ)
+	if err := f.rm.List(ctx, insights); err != nil {
 		return err
 	}
-	for _, di := range dataplaneInsights.Items {
-		if !di.Spec.IsOnline() {
+
+	for _, item := range insights.GetItems() {
+		log := finalizerLog.WithValues("type", typ, "name", item.GetMeta().GetName(), "mesh", item.GetMeta().GetMesh())
+		insight := item.GetSpec().(kuma_interfaces.Insight)
+		if !insight.IsOnline() {
 			continue
 		}
-		if di.Spec.GetLastSubscription().GetCandidateForDisconnect() {
-			finalizerLog.Info("mark data plane proxy as disconnected", "name", di.GetMeta().GetName(), "mesh", di.GetMeta().GetMesh())
-			di.Spec.GetLastSubscription().DisconnectTime = timestamppb.New(core.Now())
+		if insight.GetLastSubscription().GetCandidateForDisconnect() {
+			log.Info("mark subscription as disconnected")
+			insight.GetLastSubscription().SetDisconnectTime(core.Now())
 		} else {
-			finalizerLog.Info("mark data plane proxy as a candidate for disconnect", "name", di.GetMeta().GetName(), "mesh", di.GetMeta().GetMesh())
-			di.Spec.GetLastSubscription().CandidateForDisconnect = true
+			log.Info("mark subscription as a candidate for disconnect")
+			insight.GetLastSubscription().SetCandidateForDisconnect(true)
 		}
-		err := manager.Upsert(f.rm, model.MetaToResourceKey(di.GetMeta()), core_mesh.NewDataplaneInsightResource(), func(resource model.Resource) bool {
-			insight := resource.(*core_mesh.DataplaneInsightResource)
-			insight.Spec.UpdateSubscription(di.Spec.GetLastSubscription())
+		upsertInsight, _ := registry.Global().NewObject(typ)
+		err := manager.Upsert(f.rm, core_model.MetaToResourceKey(item.GetMeta()), upsertInsight, func(_ core_model.Resource) bool {
+			upsertInsight.GetSpec().(kuma_interfaces.Insight).UpdateSubscription(insight.GetLastSubscription())
 			return true
 		})
 		if err != nil {
-			finalizerLog.Error(err, "unable to finalize data plane insight", "name", di.GetMeta().GetName(), "mesh", di.GetMeta().GetMesh())
+			log.Error(err, "unable to finalize subscription")
 		}
 	}
 	return nil
 }
 
-func (f *finalizer) finalizeZoneInsights() error {
-	ctx := context.Background()
-	zoneInsights := &system.ZoneInsightResourceList{}
-	if err := f.rm.List(ctx, zoneInsights); err != nil {
+func validateType(typ core_model.ResourceType) error {
+	obj, err := registry.Global().NewObject(typ)
+	if err != nil {
 		return err
 	}
-	for _, zi := range zoneInsights.Items {
-		if !zi.Spec.IsOnline() {
-			continue
-		}
-		lastSubscription := zi.Spec.GetLastSubscription()
-		if lastSubscription == nil {
-			continue
-		}
-		if lastSubscription.GetCandidateForDisconnect() {
-			finalizerLog.Info("mark zone as disconnected", "name", zi.GetMeta().GetName())
-			lastSubscription.DisconnectTime = timestamppb.New(core.Now())
-		} else {
-			finalizerLog.Info("mark zone as a candidate for disconnect", "name", zi.GetMeta().GetName())
-			lastSubscription.CandidateForDisconnect = true
-		}
-		err := manager.Upsert(f.rm, model.MetaToResourceKey(zi.GetMeta()), system.NewZoneInsightResource(), func(resource model.Resource) bool {
-			insight := resource.(*system.ZoneInsightResource)
-			insight.Spec.UpdateSubscription(lastSubscription)
-			return true
-		})
-		if err != nil {
-			finalizerLog.Error(err, "unable to finalize data plane insight", "name", zi.GetMeta().GetName(), "mesh", zi.GetMeta().GetMesh())
-		}
+	_, ok := obj.GetSpec().(kuma_interfaces.Insight)
+	if !ok {
+		return errors.Errorf("type %v doesn't implement interfaces.Insight", typ)
 	}
 	return nil
 }
 
-func (f *finalizer) finalizeZoneIngressInsights() error {
-	ctx := context.Background()
-	zoneIngressInsights := &core_mesh.ZoneIngressInsightResourceList{}
-	if err := f.rm.List(ctx, zoneIngressInsights); err != nil {
-		return err
-	}
-	for _, zi := range zoneIngressInsights.Items {
-		if !zi.Spec.IsOnline() {
-			continue
-		}
-		if zi.Spec.GetLastSubscription().GetCandidateForDisconnect() {
-			finalizerLog.Info("mark zone ingress as disconnected", "name", zi.GetMeta().GetName(), "mesh", zi.GetMeta().GetMesh())
-			zi.Spec.GetLastSubscription().DisconnectTime = timestamppb.New(core.Now())
-		} else {
-			finalizerLog.Info("mark zone ingress as a candidate for disconnect", "name", zi.GetMeta().GetName(), "mesh", zi.GetMeta().GetMesh())
-			zi.Spec.GetLastSubscription().CandidateForDisconnect = true
-		}
-		err := manager.Upsert(f.rm, model.MetaToResourceKey(zi.GetMeta()), core_mesh.NewZoneIngressInsightResource(), func(resource model.Resource) bool {
-			insight := resource.(*core_mesh.ZoneIngressInsightResource)
-			insight.Spec.UpdateSubscription(zi.Spec.GetLastSubscription())
-			return true
-		})
-		if err != nil {
-			finalizerLog.Error(err, "unable to finalize data plane insight", "name", zi.GetMeta().GetName(), "mesh", zi.GetMeta().GetMesh())
-		}
-	}
-	return nil
-}
-
-func (f *finalizer) NeedLeaderElection() bool {
+func (f *subscriptionFinalizer) NeedLeaderElection() bool {
 	return true
 }

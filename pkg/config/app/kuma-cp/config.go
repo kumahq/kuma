@@ -53,8 +53,9 @@ func (m *Metrics) Validate() error {
 }
 
 type DataplaneMetrics struct {
-	Enabled           bool `yaml:"enabled" envconfig:"kuma_metrics_dataplane_enabled"`
-	SubscriptionLimit int  `yaml:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
+	Enabled           bool          `yaml:"enabled" envconfig:"kuma_metrics_dataplane_enabled"`
+	SubscriptionLimit int           `yaml:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
+	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"kuma_metrics_dataplane_idle_timeout"`
 }
 
 func (d *DataplaneMetrics) Sanitize() {
@@ -68,8 +69,9 @@ func (d *DataplaneMetrics) Validate() error {
 }
 
 type ZoneMetrics struct {
-	Enabled           bool `yaml:"enabled" envconfig:"kuma_metrics_zone_enabled"`
-	SubscriptionLimit int  `yaml:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
+	Enabled           bool          `yaml:"enabled" envconfig:"kuma_metrics_zone_enabled"`
+	SubscriptionLimit int           `yaml:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
+	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"kuma_metrics_zone_idle_timeout"`
 }
 
 func (d *ZoneMetrics) Sanitize() {
@@ -178,10 +180,12 @@ func DefaultConfig() Config {
 			Dataplane: &DataplaneMetrics{
 				Enabled:           true,
 				SubscriptionLimit: 2,
+				IdleTimeout:       5 * time.Minute,
 			},
 			Zone: &ZoneMetrics{
 				Enabled:           true,
 				SubscriptionLimit: 10,
+				IdleTimeout:       5 * time.Minute,
 			},
 			Mesh: &MeshMetrics{
 				MinResyncTimeout: 1 * time.Second,

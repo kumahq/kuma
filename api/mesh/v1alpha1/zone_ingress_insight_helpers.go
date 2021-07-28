@@ -3,6 +3,8 @@ package v1alpha1
 import (
 	"time"
 
+	"github.com/kumahq/kuma/api/helpers"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -15,16 +17,20 @@ func (x *ZoneIngressInsight) GetSubscription(id string) (int, *DiscoverySubscrip
 	return -1, nil
 }
 
-func (x *ZoneIngressInsight) UpdateSubscription(s *DiscoverySubscription) {
+func (x *ZoneIngressInsight) UpdateSubscription(s helpers.Subscription) {
 	if x == nil {
 		return
 	}
-	i, old := x.GetSubscription(s.Id)
+	discoverySubscription, ok := s.(*DiscoverySubscription)
+	if !ok {
+		return
+	}
+	i, old := x.GetSubscription(discoverySubscription.Id)
 	if old != nil {
-		x.Subscriptions[i] = s
+		x.Subscriptions[i] = discoverySubscription
 	} else {
 		x.finalizeSubscriptions()
-		x.Subscriptions = append(x.Subscriptions, s)
+		x.Subscriptions = append(x.Subscriptions, discoverySubscription)
 	}
 }
 
@@ -49,13 +55,14 @@ func (x *ZoneIngressInsight) IsOnline() bool {
 	return false
 }
 
-func (x *ZoneIngressInsight) GetLastSubscription() *DiscoverySubscription {
+func (x *ZoneIngressInsight) GetLastSubscription() helpers.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil
 	}
 	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
 }
 
+// todo(lobkovilya): delete GetLatestSubscription, use GetLastSubscription instead
 func (x *ZoneIngressInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil, nil

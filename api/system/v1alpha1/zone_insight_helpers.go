@@ -3,6 +3,8 @@ package v1alpha1
 import (
 	"time"
 
+	"github.com/kumahq/kuma/api/helpers"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -22,6 +24,7 @@ func (x *ZoneInsight) GetSubscription(id string) (int, *KDSSubscription) {
 	return -1, nil
 }
 
+// todo(lobkovilya): delete GetLatestSubscription, use GetLastSubscription instead
 func (x *ZoneInsight) GetLatestSubscription() (*KDSSubscription, *time.Time) {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil, nil
@@ -41,7 +44,7 @@ func (x *ZoneInsight) GetLatestSubscription() (*KDSSubscription, *time.Time) {
 	return x.Subscriptions[idx], latest
 }
 
-func (x *ZoneInsight) GetLastSubscription() *KDSSubscription {
+func (x *ZoneInsight) GetLastSubscription() helpers.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil
 	}
@@ -57,12 +60,12 @@ func (x *ZoneInsight) IsOnline() bool {
 	return false
 }
 
-func (x *KDSSubscription) SetCandidateForDisconnect() {
-	x.CandidateForDisconnect = true
+func (x *KDSSubscription) SetCandidateForDisconnect(b bool) {
+	x.CandidateForDisconnect = b
 }
 
-func (x *KDSSubscription) IsCandidateForDisconnect() bool {
-	return x.CandidateForDisconnect
+func (x *KDSSubscription) SetDisconnectTime(time time.Time) {
+	x.DisconnectTime = timestamppb.New(time)
 }
 
 func (x *ZoneInsight) Sum(v func(*KDSSubscription) uint64) uint64 {
@@ -73,16 +76,20 @@ func (x *ZoneInsight) Sum(v func(*KDSSubscription) uint64) uint64 {
 	return result
 }
 
-func (x *ZoneInsight) UpdateSubscription(s *KDSSubscription) {
+func (x *ZoneInsight) UpdateSubscription(s helpers.Subscription) {
 	if x == nil {
 		return
 	}
-	i, old := x.GetSubscription(s.Id)
+	kdsSubscription, ok := s.(*KDSSubscription)
+	if !ok {
+		return
+	}
+	i, old := x.GetSubscription(kdsSubscription.Id)
 	if old != nil {
-		x.Subscriptions[i] = s
+		x.Subscriptions[i] = kdsSubscription
 	} else {
 		x.finalizeSubscriptions()
-		x.Subscriptions = append(x.Subscriptions, s)
+		x.Subscriptions = append(x.Subscriptions, kdsSubscription)
 	}
 }
 
