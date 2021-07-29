@@ -24,6 +24,22 @@ message KumaResourceOptions {
 
   // Whether to skip type registration for this resource.
   bool skip_registration = 6;
+
+  // ResourceName is the name of the policy for resource name usage in kumactl
+  string resource_name = 7;
+
+  // ResourceNamePlural is only to be set if the plural of the resource is
+  // irregular (not just adding a 's' at the end).
+  string resource_name_plural = 8;
+
+  // IsReadOnly if the resource is read only
+  bool is_read_only = 9;
+
+  // SkipWs whether this entity should have api endpoints
+  bool skip_ws = 10;
+
+  // WsAdmin whether this entity requires admin auth to access these endpoints
+  bool ws_admin = 11;
 }
 
 extend google.protobuf.MessageOptions {

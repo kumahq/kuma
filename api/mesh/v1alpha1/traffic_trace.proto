@@ -20,6 +20,7 @@ message TrafficTrace {
   option (kuma.mesh.resource).name = "TrafficTraceResource";
   option (kuma.mesh.resource).type = "TrafficTrace";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).resource_name = "traffic-trace";
 
   // List of selectors to match dataplanes.
   repeated Selector selectors = 1;
