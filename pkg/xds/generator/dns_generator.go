@@ -24,7 +24,13 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 		return nil, nil // DNS only makes sense when transparent proxy is used
 	}
 
-	vips := g.computeVIPs(proxy)
+	vips := map[string]string{}
+	for _, dnsOutbound := range proxy.Routing.VipDomains {
+		for _, domain := range dnsOutbound.Domains {
+			vips[domain] = dnsOutbound.Address
+		}
+	}
+
 	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 		Configure(envoy_listeners.InboundListener(names.GetDNSListenerName(), "127.0.0.1", dnsPort, core_xds.SocketAddressProtocolUDP)).
 		Configure(envoy_listeners.DNS(vips, emptyDnsPort)).
@@ -40,14 +46,4 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 		Origin:   OriginDNS,
 	})
 	return resources, nil
-}
-
-func (g DNSGenerator) computeVIPs(proxy *core_xds.Proxy) map[string][]string {
-	meshedVips := map[string][]string{}
-	for _, dnsOutbound := range proxy.Routing.VipDomains {
-		for _, domain := range dnsOutbound.Domains {
-			meshedVips[domain] = []string{dnsOutbound.Address}
-		}
-	}
-	return meshedVips
 }

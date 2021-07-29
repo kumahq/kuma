@@ -28,7 +28,7 @@ func VIPOutbounds(
 	vipList vips.List,
 	tldomain string,
 	externalServices []*core_mesh.ExternalServiceResource,
-) ([]xds.VipDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
+) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
 	type vipEntry struct {
 		ip        string
 		port      uint32
@@ -116,7 +116,7 @@ func VIPOutbounds(
 	}
 
 	sort.Strings(services)
-	var vipDomains []xds.VipDomains
+	var vipDomains []xds.VIPDomains
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, service := range services {
 		entries := serviceVIPMap[service]
@@ -126,7 +126,7 @@ func VIPOutbounds(
 				Tags:    map[string]string{mesh_proto.ServiceTag: service},
 				Port:    entry.port,
 			})
-			vip := xds.VipDomains{
+			vip := xds.VIPDomains{
 				Address: entry.ip,
 			}
 			switch entry.entryType {

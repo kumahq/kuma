@@ -242,7 +242,7 @@ var _ = Describe("VIPOutbounds", func() {
 
 		actualVips, actualOutbounds := topology.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, nil, vipList, "mesh", externalServices)
 
-		expectedVips := []xds.VipDomains{
+		expectedVips := []xds.VIPDomains{
 			{Address: "240.0.0.6", Domains: []string{"first-external-service.mesh"}},
 			{Address: "240.0.0.7", Domains: []string{"second-external-service.mesh"}},
 			{Address: "240.0.0.1", Domains: []string{"service-1.mesh"}},
@@ -328,7 +328,7 @@ var _ = Describe("VIPOutbounds", func() {
 
 		actualVips, actualOutbounds := topology.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, zoneIngresses, vipList, "mesh", nil)
 
-		expectedVips := []xds.VipDomains{
+		expectedVips := []xds.VIPDomains{
 			{Address: "240.0.0.2", Domains: []string{"new-ingress-svc-1.mesh"}},
 			{Address: "240.0.0.3", Domains: []string{"new-ingress-svc-2.mesh"}},
 			{Address: "240.0.0.0", Domains: []string{"old-ingress-svc-1.mesh"}},

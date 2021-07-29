@@ -108,9 +108,9 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		return nil, nil, err
 	}
 
-	var domains []xds.VipDomains
+	var domains []xds.VIPDomains
 	outbounds := dataplane.Spec.Networking.Outbound
-	if dataplane.Spec.Networking.GetTransparentProxying() != nil && !dataplane.Spec.IsIngress() {
+	if dataplane.Spec.Networking.GetTransparentProxying() != nil {
 		// resolve all the domains
 		domains, outbounds = xds_topology.VIPOutbounds(core_model.MetaToResourceKey(dataplane.Meta), meshContext.Dataplanes.Items, zoneIngresses.Items, dnsResolver.GetVIPs(), dnsResolver.GetDomain(), matchedExternalServices)
 
