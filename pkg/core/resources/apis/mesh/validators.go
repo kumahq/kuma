@@ -140,6 +140,17 @@ func ValidateThreshold(path validators.PathBuilder, threshold uint32) (err valid
 	return
 }
 
+// ValidatePort validates that port is a valid TCP or UDP port number.
+func ValidatePort(path validators.PathBuilder, port uint32) validators.ValidationError {
+	err := validators.ValidationError{}
+
+	if port == 0 || port > 65535 {
+		err.AddViolationAt(path, "port must be in the range [1, 65535]")
+	}
+
+	return err
+}
+
 func AllowedValuesHint(values ...string) string {
 	options := strings.Join(values, ", ")
 	if len(values) == 0 {

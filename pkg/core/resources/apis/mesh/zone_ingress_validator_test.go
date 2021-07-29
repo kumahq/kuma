@@ -120,7 +120,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.port
-                  message: port has to be defined`,
+                  message: port must be in the range [1, 65535]`,
 		}),
 		Entry("invalid advertised address, port and available service", testCase{
 			dataplane: `
@@ -152,7 +152,7 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.advertisedAddress.address
                   message: address has to be valid IP address or domain name
                 - field: networking.advertisedPort
-                  message: port has to be in range of [1, 65535]
+                  message: port must be in the range [1, 65535]
                 - field: availableService[2].tags["kuma.io/service"]
                   message: cannot be empty
                 - field: availableService[3].tags.tags["kuma.io/service"]
