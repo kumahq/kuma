@@ -8,13 +8,13 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/kumahq/kuma/pkg/util/test"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl config control-planes use", func() {
@@ -39,14 +39,13 @@ var _ = Describe("kumactl config control-planes use", func() {
 		rootCmd = test.DefaultTestingRootCmd()
 
 		// Different versions of cobra might emit errors to stdout
-		// or stderr. It's too fragile to depend on precidely what
+		// or stderr. It's too fragile to depend on precisely what
 		// it does, and that's not something that needs to be tested
 		// within Kuma anyway. So we just combine all the output
 		// and validate the aggregate.
 		outbuf = &bytes.Buffer{}
 		rootCmd.SetOut(outbuf)
 		rootCmd.SetErr(outbuf)
-
 	})
 
 	Describe("error cases", func() {
@@ -60,8 +59,7 @@ var _ = Describe("kumactl config control-planes use", func() {
 			// then
 			Expect(err.Error()).To(MatchRegexp(requiredFlagNotSet("name")))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "name" not set
-`))
+			Expect(outbuf.String()).To(ContainSubstring(`Error: required flag(s) "name" not set`))
 		})
 
 		It("should fail to switch to unknown Control Plane", func() {
@@ -74,8 +72,7 @@ var _ = Describe("kumactl config control-planes use", func() {
 			// then
 			Expect(err).To(MatchError(`there is no Control Plane with name "example"`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: there is no Control Plane with name "example"
-`))
+			Expect(outbuf.String()).To(ContainSubstring(`Error: there is no Control Plane with name "example"`))
 		})
 	})
 
