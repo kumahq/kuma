@@ -8,7 +8,7 @@ Changes:
 * fix(kuma-cp) handle missing connection info [#2439](https://github.com//kumahq/kuma/pull/2439)
 * chore(xds) rename logger to have consistent naming style [#2375](https://github.com//kumahq/kuma/pull/2375)
   👍contributed by burntcarrot
-* fix(kuma-cp) set better keep-alive for bootstrap
+* fix(kuma-cp) set better keep-alive for bootstrap [#2432](https://github.com//kumahq/kuma/pull/2432)
 * fix(kuma-dp) validate the DP proxy type [#2186](https://github.com//kumahq/kuma/pull/2186)
 * fix(kuma-cp) use the typed config for TLS Inspector [#2373](https://github.com//kumahq/kuma/pull/2373)
 
