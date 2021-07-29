@@ -24,6 +24,9 @@ message KumaResourceOptions {
 
   // Whether to skip type registration for this resource.
   bool skip_registration = 6;
+
+  // ResourceName is the name of the policy for resource name usage in kumactl
+  string resourceName = 7;
 }
 
 extend google.protobuf.MessageOptions {
