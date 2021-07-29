@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
+
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 
@@ -316,6 +318,11 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	customizableManager.Customize(
 		system.ZoneInsightType,
 		zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone),
+	)
+
+	customizableManager.Customize(
+		mesh.ZoneIngressInsightType,
+		zoneingressinsight.NewZoneIngressInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
 	)
 
 	var cipher secret_cipher.Cipher

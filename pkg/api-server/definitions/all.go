@@ -23,6 +23,7 @@ var DefaultCRUDLEndpoints = []ResourceWsDefinition{
 	ZoneWsDefinition,
 	ZoneInsightWsDefinition,
 	ZoneIngressWsDefinition,
+	ZoneIngressInsightWsDefinition,
 	SecretWsDefinition,
 	GlobalSecretWsDefinition,
 	RetryWsDefinition,

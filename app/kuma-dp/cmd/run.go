@@ -71,7 +71,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 
 			proxyResource, err = readResource(cmd, &cfg.DataplaneRuntime)
 			if err != nil {
-				runLog.Error(err, "failed to read %s policy", cfg.Dataplane.ProxyType)
+				runLog.Error(err, "failed to read %s policy", "proxyType", cfg.Dataplane.ProxyType)
 				return err
 			}
 
