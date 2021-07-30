@@ -48,6 +48,11 @@ message ExternalService {
       // However, some servers requires this setting, especially when using
       // mTLS.
       google.protobuf.BoolValue allowRenegotiation = 5;
+
+      // SNI overrides the default Server Name Indicator set by Kuma.
+      // The default value is set to "address" specified in "networking".
+      // You can disable sending SNI by setting empty string.
+      google.protobuf.StringValue sni = 6;
     }
 
     TLS tls = 2;

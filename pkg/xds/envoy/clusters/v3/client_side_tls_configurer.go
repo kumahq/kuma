@@ -1,8 +1,6 @@
 package clusters
 
 import (
-	"fmt"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -23,13 +21,18 @@ var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	for _, ep := range c.Endpoints {
 		if ep.ExternalService.TLSEnabled {
+			sni := ep.Target
+			if ep.ExternalService.SNI != nil {
+				sni = *ep.ExternalService.SNI
+			}
+
 			tlsContext, err := envoy_tls.UpstreamTlsContextOutsideMesh(
 				ep.ExternalService.CaCert,
 				ep.ExternalService.ClientCert,
 				ep.ExternalService.ClientKey,
 				ep.ExternalService.AllowRenegotiation,
 				ep.Target,
-				fmt.Sprintf("%s:%d", ep.Target, ep.Port),
+				sni,
 			)
 			if err != nil {
 				return err

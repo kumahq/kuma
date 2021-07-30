@@ -199,6 +199,10 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 			mesh.GetMeta().GetName(), loader),
 		AllowRenegotiation: externalService.Spec.GetNetworking().GetTls().GetAllowRenegotiation().GetValue(),
 	}
+	if sni := externalService.Spec.GetNetworking().GetTls().GetSni(); sni != nil {
+		value := sni.GetValue()
+		es.SNI = &value
+	}
 
 	tags := externalService.Spec.GetTags()
 	if es.TLSEnabled {

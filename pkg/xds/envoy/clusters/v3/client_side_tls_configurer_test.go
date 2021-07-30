@@ -26,6 +26,8 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 		expected    string
 	}
 
+	customSni := "custom"
+
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
@@ -71,7 +73,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
               commonTlsContext: {}
-              sni: httpbin.org:3000
+              sni: httpbin.org
         type: EDS
 `}),
 		Entry("cluster with mTLS and certs", testCase{
@@ -88,6 +90,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 						ClientCert:         []byte("clientcert"),
 						ClientKey:          []byte("clientkey"),
 						AllowRenegotiation: true,
+						SNI: &customSni,
 					},
 				},
 			},
@@ -118,7 +121,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                       - exact: httpbin.org
                       trustedCa:
                         inlineBytes: Y2FjZXJ0
-                  sni: httpbin.org:3000
+                  sni: custom
             type: EDS
 `}),
 	)

@@ -58,6 +58,7 @@ type ExternalService struct {
 	ClientCert         []byte
 	ClientKey          []byte
 	AllowRenegotiation bool
+	SNI                *string
 }
 
 type Locality struct {
