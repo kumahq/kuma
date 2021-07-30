@@ -107,7 +107,7 @@ sources:
   - match:
       kuma.io/service: gateway
 tags:
-  kuma.io/zone: edge
+  product: edge
 conf:
   listeners:
   - hostname: www-1.example.com
@@ -120,27 +120,6 @@ conf:
 
 	DescribeErrorCases(
 		GatewayGenerator(NewGatewayResource),
-		ErrorCase("doesn't select a service",
-			validators.Violation{
-				Field:   `sources[0].match`,
-				Message: `mandatory tag "kuma.io/service" is missing`,
-			}, `
-type: Gateway
-name: gateway
-mesh: default
-sources:
-  - match:
-      kuma.io/zone: gateway
-tags:
-  kuma.io/zone: edge
-conf:
-  listeners:
-  - port: 443
-    protocol: HTTP
-    tags:
-      name: https
-`),
-
 		ErrorCase("doesn't have any source selector",
 			validators.Violation{
 				Field:   `sources`,
@@ -151,7 +130,7 @@ name: gateway
 mesh: default
 sources:
 tags:
-  kuma.io/zone: edge
+  product: edge
 conf:
   listeners:
   - port: 443
@@ -172,7 +151,7 @@ sources:
   - match:
       kuma.io/service: gateway
 tags:
-  kuma.io/zone: edge
+  product: edge
   kuma.io/service: gateway
 conf:
   listeners:
@@ -194,7 +173,7 @@ sources:
   - match:
       kuma.io/service: gateway
 tags:
-  kuma.io/zone: edge
+  product: edge
 conf:
 `),
 
@@ -210,7 +189,7 @@ sources:
   - match:
       kuma.io/service: gateway
 tags:
-  kuma.io/zone: edge
+  product: edge
 conf:
   listeners:
   - protocol: HTTP
@@ -230,7 +209,7 @@ sources:
   - match:
       kuma.io/service: gateway
 tags:
-  kuma.io/zone: edge
+  product: edge
 conf:
   listeners:
   - port: 99
@@ -250,7 +229,7 @@ sources:
   - match:
       kuma.io/service: gateway
 tags:
-  kuma.io/zone: edge
+  product: edge
 conf:
   listeners:
   - protocol: HTTPS
@@ -273,7 +252,7 @@ sources:
   - match:
       kuma.io/service: gateway
 tags:
-  kuma.io/zone: edge
+  product: edge
 conf:
   listeners:
   - protocol: HTTPS
@@ -298,7 +277,7 @@ sources:
   - match:
       kuma.io/service: gateway
 tags:
-  kuma.io/zone: edge
+  product: edge
 conf:
   listeners:
   - protocol: HTTPS
@@ -321,7 +300,7 @@ sources:
   - match:
       kuma.io/service: gateway
 tags:
-  kuma.io/zone: edge
+  product: edge
 conf:
   listeners:
   - hostname: "*.foo.*.example.com"
@@ -343,7 +322,7 @@ sources:
   - match:
       kuma.io/service: gateway
 tags:
-  kuma.io/zone: edge
+  product: edge
 conf:
   listeners:
   - hostname: "foo.example$.com"

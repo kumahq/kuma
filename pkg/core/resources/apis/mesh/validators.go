@@ -160,11 +160,11 @@ var domainRegexp = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" 
 //	- '*.domain.name'
 //	- 'domain.name'
 func ValidateHostname(path validators.PathBuilder, hostname string) validators.ValidationError {
-	err := validators.ValidationError{}
-
 	if hostname == "*" {
-		return err
+		return validators.ValidationError{}
 	}
+
+	err := validators.ValidationError{}
 
 	if strings.HasPrefix(hostname, "*.") {
 		if !domainRegexp.MatchString(strings.TrimPrefix(hostname, "*.")) {
