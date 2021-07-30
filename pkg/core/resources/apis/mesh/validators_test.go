@@ -74,24 +74,6 @@ var _ = Describe("selector tag keys", func() {
 			}),
 		}),
 
-		Entry("selector key is not", testCase{
-			validator: SelectorKeyNot("foo"),
-			tags: map[string]string{
-				"foo": "bar",
-			},
-			violation: &validators.Violation{
-				Field:   `given["foo"]`,
-				Message: `tag name must not be "foo"`,
-			},
-		}),
-
-		Entry("selector key is not matched", testCase{
-			validator: SelectorKeyNot("bar"),
-			tags: map[string]string{
-				"foo": "bar",
-			},
-		}),
-
 		Entry("selector key is not in set", testCase{
 			validator: SelectorKeyNotInSet("foo", "bar"),
 			tags: map[string]string{

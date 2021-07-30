@@ -61,7 +61,7 @@ message Gateway {
       // Options should eventually configure how TLS is configured. This
       // is where cipher suite and version configuration can be specified,
       // client certificates enforced, and so on.
-      Options options = 4;
+      Options options = 3;
     }
   }
 
@@ -100,7 +100,7 @@ message Gateway {
     // set of matching tags for each listener by forming the union of the
     // gateway tags and the listener tags. A route will be attached to the
     // listener if all of the route's tags are preset in the matching tags
-    map<string, string> tags = 6;
+    map<string, string> tags = 5;
   }
 
   // Conf defines the desired state of Gateway.

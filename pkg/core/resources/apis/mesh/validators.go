@@ -256,24 +256,6 @@ func ValidateResourceYAMLPatch(msg proto.Message, resYAML string) error {
 	return (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), msg)
 }
 
-// SelectorKeyNot returns a TagKeyValidatorFunc that checks the tag key
-// is not keyName.
-func SelectorKeyNot(keyName string) TagKeyValidatorFunc {
-	return TagKeyValidatorFunc(
-		func(path validators.PathBuilder, key string) validators.ValidationError {
-			err := validators.ValidationError{}
-
-			if key == keyName {
-				err.AddViolationAt(
-					path.Key(key),
-					fmt.Sprintf("tag name must not be %q", keyName),
-				)
-			}
-
-			return err
-		})
-}
-
 // SelectorKeyNotInSet returns a TagKeyValidatorFunc that checks the tag key
 // is not any one of the given names.
 func SelectorKeyNotInSet(keyName ...string) TagKeyValidatorFunc {
