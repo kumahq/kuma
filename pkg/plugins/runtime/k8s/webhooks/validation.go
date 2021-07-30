@@ -75,7 +75,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		return resp
 	}
 
-	if err := h.converter.ToCoreResource(obj.(k8s_model.KubernetesObject), coreRes); err != nil {
+	if err := h.converter.ToCoreResource(obj, coreRes); err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
