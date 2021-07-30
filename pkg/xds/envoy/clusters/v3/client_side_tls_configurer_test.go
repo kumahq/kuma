@@ -90,7 +90,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 						ClientCert:         []byte("clientcert"),
 						ClientKey:          []byte("clientkey"),
 						AllowRenegotiation: true,
-						SNI: &customSni,
+						SNI:                &customSni,
 					},
 				},
 			},
