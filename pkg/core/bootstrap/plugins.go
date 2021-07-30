@@ -16,6 +16,7 @@ import (
 	_ "github.com/kumahq/kuma/pkg/plugins/config/k8s"
 	_ "github.com/kumahq/kuma/pkg/plugins/config/universal"
 
+	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/k8s"
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/universal"
 
