@@ -54,12 +54,12 @@ func validateExtarnalServiceAddress(path validators.PathBuilder, address string)
 		err.AddViolationAt(path.Field("address"), "address has to be a valid IP address or a domain name")
 	}
 
-	iport, e := strconv.Atoi(port)
+	iport, e := strconv.ParseUint(port, 10, 32)
 	if e != nil {
 		err.AddViolationAt(path.Field("address"), "unable to parse port in address")
 	}
-	if iport < 1 || iport > 65535 {
-		err.AddViolationAt(path.Field("address"), "port has to be in range of [1, 65535]")
-	}
+
+	err.Add(ValidatePort(path.Field("address"), uint32(iport)))
+
 	return err
 }
