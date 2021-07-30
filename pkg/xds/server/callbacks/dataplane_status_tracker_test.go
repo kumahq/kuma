@@ -64,7 +64,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	})
 
 	BeforeEach(func() {
-		tracker = NewDataplaneStatusTracker(runtimeInfo, func(dataplaneType core_model.ResourceType, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
+		tracker = NewDataplaneStatusTracker(&runtimeInfo, func(dataplaneType core_model.ResourceType, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 			return DataplaneInsightSinkFunc(func(<-chan struct{}) {})
 		})
 		callbacks = v2.AdaptCallbacks(tracker)
