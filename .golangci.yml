@@ -1,10 +1,11 @@
 linters:
   enable:
-    - gocritic
-    - unconvert
     - bodyclose
-    - whitespace
+    - gocritic
+    - govet
     - misspell
+    - unconvert
+    - whitespace
 
 run:
   skip-files:
