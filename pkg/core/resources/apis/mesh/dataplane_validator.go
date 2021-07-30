@@ -97,14 +97,10 @@ func validateProbes(probes *mesh_proto.Dataplane_Probes) validators.ValidationEr
 	}
 	var err validators.ValidationError
 	path := validators.RootedAt("probes")
-	if probes.Port < 1 || probes.Port > 65535 {
-		err.AddViolationAt(path.Field("port"), `port has to be in range of [1, 65535]`)
-	}
+	err.Add(ValidatePort(path.Field("port"), probes.GetPort()))
 	for i, endpoint := range probes.Endpoints {
 		indexPath := path.Field("endpoints").Index(i)
-		if endpoint.InboundPort < 1 || endpoint.InboundPort > 65535 {
-			err.AddViolationAt(indexPath.Field("inboundPort"), `port has to be in range of [1, 65535]`)
-		}
+		err.Add(ValidatePort(indexPath.Field("inboundPort"), endpoint.GetInboundPort()))
 		if _, URIErr := url.ParseRequestURI(endpoint.InboundPath); URIErr != nil {
 			err.AddViolationAt(indexPath.Field("inboundPath"), `should be a valid URL Path`)
 		}
@@ -141,9 +137,7 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 	}
 	for i, inbound := range networking.GetInbound() {
 		p := path.Field("inbound").Index(i)
-		if inbound.Port > 65535 {
-			err.AddViolationAt(p.Field("port"), `port has to be in range of [1, 65535]`)
-		}
+		err.Add(ValidatePort(p.Field("port"), inbound.GetPort()))
 		if inbound.ServicePort != 0 {
 			err.AddViolationAt(p.Field("servicePort"), `cannot be defined in the ingress mode`)
 		}
@@ -177,8 +171,8 @@ func validateIngress(path validators.PathBuilder, ingress *mesh_proto.Dataplane_
 	if ingress.GetPublicAddress() != "" {
 		err.Add(validateAddress(path.Field("publicAddress"), ingress.GetPublicAddress()))
 	}
-	if ingress.GetPublicPort() > 65535 {
-		err.AddViolationAt(path.Field("publicPort"), `port has to be in range of [1, 65535]`)
+	if ingress.GetPublicPort() != 0 {
+		err.Add(ValidatePort(path.Field("publicPort"), ingress.GetPublicPort()))
 	}
 	for i, ingressInterface := range ingress.GetAvailableServices() {
 		p := path.Field("availableService").Index(i)
@@ -192,11 +186,9 @@ func validateIngress(path validators.PathBuilder, ingress *mesh_proto.Dataplane_
 
 func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress string) validators.ValidationError {
 	var result validators.ValidationError
-	if inbound.Port < 1 || inbound.Port > 65535 {
-		result.AddViolationAt(validators.RootedAt("port"), `port has to be in range of [1, 65535]`)
-	}
-	if inbound.ServicePort > 65535 {
-		result.AddViolationAt(validators.RootedAt("servicePort"), `servicePort has to be in range of [0, 65535]`)
+	result.Add(ValidatePort(validators.RootedAt("port"), inbound.GetPort()))
+	if inbound.GetServicePort() != 0 {
+		result.Add(ValidatePort(validators.RootedAt("servicePort"), inbound.GetServicePort()))
 	}
 	if inbound.ServiceAddress != "" {
 		if net.ParseIP(inbound.ServiceAddress) == nil {
@@ -250,9 +242,9 @@ func validateServiceProbe(serviceProbe *mesh_proto.Dataplane_Networking_Inbound_
 
 func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) validators.ValidationError {
 	var result validators.ValidationError
-	if outbound.Port < 1 || outbound.Port > 65535 {
-		result.AddViolation("port", "port has to be in range of [1, 65535]")
-	}
+
+	result.Add(ValidatePort(validators.RootedAt("port"), outbound.GetPort()))
+
 	if outbound.Address != "" && net.ParseIP(outbound.Address) == nil {
 		result.AddViolation("address", "address has to be valid IP address")
 	}
@@ -268,6 +260,7 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		}
 		result.Add(validateTags(outbound.Tags))
 	}
+
 	return result
 }
 
