@@ -29,9 +29,10 @@ func (g *GatewayResource) Validate() error {
 		ValidateSelectorOpts{
 			ExtraTagKeyValidators: []TagKeyValidatorFunc{
 				SelectorKeyNotInSet(
-					mesh_proto.ServiceTag,
-					mesh_proto.ProtocolTag,
 					mesh_proto.ExternalServiceTag,
+					mesh_proto.ProtocolTag,
+					mesh_proto.ServiceTag,
+					mesh_proto.ZoneTag,
 				),
 			},
 		},
@@ -106,9 +107,10 @@ func validateGatewayConf(path validators.PathBuilder, conf *mesh_proto.Gateway_C
 				RequireAtLeastOneTag: true,
 				ExtraTagKeyValidators: []TagKeyValidatorFunc{
 					SelectorKeyNotInSet(
-						mesh_proto.ServiceTag,
-						mesh_proto.ProtocolTag,
 						mesh_proto.ExternalServiceTag,
+						mesh_proto.ProtocolTag,
+						mesh_proto.ServiceTag,
+						mesh_proto.ZoneTag,
 					),
 				},
 			}))
