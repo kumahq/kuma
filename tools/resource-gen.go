@@ -135,7 +135,7 @@ func init() {
 {{end}}
 `))
 
-// KumaResourceForMessage fishes the Kuma resource option out of a message.
+// KumaResourceForMessage fetches the Kuma resource option out of a message.
 func KumaResourceForMessage(m protoreflect.MessageType) *mesh.KumaResourceOptions {
 	ext := proto.GetExtension(m.Descriptor().Options(), mesh.E_Resource)
 	if r, ok := ext.(*mesh.KumaResourceOptions); ok {
@@ -179,7 +179,7 @@ func GenerateResource(m protoreflect.MessageType) bool {
 		ResourceType:     r.Type,
 		ResourceName:     r.Name,
 		ProtoType:        string(m.Descriptor().Name()),
-		Selectors:        SelectorsForMessage(m.Descriptor().(protoreflect.MessageDescriptor)),
+		Selectors:        SelectorsForMessage(m.Descriptor()),
 		SkipRegistration: r.SkipRegistration,
 		SkipValidation:   r.SkipValidation,
 		Global:           r.Global,
