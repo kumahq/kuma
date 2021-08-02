@@ -325,10 +325,6 @@ resources:
 
               path: /var/log
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: envoy.filters.http.router
           routeConfig:
             name: outbound:api-http
@@ -391,10 +387,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: envoy.filters.http.router
           routeConfig:
             name: outbound:api-http2
@@ -434,10 +426,6 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.grpc_stats.v3.FilterConfig
               emitFilterState: true
               statsForAllMethods: true
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: envoy.filters.http.router
           routeConfig:
             name: outbound:api-grpc

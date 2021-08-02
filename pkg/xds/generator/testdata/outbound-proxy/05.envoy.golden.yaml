@@ -43,10 +43,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: envoy.filters.http.router
           routeConfig:
             name: outbound:es

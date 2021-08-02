@@ -90,6 +90,10 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 
 func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, routes envoy_common.Routes, outbound *kuma_mesh.Dataplane_Networking_Outbound, protocol mesh_core.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
+	rateLimits := []*kuma_mesh.RateLimit{}
+	if rateLimit, exists := proxy.Policies.RateLimits.Outbound[oface]; exists {
+		rateLimits = append(rateLimits, rateLimit)
+	}
 	meshName := proxy.Dataplane.Meta.GetMesh()
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	serviceName := outbound.GetTagsIncludingLegacy()[kuma_mesh.ServiceTag]
@@ -108,14 +112,14 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, routes envoy_com
 				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, sourceService)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Policies.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
-				Configure(envoy_listeners.RateLimit([]*kuma_mesh.RateLimit{proxy.Policies.RateLimits.Outbound[oface]})).
+				Configure(envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
 		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
 				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, sourceService)).
-				Configure(envoy_listeners.RateLimit([]*kuma_mesh.RateLimit{proxy.Policies.RateLimits.Outbound[oface]})).
+				Configure(envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.HttpAccessLog(
 					meshName,
 					envoy_common.TrafficDirectionOutbound,
