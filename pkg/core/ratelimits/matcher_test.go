@@ -102,11 +102,8 @@ var _ = Describe("Match", func() {
 				}
 			}
 			outboundMatched := allMatched.Outbound
-			for key := range outboundMatched {
-				Expect(len(outboundMatched[key])).To(Equal(len(given.expected.Outbound[key])))
-				for i, matched := range outboundMatched[key] {
-					Expect(matched).To(MatchProto(given.expected.Outbound[key][i]))
-				}
+			for i, matched := range outboundMatched {
+				Expect(matched).To(MatchProto(given.expected.Outbound[i]))
 			}
 		},
 		Entry("1 inbound dataplane, 2 policies", testCase{
@@ -235,26 +232,26 @@ var _ = Describe("Match", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 8080,
-					}: []*mesh_proto.RateLimit{
-						policyWithDestinationsFunc("rl2", time.Unix(1, 0),
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service":  "*",
-										"kuma.io/protocol": "http",
-									},
+					}: policyWithDestinationsFunc("rl2", time.Unix(1, 0),
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service":  "*",
+									"kuma.io/protocol": "http",
 								},
 							},
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service":  "*",
-										"kuma.io/protocol": "http",
-									},
+						},
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service":  "*",
+									"kuma.io/protocol": "http",
 								},
-							}).Spec,
-					}}}}),
-
+							},
+						}).Spec,
+				},
+			},
+		}),
 		Entry("should apply policy only to the first inbound", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
@@ -319,8 +316,8 @@ var _ = Describe("Match", func() {
 						}).Spec,
 					},
 				},
-			}}),
-
+			},
+		}),
 		Entry("should apply policy only to the first outbound", testCase{
 			dataplane: dataplaneWithOutboundsFunc([]*mesh_proto.Dataplane_Networking_Outbound{
 				{
@@ -366,7 +363,7 @@ var _ = Describe("Match", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 8081,
-					}: []*mesh_proto.RateLimit{policyWithDestinationsFunc("rl1", time.Unix(1, 0),
+					}: policyWithDestinationsFunc("rl1", time.Unix(1, 0),
 						[]*mesh_proto.Selector{
 							{
 								Match: map[string]string{
@@ -383,9 +380,9 @@ var _ = Describe("Match", func() {
 								},
 							},
 						}).Spec,
-					},
 				},
-			}}),
+			},
+		}),
 
 		Entry("match 2 policies on inbound", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
@@ -524,40 +521,25 @@ var _ = Describe("Match", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 8080,
-					}: []*mesh_proto.RateLimit{
-						policyWithDestinationsFunc("rl2", time.Unix(1, 0),
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "frontend",
-									},
+					}: policyWithDestinationsFunc("rl2", time.Unix(1, 0),
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service": "frontend",
 								},
 							},
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service":  "backend",
-										"kuma.io/protocol": "http",
-									},
-								},
-							}).Spec,
-						policyWithDestinationsFunc("rl2", time.Unix(1, 0),
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "*",
-									},
+						},
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/protocol": "http",
 								},
 							},
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service":  "backend",
-										"kuma.io/protocol": "http",
-									},
-								},
-							}).Spec,
-					}}}}),
+						}).Spec,
+				},
+			},
+		}),
 
 		Entry("match and sort 3 policies inbound", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
@@ -773,72 +755,26 @@ var _ = Describe("Match", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 8080,
-					}: []*mesh_proto.RateLimit{
-						policyWithDestinationsFunc("rl3", time.Unix(1, 0),
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "frontend",
-										"kuma.io/zone":    "eu",
-									},
+					}: policyWithDestinationsFunc("rl3", time.Unix(1, 0),
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service": "frontend",
+									"kuma.io/zone":    "eu",
 								},
 							},
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service":  "backend",
-										"kuma.io/protocol": "http",
-									},
-								},
-							}).Spec,
-						policyWithDestinationsFunc("rl2", time.Unix(1, 0),
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "frontend",
-									},
+						},
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/protocol": "http",
 								},
 							},
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service":  "backend",
-										"kuma.io/protocol": "http",
-									},
-								},
-							}).Spec,
-						policyWithDestinationsFunc("rl2", time.Unix(1, 0),
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "something_else",
-									},
-								},
-							},
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service":  "backend",
-										"kuma.io/protocol": "http",
-									},
-								},
-							}).Spec,
-						policyWithDestinationsFunc("rl1", time.Unix(1, 0),
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "*",
-									},
-								},
-							},
-							[]*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service":  "backend",
-										"kuma.io/protocol": "http",
-									},
-								},
-							}).Spec,
-					}}}}),
+						}).Spec,
+				},
+			},
+		},
+		),
 	)
 })

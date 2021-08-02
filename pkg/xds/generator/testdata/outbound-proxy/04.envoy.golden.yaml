@@ -403,6 +403,10 @@ resources:
 
               path: /var/log
           httpFilters:
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
           - name: envoy.filters.http.router
           routeConfig:
             name: outbound:api-http

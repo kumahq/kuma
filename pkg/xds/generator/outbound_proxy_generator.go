@@ -108,14 +108,14 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, routes envoy_com
 				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, sourceService)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Policies.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
-				Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits.Outbound[oface])).
+				Configure(envoy_listeners.RateLimit([]*kuma_mesh.RateLimit{proxy.Policies.RateLimits.Outbound[oface]})).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
 		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
 				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, sourceService)).
-				Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits.Outbound[oface])).
+				Configure(envoy_listeners.RateLimit([]*kuma_mesh.RateLimit{proxy.Policies.RateLimits.Outbound[oface]})).
 				Configure(envoy_listeners.HttpAccessLog(
 					meshName,
 					envoy_common.TrafficDirectionOutbound,
@@ -324,61 +324,33 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 		return clusters_internal, clusters_external
 	}
 
+	appendRoute := func(routes envoy_common.Routes, match *kuma_mesh.TrafficRoute_Http_Match, modify *kuma_mesh.TrafficRoute_Http_Modify,
+		clusters []envoy_common.Cluster, rateLimit *kuma_mesh.RateLimit) envoy_common.Routes {
+
+		if len(clusters) == 0 {
+			return routes
+		}
+
+		route := envoy_common.Route{
+			Match:     match,
+			Modify:    modify,
+			RateLimit: rateLimit,
+			Clusters:  clusters,
+		}
+		return append(routes, route)
+	}
+
 	for _, http := range route.Spec.GetConf().GetHttp() {
 		clusters_internal, clusters_external := clustersFromSplit(http.GetSplitWithDestination())
-		route := envoy_common.Route{
-			Match:    http.Match,
-			Modify:   http.Modify,
-			Clusters: clusters_internal,
-		}
-		routes = append(routes, route)
-
-		if len(proxy.Policies.RateLimits.Outbound[oface]) == 0 {
-			route := envoy_common.Route{
-				Match:    http.Match,
-				Modify:   http.Modify,
-				Clusters: clusters_external,
-			}
-			routes = append(routes, route)
-		} else {
-			for _, rateLimit := range proxy.Policies.RateLimits.Outbound[oface] {
-				route := envoy_common.Route{
-					Match:     http.Match,
-					Modify:    http.Modify,
-					RateLimit: rateLimit,
-					Clusters:  clusters_external,
-				}
-				routes = append(routes, route)
-			}
-		}
+		routes = appendRoute(routes, http.Match, http.Modify, clusters_internal, nil)
+		routes = appendRoute(routes, http.Match, http.Modify, clusters_external, proxy.Policies.RateLimits.Outbound[oface])
 
 	}
 
-	if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) > 0 {
+	if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) != 0 {
 		clusters_internal, clusters_external := clustersFromSplit(defaultDestination)
-		route := envoy_common.Route{
-			Match:    nil,
-			Clusters: clusters_internal,
-		}
-		routes = append(routes, route)
-
-		if len(proxy.Policies.RateLimits.Outbound[oface]) == 0 {
-			route := envoy_common.Route{
-				Match:    nil,
-				Clusters: clusters_external,
-			}
-			routes = append(routes, route)
-		} else {
-			for _, rateLimit := range proxy.Policies.RateLimits.Outbound[oface] {
-				route := envoy_common.Route{
-					Match:     nil,
-					RateLimit: rateLimit,
-					Clusters:  clusters_external,
-				}
-				routes = append(routes, route)
-			}
-		}
-
+		routes = appendRoute(routes, nil, nil, clusters_internal, nil)
+		routes = appendRoute(routes, nil, nil, clusters_external, proxy.Policies.RateLimits.Outbound[oface])
 	}
 
 	return routes, nil

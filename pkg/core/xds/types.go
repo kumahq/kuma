@@ -104,8 +104,8 @@ type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPerm
 // InboundRateLimitsMap holds all RateLimitResources for each InboundInterface
 type InboundRateLimitsMap map[mesh_proto.InboundInterface][]*mesh_proto.RateLimit
 
-// OutboundRateLimitsMap holds all RateLimitResources for each OutboundInterface
-type OutboundRateLimitsMap map[mesh_proto.OutboundInterface][]*mesh_proto.RateLimit
+// OutboundRateLimitsMap holds the RateLimitResource for each OutboundInterface
+type OutboundRateLimitsMap map[mesh_proto.OutboundInterface]*mesh_proto.RateLimit
 
 type RateLimitsMap struct {
 	Inbound  InboundRateLimitsMap
