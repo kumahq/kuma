@@ -28,21 +28,14 @@ package definitions
 
 import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/{{.Package}}"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 {{$pkg := .Package}}
 var {{.Package}}WsDefinitions = []ResourceWsDefinition{
 	{{range .Resources}}{{if ne .WsPath ""}}{{if not .SkipRegistration }}
 	{
-		Name: "{{.ResourceType}}",
+		Type: {{$pkg}}.{{.ResourceType}}Type,
 		Path: "{{.WsPath}}",
-		ResourceFactory: func() model.Resource {
-			return {{$pkg}}.New{{.ResourceName}}()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &{{$pkg}}.{{.ResourceName}}List{}
-		},
 		Admin: {{.WsIsAdmin}},
 		ReadOnly: {{.WsIsReadOnly}},
 	},
@@ -178,13 +171,19 @@ func init() {
 `))
 
 // KumaResourceForMessage fetches the Kuma resource option out of a message.
-func KumaResourceForMessage(m protoreflect.MessageType) *mesh.KumaResourceOptions {
+func KumaResourceForMessage(m protoreflect.MessageType) (*mesh.KumaResourceOptions, *mesh.KumaWsOptions) {
 	ext := proto.GetExtension(m.Descriptor().Options(), mesh.E_Resource)
+	var resOption *mesh.KumaResourceOptions
 	if r, ok := ext.(*mesh.KumaResourceOptions); ok {
-		return r
+		resOption = r
+	}
+	ext = proto.GetExtension(m.Descriptor().Options(), mesh.E_Ws)
+	var wsOption *mesh.KumaWsOptions
+	if r, ok := ext.(*mesh.KumaWsOptions); ok {
+		wsOption = r
 	}
 
-	return nil
+	return resOption, wsOption
 }
 
 // SelectorsForMessage finds all the top-level fields in the message are
@@ -207,7 +206,6 @@ func SelectorsForMessage(m protoreflect.MessageDescriptor) []string {
 
 type ResourceInfo struct {
 	ResourceName     string
-	EntityName       string
 	ResourceType     string
 	ProtoType        string
 	Selectors        []string
@@ -220,25 +218,24 @@ type ResourceInfo struct {
 }
 
 func ToResourceInfo(m protoreflect.MessageType) ResourceInfo {
-	r := KumaResourceForMessage(m)
-	pluralResourceName := r.ResourceNamePlural
-	if pluralResourceName == "" {
-		pluralResourceName = r.ResourceName + "s"
-	}
+	r, ws := KumaResourceForMessage(m)
 
 	out := ResourceInfo{
 		ResourceType:     r.Type,
 		ResourceName:     r.Name,
-		EntityName:       r.ResourceName,
 		ProtoType:        string(m.Descriptor().Name()),
 		Selectors:        SelectorsForMessage(m.Descriptor()),
 		SkipRegistration: r.SkipRegistration,
 		SkipValidation:   r.SkipValidation,
 		Global:           r.Global,
-		WsIsReadOnly:     r.IsReadOnly,
-		WsIsAdmin:        r.WsAdmin,
 	}
-	if !r.SkipWs {
+	if ws != nil {
+		pluralResourceName := ws.Plural
+		if pluralResourceName == "" {
+			pluralResourceName = ws.Name + "s"
+		}
+		out.WsIsReadOnly = ws.IsReadOnly
+		out.WsIsAdmin = ws.IsAdmin
 		out.WsPath = pluralResourceName
 	}
 
@@ -256,7 +253,7 @@ type ProtoMessageFunc func(protoreflect.MessageType) bool
 // OnKumaResourceMessage ...
 func OnKumaResourceMessage(pkg string, f ProtoMessageFunc) ProtoMessageFunc {
 	return func(m protoreflect.MessageType) bool {
-		r := KumaResourceForMessage(m)
+		r, _ := KumaResourceForMessage(m)
 		if r == nil {
 			return true
 		}
@@ -270,53 +267,56 @@ func OnKumaResourceMessage(pkg string, f ProtoMessageFunc) ProtoMessageFunc {
 }
 
 func main() {
-	var pkg string
-	flag.StringVar(&pkg, "package", "", "code path to generate")
+	var gen string
+	flag.StringVar(&gen, "generator", "", "the type of generator to run options: (type,ws)")
 	flag.Parse()
 
-	var types []protoreflect.MessageType
+	for _, pkg := range []string{"system", "mesh"} {
+		var types []protoreflect.MessageType
+		protoregistry.GlobalTypes.RangeMessages(
+			OnKumaResourceMessage(pkg, func(m protoreflect.MessageType) bool {
+				types = append(types, m)
+				return true
+			}))
 
-	protoregistry.GlobalTypes.RangeMessages(
-		OnKumaResourceMessage(pkg, func(m protoreflect.MessageType) bool {
-			types = append(types, m)
-			return true
-		}))
+		// Sort by name so the output is deterministic.
+		sort.Slice(types, func(i, j int) bool {
+			return types[i].Descriptor().FullName() < types[j].Descriptor().FullName()
+		})
 
-	// Sort by name so the output is deterministic.
-	sort.Slice(types, func(i, j int) bool {
-		return types[i].Descriptor().FullName() < types[j].Descriptor().FullName()
-	})
-
-	var resources []ResourceInfo
-	apisPath := fmt.Sprintf("pkg/core/resources/apis/%s", pkg)
-	for _, t := range types {
-		resourceInfo := ToResourceInfo(t)
-		resources = append(resources, resourceInfo)
-		if resourceInfo.EntityName == "" {
-			continue
+		var resources []ResourceInfo
+		apisPath := fmt.Sprintf("pkg/core/resources/apis/%s", pkg)
+		for _, t := range types {
+			resourceInfo := ToResourceInfo(t)
+			resources = append(resources, resourceInfo)
 		}
-	}
-	globalTemplates := map[string]*template.Template{
-		path.Join(apisPath, "generated_resources.go"):                                            ResourceTemplate,
-		path.Join("pkg/api-server/definitions", fmt.Sprintf("generated_%s_definitions.go", pkg)): WsResourceTemplate,
-	}
-	for filename, tmpl := range globalTemplates {
-		outBuf := bytes.Buffer{}
-		if err := tmpl.Execute(&outBuf, struct {
-			Package   string
-			Resources []ResourceInfo
-		}{
-			Package:   pkg,
-			Resources: resources,
-		}); err != nil {
-			panic(fmt.Sprintf("template error: %s", err))
+		globalTemplates := map[string]*template.Template{}
+		switch gen {
+		case "type":
+			globalTemplates[path.Join(apisPath, "generated_resources.go")] = ResourceTemplate
+		case "ws":
+			globalTemplates[path.Join("pkg/api-server/definitions", fmt.Sprintf("generated_%s_definitions.go", pkg))] = WsResourceTemplate
+		default:
+			panic(fmt.Sprintf("%s is not a valid generator option\n", gen))
 		}
-		out, err := format.Source(outBuf.Bytes())
-		if err != nil {
-			panic(fmt.Sprintf("%s\n", err))
-		}
-		if err := os.WriteFile(filename, out, os.FileMode(0644)); err != nil {
-			panic(fmt.Sprintf("%s\n", err))
+		for filename, tmpl := range globalTemplates {
+			outBuf := bytes.Buffer{}
+			if err := tmpl.Execute(&outBuf, struct {
+				Package   string
+				Resources []ResourceInfo
+			}{
+				Package:   pkg,
+				Resources: resources,
+			}); err != nil {
+				panic(fmt.Sprintf("template error: %s", err))
+			}
+			out, err := format.Source(outBuf.Bytes())
+			if err != nil {
+				panic(fmt.Sprintf("%s\n", err))
+			}
+			if err := os.WriteFile(filename, out, os.FileMode(0644)); err != nil {
+				panic(fmt.Sprintf("%s\n", err))
+			}
 		}
 	}
 }

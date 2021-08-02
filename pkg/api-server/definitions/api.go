@@ -33,18 +33,13 @@ func (ws *ResourceWsDefinition) ResourceListFactory() model.ResourceList {
 	return l
 }
 
-var All []ResourceWsDefinition
-
-func init() {
-	All = append(All, systemWsDefinitions...)
-	All = append(All, meshWsDefinitions...)
-	All = append(All, ResourceWsDefinition{
-		Type:     system.SecretType,
-		Path:     "global-secrets",
-		Admin:    true,
-		ReadOnly: false,
-	})
-}
+var All = append(append([]ResourceWsDefinition{
+	{
+		Type:  system.GlobalSecretType,
+		Path:  "global-secrets",
+		Admin: true,
+	},
+}, systemWsDefinitions...), meshWsDefinitions...)
 
 func AllApis() core_rest.Api {
 	mapping := make(map[core_model.ResourceType]core_rest.ResourceApi)

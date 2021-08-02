@@ -16,8 +16,8 @@ message Mesh {
   option (kuma.mesh.resource).type = "Mesh";
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).resource_name = "mesh";
-  option (kuma.mesh.resource).resource_name_plural = "meshes";
+  option (kuma.mesh.ws).name = "mesh";
+  option (kuma.mesh.ws).plural = "meshes";
 
   // mTLS settings of a Mesh.
   message Mtls {

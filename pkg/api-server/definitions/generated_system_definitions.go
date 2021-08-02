@@ -6,46 +6,27 @@ package definitions
 
 import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 var systemWsDefinitions = []ResourceWsDefinition{
 
 	{
-		Name: "Secret",
-		Path: "secrets",
-		ResourceFactory: func() model.Resource {
-			return system.NewSecretResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &system.SecretResourceList{}
-		},
+		Type:     system.SecretType,
+		Path:     "secrets",
 		Admin:    true,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "Zone",
-		Path: "zones",
-		ResourceFactory: func() model.Resource {
-			return system.NewZoneResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &system.ZoneResourceList{}
-		},
+		Type:     system.ZoneType,
+		Path:     "zones",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "ZoneInsight",
-		Path: "zone-insights",
-		ResourceFactory: func() model.Resource {
-			return system.NewZoneInsightResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &system.ZoneInsightResourceList{}
-		},
+		Type:     system.ZoneInsightType,
+		Path:     "zone-insights",
 		Admin:    false,
 		ReadOnly: true,
 	},

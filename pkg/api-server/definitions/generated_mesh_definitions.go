@@ -6,254 +6,139 @@ package definitions
 
 import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 var meshWsDefinitions = []ResourceWsDefinition{
 
 	{
-		Name: "CircuitBreaker",
-		Path: "circuit-breakers",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewCircuitBreakerResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.CircuitBreakerResourceList{}
-		},
+		Type:     mesh.CircuitBreakerType,
+		Path:     "circuit-breakers",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "Dataplane",
-		Path: "dataplanes",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewDataplaneResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.DataplaneResourceList{}
-		},
+		Type:     mesh.DataplaneType,
+		Path:     "dataplanes",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "DataplaneInsight",
-		Path: "dataplane-insights",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewDataplaneInsightResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.DataplaneInsightResourceList{}
-		},
+		Type:     mesh.DataplaneInsightType,
+		Path:     "dataplane-insights",
 		Admin:    false,
 		ReadOnly: true,
 	},
 
 	{
-		Name: "ExternalService",
-		Path: "external-services",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewExternalServiceResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.ExternalServiceResourceList{}
-		},
+		Type:     mesh.ExternalServiceType,
+		Path:     "external-services",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "FaultInjection",
-		Path: "fault-injections",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewFaultInjectionResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.FaultInjectionResourceList{}
-		},
+		Type:     mesh.FaultInjectionType,
+		Path:     "fault-injections",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "HealthCheck",
-		Path: "health-checks",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewHealthCheckResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.HealthCheckResourceList{}
-		},
+		Type:     mesh.HealthCheckType,
+		Path:     "health-checks",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "Mesh",
-		Path: "meshes",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewMeshResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.MeshResourceList{}
-		},
+		Type:     mesh.MeshType,
+		Path:     "meshes",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "MeshInsight",
-		Path: "mesh-insights",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewMeshInsightResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.MeshInsightResourceList{}
-		},
+		Type:     mesh.MeshInsightType,
+		Path:     "mesh-insights",
 		Admin:    false,
 		ReadOnly: true,
 	},
 
 	{
-		Name: "ProxyTemplate",
-		Path: "proxytemplates",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewProxyTemplateResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.ProxyTemplateResourceList{}
-		},
+		Type:     mesh.ProxyTemplateType,
+		Path:     "proxytemplates",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "RateLimit",
-		Path: "rate-limits",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewRateLimitResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.RateLimitResourceList{}
-		},
+		Type:     mesh.RateLimitType,
+		Path:     "rate-limits",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "Retry",
-		Path: "retries",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewRetryResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.RetryResourceList{}
-		},
+		Type:     mesh.RetryType,
+		Path:     "retries",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "ServiceInsight",
-		Path: "service-insights",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewServiceInsightResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.ServiceInsightResourceList{}
-		},
+		Type:     mesh.ServiceInsightType,
+		Path:     "service-insights",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "Timeout",
-		Path: "timeouts",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewTimeoutResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.TimeoutResourceList{}
-		},
+		Type:     mesh.TimeoutType,
+		Path:     "timeouts",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "TrafficLog",
-		Path: "traffic-logs",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewTrafficLogResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.TrafficLogResourceList{}
-		},
+		Type:     mesh.TrafficLogType,
+		Path:     "traffic-logs",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "TrafficPermission",
-		Path: "traffic-permissions",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewTrafficPermissionResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.TrafficPermissionResourceList{}
-		},
+		Type:     mesh.TrafficPermissionType,
+		Path:     "traffic-permissions",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "TrafficRoute",
-		Path: "traffic-routes",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewTrafficRouteResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.TrafficRouteResourceList{}
-		},
+		Type:     mesh.TrafficRouteType,
+		Path:     "traffic-routes",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "TrafficTrace",
-		Path: "traffic-traces",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewTrafficTraceResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.TrafficTraceResourceList{}
-		},
+		Type:     mesh.TrafficTraceType,
+		Path:     "traffic-traces",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "ZoneIngress",
-		Path: "zone-ingresses",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewZoneIngressResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.ZoneIngressResourceList{}
-		},
+		Type:     mesh.ZoneIngressType,
+		Path:     "zone-ingresses",
 		Admin:    false,
 		ReadOnly: false,
 	},
 
 	{
-		Name: "ZoneIngressInsight",
-		Path: "zone-ingress-insights",
-		ResourceFactory: func() model.Resource {
-			return mesh.NewZoneIngressInsightResource()
-		},
-		ResourceListFactory: func() model.ResourceList {
-			return &mesh.ZoneIngressInsightResourceList{}
-		},
+		Type:     mesh.ZoneIngressInsightType,
+		Path:     "zone-ingress-insights",
 		Admin:    false,
 		ReadOnly: true,
 	},

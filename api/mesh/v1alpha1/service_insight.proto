@@ -13,7 +13,7 @@ message ServiceInsight {
   option (kuma.mesh.resource).type = "ServiceInsight";
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).skip_validation = true;
-  option (kuma.mesh.resource).resource_name = "service-insight";
+  option (kuma.mesh.ws).name = "service-insight";
 
   google.protobuf.Timestamp last_sync = 1;
 
@@ -21,10 +21,8 @@ message ServiceInsight {
     option (kuma.mesh.resource).name = "ServiceOverviewResource";
     option (kuma.mesh.resource).type = "ServiceOverview";
     option (kuma.mesh.resource).package = "mesh";
-    option (kuma.mesh.resource).skip_ws = true;
     option (kuma.mesh.resource).skip_registration = true;
     option (kuma.mesh.resource).skip_validation = true;
-    option (kuma.mesh.resource).is_read_only = true;
 
     enum Status {
       none = 0; // should not be used
