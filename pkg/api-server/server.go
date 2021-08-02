@@ -167,7 +167,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	zoneIngressOverviewEndpoints.addListEndpoint(ws)
 
 	for _, definition := range defs {
-		defType := definition.ResourceFactory().GetType()
+		defType := definition.Type
 		if cfg.ApiServer.ReadOnly || (defType == mesh.DataplaneType && cfg.Mode == config_core.Global) || (defType != mesh.DataplaneType && cfg.Mode == config_core.Zone) {
 			definition.ReadOnly = true
 		}
@@ -341,8 +341,7 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	enableGUI := cfg.Mode != config_core.Zone
-	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), definitions.All, &cfg, enableGUI, rt.Metrics())
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), definitions.All, &cfg, cfg.Mode != config_core.Zone, rt.Metrics())
 	if err != nil {
 		return err
 	}

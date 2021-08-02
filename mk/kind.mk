@@ -178,7 +178,7 @@ kind/deploy/example-app:
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
 
 .PHONY: run/k8s
-run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
+run/k8s: ## Dev: Run Control Plane locally in Kubernetes mode
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(MAKE) crd/upgrade -C pkg/plugins/resources/k8s/native
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KUMA_ENVIRONMENT=kubernetes \

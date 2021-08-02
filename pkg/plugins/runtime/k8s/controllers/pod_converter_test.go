@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 
@@ -140,7 +139,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, nil, vips.List{})
+			err = converter.PodToDataplane(dataplane, pod, services, otherDataplanes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -337,7 +336,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, nil, vips.List{})
+				err = converter.PodToDataplane(dataplane, pod, services, nil)
 
 				// then
 				Expect(err).To(HaveOccurred())

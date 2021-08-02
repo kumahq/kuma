@@ -1,13 +1,6 @@
 package generator
 
 import (
-	"strings"
-
-	"github.com/asaskevich/govalidator"
-
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -31,7 +24,13 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 		return nil, nil // DNS only makes sense when transparent proxy is used
 	}
 
-	vips := g.computeVIPs(ctx, proxy)
+	vips := map[string]string{}
+	for _, dnsOutbound := range proxy.Routing.VipDomains {
+		for _, domain := range dnsOutbound.Domains {
+			vips[domain] = dnsOutbound.Address
+		}
+	}
+
 	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 		Configure(envoy_listeners.InboundListener(names.GetDNSListenerName(), "127.0.0.1", dnsPort, core_xds.SocketAddressProtocolUDP)).
 		Configure(envoy_listeners.DNS(vips, emptyDnsPort)).
@@ -47,31 +46,4 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 		Origin:   OriginDNS,
 	})
 	return resources, nil
-}
-
-func (g DNSGenerator) computeVIPs(ctx xds_context.Context, proxy *core_xds.Proxy) map[string]string {
-	domainsByIPs := ctx.ControlPlane.DNSResolver.GetVIPs().FQDNsByIPs()
-	meshedVips := map[string]string{}
-	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
-		if entry, ok := domainsByIPs[outbound.Address]; ok {
-			switch entry.Type {
-			case vips.Service:
-				domain := outbound.Tags[mesh_proto.ServiceTag]
-				// add regular .mesh domain
-				meshedVips[domain+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
-				meshedVips[strings.ReplaceAll(domain, "_", ".")+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
-			case vips.Host:
-				// add hostname from address in external service
-				endpoints := proxy.Routing.OutboundTargets[outbound.Tags[mesh_proto.ServiceTag]]
-				for _, endpoint := range endpoints {
-					if govalidator.IsDNSName(endpoint.Target) {
-						if endpoint.ExternalService != nil && endpoint.Target != "" {
-							meshedVips[endpoint.Target] = outbound.Address
-						}
-					}
-				}
-			}
-		}
-	}
-	return meshedVips
 }
