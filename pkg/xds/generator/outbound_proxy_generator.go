@@ -326,7 +326,6 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 
 	appendRoute := func(routes envoy_common.Routes, match *kuma_mesh.TrafficRoute_Http_Match, modify *kuma_mesh.TrafficRoute_Http_Modify,
 		clusters []envoy_common.Cluster, rateLimit *kuma_mesh.RateLimit) envoy_common.Routes {
-
 		if len(clusters) == 0 {
 			return routes
 		}
@@ -344,7 +343,6 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 		clusters_internal, clusters_external := clustersFromSplit(http.GetSplitWithDestination())
 		routes = appendRoute(routes, http.Match, http.Modify, clusters_internal, nil)
 		routes = appendRoute(routes, http.Match, http.Modify, clusters_external, proxy.Policies.RateLimits.Outbound[oface])
-
 	}
 
 	if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) != 0 {

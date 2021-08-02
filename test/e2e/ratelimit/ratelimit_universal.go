@@ -193,7 +193,6 @@ conf:
 	})
 
 	It("should limit echo server as external service", func() {
-
 		externalService := `
 type: ExternalService
 mesh: default
