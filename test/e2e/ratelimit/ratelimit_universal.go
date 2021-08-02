@@ -229,7 +229,7 @@ conf:
 		Eventually(verifyRateLimitExternal("demo-client", 5), "30s", "1s").Should(Equal(4))
 	})
 
-	FIt("should limit echo server as external service matching subset", func() {
+	It("should limit echo server as external service matching subset", func() {
 		externalService := `
 type: ExternalService
 mesh: default
