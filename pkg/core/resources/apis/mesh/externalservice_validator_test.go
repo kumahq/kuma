@@ -157,7 +157,7 @@ var _ = Describe("ExternalService", func() {
                 - field: networking.address
                   message: unable to parse port in address
                 - field: networking.address
-                  message: port has to be in range of [1, 65535]`,
+                  message: port must be in the range [1, 65535]`,
 		}),
 		Entry("networking.address: invalid format IPv6", testCase{
 			dataplane: `
@@ -178,7 +178,7 @@ var _ = Describe("ExternalService", func() {
                 - field: networking.address
                   message: unable to parse port in address
                 - field: networking.address
-                  message: port has to be in range of [1, 65535]`,
+                  message: port must be in the range [1, 65535]`,
 		}),
 		Entry("networking: port out of range", testCase{
 			dataplane: `
@@ -193,7 +193,7 @@ var _ = Describe("ExternalService", func() {
 			expected: `
                 violations:
                 - field: networking.address
-                  message: port has to be in range of [1, 65535]`,
+                  message: port must be in the range [1, 65535]`,
 		}),
 		Entry("tags: empty service tag", testCase{
 			dataplane: `

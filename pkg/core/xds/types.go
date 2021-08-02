@@ -127,9 +127,15 @@ type Proxy struct {
 	Policies    MatchedPolicies
 }
 
+type VIPDomains struct {
+	Address string
+	Domains []string
+}
+
 type Routing struct {
 	TrafficRoutes   RouteMap
 	OutboundTargets EndpointMap
+	VipDomains      []VIPDomains
 
 	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
 	// TrafficRouteList is used only for generating configs for Ingress.

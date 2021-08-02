@@ -129,10 +129,10 @@ func WaitUntilPodCompleteE(t testing.TestingT, options *k8s.KubectlOptions, podN
 		},
 	)
 	if err != nil {
-		logger.Logf(t, "Timedout waiting for Pod to be completed: %s", err)
+		logger.Default.Logf(t, "Timedout waiting for Pod to be completed: %s", err)
 		return err
 	}
-	logger.Logf(t, message)
+	logger.Default.Logf(t, message)
 	return nil
 }
 

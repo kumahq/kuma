@@ -1,8 +1,13 @@
-package dns
+package topology
 
 import (
 	"sort"
 	"strconv"
+	"strings"
+
+	"github.com/asaskevich/govalidator"
+
+	"github.com/kumahq/kuma/pkg/core/xds"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
@@ -21,8 +26,9 @@ func VIPOutbounds(
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	vipList vips.List,
+	tldomain string,
 	externalServices []*core_mesh.ExternalServiceResource,
-) []*mesh_proto.Dataplane_Networking_Outbound {
+) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
 	type vipEntry struct {
 		ip        string
 		port      uint32
@@ -76,8 +82,10 @@ func VIPOutbounds(
 		}
 	}
 
+	externalServicesByServiceName := map[string]*core_mesh.ExternalServiceResource{}
 	for _, externalService := range externalServices {
 		inService := externalService.Spec.Tags[mesh_proto.ServiceTag]
+		externalServicesByServiceName[inService] = externalService
 		host := externalService.Spec.GetHost()
 		if _, found := serviceVIPMap[inService]; !found {
 			vip1, err := ForwardLookup(vipList, vips.NewHostEntry(host))
@@ -108,30 +116,46 @@ func VIPOutbounds(
 	}
 
 	sort.Strings(services)
-	outbounds := []*mesh_proto.Dataplane_Networking_Outbound{}
+	var vipDomains []xds.VIPDomains
+	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, service := range services {
 		entries := serviceVIPMap[service]
 		for _, entry := range entries {
 			outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 				Address: entry.ip,
-				Port:    entry.port,
 				Tags:    map[string]string{mesh_proto.ServiceTag: service},
+				Port:    entry.port,
 			})
-
-			if entry.entryType != vips.Host {
+			vip := xds.VIPDomains{
+				Address: entry.ip,
+			}
+			switch entry.entryType {
+			case vips.Service:
+				// add regular .mesh domain
+				vip.Domains = []string{service + "." + tldomain}
+				cleanedDomain := strings.ReplaceAll(service, "_", ".") + "." + tldomain
+				if cleanedDomain != vip.Domains[0] {
+					vip.Domains = append(vip.Domains, cleanedDomain)
+				}
 				// todo (lobkovilya): backwards compatibility, could be deleted in the next major release Kuma 1.2.x
 				if entry.port != VIPListenPort {
 					outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 						Address: entry.ip,
-						Port:    VIPListenPort,
 						Tags:    map[string]string{mesh_proto.ServiceTag: service},
+						Port:    VIPListenPort,
 					})
 				}
+			case vips.Host:
+				host := externalServicesByServiceName[service].Spec.GetHost()
+				if govalidator.IsDNSName(host) {
+					vip.Domains = append(vip.Domains, host)
+				}
 			}
+			vipDomains = append(vipDomains, vip)
 		}
 	}
 
-	return outbounds
+	return vipDomains, outbounds
 }
 
 func ForwardLookup(vips vips.List, entry vips.Entry) (string, error) {

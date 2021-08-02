@@ -13,7 +13,7 @@ run/universal/postgres/ssl: POSTGRES_SSL_ROOT_CERT_PATH=$(TOOLS_DIR)/postgres/ss
 run/universal/postgres/ssl: run/universal/postgres ## Dev: Run Control Plane locally in universal mode with Postgres store and SSL enabled
 
 .PHONY: run/universal/postgres
-run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal mode with Postgres store
+run/universal/postgres: ## Dev: Run Control Plane locally in universal mode with Postgres store
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=postgres \
 	KUMA_STORE_POSTGRES_HOST=localhost \
