@@ -228,4 +228,44 @@ conf:
 		// verify determinism by running it once again with shorter timeout
 		Eventually(verifyRateLimitExternal("demo-client", 5), "30s", "1s").Should(Equal(4))
 	})
+
+	It("should limit echo server as external service matching subset", func() {
+		externalService := `
+type: ExternalService
+mesh: default
+name: external-service
+tags:
+  kuma.io/service: external-service
+  kuma.io/protocol: HTTP
+  verison: v1
+networking:
+  address: "kuma-3_externalservice-http-server:81"
+`
+		specificRateLimitPolicy := `
+type: RateLimit
+mesh: default
+name: rate-limit-demo-client
+sources:
+- match:
+    kuma.io/service: "demo-client"
+destinations:
+- match:
+    kuma.io/service: "external-service"
+    verison: v1
+conf:
+  http:
+    requests: 4
+    interval: 10s
+`
+		err := YamlUniversal(externalService)(cluster)
+		Expect(err).ToNot(HaveOccurred())
+		err = YamlUniversal(specificRateLimitPolicy)(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// demo-client specific RateLimit works
+		Eventually(verifyRateLimitExternal("demo-client", 5), "60s", "1s").Should(Equal(4))
+		// verify determinism by running it once again with shorter timeout
+		Eventually(verifyRateLimitExternal("demo-client", 5), "30s", "1s").Should(Equal(4))
+	})
+
 }
