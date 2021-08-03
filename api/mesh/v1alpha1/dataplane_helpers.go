@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"encoding"
 	"fmt"
 	"net"
 	"reflect"
@@ -57,6 +58,14 @@ type InboundInterface struct {
 	WorkloadPort          uint32
 }
 
+// We need to implement TextMarshaler because InboundInterface is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = InboundInterface{}
+
+func (i InboundInterface) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
+}
+
 func (i InboundInterface) String() string {
 	return fmt.Sprintf("%s:%d:%d", i.DataplaneIP, i.DataplanePort, i.WorkloadPort)
 }
@@ -68,6 +77,14 @@ func (i *InboundInterface) IsServiceLess() bool {
 type OutboundInterface struct {
 	DataplaneIP   string
 	DataplanePort uint32
+}
+
+// We need to implement TextMarshaler because OutboundInterface is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = OutboundInterface{}
+
+func (i OutboundInterface) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
 }
 
 func (i OutboundInterface) String() string {
