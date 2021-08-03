@@ -109,7 +109,17 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 }
 
 func DefaultRootCmd() *cobra.Command {
-	return NewRootCmd(kumactl_cmd.DefaultRootContext())
+	root := kumactl_cmd.DefaultRootContext()
+	for _, p := range kumactl_cmd.Plugins {
+		p.CustomizeContext(root)
+	}
+
+	cmd := NewRootCmd(root)
+	for _, p := range kumactl_cmd.Plugins {
+		p.CustomizeCommand(cmd)
+	}
+
+	return cmd
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
