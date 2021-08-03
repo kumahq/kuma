@@ -16,4 +16,4 @@ else
   ' $@
 fi
 
-goimports -w -local github.com/kumahq/kuma -d $@
+goimports -w -local github.com/kumahq/kuma $@
