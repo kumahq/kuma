@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"encoding"
 	"fmt"
 	"net"
 	"reflect"
@@ -39,12 +40,11 @@ type ProxyType string
 const (
 	DataplaneProxyType ProxyType = "dataplane"
 	IngressProxyType   ProxyType = "ingress"
-	GatewayProxyType   ProxyType = "gateway"
 )
 
 func (t ProxyType) IsValid() error {
 	switch t {
-	case DataplaneProxyType, IngressProxyType, GatewayProxyType:
+	case DataplaneProxyType, IngressProxyType:
 		return nil
 	}
 	return errors.Errorf("%s is not a valid proxy type", t)
@@ -58,6 +58,14 @@ type InboundInterface struct {
 	WorkloadPort          uint32
 }
 
+// We need to implement TextMarshaler because InboundInterface is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = InboundInterface{}
+
+func (i InboundInterface) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
+}
+
 func (i InboundInterface) String() string {
 	return fmt.Sprintf("%s:%d:%d", i.DataplaneIP, i.DataplanePort, i.WorkloadPort)
 }
@@ -69,6 +77,14 @@ func (i *InboundInterface) IsServiceLess() bool {
 type OutboundInterface struct {
 	DataplaneIP   string
 	DataplanePort uint32
+}
+
+// We need to implement TextMarshaler because OutboundInterface is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = OutboundInterface{}
+
+func (i OutboundInterface) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
 }
 
 func (i OutboundInterface) String() string {
@@ -395,7 +411,7 @@ func (d *Dataplane) GetIdentifyingService() string {
 // IsIngress returns true if this Dataplane specifies an ingress
 // configuration.
 //
-// Deprecated in favor of ZoneIngress.
+// Deprecated: use ZoneIngress instead.
 func (d *Dataplane) IsIngress() bool {
 	if d.GetNetworking() == nil {
 		return false
@@ -403,14 +419,14 @@ func (d *Dataplane) IsIngress() bool {
 	return d.GetNetworking().GetIngress() != nil
 }
 
-// IsDataplane returns true if this Dataplane specifies a gateway
-// configuration.
-func (d *Dataplane) IsGateway() bool {
-	if d.GetNetworking() == nil {
-		return false
-	}
+func (d *Dataplane) IsDelegatedGateway() bool {
+	return d.GetNetworking().GetGateway() != nil &&
+		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED
+}
 
-	return d.GetNetworking().GetGateway() != nil
+func (d *Dataplane) IsBuiltinGateway() bool {
+	return d.GetNetworking().GetGateway() != nil &&
+		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
 }
 
 func (d *Dataplane) HasPublicAddress() bool {

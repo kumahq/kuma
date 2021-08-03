@@ -17,3 +17,27 @@ type FilterChainConfigurer interface {
 	// Configure configures a single aspect on a given Envoy filter chain.
 	Configure(filterChain *envoy_listener.FilterChain) error
 }
+
+// ListenerConfigureFunc adapts a configuration function to the
+// ListenerConfigurer interface.
+type ListenerConfigureFunc func(listener *envoy_listener.Listener) error
+
+func (f ListenerConfigureFunc) Configure(listener *envoy_listener.Listener) error {
+	if f != nil {
+		return f(listener)
+	}
+
+	return nil
+}
+
+// ListenerMustConfigureFunc adapts a configuration function that never
+// fails to the ListenerConfigurer interface.
+type ListenerMustConfigureFunc func(listener *envoy_listener.Listener)
+
+func (f ListenerMustConfigureFunc) Configure(listener *envoy_listener.Listener) error {
+	if f != nil {
+		f(listener)
+	}
+
+	return nil
+}

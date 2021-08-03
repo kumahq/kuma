@@ -3,11 +3,9 @@ package manager_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestSecretManager(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Secret Manager Suite")
+	test.RunSpecs(t, "Secret Manager Suite")
 }

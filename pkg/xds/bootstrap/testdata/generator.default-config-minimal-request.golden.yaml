@@ -53,7 +53,10 @@ staticResources:
     name: access_log_sink
     type: STATIC
     upstreamConnectionOptions:
-      tcpKeepalive: {}
+      tcpKeepalive:
+        keepaliveInterval: 10
+        keepaliveProbes: 3
+        keepaliveTime: 10
   - connectTimeout: 1s
     http2ProtocolOptions: {}
     loadAssignment:
@@ -81,7 +84,10 @@ staticResources:
         sni: localhost
     type: STRICT_DNS
     upstreamConnectionOptions:
-      tcpKeepalive: {}
+      tcpKeepalive:
+        keepaliveInterval: 10
+        keepaliveProbes: 3
+        keepaliveTime: 10
 statsConfig:
   statsTags:
   - regex: ^grpc\.((.+)\.)

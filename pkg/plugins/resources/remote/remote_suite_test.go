@@ -3,11 +3,9 @@ package remote_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestRemote(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Remote Suite")
+	test.RunSpecs(t, "Remote Suite")
 }

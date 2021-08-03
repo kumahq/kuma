@@ -3,11 +3,9 @@ package generator_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestGenerator(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Generator Suite")
+	test.RunSpecs(t, "Generator Suite")
 }

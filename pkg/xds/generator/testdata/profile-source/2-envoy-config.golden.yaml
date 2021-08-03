@@ -310,8 +310,7 @@ resources:
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
-        '@type': type.googleapis.com/google.protobuf.Empty
-        value: {}
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: kuma:envoy:admin
     trafficDirection: INBOUND
 - name: outbound:127.0.0.1:54321

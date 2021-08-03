@@ -11,14 +11,12 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
 type DataplaneWatchdogDependencies struct {
-	resManager            manager.ResourceManager
 	dataplaneProxyBuilder *DataplaneProxyBuilder
 	dataplaneReconciler   SnapshotReconciler
 	ingressProxyBuilder   *IngressProxyBuilder
@@ -70,7 +68,7 @@ func (d *DataplaneWatchdog) Sync() error {
 		d.proxyTypeSettled = true
 	}
 	switch d.dpType {
-	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
+	case mesh_proto.DataplaneProxyType:
 		return d.syncDataplane()
 	case mesh_proto.IngressProxyType:
 		return d.syncIngress()
@@ -83,7 +81,7 @@ func (d *DataplaneWatchdog) Sync() error {
 func (d *DataplaneWatchdog) Cleanup() error {
 	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
-	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
+	case mesh_proto.DataplaneProxyType:
 		return d.dataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
 		return d.ingressReconciler.Clear(&proxyID)
@@ -109,7 +107,7 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 	if err != nil {
 		return err
 	}
-	proxy, err := d.dataplaneProxyBuilder.build(d.key, &envoyCtx.Mesh)
+	proxy, err := d.dataplaneProxyBuilder.build(d.key, envoyCtx)
 	if err != nil {
 		return err
 	}
@@ -122,7 +120,10 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 
 // syncIngress synces state of Ingress Dataplane. Notice that it does not use Mesh Hash yet because Ingress supports many Meshes.
 func (d *DataplaneWatchdog) syncIngress() error {
-	envoyCtx := d.xdsContextBuilder.buildContext(d.key)
+	envoyCtx, err := d.xdsContextBuilder.buildContext(d.key)
+	if err != nil {
+		return err
+	}
 	proxy, err := d.ingressProxyBuilder.build(d.key)
 	if err != nil {
 		return err

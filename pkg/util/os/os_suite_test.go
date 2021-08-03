@@ -3,11 +3,9 @@ package os
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestOS(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "OS Suite")
+	test.RunSpecs(t, "OS Suite")
 }

@@ -115,8 +115,8 @@ func UseLoadBalancer() bool {
 	return envBool("KUMA_USE_LOAD_BALANCER")
 }
 
-func IsInEKS() bool {
-	return envBool("KUMA_IN_EKS")
+func UseHostnameInsteadOfIP() bool {
+	return envBool("KUMA_USE_HOSTNAME_INSTEAD_OF_IP")
 }
 
 func IsIPv6() bool {

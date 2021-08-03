@@ -1,14 +1,10 @@
 package universal
 
 import (
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -27,9 +23,6 @@ mtls:
 `
 
 	E2EBeforeSuite(func() {
-		core.SetLogger = func(l logr.Logger) {}
-		logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
-
 		universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 		deployOptsFuncs = KumaUniversalDeployOpts
 

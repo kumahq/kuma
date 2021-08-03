@@ -3,11 +3,9 @@ package apply_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestApplyCmd(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Apply Cmd Suite")
+	test.RunSpecs(t, "Apply Cmd Suite")
 }
