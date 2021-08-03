@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"strings"
 	"time"
+
+	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
 
 	"github.com/pkg/errors"
 
@@ -12,8 +15,6 @@ import (
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	util_files "github.com/kumahq/kuma/pkg/util/files"
@@ -45,7 +46,6 @@ type RootRuntime struct {
 // rootCmd := cmd.NewRootCmd(rootCtx)
 // err := rootCmd.Execute()
 type RootContext struct {
-	TypeArgs                            map[string]core_model.ResourceType
 	Args                                RootArgs
 	Runtime                             RootRuntime
 	GetContext                          get_context.GetContext
@@ -73,25 +73,6 @@ func DefaultRootContext() *RootContext {
 			NewZoneIngressTokenClient:    tokens.NewZoneIngressTokenClient,
 			NewAPIServerClient:           kumactl_resources.NewAPIServerClient,
 		},
-		TypeArgs: map[string]core_model.ResourceType{
-			"circuit-breaker":    core_mesh.CircuitBreakerType,
-			"dataplane":          core_mesh.DataplaneType,
-			"external-service":   core_mesh.ExternalServiceType,
-			"fault-injection":    core_mesh.FaultInjectionType,
-			"healthcheck":        core_mesh.HealthCheckType,
-			"mesh":               core_mesh.MeshType,
-			"proxytemplate":      core_mesh.ProxyTemplateType,
-			"rate-limit":         core_mesh.RateLimitType,
-			"retry":              core_mesh.RetryType,
-			"timeout":            core_mesh.TimeoutType,
-			"traffic-log":        core_mesh.TrafficLogType,
-			"traffic-permission": core_mesh.TrafficPermissionType,
-			"traffic-route":      core_mesh.TrafficRouteType,
-			"traffic-trace":      core_mesh.TrafficTraceType,
-			"global-secret":      system.GlobalSecretType,
-			"secret":             system.SecretType,
-			"zone":               system.ZoneType,
-		},
 		InstallCpContext:                    install_context.DefaultInstallCpContext(),
 		InstallCRDContext:                   install_context.DefaultInstallCrdsContext(),
 		InstallMetricsContext:               install_context.DefaultInstallMetricsContext(),
@@ -102,16 +83,15 @@ func DefaultRootContext() *RootContext {
 	}
 }
 
-func (rc *RootContext) TypeForArg(arg string) (core_model.ResourceType, error) {
-	typ, ok := rc.TypeArgs[arg]
-	if !ok {
-		allowedValues := ""
-		for v := range rc.TypeArgs {
-			allowedValues += v + ", "
-		}
-		return "", errors.Errorf("unknown TYPE: %s. Allowed values: %s:", arg, allowedValues)
+func (rc *RootContext) TypeForArg(arg string, requiresWrite bool) (core_model.ResourceType, error) {
+	typ, ok := entities.ByName[arg]
+	if requiresWrite && typ.ReadOnly {
+		return "", errors.Errorf("TYPE: %s is readOnly, can't use it for write action", arg)
 	}
-	return typ, nil
+	if !ok {
+		return "", errors.Errorf("unknown TYPE: %s. Allowed values: %s:", arg, strings.Join(entities.Names, ", "))
+	}
+	return typ.ResourceType, nil
 }
 
 func (rc *RootContext) LoadConfig() error {

@@ -3,7 +3,8 @@ package kumactl
 import (
 	"github.com/spf13/cobra"
 
-	kumactl_get "github.com/kumahq/kuma/app/kumactl/cmd/get"
+	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
+
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -27,21 +28,12 @@ func (p *Plugin) CustomizeContext(root *kumactl_cmd.RootContext) {
 			Path: "gateways",
 		},
 	)
-
-	root.TypeArgs["gateway"] = core_mesh.GatewayType
+	entities.All = append(entities.All, entities.Definition{
+		Singular:     "gateway",
+		Plural:       "gateways",
+		ResourceType: core_mesh.GatewayType,
+	})
 }
 
-func (p *Plugin) CustomizeCommand(root *cobra.Command) {
-	get := kumactl_cmd.FindSubCommand(root, "get")
-
-	get.AddCommand(
-		kumactl_get.WithPaginationArgs(
-			kumactl_get.NewGetResourcesCmd(p.rootContext, "gateways", core_mesh.GatewayType, kumactl_get.BasicResourceTablePrinter),
-			&p.rootContext.ListContext,
-		),
-	)
-
-	get.AddCommand(
-		kumactl_get.NewGetResourceCmd(p.rootContext, "gateway", core_mesh.GatewayType, kumactl_get.BasicResourceTablePrinter),
-	)
+func (p *Plugin) CustomizeCommand(_ *cobra.Command) {
 }

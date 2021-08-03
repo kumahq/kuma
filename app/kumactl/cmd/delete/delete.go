@@ -23,7 +23,7 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			name := args[1]
 
 			var resource model.Resource
-			resourceType, err := pctx.TypeForArg(resourceTypeArg)
+			resourceType, err := pctx.TypeForArg(resourceTypeArg, true)
 			if err != nil {
 				return err
 			}

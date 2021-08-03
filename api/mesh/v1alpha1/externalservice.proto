@@ -23,7 +23,7 @@ message ExternalService {
   option (kuma.mesh.resource).name = "ExternalServiceResource";
   option (kuma.mesh.resource).type = "ExternalService";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.ws).name = "external-service";
+  option (kuma.mesh.resource).ws.name = "external-service";
 
   // Networking describes the properties of the external service connectivity
   message Networking {
