@@ -7,22 +7,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pkg/errors"
-	prometheus_client "github.com/prometheus/client_model/go"
-
-	sds_server "github.com/kumahq/kuma/pkg/sds/server"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
-
 	envoy_api_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_service_secret "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	prometheus_client "github.com/prometheus/client_model/go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -34,11 +29,13 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	sds_server "github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/runtime"
 	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 var _ = Describe("SDS Server", func() {

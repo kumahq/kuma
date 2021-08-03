@@ -3,11 +3,10 @@ package rest
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 type Api interface {

@@ -53,7 +53,6 @@ package {{.Package}}
 
 import (
 	"fmt"
-
 	mesh_proto "github.com/kumahq/kuma/api/{{.Package}}/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"

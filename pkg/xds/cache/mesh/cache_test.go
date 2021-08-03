@@ -8,10 +8,6 @@ import (
 	"sync"
 	"time"
 
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
-	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -20,9 +16,12 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 type countingResourcesManager struct {

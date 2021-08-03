@@ -3,11 +3,9 @@ package v3
 import (
 	"strings"
 
-	"github.com/pkg/errors"
-
-	"github.com/go-logr/logr"
-
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 
 	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 )

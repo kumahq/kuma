@@ -5,7 +5,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 

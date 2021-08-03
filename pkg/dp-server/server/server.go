@@ -7,12 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/grpc/keepalive"
-
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"

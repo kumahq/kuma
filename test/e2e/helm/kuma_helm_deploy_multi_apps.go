@@ -6,15 +6,12 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/gruntwork-io/terratest/modules/random"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
 

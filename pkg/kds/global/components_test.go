@@ -5,32 +5,26 @@ import (
 	"fmt"
 	"sync"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
-
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
-
-	"github.com/kumahq/kuma/pkg/kds"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/core"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/global"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 var _ = Describe("Global Sync", func() {

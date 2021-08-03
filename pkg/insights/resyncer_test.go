@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -21,9 +23,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/proto"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Insight Persistence", func() {

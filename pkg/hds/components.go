@@ -7,18 +7,16 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 
-	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
-
-	"github.com/kumahq/kuma/pkg/hds/authn"
-	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
-	hds_server "github.com/kumahq/kuma/pkg/hds/server"
-	"github.com/kumahq/kuma/pkg/hds/tracker"
-	"github.com/kumahq/kuma/pkg/xds/auth/components"
-
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/hds/authn"
+	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
+	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
+	hds_server "github.com/kumahq/kuma/pkg/hds/server"
+	"github.com/kumahq/kuma/pkg/hds/tracker"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/pkg/xds/auth/components"
 )
 
 var (

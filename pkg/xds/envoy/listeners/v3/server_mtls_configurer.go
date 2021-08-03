@@ -4,11 +4,10 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
-	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
-
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
 type ServerSideMTLSConfigurer struct {

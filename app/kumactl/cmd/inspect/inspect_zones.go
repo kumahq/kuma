@@ -5,16 +5,15 @@ import (
 	"io"
 	"time"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )

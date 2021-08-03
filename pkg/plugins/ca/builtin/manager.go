@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -15,6 +13,7 @@ import (
 	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
 	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_validators "github.com/kumahq/kuma/pkg/core/validators"

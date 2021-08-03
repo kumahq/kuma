@@ -35,7 +35,7 @@ helm-lint:
 
 .PHONY: imports
 imports: ## Dev: Runs goimports in order to organize imports
-	goimports -w -local github.com/kumahq/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendored/*'`
+	./tools/imports/goimports.sh `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendored/*'`
 
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator

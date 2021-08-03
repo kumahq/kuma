@@ -6,6 +6,8 @@ import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -21,9 +23,6 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 	"github.com/kumahq/kuma/pkg/xds/auth"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 type testAuthenticator struct {

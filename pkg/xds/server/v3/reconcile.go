@@ -1,6 +1,10 @@
 package v3
 
 import (
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
@@ -11,11 +15,6 @@ import (
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 )
 
 var (

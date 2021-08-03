@@ -23,7 +23,6 @@ import (
 	"github.com/miekg/dns"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
 	"istio.io/pkg/env"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-clean-iptables/pkg/config"

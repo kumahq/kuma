@@ -4,23 +4,19 @@ import (
 	"context"
 	"sync"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/kds/util"
-	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
-
-	"github.com/go-logr/logr"
-
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	"github.com/go-logr/logr"
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/kds/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 )
 
 type StatusTracker interface {

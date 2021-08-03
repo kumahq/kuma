@@ -6,7 +6,6 @@ type Dashboard struct {
 	FileName string
 	Content  string
 }
-
 type MetricsTemplateArgs struct {
 	Namespace               string
 	Mesh                    string
@@ -17,7 +16,6 @@ type MetricsTemplateArgs struct {
 	WithoutGrafana          bool
 	Dashboards              []Dashboard
 }
-
 type InstallMetricsContext struct {
 	TemplateArgs MetricsTemplateArgs
 }

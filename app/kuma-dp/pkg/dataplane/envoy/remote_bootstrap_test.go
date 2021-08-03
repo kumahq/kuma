@@ -10,17 +10,15 @@ import (
 	"strings"
 	"time"
 
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("Remote Bootstrap", func() {

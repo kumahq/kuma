@@ -3,13 +3,8 @@ package k8s_test
 import (
 	"context"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
-	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
-
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -17,8 +12,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
+	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 )
 
 type denyingValidator struct {

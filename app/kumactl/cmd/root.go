@@ -4,8 +4,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd/uninstall"
-
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd/apply"
@@ -16,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd/get"
 	"github.com/kumahq/kuma/app/kumactl/cmd/inspect"
 	"github.com/kumahq/kuma/app/kumactl/cmd/install"
+	"github.com/kumahq/kuma/app/kumactl/cmd/uninstall"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	kumactl_config "github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_errors "github.com/kumahq/kuma/app/kumactl/pkg/errors"

@@ -3,14 +3,13 @@ package reconcile
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/mads/generator"
-
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/mads/generator"
 	mads_cache "github.com/kumahq/kuma/pkg/mads/v1alpha1/cache"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
