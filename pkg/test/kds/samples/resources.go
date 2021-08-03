@@ -311,4 +311,24 @@ var (
 			},
 		}},
 	}
+	Gateway = &mesh_proto.Gateway{
+		Sources: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "gateway",
+			},
+		}},
+		Tags: map[string]string{
+			"gateway-name": "philip",
+		},
+		Conf: &mesh_proto.Gateway_Conf{
+			Listeners: []*mesh_proto.Gateway_Listener{{
+				Hostname: "philip.example.com",
+				Port:     8080,
+				Protocol: mesh_proto.Gateway_Listener_HTTP,
+				Tags: map[string]string{
+					"port": "8080",
+				},
+			}},
+		},
+	}
 )
