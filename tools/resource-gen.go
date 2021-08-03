@@ -36,7 +36,7 @@ var {{.Package}}WsDefinitions = []ResourceWsDefinition{
 	{
 		Type: {{$pkg}}.{{.ResourceType}}Type,
 		Path: "{{.WsPath}}",
-		Admin: {{.WsIsAdmin}},
+		AdminOnly: {{.WsIsAdmin}},
 		ReadOnly: {{.WsIsReadOnly}},
 	},
 	{{end}} {{end}}{{end}}
@@ -234,8 +234,8 @@ func ToResourceInfo(m protoreflect.MessageType) ResourceInfo {
 		if pluralResourceName == "" {
 			pluralResourceName = ws.Name + "s"
 		}
-		out.WsIsReadOnly = ws.IsReadOnly
-		out.WsIsAdmin = ws.IsAdmin
+		out.WsIsReadOnly = ws.ReadOnly
+		out.WsIsAdmin = ws.AdminOnly
 		out.WsPath = pluralResourceName
 	}
 

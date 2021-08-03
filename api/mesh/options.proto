@@ -27,15 +27,16 @@ message KumaResourceOptions {
 }
 
 message KumaWsOptions {
-  // ResourceName is the name of the policy for resource name usage in path
+  // Name is the name of the policy for resource name usage in path.
   string name = 1;
-  // ResourceNamePlural is only to be set if the plural of the resource is
-  // irregular (not just adding a 's' at the end).
+  // Plural is only to be set if the plural of the resource is irregular (not
+  // just adding a 's' at the end).
   string plural = 2;
-  // IsReadOnly if the resource is read only
-  bool is_read_only = 3;
-  // IsAdmin whether this entity requires admin auth to access these endpoints
-  bool is_admin = 4;
+  // ReadOnly if the resource is read only.
+  bool read_only = 3;
+  // AdminOnly whether this entity requires admin auth to access these
+  // endpoints.
+  bool admin_only = 4;
 }
 
 extend google.protobuf.MessageOptions {

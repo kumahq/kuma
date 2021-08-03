@@ -16,7 +16,7 @@ message MeshInsight {
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).skip_validation = true;
   option (kuma.mesh.ws).name = "mesh-insight";
-  option (kuma.mesh.ws).is_read_only = true;
+  option (kuma.mesh.ws).read_only = true;
 
   // last_sync is a time of the last synchronization
   google.protobuf.Timestamp last_sync = 1;

@@ -9,10 +9,10 @@ import (
 )
 
 type ResourceWsDefinition struct {
-	Type     model.ResourceType
-	Path     string
-	ReadOnly bool
-	Admin    bool
+	Type      model.ResourceType
+	Path      string
+	ReadOnly  bool
+	AdminOnly bool
 }
 
 func (ws *ResourceWsDefinition) ResourceFactory() model.Resource {
@@ -35,9 +35,9 @@ func (ws *ResourceWsDefinition) ResourceListFactory() model.ResourceList {
 
 var All = append(append([]ResourceWsDefinition{
 	{
-		Type:  system.GlobalSecretType,
-		Path:  "global-secrets",
-		Admin: true,
+		Type:      system.GlobalSecretType,
+		Path:      "global-secrets",
+		AdminOnly: true,
 	},
 }, systemWsDefinitions...), meshWsDefinitions...)
 

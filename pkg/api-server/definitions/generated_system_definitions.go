@@ -11,23 +11,23 @@ import (
 var systemWsDefinitions = []ResourceWsDefinition{
 
 	{
-		Type:     system.SecretType,
-		Path:     "secrets",
-		Admin:    true,
-		ReadOnly: false,
+		Type:      system.SecretType,
+		Path:      "secrets",
+		AdminOnly: true,
+		ReadOnly:  false,
 	},
 
 	{
-		Type:     system.ZoneType,
-		Path:     "zones",
-		Admin:    false,
-		ReadOnly: false,
+		Type:      system.ZoneType,
+		Path:      "zones",
+		AdminOnly: false,
+		ReadOnly:  false,
 	},
 
 	{
-		Type:     system.ZoneInsightType,
-		Path:     "zone-insights",
-		Admin:    false,
-		ReadOnly: true,
+		Type:      system.ZoneInsightType,
+		Path:      "zone-insights",
+		AdminOnly: false,
+		ReadOnly:  true,
 	},
 }

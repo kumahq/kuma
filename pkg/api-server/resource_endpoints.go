@@ -39,7 +39,7 @@ type resourceEndpoints struct {
 }
 
 func (r *resourceEndpoints) auth() restful.FilterFunction {
-	if r.ResourceWsDefinition.Admin {
+	if r.ResourceWsDefinition.AdminOnly {
 		return r.adminAuth.Validate
 	}
 	return authz.NoAuth
