@@ -10,6 +10,7 @@ type EntryType int
 const (
 	Service EntryType = iota
 	Host
+	FullyQualifiedDomain
 )
 
 func (t EntryType) String() string {
@@ -18,6 +19,8 @@ func (t EntryType) String() string {
 		return "service"
 	case Host:
 		return "host"
+	case FullyQualifiedDomain:
+		return "fqdn"
 	default:
 		return "undefined"
 	}
@@ -41,12 +44,23 @@ func (e *Entry) UnmarshalText(text []byte) error {
 	return err
 }
 
+func (e *Entry) Less(o *Entry) bool {
+	if e.Type == o.Type {
+		return e.Name < o.Name
+	}
+	return e.Type < o.Type
+}
+
 func NewHostEntry(host string) Entry {
 	return Entry{Host, host}
 }
 
 func NewServiceEntry(name string) Entry {
 	return Entry{Service, name}
+}
+
+func NewFqdnEntry(name string) Entry {
+	return Entry{FullyQualifiedDomain, name}
 }
 
 type EntrySet map[Entry]bool
@@ -56,9 +70,7 @@ func (s EntrySet) ToArray() (entries []Entry) {
 		entries = append(entries, entry)
 	}
 	sort.SliceStable(entries, func(i, j int) bool {
-		// Sort by entry type, then name.
-		return entries[i].Type < entries[j].Type ||
-			entries[i].Name < entries[j].Name
+		return entries[i].Less(&entries[j])
 	})
 	return
 }

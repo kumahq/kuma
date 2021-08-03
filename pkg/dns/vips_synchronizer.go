@@ -63,9 +63,16 @@ func (d *vipsSynchronizer) synchronize() error {
 	if d.leadInfo.IsLeader() {
 		return nil // when CP is leader we skip this because VIP allocator updates DNSResolver
 	}
-	vipList, _, err := d.persistence.Get()
+	voByMesh, err := d.persistence.Get()
 	if err != nil {
 		return err
+	}
+	vipList := vips.List{}
+	for _, voView := range voByMesh {
+		for _, v := range voView.Keys() {
+			vo := voView.Get(v)
+			vipList[v] = vo.Address
+		}
 	}
 	d.resolver.SetVIPs(vipList)
 	return nil

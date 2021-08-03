@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -84,68 +83,61 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string) error {
 }
 
 func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) {
-	global, byMesh, err := d.persistence.Get()
+	byMesh, err := d.persistence.Get()
 	if err != nil {
 		return err
 	}
 
-	ipam, err := d.newIPAM(global)
+	gv, err := vips.NewGlobalView(d.cidr)
 	if err != nil {
 		return err
 	}
+	for _, mesh := range meshes {
+		if _, ok := byMesh[mesh]; !ok {
+			byMesh[mesh] = vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{})
+		}
+		for _, key := range byMesh[mesh].Keys() {
+			vo := byMesh[mesh].Get(key)
+			err := gv.Reserve(key, vo.Address)
+			if err != nil {
+				return err
+			}
+		}
+	}
 
-	forEachMesh := func(mesh string, meshed vips.List) error {
-		serviceSet, err := BuildServiceSet(d.rm, mesh)
+	forEachMesh := func(mesh string, meshed *vips.VirtualOutboundView) error {
+		newVirtualOutboundView, err := BuildServiceSet(d.rm, mesh)
 		if err != nil {
 			return err
 		}
 
-		changed, err := UpdateMeshedVIPs(global, meshed, ipam, serviceSet)
+		err = AllocateVIPs(gv, newVirtualOutboundView)
 		if err != nil {
 			// Error might occur only if we run out of VIPs. There is no point to pass it through,
 			// we must notify user in logs and proceed
-			vipsAllocatorLog.Error(err, "failed to allocate new VIPs")
+			vipsAllocatorLog.Error(err, "failed to allocate new VIPs", "mesh", mesh)
 		}
-		if !changed {
+		changes, out := meshed.Update(newVirtualOutboundView)
+		if len(changes) == 0 {
 			return nil
 		}
-		global.Append(meshed)
-
-		return d.persistence.Set(mesh, meshed)
+		vipsAllocatorLog.Info("mesh vip changes", "mesh", mesh, "changes", changes)
+		return d.persistence.Set(mesh, out)
 	}
 
 	for _, mesh := range meshes {
-		meshed, ok := byMesh[mesh]
-		if !ok {
-			meshed = vips.List{}
-		}
-		if err := forEachMesh(mesh, meshed); err != nil {
+		if err := forEachMesh(mesh, byMesh[mesh]); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
 
-	d.resolver.SetVIPs(global)
+	d.resolver.SetVIPs(gv.VipList())
 
 	return errs
 }
 
-func (d *VIPsAllocator) newIPAM(initialVIPs vips.List) (IPAM, error) {
-	ipam, err := NewSimpleIPAM(d.cidr)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, vip := range initialVIPs {
-		if err := ipam.ReserveIP(vip); err != nil && !IsAddressAlreadyAllocated(err) {
-			return nil, err
-		}
-	}
-
-	return ipam, nil
-}
-
-func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (vips.EntrySet, error) {
-	serviceSet := make(vips.EntrySet)
+func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (*vips.VirtualOutboundView, error) {
+	outboundSet := vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{})
 
 	dataplanes := core_mesh.DataplaneResourceList{}
 	if err := rm.List(context.Background(), &dataplanes); err != nil {
@@ -158,19 +150,18 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (vips.Entr
 			_ = filteredDataplanes.AddItem(d)
 		}
 	}
-
+	var err error
 	for _, dp := range filteredDataplanes.Items {
 		// backwards compatibility
 		if dp.Spec.IsIngress() {
 			for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
-				if service.Mesh != mesh {
-					continue
+				if service.Mesh == mesh {
+					err = multierr.Append(err, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag]))
 				}
-				serviceSet[vips.NewServiceEntry(service.Tags[mesh_proto.ServiceTag])] = true
 			}
 		} else {
 			for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
-				serviceSet[vips.NewServiceEntry(inbound.GetService())] = true
+				err = multierr.Append(err, addDefault(outboundSet, inbound.GetService()))
 			}
 		}
 	}
@@ -182,10 +173,9 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (vips.Entr
 
 	for _, zi := range zoneIngresses.Items {
 		for _, service := range zi.Spec.GetAvailableServices() {
-			if service.Mesh != mesh {
-				continue
+			if service.Mesh == mesh {
+				err = multierr.Append(err, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag]))
 			}
-			serviceSet[vips.NewServiceEntry(service.Tags[mesh_proto.ServiceTag])] = true
 		}
 	}
 
@@ -194,41 +184,36 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (vips.Entr
 		return nil, err
 	}
 	for _, es := range externalServices.Items {
-		serviceSet[vips.NewServiceEntry(es.Spec.GetService())] = true
-		serviceSet[vips.NewHostEntry(es.Spec.GetHost())] = true
+		err = multierr.Append(err, addDefault(outboundSet, es.Spec.GetService()))
+		err = multierr.Append(err, outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.MeshOutbound{
+			Port:   es.Spec.GetPortUInt32(),
+			TagSet: map[string]string{mesh_proto.ServiceTag: es.Spec.GetService()},
+			Origin: "host",
+		}))
 	}
 
-	return serviceSet, nil
+	if err != nil {
+		return nil, err
+	}
+	return outboundSet, nil
 }
 
-func UpdateMeshedVIPs(global, meshed vips.List, ipam IPAM, entrySet vips.EntrySet) (updated bool, errs error) {
-	for _, service := range entrySet.ToArray() {
-		_, found := meshed[service]
-		if found {
-			continue
-		}
-		ip, found := global[service]
-		if found {
-			meshed[service] = ip
-			updated = true
-			continue
-		}
-		ip, err := ipam.AllocateIP()
-		if err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, "unable to allocate an ip for service %s", service))
-			continue
-		}
-		meshed[service] = ip
-		updated = true
-		vipsAllocatorLog.Info("adding", "service", service, "ip", ip)
-	}
-	for service, ip := range meshed {
-		if _, found := entrySet[service]; !found {
-			updated = true
-			_ = ipam.FreeIP(ip)
-			delete(meshed, service)
-			vipsAllocatorLog.Info("deleting", "service", service, "ip", ip)
+func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundView) (errs error) {
+	// Assign ips for all services
+	for _, key := range voView.Keys() {
+		vo := voView.Get(key)
+		if vo.Address == "" {
+			ip, err := global.Allocate(key)
+			if err != nil {
+				errs = multierr.Append(errs, err)
+			} else {
+				vo.Address = ip
+			}
 		}
 	}
-	return
+	return errs
+}
+
+func addDefault(outboundSet *vips.VirtualOutboundView, service string) error {
+	return outboundSet.Add(vips.NewServiceEntry(service), vips.MeshOutbound{TagSet: map[string]string{mesh_proto.ServiceTag: service}, Origin: "default"})
 }

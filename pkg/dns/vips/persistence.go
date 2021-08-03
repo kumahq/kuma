@@ -46,14 +46,13 @@ func NewPersistence(resourceManager manager.ReadOnlyResourceManager, configManag
 	}
 }
 
-func (m *Persistence) Get() (global List, meshed map[string]List, errs error) {
+func (m *Persistence) Get() (meshed map[string]*VirtualOutboundView, errs error) {
 	resourceList := &config_model.ConfigResourceList{}
 	if err := m.configManager.List(context.Background(), resourceList); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	global = List{}
-	meshed = map[string]List{}
+	meshed = map[string]*VirtualOutboundView{}
 	for _, resource := range resourceList.Items {
 		mesh, ok := MeshFromConfigKey(resource.Meta.GetName())
 		if !ok {
@@ -67,53 +66,59 @@ func (m *Persistence) Get() (global List, meshed map[string]List, errs error) {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		global.Append(v)
 		meshed[mesh] = v
 	}
 	return
 }
 
-func (m *Persistence) unmarshal(config string) (List, error) {
-	v := List{}
-	if err := json.Unmarshal([]byte(config), &v); err == nil {
-		return v, nil
+func (m *Persistence) unmarshal(config string) (*VirtualOutboundView, error) {
+	res := map[Entry]VirtualOutbound{}
+	if err := json.Unmarshal([]byte(config), &res); err == nil {
+		return NewVirtualOutboundView(res), nil
 	}
-	// backwards compatibility
-	backwardCompatible := map[string]string{}
-	if err := json.Unmarshal([]byte(config), &backwardCompatible); err != nil {
-		return nil, err
+	backCompat := List{}
+	if err := json.Unmarshal([]byte(config), &backCompat); err != nil {
+		// backwards compatibility
+		backwardCompatible := map[string]string{}
+		if err := json.Unmarshal([]byte(config), &backwardCompatible); err != nil {
+			return nil, err
+		}
+		for service, vip := range backwardCompatible {
+			backCompat[NewServiceEntry(service)] = vip
+		}
 	}
-	v = List{}
-	for service, vip := range backwardCompatible {
-		v[NewServiceEntry(service)] = vip
+	for entry, vip := range backCompat {
+		res[entry] = VirtualOutbound{
+			Address: vip,
+		}
 	}
-	return v, nil
+	return NewVirtualOutboundView(res), nil
 }
 
-func (m *Persistence) GetByMesh(mesh string) (List, error) {
+func (m *Persistence) GetByMesh(mesh string) (*VirtualOutboundView, error) {
 	name := fmt.Sprintf(template, mesh)
 	resource := config_model.NewConfigResource()
 	err := m.configManager.Get(context.Background(), resource, store.GetByKey(name, ""))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
-			return List{}, nil
+			return NewVirtualOutboundView(map[Entry]VirtualOutbound{}), nil
 		}
 		return nil, err
 	}
 
 	if resource.Spec.Config == "" {
-		return List{}, nil
+		return NewVirtualOutboundView(map[Entry]VirtualOutbound{}), nil
 	}
 
-	vips, err := m.unmarshal(resource.Spec.GetConfig())
+	virtualOutboundView, err := m.unmarshal(resource.Spec.GetConfig())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal")
 	}
 
-	return vips, nil
+	return virtualOutboundView, nil
 }
 
-func (m *Persistence) Set(mesh string, vips List) error {
+func (m *Persistence) Set(mesh string, vips *VirtualOutboundView) error {
 	ctx := context.Background()
 	name := fmt.Sprintf(template, mesh)
 	resource := config_model.NewConfigResource()
@@ -125,7 +130,7 @@ func (m *Persistence) Set(mesh string, vips List) error {
 		create = true
 	}
 
-	jsonBytes, err := json.Marshal(vips)
+	jsonBytes, err := json.Marshal(vips.byHostname)
 	if err != nil {
 		return errors.Wrap(err, "unable to marshall VIP list")
 	}
