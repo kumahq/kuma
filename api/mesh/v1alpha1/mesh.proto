@@ -16,6 +16,7 @@ message Mesh {
   option (kuma.mesh.resource).type = "Mesh";
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.ws).name = "mesh";
   option (kuma.mesh.ws).plural = "meshes";
 

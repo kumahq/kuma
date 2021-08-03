@@ -3,12 +3,13 @@ package cache
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/pkg/kds/definitions"
+
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/kds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
@@ -59,8 +60,8 @@ type Snapshot struct {
 var _ util_xds.Snapshot = &Snapshot{}
 
 func (s *Snapshot) GetSupportedTypes() (types []string) {
-	for _, typ := range kds.SupportedTypes {
-		types = append(types, string(typ))
+	for _, def := range definitions.All {
+		types = append(types, string(def.Type))
 	}
 	return
 }

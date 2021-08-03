@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/kds/definitions"
+
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -31,42 +33,10 @@ import (
 
 var (
 	kdsGlobalLog = core.Log.WithName("kds-global")
-
-	// ProvidedTypes lists the resource types provided by the Global
-	// CP to the Zone CP.
-	ProvidedTypes = []model.ResourceType{
-		core_mesh.CircuitBreakerType,
-		core_mesh.DataplaneType,
-		core_mesh.ExternalServiceType,
-		core_mesh.FaultInjectionType,
-		core_mesh.HealthCheckType,
-		core_mesh.MeshType,
-		core_mesh.ProxyTemplateType,
-		core_mesh.RateLimitType,
-		core_mesh.RetryType,
-		core_mesh.TimeoutType,
-		core_mesh.TrafficLogType,
-		core_mesh.TrafficPermissionType,
-		core_mesh.TrafficRouteType,
-		core_mesh.TrafficTraceType,
-		core_mesh.ZoneIngressType,
-		system.ConfigType,
-		system.GlobalSecretType,
-		system.SecretType,
-	}
-
-	// ConsumedTypes lists the resource types consumed from the Zone
-	// CP by the Global CP.
-	ConsumedTypes = []model.ResourceType{
-		core_mesh.DataplaneInsightType,
-		core_mesh.DataplaneType,
-		core_mesh.ZoneIngressInsightType,
-		core_mesh.ZoneIngressType,
-	}
 )
 
 func Setup(rt runtime.Runtime) (err error) {
-	kdsServer, err := kds_server.New(kdsGlobalLog, rt, ProvidedTypes,
+	kdsServer, err := kds_server.New(kdsGlobalLog, rt, definitions.All.Get(definitions.ProvidedByGlobal),
 		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
 		rt.KDSContext().GlobalProvidedFilter, true)
 	if err != nil {
@@ -87,7 +57,7 @@ func Setup(rt runtime.Runtime) (err error) {
 			log.Error(err, "Global CP could not create a zone")
 			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry
 		}
-		sink := client.NewKDSSink(log, ConsumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
+		sink := client.NewKDSSink(log, definitions.All.Get(definitions.ConsumedByGlobal), kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
 		go func() {
 			if err := sink.Start(session.Done()); err != nil {
 				log.Error(err, "KDSSink finished with an error")
@@ -142,13 +112,4 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			}), sync_store.Zone(clusterName))
 		},
 	}
-}
-
-func ConsumesType(typ model.ResourceType) bool {
-	for _, consumedTyp := range ConsumedTypes {
-		if consumedTyp == typ {
-			return true
-		}
-	}
-	return false
 }

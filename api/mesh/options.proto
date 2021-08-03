@@ -24,6 +24,8 @@ message KumaResourceOptions {
 
   // Whether to skip type registration for this resource.
   bool skip_registration = 6;
+
+  KumaKdsOptions kds = 10;
 }
 
 message KumaWsOptions {
@@ -37,6 +39,11 @@ message KumaWsOptions {
   // AdminOnly whether this entity requires admin auth to access these
   // endpoints.
   bool admin_only = 4;
+}
+
+message KumaKdsOptions {
+  bool send_to_global = 1;
+  bool send_to_zone = 2;
 }
 
 extend google.protobuf.MessageOptions {
