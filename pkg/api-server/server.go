@@ -166,17 +166,6 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
 	zoneIngressOverviewEndpoints.addListEndpoint(ws)
 
-	serviceInsightEndpoints := serviceInsightEndpoints{
-		resourceEndpoints: resourceEndpoints{
-			mode:                 cfg.Mode,
-			resManager:           resManager,
-			ResourceWsDefinition: definitions.ServiceInsightWsDefinition,
-			adminAuth: authz.AdminAuth{
-				AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost,
-			},
-		},
-	}
-
 	for _, definition := range defs {
 		defType := definition.Type
 		if cfg.ApiServer.ReadOnly || (defType == mesh.DataplaneType && cfg.Mode == config_core.Global) || (defType != mesh.DataplaneType && cfg.Mode == config_core.Zone) {
@@ -191,12 +180,14 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 			},
 		}
 		switch defType {
-		case mesh.ServiceInsightType: // ServiceInsight has a custom endpoint
-			serviceInsightEndpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
-			serviceInsightEndpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
-			serviceInsightEndpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
-			serviceInsightEndpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
-			serviceInsightEndpoints.addListEndpoint(ws, "/"+definitions.ServiceInsightWsDefinition.Path) // listing all resources in all meshes
+		case mesh.ServiceInsightType:
+			// ServiceInsight is a bit different
+			ep := serviceInsightEndpoints{endpoints}
+			ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			ep.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			ep.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
 		default:
 			switch definition.ResourceFactory().Scope() {
 			case model.ScopeMesh:

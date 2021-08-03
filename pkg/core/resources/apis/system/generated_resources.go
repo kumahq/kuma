@@ -233,6 +233,10 @@ func (t *ZoneResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
+func (t *ZoneResource) Validate() error {
+	return nil
+}
+
 func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.Zone)
 	if !ok {
