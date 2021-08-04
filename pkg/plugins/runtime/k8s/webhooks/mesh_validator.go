@@ -13,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s_common.Converter, resourceManager manager.ResourceManager) k8s_common.AdmissionValidator {
@@ -57,7 +56,7 @@ func (h *MeshValidator) ValidateDelete(ctx context.Context, req admission.Reques
 
 func (h *MeshValidator) ValidateCreate(ctx context.Context, req admission.Request) admission.Response {
 	coreRes := mesh_core.NewMeshResource()
-	k8sRes := &v1alpha1.Mesh{}
+	k8sRes := &mesh_k8s.Mesh{}
 	if err := h.decoder.Decode(req, k8sRes); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -75,7 +74,7 @@ func (h *MeshValidator) ValidateCreate(ctx context.Context, req admission.Reques
 
 func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Request) admission.Response {
 	coreRes := mesh_core.NewMeshResource()
-	k8sRes := &v1alpha1.Mesh{}
+	k8sRes := &mesh_k8s.Mesh{}
 	if err := h.decoder.DecodeRaw(req.Object, k8sRes); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -84,7 +83,7 @@ func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Reques
 	}
 
 	oldCoreRes := mesh_core.NewMeshResource()
-	oldK8sRes := &v1alpha1.Mesh{}
+	oldK8sRes := &mesh_k8s.Mesh{}
 	if err := h.decoder.DecodeRaw(req.OldObject, oldK8sRes); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}

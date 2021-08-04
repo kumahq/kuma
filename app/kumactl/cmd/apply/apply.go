@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/util/template"
@@ -105,7 +104,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 					continue
 				}
 				bytes := template.Render(rawResource, ctx.args.vars)
-				res, err := rest.UnmarshallToCore(bytes)
+				res, err := rest_types.UnmarshallToCore(bytes)
 				if err != nil {
 					return errors.Wrap(err, "YAML contains invalid resource")
 				}

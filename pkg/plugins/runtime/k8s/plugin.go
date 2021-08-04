@@ -27,7 +27,6 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	k8s_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-	k8s_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	k8s_webhooks "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 )
@@ -143,12 +142,12 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 }
 
 func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	reconciler := &controllers.PodReconciler{
+	reconciler := &k8s_controllers.PodReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-generator"),
 		Scheme:        mgr.GetScheme(),
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
-		PodConverter: controllers.PodConverter{
+		PodConverter: k8s_controllers.PodConverter{
 			ServiceGetter:     mgr.GetClient(),
 			NodeGetter:        mgr.GetClient(),
 			Zone:              rt.Config().Multizone.Zone.Name,
@@ -162,7 +161,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 }
 
 func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	reconciler := &controllers.PodStatusReconciler{
+	reconciler := &k8s_controllers.PodStatusReconciler{
 		Client:            mgr.GetClient(),
 		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-jobs-syncer"),
 		Scheme:            mgr.GetScheme(),

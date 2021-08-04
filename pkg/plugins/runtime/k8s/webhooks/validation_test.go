@@ -12,7 +12,6 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -43,7 +42,7 @@ var _ = Describe("Validation", func() {
 	DescribeTable("Validation",
 		func(given testCase) {
 			// given
-			webhook := &admission.Webhook{
+			webhook := &kube_admission.Webhook{
 				Handler: webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, "kuma-system"),
 			}
 			Expect(webhook.InjectScheme(scheme)).To(Succeed())

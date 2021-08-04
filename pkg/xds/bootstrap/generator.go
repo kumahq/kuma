@@ -33,9 +33,6 @@ import (
 
 	// import Envoy protobuf definitions so (un)marshalling Envoy protobuf works in tests (normally it is imported in root.go)
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
-	// import Envoy protobuf definitions so (un)marshalling Envoy protobuf works in tests (normally it is imported in root.go)
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type BootstrapGenerator interface {

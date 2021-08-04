@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -117,7 +116,7 @@ func (d *DataplaneReconciler) Cleanup(proxyId *core_xds.ProxyId) error {
 	return nil
 }
 
-func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_helper.MeshResource, dataplane *mesh_helper.DataplaneResource) (bool, string, error) {
+func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_core.MeshResource, dataplane *mesh_core.DataplaneResource) (bool, string, error) {
 	_, err := d.cache.GetSnapshot(proxyID)
 	if err != nil {
 		return true, "Snapshot does not exist", nil

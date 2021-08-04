@@ -4,7 +4,6 @@ import (
 	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -46,8 +45,8 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 
 func (c RoutesConfigurer) setHeadersModifications(route *envoy_route.Route, modify *mesh_proto.TrafficRoute_Http_Modify) {
 	for _, add := range modify.GetRequestHeaders().GetAdd() {
-		route.RequestHeadersToAdd = append(route.RequestHeadersToAdd, &envoy_core.HeaderValueOption{
-			Header: &envoy_core.HeaderValue{
+		route.RequestHeadersToAdd = append(route.RequestHeadersToAdd, &envoy_config_core_v3.HeaderValueOption{
+			Header: &envoy_config_core_v3.HeaderValue{
 				Key:   add.Name,
 				Value: add.Value,
 			},
@@ -61,8 +60,8 @@ func (c RoutesConfigurer) setHeadersModifications(route *envoy_route.Route, modi
 	}
 
 	for _, add := range modify.GetResponseHeaders().GetAdd() {
-		route.ResponseHeadersToAdd = append(route.ResponseHeadersToAdd, &envoy_core.HeaderValueOption{
-			Header: &envoy_core.HeaderValue{
+		route.ResponseHeadersToAdd = append(route.ResponseHeadersToAdd, &envoy_config_core_v3.HeaderValueOption{
+			Header: &envoy_config_core_v3.HeaderValue{
 				Key:   add.Name,
 				Value: add.Value,
 			},

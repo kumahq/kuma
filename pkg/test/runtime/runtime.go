@@ -9,7 +9,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -115,11 +114,11 @@ type DummyEnvoyAdminClient struct {
 	PostQuitCalled *int
 }
 
-func (d *DummyEnvoyAdminClient) GenerateAPIToken(dp *mesh_core.DataplaneResource) (string, error) {
+func (d *DummyEnvoyAdminClient) GenerateAPIToken(dp *core_mesh.DataplaneResource) (string, error) {
 	return "token", nil
 }
 
-func (d *DummyEnvoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) error {
+func (d *DummyEnvoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) error {
 	if d.PostQuitCalled != nil {
 		*d.PostQuitCalled++
 	}

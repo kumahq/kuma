@@ -16,7 +16,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -32,7 +31,7 @@ type testAuthenticator struct {
 
 var _ auth.Authenticator = &testAuthenticator{}
 
-func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resource, credential auth.Credential) error {
+func (t *testAuthenticator) Authenticate(_ context.Context, resource core_model.Resource, credential auth.Credential) error {
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource:
 		t.callCounter++

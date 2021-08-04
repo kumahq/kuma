@@ -10,7 +10,6 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
@@ -25,22 +24,22 @@ type denyingValidator struct {
 
 var _ k8s_common.AdmissionValidator = &denyingValidator{}
 
-func (d *denyingValidator) InjectDecoder(*admission.Decoder) error {
+func (d *denyingValidator) InjectDecoder(*kube_admission.Decoder) error {
 	return nil
 }
 
-func (d *denyingValidator) Handle(context.Context, admission.Request) admission.Response {
-	return admission.Denied("")
+func (d *denyingValidator) Handle(context.Context, kube_admission.Request) kube_admission.Response {
+	return kube_admission.Denied("")
 }
 
-func (d *denyingValidator) Supports(req admission.Request) bool {
+func (d *denyingValidator) Supports(req kube_admission.Request) bool {
 	gvk := sample_k8s.GroupVersion.WithKind("SampleTrafficRoute")
 	return req.Kind.Group == gvk.Group && req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version
 }
 
 var _ = Describe("Composite Validator", func() {
 
-	var handler admission.Handler
+	var handler kube_admission.Handler
 	var kubeTypes k8s_registry.TypeRegistry
 
 	BeforeEach(func() {
