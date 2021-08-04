@@ -2,16 +2,9 @@ package definitions
 
 import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 var ExternalServiceWsDefinition = ResourceWsDefinition{
-	Name: "ExternalService",
+	Type: mesh.ExternalServiceType,
 	Path: "external-services",
-	ResourceFactory: func() model.Resource {
-		return mesh.NewExternalServiceResource()
-	},
-	ResourceListFactory: func() model.ResourceList {
-		return &mesh.ExternalServiceResourceList{}
-	},
 }
