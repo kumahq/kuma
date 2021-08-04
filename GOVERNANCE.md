@@ -5,7 +5,7 @@ This document defines governance policies for the Kuma project.
 ## Maintainers
 
 Kuma Maintainers have write access to the Kuma GitHub repository https://github.com/kumahq/kuma.
-They can merge their own patches or patches from others. The current maintainers can be found in [CODEOWNERS](./CODEOWNERS).
+They can merge their own patches or patches from others. The current maintainers can be found in [OWNERS.md](./OWNERS.md).
 
 This privilege is granted with some expectation of responsibility: maintainers are people who care about the Kuma project and want to help it grow and improve. A maintainer is not just someone who can make changes, but someone who has demonstrated his or her ability to collaborate with the team, get the most knowledgeable people to review code, contribute high-quality code, and follow through to fix issues (in code or tests).
 
