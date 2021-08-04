@@ -106,7 +106,7 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 	if err != nil {
 		return err
 	}
-	proxy, err := d.dataplaneProxyBuilder.build(d.key, envoyCtx)
+	proxy, err := d.dataplaneProxyBuilder.Build(d.key, envoyCtx)
 	if err != nil {
 		return err
 	}
