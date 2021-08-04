@@ -36,11 +36,11 @@ func (m *zoneIngressInsightManager) Create(ctx context.Context, resource core_mo
 
 	m.limitSubscription(resource.(*mesh.ZoneIngressInsightResource))
 
-	zoneIngres := mesh.NewZoneIngressResource()
-	if err := m.store.Get(ctx, zoneIngres, core_store.GetByKey(opts.Name, core_model.NoMesh)); err != nil {
+	zoneIngress := mesh.NewZoneIngressResource()
+	if err := m.store.Get(ctx, zoneIngress, core_store.GetByKey(opts.Name, core_model.NoMesh)); err != nil {
 		return err
 	}
-	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()), core_store.CreateWithOwner(zoneIngres))...)
+	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()), core_store.CreateWithOwner(zoneIngress))...)
 }
 
 func (m *zoneIngressInsightManager) Update(ctx context.Context, resource core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
