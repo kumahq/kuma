@@ -3,12 +3,9 @@ package zoneinsight
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-
 	"github.com/kumahq/kuma/pkg/core"
-
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"

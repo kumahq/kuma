@@ -3,6 +3,9 @@ package metrics_test
 import (
 	"context"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -10,9 +13,6 @@ import (
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	store_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Metered Store", func() {

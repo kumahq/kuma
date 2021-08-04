@@ -8,15 +8,13 @@ import (
 	"math/big"
 	"path/filepath"
 
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 
 	. "github.com/kumahq/kuma/pkg/plugins/ca/provided"
-
 	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 

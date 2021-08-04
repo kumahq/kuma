@@ -8,13 +8,12 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/kumahq/kuma/pkg/util/test"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
 	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl config control-planes remove", func() {

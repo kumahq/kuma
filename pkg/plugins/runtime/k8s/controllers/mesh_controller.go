@@ -5,21 +5,19 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
-	core_ca "github.com/kumahq/kuma/pkg/core/ca"
-	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 // MeshReconciler reconciles a Mesh object

@@ -8,27 +8,25 @@ import (
 	"sync"
 	"time"
 
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	sds_metrics "github.com/kumahq/kuma/pkg/sds/metrics"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
-
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	sds_ca "github.com/kumahq/kuma/pkg/sds/ca"
 	sds_identity "github.com/kumahq/kuma/pkg/sds/identity"
+	sds_metrics "github.com/kumahq/kuma/pkg/sds/metrics"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
 )
 
 // DataplaneReconciler keeps the state of the Cache for SDS consistent

@@ -3,16 +3,13 @@ package v3_test
 import (
 	"time"
 
+	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
-
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
-
+	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 

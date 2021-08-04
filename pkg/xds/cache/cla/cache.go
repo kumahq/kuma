@@ -7,19 +7,16 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
-
-	"github.com/kumahq/kuma/pkg/core/xds"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/metrics"
-
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	"github.com/kumahq/kuma/pkg/xds/topology"

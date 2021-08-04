@@ -5,11 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/log"
-
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/log"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 )
 

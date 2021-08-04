@@ -6,11 +6,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-
-	"github.com/Masterminds/semver/v3"
 
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/metrics"

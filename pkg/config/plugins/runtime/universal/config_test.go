@@ -5,12 +5,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/config/plugins/runtime/universal"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config/plugins/runtime/universal"
 )
 
 var _ = Describe("Config", func() {

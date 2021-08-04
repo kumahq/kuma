@@ -3,10 +3,10 @@ package install_test
 import (
 	"io/ioutil"
 
+	. "github.com/onsi/gomega"
+
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/pkg/test/golden"
-
-	. "github.com/onsi/gomega"
 )
 
 func ExpectMatchesGoldenFiles(actual []byte, goldenFilePath string) {

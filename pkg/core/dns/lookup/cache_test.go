@@ -4,11 +4,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 )
 
 var _ = Describe("DNS with cache", func() {

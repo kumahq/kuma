@@ -4,9 +4,7 @@ import (
 	"context"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-
 	"github.com/kumahq/kuma/pkg/core"
-
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"

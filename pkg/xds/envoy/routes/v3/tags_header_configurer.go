@@ -4,9 +4,8 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 const TagsHeaderName = "x-kuma-tags"

@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
-
-	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
 
 var _ = Describe("CallbacksChain", func() {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core/validators"
-
 	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 
