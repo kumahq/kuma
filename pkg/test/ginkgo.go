@@ -20,7 +20,10 @@ func RunSpecs(t *testing.T, description string) {
 
 	// Log to the Ginkgo writer. This makes Ginkgo emit logs on
 	// test failure.
-	log.SetLogger(zap.LoggerTo(ginkgo.GinkgoWriter, true))
+	log.SetLogger(zap.New(
+		zap.UseDevMode(true),
+		zap.WriteTo(ginkgo.GinkgoWriter),
+	))
 
 	gomega.RegisterFailHandlerWithT(t, ginkgo.Fail)
 	ginkgo.RunSpecs(t, description)

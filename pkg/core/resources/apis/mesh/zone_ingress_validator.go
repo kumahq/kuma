@@ -26,15 +26,13 @@ func (r *ZoneIngressResource) validateNetworking(path validators.PathBuilder, ne
 	if networking.GetAdvertisedAddress() != "" {
 		err.Add(validateAddress(path.Field("advertisedAddress"), networking.GetAdvertisedAddress()))
 	}
-	if networking.GetPort() == 0 {
-		err.AddViolationAt(path.Field("port"), `port has to be defined`)
+
+	err.Add(ValidatePort(path.Field("port"), networking.GetPort()))
+
+	if networking.GetAdvertisedPort() != 0 {
+		err.Add(ValidatePort(path.Field("advertisedPort"), networking.GetAdvertisedPort()))
 	}
-	if networking.GetPort() > 65535 {
-		err.AddViolationAt(path.Field("port"), `port has to be in range of [1, 65535]`)
-	}
-	if networking.GetAdvertisedPort() > 65535 {
-		err.AddViolationAt(path.Field("advertisedPort"), `port has to be in range of [1, 65535]`)
-	}
+
 	return err
 }
 

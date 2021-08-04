@@ -35,15 +35,13 @@ func (c *DNSConfigurer) Configure(listener *envoy_listener.Listener) error {
 
 func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 	var virtualDomains []*envoy_data_dns.DnsTable_DnsVirtualDomain
-	for domain, ip := range c.VIPs {
+	for domain, ips := range c.VIPs {
 		virtualDomains = append(virtualDomains, &envoy_data_dns.DnsTable_DnsVirtualDomain{
 			Name: domain,
 			Endpoint: &envoy_data_dns.DnsTable_DnsEndpoint{
 				EndpointConfig: &envoy_data_dns.DnsTable_DnsEndpoint_AddressList{
 					AddressList: &envoy_data_dns.DnsTable_AddressList{
-						Address: []string{
-							ip,
-						},
+						Address: []string{ips},
 					},
 				},
 			},
