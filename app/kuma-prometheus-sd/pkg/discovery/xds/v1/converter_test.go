@@ -4,13 +4,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	v1 "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/v1"
-
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
+	v1 "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/v1"
 )
 
 var _ = Describe("Converter", func() {

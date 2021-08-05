@@ -8,7 +8,6 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"

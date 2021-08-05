@@ -5,13 +5,12 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 
 	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/common"
 	v1 "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/v1"
 	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/v1alpha1"
-
-	"github.com/prometheus/prometheus/discovery"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
 type discoverer struct {

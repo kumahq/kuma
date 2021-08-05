@@ -3,18 +3,14 @@ package controllers
 import (
 	"context"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
+	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -22,13 +18,12 @@ import (
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
-	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_record "k8s.io/client-go/tools/record"
-
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 

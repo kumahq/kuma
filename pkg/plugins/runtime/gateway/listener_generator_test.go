@@ -1,10 +1,9 @@
 package gateway_test
 
 import (
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"

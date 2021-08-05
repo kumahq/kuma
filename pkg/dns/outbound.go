@@ -4,14 +4,12 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	"github.com/pkg/errors"
-
-	"github.com/kumahq/kuma/pkg/dns/vips"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 )
 
 const VIPListenPort = uint32(80)

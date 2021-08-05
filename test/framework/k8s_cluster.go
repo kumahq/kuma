@@ -15,18 +15,12 @@ import (
 	"strings"
 	"time"
 
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-
-	"github.com/gruntwork-io/terratest/modules/random"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
-	"github.com/pkg/errors"
-
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +28,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 type K8sCluster struct {

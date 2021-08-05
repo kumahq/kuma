@@ -3,12 +3,11 @@ package plugins
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/events"
-
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/events"
 )
 
 type Plugin interface{}

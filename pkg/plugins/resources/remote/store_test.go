@@ -11,21 +11,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	errors_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	sample_api "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources/model"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	errors_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
-
+	sample_api "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("RemoteStore", func() {

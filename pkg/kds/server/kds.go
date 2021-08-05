@@ -3,10 +3,9 @@ package server
 import (
 	"context"
 
-	"github.com/envoyproxy/go-control-plane/pkg/server/sotw/v2"
-
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
+	"github.com/envoyproxy/go-control-plane/pkg/server/sotw/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
 

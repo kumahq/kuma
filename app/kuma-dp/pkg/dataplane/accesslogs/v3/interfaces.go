@@ -3,9 +3,8 @@ package v3
 import (
 	"io"
 
-	"github.com/go-logr/logr"
-
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
+	"github.com/go-logr/logr"
 )
 
 // logHandler represents a contract between a log stream receiver and a log handler.

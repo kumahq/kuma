@@ -14,16 +14,15 @@ import (
 	"time"
 	"unicode"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+	"github.com/spf13/cobra"
+
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	"github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/util/test"
 	"github.com/kumahq/kuma/pkg/version"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-
-	"github.com/spf13/cobra"
 )
 
 var _ = Describe("kumactl config control-planes add", func() {

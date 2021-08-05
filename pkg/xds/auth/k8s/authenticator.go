@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
 	kube_auth "k8s.io/api/authentication/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 

@@ -4,18 +4,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
 	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 )
 
 var log = core.Log.WithName("vip-outbounds-reconciler")

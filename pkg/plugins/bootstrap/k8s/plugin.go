@@ -17,16 +17,14 @@ import (
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kumahq/kuma/pkg/core"
-	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}

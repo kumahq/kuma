@@ -3,18 +3,15 @@ package v3_test
 import (
 	"time"
 
+	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
+	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
-
-	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
-	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 

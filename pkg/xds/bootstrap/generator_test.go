@@ -5,25 +5,23 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/xds/bootstrap"
-
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	. "github.com/kumahq/kuma/pkg/xds/bootstrap"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("bootstrapGenerator", func() {

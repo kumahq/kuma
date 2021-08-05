@@ -2,20 +2,19 @@ package definitions
 
 import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 type ResourceWsDefinition struct {
-	Type      model.ResourceType
+	Type      core_model.ResourceType
 	Path      string
 	ReadOnly  bool
 	AdminOnly bool
 }
 
-func (ws *ResourceWsDefinition) ResourceFactory() model.Resource {
+func (ws *ResourceWsDefinition) ResourceFactory() core_model.Resource {
 	m, err := registry.Global().NewObject(ws.Type)
 	if err != nil {
 		panic(err.Error())
@@ -24,7 +23,7 @@ func (ws *ResourceWsDefinition) ResourceFactory() model.Resource {
 	return m
 }
 
-func (ws *ResourceWsDefinition) ResourceListFactory() model.ResourceList {
+func (ws *ResourceWsDefinition) ResourceListFactory() core_model.ResourceList {
 	l, err := registry.Global().NewList(ws.Type)
 	if err != nil {
 		panic(err.Error())

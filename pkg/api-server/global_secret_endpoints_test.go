@@ -5,10 +5,9 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/ghodss/yaml"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"

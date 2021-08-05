@@ -4,20 +4,18 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/universal/outbound"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/universal/outbound"
 )
 
 type countingManager struct {

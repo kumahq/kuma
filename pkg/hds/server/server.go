@@ -12,10 +12,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-
-	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 )
 
 // inspired by https://github.com/envoyproxy/go-control-plane/blob/master/pkg/server/sotw/v3/server.go
