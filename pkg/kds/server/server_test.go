@@ -48,7 +48,7 @@ var _ = Describe("KDS Server", func() {
 
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		stream := kds_setup.StartServer(s, wg, "test-cluster", definitions.All.Get(0), reconcile.Any)
+		stream := kds_setup.StartServer(s, wg, "test-cluster", definitions.All.Get(), reconcile.Any)
 
 		tc = &kds_verifier.TestContextImpl{
 			ResourceStore:      s,

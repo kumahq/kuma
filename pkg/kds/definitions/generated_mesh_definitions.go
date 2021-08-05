@@ -17,7 +17,7 @@ var meshDefinitions = []KdsDefinition{
 
 	{
 		Type:      mesh.DataplaneType,
-		Direction: SendEverywhere,
+		Direction: FromZoneToGlobal | FromGlobalToZone,
 	},
 
 	{
@@ -87,7 +87,7 @@ var meshDefinitions = []KdsDefinition{
 
 	{
 		Type:      mesh.ZoneIngressType,
-		Direction: SendEverywhere,
+		Direction: FromZoneToGlobal | FromGlobalToZone,
 	},
 
 	{

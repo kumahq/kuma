@@ -266,7 +266,7 @@ func ToResourceInfo(m protoreflect.MessageType) ResourceInfo {
 	case r.Kds == nil || (!r.Kds.SendToZone && !r.Kds.SendToGlobal):
 		out.SkipKds = true
 	case r.Kds.SendToGlobal && r.Kds.SendToZone:
-		out.KdsDirection = "SendEverywhere"
+		out.KdsDirection = "FromZoneToGlobal | FromGlobalToZone"
 	case r.Kds.SendToGlobal:
 		out.KdsDirection = "FromZoneToGlobal"
 	case r.Kds.SendToZone:

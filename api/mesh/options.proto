@@ -42,7 +42,9 @@ message KumaWsOptions {
 }
 
 message KumaKdsOptions {
+  // SendToGlobal whether this entity will be sent from zone cp to global cp
   bool send_to_global = 1;
+  // SendToZone whether this entity will be sent from global cp to zone cp
   bool send_to_zone = 2;
 }
 

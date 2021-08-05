@@ -51,7 +51,7 @@ var _ = Describe("Global Sync", func() {
 		for i := 0; i < numOfZones; i++ {
 			wg.Add(1)
 			zoneStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), definitions.All.Get(0), reconcile.Any)
+			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), definitions.All.Get(), reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
 			zoneStores = append(zoneStores, zoneStore)
 		}
@@ -200,7 +200,7 @@ var _ = Describe("Global Sync", func() {
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
-		Expect(actualProvidedTypes).To(ConsistOf(definitions.All.Get(definitions.ProvidedByGlobal)))
+		Expect(actualProvidedTypes).To(ConsistOf(definitions.All.Select(definitions.ProvidedByGlobal)))
 	})
 
 })

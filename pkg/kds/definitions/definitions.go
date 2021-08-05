@@ -15,34 +15,43 @@ const (
 
 type KdsDefinition struct {
 	Type      model.ResourceType
-	Direction KdsTypeFlag
+	Direction KDSFlagType
 }
 
-type KdsTypeFlag uint32
+type KDSFlagType uint32
 
 const (
-	ConsumedByZone   = KdsTypeFlag(1)
-	ConsumedByGlobal = KdsTypeFlag(1 << 2)
-	ProvidedByZone   = KdsTypeFlag(1 << 3)
-	ProvidedByGlobal = KdsTypeFlag(1 << 4)
-	SendEverywhere   = ConsumedByZone | ConsumedByGlobal | ProvidedByZone | ProvidedByGlobal
+	ConsumedByZone   = KDSFlagType(1)
+	ConsumedByGlobal = KDSFlagType(1 << 2)
+	ProvidedByZone   = KDSFlagType(1 << 3)
+	ProvidedByGlobal = KDSFlagType(1 << 4)
 	FromZoneToGlobal = ConsumedByGlobal | ProvidedByZone
 	FromGlobalToZone = ProvidedByGlobal | ConsumedByZone
 )
 
 type kdsTypes []KdsDefinition
 
-func (kt kdsTypes) Get(flag KdsTypeFlag) []model.ResourceType {
+// Get return a list of all model.ResourceType
+func (kt kdsTypes) Get() []model.ResourceType {
 	var res []model.ResourceType
 	for i := range kt {
-		if flag == 0 || kt[i].Direction&flag != 0 {
+		res = append(res, kt[i].Type)
+	}
+	return res
+}
+
+// Select return a list of all model.ResourceType that have this flag
+func (kt kdsTypes) Select(flag KDSFlagType) []model.ResourceType {
+	var res []model.ResourceType
+	for i := range kt {
+		if kt[i].Direction&flag != 0 {
 			res = append(res, kt[i].Type)
 		}
 	}
 	return res
 }
 
-func (kt kdsTypes) TypeHasFlag(resourceType model.ResourceType, flag KdsTypeFlag) bool {
+func (kt kdsTypes) TypeHasFlag(resourceType model.ResourceType, flag KDSFlagType) bool {
 	for _, consumedTyp := range kt {
 		if consumedTyp.Type == resourceType {
 			return 0 != (consumedTyp.Direction & flag)
