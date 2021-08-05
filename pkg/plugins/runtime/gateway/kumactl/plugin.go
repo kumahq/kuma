@@ -3,9 +3,8 @@ package kumactl
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
-
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"

@@ -3,11 +3,11 @@ package clusters
 import (
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 type LbConfigurer struct {

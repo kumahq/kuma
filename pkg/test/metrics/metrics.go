@@ -1,11 +1,10 @@
 package metrics
 
 import (
+	. "github.com/onsi/gomega"
 	prometheus_client "github.com/prometheus/client_model/go"
 
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-
-	. "github.com/onsi/gomega"
 )
 
 func FindMetric(metrics core_metrics.Metrics, name string, labelsValues ...string) *prometheus_client.Metric {

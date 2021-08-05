@@ -5,10 +5,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 

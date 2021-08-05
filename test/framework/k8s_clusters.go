@@ -5,10 +5,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/pkg/errors"
 )
 
 type K8sClusters struct {

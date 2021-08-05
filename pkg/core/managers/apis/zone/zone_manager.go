@@ -23,7 +23,8 @@ type zoneManager struct {
 }
 
 func (z *zoneManager) Delete(ctx context.Context, r model.Resource, opts ...core_store.DeleteOptionsFunc) error {
-	if err := z.validator.ValidateDelete(ctx, r.GetMeta().GetName()); err != nil {
+	options := core_store.NewDeleteOptions(opts...)
+	if err := z.validator.ValidateDelete(ctx, options.Name); err != nil {
 		return err
 	}
 	return z.ResourceManager.Delete(ctx, r, opts...)

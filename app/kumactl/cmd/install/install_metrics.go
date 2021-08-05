@@ -3,13 +3,12 @@ package install
 import (
 	"strings"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd/install/context"
-	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/app/kumactl/cmd/install/context"
+	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 )

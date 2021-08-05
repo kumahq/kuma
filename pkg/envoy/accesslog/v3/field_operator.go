@@ -7,13 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (

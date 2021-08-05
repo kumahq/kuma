@@ -3,10 +3,9 @@ package get
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
-
 	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 )

@@ -6,10 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
 	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
 	kuma_http "github.com/kumahq/kuma/pkg/util/http"
 )

@@ -1,9 +1,12 @@
 package metrics
 
 import (
+	"fmt"
 	"io"
 	"regexp"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	io_prometheus_client "github.com/prometheus/client_model/go"
@@ -30,13 +33,45 @@ func MergeClusters(in io.Reader, out io.Writer) error {
 			continue
 		}
 
+		// metricsByClusterNames returns the data in the following format:
+		// 'cluster_name' ->
+		//   - metric1{envoy_cluster_name="cluster_name-_0_",label1="value1"} 10
+		//   - metric1{envoy_cluster_name="cluster_name-_1_",label1="value1"} 20
+		//   - metric1{envoy_cluster_name="cluster_name-_2_",label1="value1"} 30
+		// 'another_cluster_name' ->
+		//   - metric1{envoy_cluster_name="another_cluster_name-_0_",response_code="200"} 10
+		//   - metric1{envoy_cluster_name="another_cluster_name-_0_",response_code="401"} 20
+		//   - metric1{envoy_cluster_name="another_cluster_name-_1_",response_code="200"} 30
+		//   - metric1{envoy_cluster_name="another_cluster_name-_2_",response_code="503"} 40
 		metricsByClusterName, err := metricsByClusterNames(metricFamily.Metric)
 		if err != nil {
 			return err
 		}
 
+		// renameCluster changes the value of 'envoy_cluster_name' label for every metric.
+		// So the data will look like:
+		// 'cluster_name' ->
+		//   - metric1{envoy_cluster_name="cluster_name",label1="value1"} 10
+		//   - metric1{envoy_cluster_name="cluster_name",label1="value1"} 20
+		//   - metric1{envoy_cluster_name="cluster_name",label1="value1"} 30
+		// 'another_cluster_name' ->
+		//   - metric1{envoy_cluster_name="another_cluster_name",response_code="200"} 10
+		//   - metric1{envoy_cluster_name="another_cluster_name",response_code="401"} 20
+		//   - metric1{envoy_cluster_name="another_cluster_name",response_code="200"} 30
+		//   - metric1{envoy_cluster_name="another_cluster_name",response_code="503"} 40
 		for clusterName, metrics := range metricsByClusterName {
-			metricsByClusterName[clusterName] = merge(metricFamily.Type, clusterName, metrics)
+			renameCluster(clusterName, metrics)
+		}
+
+		// after the previous step we've got duplicates in the metrics, merge them during this step:
+		// 'cluster_name' ->
+		//   - metric1{envoy_cluster_name="cluster_name",label1="value1"} 60
+		// 'another_cluster_name' ->
+		//   - metric1{envoy_cluster_name="another_cluster_name",response_code="200"} 40
+		//   - metric1{envoy_cluster_name="another_cluster_name",response_code="401"} 20
+		//   - metric1{envoy_cluster_name="another_cluster_name",response_code="503"} 40
+		for clusterName, metrics := range metricsByClusterName {
+			metricsByClusterName[clusterName] = mergeDuplicates(metricFamily.Type, metrics)
 		}
 
 		metricFamily.Metric = nil
@@ -55,71 +90,52 @@ func MergeClusters(in io.Reader, out io.Writer) error {
 	return nil
 }
 
-func merge(typ *io_prometheus_client.MetricType, clusterName string, metrics []*io_prometheus_client.Metric) []*io_prometheus_client.Metric {
-	if len(metrics) == 1 {
-		return metrics
-	}
-
-	labels, err := mergeLabels(clusterName, metrics)
-	if err != nil {
-		logger.Error(err, "unable to merge labels, falling back to unmerged state")
-		return metrics
-	}
-
-	merged := &io_prometheus_client.Metric{
-		Label: labels,
-	}
-
-	switch *typ {
-	case io_prometheus_client.MetricType_COUNTER:
-		merged.Counter = mergeCounter(metrics)
-		return []*io_prometheus_client.Metric{merged}
-	case io_prometheus_client.MetricType_GAUGE:
-		merged.Gauge = mergeGauge(metrics)
-		return []*io_prometheus_client.Metric{merged}
-	case io_prometheus_client.MetricType_SUMMARY:
-		merged.Summary = mergeSummary(metrics)
-		return []*io_prometheus_client.Metric{merged}
-	case io_prometheus_client.MetricType_UNTYPED:
-		merged.Untyped = mergeUntyped(metrics)
-		return []*io_prometheus_client.Metric{merged}
-	case io_prometheus_client.MetricType_HISTOGRAM:
-		merged.Histogram = mergeHistogram(metrics)
-		return []*io_prometheus_client.Metric{merged}
-	}
-
-	return nil
-}
-
-func mergeLabels(clusterName string, metrics []*io_prometheus_client.Metric) ([]*io_prometheus_client.LabelPair, error) {
-	labels := map[string]string{}
-	for _, m := range metrics {
-		for _, l := range m.Label {
-			if l.GetName() == EnvoyClusterLabelName {
-				continue
-			}
-			value, ok := labels[l.GetName()]
-			if ok && value != l.GetValue() {
-				return nil, errors.Errorf("failed to merge label '%s', values are not equal: '%s' != '%s'", l.GetName(), value, l.GetValue())
-			}
-			if !ok {
-				labels[l.GetName()] = l.GetValue()
+func renameCluster(clusterName string, metrics []*io_prometheus_client.Metric) {
+	for _, metric := range metrics {
+		for _, label := range metric.GetLabel() {
+			if label.GetName() == EnvoyClusterLabelName {
+				label.Value = &clusterName
 			}
 		}
 	}
-	pairs := []*io_prometheus_client.LabelPair{{
-		Name:  strptr(EnvoyClusterLabelName),
-		Value: &clusterName,
-	}}
-	for name, value := range labels {
-		n := name
-		v := value
-		pairs = append(pairs, &io_prometheus_client.LabelPair{
-			Name:  &n,
-			Value: &v,
-		})
+}
+
+func mergeDuplicates(typ *io_prometheus_client.MetricType, metrics []*io_prometheus_client.Metric) []*io_prometheus_client.Metric {
+	hashes := map[string][]*io_prometheus_client.Metric{}
+	for _, metric := range metrics {
+		hashes[hash(metric)] = append(hashes[hash(metric)], metric)
 	}
-	return pairs, nil
+
+	var result []*io_prometheus_client.Metric
+
+	for _, dups := range hashes {
+		merged := &io_prometheus_client.Metric{
+			Label: dups[0].GetLabel(),
+		}
+		switch *typ {
+		case io_prometheus_client.MetricType_COUNTER:
+			merged.Counter = mergeCounter(dups)
+		case io_prometheus_client.MetricType_GAUGE:
+			merged.Gauge = mergeGauge(dups)
+		case io_prometheus_client.MetricType_SUMMARY:
+			merged.Summary = mergeSummary(dups)
+		case io_prometheus_client.MetricType_UNTYPED:
+			merged.Untyped = mergeUntyped(dups)
+		case io_prometheus_client.MetricType_HISTOGRAM:
+			merged.Histogram = mergeHistogram(dups)
+		}
+		result = append(result, merged)
+	}
+	return result
+}
+
+func hash(metric *io_prometheus_client.Metric) string {
+	pairs := []string{}
+	for _, l := range metric.GetLabel() {
+		pairs = append(pairs, fmt.Sprintf("%s=%s", l.GetName(), l.GetValue()))
+	}
+	sort.Strings(pairs)
+	return strings.Join(pairs, ";")
 }
 
 func mergeCounter(metrics []*io_prometheus_client.Metric) *io_prometheus_client.Counter {
@@ -259,5 +275,3 @@ func isMergeableClusterName(clusterName string) (prefix string, n int, ok bool) 
 	}
 	return matches[prefixIndex], num, true
 }
-
-func strptr(s string) *string { return &s }

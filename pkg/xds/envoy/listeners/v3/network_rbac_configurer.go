@@ -3,8 +3,6 @@ package v3
 import (
 	"fmt"
 
-	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/rbac/v3"
@@ -13,6 +11,7 @@ import (
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
 type NetworkRBACConfigurer struct {

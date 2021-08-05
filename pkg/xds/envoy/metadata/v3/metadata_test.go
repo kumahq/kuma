@@ -1,11 +1,11 @@
 package envoy
 
 import (
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Metadata()", func() {

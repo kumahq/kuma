@@ -22,7 +22,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -147,7 +146,7 @@ func (c *multiNamespaceCache) List(ctx context.Context, list runtime.Object, opt
 		return cache.List(ctx, list, opts...)
 	}
 
-	listAccessor, err := meta.ListAccessor(list)
+	listAccessor, err := apimeta.ListAccessor(list)
 	if err != nil {
 		return err
 	}
@@ -167,7 +166,7 @@ func (c *multiNamespaceCache) List(ctx context.Context, list runtime.Object, opt
 		if err != nil {
 			return err
 		}
-		accessor, err := meta.ListAccessor(listObj)
+		accessor, err := apimeta.ListAccessor(listObj)
 		if err != nil {
 			return fmt.Errorf("object: %T must be a list type", list)
 		}

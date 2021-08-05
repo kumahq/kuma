@@ -5,17 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/kds/util"
-
-	"github.com/golang/protobuf/ptypes/any"
-
-	"github.com/kumahq/kuma/pkg/util/proto"
-
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/golang/protobuf/ptypes/any"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/util"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func Create(ctx context.Context, r model.Resource, opts ...store.CreateOptionsFunc) Executable {

@@ -7,16 +7,13 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/retry"
-
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
+	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/remotecommand"
-
 	restclient "k8s.io/client-go/rest"
-
-	. "github.com/onsi/gomega"
+	"k8s.io/client-go/tools/remotecommand"
 )
 
 // inspired by https://github.com/kubernetes/kubernetes/blob/v1.6.1/test/e2e/framework/exec_util.go

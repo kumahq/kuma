@@ -1,13 +1,12 @@
 package xds_test
 
 import (
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/core/xds"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 )
 
 var _ = Describe("ResourceSet", func() {

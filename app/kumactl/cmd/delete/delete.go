@@ -4,12 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"

@@ -5,6 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -12,11 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
-
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
 var _ = Describe("Sync", func() {
