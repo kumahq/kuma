@@ -2,6 +2,9 @@ package delete
 
 import (
 	"context"
+	"strings"
+
+	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -22,10 +25,12 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			resourceTypeArg := args[0]
 			name := args[1]
 
-			var resource model.Resource
-			resourceType, err := pctx.TypeForArg(resourceTypeArg, true)
-			if err != nil {
-				return err
+			def, ok := entities.ByName[resourceTypeArg]
+			if !ok {
+				return errors.Errorf("unknown TYPE: %s. Allowed values: %s", resourceTypeArg, strings.Join(entities.Names, ", "))
+			}
+			if def.ReadOnly {
+				return errors.Errorf("TYPE: %s is readOnly, can't use it for write action", resourceTypeArg)
 			}
 
 			rs, err := pctx.CurrentResourceStore()
@@ -33,7 +38,8 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return err
 			}
 
-			if resource, err = registry.Global().NewObject(resourceType); err != nil {
+			var resource model.Resource
+			if resource, err = registry.Global().NewObject(def.ResourceType); err != nil {
 				return err
 			}
 
@@ -42,11 +48,11 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				mesh = pctx.CurrentMesh()
 			}
 
-			if err := deleteResource(name, mesh, resource, resourceType, rs); err != nil {
+			if err := deleteResource(name, mesh, resource, def.ResourceType, rs); err != nil {
 				return err
 			}
 
-			cmd.Printf("deleted %s %q\n", resourceType, name)
+			cmd.Printf("deleted %s %q\n", def.ResourceType, name)
 			return nil
 		},
 	}

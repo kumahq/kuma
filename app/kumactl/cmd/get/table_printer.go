@@ -135,11 +135,13 @@ var BasicGlobalResourceTablePrinter = RowPrinter{
 	},
 }
 
-func ResolvePrinter(resourceType model.ResourceType, isGlobal bool) TablePrinter {
+func ResolvePrinter(resourceType model.ResourceType, scope model.ResourceScope) TablePrinter {
 	tablePrinter := CustomTablePrinters[resourceType]
 	if tablePrinter == nil {
-		tablePrinter = BasicResourceTablePrinter
-		if isGlobal {
+		switch scope {
+		case model.ScopeMesh:
+			tablePrinter = BasicResourceTablePrinter
+		case model.ScopeGlobal:
 			tablePrinter = BasicGlobalResourceTablePrinter
 		}
 	}

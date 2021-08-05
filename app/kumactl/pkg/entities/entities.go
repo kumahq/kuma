@@ -20,6 +20,7 @@ func init() {
 	All = append(All, meshEntities...)
 	All = append(All, systemEntities...)
 	All = append(All, Definition{Singular: "global-secret", Plural: "global-secrets", ResourceType: core_system.GlobalSecretType})
+
 	for i := range All {
 		if All[i].Singular == "health-check" {
 			// Preserving incoherency between kumactl and the web-service.

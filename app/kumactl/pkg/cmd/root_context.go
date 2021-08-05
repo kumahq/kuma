@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"strings"
 	"time"
-
-	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
 
 	"github.com/pkg/errors"
 
@@ -81,17 +78,6 @@ func DefaultRootContext() *RootContext {
 		InstallGatewayKongEnterpriseContext: install_context.DefaultInstallGatewayKongEnterpriseContext(),
 		InstallTracingContext:               install_context.DefaultInstallTracingContext(),
 	}
-}
-
-func (rc *RootContext) TypeForArg(arg string, requiresWrite bool) (core_model.ResourceType, error) {
-	typ, ok := entities.ByName[arg]
-	if requiresWrite && typ.ReadOnly {
-		return "", errors.Errorf("TYPE: %s is readOnly, can't use it for write action", arg)
-	}
-	if !ok {
-		return "", errors.Errorf("unknown TYPE: %s. Allowed values: %s:", arg, strings.Join(entities.Names, ", "))
-	}
-	return typ.ResourceType, nil
 }
 
 func (rc *RootContext) LoadConfig() error {
