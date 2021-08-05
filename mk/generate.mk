@@ -23,7 +23,11 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 
 .PHONY: generate
 generate:  ## Dev: Run code generators
-generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type resources/ws resources/kumactl generate/deepcopy
+generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type resources/ws resources/kds resources/kumactl generate/deepcopy
+
+.PHONY: resources/kds
+resources/kds:
+	$(GO_RUN) ./tools/resource-gen.go -generator kds
 
 .PHONY: resources/type
 resources/type:

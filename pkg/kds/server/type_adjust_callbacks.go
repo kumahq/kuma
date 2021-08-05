@@ -3,7 +3,7 @@ package server
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	"github.com/kumahq/kuma/pkg/kds"
+	"github.com/kumahq/kuma/pkg/kds/definitions"
 	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 )
 
@@ -21,6 +21,6 @@ type typeAdjustCallbacks struct {
 
 func (c *typeAdjustCallbacks) OnStreamResponse(streamID int64, req *envoy_api.DiscoveryRequest, resp *envoy_api.DiscoveryResponse) {
 	for _, res := range resp.Resources {
-		res.TypeUrl = kds.KumaResource
+		res.TypeUrl = definitions.KumaResource
 	}
 }
