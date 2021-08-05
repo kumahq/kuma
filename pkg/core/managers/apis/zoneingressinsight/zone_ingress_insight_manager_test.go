@@ -4,16 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )

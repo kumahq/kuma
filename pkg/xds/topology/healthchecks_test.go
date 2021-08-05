@@ -7,11 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
 	"google.golang.org/protobuf/types/known/durationpb"
-
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	. "github.com/kumahq/kuma/pkg/xds/topology"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -20,7 +16,9 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	. "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ = Describe("HealthCheck", func() {

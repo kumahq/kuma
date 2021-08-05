@@ -10,11 +10,10 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 type SelectorValidatorFunc func(path validators.PathBuilder, selector map[string]string) validators.ValidationError

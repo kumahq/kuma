@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-errors/errors"
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/tls"
-
-	"github.com/go-errors/errors"
-
-	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/retry"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type InstallFunc func(cluster Cluster) error

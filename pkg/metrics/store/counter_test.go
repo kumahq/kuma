@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -21,9 +23,6 @@ import (
 	store_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Counter", func() {

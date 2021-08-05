@@ -8,17 +8,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-
-	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
-
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 

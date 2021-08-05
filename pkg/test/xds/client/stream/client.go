@@ -7,19 +7,17 @@ import (
 	"fmt"
 	"net/url"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/structpb"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 type Client struct {

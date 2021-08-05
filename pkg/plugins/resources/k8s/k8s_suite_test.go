@@ -24,7 +24,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,11 +32,11 @@ import (
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 
 	// +kubebuilder:scaffold:imports
 	sample_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 )
 
 var k8sClient client.Client

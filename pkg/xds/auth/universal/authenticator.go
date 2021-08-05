@@ -3,15 +3,13 @@ package universal
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	"github.com/pkg/errors"
-
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
