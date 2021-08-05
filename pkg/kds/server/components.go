@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
@@ -13,6 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"

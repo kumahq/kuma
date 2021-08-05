@@ -5,19 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-
-	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
-	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
-
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/events"
-
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
+	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -28,7 +18,13 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/events"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 )
 
 // BuilderContext provides access to Builder's interim state.

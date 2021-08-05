@@ -5,10 +5,10 @@ import (
 	"sort"
 	"strings"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/pkg/errors"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 type Cluster struct {

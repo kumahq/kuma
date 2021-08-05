@@ -4,22 +4,9 @@ import (
 	"context"
 	"net"
 
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-
-	"github.com/kumahq/kuma/pkg/api-server/customization"
-	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
-	"github.com/kumahq/kuma/pkg/dp-server/server"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
-
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
-	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
-
-	"github.com/kumahq/kuma/pkg/events"
-
+	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -29,6 +16,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplaneinsight"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -42,7 +31,14 @@ import (
 	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dp-server/server"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/events"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 )
 
 func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
@@ -316,6 +312,11 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	customizableManager.Customize(
 		system.ZoneInsightType,
 		zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone),
+	)
+
+	customizableManager.Customize(
+		mesh.ZoneIngressInsightType,
+		zoneingressinsight.NewZoneIngressInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
 	)
 
 	var cipher secret_cipher.Cipher

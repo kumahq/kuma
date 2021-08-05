@@ -3,16 +3,14 @@ package reconcile
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
-	"github.com/kumahq/kuma/pkg/kds/util"
-
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/kds/cache"
+	"github.com/kumahq/kuma/pkg/kds/util"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 

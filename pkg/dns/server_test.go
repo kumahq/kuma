@@ -5,15 +5,13 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
 	. "github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"

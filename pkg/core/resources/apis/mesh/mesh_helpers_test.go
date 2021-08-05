@@ -7,9 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 

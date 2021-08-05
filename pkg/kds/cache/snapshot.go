@@ -3,13 +3,12 @@ package cache
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/kds/definitions"
-
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/kds/definitions"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 

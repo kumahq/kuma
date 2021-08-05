@@ -7,12 +7,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/test"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"sigs.k8s.io/testing_frameworks/integration/addr"
+
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 type ConfigFactory interface {

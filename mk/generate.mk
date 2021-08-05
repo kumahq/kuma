@@ -29,13 +29,17 @@ generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/api
 resources/kds:
 	$(GO_RUN) ./tools/resource-gen.go -generator kds
 
-.PHONY: resources/mesh
+.PHONY: resources/type
 resources/type:
 	$(GO_RUN) ./tools/resource-gen.go -generator type
 
-.PHONY: resources/mesh
+.PHONY: resources/ws
 resources/ws:
 	$(GO_RUN) ./tools/resource-gen.go -generator ws
+
+.PHONY: resources/kumactl
+resources/kumactl:
+	$(GO_RUN) ./tools/resource-gen.go -generator kumactl
 
 .PHONY: protoc/pkg/config/app/kumactl/v1alpha1
 protoc/pkg/config/app/kumactl/v1alpha1:

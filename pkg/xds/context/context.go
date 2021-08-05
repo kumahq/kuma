@@ -3,14 +3,12 @@ package context
 import (
 	"io/ioutil"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-	"github.com/kumahq/kuma/pkg/tls"
-
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/tls"
 )
 
 type Context struct {

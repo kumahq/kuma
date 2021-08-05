@@ -4,7 +4,6 @@ import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
 	"github.com/kumahq/kuma/pkg/kds/definitions"
-
 	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 )
 

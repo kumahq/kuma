@@ -16,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, use string, resourceType core_model.ResourceType, tablePrinter TablePrinter) *cobra.Command {
+func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, use string, resourceType core_model.ResourceType) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s NAME", use),
 		Short: fmt.Sprintf("Show a single %s resource", resourceType),
@@ -61,7 +61,7 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, use string, resourceType c
 
 			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
-				return tablePrinter(pctx.Now(), resources, cmd.OutOrStdout())
+				return ResolvePrinter(resourceType, resource.Scope()).Print(pctx.Now(), resources, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

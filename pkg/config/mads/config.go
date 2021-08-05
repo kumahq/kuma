@@ -3,13 +3,12 @@ package mads
 import (
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/mads"
-
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/mads"
 )
 
 var log = core.Log.WithName("mads-config")
