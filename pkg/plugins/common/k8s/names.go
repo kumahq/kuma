@@ -18,6 +18,10 @@ const (
 	// k8sSynced identifies that resource was synced
 	K8sSynced = "k8s.kuma.io/synced"
 
+	// K8sProcessed identifies that resource was already processed on creation. Specifically it's used to avoid
+	// creation of default resources twice when Kuma CP restarts
+	K8sProcessed = "k8s.kuma.io/processed"
+
 	// Kubernetes secret type to differentiate Kuma System secrets. Secret is bound to a mesh
 	MeshSecretType = "system.kuma.io/secret"
 
