@@ -15,9 +15,6 @@ const (
 	// The value has a format of a Kubernetes label name.
 	k8sNameComponent = "k8s.kuma.io/name"
 
-	// k8sSynced identifies that resource was synced
-	K8sSynced = "k8s.kuma.io/synced"
-
 	// K8sProcessed identifies that resource was already processed on creation. Specifically it's used to avoid
 	// creation of default resources twice when Kuma CP restarts
 	K8sProcessed = "k8s.kuma.io/processed"
