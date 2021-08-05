@@ -72,7 +72,7 @@ metadata:
 			Setup(zoneK8s)
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := globalK8s.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		testServerToken, err := globalK8s.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 
 		optsZoneUniversal = append(optsZoneUniversal,
@@ -84,9 +84,20 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZoneUniversal...)).
-			Install(EchoServerUniversal("dp-echo-1", "default", "echo-universal-1", echoServerToken, WithProtocol("tcp"))).
-			Install(EchoServerUniversal("dp-echo-2", "default", "echo-universal-2", echoServerToken, WithProtocol("tcp"), ProxyOnly(), ServiceProbe())).
-			Install(EchoServerUniversal("dp-echo-3", "default", "echo-universal-3", echoServerToken, WithProtocol("tcp"))).
+			Install(TestServerUniversal("test-server-1", "default", testServerToken,
+				WithArgs([]string{"echo", "--instance", "dp-universal-1"}),
+				WithProtocol("tcp"),
+				WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server-2", "default", testServerToken,
+				WithArgs([]string{"echo", "--instance", "dp-universal-2"}),
+				WithProtocol("tcp"),
+				ProxyOnly(),
+				ServiceProbe(),
+				WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server-3", "default", testServerToken,
+				WithArgs([]string{"echo", "--instance", "dp-universal-3"}),
+				WithProtocol("tcp"),
+				WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
@@ -123,9 +134,9 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(pods).To(HaveLen(1))
 
-		cmd := []string{"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh"}
+		cmd := []string{"curl", "-v", "-m", "3", "--fail", "test-server.mesh"}
 
-		instances := []string{"echo-universal-1", "echo-universal-3"}
+		instances := []string{"dp-universal-1", "dp-universal-3"}
 		instanceSet := map[string]bool{}
 
 		_, err = retry.DoWithRetryE(zoneK8s.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pods[0].GetName(), strings.Join(cmd, " ")),
@@ -157,11 +168,11 @@ metadata:
 			Expect(err).ToNot(HaveOccurred())
 
 			switch {
-			case strings.Contains(stdout, "Echo echo-universal-1"):
+			case strings.Contains(stdout, "dp-universal-1"):
 				counter1++
-			case strings.Contains(stdout, "Echo echo-universal-2"):
+			case strings.Contains(stdout, "dp-universal-2"):
 				counter2++
-			case strings.Contains(stdout, "Echo echo-universal-3"):
+			case strings.Contains(stdout, "dp-universal-3"):
 				counter3++
 			}
 		}

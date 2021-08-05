@@ -34,12 +34,15 @@ mtls:
 		err = universalCluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal(AppModeEchoServer, "default", "universal-1", echoServerToken)(universalCluster)
+		err = TestServerUniversal("test-server", "default", testServerToken,
+			WithArgs([]string{"echo", "--instance", "echo-v1"}),
+			WithTransparentProxy(true),
+		)(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -83,7 +86,7 @@ destinations:
 
 	trafficAllowed := func() {
 		stdout, _, err := universalCluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+			"curl", "-v", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	}
@@ -91,7 +94,7 @@ destinations:
 	trafficBlocked := func() {
 		Eventually(func() error {
 			_, _, err := universalCluster.Exec("", "", "demo-client",
-				"curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+				"curl", "-v", "--fail", "test-server.mesh")
 			return err
 		}, "30s", "1s").Should(HaveOccurred())
 	}
@@ -129,7 +132,7 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 `
 		err := YamlUniversal(yaml)(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -179,7 +182,7 @@ sources:
 destinations:
   - match:
       team: server-owners
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 `
 		err := YamlUniversal(yaml)(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -202,7 +205,7 @@ sources:
       kuma.io/service: non-existent-demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 `
 		err := YamlUniversal(yaml)(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -220,7 +223,7 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 `
 		err = YamlUniversal(yaml)(universalCluster)
 		Expect(err).ToNot(HaveOccurred())

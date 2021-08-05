@@ -38,15 +38,17 @@ func RetryOnUniversal() {
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = cluster.GetKumactlOptions().RunKumactl("delete", "retry", "retry-all-default")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)).
-			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", "default", echoServerToken,
+				WithArgs([]string{"echo", "--instance", "universal"}),
+				WithTransparentProxy(true))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -73,7 +75,7 @@ networking:
   - port: 7777
     servicePort: 7777
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       kuma.io/protocol: http
 `
 		retryPolicy := `
@@ -85,7 +87,7 @@ sources:
     kuma.io/service: demo-client
 destinations:
 - match:
-    kuma.io/service: echo-server_kuma-test_svc_8080
+    kuma.io/service: test-server
 conf:
   http:
     numRetries: 5
@@ -107,7 +109,7 @@ conf:
 
 		for i := 0; i < 10; i++ {
 			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "localhost:4001")
+			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stderr).To(BeEmpty())
 			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -121,7 +123,7 @@ conf:
 		var errs []error
 
 		for i := 0; i < 10; i++ {
-			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "localhost:4001")
+			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 
 			if err != nil {
 				errs = append(errs, err)
@@ -136,7 +138,7 @@ conf:
 		time.Sleep(5 * time.Second)
 
 		for i := 0; i < 10; i++ {
-			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "localhost:4001")
+			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stderr).To(BeEmpty())
 			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
