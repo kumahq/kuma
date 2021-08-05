@@ -3,8 +3,6 @@ package testserver
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
-
 	"github.com/kumahq/kuma/test/framework"
 )
 
@@ -94,16 +92,21 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 }
 
 func (k *k8SDeployment) Delete(cluster framework.Cluster) error {
-	k8s.KubectlDeleteFromString(
-		cluster.GetTesting(),
-		cluster.GetKubectlOptions(framework.TestNamespace),
-		service,
-	)
-	k8s.KubectlDeleteFromString(
-		cluster.GetTesting(),
-		cluster.GetKubectlOptions(framework.TestNamespace),
-		fmt.Sprintf(deployment, k.opts.Mesh, framework.GetUniversalImage()),
-	)
+	// todo(jakubdyszkiewicz) right now we delete TestNamespace before we Dismiss the cluster
+	// This means that namespace is no longer available so the code below would throw an error
+	// If we ever switch DemoClient to be deployment and remove manual deletion of TestNamespace
+	// then we can rely on code below to delete tht deployment.
+
+	// k8s.KubectlDeleteFromString(
+	// 	cluster.GetTesting(),
+	// 	cluster.GetKubectlOptions(framework.TestNamespace),
+	// 	service,
+	// )
+	// k8s.KubectlDeleteFromString(
+	// 	cluster.GetTesting(),
+	// 	cluster.GetKubectlOptions(framework.TestNamespace),
+	// 	fmt.Sprintf(deployment, k.opts.Mesh, framework.GetUniversalImage()),
+	// )
 	return nil
 }
 
