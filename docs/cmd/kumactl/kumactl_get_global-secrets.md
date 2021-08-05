@@ -13,7 +13,9 @@ kumactl get global-secrets [flags]
 ### Options
 
 ```
-  -h, --help   help for global-secrets
+  -h, --help            help for global-secrets
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 ```
 
 ### Options inherited from parent commands

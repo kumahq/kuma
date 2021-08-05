@@ -13,7 +13,7 @@ message KumaResourceOptions {
   // Name and value of the modelResourceType constant.
   string type = 2;
 
-  // True if this resoure has global scope. Otherwise it will be mesh scope.
+  // True if this resource has global scope. Otherwise it will be mesh scope.
   bool global = 3;
 
   // Name of the resource's Go package.
@@ -24,6 +24,8 @@ message KumaResourceOptions {
 
   // Whether to skip type registration for this resource.
   bool skip_registration = 6;
+
+  KumaWsOptions ws = 7;
 }
 
 message KumaWsOptions {
@@ -41,5 +43,4 @@ message KumaWsOptions {
 
 extend google.protobuf.MessageOptions {
   KumaResourceOptions resource = 43534533; // 'kuma'
-  KumaWsOptions ws = 43534534;
 }
