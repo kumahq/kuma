@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -48,11 +49,11 @@ var _ = Describe("kumactl get ", func() {
 
 		It("should have get commands for all defined types", func() {
 			// when
-			Expect(len(getCmd.Commands()) > len(rootCtx.TypeArgs)).To(BeTrue())
+			Expect(len(getCmd.Commands()) > len(entities.Names)).To(BeTrue())
 
 			// then
-			for sub := range rootCtx.TypeArgs {
-				Expect(hasSubCommand(getCmd, sub+" NAME")).To(BeTrue(), "failing to find "+sub)
+			for _, sub := range entities.All {
+				Expect(hasSubCommand(getCmd, sub.Singular+" NAME")).To(BeTrue(), "failing to find "+sub.Singular)
 			}
 		})
 	})

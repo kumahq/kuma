@@ -20,7 +20,7 @@ message TrafficPermission {
   option (kuma.mesh.resource).name = "TrafficPermissionResource";
   option (kuma.mesh.resource).type = "TrafficPermission";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.ws).name = "traffic-permission";
+  option (kuma.mesh.resource).ws.name = "traffic-permission";
 
   // List of selectors to match dataplanes that are sources of traffic.
   repeated Selector sources = 1;
