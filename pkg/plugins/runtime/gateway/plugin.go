@@ -13,7 +13,6 @@ import (
 const OriginGateway = "gateway"
 
 var (
-	// nolint:deadcode,varcheck,unused
 	log = core.Log.WithName("plugin").WithName("runtime").WithName("gateway")
 )
 
@@ -50,9 +49,14 @@ func NewProxyProfile(manager manager.ReadOnlyResourceManager) generator.Resource
 		generator.TransparentProxyGenerator{},
 		generator.DNSGenerator{},
 
-		RouteGenerator{Resources: manager},
-		ListenerGenerator{Resources: manager},
-
-		DefaultRouteGenerator{},
+		Generator{
+			Resources: manager,
+			Generators: []GatewayGenerator{
+				&ListenerGenerator{},
+				&RouteConfigurationGenerator{},
+				&VirtualHostGenerator{},
+				&TrafficRouteGenerator{},
+			},
+		},
 	}
 }
