@@ -3,13 +3,12 @@ package v1alpha1_test
 import (
 	"time"
 
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	util_proto "github.com/kumahq/kuma/api/internal/util/proto"
 	. "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 )
 
 var _ = Describe("DataplaneHelpers", func() {

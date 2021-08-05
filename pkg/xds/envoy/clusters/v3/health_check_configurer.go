@@ -9,9 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kumahq/kuma/pkg/core"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 

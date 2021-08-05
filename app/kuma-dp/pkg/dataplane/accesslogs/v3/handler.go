@@ -1,9 +1,8 @@
 package v3
 
 import (
-	"github.com/pkg/errors"
-
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
+	"github.com/pkg/errors"
 
 	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 )

@@ -3,18 +3,15 @@ package mesh
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -23,9 +20,10 @@ import (
 	secrets_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	ca_builtin "github.com/kumahq/kuma/pkg/plugins/ca/builtin"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_resources "github.com/kumahq/kuma/pkg/test/resources"
-
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 

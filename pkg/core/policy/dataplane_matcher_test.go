@@ -12,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/policy"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
-
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 

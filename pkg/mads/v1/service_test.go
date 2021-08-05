@@ -19,8 +19,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
@@ -33,6 +31,7 @@ import (
 	"github.com/kumahq/kuma/pkg/mads/v1/service"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/util/test"
 )
 

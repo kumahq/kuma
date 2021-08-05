@@ -7,9 +7,8 @@ import (
 	"github.com/pkg/errors"
 
 	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
 	kuma_http "github.com/kumahq/kuma/pkg/util/http"
 )

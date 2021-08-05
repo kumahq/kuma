@@ -5,18 +5,15 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/mads/v1/generator"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/mads/generator"
-	"github.com/kumahq/kuma/pkg/util/proto"
-
-	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
-
+	. "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("MonitoringAssignmentsGenerator", func() {

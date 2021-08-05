@@ -4,12 +4,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-
 	"github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
 var _ = Describe("HttpDynamicRouteConfigurer", func() {

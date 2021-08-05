@@ -2,11 +2,10 @@ package generator
 
 import (
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
-	"github.com/kumahq/kuma/pkg/mads"
-	"github.com/kumahq/kuma/pkg/mads/generator"
-
 	"github.com/kumahq/kuma/pkg/core"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/mads"
+	"github.com/kumahq/kuma/pkg/mads/generator"
 )
 
 var log = core.Log.WithName("mads").WithName("v1").WithName("generator")

@@ -4,9 +4,9 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/kumahq/kuma/pkg/api-server/types"
-
 	"github.com/emicklei/go-restful"
+
+	"github.com/kumahq/kuma/pkg/api-server/types"
 )
 
 const maxPageSize = 1000
