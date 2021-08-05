@@ -122,9 +122,7 @@ metadata:
 			Install(Kuma(core.Zone, optsZone3...)).
 			Install(TestServerUniversal("dp-echo", nonDefaultMesh, echoServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
-				WithProtocol("http"),
 				WithServiceName("test-server"),
-				WithTransparentProxy(true),
 			)).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(false))).
 			Install(IngressUniversal(ingressTokenKuma3)).

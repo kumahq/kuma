@@ -30,7 +30,6 @@ func ServiceProbes() {
 
 		err = TestServerUniversal("test-server", "default", echoServerToken,
 			WithArgs([]string{"echo", "--instance", "universal-1"}),
-			WithTransparentProxy(true),
 			ProxyOnly(),
 			ServiceProbe())(cluster)
 		Expect(err).ToNot(HaveOccurred())

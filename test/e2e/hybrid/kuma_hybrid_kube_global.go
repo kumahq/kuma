@@ -48,9 +48,7 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone...)).
-			Install(TestServerUniversal("test-server", "default", echoServerToken,
-				WithArgs([]string{"echo", "--instance", "universal-1"}),
-				WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", "default", echoServerToken, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneCluster)

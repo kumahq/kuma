@@ -31,7 +31,6 @@ func UniversalCompatibility() {
 
 		err = TestServerUniversal("test-server", "default", testServerToken,
 			WithArgs([]string{"echo", "--instance", "universal1"}),
-			WithTransparentProxy(true),
 			WithDPVersion("1.1.6"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithDPVersion("1.1.6"), WithTransparentProxy(true))(cluster)

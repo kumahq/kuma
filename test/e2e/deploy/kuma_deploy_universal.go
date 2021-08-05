@@ -80,9 +80,7 @@ name: %s
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone1...)).
-			Install(TestServerUniversal("test-server", nonDefaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "universal1"}),
-				WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", nonDefaultMesh, testServerToken, WithArgs([]string{"echo", "--instance", "universal1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone1)
@@ -100,9 +98,7 @@ name: %s
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone2...)).
-			Install(TestServerUniversal("test-server", nonDefaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "universal2"}),
-				WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", nonDefaultMesh, testServerToken, WithArgs([]string{"echo", "--instance", "universal2"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone2)

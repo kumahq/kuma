@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+
 	"github.com/kumahq/kuma/test/framework"
 )
 

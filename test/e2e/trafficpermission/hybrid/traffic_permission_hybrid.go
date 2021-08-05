@@ -78,9 +78,7 @@ spec:
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Zone, optsZoneUniversal...)).
-			Install(TestServerUniversal("test-server", "default", testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v1"}),
-				WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())

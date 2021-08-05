@@ -39,10 +39,7 @@ mtls:
 		demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = TestServerUniversal("test-server", "default", testServerToken,
-			WithArgs([]string{"echo", "--instance", "echo-v1"}),
-			WithTransparentProxy(true),
-		)(universalCluster)
+		err = TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)
 		Expect(err).ToNot(HaveOccurred())

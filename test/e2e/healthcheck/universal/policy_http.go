@@ -61,9 +61,7 @@ conf:
 		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken,
 			WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = TestServerUniversal("test-server", "default", testServerToken,
-			WithArgs([]string{"health-check", "http"}),
-			WithTransparentProxy(true), WithProtocol("http"))(cluster)
+		err = TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"health-check", "http"}))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

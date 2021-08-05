@@ -34,8 +34,7 @@ func UniversalTransparentProxyDeployment() {
 
 		err = TestServerUniversal("test-server", "default", echoServerToken,
 			WithArgs([]string{"echo", "--instance", "universal"}),
-			WithServiceName("echo-server_kuma-test_svc_8080"),
-			WithTransparentProxy(true))(cluster)
+			WithServiceName("echo-server_kuma-test_svc_8080"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())

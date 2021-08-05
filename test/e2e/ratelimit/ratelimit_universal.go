@@ -60,9 +60,7 @@ conf:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(TestServerUniversal("test-server", "default", testServerToken,
-				WithArgs([]string{"echo", "--instance", "universal-1"}),
-				WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("web", "default", webToken, WithTransparentProxy(true))).
 			Setup(cluster)

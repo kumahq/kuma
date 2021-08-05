@@ -86,18 +86,15 @@ metadata:
 			Install(Kuma(core.Zone, optsZoneUniversal...)).
 			Install(TestServerUniversal("test-server-1", "default", testServerToken,
 				WithArgs([]string{"echo", "--instance", "dp-universal-1"}),
-				WithProtocol("tcp"),
-				WithTransparentProxy(true))).
+				WithProtocol("tcp"))).
 			Install(TestServerUniversal("test-server-2", "default", testServerToken,
 				WithArgs([]string{"echo", "--instance", "dp-universal-2"}),
 				WithProtocol("tcp"),
 				ProxyOnly(),
-				ServiceProbe(),
-				WithTransparentProxy(true))).
+				ServiceProbe())).
 			Install(TestServerUniversal("test-server-3", "default", testServerToken,
 				WithArgs([]string{"echo", "--instance", "dp-universal-3"}),
-				WithProtocol("tcp"),
-				WithTransparentProxy(true))).
+				WithProtocol("tcp"))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())

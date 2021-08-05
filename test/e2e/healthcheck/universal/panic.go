@@ -69,9 +69,7 @@ networking:
 		for i := 1; i <= 6; i++ {
 			dpName := fmt.Sprintf("dp-echo-%d", i)
 			response := fmt.Sprintf("universal-%d", i)
-			err = TestServerUniversal(dpName, "default", testServerToken,
-				WithArgs([]string{"echo", "--instance", response}),
-				WithTransparentProxy(true))(universalCluster)
+			err = TestServerUniversal(dpName, "default", testServerToken, WithArgs([]string{"echo", "--instance", response}))(universalCluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		for i := 7; i <= 10; i++ {

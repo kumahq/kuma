@@ -46,9 +46,7 @@ func RetryOnUniversal() {
 
 		err = NewClusterSetup().
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
-			Install(TestServerUniversal("test-server", "default", echoServerToken,
-				WithArgs([]string{"echo", "--instance", "universal"}),
-				WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", "default", echoServerToken, WithArgs([]string{"echo", "--instance", "universal"}))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
