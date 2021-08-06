@@ -198,10 +198,7 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 			externalService.Spec.GetNetworking().GetTls().GetClientKey(),
 			mesh.GetMeta().GetName(), loader),
 		AllowRenegotiation: externalService.Spec.GetNetworking().GetTls().GetAllowRenegotiation().GetValue(),
-	}
-	if serverName := externalService.Spec.GetNetworking().GetTls().GetServerName(); serverName != nil {
-		value := serverName.GetValue()
-		es.ServerName = &value
+		ServerName:         externalService.Spec.GetNetworking().GetTls().GetServerName().GetValue(),
 	}
 
 	tags := externalService.Spec.GetTags()

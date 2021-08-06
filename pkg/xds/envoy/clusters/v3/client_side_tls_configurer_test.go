@@ -26,8 +26,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 		expected    string
 	}
 
-	customSni := "custom"
-
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
@@ -121,7 +119,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 						ClientCert:         []byte("clientcert"),
 						ClientKey:          []byte("clientkey"),
 						AllowRenegotiation: true,
-						ServerName:         &customSni,
+						ServerName:         "custom",
 					},
 				},
 			},
