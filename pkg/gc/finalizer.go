@@ -39,22 +39,24 @@ type subscriptionFinalizer struct {
 	types     []core_model.ResourceType
 }
 
-func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time.Ticker, types ...core_model.ResourceType) component.Component {
+func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
+	for _, typ := range types {
+		if err := validateType(typ); err != nil {
+			return nil, err
+		}
+	}
+
 	return &subscriptionFinalizer{
 		rm:        rm,
 		types:     types,
 		newTicker: newTicker,
-	}
+	}, nil
 }
 
 func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	ticker := f.newTicker()
 	defer ticker.Stop()
-	for _, typ := range f.types {
-		if err := validateType(typ); err != nil {
-			return err
-		}
-	}
+
 	finalizerLog.Info("started")
 	for {
 		select {
@@ -89,6 +91,9 @@ func (f *subscriptionFinalizer) finalize(typ core_model.ResourceType) error {
 			insight.GetLastSubscription().SetDisconnectTime(core.Now())
 		} else {
 			log.V(1).Info("mark subscription as a candidate for disconnect")
+
+			// the CandidateForDisconnect flag will be unset in the DataplaneInsightSink (or ZoneInsightSink)
+			// if the connection is active
 			insight.GetLastSubscription().SetCandidateForDisconnect(true)
 		}
 		upsertInsight, _ := registry.Global().NewObject(typ)

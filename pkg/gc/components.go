@@ -8,6 +8,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 )
 
@@ -35,30 +36,39 @@ func setupCollector(rt runtime.Runtime) error {
 }
 
 func setupFinalizer(rt runtime.Runtime) error {
+	var newTicker func() *time.Ticker
+	var resourceTypes []model.ResourceType
+
 	switch rt.Config().Mode {
 	case config_core.Standalone:
-		return rt.Add(
-			NewSubscriptionFinalizer(
-				rt.ResourceManager(),
-				func() *time.Ticker { return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout / 2) },
-				mesh.DataplaneInsightType,
-			),
-		)
+		newTicker = func() *time.Ticker {
+			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout / 2)
+		}
+		resourceTypes = []model.ResourceType{
+			mesh.DataplaneInsightType,
+		}
 	case config_core.Zone:
-		return rt.Add(
-			NewSubscriptionFinalizer(
-				rt.ResourceManager(),
-				func() *time.Ticker { return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout / 2) },
-				mesh.DataplaneInsightType, mesh.ZoneIngressInsightType),
-		)
+		newTicker = func() *time.Ticker {
+			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout / 2)
+		}
+		resourceTypes = []model.ResourceType{
+			mesh.DataplaneInsightType,
+			mesh.ZoneIngressInsightType,
+		}
 	case config_core.Global:
-		return rt.Add(
-			NewSubscriptionFinalizer(
-				rt.ResourceManager(),
-				func() *time.Ticker { return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout / 2) },
-				system.ZoneInsightType),
-		)
+		newTicker = func() *time.Ticker {
+			return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout / 2)
+		}
+		resourceTypes = []model.ResourceType{
+			system.ZoneInsightType,
+		}
 	default:
 		return errors.Errorf("unknown Kuma CP mode %v", rt.Config().Mode)
 	}
+
+	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), newTicker, resourceTypes...)
+	if err != nil {
+		return err
+	}
+	return rt.Add(finalizer)
 }

@@ -27,9 +27,11 @@ var _ = Describe("Subscription Finalizer", func() {
 	})
 
 	startSubscriptionFinalizer := func(ticks chan time.Time, stop chan struct{}) {
-		finalizer = gc.NewSubscriptionFinalizer(rm, func() *time.Ticker {
+		var err error
+		finalizer, err = gc.NewSubscriptionFinalizer(rm, func() *time.Ticker {
 			return &time.Ticker{C: ticks}
 		}, system.ZoneInsightType)
+		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			_ = finalizer.Start(stop)
 		}()

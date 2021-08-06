@@ -93,6 +93,7 @@ func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSub
 	return manager.Upsert(s.resManager, key, zoneInsight, func(resource core_model.Resource) bool {
 		insight := resource.(*system.ZoneInsightResource)
 		if proto.Equal(subscription, insight.Spec.GetLastSubscription()) {
+			// resource didn't change, no need to update
 			return false
 		}
 		insight.Spec.UpdateSubscription(subscription)
