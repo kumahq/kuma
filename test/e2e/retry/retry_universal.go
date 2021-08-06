@@ -95,7 +95,7 @@ conf:
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+					"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 				if err != nil {
 					return "should retry", err
 				}
