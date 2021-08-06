@@ -23,6 +23,9 @@ import (
 	"github.com/kumahq/kuma/pkg/cmd/version"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
+
+	// Register gateway resources.
+	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 
 	// import Envoy protobuf definitions so (un)marshalling Envoy protobuf works
@@ -110,17 +113,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 }
 
 func DefaultRootCmd() *cobra.Command {
-	root := kumactl_cmd.DefaultRootContext()
-	for _, p := range kumactl_cmd.Plugins {
-		p.CustomizeContext(root)
-	}
-
-	cmd := NewRootCmd(root)
-	for _, p := range kumactl_cmd.Plugins {
-		p.CustomizeCommand(cmd)
-	}
-
-	return cmd
+	return NewRootCmd(kumactl_cmd.DefaultRootContext())
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
