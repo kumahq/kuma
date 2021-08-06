@@ -7,9 +7,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/kds"
-	"github.com/kumahq/kuma/pkg/kds/global"
-	"github.com/kumahq/kuma/pkg/kds/zone"
+	kds_definitions "github.com/kumahq/kuma/pkg/kds/definitions"
 )
 
 // NOTE: this is non-deterministic in testing. Some tests will import
@@ -28,9 +26,10 @@ func init() {
 	// resources from Universal -> Kubernetes and have to deal with namespace
 	// semantics and a lot of other unpleasantness.
 
-	kds.SupportedTypes = append(kds.SupportedTypes, core_mesh.GatewayType)
-	zone.ProvidedTypes = append(zone.ProvidedTypes, core_mesh.GatewayType)
-	global.ConsumedTypes = append(global.ConsumedTypes, core_mesh.GatewayType)
+	kds_definitions.All = append(kds_definitions.All, kds_definitions.KdsDefinition{
+		Type:      core_mesh.GatewayType,
+		Direction: kds_definitions.FromZoneToGlobal,
+	})
 
 	definitions.All = append(definitions.All,
 		definitions.ResourceWsDefinition{
