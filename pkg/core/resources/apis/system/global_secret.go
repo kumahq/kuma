@@ -95,7 +95,20 @@ func (l *GlobalSecretResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var GlobalSecretResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewGlobalSecretResource())
-	registry.RegistryListType(&GlobalSecretResourceList{})
+	GlobalSecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           GlobalSecretType,
+		Resource:       NewGlobalSecretResource(),
+		ResourceList:   &GlobalSecretResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      true,
+		Scope:          model.ScopeGlobal,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "global-secrets",
+		KumactlArg:     "global-secret",
+		KumactlListArg: "global-secrets",
+	}
+	registry.RegisterType(GlobalSecretResourceTypeDescriptor)
 }

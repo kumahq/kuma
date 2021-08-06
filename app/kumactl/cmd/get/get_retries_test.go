@@ -16,14 +16,12 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl get retries", func() {
@@ -57,7 +55,6 @@ var _ = Describe("kumactl get retries", func() {
 
 	Describe("GetRetriesCmd", func() {
 		var (
-			rootCtx *kumactl_cmd.RootContext
 			rootCmd *cobra.Command
 			buf     *bytes.Buffer
 			store   core_store.ResourceStore
@@ -66,19 +63,10 @@ var _ = Describe("kumactl get retries", func() {
 
 		BeforeEach(func() {
 			// setup
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return rootTime },
-					NewResourceStore: func(
-						*config_proto.ControlPlaneCoordinates_ApiServer,
-					) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-					NewAPIServerClient: test.GetMockNewAPIServerClient(),
-				},
-			}
-
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
+
+			rootCtx, err := test_kumactl.DummyContext(rootTime, store, mesh_core.RetryResourceTypeDescriptor)
+			Expect(err).ToNot(HaveOccurred())
 
 			for _, pt := range sampleRetries {
 				key := core_model.ResourceKey{

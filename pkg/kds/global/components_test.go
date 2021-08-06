@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/kds/definitions"
 	"github.com/kumahq/kuma/pkg/kds/global"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
@@ -45,7 +44,7 @@ var _ = Describe("Global Sync", func() {
 		for i := 0; i < numOfZones; i++ {
 			wg.Add(1)
 			zoneStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), definitions.All.Get(), reconcile.Any)
+			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), registry.Global().ObjectTypes(model.HasKdsEnabled), reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
 			zoneStores = append(zoneStores, zoneStore)
 		}
@@ -176,14 +175,9 @@ var _ = Describe("Global Sync", func() {
 		}
 
 		// take all mesh-scoped types and exclude types that won't be synced
-		actualProvidedTypes := []model.ResourceType{}
-		for _, typ := range registry.Global().ListTypes() {
-			obj, err := registry.Global().NewObject(typ)
-			Expect(err).ToNot(HaveOccurred())
-			if obj.Scope() == model.ScopeMesh && !excludeTypes[typ] {
-				actualProvidedTypes = append(actualProvidedTypes, typ)
-			}
-		}
+		actualProvidedTypes := registry.Global().ObjectTypes(model.ScopeFilter(model.ScopeMesh), model.TypeFilterFn(func(descriptor model.ResourceTypeDescriptor) bool {
+			return !excludeTypes[descriptor.Name]
+		}))
 
 		// plus 4 global-scope types
 		extraTypes := []model.ResourceType{
@@ -194,7 +188,7 @@ var _ = Describe("Global Sync", func() {
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
-		Expect(actualProvidedTypes).To(ConsistOf(definitions.All.Select(definitions.ProvidedByGlobal)))
+		Expect(actualProvidedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.KdsFlagFilter(model.ProvidedByGlobal))))
 	})
 
 })

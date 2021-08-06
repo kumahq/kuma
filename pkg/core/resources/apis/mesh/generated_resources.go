@@ -105,9 +105,24 @@ func (l *CircuitBreakerResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var CircuitBreakerResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewCircuitBreakerResource())
-	registry.RegistryListType(&CircuitBreakerResourceList{})
+	CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           CircuitBreakerType,
+		Resource:       NewCircuitBreakerResource(),
+		ResourceList:   &CircuitBreakerResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "circuit-breakers",
+		KumactlArg:     "circuit-breaker",
+		KumactlListArg: "circuit-breakers",
+	}
+
+	registry.RegisterType(CircuitBreakerResourceTypeDescriptor)
+
 }
 
 const (
@@ -195,9 +210,24 @@ func (l *DataplaneResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var DataplaneResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewDataplaneResource())
-	registry.RegistryListType(&DataplaneResourceList{})
+	DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           DataplaneType,
+		Resource:       NewDataplaneResource(),
+		ResourceList:   &DataplaneResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromZoneToGlobal | model.FromGlobalToZone,
+		WsPath:         "dataplanes",
+		KumactlArg:     "dataplane",
+		KumactlListArg: "dataplanes",
+	}
+
+	registry.RegisterType(DataplaneResourceTypeDescriptor)
+
 }
 
 const (
@@ -289,9 +319,24 @@ func (l *DataplaneInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var DataplaneInsightResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewDataplaneInsightResource())
-	registry.RegistryListType(&DataplaneInsightResourceList{})
+	DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           DataplaneInsightType,
+		Resource:       NewDataplaneInsightResource(),
+		ResourceList:   &DataplaneInsightResourceList{},
+		ReadOnly:       true,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromZoneToGlobal,
+		WsPath:         "dataplane-insights",
+		KumactlArg:     "",
+		KumactlListArg: "",
+	}
+
+	registry.RegisterType(DataplaneInsightResourceTypeDescriptor)
+
 }
 
 const (
@@ -383,6 +428,24 @@ func (l *DataplaneOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var DataplaneOverviewResourceTypeDescriptor model.ResourceTypeDescriptor
+
+func init() {
+	DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           DataplaneOverviewType,
+		Resource:       NewDataplaneOverviewResource(),
+		ResourceList:   &DataplaneOverviewResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.KDSDisabled,
+		WsPath:         "",
+		KumactlArg:     "",
+		KumactlListArg: "",
+	}
+
+}
+
 const (
 	ExternalServiceType model.ResourceType = "ExternalService"
 )
@@ -468,9 +531,24 @@ func (l *ExternalServiceResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var ExternalServiceResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewExternalServiceResource())
-	registry.RegistryListType(&ExternalServiceResourceList{})
+	ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ExternalServiceType,
+		Resource:       NewExternalServiceResource(),
+		ResourceList:   &ExternalServiceResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "external-services",
+		KumactlArg:     "external-service",
+		KumactlListArg: "external-services",
+	}
+
+	registry.RegisterType(ExternalServiceResourceTypeDescriptor)
+
 }
 
 const (
@@ -566,9 +644,24 @@ func (l *FaultInjectionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var FaultInjectionResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewFaultInjectionResource())
-	registry.RegistryListType(&FaultInjectionResourceList{})
+	FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           FaultInjectionType,
+		Resource:       NewFaultInjectionResource(),
+		ResourceList:   &FaultInjectionResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "fault-injections",
+		KumactlArg:     "fault-injection",
+		KumactlListArg: "fault-injections",
+	}
+
+	registry.RegisterType(FaultInjectionResourceTypeDescriptor)
+
 }
 
 const (
@@ -658,6 +751,24 @@ func (l *GatewayResourceList) AddItem(r model.Resource) error {
 
 func (l *GatewayResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+var GatewayResourceTypeDescriptor model.ResourceTypeDescriptor
+
+func init() {
+	GatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           GatewayType,
+		Resource:       NewGatewayResource(),
+		ResourceList:   &GatewayResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromZoneToGlobal,
+		WsPath:         "gateways",
+		KumactlArg:     "gateway",
+		KumactlListArg: "gateways",
+	}
+
 }
 
 const (
@@ -753,9 +864,24 @@ func (l *HealthCheckResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var HealthCheckResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewHealthCheckResource())
-	registry.RegistryListType(&HealthCheckResourceList{})
+	HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           HealthCheckType,
+		Resource:       NewHealthCheckResource(),
+		ResourceList:   &HealthCheckResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "health-checks",
+		KumactlArg:     "healthcheck",
+		KumactlListArg: "healthchecks",
+	}
+
+	registry.RegisterType(HealthCheckResourceTypeDescriptor)
+
 }
 
 const (
@@ -843,9 +969,24 @@ func (l *MeshResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var MeshResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewMeshResource())
-	registry.RegistryListType(&MeshResourceList{})
+	MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           MeshType,
+		Resource:       NewMeshResource(),
+		ResourceList:   &MeshResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeGlobal,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "meshes",
+		KumactlArg:     "mesh",
+		KumactlListArg: "meshes",
+	}
+
+	registry.RegisterType(MeshResourceTypeDescriptor)
+
 }
 
 const (
@@ -937,9 +1078,24 @@ func (l *MeshInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var MeshInsightResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewMeshInsightResource())
-	registry.RegistryListType(&MeshInsightResourceList{})
+	MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           MeshInsightType,
+		Resource:       NewMeshInsightResource(),
+		ResourceList:   &MeshInsightResourceList{},
+		ReadOnly:       true,
+		AdminOnly:      false,
+		Scope:          model.ScopeGlobal,
+		KdsFlags:       model.KDSDisabled,
+		WsPath:         "mesh-insights",
+		KumactlArg:     "",
+		KumactlListArg: "",
+	}
+
+	registry.RegisterType(MeshInsightResourceTypeDescriptor)
+
 }
 
 const (
@@ -1031,9 +1187,24 @@ func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var ProxyTemplateResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewProxyTemplateResource())
-	registry.RegistryListType(&ProxyTemplateResourceList{})
+	ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ProxyTemplateType,
+		Resource:       NewProxyTemplateResource(),
+		ResourceList:   &ProxyTemplateResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "proxytemplates",
+		KumactlArg:     "proxytemplate",
+		KumactlListArg: "proxytemplates",
+	}
+
+	registry.RegisterType(ProxyTemplateResourceTypeDescriptor)
+
 }
 
 const (
@@ -1129,9 +1300,24 @@ func (l *RateLimitResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var RateLimitResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewRateLimitResource())
-	registry.RegistryListType(&RateLimitResourceList{})
+	RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           RateLimitType,
+		Resource:       NewRateLimitResource(),
+		ResourceList:   &RateLimitResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "rate-limits",
+		KumactlArg:     "rate-limit",
+		KumactlListArg: "rate-limits",
+	}
+
+	registry.RegisterType(RateLimitResourceTypeDescriptor)
+
 }
 
 const (
@@ -1227,9 +1413,24 @@ func (l *RetryResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var RetryResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewRetryResource())
-	registry.RegistryListType(&RetryResourceList{})
+	RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           RetryType,
+		Resource:       NewRetryResource(),
+		ResourceList:   &RetryResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "retries",
+		KumactlArg:     "retry",
+		KumactlListArg: "retries",
+	}
+
+	registry.RegisterType(RetryResourceTypeDescriptor)
+
 }
 
 const (
@@ -1321,9 +1522,24 @@ func (l *ServiceInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var ServiceInsightResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewServiceInsightResource())
-	registry.RegistryListType(&ServiceInsightResourceList{})
+	ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ServiceInsightType,
+		Resource:       NewServiceInsightResource(),
+		ResourceList:   &ServiceInsightResourceList{},
+		ReadOnly:       true,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.KDSDisabled,
+		WsPath:         "service-insights",
+		KumactlArg:     "",
+		KumactlListArg: "",
+	}
+
+	registry.RegisterType(ServiceInsightResourceTypeDescriptor)
+
 }
 
 const (
@@ -1413,6 +1629,24 @@ func (l *ServiceOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ServiceOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+var ServiceOverviewResourceTypeDescriptor model.ResourceTypeDescriptor
+
+func init() {
+	ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ServiceOverviewType,
+		Resource:       NewServiceOverviewResource(),
+		ResourceList:   &ServiceOverviewResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.KDSDisabled,
+		WsPath:         "",
+		KumactlArg:     "",
+		KumactlListArg: "",
+	}
+
 }
 
 const (
@@ -1508,9 +1742,24 @@ func (l *TimeoutResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var TimeoutResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewTimeoutResource())
-	registry.RegistryListType(&TimeoutResourceList{})
+	TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           TimeoutType,
+		Resource:       NewTimeoutResource(),
+		ResourceList:   &TimeoutResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "timeouts",
+		KumactlArg:     "timeout",
+		KumactlListArg: "timeouts",
+	}
+
+	registry.RegisterType(TimeoutResourceTypeDescriptor)
+
 }
 
 const (
@@ -1606,9 +1855,24 @@ func (l *TrafficLogResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var TrafficLogResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewTrafficLogResource())
-	registry.RegistryListType(&TrafficLogResourceList{})
+	TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           TrafficLogType,
+		Resource:       NewTrafficLogResource(),
+		ResourceList:   &TrafficLogResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "traffic-logs",
+		KumactlArg:     "traffic-log",
+		KumactlListArg: "traffic-logs",
+	}
+
+	registry.RegisterType(TrafficLogResourceTypeDescriptor)
+
 }
 
 const (
@@ -1704,9 +1968,24 @@ func (l *TrafficPermissionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var TrafficPermissionResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewTrafficPermissionResource())
-	registry.RegistryListType(&TrafficPermissionResourceList{})
+	TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           TrafficPermissionType,
+		Resource:       NewTrafficPermissionResource(),
+		ResourceList:   &TrafficPermissionResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "traffic-permissions",
+		KumactlArg:     "traffic-permission",
+		KumactlListArg: "traffic-permissions",
+	}
+
+	registry.RegisterType(TrafficPermissionResourceTypeDescriptor)
+
 }
 
 const (
@@ -1802,9 +2081,24 @@ func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var TrafficRouteResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewTrafficRouteResource())
-	registry.RegistryListType(&TrafficRouteResourceList{})
+	TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           TrafficRouteType,
+		Resource:       NewTrafficRouteResource(),
+		ResourceList:   &TrafficRouteResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "traffic-routes",
+		KumactlArg:     "traffic-route",
+		KumactlListArg: "traffic-routes",
+	}
+
+	registry.RegisterType(TrafficRouteResourceTypeDescriptor)
+
 }
 
 const (
@@ -1896,9 +2190,24 @@ func (l *TrafficTraceResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var TrafficTraceResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewTrafficTraceResource())
-	registry.RegistryListType(&TrafficTraceResourceList{})
+	TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           TrafficTraceType,
+		Resource:       NewTrafficTraceResource(),
+		ResourceList:   &TrafficTraceResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "traffic-traces",
+		KumactlArg:     "traffic-trace",
+		KumactlListArg: "traffic-traces",
+	}
+
+	registry.RegisterType(TrafficTraceResourceTypeDescriptor)
+
 }
 
 const (
@@ -1986,9 +2295,24 @@ func (l *ZoneIngressResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var ZoneIngressResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewZoneIngressResource())
-	registry.RegistryListType(&ZoneIngressResourceList{})
+	ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ZoneIngressType,
+		Resource:       NewZoneIngressResource(),
+		ResourceList:   &ZoneIngressResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeGlobal,
+		KdsFlags:       model.FromZoneToGlobal | model.FromGlobalToZone,
+		WsPath:         "zone-ingresses",
+		KumactlArg:     "zone-ingress",
+		KumactlListArg: "zone-ingresses",
+	}
+
+	registry.RegisterType(ZoneIngressResourceTypeDescriptor)
+
 }
 
 const (
@@ -2080,9 +2404,24 @@ func (l *ZoneIngressInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var ZoneIngressInsightResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewZoneIngressInsightResource())
-	registry.RegistryListType(&ZoneIngressInsightResourceList{})
+	ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ZoneIngressInsightType,
+		Resource:       NewZoneIngressInsightResource(),
+		ResourceList:   &ZoneIngressInsightResourceList{},
+		ReadOnly:       true,
+		AdminOnly:      false,
+		Scope:          model.ScopeGlobal,
+		KdsFlags:       model.FromZoneToGlobal,
+		WsPath:         "zone-ingress-insights",
+		KumactlArg:     "",
+		KumactlListArg: "",
+	}
+
+	registry.RegisterType(ZoneIngressInsightResourceTypeDescriptor)
+
 }
 
 const (
@@ -2172,4 +2511,22 @@ func (l *ZoneIngressOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ZoneIngressOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+var ZoneIngressOverviewResourceTypeDescriptor model.ResourceTypeDescriptor
+
+func init() {
+	ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ZoneIngressOverviewType,
+		Resource:       NewZoneIngressOverviewResource(),
+		ResourceList:   &ZoneIngressOverviewResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeGlobal,
+		KdsFlags:       model.KDSDisabled,
+		WsPath:         "",
+		KumactlArg:     "",
+		KumactlListArg: "",
+	}
+
 }

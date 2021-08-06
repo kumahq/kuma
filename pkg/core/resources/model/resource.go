@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -33,6 +34,23 @@ const (
 	ScopeGlobal = "Global"
 )
 
+type KDSFlagType uint32
+
+const (
+	KDSDisabled      = KDSFlagType(0)
+	ConsumedByZone   = KDSFlagType(1)
+	ConsumedByGlobal = KDSFlagType(1 << 2)
+	ProvidedByZone   = KDSFlagType(1 << 3)
+	ProvidedByGlobal = KDSFlagType(1 << 4)
+	FromZoneToGlobal = ConsumedByGlobal | ProvidedByZone
+	FromGlobalToZone = ProvidedByGlobal | ConsumedByZone
+)
+
+// Has return whether this flag has all the passed flags on.
+func (kt KDSFlagType) Has(flag KDSFlagType) bool {
+	return kt&flag != 0
+}
+
 type Resource interface {
 	GetType() ResourceType
 	GetMeta() ResourceMeta
@@ -41,6 +59,77 @@ type Resource interface {
 	SetSpec(ResourceSpec) error
 	Validate() error
 	Scope() ResourceScope
+}
+
+type ResourceTypeDescriptor struct {
+	Name           ResourceType
+	Resource       Resource
+	ResourceList   ResourceList
+	ObjectType     reflect.Type
+	ListType       reflect.Type
+	ReadOnly       bool
+	AdminOnly      bool
+	Scope          ResourceScope
+	KdsFlags       KDSFlagType
+	WsPath         string
+	KumactlArg     string
+	KumactlListArg string
+}
+
+func (d ResourceTypeDescriptor) NewObject() Resource {
+	newSpec := proto.Clone(d.Resource.GetSpec())
+	resource := reflect.New(d.ObjectType).Interface().(Resource)
+	if err := resource.SetSpec(newSpec); err != nil {
+		panic(errors.Wrap(err, "could not set spec on the new resource"))
+	}
+	return resource
+}
+
+func (d ResourceTypeDescriptor) NewList() ResourceList {
+	return reflect.New(d.ListType).Interface().(ResourceList)
+}
+
+type TypeFilter interface {
+	Apply(descriptor ResourceTypeDescriptor) bool
+}
+type TypeFilterFn func(descriptor ResourceTypeDescriptor) bool
+
+func (f TypeFilterFn) Apply(descriptor ResourceTypeDescriptor) bool {
+	return f(descriptor)
+}
+
+func KdsFlagFilter(flagType KDSFlagType) TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.KdsFlags.Has(flagType)
+	})
+}
+
+var HasKdsEnabled = TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+	return descriptor.KdsFlags != KDSDisabled
+})
+
+var HasKumactlEnabled = TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+	return descriptor.KumactlArg != ""
+})
+
+var HasWsEnabled = TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+	return descriptor.WsPath != ""
+})
+
+func ScopeFilter(scope ResourceScope) TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.Scope == scope
+	})
+}
+func ExcludeByNameFilter(names ...ResourceType) TypeFilter {
+	excluded := map[ResourceType]bool{}
+	for _, n := range names {
+		excluded[n] = true
+	}
+
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return !excluded[descriptor.Name]
+	})
 }
 
 type ByMeta []Resource

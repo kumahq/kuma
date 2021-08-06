@@ -5,9 +5,9 @@ import (
 
 	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -18,9 +18,9 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	}
 	// flags
 	cmd.PersistentFlags().StringVarP(&pctx.GetContext.Args.OutputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
-	for _, cmdInst := range entities.All {
-		cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, cmdInst.Plural, cmdInst.ResourceType), &pctx.ListContext))
-		cmd.AddCommand(NewGetResourceCmd(pctx, cmdInst.Singular, cmdInst.ResourceType))
+	for _, cmdInst := range pctx.Runtime.Registry.ObjectDesc(model.HasKumactlEnabled) {
+		cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, cmdInst), &pctx.ListContext))
+		cmd.AddCommand(NewGetResourceCmd(pctx, cmdInst))
 	}
 	return cmd
 }

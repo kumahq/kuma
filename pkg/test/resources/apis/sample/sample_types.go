@@ -100,7 +100,18 @@ func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var TrafficRouteResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewTrafficRouteResource())
-	registry.RegistryListType(&TrafficRouteResourceList{})
+	TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:         TrafficRouteType,
+		Resource:     NewTrafficRouteResource(),
+		ResourceList: &TrafficRouteResourceList{},
+		ReadOnly:     false,
+		AdminOnly:    false,
+		Scope:        model.ScopeMesh,
+		KdsFlags:     model.KDSDisabled,
+		WsPath:       "sample-traffic-routes",
+	}
+	registry.RegisterType(TrafficRouteResourceTypeDescriptor)
 }

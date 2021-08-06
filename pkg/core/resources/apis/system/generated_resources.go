@@ -101,9 +101,24 @@ func (l *ConfigResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var ConfigResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewConfigResource())
-	registry.RegistryListType(&ConfigResourceList{})
+	ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ConfigType,
+		Resource:       NewConfigResource(),
+		ResourceList:   &ConfigResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeGlobal,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "",
+		KumactlArg:     "",
+		KumactlListArg: "",
+	}
+
+	registry.RegisterType(ConfigResourceTypeDescriptor)
+
 }
 
 const (
@@ -195,9 +210,24 @@ func (l *SecretResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var SecretResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewSecretResource())
-	registry.RegistryListType(&SecretResourceList{})
+	SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           SecretType,
+		Resource:       NewSecretResource(),
+		ResourceList:   &SecretResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      true,
+		Scope:          model.ScopeMesh,
+		KdsFlags:       model.FromGlobalToZone,
+		WsPath:         "secrets",
+		KumactlArg:     "secret",
+		KumactlListArg: "secrets",
+	}
+
+	registry.RegisterType(SecretResourceTypeDescriptor)
+
 }
 
 const (
@@ -289,9 +319,24 @@ func (l *ZoneResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var ZoneResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewZoneResource())
-	registry.RegistryListType(&ZoneResourceList{})
+	ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ZoneType,
+		Resource:       NewZoneResource(),
+		ResourceList:   &ZoneResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeGlobal,
+		KdsFlags:       model.KDSDisabled,
+		WsPath:         "zones",
+		KumactlArg:     "zone",
+		KumactlListArg: "zones",
+	}
+
+	registry.RegisterType(ZoneResourceTypeDescriptor)
+
 }
 
 const (
@@ -383,9 +428,24 @@ func (l *ZoneInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var ZoneInsightResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewZoneInsightResource())
-	registry.RegistryListType(&ZoneInsightResourceList{})
+	ZoneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ZoneInsightType,
+		Resource:       NewZoneInsightResource(),
+		ResourceList:   &ZoneInsightResourceList{},
+		ReadOnly:       true,
+		AdminOnly:      false,
+		Scope:          model.ScopeGlobal,
+		KdsFlags:       model.KDSDisabled,
+		WsPath:         "zone-insights",
+		KumactlArg:     "",
+		KumactlListArg: "",
+	}
+
+	registry.RegisterType(ZoneInsightResourceTypeDescriptor)
+
 }
 
 const (
@@ -475,4 +535,22 @@ func (l *ZoneOverviewResourceList) AddItem(r model.Resource) error {
 
 func (l *ZoneOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
+}
+
+var ZoneOverviewResourceTypeDescriptor model.ResourceTypeDescriptor
+
+func init() {
+	ZoneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           ZoneOverviewType,
+		Resource:       NewZoneOverviewResource(),
+		ResourceList:   &ZoneOverviewResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      false,
+		Scope:          model.ScopeGlobal,
+		KdsFlags:       model.KDSDisabled,
+		WsPath:         "",
+		KumactlArg:     "",
+		KumactlListArg: "",
+	}
+
 }

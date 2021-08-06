@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 type Api interface {
@@ -18,12 +17,14 @@ type ResourceApi interface {
 	Item(mesh string, name string) string
 }
 
-func NewResourceApi(resType model.ResourceType, path string) ResourceApi {
-	res, _ := registry.Global().NewObject(resType)
-	if res.Scope() == model.ScopeGlobal {
+func NewResourceApi(scope model.ResourceScope, path string) ResourceApi {
+	switch scope {
+	case model.ScopeGlobal:
 		return &nonMeshedApi{CollectionPath: path}
-	} else {
+	case model.ScopeMesh:
 		return &meshedApi{CollectionPath: path}
+	default:
+		panic("Unsupported scope type")
 	}
 }
 

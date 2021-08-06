@@ -3,11 +3,9 @@
 package gateway
 
 import (
-	"github.com/kumahq/kuma/pkg/api-server/definitions"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	kds_definitions "github.com/kumahq/kuma/pkg/kds/definitions"
 )
 
 // NOTE: this is non-deterministic in testing. Some tests will import
@@ -15,8 +13,7 @@ import (
 // whether the Gateway types are registered in tests depends on which
 // subset of tests are running.
 func init() {
-	registry.RegisterType(core_mesh.NewGatewayResource())
-	registry.RegistryListType(&core_mesh.GatewayResourceList{})
+	registry.RegisterType(core_mesh.GatewayResourceTypeDescriptor)
 
 	// A Gateway is local to a zone, which means that it propagates in one
 	// direction, from a zone CP up to a global CP. The reason for this
@@ -25,18 +22,6 @@ func init() {
 	// to a Kubernetes zone, we would need to be able to transform Gateway
 	// resources from Universal -> Kubernetes and have to deal with namespace
 	// semantics and a lot of other unpleasantness.
-
-	kds_definitions.All = append(kds_definitions.All, kds_definitions.KdsDefinition{
-		Type:      core_mesh.GatewayType,
-		Direction: kds_definitions.FromZoneToGlobal,
-	})
-
-	definitions.All = append(definitions.All,
-		definitions.ResourceWsDefinition{
-			Type: core_mesh.GatewayType,
-			Path: "gateways",
-		},
-	)
 
 	core_plugins.Register("gateway", &plugin{})
 }

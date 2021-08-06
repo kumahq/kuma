@@ -128,7 +128,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 						return err
 					}
 
-					if err := upsert(rs, resource); err != nil {
+					if err := upsert(pctx.Runtime.Registry, rs, resource); err != nil {
 						return err
 					}
 				}
@@ -143,8 +143,8 @@ $ kumactl apply -f https://example.com/resource.yaml
 	return cmd
 }
 
-func upsert(rs store.ResourceStore, res model.Resource) error {
-	newRes, err := registry.Global().NewObject(res.GetType())
+func upsert(typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) error {
+	newRes, err := typeRegistry.NewObject(res.GetType())
 	if err != nil {
 		return err
 	}
