@@ -3,17 +3,14 @@ package server
 import (
 	"time"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-
 	"github.com/go-logr/logr"
+	"github.com/golang/protobuf/proto"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
-	"github.com/golang/protobuf/proto"
-
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type ZoneInsightSink interface {

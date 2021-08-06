@@ -5,10 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 )
 

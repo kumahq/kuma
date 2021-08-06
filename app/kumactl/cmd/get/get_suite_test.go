@@ -3,11 +3,9 @@ package get_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestGetCmd(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Get Cmd Suite")
+	test.RunSpecs(t, "Get Cmd Suite")
 }

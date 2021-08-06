@@ -7,10 +7,9 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"

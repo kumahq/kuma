@@ -4,9 +4,8 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_kafka "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/kafka_broker/v3"
 
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-
 	"github.com/kumahq/kuma/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 type KafkaConfigurer struct {

@@ -3,11 +3,9 @@ package reconcile_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestReconcile(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Reconcile Suite")
+	test.RunSpecs(t, "Reconcile Suite")
 }

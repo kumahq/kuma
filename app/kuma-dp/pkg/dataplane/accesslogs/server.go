@@ -6,15 +6,13 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-
-	v3 "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs/v3"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-
 	"google.golang.org/grpc"
 
+	v3 "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs/v3"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var logger = core.Log.WithName("accesslogs-server")

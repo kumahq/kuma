@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/kumahq/kuma/test/framework"
 )
 

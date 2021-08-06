@@ -3,6 +3,8 @@ package logs
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/policy"
@@ -11,8 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
-	"github.com/pkg/errors"
 )
 
 var logger = core.Log.WithName("logs")

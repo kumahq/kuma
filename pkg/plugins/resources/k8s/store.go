@@ -11,9 +11,8 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"

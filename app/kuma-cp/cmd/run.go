@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/gc"
-
 	"github.com/spf13/cobra"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -19,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/diagnostics"
 	"github.com/kumahq/kuma/pkg/dns"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
+	"github.com/kumahq/kuma/pkg/gc"
 	"github.com/kumahq/kuma/pkg/hds"
 	"github.com/kumahq/kuma/pkg/insights"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"

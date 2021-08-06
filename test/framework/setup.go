@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-errors/errors"
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/tls"
-
-	"github.com/go-errors/errors"
-
-	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/retry"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type InstallFunc func(cluster Cluster) error
@@ -129,10 +127,10 @@ func WaitUntilPodCompleteE(t testing.TestingT, options *k8s.KubectlOptions, podN
 		},
 	)
 	if err != nil {
-		logger.Logf(t, "Timedout waiting for Pod to be completed: %s", err)
+		logger.Default.Logf(t, "Timedout waiting for Pod to be completed: %s", err)
 		return err
 	}
-	logger.Logf(t, message)
+	logger.Default.Logf(t, message)
 	return nil
 }
 

@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"

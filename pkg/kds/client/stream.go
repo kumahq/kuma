@@ -3,8 +3,6 @@ package client
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/kds/util"
-
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -13,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/kds/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )

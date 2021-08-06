@@ -14,18 +14,15 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/kumahq/kuma/pkg/version"
-
-	"github.com/kumahq/kuma/app/kumactl/pkg/config"
-	"github.com/kumahq/kuma/pkg/api-server/types"
-
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
 	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/app/kumactl/pkg/config"
+	"github.com/kumahq/kuma/pkg/api-server/types"
+	"github.com/kumahq/kuma/pkg/util/test"
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 var _ = Describe("kumactl config control-planes add", func() {
@@ -47,7 +44,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 	var outbuf *bytes.Buffer
 
 	BeforeEach(func() {
-		rootCmd = cmd.DefaultRootCmd()
+		rootCmd = test.DefaultTestingRootCmd()
 
 		// Different versions of cobra might emit errors to stdout
 		// or stderr. It's too fragile to depend on precidely what
@@ -70,7 +67,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// then
 			Expect(err.Error()).To(MatchRegexp(requiredFlagNotSet("name")))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "address", "name" not set
+			Expect(outbuf.String()).To(ContainSubstring(`Error: required flag(s) "address", "name" not set
 `))
 		})
 
@@ -84,7 +81,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// then
 			Expect(err.Error()).To(MatchRegexp(requiredFlagNotSet("address")))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "address" not set
+			Expect(outbuf.String()).To(ContainSubstring(`Error: required flag(s) "address" not set
 `))
 		})
 

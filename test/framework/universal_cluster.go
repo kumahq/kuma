@@ -6,15 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/util/template"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"go.uber.org/multierr"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/util/template"
 )
 
 type UniversalCluster struct {

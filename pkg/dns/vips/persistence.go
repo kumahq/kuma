@@ -9,13 +9,11 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 

@@ -2,25 +2,22 @@ package datasource_test
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-
-	"io/ioutil"
-
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("DataSource Loader", func() {

@@ -3,11 +3,9 @@ package defaults_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestDefaults(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Defaults")
+	test.RunSpecs(t, "Defaults")
 }

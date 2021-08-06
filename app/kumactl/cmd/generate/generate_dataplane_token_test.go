@@ -10,13 +10,12 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type staticDataplaneTokenGenerator struct {
@@ -45,7 +44,7 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 				NewDataplaneTokenClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error) {
 					return generator, nil
 				},
-				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
 		}
 

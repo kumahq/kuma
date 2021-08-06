@@ -7,12 +7,10 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-
-	"github.com/kumahq/kuma/pkg/api-server/customization"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/api-server/customization"
 	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"

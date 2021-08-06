@@ -32,6 +32,17 @@ COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 # List of binaries that we have release build rules for.
 BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-prometheus-sd coredns
 
+# Setting this variable to any value other than 'N', enables the experimental Kuma
+# gateway plugin. Experimental means "for experiments", NOT "for production".
+BUILD_WITH_EXPERIMENTAL_GATEWAY ?= N
+
+# Build_Go_Application is a build command for the Kuma Go applications.
+ifeq ($(BUILD_WITH_EXPERIMENTAL_GATEWAY),N)
+Build_Go_Application = $(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@) ./app/$(notdir $@)
+else
+Build_Go_Application = $(GO_BUILD) -tags gateway -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@) ./app/$(notdir $@)
+endif
+
 .PHONY: build
 build: build/release build/test
 
@@ -55,15 +66,15 @@ build/test/linux-amd64:
 
 .PHONY: build/kuma-cp
 build/kuma-cp: ## Dev: Build `Control Plane` binary
-	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-cp/kuma-cp ./app/kuma-cp
+	$(Build_Go_Application)
 
 .PHONY: build/kuma-dp
 build/kuma-dp: ## Dev: Build `kuma-dp` binary
-	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-dp/kuma-dp ./app/kuma-dp
+	$(Build_Go_Application)
 
 .PHONY: build/kumactl
 build/kumactl: ## Dev: Build `kumactl` binary
-	$(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl ./app/kumactl
+	$(Build_Go_Application)
 
 .PHONY: build/coredns
 build/coredns:

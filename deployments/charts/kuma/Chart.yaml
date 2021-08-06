@@ -2,8 +2,8 @@ apiVersion: v2
 name: kuma
 description: A Helm chart for the Kuma Control Plane
 type: application
-version: 0.6.2
-appVersion: 1.2.2
+version: 0.6.3
+appVersion: 1.2.3
 home: https://github.com/kumahq/kuma
 maintainers:
   - name: austince

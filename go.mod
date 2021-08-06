@@ -25,8 +25,8 @@ require (
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
+	github.com/kumahq/protoc-gen-kumadoc v0.1.7
 	github.com/lib/pq v1.10.2
 	github.com/miekg/dns v1.1.42
 	github.com/onsi/ginkgo v1.16.4
@@ -65,8 +65,6 @@ require (
 )
 
 replace (
-	github.com/kumahq/kuma/api => ./api
 	github.com/kumahq/kuma/pkg/transparentproxy/istio => ./pkg/transparentproxy/istio
-
 	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
 )

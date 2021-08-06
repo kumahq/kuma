@@ -16,15 +16,12 @@ import (
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )

@@ -10,12 +10,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type staticZoneIngressTokenGenerator struct {
@@ -45,7 +44,7 @@ var _ = Describe("kumactl generate zone-ingress-token", func() {
 				NewZoneIngressTokenClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.ZoneIngressTokenClient, error) {
 					return generator, nil
 				},
-				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
 		}
 

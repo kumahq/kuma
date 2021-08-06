@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/structpb"
-
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	access_loggers_grpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"

@@ -193,7 +193,7 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 	}
 	DescribeTable("MatchTags()",
 		func(given testCase) {
-			//given
+			// given
 			outbound := Dataplane_Networking_Outbound{
 				Service: given.serviceTag,
 			}
@@ -362,7 +362,8 @@ var _ = Describe("Dataplane classification", func() {
 			dp := Dataplane{
 				Networking: &Dataplane_Networking{},
 			}
-			Expect(dp.IsGateway()).To(BeFalse())
+			Expect(dp.IsDelegatedGateway()).To(BeFalse())
+			Expect(dp.IsBuiltinGateway()).To(BeFalse())
 			Expect(dp.IsIngress()).To(BeFalse())
 		})
 	})
@@ -374,7 +375,38 @@ var _ = Describe("Dataplane classification", func() {
 					Gateway: &Dataplane_Networking_Gateway{},
 				},
 			}
-			Expect(gw.IsGateway()).To(BeTrue())
+			Expect(gw.IsDelegatedGateway()).To(BeTrue())
+			Expect(gw.IsBuiltinGateway()).To(BeFalse())
+			Expect(gw.IsIngress()).To(BeFalse())
+		})
+	})
+
+	Describe("with delegated gateway networking", func() {
+		It("should be a gateway", func() {
+			gw := Dataplane{
+				Networking: &Dataplane_Networking{
+					Gateway: &Dataplane_Networking_Gateway{
+						Type: Dataplane_Networking_Gateway_DELEGATED,
+					},
+				},
+			}
+			Expect(gw.IsDelegatedGateway()).To(BeTrue())
+			Expect(gw.IsBuiltinGateway()).To(BeFalse())
+			Expect(gw.IsIngress()).To(BeFalse())
+		})
+	})
+
+	Describe("with builtin gateway networking", func() {
+		It("should be a gateway", func() {
+			gw := Dataplane{
+				Networking: &Dataplane_Networking{
+					Gateway: &Dataplane_Networking_Gateway{
+						Type: Dataplane_Networking_Gateway_BUILTIN,
+					},
+				},
+			}
+			Expect(gw.IsDelegatedGateway()).To(BeFalse())
+			Expect(gw.IsBuiltinGateway()).To(BeTrue())
 			Expect(gw.IsIngress()).To(BeFalse())
 		})
 	})
@@ -386,7 +418,8 @@ var _ = Describe("Dataplane classification", func() {
 					Ingress: &Dataplane_Networking_Ingress{},
 				},
 			}
-			Expect(in.IsGateway()).To(BeFalse())
+			Expect(in.IsDelegatedGateway()).To(BeFalse())
+			Expect(in.IsBuiltinGateway()).To(BeFalse())
 			Expect(in.IsIngress()).To(BeTrue())
 		})
 	})
@@ -456,7 +489,7 @@ var _ = Describe("TagSelector", func() {
 				// when
 				match := TagSelector(given.tags).Matches(dpTags)
 
-				//then
+				// then
 				Expect(match).To(Equal(given.match))
 			},
 			Entry("should match 0 tags", testCase{

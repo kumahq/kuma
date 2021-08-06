@@ -8,18 +8,17 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl delete ", func() {
@@ -32,6 +31,7 @@ var _ = Describe("kumactl delete ", func() {
 		BeforeEach(func() {
 			// setup
 			rootCtx = kumactl_cmd.DefaultRootContext()
+			rootCtx.Runtime.NewAPIServerClient = test.GetMockNewAPIServerClient()
 			rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 				return store, nil
 			}

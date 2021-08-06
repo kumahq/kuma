@@ -5,17 +5,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-
 	kuma_mesh "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 var outboundLog = core.Log.WithName("outbound-proxy-generator")

@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl install tracing", func() {
@@ -32,7 +32,7 @@ var _ = Describe("kumactl install tracing", func() {
 	DescribeTable("should install transparent proxy",
 		func(given testCase) {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs(append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
@@ -98,7 +98,7 @@ var _ = Describe("kumactl install tracing", func() {
 	DescribeTable("should return error",
 		func(given testCase) {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs(append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)

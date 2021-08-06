@@ -5,13 +5,12 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"

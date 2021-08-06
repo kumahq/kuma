@@ -6,19 +6,16 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
 type DataplaneWatchdogDependencies struct {
-	resManager            manager.ResourceManager
 	dataplaneProxyBuilder *DataplaneProxyBuilder
 	dataplaneReconciler   SnapshotReconciler
 	ingressProxyBuilder   *IngressProxyBuilder
@@ -109,7 +106,7 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 	if err != nil {
 		return err
 	}
-	proxy, err := d.dataplaneProxyBuilder.build(d.key, &envoyCtx.Mesh)
+	proxy, err := d.dataplaneProxyBuilder.build(d.key, envoyCtx)
 	if err != nil {
 		return err
 	}
@@ -122,7 +119,10 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 
 // syncIngress synces state of Ingress Dataplane. Notice that it does not use Mesh Hash yet because Ingress supports many Meshes.
 func (d *DataplaneWatchdog) syncIngress() error {
-	envoyCtx := d.xdsContextBuilder.buildContext(d.key)
+	envoyCtx, err := d.xdsContextBuilder.buildContext(d.key)
+	if err != nil {
+		return err
+	}
 	proxy, err := d.ingressProxyBuilder.build(d.key)
 	if err != nil {
 		return err

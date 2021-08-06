@@ -3,10 +3,10 @@ package cmd
 import (
 	"time"
 
-	"github.com/kumahq/kuma/pkg/test"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("run", func() {

@@ -7,11 +7,10 @@ import (
 	"github.com/pkg/errors"
 
 	kuma_interfaces "github.com/kumahq/kuma/api/helpers"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 

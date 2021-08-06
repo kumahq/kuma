@@ -10,20 +10,17 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
-
-	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
-
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/util/watchdog"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
+	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
+	"github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )

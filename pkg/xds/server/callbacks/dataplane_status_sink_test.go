@@ -4,22 +4,19 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/api/helpers"
-
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
-
+	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/golang/protobuf/proto"
-
+	"github.com/kumahq/kuma/api/helpers"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("DataplaneInsightSink", func() {

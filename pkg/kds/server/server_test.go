@@ -5,27 +5,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
-	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
-
-	"github.com/golang/protobuf/proto"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/kds"
-	kds_verifier "github.com/kumahq/kuma/pkg/test/kds/verifier"
-
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/definitions"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
+	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
+	kds_verifier "github.com/kumahq/kuma/pkg/test/kds/verifier"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var (
@@ -47,7 +43,7 @@ var _ = Describe("KDS Server", func() {
 
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		stream := kds_setup.StartServer(s, wg, "test-cluster", kds.SupportedTypes, reconcile.Any)
+		stream := kds_setup.StartServer(s, wg, "test-cluster", definitions.All.Get(), reconcile.Any)
 
 		tc = &kds_verifier.TestContextImpl{
 			ResourceStore:      s,
@@ -83,8 +79,9 @@ var _ = Describe("KDS Server", func() {
 			kds_samples.ZoneIngress,
 			kds_samples.ZoneIngressInsight,
 			kds_samples.Config,
+			kds_samples.Gateway,
 		}).
-			To(HaveLen(len(kds.SupportedTypes)))
+			To(HaveLen(len(definitions.All)))
 
 		vrf := kds_verifier.New().
 			// NOTE: The resources all have to be created before any DiscoveryRequests are made.

@@ -3,11 +3,9 @@ package kuma_cp
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestCpConfig(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Control Plane Configuration Suite")
+	test.RunSpecs(t, "Control Plane Configuration Suite")
 }

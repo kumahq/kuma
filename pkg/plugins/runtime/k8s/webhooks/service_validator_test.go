@@ -3,18 +3,16 @@ package webhooks_test
 import (
 	"context"
 
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
-
-	"github.com/ghodss/yaml"
-
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_core "k8s.io/api/core/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("ServiceValidator", func() {

@@ -3,9 +3,9 @@ package v1alpha1
 import (
 	"time"
 
-	"github.com/kumahq/kuma/api/helpers"
-
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/kumahq/kuma/api/helpers"
 )
 
 func (x *ZoneIngressInsight) GetSubscription(id string) (int, *DiscoverySubscription) {

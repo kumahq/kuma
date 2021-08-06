@@ -4,27 +4,22 @@ import (
 	"context"
 	"time"
 
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+	status "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-
-	status "google.golang.org/genproto/googleapis/rpc/status"
-
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
@@ -64,7 +59,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	})
 
 	BeforeEach(func() {
-		tracker = NewDataplaneStatusTracker(runtimeInfo, func(dataplaneType core_model.ResourceType, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
+		tracker = NewDataplaneStatusTracker(&runtimeInfo, func(dataplaneType core_model.ResourceType, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 			return DataplaneInsightSinkFunc(func(<-chan struct{}) {})
 		})
 		callbacks = v2.AdaptCallbacks(tracker)

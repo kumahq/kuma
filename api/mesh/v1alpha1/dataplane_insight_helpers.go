@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/api/helpers"
-
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/kumahq/kuma/api/helpers"
 )
 
 func NewSubscriptionStatus() *DiscoverySubscriptionStatus {

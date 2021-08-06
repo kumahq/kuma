@@ -8,9 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	util_proto "github.com/kumahq/kuma/api/internal/util/proto"
+	. "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 var _ = Describe("Dataplane", func() {
@@ -80,7 +79,7 @@ var _ = Describe("Dataplane", func() {
 				// given
 				var pretty bytes.Buffer
 				// when
-				json.Indent(&pretty, actual, "", "  ")
+				Expect(json.Indent(&pretty, actual, "", "  ")).To(Succeed())
 				// and
 				Expect(pretty.String()).To(Equal(given.expected))
 			},

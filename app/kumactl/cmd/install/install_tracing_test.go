@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl install tracing", func() {
@@ -29,7 +29,7 @@ var _ = Describe("kumactl install tracing", func() {
 	DescribeTable("should generate Kubernetes resources",
 		func(given testCase) {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs(append([]string{"install", "tracing"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)

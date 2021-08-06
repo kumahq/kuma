@@ -6,20 +6,18 @@ import (
 	"path/filepath"
 	"time"
 
-	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kumahq/kuma/pkg/test"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
+	kube_core "k8s.io/api/core/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/testing_frameworks/integration/addr"
+
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 // Disabling this one as there are potential issues due to https://github.com/kumahq/kuma/issues/1001

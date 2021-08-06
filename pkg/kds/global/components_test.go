@@ -5,32 +5,26 @@ import (
 	"fmt"
 	"sync"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
-
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
-
-	"github.com/kumahq/kuma/pkg/kds"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/core"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/definitions"
 	"github.com/kumahq/kuma/pkg/kds/global"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 var _ = Describe("Global Sync", func() {
@@ -51,7 +45,7 @@ var _ = Describe("Global Sync", func() {
 		for i := 0; i < numOfZones; i++ {
 			wg.Add(1)
 			zoneStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), kds.SupportedTypes, reconcile.Any)
+			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), definitions.All.Get(), reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
 			zoneStores = append(zoneStores, zoneStore)
 		}
@@ -175,6 +169,7 @@ var _ = Describe("Global Sync", func() {
 		excludeTypes := map[model.ResourceType]bool{
 			mesh.DataplaneInsightType:  true,
 			mesh.DataplaneOverviewType: true,
+			mesh.GatewayType:           true, // Gateways are zone-local.
 			mesh.ServiceInsightType:    true,
 			mesh.ServiceOverviewType:   true,
 			sample.TrafficRouteType:    true,
@@ -199,8 +194,7 @@ var _ = Describe("Global Sync", func() {
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
-		Expect(actualProvidedTypes).To(HaveLen(len(global.ProvidedTypes)))
-		Expect(actualProvidedTypes).To(ConsistOf(global.ProvidedTypes))
+		Expect(actualProvidedTypes).To(ConsistOf(definitions.All.Select(definitions.ProvidedByGlobal)))
 	})
 
 })

@@ -15,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_model "github.com/kumahq/kuma/pkg/core/xds"
-	core_xds_v3 "github.com/kumahq/kuma/pkg/core/xds/v3"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -41,10 +40,10 @@ var _ = Describe("Reconcile", func() {
 			}
 		})
 
-		var xdsContext core_xds_v3.XdsContext
+		var xdsContext XdsContext
 
 		BeforeEach(func() {
-			xdsContext = core_xds_v3.NewXdsContext()
+			xdsContext = NewXdsContext()
 		})
 
 		snapshot := envoy_cache.Snapshot{

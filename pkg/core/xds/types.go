@@ -6,13 +6,11 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
@@ -126,9 +124,15 @@ type Proxy struct {
 	Policies    MatchedPolicies
 }
 
+type VIPDomains struct {
+	Address string
+	Domains []string
+}
+
 type Routing struct {
 	TrafficRoutes   RouteMap
 	OutboundTargets EndpointMap
+	VipDomains      []VIPDomains
 
 	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
 	// TrafficRouteList is used only for generating configs for Ingress.

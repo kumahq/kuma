@@ -3,9 +3,8 @@ package controllers
 import (
 	"sort"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 type Endpoint struct {

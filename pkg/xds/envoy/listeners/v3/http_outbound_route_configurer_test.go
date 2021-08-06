@@ -5,13 +5,11 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("HttpOutboundRouteConfigurer", func() {

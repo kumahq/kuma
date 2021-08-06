@@ -8,26 +8,22 @@ import (
 	"strconv"
 	"strings"
 
-	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
-
 	"github.com/pkg/errors"
-	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
-
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/pkg/core"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+
+	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/core"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
 )
 
 const (

@@ -3,11 +3,9 @@ package dnsserver
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestEnvoy(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "DNS Server Suite")
+	test.RunSpecs(t, "DNS Server Suite")
 }

@@ -10,9 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	. "github.com/kumahq/kuma/pkg/xds/topology"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -20,7 +17,9 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	. "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ = Describe("Retry", func() {

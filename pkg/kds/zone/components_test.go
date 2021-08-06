@@ -8,32 +8,28 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-
-	"github.com/kumahq/kuma/api/system/v1alpha1"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-
-	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
+	"github.com/kumahq/kuma/pkg/kds/definitions"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/zone"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/kds/setup"
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 type testRuntimeContext struct {
@@ -50,7 +46,7 @@ var _ = Describe("Zone Sync", func() {
 	zoneName := "zone-1"
 
 	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) component.Component {
-		return kds_client.NewKDSSink(core.Log, zone.ConsumedTypes, kds_client.NewKDSStream(cs, zoneName), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
+		return kds_client.NewKDSSink(core.Log, definitions.All.Select(definitions.ConsumedByZone), kds_client.NewKDSStream(cs, zoneName), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
 	}
 	start := func(comp component.Component, stop chan struct{}) {
 		go func() {
@@ -91,7 +87,7 @@ var _ = Describe("Zone Sync", func() {
 		wg.Add(1)
 
 		kdsCtx := kds_context.DefaultContext(manager.NewResourceManager(globalStore), "global")
-		serverStream := setup.StartServer(globalStore, wg, "global", zone.ConsumedTypes, kdsCtx.GlobalProvidedFilter)
+		serverStream := setup.StartServer(globalStore, wg, "global", definitions.All.Select(definitions.ConsumedByZone), kdsCtx.GlobalProvidedFilter)
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)
@@ -151,6 +147,7 @@ var _ = Describe("Zone Sync", func() {
 		excludeTypes := map[model.ResourceType]bool{
 			mesh.DataplaneInsightType:  true,
 			mesh.DataplaneOverviewType: true,
+			mesh.GatewayType:           true, // Gateways are zone-local.
 			mesh.ServiceInsightType:    true,
 			mesh.ServiceOverviewType:   true,
 			sample.TrafficRouteType:    true,
@@ -175,8 +172,7 @@ var _ = Describe("Zone Sync", func() {
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
-		Expect(actualConsumedTypes).To(HaveLen(len(zone.ConsumedTypes)))
-		Expect(actualConsumedTypes).To(ConsistOf(zone.ConsumedTypes))
+		Expect(actualConsumedTypes).To(ConsistOf(definitions.All.Select(definitions.ConsumedByZone)))
 	})
 
 	It("should not delete predefined ConfigMaps in the Zone cluster", func() {
