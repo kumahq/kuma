@@ -1,13 +1,11 @@
 package cache
 
 import (
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/mads/v1alpha1"
-
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
-
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 

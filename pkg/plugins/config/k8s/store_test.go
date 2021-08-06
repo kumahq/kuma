@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -21,6 +18,7 @@ import (
 	system_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/config/k8s"
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 )
 
 var _ = Describe("KubernetesStore", func() {

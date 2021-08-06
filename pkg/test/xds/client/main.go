@@ -6,18 +6,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/test/xds/client/stream"
-
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
 
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
-
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
+	"github.com/kumahq/kuma/pkg/test/xds/client/stream"
 )
 
 func newRootCmd() *cobra.Command {

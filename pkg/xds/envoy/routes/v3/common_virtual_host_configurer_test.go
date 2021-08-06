@@ -5,10 +5,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("CommonVirtualHostConfigurer", func() {

@@ -9,11 +9,9 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
 

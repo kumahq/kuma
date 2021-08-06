@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/test"
-
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/jsonpb"
@@ -23,6 +21,7 @@ import (
 	mads_v1_client "github.com/kumahq/kuma/pkg/mads/v1/client"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 type testRuntime struct {

@@ -1,6 +1,7 @@
 linters:
   enable:
     - bodyclose
+    - gci
     - gocritic
     - govet
     - misspell
@@ -19,8 +20,11 @@ linters-settings:
   gocritic:
     disabled-checks:
       - singleCaseSwitch
+  gci:
+    local-prefixes: github.com/kumahq/kuma
 
 issues:
+  fix: true
   exclude-rules:
     - linters:
         - staticcheck

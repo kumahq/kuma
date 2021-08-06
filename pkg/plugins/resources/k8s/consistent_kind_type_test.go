@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -18,6 +17,7 @@ var IgnoredTypes = map[model.ResourceType]bool{
 	system.GlobalSecretType:     true,
 	system.ConfigType:           true,
 	mesh.ZoneIngressInsightType: true, // uses DataplaneInsight under the hood
+	mesh.GatewayType:            true, // Gateway is only in Universal.
 }
 
 var _ = Describe("Consistent Kind Types", func() {

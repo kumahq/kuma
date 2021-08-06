@@ -3,6 +3,9 @@ package dns_test
 import (
 	"context"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -13,9 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("DNS sync", func() {

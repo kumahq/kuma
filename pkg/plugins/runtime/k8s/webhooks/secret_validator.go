@@ -5,18 +5,17 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 const (

@@ -4,13 +4,12 @@ import (
 	"path/filepath"
 	"time"
 
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config"
+	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var _ = Describe("Config", func() {

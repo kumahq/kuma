@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/pkg/errors"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
 

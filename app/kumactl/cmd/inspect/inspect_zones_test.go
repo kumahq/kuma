@@ -7,14 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
-
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"

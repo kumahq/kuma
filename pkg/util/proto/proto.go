@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func FromYAML(content []byte, pb proto.Message) error {

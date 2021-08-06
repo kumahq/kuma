@@ -15,25 +15,24 @@ import (
 	"text/template"
 
 	"github.com/asaskevich/govalidator"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-	_ "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshalling Envoy protobuf works in tests (normally it is imported in root.go)
+
+	// import Envoy protobuf definitions so (un)marshalling Envoy protobuf works in tests (normally it is imported in root.go)
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type BootstrapGenerator interface {

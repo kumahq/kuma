@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 

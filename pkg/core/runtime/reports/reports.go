@@ -10,14 +10,13 @@ import (
 	"sync"
 	"time"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )

@@ -1,16 +1,15 @@
 package generator
 
 import (
-	observability_v1alpha1 "github.com/kumahq/kuma/api/observability/v1alpha1"
-	"github.com/kumahq/kuma/pkg/mads"
-	"github.com/kumahq/kuma/pkg/mads/generator"
+	prom "github.com/prometheus/common/model"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	observability_v1alpha1 "github.com/kumahq/kuma/api/observability/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
-	prom "github.com/prometheus/common/model"
+	"github.com/kumahq/kuma/pkg/mads"
+	"github.com/kumahq/kuma/pkg/mads/generator"
 )
 
 const (

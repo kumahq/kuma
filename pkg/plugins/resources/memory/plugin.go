@@ -3,10 +3,9 @@ package memory
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/events"
-
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/events"
 )
 
 var _ core_plugins.ResourceStorePlugin = &plugin{}

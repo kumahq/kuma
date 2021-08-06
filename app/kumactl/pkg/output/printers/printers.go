@@ -1,12 +1,12 @@
 package printers
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/json"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
-
-	"github.com/pkg/errors"
 )
 
 type Table = table.Table

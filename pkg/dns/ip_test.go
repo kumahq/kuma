@@ -3,10 +3,10 @@ package dns_test
 import (
 	"math"
 
-	. "github.com/kumahq/kuma/pkg/dns"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kumahq/kuma/pkg/dns"
 )
 
 var _ = Describe("DNS ip", func() {

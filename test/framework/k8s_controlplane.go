@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -16,6 +14,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 

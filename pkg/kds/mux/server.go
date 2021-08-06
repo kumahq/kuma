@@ -5,11 +5,10 @@ import (
 	"net"
 	"time"
 
-	"google.golang.org/grpc/keepalive"
-
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"

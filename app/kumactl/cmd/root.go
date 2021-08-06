@@ -4,8 +4,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd/uninstall"
-
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd/apply"
@@ -16,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd/get"
 	"github.com/kumahq/kuma/app/kumactl/cmd/inspect"
 	"github.com/kumahq/kuma/app/kumactl/cmd/install"
+	"github.com/kumahq/kuma/app/kumactl/cmd/uninstall"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	kumactl_config "github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_errors "github.com/kumahq/kuma/app/kumactl/pkg/errors"
@@ -25,7 +24,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
-	_ "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshalling Envoy protobuf works
+
+	// import Envoy protobuf definitions so (un)marshalling Envoy protobuf works
+	_ "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var (
@@ -109,7 +110,17 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 }
 
 func DefaultRootCmd() *cobra.Command {
-	return NewRootCmd(kumactl_cmd.DefaultRootContext())
+	root := kumactl_cmd.DefaultRootContext()
+	for _, p := range kumactl_cmd.Plugins {
+		p.CustomizeContext(root)
+	}
+
+	cmd := NewRootCmd(root)
+	for _, p := range kumactl_cmd.Plugins {
+		p.CustomizeCommand(cmd)
+	}
+
+	return cmd
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
