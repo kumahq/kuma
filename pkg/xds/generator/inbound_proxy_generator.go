@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -35,14 +35,14 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		}
 
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
-		protocol := mesh_core.ParseProtocol(iface.GetProtocol())
+		protocol := core_mesh.ParseProtocol(iface.GetProtocol())
 
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 			Configure(envoy_clusters.StaticCluster(localClusterName, endpoint.WorkloadIP, endpoint.WorkloadPort))
 		switch protocol {
-		case mesh_core.ProtocolHTTP2, mesh_core.ProtocolGRPC:
+		case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 			clusterBuilder.Configure(envoy_clusters.Http2())
 		}
 		cluster, err := clusterBuilder.Build()
@@ -69,14 +69,14 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
 			switch protocol {
 			// configuration for HTTP case
-			case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
+			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, service)).
 					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
-			case mesh_core.ProtocolGRPC:
+			case core_mesh.ProtocolGRPC:
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
 					Configure(envoy_listeners.GrpcStats()).
@@ -84,11 +84,11 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, service)).
 					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
-			case mesh_core.ProtocolKafka:
+			case core_mesh.ProtocolKafka:
 				filterChainBuilder.
 					Configure(envoy_listeners.Kafka(localClusterName)).
 					Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
-			case mesh_core.ProtocolTCP:
+			case core_mesh.ProtocolTCP:
 				fallthrough
 			default:
 				// configuration for non-HTTP cases

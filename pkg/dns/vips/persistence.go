@@ -10,7 +10,7 @@ import (
 	"go.uber.org/multierr"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -132,7 +132,7 @@ func (m *Persistence) Set(mesh string, vips List) error {
 	resource.Spec.Config = string(jsonBytes)
 
 	if create {
-		meshRes := mesh_core.NewMeshResource()
+		meshRes := core_mesh.NewMeshResource()
 		if err := m.resourceManager.Get(ctx, meshRes, store.GetByKey(mesh, model.NoMesh)); err != nil {
 			return err
 		}
