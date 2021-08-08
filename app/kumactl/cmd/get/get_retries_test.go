@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -27,10 +27,10 @@ import (
 )
 
 var _ = Describe("kumactl get retries", func() {
-	var sampleRetries []*mesh_core.RetryResource
+	var sampleRetries []*core_mesh.RetryResource
 
 	BeforeEach(func() {
-		sampleRetries = []*mesh_core.RetryResource{
+		sampleRetries = []*core_mesh.RetryResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default",

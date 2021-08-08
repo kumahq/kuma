@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	config_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -79,13 +79,13 @@ var _ = Describe("Meshed Persistence", func() {
 
 	BeforeEach(func() {
 		rm = manager.NewResourceManager(memory.NewStore())
-		err := rm.Create(context.Background(), mesh_core.NewMeshResource(), core_store.CreateByKey("mesh-1", core_model.NoMesh))
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("mesh-1", core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), mesh_core.NewMeshResource(), core_store.CreateByKey("mesh-2", core_model.NoMesh))
+		err = rm.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("mesh-2", core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), mesh_core.NewMeshResource(), core_store.CreateByKey("mesh-3", core_model.NoMesh))
+		err = rm.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("mesh-3", core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

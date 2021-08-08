@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -34,19 +34,19 @@ var _ = Describe("Retry", func() {
 	Describe("GetRetries()", func() {
 		It("should pick the best matching Retry for each destination service", func() {
 			// given
-			mesh := &mesh_core.MeshResource{ // mesh that is relevant to this test case
+			mesh := &core_mesh.MeshResource{ // mesh that is relevant to this test case
 				Meta: &test_model.ResourceMeta{
 					Name: "demo",
 				},
 				Spec: &mesh_proto.Mesh{},
 			}
-			otherMesh := &mesh_core.MeshResource{ // mesh that is irrelevant to this test case
+			otherMesh := &core_mesh.MeshResource{ // mesh that is irrelevant to this test case
 				Meta: &test_model.ResourceMeta{
 					Name: "default",
 				},
 				Spec: &mesh_proto.Mesh{},
 			}
-			backend := &mesh_core.DataplaneResource{ // dataplane that is a source of traffic
+			backend := &core_mesh.DataplaneResource{ // dataplane that is a source of traffic
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "backend",
@@ -97,7 +97,7 @@ var _ = Describe("Retry", func() {
 					mesh_proto.MatchService("elastic"),
 				},
 			}
-			retryRedis := &mesh_core.RetryResource{ // retries for `redis` service
+			retryRedis := &core_mesh.RetryResource{ // retries for `redis` service
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "retry-redis",
@@ -143,7 +143,7 @@ var _ = Describe("Retry", func() {
 					},
 				},
 			}
-			retryElastic := &mesh_core.RetryResource{ // retries for `elastic` service
+			retryElastic := &core_mesh.RetryResource{ // retries for `elastic` service
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "retry-elastic",
@@ -183,7 +183,7 @@ var _ = Describe("Retry", func() {
 					},
 				},
 			}
-			retryEverything := &mesh_core.RetryResource{ // retries for any service
+			retryEverything := &core_mesh.RetryResource{ // retries for any service
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default", // other mesh
 					Name: "retry-everything",
@@ -259,9 +259,9 @@ var _ = Describe("Retry", func() {
 				meta1.GetVersion() == meta2.GetVersion()
 		}
 		type testCase struct {
-			dataplane    *mesh_core.DataplaneResource
+			dataplane    *core_mesh.DataplaneResource
 			destinations core_xds.DestinationMap
-			retries      []*mesh_core.RetryResource
+			retries      []*core_mesh.RetryResource
 			expected     core_xds.RetryMap
 		}
 		DescribeTable("should correctly pick a single the most specific Retry for each outbound"+
@@ -289,13 +289,13 @@ var _ = Describe("Retry", func() {
 				Expect(retries).Should(Equal(expectedRetries))
 			},
 			Entry("Dataplane without outbound interfaces (and therefore no destinations)", testCase{
-				dataplane:    mesh_core.NewDataplaneResource(),
+				dataplane:    core_mesh.NewDataplaneResource(),
 				destinations: nil,
 				retries:      nil,
 				expected:     nil,
 			}),
 			Entry("if a destination service has no matching Retries, none should be used", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -332,7 +332,7 @@ var _ = Describe("Retry", func() {
 				expected: nil,
 			}),
 			Entry("due to TrafficRoutes, a Dataplane might have more destinations than outbound interfaces", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -360,7 +360,7 @@ var _ = Describe("Retry", func() {
 						mesh_proto.MatchService("elastic"),
 					},
 				},
-				retries: []*mesh_core.RetryResource{
+				retries: []*core_mesh.RetryResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "retry-elastic",
@@ -442,12 +442,12 @@ var _ = Describe("Retry", func() {
 					},
 				},
 				expected: core_xds.RetryMap{
-					"redis": &mesh_core.RetryResource{
+					"redis": &core_mesh.RetryResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "retry-redis",
 						},
 					},
-					"elastic": &mesh_core.RetryResource{
+					"elastic": &core_mesh.RetryResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "retry-elastic",
 						},
@@ -456,7 +456,7 @@ var _ = Describe("Retry", func() {
 			}),
 			Entry("Retries should be picked by latest creation time given two equally specific"+
 				" Retries", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -481,7 +481,7 @@ var _ = Describe("Retry", func() {
 						mesh_proto.MatchService("redis"),
 					},
 				},
-				retries: []*mesh_core.RetryResource{
+				retries: []*core_mesh.RetryResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name:         "retry-everything-passive",
@@ -565,7 +565,7 @@ var _ = Describe("Retry", func() {
 					},
 				},
 				expected: core_xds.RetryMap{
-					"redis": &mesh_core.RetryResource{
+					"redis": &core_mesh.RetryResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "retry-everything-passive",
 						},
@@ -574,7 +574,7 @@ var _ = Describe("Retry", func() {
 			}),
 			Entry("Retry with a `source` selector by 2 tags should win over a Retry with a"+
 				" `source` selector by 1 tag", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -600,7 +600,7 @@ var _ = Describe("Retry", func() {
 						mesh_proto.MatchService("redis"),
 					},
 				},
-				retries: []*mesh_core.RetryResource{
+				retries: []*core_mesh.RetryResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
@@ -683,7 +683,7 @@ var _ = Describe("Retry", func() {
 					},
 				},
 				expected: core_xds.RetryMap{
-					"redis": &mesh_core.RetryResource{
+					"redis": &core_mesh.RetryResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
@@ -692,7 +692,7 @@ var _ = Describe("Retry", func() {
 			}),
 			Entry("Retry with a `source` selector by an exact value should win over a Retry"+
 				" with a `source` selector by a wildcard value", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -718,7 +718,7 @@ var _ = Describe("Retry", func() {
 						mesh_proto.MatchService("redis"),
 					},
 				},
-				retries: []*mesh_core.RetryResource{
+				retries: []*core_mesh.RetryResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
@@ -800,7 +800,7 @@ var _ = Describe("Retry", func() {
 					},
 				},
 				expected: core_xds.RetryMap{
-					"redis": &mesh_core.RetryResource{
+					"redis": &core_mesh.RetryResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
@@ -809,7 +809,7 @@ var _ = Describe("Retry", func() {
 			}),
 			Entry("Retry with a `destination` selector by an exact value should win over a"+
 				" Retry with a `destination` selector by a wildcard value", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -835,7 +835,7 @@ var _ = Describe("Retry", func() {
 						mesh_proto.MatchService("redis"),
 					},
 				},
-				retries: []*mesh_core.RetryResource{
+				retries: []*core_mesh.RetryResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
@@ -917,7 +917,7 @@ var _ = Describe("Retry", func() {
 					},
 				},
 				expected: core_xds.RetryMap{
-					"redis": &mesh_core.RetryResource{
+					"redis": &core_mesh.RetryResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
@@ -926,7 +926,7 @@ var _ = Describe("Retry", func() {
 			}),
 			Entry("in case if Retries have equal aggregate ranks, "+
 				"most specific one should be selected based on last creation time", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -952,7 +952,7 @@ var _ = Describe("Retry", func() {
 						mesh_proto.MatchService("redis"),
 					},
 				},
-				retries: []*mesh_core.RetryResource{
+				retries: []*core_mesh.RetryResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name:         "equally-specific-2",
@@ -1036,7 +1036,7 @@ var _ = Describe("Retry", func() {
 					},
 				},
 				expected: core_xds.RetryMap{
-					"redis": &mesh_core.RetryResource{
+					"redis": &core_mesh.RetryResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "equally-specific-2",
 						},

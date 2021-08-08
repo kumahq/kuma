@@ -11,12 +11,12 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 type HealthCheckConfigurer struct {
-	HealthCheck *mesh_core.HealthCheckResource
-	Protocol    mesh_core.Protocol
+	HealthCheck *core_mesh.HealthCheckResource
+	Protocol    core_mesh.Protocol
 }
 
 var _ ClusterConfigurer = &HealthCheckConfigurer{}
@@ -75,7 +75,7 @@ func tcpHealthCheck(
 }
 
 func httpHealthCheck(
-	protocol mesh_core.Protocol,
+	protocol core_mesh.Protocol,
 	httpConf *mesh_proto.HealthCheck_Conf_Http,
 ) *envoy_core.HealthCheck_HttpHealthCheck_ {
 	var expectedStatuses []*envoy_type.Int64Range
@@ -87,7 +87,7 @@ func httpHealthCheck(
 	}
 
 	codecClientType := envoy_type.CodecClientType_HTTP1
-	if protocol == mesh_core.ProtocolHTTP2 {
+	if protocol == core_mesh.ProtocolHTTP2 {
 		codecClientType = envoy_type.CodecClientType_HTTP2
 	}
 

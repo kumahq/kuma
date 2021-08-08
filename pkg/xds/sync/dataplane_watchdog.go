@@ -8,7 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -57,7 +57,7 @@ func (d *DataplaneWatchdog) Sync() error {
 	}
 	// backwards compatibility
 	if d.dpType == mesh_proto.DataplaneProxyType && !d.proxyTypeSettled {
-		dataplane := mesh_core.NewDataplaneResource()
+		dataplane := core_mesh.NewDataplaneResource()
 		if err := d.dataplaneProxyBuilder.CachingResManager.Get(ctx, dataplane, store.GetBy(d.key)); err != nil {
 			return err
 		}

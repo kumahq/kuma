@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/kumahq/kuma/pkg/core/policy"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -12,7 +12,7 @@ import (
 
 func GetRetries(
 	ctx context.Context,
-	dataplane *mesh_core.DataplaneResource,
+	dataplane *core_mesh.DataplaneResource,
 	destinations core_xds.DestinationMap,
 	manager core_manager.ReadOnlyResourceManager,
 ) (core_xds.RetryMap, error) {
@@ -20,7 +20,7 @@ func GetRetries(
 		return nil, nil
 	}
 
-	retries := &mesh_core.RetryResourceList{}
+	retries := &core_mesh.RetryResourceList{}
 	if err := manager.List(
 		ctx,
 		retries,
@@ -33,8 +33,8 @@ func GetRetries(
 }
 
 func BuildRetryMap(
-	dataplane *mesh_core.DataplaneResource,
-	retries []*mesh_core.RetryResource,
+	dataplane *core_mesh.DataplaneResource,
+	retries []*core_mesh.RetryResource,
 	destinations core_xds.DestinationMap,
 ) (core_xds.RetryMap, error) {
 	if len(retries) == 0 || len(destinations) == 0 {
@@ -54,7 +54,7 @@ func BuildRetryMap(
 
 	retriesMap := core_xds.RetryMap{}
 	for service, singlePolicy := range policyMap {
-		retriesMap[service] = singlePolicy.(*mesh_core.RetryResource)
+		retriesMap[service] = singlePolicy.(*core_mesh.RetryResource)
 	}
 
 	return retriesMap, nil
