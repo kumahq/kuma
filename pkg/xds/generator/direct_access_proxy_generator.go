@@ -8,7 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -50,7 +50,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 			Configure(envoy_listeners.OutboundListener(name, endpoint.Address, endpoint.Port, core_xds.SocketAddressProtocolTCP)).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 				Configure(envoy_listeners.TcpProxy(name, envoy_common.NewCluster(envoy_common.WithService("direct_access")))).
-				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, name, proxy.Policies.Logs[mesh_core.PassThroughService], proxy)))).
+				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, name, proxy.Policies.Logs[core_mesh.PassThroughService], proxy)))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Build()
 		if err != nil {
@@ -78,7 +78,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 	return resources, nil
 }
 
-func directAccessEndpoints(dataplane *mesh_core.DataplaneResource, other *mesh_core.DataplaneResourceList, mesh *mesh_core.MeshResource) (Endpoints, error) {
+func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_mesh.DataplaneResourceList, mesh *core_mesh.MeshResource) (Endpoints, error) {
 	// collect endpoints that are already created so we don't create 2 listeners with same IP:PORT
 	takenEndpoints, err := takenEndpoints(dataplane)
 	if err != nil {
@@ -121,7 +121,7 @@ func directAccessEndpoints(dataplane *mesh_core.DataplaneResource, other *mesh_c
 	return fromMap(endpoints), nil
 }
 
-func takenEndpoints(dataplane *mesh_core.DataplaneResource) (map[Endpoint]bool, error) {
+func takenEndpoints(dataplane *core_mesh.DataplaneResource) (map[Endpoint]bool, error) {
 	ofaces, err := dataplane.Spec.GetNetworking().GetOutboundInterfaces()
 	if err != nil {
 		return nil, err
