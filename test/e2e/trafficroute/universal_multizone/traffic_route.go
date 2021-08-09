@@ -82,33 +82,23 @@ routing:
 			Install(Kuma(core.Zone, optsZone2...)).
 			Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
-				WithProtocol("http"),
 				WithServiceVersion("v1"),
-				WithTransparentProxy(true),
 			)).
 			Install(TestServerUniversal("dp-echo-2", defaultMesh, testServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v2"}),
-				WithProtocol("http"),
 				WithServiceVersion("v2"),
-				WithTransparentProxy(true),
 			)).
 			Install(TestServerUniversal("dp-echo-3", defaultMesh, testServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v3"}),
-				WithProtocol("http"),
 				WithServiceVersion("v3"),
-				WithTransparentProxy(true),
 			)).
 			Install(TestServerUniversal("dp-echo-4", defaultMesh, testServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v4"}),
-				WithProtocol("http"),
 				WithServiceVersion("v4"),
-				WithTransparentProxy(true),
 			)).
 			Install(TestServerUniversal("dp-another-test", defaultMesh, anotherTestServerToken,
 				WithArgs([]string{"echo", "--instance", "another-test-server"}),
-				WithProtocol("http"),
 				WithServiceName("another-test-server"),
-				WithTransparentProxy(true),
 			)).
 			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone2)

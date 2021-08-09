@@ -24,7 +24,7 @@ sources:
     kuma.io/service: '*'
 destinations:
 - match:
-    kuma.io/service: echo-server_kuma-test_svc_8080
+    kuma.io/service: test-server
 conf:
   interval: 10s
   timeout: 2s
@@ -45,7 +45,7 @@ networking:
   - port: 8080
     servicePort: 80
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       kuma.io/protocol: http`, idx, idx)
 	}
 
@@ -61,7 +61,7 @@ networking:
 		err = universalCluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
@@ -69,7 +69,7 @@ networking:
 		for i := 1; i <= 6; i++ {
 			dpName := fmt.Sprintf("dp-echo-%d", i)
 			response := fmt.Sprintf("universal-%d", i)
-			err = EchoServerUniversal(dpName, "default", response, echoServerToken)(universalCluster)
+			err = TestServerUniversal(dpName, "default", testServerToken, WithArgs([]string{"echo", "--instance", response}))(universalCluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		for i := 7; i <= 10; i++ {
@@ -92,7 +92,7 @@ networking:
 	It("should switch to panic mode and dismiss all requests", func() {
 		Eventually(func() bool {
 			stdout, _, _ := universalCluster.Exec("", "", "demo-client",
-				"curl", "-v", "echo-server_kuma-test_svc_8080.mesh")
+				"curl", "-v", "test-server.mesh")
 			return strings.Contains(stdout, "no healthy upstream")
 		}, "30s", "500ms").Should(BeTrue())
 	})
