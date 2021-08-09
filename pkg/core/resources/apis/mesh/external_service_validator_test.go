@@ -195,6 +195,23 @@ var _ = Describe("ExternalService", func() {
                 - field: networking.address
                   message: port must be in the range [1, 65535]`,
 		}),
+		Entry("tls: empty SNI", testCase{
+			dataplane: `
+                type: ExternalService
+                name: es-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1:8080
+                  tls:
+                    serverName: ""
+                tags:
+                  kuma.io/service: backend
+                  version: "1"`,
+			expected: `
+                violations:
+                - field: networking.tls.serverName
+                  message: cannot be empty`,
+		}),
 		Entry("tags: empty service tag", testCase{
 			dataplane: `
                 type: ExternalService
