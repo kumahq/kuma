@@ -1,13 +1,13 @@
 package generator
 
 import (
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 type Args struct {
-	Meshes     []*mesh_core.MeshResource
-	Dataplanes []*mesh_core.DataplaneResource
+	Meshes     []*core_mesh.MeshResource
+	Dataplanes []*core_mesh.DataplaneResource
 }
 
 type ResourceGenerator interface {

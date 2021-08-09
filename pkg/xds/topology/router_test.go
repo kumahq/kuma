@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -35,19 +35,19 @@ var _ = Describe("TrafficRoute", func() {
 
 		It("should pick the best matching Route for each outbound interface", func() {
 			// given
-			mesh := &mesh_core.MeshResource{ // mesh that is relevant to this test case
+			mesh := &core_mesh.MeshResource{ // mesh that is relevant to this test case
 				Meta: &test_model.ResourceMeta{
 					Name: "demo",
 				},
 				Spec: &mesh_proto.Mesh{},
 			}
-			otherMesh := &mesh_core.MeshResource{ // mesh that is irrelevant to this test case
+			otherMesh := &core_mesh.MeshResource{ // mesh that is irrelevant to this test case
 				Meta: &test_model.ResourceMeta{
 					Name: "default",
 				},
 				Spec: &mesh_proto.Mesh{},
 			}
-			backend := &mesh_core.DataplaneResource{ // dataplane that is a source of traffic
+			backend := &core_mesh.DataplaneResource{ // dataplane that is a source of traffic
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "backend",
@@ -74,7 +74,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}
-			routeRedis := &mesh_core.TrafficRouteResource{ // traffic route for `redis` service
+			routeRedis := &core_mesh.TrafficRouteResource{ // traffic route for `redis` service
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "route-to-redis",
@@ -105,7 +105,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}
-			routeElastic := &mesh_core.TrafficRouteResource{ // traffic route for `elastic` service
+			routeElastic := &core_mesh.TrafficRouteResource{ // traffic route for `elastic` service
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "route-to-elastic",
@@ -135,7 +135,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}
-			routeBlackhole := &mesh_core.TrafficRouteResource{ // traffic route that must be ignored (due to `mesh: default`)
+			routeBlackhole := &core_mesh.TrafficRouteResource{ // traffic route that must be ignored (due to `mesh: default`)
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default", // other mesh
 					Name: "route-to-blackhole",
@@ -193,8 +193,8 @@ var _ = Describe("TrafficRoute", func() {
 				meta1.GetVersion() == meta2.GetVersion()
 		}
 		type testCase struct {
-			dataplane *mesh_core.DataplaneResource
-			routes    []*mesh_core.TrafficRouteResource
+			dataplane *core_mesh.DataplaneResource
+			routes    []*core_mesh.TrafficRouteResource
 			expected  core_xds.RouteMap
 		}
 		DescribeTable("should correctly pick a single the most specific route for each outbound interface",
@@ -222,13 +222,13 @@ var _ = Describe("TrafficRoute", func() {
 				}
 			},
 			Entry("Dataplane without outbound interfaces and no routes", testCase{
-				dataplane: mesh_core.NewDataplaneResource(),
+				dataplane: core_mesh.NewDataplaneResource(),
 				routes:    nil,
 				expected:  nil,
 			}),
 			Entry("Dataplane without outbound interfaces", testCase{
-				dataplane: mesh_core.NewDataplaneResource(),
-				routes: []*mesh_core.TrafficRouteResource{
+				dataplane: core_mesh.NewDataplaneResource(),
+				routes: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
@@ -253,7 +253,7 @@ var _ = Describe("TrafficRoute", func() {
 				expected: core_xds.RouteMap{},
 			}),
 			Entry("TrafficRoutes should be picked by latest creation time given two equally specific routes", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -268,7 +268,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				routes: []*mesh_core.TrafficRouteResource{
+				routes: []*core_mesh.TrafficRouteResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name:         "everything-to-hollygrail",
@@ -322,7 +322,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1234,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "everything-to-hollygrail",
 						},
@@ -330,7 +330,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("TrafficRoute with a `source` selector by 2 tags should win over a TrafficRoute with a `source` selector by 1 tag", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -345,7 +345,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				routes: []*mesh_core.TrafficRouteResource{
+				routes: []*core_mesh.TrafficRouteResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
@@ -397,7 +397,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1234,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
@@ -405,7 +405,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("TrafficRoute with a `source` selector by an exact value should win over a TrafficRoute with a `source` selector by a wildcard value", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -420,7 +420,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				routes: []*mesh_core.TrafficRouteResource{
+				routes: []*core_mesh.TrafficRouteResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
@@ -472,7 +472,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1234,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
@@ -480,7 +480,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("TrafficRoute with a `destination` selector by an exact value should win over a TrafficRoute with a `destination` selector by a wildcard value", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -495,7 +495,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				routes: []*mesh_core.TrafficRouteResource{
+				routes: []*core_mesh.TrafficRouteResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
@@ -547,7 +547,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1234,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
@@ -555,7 +555,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("in case if TrafficRoutes have equal aggregate ranks, most specific one should be selected based on last creation time", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -570,7 +570,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				routes: []*mesh_core.TrafficRouteResource{
+				routes: []*core_mesh.TrafficRouteResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name:         "equally-specific-2",
@@ -624,7 +624,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1234,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "equally-specific-2",
 						},
@@ -640,7 +640,7 @@ var _ = Describe("TrafficRoute", func() {
 				Expect(routes).Should(Equal(given.expected))
 			},
 			Entry("if an outbound interface has no matching TrafficRoute, the default route should be used", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -659,7 +659,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				routes: []*mesh_core.TrafficRouteResource{
+				routes: []*core_mesh.TrafficRouteResource{
 					{
 						Meta: &PseudoMeta{
 							Name: "route-all-default",
@@ -689,7 +689,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1234,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Meta: &PseudoMeta{
 							Name: "route-all-default",
 						},
@@ -715,7 +715,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1235,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Meta: &PseudoMeta{
 							Name: "route-all-default",
 						},
@@ -741,7 +741,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("the default route should only be used if there is matching TrafficRoute for a given outbound interface", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -760,7 +760,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				routes: []*mesh_core.TrafficRouteResource{
+				routes: []*core_mesh.TrafficRouteResource{
 					{
 						Meta: &PseudoMeta{
 							Name: "route-all-default",
@@ -813,7 +813,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1234,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Meta: &PseudoMeta{
 							Name: "route-all-default",
 						},
@@ -839,7 +839,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 1235,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "everything-to-elastic-v1",
 						},
@@ -869,7 +869,7 @@ var _ = Describe("TrafficRoute", func() {
 
 	Describe("BuildDestinationMap()", func() {
 		type testCase struct {
-			dataplane *mesh_core.DataplaneResource
+			dataplane *core_mesh.DataplaneResource
 			routes    core_xds.RouteMap
 			expected  core_xds.DestinationMap
 		}
@@ -881,12 +881,12 @@ var _ = Describe("TrafficRoute", func() {
 				Expect(destinations).Should(Equal(given.expected))
 			},
 			Entry("Dataplane without outbound interfaces", testCase{
-				dataplane: mesh_core.NewDataplaneResource(),
+				dataplane: core_mesh.NewDataplaneResource(),
 				routes:    nil,
 				expected:  core_xds.DestinationMap{},
 			}),
 			Entry("Dataplane with outbound interfaces but no TrafficRoutes", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
@@ -907,7 +907,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("Dataplane with outbound interfaces and TrafficRoutes", testCase{
-				dataplane: &mesh_core.DataplaneResource{
+				dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
@@ -921,7 +921,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 10001,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
@@ -944,7 +944,7 @@ var _ = Describe("TrafficRoute", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 10002,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{

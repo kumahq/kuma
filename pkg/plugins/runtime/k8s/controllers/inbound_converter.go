@@ -8,7 +8,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
@@ -160,7 +160,7 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 	if protocolValue == "" {
 		// if `appProtocol` or `<port>.service.kuma.io/protocol` is missing or has an empty value
 		// we want Dataplane to have a `protocol: tcp` tag in order to get user's attention
-		return mesh_core.ProtocolTCP
+		return core_mesh.ProtocolTCP
 	}
 	// if `appProtocol` or `<port>.service.kuma.io/protocol` field is present but has an invalid value
 	// we still want Dataplane to have a `protocol: <value as is>` tag in order to make it clear
@@ -182,7 +182,7 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod) map[string]string {
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
 	}
-	tags[mesh_proto.ProtocolTag] = mesh_core.ProtocolTCP
+	tags[mesh_proto.ProtocolTag] = core_mesh.ProtocolTCP
 	tags[mesh_proto.InstanceTag] = pod.Name
 
 	return tags

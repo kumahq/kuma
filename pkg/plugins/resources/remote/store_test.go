@@ -48,8 +48,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "traffic-routes"),
-				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
+				sample_core.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
+				mesh.MeshType:                core_rest.NewResourceApi(core_model.ScopeGlobal, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -66,8 +66,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "traffic-routes"),
-				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
+				sample_core.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
+				mesh.MeshType:                core_rest.NewResourceApi(core_model.ScopeMesh, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)

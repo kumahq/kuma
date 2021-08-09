@@ -67,7 +67,7 @@ conf:
 		Expect(err).ToNot(HaveOccurred())
 		err = TestServerUniversal("test-server", "default", testServerToken,
 			WithArgs([]string{"health-check", "tcp"}),
-			WithTransparentProxy(true), WithProtocol("tcp"))(cluster)
+			WithProtocol("tcp"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

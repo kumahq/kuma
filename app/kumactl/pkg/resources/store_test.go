@@ -30,7 +30,7 @@ var _ = Describe("Store", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				store, err := NewResourceStore(cp.Coordinates.ApiServer)
+				store, err := NewResourceStore(cp.Coordinates.ApiServer, nil)
 				// then
 				Expect(store).ToNot(BeNil())
 				// and
@@ -51,7 +51,7 @@ var _ = Describe("Store", func() {
 					},
 				}
 				// when
-				store, err := NewResourceStore(cp.Coordinates.ApiServer)
+				store, err := NewResourceStore(cp.Coordinates.ApiServer, nil)
 				// then
 				Expect(store).To(BeNil())
 				// and

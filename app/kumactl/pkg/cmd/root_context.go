@@ -12,9 +12,8 @@ import (
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	util_files "github.com/kumahq/kuma/pkg/util/files"
 )
@@ -35,6 +34,7 @@ type RootRuntime struct {
 	NewDataplaneTokenClient      func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error)
 	NewZoneIngressTokenClient    func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.ZoneIngressTokenClient, error)
 	NewAPIServerClient           func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
+	Registry                     registry.TypeRegistry
 }
 
 // RootContext contains variables, functions and components that can be overridden when extending kumactl or running the test.
@@ -45,7 +45,6 @@ type RootRuntime struct {
 // rootCmd := cmd.NewRootCmd(rootCtx)
 // err := rootCmd.Execute()
 type RootContext struct {
-	TypeArgs                            map[string]core_model.ResourceType
 	Args                                RootArgs
 	Runtime                             RootRuntime
 	GetContext                          get_context.GetContext
@@ -63,8 +62,11 @@ type RootContext struct {
 func DefaultRootContext() *RootContext {
 	return &RootContext{
 		Runtime: RootRuntime{
-			Now:                          time.Now,
-			NewResourceStore:             kumactl_resources.NewResourceStore,
+			Now:      time.Now,
+			Registry: registry.Global(),
+			NewResourceStore: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
+				return kumactl_resources.NewResourceStore(server, registry.Global().ObjectDescriptors())
+			},
 			NewDataplaneOverviewClient:   kumactl_resources.NewDataplaneOverviewClient,
 			NewZoneIngressOverviewClient: kumactl_resources.NewZoneIngressOverviewClient,
 			NewZoneOverviewClient:        kumactl_resources.NewZoneOverviewClient,
@@ -72,25 +74,6 @@ func DefaultRootContext() *RootContext {
 			NewDataplaneTokenClient:      tokens.NewDataplaneTokenClient,
 			NewZoneIngressTokenClient:    tokens.NewZoneIngressTokenClient,
 			NewAPIServerClient:           kumactl_resources.NewAPIServerClient,
-		},
-		TypeArgs: map[string]core_model.ResourceType{
-			"circuit-breaker":    core_mesh.CircuitBreakerType,
-			"dataplane":          core_mesh.DataplaneType,
-			"external-service":   core_mesh.ExternalServiceType,
-			"fault-injection":    core_mesh.FaultInjectionType,
-			"healthcheck":        core_mesh.HealthCheckType,
-			"mesh":               core_mesh.MeshType,
-			"proxytemplate":      core_mesh.ProxyTemplateType,
-			"rate-limit":         core_mesh.RateLimitType,
-			"retry":              core_mesh.RetryType,
-			"timeout":            core_mesh.TimeoutType,
-			"traffic-log":        core_mesh.TrafficLogType,
-			"traffic-permission": core_mesh.TrafficPermissionType,
-			"traffic-route":      core_mesh.TrafficRouteType,
-			"traffic-trace":      core_mesh.TrafficTraceType,
-			"global-secret":      system.GlobalSecretType,
-			"secret":             system.SecretType,
-			"zone":               system.ZoneType,
 		},
 		InstallCpContext:                    install_context.DefaultInstallCpContext(),
 		InstallCRDContext:                   install_context.DefaultInstallCrdsContext(),
@@ -100,18 +83,6 @@ func DefaultRootContext() *RootContext {
 		InstallGatewayKongEnterpriseContext: install_context.DefaultInstallGatewayKongEnterpriseContext(),
 		InstallTracingContext:               install_context.DefaultInstallTracingContext(),
 	}
-}
-
-func (rc *RootContext) TypeForArg(arg string) (core_model.ResourceType, error) {
-	typ, ok := rc.TypeArgs[arg]
-	if !ok {
-		allowedValues := ""
-		for v := range rc.TypeArgs {
-			allowedValues += v + ", "
-		}
-		return "", errors.Errorf("unknown TYPE: %s. Allowed values: %s:", arg, allowedValues)
-	}
-	return typ, nil
 }
 
 func (rc *RootContext) LoadConfig() error {

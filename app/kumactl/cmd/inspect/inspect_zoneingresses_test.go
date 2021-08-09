@@ -15,15 +15,14 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type testZoneIngressOverviewClient struct {
@@ -241,7 +240,6 @@ var _ = Describe("kumactl inspect zone-ingresses", func() {
 
 	Describe("InspectZoneIngressesCmd", func() {
 
-		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 
@@ -254,14 +252,10 @@ var _ = Describe("kumactl inspect zone-ingresses", func() {
 				overviews: sampleZoneIngressOverview,
 			}
 
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return now },
-					NewZoneIngressOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneIngressOverviewClient, error) {
-						return testClient, nil
-					},
-					NewAPIServerClient: test.GetMockNewAPIServerClient(),
-				},
+			rootCtx, err := test_kumactl.MakeRootContext(now, nil)
+			Expect(err).ToNot(HaveOccurred())
+			rootCtx.Runtime.NewZoneIngressOverviewClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneIngressOverviewClient, error) {
+				return testClient, nil
 			}
 
 			rootCmd = cmd.NewRootCmd(rootCtx)

@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/tls"
@@ -34,8 +34,8 @@ func (c Context) SDSLocation() string {
 }
 
 type MeshContext struct {
-	Resource   *mesh_core.MeshResource
-	Dataplanes *mesh_core.DataplaneResourceList
+	Resource   *core_mesh.MeshResource
+	Dataplanes *core_mesh.DataplaneResourceList
 	Hash       string
 }
 

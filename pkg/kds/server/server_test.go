@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"reflect"
 	"sync"
 	"time"
 
@@ -14,8 +15,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
@@ -43,7 +44,7 @@ var _ = Describe("KDS Server", func() {
 
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		stream := kds_setup.StartServer(s, wg, "test-cluster", kds.SupportedTypes, reconcile.Any)
+		stream := kds_setup.StartServer(s, wg, "test-cluster", registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any)
 
 		tc = &kds_verifier.TestContextImpl{
 			ResourceStore:      s,
@@ -81,7 +82,13 @@ var _ = Describe("KDS Server", func() {
 			kds_samples.Config,
 			kds_samples.Gateway,
 		}).
-			To(HaveLen(len(kds.SupportedTypes)))
+			To(WithTransform(func(messages []proto.Message) []string {
+				var res []string
+				for _, m := range messages {
+					res = append(res, reflect.TypeOf(m).String())
+				}
+				return res
+			}, HaveLen(len(registry.Global().ObjectTypes(model.HasKdsEnabled())))))
 
 		vrf := kds_verifier.New().
 			// NOTE: The resources all have to be created before any DiscoveryRequests are made.

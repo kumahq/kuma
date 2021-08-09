@@ -12,15 +12,14 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, use string, resourceType core_model.ResourceType, tablePrinter TablePrinter) *cobra.Command {
+func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTypeDescriptor) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s NAME", use),
-		Short: fmt.Sprintf("Show a single %s resource", resourceType),
-		Long:  fmt.Sprintf("Show a single %s resource.", resourceType),
+		Use:   fmt.Sprintf("%s NAME", desc.KumactlArg),
+		Short: fmt.Sprintf("Show a single %s resource", desc.Name),
+		Long:  fmt.Sprintf("Show a single %s resource.", desc.Name),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()
@@ -29,19 +28,16 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, use string, resourceType c
 			}
 			name := args[0]
 
-			resource, err := registry.Global().NewObject(resourceType)
-			if err != nil {
-				return err
-			}
-
-			if resource.Scope() == core_model.ScopeGlobal {
+			resource := desc.NewObject()
+			switch desc.Scope {
+			case core_model.ScopeGlobal:
 				if err := rs.Get(context.Background(), resource, store.GetByKey(name, "")); err != nil {
 					if store.IsResourceNotFound(err) {
 						return errors.New("No resources found")
 					}
 					return errors.Wrapf(err, "failed to get %s", name)
 				}
-			} else {
+			case core_model.ScopeMesh:
 				currentMesh := pctx.CurrentMesh()
 				if err := rs.Get(context.Background(), resource, store.GetByKey(name, currentMesh)); err != nil {
 					if store.IsResourceNotFound(err) {
@@ -49,19 +45,18 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, use string, resourceType c
 					}
 					return errors.Wrapf(err, "failed to get %s in mesh %s", name, currentMesh)
 				}
+			default:
+				return fmt.Errorf("Scope %s is unsupported", desc.Scope)
 			}
 
-			resources, err := registry.Global().NewList(resourceType)
-			if err != nil {
-				return err
-			}
+			resources := desc.NewList()
 			if err := resources.AddItem(resource); err != nil {
 				return err
 			}
 
 			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
-				return tablePrinter(pctx.Now(), resources, cmd.OutOrStdout())
+				return ResolvePrinter(desc.Name, resource.Descriptor().Scope).Print(pctx.Now(), resources, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

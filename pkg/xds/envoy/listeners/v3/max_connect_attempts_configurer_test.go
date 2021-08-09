@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -28,7 +28,7 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// given
-			retry := &mesh_core.RetryResource{
+			retry := &core_mesh.RetryResource{
 				Meta: nil,
 				Spec: &mesh_proto.Retry{
 					Sources:      nil,

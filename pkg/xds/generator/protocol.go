@@ -2,7 +2,7 @@ package generator
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
@@ -11,12 +11,12 @@ var (
 	// HTTP has a protocol stack [HTTP, TCP],
 	// GRPC has a protocol stack [GRPC, HTTP2, TCP],
 	// TCP  has a protocol stack [TCP].
-	protocolStacks = map[mesh_core.Protocol]mesh_core.ProtocolList{
-		mesh_core.ProtocolGRPC:  {mesh_core.ProtocolGRPC, mesh_core.ProtocolHTTP2, mesh_core.ProtocolTCP},
-		mesh_core.ProtocolHTTP2: {mesh_core.ProtocolHTTP2, mesh_core.ProtocolTCP},
-		mesh_core.ProtocolHTTP:  {mesh_core.ProtocolHTTP, mesh_core.ProtocolTCP},
-		mesh_core.ProtocolKafka: {mesh_core.ProtocolKafka, mesh_core.ProtocolTCP},
-		mesh_core.ProtocolTCP:   {mesh_core.ProtocolTCP},
+	protocolStacks = map[core_mesh.Protocol]core_mesh.ProtocolList{
+		core_mesh.ProtocolGRPC:  {core_mesh.ProtocolGRPC, core_mesh.ProtocolHTTP2, core_mesh.ProtocolTCP},
+		core_mesh.ProtocolHTTP2: {core_mesh.ProtocolHTTP2, core_mesh.ProtocolTCP},
+		core_mesh.ProtocolHTTP:  {core_mesh.ProtocolHTTP, core_mesh.ProtocolTCP},
+		core_mesh.ProtocolKafka: {core_mesh.ProtocolKafka, core_mesh.ProtocolTCP},
+		core_mesh.ProtocolTCP:   {core_mesh.ProtocolTCP},
 	}
 )
 
@@ -28,20 +28,20 @@ var (
 // a common protocol between HTTP and TCP   is TCP,
 // a common protocol between GRPC and HTTP2 is HTTP2,
 // a common protocol between HTTP and HTTP2 is HTTP.
-func getCommonProtocol(one, another mesh_core.Protocol) mesh_core.Protocol {
+func getCommonProtocol(one, another core_mesh.Protocol) core_mesh.Protocol {
 	if one == another {
 		return one
 	}
-	if one == mesh_core.ProtocolUnknown || another == mesh_core.ProtocolUnknown {
-		return mesh_core.ProtocolUnknown
+	if one == core_mesh.ProtocolUnknown || another == core_mesh.ProtocolUnknown {
+		return core_mesh.ProtocolUnknown
 	}
 	oneProtocolStack, exist := protocolStacks[one]
 	if !exist {
-		return mesh_core.ProtocolUnknown
+		return core_mesh.ProtocolUnknown
 	}
 	anotherProtocolStack, exist := protocolStacks[another]
 	if !exist {
-		return mesh_core.ProtocolUnknown
+		return core_mesh.ProtocolUnknown
 	}
 	for _, firstProtocol := range oneProtocolStack {
 		for _, secondProtocol := range anotherProtocolStack {
@@ -50,17 +50,17 @@ func getCommonProtocol(one, another mesh_core.Protocol) mesh_core.Protocol {
 			}
 		}
 	}
-	return mesh_core.ProtocolUnknown
+	return core_mesh.ProtocolUnknown
 }
 
 // InferServiceProtocol returns a common protocol for a given group of endpoints.
-func InferServiceProtocol(endpoints []core_xds.Endpoint) mesh_core.Protocol {
+func InferServiceProtocol(endpoints []core_xds.Endpoint) core_mesh.Protocol {
 	if len(endpoints) == 0 {
-		return mesh_core.ProtocolUnknown
+		return core_mesh.ProtocolUnknown
 	}
-	serviceProtocol := mesh_core.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
+	serviceProtocol := core_mesh.ParseProtocol(endpoints[0].Tags[mesh_proto.ProtocolTag])
 	for _, endpoint := range endpoints[1:] {
-		endpointProtocol := mesh_core.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
+		endpointProtocol := core_mesh.ParseProtocol(endpoint.Tags[mesh_proto.ProtocolTag])
 		serviceProtocol = getCommonProtocol(serviceProtocol, endpointProtocol)
 	}
 	return serviceProtocol

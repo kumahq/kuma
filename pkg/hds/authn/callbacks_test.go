@@ -36,7 +36,7 @@ func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resou
 			return nil
 		}
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.GetType())
+		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 
 	return errors.New("invalid credential")

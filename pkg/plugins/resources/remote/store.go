@@ -34,7 +34,7 @@ type remoteStore struct {
 func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 	meta := rest.ResourceMeta{
-		Type: string(res.GetType()),
+		Type: string(res.Descriptor().Name),
 		Name: opts.Name,
 		Mesh: opts.Mesh,
 	}
@@ -46,7 +46,7 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 
 func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
 	meta := rest.ResourceMeta{
-		Type: string(res.GetType()),
+		Type: string(res.Descriptor().Name),
 		Name: res.GetMeta().GetName(),
 		Mesh: res.GetMeta().GetMesh(),
 	}
@@ -57,9 +57,9 @@ func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...stor
 }
 
 func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.ResourceMeta) error {
-	resourceApi, err := s.api.GetResourceApi(res.GetType())
+	resourceApi, err := s.api.GetResourceApi(res.Descriptor().Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to update a %q", res.GetType())
+		return errors.Wrapf(err, "failed to construct URI to update a %q", res.Descriptor().Name)
 	}
 	restRes := rest.Resource{
 		Meta: meta,
@@ -95,9 +95,9 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 
 func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
-	resourceApi, err := s.api.GetResourceApi(res.GetType())
+	resourceApi, err := s.api.GetResourceApi(res.Descriptor().Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to delete a %q", res.GetType())
+		return errors.Wrapf(err, "failed to construct URI to delete a %q", res.Descriptor().Name)
 	}
 	req, err := http.NewRequest("DELETE", resourceApi.Item(opts.Mesh, opts.Name), nil)
 	if err != nil {
@@ -106,7 +106,7 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
 		if statusCode == 404 {
-			return store.ErrorResourceNotFound(res.GetType(), opts.Name, opts.Mesh)
+			return store.ErrorResourceNotFound(res.Descriptor().Name, opts.Name, opts.Mesh)
 		}
 		return err
 	}
@@ -121,9 +121,9 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 }
 
 func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
-	resourceApi, err := s.api.GetResourceApi(res.GetType())
+	resourceApi, err := s.api.GetResourceApi(res.Descriptor().Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to fetch a %q", res.GetType())
+		return errors.Wrapf(err, "failed to construct URI to fetch a %q", res.Descriptor().Name)
 	}
 	opts := store.NewGetOptions(fs...)
 	req, err := http.NewRequest("GET", resourceApi.Item(opts.Mesh, opts.Name), nil)
@@ -133,7 +133,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 	statusCode, b, err := s.doRequest(ctx, req)
 	if err != nil {
 		if statusCode == 404 {
-			return store.ErrorResourceNotFound(res.GetType(), opts.Name, opts.Mesh)
+			return store.ErrorResourceNotFound(res.Descriptor().Name, opts.Name, opts.Mesh)
 		}
 		return err
 	}
