@@ -28,7 +28,7 @@ var (
 func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multizone.Zone.Name
 	reg := registry.Global()
-	kdsServer, err := kds_server.New(kdsZoneLog, rt, reg.ObjectTypes(model.KdsFlagFilter(model.ProvidedByZone)),
+	kdsServer, err := kds_server.New(kdsZoneLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByZone)),
 		zone, rt.Config().Multizone.Zone.KDS.RefreshInterval,
 		rt.KDSContext().ZoneProvidedFilter, false)
 	if err != nil {
@@ -44,7 +44,7 @@ func Setup(rt core_runtime.Runtime) error {
 				log.Error(err, "StreamKumaResources finished with an error")
 			}
 		}()
-		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.KdsFlagFilter(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone),
+		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone),
 			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
 		)
 		go func() {

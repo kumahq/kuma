@@ -60,7 +60,7 @@ type Snapshot struct {
 var _ util_xds.Snapshot = &Snapshot{}
 
 func (s *Snapshot) GetSupportedTypes() (types []string) {
-	for _, def := range registry.Global().ObjectTypes(model.HasKdsEnabled) {
+	for _, def := range registry.Global().ObjectTypes(model.HasKdsEnabled()) {
 		types = append(types, string(def))
 	}
 	return

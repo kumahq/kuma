@@ -338,7 +338,7 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), registry.Global().ObjectDesc(model.HasWsEnabled), &cfg, cfg.Mode != config_core.Zone, rt.Metrics())
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), registry.Global().ObjectDescriptors(model.HasWsEnabled()), &cfg, cfg.Mode != config_core.Zone, rt.Metrics())
 	if err != nil {
 		return err
 	}

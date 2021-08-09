@@ -16,7 +16,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -26,10 +26,10 @@ import (
 
 var _ = Describe("kumactl get dataplanes", func() {
 
-	var dataplanes []*mesh_core.DataplaneResource
+	var dataplanes []*core_mesh.DataplaneResource
 	BeforeEach(func() {
 		// setup
-		dataplanes = []*mesh_core.DataplaneResource{
+		dataplanes = []*core_mesh.DataplaneResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default",
@@ -93,7 +93,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 			// setup
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
-			rootCtx, err := test_kumactl.DummyContext(rootTime, store, mesh_core.DataplaneResourceTypeDescriptor)
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, core_mesh.DataplaneResourceTypeDescriptor)
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, pt := range dataplanes {

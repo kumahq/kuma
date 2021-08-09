@@ -32,7 +32,7 @@ var (
 
 func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.ResourceType {
 	types := []core_model.ResourceType{}
-	for _, desc := range registry.Global().ObjectDesc() {
+	for _, desc := range registry.Global().ObjectDescriptors() {
 		if desc.Scope == core_model.ScopeMesh && !exclude[desc.Name] {
 			types = append(types, desc.Name)
 		}

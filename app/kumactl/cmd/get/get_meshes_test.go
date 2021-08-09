@@ -136,7 +136,7 @@ var _ = Describe("kumactl get meshes", func() {
 			// setup
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
-			rootCtx, err := test_kumactl.DummyContext(rootTime, store, mesh.MeshResourceTypeDescriptor)
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, mesh.MeshResourceTypeDescriptor)
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, ds := range sampleMeshes {

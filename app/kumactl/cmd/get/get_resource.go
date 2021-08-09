@@ -56,7 +56,7 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTy
 
 			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
-				return ResolvePrinter(desc.Name, resource.Scope()).Print(pctx.Now(), resources, cmd.OutOrStdout())
+				return ResolvePrinter(desc.Name, resource.Descriptor().Scope).Print(pctx.Now(), resources, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {

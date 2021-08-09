@@ -77,7 +77,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Scope()); err.HasViolations() {
+	if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
 		return convertValidationErrorOf(err, obj, obj.GetObjectMeta())
 	}
 
@@ -103,11 +103,11 @@ func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8
 		return admission.Allowed("")
 	}
 
-	descriptor, err := h.coreRegistry.Descriptor(resType)
+	descriptor, err := h.coreRegistry.DescriptorFor(resType)
 	if err != nil {
 		return syncErrorResponse(resType, h.mode)
 	}
-	if (h.mode == core.Global && descriptor.KdsFlags.Has(core_model.ConsumedByGlobal)) || (h.mode == core.Zone && resType != core_mesh.DataplaneType && descriptor.KdsFlags.Has(core_model.ConsumedByZone)) {
+	if (h.mode == core.Global && descriptor.KDSFlags.Has(core_model.ConsumedByGlobal)) || (h.mode == core.Zone && resType != core_mesh.DataplaneType && descriptor.KDSFlags.Has(core_model.ConsumedByZone)) {
 		return syncErrorResponse(resType, h.mode)
 	}
 	return admission.Allowed("")

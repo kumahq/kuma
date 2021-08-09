@@ -44,7 +44,7 @@ var _ = Describe("Global Sync", func() {
 		for i := 0; i < numOfZones; i++ {
 			wg.Add(1)
 			zoneStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), registry.Global().ObjectTypes(model.HasKdsEnabled), reconcile.Any)
+			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
 			zoneStores = append(zoneStores, zoneStore)
 		}
@@ -175,7 +175,7 @@ var _ = Describe("Global Sync", func() {
 		}
 
 		// take all mesh-scoped types and exclude types that won't be synced
-		actualProvidedTypes := registry.Global().ObjectTypes(model.ScopeFilter(model.ScopeMesh), model.TypeFilterFn(func(descriptor model.ResourceTypeDescriptor) bool {
+		actualProvidedTypes := registry.Global().ObjectTypes(model.HasScope(model.ScopeMesh), model.TypeFilterFn(func(descriptor model.ResourceTypeDescriptor) bool {
 			return !excludeTypes[descriptor.Name]
 		}))
 
@@ -188,7 +188,7 @@ var _ = Describe("Global Sync", func() {
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
-		Expect(actualProvidedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.KdsFlagFilter(model.ProvidedByGlobal))))
+		Expect(actualProvidedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal))))
 	})
 
 })

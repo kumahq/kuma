@@ -37,7 +37,6 @@ const (
 type KDSFlagType uint32
 
 const (
-	KDSDisabled      = KDSFlagType(0)
 	ConsumedByZone   = KDSFlagType(1)
 	ConsumedByGlobal = KDSFlagType(1 << 2)
 	ProvidedByZone   = KDSFlagType(1 << 3)
@@ -52,33 +51,51 @@ func (kt KDSFlagType) Has(flag KDSFlagType) bool {
 }
 
 type Resource interface {
-	GetType() ResourceType
 	GetMeta() ResourceMeta
 	SetMeta(ResourceMeta)
 	GetSpec() ResourceSpec
 	SetSpec(ResourceSpec) error
 	Validate() error
-	Scope() ResourceScope
+	Descriptor() ResourceTypeDescriptor
+}
+
+func InitDescriptor(res ResourceTypeDescriptor) ResourceTypeDescriptor {
+	newType := reflect.TypeOf(res.Resource).Elem()
+	res.objectType = newType
+	if res.ResourceList != nil {
+		res.listType = reflect.TypeOf(res.ResourceList).Elem()
+	}
+	return res
 }
 
 type ResourceTypeDescriptor struct {
-	Name           ResourceType
-	Resource       Resource
-	ResourceList   ResourceList
-	ObjectType     reflect.Type
-	ListType       reflect.Type
-	ReadOnly       bool
-	AdminOnly      bool
-	Scope          ResourceScope
-	KdsFlags       KDSFlagType
-	WsPath         string
-	KumactlArg     string
+	// Name identifier of this resourceType this maps to the k8s entity and universal name.
+	Name ResourceType
+	// Resource a created element of this type
+	Resource Resource
+	// ResourceList a create list container of this type
+	ResourceList ResourceList
+	// ReadOnly if this type will be created, modified and deleted by the system.
+	ReadOnly bool
+	// AdminOnly if this type requires users to be admin to access.
+	AdminOnly bool
+	// Scope whether this resource is Global or Mesh scoped.
+	Scope ResourceScope
+	// KDSFlags a set of flags that defines how this entity is sent using KDS (if unset KDS is disabled).
+	KDSFlags KDSFlagType
+	// WsPath the path to access on the REST api.
+	WsPath string
+	// KumactlArg the name of the cmdline argument when doing `get` or `delete`.
+	KumactlArg string
+	// KumactlListArg the name of the cmdline argument when doing `list`.
 	KumactlListArg string
+	objectType     reflect.Type
+	listType       reflect.Type
 }
 
 func (d ResourceTypeDescriptor) NewObject() Resource {
 	newSpec := proto.Clone(d.Resource.GetSpec())
-	resource := reflect.New(d.ObjectType).Interface().(Resource)
+	resource := reflect.New(d.objectType).Interface().(Resource)
 	if err := resource.SetSpec(newSpec); err != nil {
 		panic(errors.Wrap(err, "could not set spec on the new resource"))
 	}
@@ -86,49 +103,63 @@ func (d ResourceTypeDescriptor) NewObject() Resource {
 }
 
 func (d ResourceTypeDescriptor) NewList() ResourceList {
-	return reflect.New(d.ListType).Interface().(ResourceList)
+	return reflect.New(d.listType).Interface().(ResourceList)
 }
 
 type TypeFilter interface {
 	Apply(descriptor ResourceTypeDescriptor) bool
 }
+
 type TypeFilterFn func(descriptor ResourceTypeDescriptor) bool
 
 func (f TypeFilterFn) Apply(descriptor ResourceTypeDescriptor) bool {
 	return f(descriptor)
 }
 
-func KdsFlagFilter(flagType KDSFlagType) TypeFilter {
+func HasKDSFlag(flagType KDSFlagType) TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.KdsFlags.Has(flagType)
+		return descriptor.KDSFlags.Has(flagType)
 	})
 }
 
-var HasKdsEnabled = TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-	return descriptor.KdsFlags != KDSDisabled
-})
+func HasKdsEnabled() TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.KDSFlags != 0
+	})
+}
 
-var HasKumactlEnabled = TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-	return descriptor.KumactlArg != ""
-})
+func HasKumactlEnabled() TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.KumactlArg != ""
+	})
+}
 
-var HasWsEnabled = TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-	return descriptor.WsPath != ""
-})
+func HasWsEnabled() TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.WsPath != ""
+	})
+}
 
-func ScopeFilter(scope ResourceScope) TypeFilter {
+func HasScope(scope ResourceScope) TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.Scope == scope
 	})
 }
-func ExcludeByNameFilter(names ...ResourceType) TypeFilter {
-	excluded := map[ResourceType]bool{}
+
+func Named(names ...ResourceType) TypeFilter {
+	included := map[ResourceType]bool{}
 	for _, n := range names {
-		excluded[n] = true
+		included[n] = true
 	}
 
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return !excluded[descriptor.Name]
+		return included[descriptor.Name]
+	})
+}
+
+func Not(filter TypeFilter) TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return !filter.Apply(descriptor)
 	})
 }
 

@@ -121,7 +121,7 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 			// setup
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
-			rootCtx, err := test_kumactl.DummyContext(rootTime, store, mesh.CircuitBreakerResourceTypeDescriptor)
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, mesh.CircuitBreakerResourceTypeDescriptor)
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, cb := range circuitBreakerResources {

@@ -51,7 +51,7 @@ var _ = Describe("kumactl get zones", func() {
 			// setup
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
-			rootCtx, err := test_kumactl.DummyContext(rootTime, store, system.ZoneResourceTypeDescriptor)
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, system.ZoneResourceTypeDescriptor)
 			Expect(err).ToNot(HaveOccurred())
 			for _, cb := range zoneResources {
 				err := store.Create(context.Background(), cb, core_store.CreateBy(core_model.MetaToResourceKey(cb.GetMeta())))

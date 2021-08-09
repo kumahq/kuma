@@ -80,7 +80,7 @@ var _ = Describe("kumactl inspect services", func() {
 	}
 
 	BeforeEach(func() {
-		rootCtx, err := test_kumactl.DummyContext(rootTime, nil)
+		rootCtx, err := test_kumactl.MakeRootContext(rootTime, nil)
 		Expect(err).ToNot(HaveOccurred())
 		rootCtx.Runtime.NewServiceOverviewClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer) (resources.ServiceOverviewClient, error) {
 			return &testServiceOverviewClient{

@@ -53,10 +53,6 @@ func New{{.ResourceName}}() *{{.ResourceName}} {
 	}
 }
 
-func (t *{{.ResourceName}}) GetType() model.ResourceType {
-	return {{.ResourceType}}Type
-}
-
 func (t *{{.ResourceName}}) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
@@ -93,12 +89,8 @@ func (t *{{.ResourceName}}) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *{{.ResourceName}}) Scope() model.ResourceScope {
-{{if .Global}}
-	return model.ScopeGlobal
-{{else}}
-	return model.ScopeMesh
-{{end}}
+func (t *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {
+	return {{.ResourceName}}TypeDescriptor 
 }
 
 var _ model.ResourceList = &{{.ResourceName}}List{}
@@ -137,25 +129,26 @@ func (l *{{.ResourceName}}List) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var {{.ResourceName}}TypeDescriptor model.ResourceTypeDescriptor 
-
-func init() {
-	{{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
+var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		Name: {{.ResourceType}}Type,
 		Resource: New{{.ResourceName}}(),
 		ResourceList: &{{.ResourceName}}List{},
 		ReadOnly: {{.WsReadOnly}},
 		AdminOnly: {{.WsAdminOnly}},
 		Scope: {{if .Global}}model.ScopeGlobal{{else}}model.ScopeMesh{{end}},
-		KdsFlags: {{.KdsDirection}},
+		{{- if ne .KdsDirection ""}}
+		KDSFlags: {{.KdsDirection}},
+		{{- end}}
 		WsPath: "{{.WsPath}}",
 		KumactlArg: "{{.KumactlSingular}}",
 		KumactlListArg: "{{.KumactlPlural}}",
 	}
-	{{if not .SkipRegistration}}
+
+{{- if not .SkipRegistration}}
+func init() {
 	registry.RegisterType({{.ResourceName}}TypeDescriptor)
-	{{end}}
 }
+{{- end}}
 {{end}}
 `))
 
@@ -236,7 +229,7 @@ func ToResourceInfo(m protoreflect.MessageType) ResourceInfo {
 	}
 	switch {
 	case r.Kds == nil || (!r.Kds.SendToZone && !r.Kds.SendToGlobal):
-		out.KdsDirection = "model.KDSDisabled"
+		out.KdsDirection = ""
 	case r.Kds.SendToGlobal && r.Kds.SendToZone:
 		out.KdsDirection = "model.FromZoneToGlobal | model.FromGlobalToZone"
 	case r.Kds.SendToGlobal:

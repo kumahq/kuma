@@ -11,7 +11,7 @@ import (
 	util_test "github.com/kumahq/kuma/pkg/util/test"
 )
 
-func DummyContext(now time.Time, resourceStore store.ResourceStore, res ...model.ResourceTypeDescriptor) (*kumactl_cmd.RootContext, error) {
+func MakeRootContext(now time.Time, resourceStore store.ResourceStore, res ...model.ResourceTypeDescriptor) (*kumactl_cmd.RootContext, error) {
 	reg := registry.NewTypeRegistry()
 	for _, r := range res {
 		if err := reg.RegisterType(r); err != nil {

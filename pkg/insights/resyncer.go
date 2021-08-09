@@ -111,7 +111,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		if !ok {
 			continue
 		}
-		desc, err := r.registry.Descriptor(resourceChanged.Type)
+		desc, err := r.registry.DescriptorFor(resourceChanged.Type)
 		if err != nil {
 			log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
 		}
@@ -330,7 +330,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
 	}
 
-	for _, resDesc := range r.registry.ObjectDesc(model.ScopeFilter(model.ScopeMesh), model.ExcludeByNameFilter(core_mesh.DataplaneType, core_mesh.DataplaneInsightType)) {
+	for _, resDesc := range r.registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.Not(model.Named(core_mesh.DataplaneType, core_mesh.DataplaneInsightType))) {
 		list := resDesc.NewList()
 
 		if err := r.rm.List(context.Background(), list, store.ListByMesh(mesh)); err != nil {

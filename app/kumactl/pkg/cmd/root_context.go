@@ -65,7 +65,7 @@ func DefaultRootContext() *RootContext {
 			Now:      time.Now,
 			Registry: registry.Global(),
 			NewResourceStore: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-				return kumactl_resources.NewResourceStore(server, registry.Global().ObjectDesc())
+				return kumactl_resources.NewResourceStore(server, registry.Global().ObjectDescriptors())
 			},
 			NewDataplaneOverviewClient:   kumactl_resources.NewDataplaneOverviewClient,
 			NewZoneIngressOverviewClient: kumactl_resources.NewZoneIngressOverviewClient,

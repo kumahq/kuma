@@ -29,10 +29,6 @@ func NewCircuitBreakerResource() *CircuitBreakerResource {
 	}
 }
 
-func (t *CircuitBreakerResource) GetType() model.ResourceType {
-	return CircuitBreakerType
-}
-
 func (t *CircuitBreakerResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
@@ -63,10 +59,8 @@ func (t *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *CircuitBreakerResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *CircuitBreakerResource) Descriptor() model.ResourceTypeDescriptor {
+	return CircuitBreakerResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &CircuitBreakerResourceList{}
@@ -105,24 +99,21 @@ func (l *CircuitBreakerResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var CircuitBreakerResourceTypeDescriptor model.ResourceTypeDescriptor
+var CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           CircuitBreakerType,
+	Resource:       NewCircuitBreakerResource(),
+	ResourceList:   &CircuitBreakerResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "circuit-breakers",
+	KumactlArg:     "circuit-breaker",
+	KumactlListArg: "circuit-breakers",
+}
 
 func init() {
-	CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           CircuitBreakerType,
-		Resource:       NewCircuitBreakerResource(),
-		ResourceList:   &CircuitBreakerResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "circuit-breakers",
-		KumactlArg:     "circuit-breaker",
-		KumactlListArg: "circuit-breakers",
-	}
-
 	registry.RegisterType(CircuitBreakerResourceTypeDescriptor)
-
 }
 
 const (
@@ -140,10 +131,6 @@ func NewDataplaneResource() *DataplaneResource {
 	return &DataplaneResource{
 		Spec: &mesh_proto.Dataplane{},
 	}
-}
-
-func (t *DataplaneResource) GetType() model.ResourceType {
-	return DataplaneType
 }
 
 func (t *DataplaneResource) GetMeta() model.ResourceMeta {
@@ -168,10 +155,8 @@ func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *DataplaneResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *DataplaneResource) Descriptor() model.ResourceTypeDescriptor {
+	return DataplaneResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &DataplaneResourceList{}
@@ -210,24 +195,21 @@ func (l *DataplaneResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var DataplaneResourceTypeDescriptor model.ResourceTypeDescriptor
+var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           DataplaneType,
+	Resource:       NewDataplaneResource(),
+	ResourceList:   &DataplaneResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromZoneToGlobal | model.FromGlobalToZone,
+	WsPath:         "dataplanes",
+	KumactlArg:     "dataplane",
+	KumactlListArg: "dataplanes",
+}
 
 func init() {
-	DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           DataplaneType,
-		Resource:       NewDataplaneResource(),
-		ResourceList:   &DataplaneResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromZoneToGlobal | model.FromGlobalToZone,
-		WsPath:         "dataplanes",
-		KumactlArg:     "dataplane",
-		KumactlListArg: "dataplanes",
-	}
-
 	registry.RegisterType(DataplaneResourceTypeDescriptor)
-
 }
 
 const (
@@ -245,10 +227,6 @@ func NewDataplaneInsightResource() *DataplaneInsightResource {
 	return &DataplaneInsightResource{
 		Spec: &mesh_proto.DataplaneInsight{},
 	}
-}
-
-func (t *DataplaneInsightResource) GetType() model.ResourceType {
-	return DataplaneInsightType
 }
 
 func (t *DataplaneInsightResource) GetMeta() model.ResourceMeta {
@@ -277,10 +255,8 @@ func (t *DataplaneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *DataplaneInsightResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *DataplaneInsightResource) Descriptor() model.ResourceTypeDescriptor {
+	return DataplaneInsightResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &DataplaneInsightResourceList{}
@@ -319,24 +295,21 @@ func (l *DataplaneInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var DataplaneInsightResourceTypeDescriptor model.ResourceTypeDescriptor
+var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           DataplaneInsightType,
+	Resource:       NewDataplaneInsightResource(),
+	ResourceList:   &DataplaneInsightResourceList{},
+	ReadOnly:       true,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromZoneToGlobal,
+	WsPath:         "dataplane-insights",
+	KumactlArg:     "",
+	KumactlListArg: "",
+}
 
 func init() {
-	DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           DataplaneInsightType,
-		Resource:       NewDataplaneInsightResource(),
-		ResourceList:   &DataplaneInsightResourceList{},
-		ReadOnly:       true,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromZoneToGlobal,
-		WsPath:         "dataplane-insights",
-		KumactlArg:     "",
-		KumactlListArg: "",
-	}
-
 	registry.RegisterType(DataplaneInsightResourceTypeDescriptor)
-
 }
 
 const (
@@ -354,10 +327,6 @@ func NewDataplaneOverviewResource() *DataplaneOverviewResource {
 	return &DataplaneOverviewResource{
 		Spec: &mesh_proto.DataplaneOverview{},
 	}
-}
-
-func (t *DataplaneOverviewResource) GetType() model.ResourceType {
-	return DataplaneOverviewType
 }
 
 func (t *DataplaneOverviewResource) GetMeta() model.ResourceMeta {
@@ -386,10 +355,8 @@ func (t *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *DataplaneOverviewResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *DataplaneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+	return DataplaneOverviewResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
@@ -428,22 +395,16 @@ func (l *DataplaneOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var DataplaneOverviewResourceTypeDescriptor model.ResourceTypeDescriptor
-
-func init() {
-	DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           DataplaneOverviewType,
-		Resource:       NewDataplaneOverviewResource(),
-		ResourceList:   &DataplaneOverviewResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.KDSDisabled,
-		WsPath:         "",
-		KumactlArg:     "",
-		KumactlListArg: "",
-	}
-
+var DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           DataplaneOverviewType,
+	Resource:       NewDataplaneOverviewResource(),
+	ResourceList:   &DataplaneOverviewResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	WsPath:         "",
+	KumactlArg:     "",
+	KumactlListArg: "",
 }
 
 const (
@@ -461,10 +422,6 @@ func NewExternalServiceResource() *ExternalServiceResource {
 	return &ExternalServiceResource{
 		Spec: &mesh_proto.ExternalService{},
 	}
-}
-
-func (t *ExternalServiceResource) GetType() model.ResourceType {
-	return ExternalServiceType
 }
 
 func (t *ExternalServiceResource) GetMeta() model.ResourceMeta {
@@ -489,10 +446,8 @@ func (t *ExternalServiceResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *ExternalServiceResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *ExternalServiceResource) Descriptor() model.ResourceTypeDescriptor {
+	return ExternalServiceResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &ExternalServiceResourceList{}
@@ -531,24 +486,21 @@ func (l *ExternalServiceResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var ExternalServiceResourceTypeDescriptor model.ResourceTypeDescriptor
+var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           ExternalServiceType,
+	Resource:       NewExternalServiceResource(),
+	ResourceList:   &ExternalServiceResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "external-services",
+	KumactlArg:     "external-service",
+	KumactlListArg: "external-services",
+}
 
 func init() {
-	ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           ExternalServiceType,
-		Resource:       NewExternalServiceResource(),
-		ResourceList:   &ExternalServiceResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "external-services",
-		KumactlArg:     "external-service",
-		KumactlListArg: "external-services",
-	}
-
 	registry.RegisterType(ExternalServiceResourceTypeDescriptor)
-
 }
 
 const (
@@ -566,10 +518,6 @@ func NewFaultInjectionResource() *FaultInjectionResource {
 	return &FaultInjectionResource{
 		Spec: &mesh_proto.FaultInjection{},
 	}
-}
-
-func (t *FaultInjectionResource) GetType() model.ResourceType {
-	return FaultInjectionType
 }
 
 func (t *FaultInjectionResource) GetMeta() model.ResourceMeta {
@@ -602,10 +550,8 @@ func (t *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *FaultInjectionResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *FaultInjectionResource) Descriptor() model.ResourceTypeDescriptor {
+	return FaultInjectionResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &FaultInjectionResourceList{}
@@ -644,24 +590,21 @@ func (l *FaultInjectionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var FaultInjectionResourceTypeDescriptor model.ResourceTypeDescriptor
+var FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           FaultInjectionType,
+	Resource:       NewFaultInjectionResource(),
+	ResourceList:   &FaultInjectionResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "fault-injections",
+	KumactlArg:     "fault-injection",
+	KumactlListArg: "fault-injections",
+}
 
 func init() {
-	FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           FaultInjectionType,
-		Resource:       NewFaultInjectionResource(),
-		ResourceList:   &FaultInjectionResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "fault-injections",
-		KumactlArg:     "fault-injection",
-		KumactlListArg: "fault-injections",
-	}
-
 	registry.RegisterType(FaultInjectionResourceTypeDescriptor)
-
 }
 
 const (
@@ -679,10 +622,6 @@ func NewGatewayResource() *GatewayResource {
 	return &GatewayResource{
 		Spec: &mesh_proto.Gateway{},
 	}
-}
-
-func (t *GatewayResource) GetType() model.ResourceType {
-	return GatewayType
 }
 
 func (t *GatewayResource) GetMeta() model.ResourceMeta {
@@ -711,10 +650,8 @@ func (t *GatewayResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *GatewayResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *GatewayResource) Descriptor() model.ResourceTypeDescriptor {
+	return GatewayResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &GatewayResourceList{}
@@ -753,22 +690,17 @@ func (l *GatewayResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var GatewayResourceTypeDescriptor model.ResourceTypeDescriptor
-
-func init() {
-	GatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           GatewayType,
-		Resource:       NewGatewayResource(),
-		ResourceList:   &GatewayResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromZoneToGlobal,
-		WsPath:         "gateways",
-		KumactlArg:     "gateway",
-		KumactlListArg: "gateways",
-	}
-
+var GatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           GatewayType,
+	Resource:       NewGatewayResource(),
+	ResourceList:   &GatewayResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromZoneToGlobal,
+	WsPath:         "gateways",
+	KumactlArg:     "gateway",
+	KumactlListArg: "gateways",
 }
 
 const (
@@ -786,10 +718,6 @@ func NewHealthCheckResource() *HealthCheckResource {
 	return &HealthCheckResource{
 		Spec: &mesh_proto.HealthCheck{},
 	}
-}
-
-func (t *HealthCheckResource) GetType() model.ResourceType {
-	return HealthCheckType
 }
 
 func (t *HealthCheckResource) GetMeta() model.ResourceMeta {
@@ -822,10 +750,8 @@ func (t *HealthCheckResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *HealthCheckResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *HealthCheckResource) Descriptor() model.ResourceTypeDescriptor {
+	return HealthCheckResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &HealthCheckResourceList{}
@@ -864,24 +790,21 @@ func (l *HealthCheckResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var HealthCheckResourceTypeDescriptor model.ResourceTypeDescriptor
+var HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           HealthCheckType,
+	Resource:       NewHealthCheckResource(),
+	ResourceList:   &HealthCheckResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "health-checks",
+	KumactlArg:     "healthcheck",
+	KumactlListArg: "healthchecks",
+}
 
 func init() {
-	HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           HealthCheckType,
-		Resource:       NewHealthCheckResource(),
-		ResourceList:   &HealthCheckResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "health-checks",
-		KumactlArg:     "healthcheck",
-		KumactlListArg: "healthchecks",
-	}
-
 	registry.RegisterType(HealthCheckResourceTypeDescriptor)
-
 }
 
 const (
@@ -899,10 +822,6 @@ func NewMeshResource() *MeshResource {
 	return &MeshResource{
 		Spec: &mesh_proto.Mesh{},
 	}
-}
-
-func (t *MeshResource) GetType() model.ResourceType {
-	return MeshType
 }
 
 func (t *MeshResource) GetMeta() model.ResourceMeta {
@@ -927,10 +846,8 @@ func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *MeshResource) Scope() model.ResourceScope {
-
-	return model.ScopeGlobal
-
+func (t *MeshResource) Descriptor() model.ResourceTypeDescriptor {
+	return MeshResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &MeshResourceList{}
@@ -969,24 +886,21 @@ func (l *MeshResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var MeshResourceTypeDescriptor model.ResourceTypeDescriptor
+var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           MeshType,
+	Resource:       NewMeshResource(),
+	ResourceList:   &MeshResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeGlobal,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "meshes",
+	KumactlArg:     "mesh",
+	KumactlListArg: "meshes",
+}
 
 func init() {
-	MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           MeshType,
-		Resource:       NewMeshResource(),
-		ResourceList:   &MeshResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeGlobal,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "meshes",
-		KumactlArg:     "mesh",
-		KumactlListArg: "meshes",
-	}
-
 	registry.RegisterType(MeshResourceTypeDescriptor)
-
 }
 
 const (
@@ -1004,10 +918,6 @@ func NewMeshInsightResource() *MeshInsightResource {
 	return &MeshInsightResource{
 		Spec: &mesh_proto.MeshInsight{},
 	}
-}
-
-func (t *MeshInsightResource) GetType() model.ResourceType {
-	return MeshInsightType
 }
 
 func (t *MeshInsightResource) GetMeta() model.ResourceMeta {
@@ -1036,10 +946,8 @@ func (t *MeshInsightResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *MeshInsightResource) Scope() model.ResourceScope {
-
-	return model.ScopeGlobal
-
+func (t *MeshInsightResource) Descriptor() model.ResourceTypeDescriptor {
+	return MeshInsightResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &MeshInsightResourceList{}
@@ -1078,24 +986,20 @@ func (l *MeshInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var MeshInsightResourceTypeDescriptor model.ResourceTypeDescriptor
+var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           MeshInsightType,
+	Resource:       NewMeshInsightResource(),
+	ResourceList:   &MeshInsightResourceList{},
+	ReadOnly:       true,
+	AdminOnly:      false,
+	Scope:          model.ScopeGlobal,
+	WsPath:         "mesh-insights",
+	KumactlArg:     "",
+	KumactlListArg: "",
+}
 
 func init() {
-	MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           MeshInsightType,
-		Resource:       NewMeshInsightResource(),
-		ResourceList:   &MeshInsightResourceList{},
-		ReadOnly:       true,
-		AdminOnly:      false,
-		Scope:          model.ScopeGlobal,
-		KdsFlags:       model.KDSDisabled,
-		WsPath:         "mesh-insights",
-		KumactlArg:     "",
-		KumactlListArg: "",
-	}
-
 	registry.RegisterType(MeshInsightResourceTypeDescriptor)
-
 }
 
 const (
@@ -1113,10 +1017,6 @@ func NewProxyTemplateResource() *ProxyTemplateResource {
 	return &ProxyTemplateResource{
 		Spec: &mesh_proto.ProxyTemplate{},
 	}
-}
-
-func (t *ProxyTemplateResource) GetType() model.ResourceType {
-	return ProxyTemplateType
 }
 
 func (t *ProxyTemplateResource) GetMeta() model.ResourceMeta {
@@ -1145,10 +1045,8 @@ func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *ProxyTemplateResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *ProxyTemplateResource) Descriptor() model.ResourceTypeDescriptor {
+	return ProxyTemplateResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &ProxyTemplateResourceList{}
@@ -1187,24 +1085,21 @@ func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var ProxyTemplateResourceTypeDescriptor model.ResourceTypeDescriptor
+var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           ProxyTemplateType,
+	Resource:       NewProxyTemplateResource(),
+	ResourceList:   &ProxyTemplateResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "proxytemplates",
+	KumactlArg:     "proxytemplate",
+	KumactlListArg: "proxytemplates",
+}
 
 func init() {
-	ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           ProxyTemplateType,
-		Resource:       NewProxyTemplateResource(),
-		ResourceList:   &ProxyTemplateResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "proxytemplates",
-		KumactlArg:     "proxytemplate",
-		KumactlListArg: "proxytemplates",
-	}
-
 	registry.RegisterType(ProxyTemplateResourceTypeDescriptor)
-
 }
 
 const (
@@ -1222,10 +1117,6 @@ func NewRateLimitResource() *RateLimitResource {
 	return &RateLimitResource{
 		Spec: &mesh_proto.RateLimit{},
 	}
-}
-
-func (t *RateLimitResource) GetType() model.ResourceType {
-	return RateLimitType
 }
 
 func (t *RateLimitResource) GetMeta() model.ResourceMeta {
@@ -1258,10 +1149,8 @@ func (t *RateLimitResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *RateLimitResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *RateLimitResource) Descriptor() model.ResourceTypeDescriptor {
+	return RateLimitResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &RateLimitResourceList{}
@@ -1300,24 +1189,21 @@ func (l *RateLimitResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var RateLimitResourceTypeDescriptor model.ResourceTypeDescriptor
+var RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           RateLimitType,
+	Resource:       NewRateLimitResource(),
+	ResourceList:   &RateLimitResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "rate-limits",
+	KumactlArg:     "rate-limit",
+	KumactlListArg: "rate-limits",
+}
 
 func init() {
-	RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           RateLimitType,
-		Resource:       NewRateLimitResource(),
-		ResourceList:   &RateLimitResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "rate-limits",
-		KumactlArg:     "rate-limit",
-		KumactlListArg: "rate-limits",
-	}
-
 	registry.RegisterType(RateLimitResourceTypeDescriptor)
-
 }
 
 const (
@@ -1335,10 +1221,6 @@ func NewRetryResource() *RetryResource {
 	return &RetryResource{
 		Spec: &mesh_proto.Retry{},
 	}
-}
-
-func (t *RetryResource) GetType() model.ResourceType {
-	return RetryType
 }
 
 func (t *RetryResource) GetMeta() model.ResourceMeta {
@@ -1371,10 +1253,8 @@ func (t *RetryResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *RetryResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *RetryResource) Descriptor() model.ResourceTypeDescriptor {
+	return RetryResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &RetryResourceList{}
@@ -1413,24 +1293,21 @@ func (l *RetryResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var RetryResourceTypeDescriptor model.ResourceTypeDescriptor
+var RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           RetryType,
+	Resource:       NewRetryResource(),
+	ResourceList:   &RetryResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "retries",
+	KumactlArg:     "retry",
+	KumactlListArg: "retries",
+}
 
 func init() {
-	RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           RetryType,
-		Resource:       NewRetryResource(),
-		ResourceList:   &RetryResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "retries",
-		KumactlArg:     "retry",
-		KumactlListArg: "retries",
-	}
-
 	registry.RegisterType(RetryResourceTypeDescriptor)
-
 }
 
 const (
@@ -1448,10 +1325,6 @@ func NewServiceInsightResource() *ServiceInsightResource {
 	return &ServiceInsightResource{
 		Spec: &mesh_proto.ServiceInsight{},
 	}
-}
-
-func (t *ServiceInsightResource) GetType() model.ResourceType {
-	return ServiceInsightType
 }
 
 func (t *ServiceInsightResource) GetMeta() model.ResourceMeta {
@@ -1480,10 +1353,8 @@ func (t *ServiceInsightResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *ServiceInsightResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *ServiceInsightResource) Descriptor() model.ResourceTypeDescriptor {
+	return ServiceInsightResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &ServiceInsightResourceList{}
@@ -1522,24 +1393,20 @@ func (l *ServiceInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var ServiceInsightResourceTypeDescriptor model.ResourceTypeDescriptor
+var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           ServiceInsightType,
+	Resource:       NewServiceInsightResource(),
+	ResourceList:   &ServiceInsightResourceList{},
+	ReadOnly:       true,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	WsPath:         "service-insights",
+	KumactlArg:     "",
+	KumactlListArg: "",
+}
 
 func init() {
-	ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           ServiceInsightType,
-		Resource:       NewServiceInsightResource(),
-		ResourceList:   &ServiceInsightResourceList{},
-		ReadOnly:       true,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.KDSDisabled,
-		WsPath:         "service-insights",
-		KumactlArg:     "",
-		KumactlListArg: "",
-	}
-
 	registry.RegisterType(ServiceInsightResourceTypeDescriptor)
-
 }
 
 const (
@@ -1557,10 +1424,6 @@ func NewServiceOverviewResource() *ServiceOverviewResource {
 	return &ServiceOverviewResource{
 		Spec: &mesh_proto.ServiceInsight_Service{},
 	}
-}
-
-func (t *ServiceOverviewResource) GetType() model.ResourceType {
-	return ServiceOverviewType
 }
 
 func (t *ServiceOverviewResource) GetMeta() model.ResourceMeta {
@@ -1589,10 +1452,8 @@ func (t *ServiceOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *ServiceOverviewResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *ServiceOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+	return ServiceOverviewResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &ServiceOverviewResourceList{}
@@ -1631,22 +1492,16 @@ func (l *ServiceOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var ServiceOverviewResourceTypeDescriptor model.ResourceTypeDescriptor
-
-func init() {
-	ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           ServiceOverviewType,
-		Resource:       NewServiceOverviewResource(),
-		ResourceList:   &ServiceOverviewResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.KDSDisabled,
-		WsPath:         "",
-		KumactlArg:     "",
-		KumactlListArg: "",
-	}
-
+var ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           ServiceOverviewType,
+	Resource:       NewServiceOverviewResource(),
+	ResourceList:   &ServiceOverviewResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	WsPath:         "",
+	KumactlArg:     "",
+	KumactlListArg: "",
 }
 
 const (
@@ -1664,10 +1519,6 @@ func NewTimeoutResource() *TimeoutResource {
 	return &TimeoutResource{
 		Spec: &mesh_proto.Timeout{},
 	}
-}
-
-func (t *TimeoutResource) GetType() model.ResourceType {
-	return TimeoutType
 }
 
 func (t *TimeoutResource) GetMeta() model.ResourceMeta {
@@ -1700,10 +1551,8 @@ func (t *TimeoutResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *TimeoutResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *TimeoutResource) Descriptor() model.ResourceTypeDescriptor {
+	return TimeoutResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &TimeoutResourceList{}
@@ -1742,24 +1591,21 @@ func (l *TimeoutResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var TimeoutResourceTypeDescriptor model.ResourceTypeDescriptor
+var TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           TimeoutType,
+	Resource:       NewTimeoutResource(),
+	ResourceList:   &TimeoutResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "timeouts",
+	KumactlArg:     "timeout",
+	KumactlListArg: "timeouts",
+}
 
 func init() {
-	TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           TimeoutType,
-		Resource:       NewTimeoutResource(),
-		ResourceList:   &TimeoutResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "timeouts",
-		KumactlArg:     "timeout",
-		KumactlListArg: "timeouts",
-	}
-
 	registry.RegisterType(TimeoutResourceTypeDescriptor)
-
 }
 
 const (
@@ -1777,10 +1623,6 @@ func NewTrafficLogResource() *TrafficLogResource {
 	return &TrafficLogResource{
 		Spec: &mesh_proto.TrafficLog{},
 	}
-}
-
-func (t *TrafficLogResource) GetType() model.ResourceType {
-	return TrafficLogType
 }
 
 func (t *TrafficLogResource) GetMeta() model.ResourceMeta {
@@ -1813,10 +1655,8 @@ func (t *TrafficLogResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *TrafficLogResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *TrafficLogResource) Descriptor() model.ResourceTypeDescriptor {
+	return TrafficLogResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &TrafficLogResourceList{}
@@ -1855,24 +1695,21 @@ func (l *TrafficLogResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var TrafficLogResourceTypeDescriptor model.ResourceTypeDescriptor
+var TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           TrafficLogType,
+	Resource:       NewTrafficLogResource(),
+	ResourceList:   &TrafficLogResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "traffic-logs",
+	KumactlArg:     "traffic-log",
+	KumactlListArg: "traffic-logs",
+}
 
 func init() {
-	TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           TrafficLogType,
-		Resource:       NewTrafficLogResource(),
-		ResourceList:   &TrafficLogResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "traffic-logs",
-		KumactlArg:     "traffic-log",
-		KumactlListArg: "traffic-logs",
-	}
-
 	registry.RegisterType(TrafficLogResourceTypeDescriptor)
-
 }
 
 const (
@@ -1890,10 +1727,6 @@ func NewTrafficPermissionResource() *TrafficPermissionResource {
 	return &TrafficPermissionResource{
 		Spec: &mesh_proto.TrafficPermission{},
 	}
-}
-
-func (t *TrafficPermissionResource) GetType() model.ResourceType {
-	return TrafficPermissionType
 }
 
 func (t *TrafficPermissionResource) GetMeta() model.ResourceMeta {
@@ -1926,10 +1759,8 @@ func (t *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *TrafficPermissionResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *TrafficPermissionResource) Descriptor() model.ResourceTypeDescriptor {
+	return TrafficPermissionResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &TrafficPermissionResourceList{}
@@ -1968,24 +1799,21 @@ func (l *TrafficPermissionResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var TrafficPermissionResourceTypeDescriptor model.ResourceTypeDescriptor
+var TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           TrafficPermissionType,
+	Resource:       NewTrafficPermissionResource(),
+	ResourceList:   &TrafficPermissionResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "traffic-permissions",
+	KumactlArg:     "traffic-permission",
+	KumactlListArg: "traffic-permissions",
+}
 
 func init() {
-	TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           TrafficPermissionType,
-		Resource:       NewTrafficPermissionResource(),
-		ResourceList:   &TrafficPermissionResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "traffic-permissions",
-		KumactlArg:     "traffic-permission",
-		KumactlListArg: "traffic-permissions",
-	}
-
 	registry.RegisterType(TrafficPermissionResourceTypeDescriptor)
-
 }
 
 const (
@@ -2003,10 +1831,6 @@ func NewTrafficRouteResource() *TrafficRouteResource {
 	return &TrafficRouteResource{
 		Spec: &mesh_proto.TrafficRoute{},
 	}
-}
-
-func (t *TrafficRouteResource) GetType() model.ResourceType {
-	return TrafficRouteType
 }
 
 func (t *TrafficRouteResource) GetMeta() model.ResourceMeta {
@@ -2039,10 +1863,8 @@ func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *TrafficRouteResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *TrafficRouteResource) Descriptor() model.ResourceTypeDescriptor {
+	return TrafficRouteResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &TrafficRouteResourceList{}
@@ -2081,24 +1903,21 @@ func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var TrafficRouteResourceTypeDescriptor model.ResourceTypeDescriptor
+var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           TrafficRouteType,
+	Resource:       NewTrafficRouteResource(),
+	ResourceList:   &TrafficRouteResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "traffic-routes",
+	KumactlArg:     "traffic-route",
+	KumactlListArg: "traffic-routes",
+}
 
 func init() {
-	TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           TrafficRouteType,
-		Resource:       NewTrafficRouteResource(),
-		ResourceList:   &TrafficRouteResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "traffic-routes",
-		KumactlArg:     "traffic-route",
-		KumactlListArg: "traffic-routes",
-	}
-
 	registry.RegisterType(TrafficRouteResourceTypeDescriptor)
-
 }
 
 const (
@@ -2116,10 +1935,6 @@ func NewTrafficTraceResource() *TrafficTraceResource {
 	return &TrafficTraceResource{
 		Spec: &mesh_proto.TrafficTrace{},
 	}
-}
-
-func (t *TrafficTraceResource) GetType() model.ResourceType {
-	return TrafficTraceType
 }
 
 func (t *TrafficTraceResource) GetMeta() model.ResourceMeta {
@@ -2148,10 +1963,8 @@ func (t *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *TrafficTraceResource) Scope() model.ResourceScope {
-
-	return model.ScopeMesh
-
+func (t *TrafficTraceResource) Descriptor() model.ResourceTypeDescriptor {
+	return TrafficTraceResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &TrafficTraceResourceList{}
@@ -2190,24 +2003,21 @@ func (l *TrafficTraceResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var TrafficTraceResourceTypeDescriptor model.ResourceTypeDescriptor
+var TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           TrafficTraceType,
+	Resource:       NewTrafficTraceResource(),
+	ResourceList:   &TrafficTraceResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "traffic-traces",
+	KumactlArg:     "traffic-trace",
+	KumactlListArg: "traffic-traces",
+}
 
 func init() {
-	TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           TrafficTraceType,
-		Resource:       NewTrafficTraceResource(),
-		ResourceList:   &TrafficTraceResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeMesh,
-		KdsFlags:       model.FromGlobalToZone,
-		WsPath:         "traffic-traces",
-		KumactlArg:     "traffic-trace",
-		KumactlListArg: "traffic-traces",
-	}
-
 	registry.RegisterType(TrafficTraceResourceTypeDescriptor)
-
 }
 
 const (
@@ -2225,10 +2035,6 @@ func NewZoneIngressResource() *ZoneIngressResource {
 	return &ZoneIngressResource{
 		Spec: &mesh_proto.ZoneIngress{},
 	}
-}
-
-func (t *ZoneIngressResource) GetType() model.ResourceType {
-	return ZoneIngressType
 }
 
 func (t *ZoneIngressResource) GetMeta() model.ResourceMeta {
@@ -2253,10 +2059,8 @@ func (t *ZoneIngressResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *ZoneIngressResource) Scope() model.ResourceScope {
-
-	return model.ScopeGlobal
-
+func (t *ZoneIngressResource) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneIngressResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &ZoneIngressResourceList{}
@@ -2295,24 +2099,21 @@ func (l *ZoneIngressResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var ZoneIngressResourceTypeDescriptor model.ResourceTypeDescriptor
+var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           ZoneIngressType,
+	Resource:       NewZoneIngressResource(),
+	ResourceList:   &ZoneIngressResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeGlobal,
+	KDSFlags:       model.FromZoneToGlobal | model.FromGlobalToZone,
+	WsPath:         "zone-ingresses",
+	KumactlArg:     "zone-ingress",
+	KumactlListArg: "zone-ingresses",
+}
 
 func init() {
-	ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           ZoneIngressType,
-		Resource:       NewZoneIngressResource(),
-		ResourceList:   &ZoneIngressResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeGlobal,
-		KdsFlags:       model.FromZoneToGlobal | model.FromGlobalToZone,
-		WsPath:         "zone-ingresses",
-		KumactlArg:     "zone-ingress",
-		KumactlListArg: "zone-ingresses",
-	}
-
 	registry.RegisterType(ZoneIngressResourceTypeDescriptor)
-
 }
 
 const (
@@ -2330,10 +2131,6 @@ func NewZoneIngressInsightResource() *ZoneIngressInsightResource {
 	return &ZoneIngressInsightResource{
 		Spec: &mesh_proto.ZoneIngressInsight{},
 	}
-}
-
-func (t *ZoneIngressInsightResource) GetType() model.ResourceType {
-	return ZoneIngressInsightType
 }
 
 func (t *ZoneIngressInsightResource) GetMeta() model.ResourceMeta {
@@ -2362,10 +2159,8 @@ func (t *ZoneIngressInsightResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *ZoneIngressInsightResource) Scope() model.ResourceScope {
-
-	return model.ScopeGlobal
-
+func (t *ZoneIngressInsightResource) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneIngressInsightResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &ZoneIngressInsightResourceList{}
@@ -2404,24 +2199,21 @@ func (l *ZoneIngressInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var ZoneIngressInsightResourceTypeDescriptor model.ResourceTypeDescriptor
+var ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           ZoneIngressInsightType,
+	Resource:       NewZoneIngressInsightResource(),
+	ResourceList:   &ZoneIngressInsightResourceList{},
+	ReadOnly:       true,
+	AdminOnly:      false,
+	Scope:          model.ScopeGlobal,
+	KDSFlags:       model.FromZoneToGlobal,
+	WsPath:         "zone-ingress-insights",
+	KumactlArg:     "",
+	KumactlListArg: "",
+}
 
 func init() {
-	ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           ZoneIngressInsightType,
-		Resource:       NewZoneIngressInsightResource(),
-		ResourceList:   &ZoneIngressInsightResourceList{},
-		ReadOnly:       true,
-		AdminOnly:      false,
-		Scope:          model.ScopeGlobal,
-		KdsFlags:       model.FromZoneToGlobal,
-		WsPath:         "zone-ingress-insights",
-		KumactlArg:     "",
-		KumactlListArg: "",
-	}
-
 	registry.RegisterType(ZoneIngressInsightResourceTypeDescriptor)
-
 }
 
 const (
@@ -2439,10 +2231,6 @@ func NewZoneIngressOverviewResource() *ZoneIngressOverviewResource {
 	return &ZoneIngressOverviewResource{
 		Spec: &mesh_proto.ZoneIngressOverview{},
 	}
-}
-
-func (t *ZoneIngressOverviewResource) GetType() model.ResourceType {
-	return ZoneIngressOverviewType
 }
 
 func (t *ZoneIngressOverviewResource) GetMeta() model.ResourceMeta {
@@ -2471,10 +2259,8 @@ func (t *ZoneIngressOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *ZoneIngressOverviewResource) Scope() model.ResourceScope {
-
-	return model.ScopeGlobal
-
+func (t *ZoneIngressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneIngressOverviewResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &ZoneIngressOverviewResourceList{}
@@ -2513,20 +2299,14 @@ func (l *ZoneIngressOverviewResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
-var ZoneIngressOverviewResourceTypeDescriptor model.ResourceTypeDescriptor
-
-func init() {
-	ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           ZoneIngressOverviewType,
-		Resource:       NewZoneIngressOverviewResource(),
-		ResourceList:   &ZoneIngressOverviewResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      false,
-		Scope:          model.ScopeGlobal,
-		KdsFlags:       model.KDSDisabled,
-		WsPath:         "",
-		KumactlArg:     "",
-		KumactlListArg: "",
-	}
-
+var ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           ZoneIngressOverviewType,
+	Resource:       NewZoneIngressOverviewResource(),
+	ResourceList:   &ZoneIngressOverviewResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeGlobal,
+	WsPath:         "",
+	KumactlArg:     "",
+	KumactlListArg: "",
 }

@@ -93,7 +93,7 @@ var _ = Describe("kumactl get traffic-logs", func() {
 			// setup
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
-			rootCtx, err := test_kumactl.DummyContext(rootTime, store, mesh.TrafficLogResourceTypeDescriptor)
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, mesh.TrafficLogResourceTypeDescriptor)
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, ds := range trafficLoggingResources {

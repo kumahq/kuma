@@ -66,7 +66,7 @@ var _ = Describe("kumactl get secrets", func() {
 			// setup
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
-			rootCtx, err := test_kumactl.DummyContext(rootTime, store, system.SecretResourceTypeDescriptor)
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, system.SecretResourceTypeDescriptor)
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, pt := range sampleSecrets {

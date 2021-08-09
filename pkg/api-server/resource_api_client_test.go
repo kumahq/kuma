@@ -116,7 +116,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		config.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 	}
 
-	defs := append(registry.Global().ObjectDesc(model.HasWsEnabled), sample_model.TrafficRouteResourceTypeDescriptor)
+	defs := append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor)
 	resources := manager.NewResourceManager(store)
 	wsManager := customization.NewAPIList()
 	cfg := kuma_cp.DefaultConfig()

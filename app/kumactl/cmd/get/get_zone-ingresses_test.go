@@ -76,7 +76,7 @@ var _ = Describe("kumactl get zone-ingresses", func() {
 			// setup
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
-			rootCtx, err := test_kumactl.DummyContext(rootTime, store, core_mesh.ZoneIngressResourceTypeDescriptor)
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, core_mesh.ZoneIngressResourceTypeDescriptor)
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, cb := range zoneIngresses {

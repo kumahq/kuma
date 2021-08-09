@@ -115,7 +115,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 			// setup
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
-			rootCtx, err := test_kumactl.DummyContext(rootTime, store, mesh.FaultInjectionResourceTypeDescriptor)
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, mesh.FaultInjectionResourceTypeDescriptor)
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, ds := range faultInjectionResources {

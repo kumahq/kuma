@@ -50,7 +50,7 @@ var _ = Describe("kumactl get ", func() {
 
 		It("should have get commands for all defined types", func() {
 			// when
-			all := registry.Global().ObjectDesc(model.HasKumactlEnabled)
+			all := registry.Global().ObjectDescriptors(model.HasKumactlEnabled())
 			Expect(len(getCmd.Commands()) > len(all)).To(BeTrue())
 
 			// then

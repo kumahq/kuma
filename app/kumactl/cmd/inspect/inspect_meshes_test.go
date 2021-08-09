@@ -87,7 +87,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			rootCtx, err := test_kumactl.DummyContext(rootTime, store)
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store)
 			Expect(err).ToNot(HaveOccurred())
 
 			rootCmd = cmd.NewRootCmd(rootCtx)

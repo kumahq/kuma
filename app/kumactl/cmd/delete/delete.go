@@ -16,7 +16,7 @@ import (
 func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	byName := map[string]model.ResourceTypeDescriptor{}
 	allNames := []string{}
-	for _, desc := range pctx.Runtime.Registry.ObjectDesc(model.HasKumactlEnabled) {
+	for _, desc := range pctx.Runtime.Registry.ObjectDescriptors(model.HasKumactlEnabled()) {
 		byName[desc.KumactlArg] = desc
 		allNames = append(allNames, desc.KumactlArg)
 	}

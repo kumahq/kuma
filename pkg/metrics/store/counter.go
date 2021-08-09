@@ -83,7 +83,7 @@ func (s *storeCounter) count() error {
 }
 
 func (s *storeCounter) countGlobalScopedResources(resourceCount map[string]uint32) error {
-	for _, resDesc := range registry.Global().ObjectDesc() {
+	for _, resDesc := range registry.Global().ObjectDescriptors() {
 		if resDesc.Scope == model.ScopeMesh {
 			continue
 		}

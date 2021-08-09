@@ -25,10 +25,6 @@ func NewGlobalSecretResource() *GlobalSecretResource {
 	}
 }
 
-func (t *GlobalSecretResource) GetType() model.ResourceType {
-	return GlobalSecretType
-}
-
 func (t *GlobalSecretResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
@@ -55,8 +51,8 @@ func (t *GlobalSecretResource) Validate() error {
 	return nil
 }
 
-func (t *GlobalSecretResource) Scope() model.ResourceScope {
-	return model.ScopeGlobal
+func (t *GlobalSecretResource) Descriptor() model.ResourceTypeDescriptor {
+	return GlobalSecretResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &GlobalSecretResourceList{}
@@ -105,7 +101,7 @@ func init() {
 		ReadOnly:       false,
 		AdminOnly:      true,
 		Scope:          model.ScopeGlobal,
-		KdsFlags:       model.FromGlobalToZone,
+		KDSFlags:       model.FromGlobalToZone,
 		WsPath:         "global-secrets",
 		KumactlArg:     "global-secret",
 		KumactlListArg: "global-secrets",

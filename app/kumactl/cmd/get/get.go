@@ -18,7 +18,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	}
 	// flags
 	cmd.PersistentFlags().StringVarP(&pctx.GetContext.Args.OutputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
-	for _, cmdInst := range pctx.Runtime.Registry.ObjectDesc(model.HasKumactlEnabled) {
+	for _, cmdInst := range pctx.Runtime.Registry.ObjectDescriptors(model.HasKumactlEnabled()) {
 		cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, cmdInst), &pctx.ListContext))
 		cmd.AddCommand(NewGetResourceCmd(pctx, cmdInst))
 	}

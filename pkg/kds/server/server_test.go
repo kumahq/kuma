@@ -44,7 +44,7 @@ var _ = Describe("KDS Server", func() {
 
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		stream := kds_setup.StartServer(s, wg, "test-cluster", registry.Global().ObjectTypes(model.HasKdsEnabled), reconcile.Any)
+		stream := kds_setup.StartServer(s, wg, "test-cluster", registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any)
 
 		tc = &kds_verifier.TestContextImpl{
 			ResourceStore:      s,
@@ -88,7 +88,7 @@ var _ = Describe("KDS Server", func() {
 					res = append(res, reflect.TypeOf(m).String())
 				}
 				return res
-			}, HaveLen(len(registry.Global().ObjectTypes(model.HasKdsEnabled)))))
+			}, HaveLen(len(registry.Global().ObjectTypes(model.HasKdsEnabled())))))
 
 		vrf := kds_verifier.New().
 			// NOTE: The resources all have to be created before any DiscoveryRequests are made.

@@ -108,7 +108,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 				if err != nil {
 					return errors.Wrap(err, "YAML contains invalid resource")
 				}
-				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Scope()); err.HasViolations() {
+				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Descriptor().Scope); err.HasViolations() {
 					return err.OrNil()
 				}
 				resources = append(resources, res)
@@ -144,7 +144,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 }
 
 func upsert(typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) error {
-	newRes, err := typeRegistry.NewObject(res.GetType())
+	newRes, err := typeRegistry.NewObject(res.Descriptor().Name)
 	if err != nil {
 		return err
 	}

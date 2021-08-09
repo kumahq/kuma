@@ -45,7 +45,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	}
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, wsManager, registry.Global().ObjectDesc(core_model.HasWsEnabled), &cfg, enableGUI, metrics)
+	apiServer, err := api_server.NewApiServer(resources, wsManager, registry.Global().ObjectDescriptors(core_model.HasWsEnabled()), &cfg, enableGUI, metrics)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

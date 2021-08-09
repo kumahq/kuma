@@ -225,7 +225,7 @@ var _ = Describe("kumactl inspect zones", func() {
 				total:     uint32(len(sampleZoneOverview)),
 				overviews: sampleZoneOverview,
 			}
-			rootCtx, err := test_kumactl.DummyContext(now, nil)
+			rootCtx, err := test_kumactl.MakeRootContext(now, nil)
 			Expect(err).ToNot(HaveOccurred())
 			rootCtx.Runtime.NewZoneOverviewClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneOverviewClient, error) {
 				return testClient, nil

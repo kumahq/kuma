@@ -13,33 +13,33 @@ type TypeRegistry interface {
 
 	NewObject(model.ResourceType) (model.Resource, error)
 	NewList(model.ResourceType) (model.ResourceList, error)
-	Descriptor(resourceType model.ResourceType) (model.ResourceTypeDescriptor, error)
+	DescriptorFor(resourceType model.ResourceType) (model.ResourceTypeDescriptor, error)
 
 	ObjectTypes(filters ...model.TypeFilter) []model.ResourceType
-	ObjectDesc(filters ...model.TypeFilter) []model.ResourceTypeDescriptor
+	ObjectDescriptors(filters ...model.TypeFilter) []model.ResourceTypeDescriptor
 }
 
 func NewTypeRegistry() TypeRegistry {
 	return &typeRegistry{
-		objectSpecs: make(map[model.ResourceType]model.ResourceTypeDescriptor),
+		descriptors: make(map[model.ResourceType]model.ResourceTypeDescriptor),
 	}
 }
 
 type typeRegistry struct {
-	objectSpecs map[model.ResourceType]model.ResourceTypeDescriptor
+	descriptors map[model.ResourceType]model.ResourceTypeDescriptor
 }
 
-func (t *typeRegistry) Descriptor(resType model.ResourceType) (model.ResourceTypeDescriptor, error) {
-	typDesc, ok := t.objectSpecs[resType]
+func (t *typeRegistry) DescriptorFor(resType model.ResourceType) (model.ResourceTypeDescriptor, error) {
+	typDesc, ok := t.descriptors[resType]
 	if !ok {
 		return model.ResourceTypeDescriptor{}, errors.Errorf("invalid resource type %q", resType)
 	}
 	return typDesc, nil
 }
 
-func (t *typeRegistry) ObjectDesc(filters ...model.TypeFilter) []model.ResourceTypeDescriptor {
+func (t *typeRegistry) ObjectDescriptors(filters ...model.TypeFilter) []model.ResourceTypeDescriptor {
 	var descriptors []model.ResourceTypeDescriptor
-	for _, typ := range t.objectSpecs {
+	for _, typ := range t.descriptors {
 		match := true
 		for _, f := range filters {
 			match = match && f.Apply(typ)
@@ -53,7 +53,7 @@ func (t *typeRegistry) ObjectDesc(filters ...model.TypeFilter) []model.ResourceT
 
 func (t *typeRegistry) ObjectTypes(filters ...model.TypeFilter) []model.ResourceType {
 	var types []model.ResourceType
-	for _, typ := range t.objectSpecs {
+	for _, typ := range t.descriptors {
 		match := true
 		for _, f := range filters {
 			match = match && f.Apply(typ)
@@ -66,23 +66,18 @@ func (t *typeRegistry) ObjectTypes(filters ...model.TypeFilter) []model.Resource
 }
 
 func (t *typeRegistry) RegisterType(res model.ResourceTypeDescriptor) error {
-	newType := reflect.TypeOf(res.Resource).Elem()
-	if previous, ok := t.objectSpecs[res.Name]; ok {
-		return errors.Errorf("duplicate registration of ResourceType under name %q: previous=%#v new=%#v", res.Name, previous, newType.String())
-	}
 	if res.Resource.GetSpec() == nil {
 		return errors.New("spec in the object cannot be nil")
 	}
-	res.ObjectType = newType
-	if res.ResourceList != nil {
-		res.ListType = reflect.TypeOf(res.ResourceList).Elem()
+	if previous, ok := t.descriptors[res.Name]; ok {
+		return errors.Errorf("duplicate registration of ResourceType under name %q: previous=%#v new=%#v", res.Name, previous, reflect.TypeOf(res.Resource).Elem().String())
 	}
-	t.objectSpecs[res.Name] = res
+	t.descriptors[res.Name] = model.InitDescriptor(res)
 	return nil
 }
 
 func (t *typeRegistry) NewObject(resType model.ResourceType) (model.Resource, error) {
-	typDesc, ok := t.objectSpecs[resType]
+	typDesc, ok := t.descriptors[resType]
 	if !ok {
 		return nil, errors.Errorf("invalid resource type %q", resType)
 	}
@@ -90,7 +85,7 @@ func (t *typeRegistry) NewObject(resType model.ResourceType) (model.Resource, er
 }
 
 func (t *typeRegistry) NewList(resType model.ResourceType) (model.ResourceList, error) {
-	typDesc, ok := t.objectSpecs[resType]
+	typDesc, ok := t.descriptors[resType]
 	if !ok {
 		return nil, errors.Errorf("invalid resource type %q", resType)
 	}

@@ -33,7 +33,7 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 	case *core_mesh.ZoneIngressResource:
 		return k.authZoneIngress(ctx, resource, credential)
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.GetType())
+		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 }
 

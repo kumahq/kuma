@@ -52,7 +52,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	}
 	secret.Namespace = s.namespace
 	secret.Name = opts.Name
-	if r.GetType() == secret_model.SecretType {
+	if r.Descriptor().Name == secret_model.SecretType {
 		labels := map[string]string{
 			meshLabel: opts.Mesh,
 		}
@@ -61,7 +61,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 
 	if err := s.writer.Create(ctx, secret); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
-			return core_store.ErrorResourceAlreadyExists(r.GetType(), secret.Name, opts.Mesh)
+			return core_store.ErrorResourceAlreadyExists(r.Descriptor().Name, secret.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to create k8s Secret")
 	}
@@ -79,7 +79,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	secret.Namespace = s.namespace
 	if err := s.writer.Update(ctx, secret); err != nil {
 		if kube_apierrs.IsConflict(err) {
-			return core_store.ErrorResourceConflict(r.GetType(), secret.Name, r.GetMeta().GetMesh())
+			return core_store.ErrorResourceConflict(r.Descriptor().Name, secret.Name, r.GetMeta().GetMesh())
 		}
 		return errors.Wrap(err, "failed to update k8s Secret")
 	}
@@ -112,7 +112,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	secret := &kube_core.Secret{}
 	if err := s.reader.Get(ctx, kube_client.ObjectKey{Namespace: s.namespace, Name: opts.Name}, secret); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return core_store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
+			return core_store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to get k8s secret")
 	}
@@ -126,14 +126,14 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 }
 
 func assertFound(r core_model.Resource, secret *kube_core.Secret, name string, mesh string) error {
-	switch r.GetType() {
+	switch r.Descriptor().Name {
 	case secret_model.SecretType:
 		// secret must match mesh and be a proper type, otherwise return not found
 		if r.GetMeta().GetMesh() != mesh || secret.Type != common_k8s.MeshSecretType {
 			if err := r.SetSpec(&system_proto.Secret{}); err != nil {
 				return err
 			}
-			return core_store.ErrorResourceNotFound(r.GetType(), name, mesh)
+			return core_store.ErrorResourceNotFound(r.Descriptor().Name, name, mesh)
 		}
 	case secret_model.GlobalSecretType:
 		// secret must be a proper type, otherwise return not found
@@ -141,7 +141,7 @@ func assertFound(r core_model.Resource, secret *kube_core.Secret, name string, m
 			if err := r.SetSpec(&system_proto.Secret{}); err != nil {
 				return err
 			}
-			return core_store.ErrorResourceNotFound(r.GetType(), name, mesh)
+			return core_store.ErrorResourceNotFound(r.Descriptor().Name, name, mesh)
 		}
 	}
 	return nil
@@ -226,7 +226,7 @@ type SimpleConverter struct {
 
 func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (*kube_core.Secret, error) {
 	secret := &kube_core.Secret{}
-	switch r.GetType() {
+	switch r.Descriptor().Name {
 	case secret_model.SecretType:
 		secret.Type = common_k8s.MeshSecretType
 		secret.Data = map[string][]byte{
@@ -244,7 +244,7 @@ func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (*kube_core.
 			"value": r.(*secret_model.GlobalSecretResource).Spec.GetData().GetValue(),
 		}
 	default:
-		return nil, errors.Errorf("invalid type %s, expected %s or %s", r.GetType(), secret_model.SecretType, secret_model.GlobalSecretType)
+		return nil, errors.Errorf("invalid type %s, expected %s or %s", r.Descriptor().Name, secret_model.SecretType, secret_model.GlobalSecretType)
 	}
 	if r.GetMeta() != nil {
 		if adapter, ok := r.GetMeta().(*KubernetesMetaAdapter); ok {

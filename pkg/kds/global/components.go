@@ -33,7 +33,7 @@ var (
 
 func Setup(rt runtime.Runtime) (err error) {
 	reg := registry.Global()
-	kdsServer, err := kds_server.New(kdsGlobalLog, rt, reg.ObjectTypes(model.KdsFlagFilter(model.ProvidedByGlobal)),
+	kdsServer, err := kds_server.New(kdsGlobalLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal)),
 		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
 		rt.KDSContext().GlobalProvidedFilter, true)
 	if err != nil {
@@ -54,7 +54,7 @@ func Setup(rt runtime.Runtime) (err error) {
 			log.Error(err, "Global CP could not create a zone")
 			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry
 		}
-		sink := client.NewKDSSink(log, reg.ObjectTypes(model.KdsFlagFilter(model.ConsumedByGlobal)), kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
+		sink := client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)), kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
 		go func() {
 			if err := sink.Start(session.Done()); err != nil {
 				log.Error(err, "KDSSink finished with an error")

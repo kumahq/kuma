@@ -392,7 +392,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				overviews: sampleDataplaneOverview,
 			}
 
-			rootCtx, err := test_kumactl.DummyContext(now, nil)
+			rootCtx, err := test_kumactl.MakeRootContext(now, nil)
 			Expect(err).ToNot(HaveOccurred())
 			rootCtx.Runtime.NewDataplaneOverviewClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer) (resources.DataplaneOverviewClient, error) {
 				return testClient, nil

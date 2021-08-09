@@ -252,7 +252,7 @@ var _ = Describe("kumactl inspect zone-ingresses", func() {
 				overviews: sampleZoneIngressOverview,
 			}
 
-			rootCtx, err := test_kumactl.DummyContext(now, nil)
+			rootCtx, err := test_kumactl.MakeRootContext(now, nil)
 			Expect(err).ToNot(HaveOccurred())
 			rootCtx.Runtime.NewZoneIngressOverviewClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneIngressOverviewClient, error) {
 				return testClient, nil
