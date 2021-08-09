@@ -35,7 +35,7 @@ var _ = Describe("Consistent Kind Types", func() {
 			obj, err := k8sTypes.NewObject(res.GetSpec())
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(obj.GetObjectKind().GroupVersionKind().Kind).To(Equal(string(res.GetType())))
+			Expect(obj.GetObjectKind().GroupVersionKind().Kind).To(Equal(string(res.Descriptor().Name)))
 		}
 	})
 
@@ -43,17 +43,17 @@ var _ = Describe("Consistent Kind Types", func() {
 		types := core_registry.Global()
 		k8sTypes := k8s_registry.Global()
 
-		for _, typ := range types.ListTypes() {
-			if IgnoredTypes[typ] {
+		for _, desc := range types.ObjectDescriptors() {
+			if IgnoredTypes[desc.Name] {
 				continue
 			}
 
-			res, err := types.NewObject(typ)
+			res, err := types.NewObject(desc.Name)
 			Expect(err).ToNot(HaveOccurred())
 			obj, err := k8sTypes.NewObject(res.GetSpec())
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(obj.GetObjectKind().GroupVersionKind().Kind).To(Equal(string(res.GetType())))
+			Expect(obj.GetObjectKind().GroupVersionKind().Kind).To(Equal(string(res.Descriptor().Name)))
 		}
 	})
 })

@@ -37,7 +37,7 @@ func (m *customizableResourceManager) Customize(resourceType model.ResourceType,
 }
 
 func (m *customizableResourceManager) Get(ctx context.Context, resource model.Resource, fs ...store.GetOptionsFunc) error {
-	return m.ResourceManager(resource.GetType()).Get(ctx, resource, fs...)
+	return m.ResourceManager(resource.Descriptor().Name).Get(ctx, resource, fs...)
 }
 
 func (m *customizableResourceManager) List(ctx context.Context, list model.ResourceList, fs ...store.ListOptionsFunc) error {
@@ -45,11 +45,11 @@ func (m *customizableResourceManager) List(ctx context.Context, list model.Resou
 }
 
 func (m *customizableResourceManager) Create(ctx context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
-	return m.ResourceManager(resource.GetType()).Create(ctx, resource, fs...)
+	return m.ResourceManager(resource.Descriptor().Name).Create(ctx, resource, fs...)
 }
 
 func (m *customizableResourceManager) Delete(ctx context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
-	return m.ResourceManager(resource.GetType()).Delete(ctx, resource, fs...)
+	return m.ResourceManager(resource.Descriptor().Name).Delete(ctx, resource, fs...)
 }
 
 func (m *customizableResourceManager) DeleteAll(ctx context.Context, list model.ResourceList, fs ...store.DeleteAllOptionsFunc) error {
@@ -57,7 +57,7 @@ func (m *customizableResourceManager) DeleteAll(ctx context.Context, list model.
 }
 
 func (m *customizableResourceManager) Update(ctx context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
-	return m.ResourceManager(resource.GetType()).Update(ctx, resource, fs...)
+	return m.ResourceManager(resource.Descriptor().Name).Update(ctx, resource, fs...)
 }
 
 func (m *customizableResourceManager) ResourceManager(typ model.ResourceType) ResourceManager {

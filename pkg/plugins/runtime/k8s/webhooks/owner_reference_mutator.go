@@ -57,7 +57,7 @@ func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Reques
 		}
 	default:
 		// we need to also validate Mesh here because OwnerReferenceMutator is executed before validatingHandler
-		if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Scope()); err.HasViolations() {
+		if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
 			return convertValidationErrorOf(err, obj, obj.GetObjectMeta())
 		}
 

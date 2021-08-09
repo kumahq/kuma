@@ -4,6 +4,7 @@ import (
 	"github.com/go-kit/kit/ratelimit"
 	"golang.org/x/time/rate"
 
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
@@ -17,6 +18,7 @@ func Setup(rt runtime.Runtime) error {
 		RateLimiterFactory: func() ratelimit.Allower {
 			return rate.NewLimiter(rate.Every(rt.Config().Metrics.Mesh.MinResyncTimeout), 50)
 		},
+		Registry: registry.Global(),
 	})
 	return rt.Add(component.NewResilientComponent(log, resyncer))
 }
