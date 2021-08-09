@@ -92,7 +92,6 @@ spec:
 			Install(Kuma(core.Zone, optsZone...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
-			Install(EchoServerK8s("default")).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 

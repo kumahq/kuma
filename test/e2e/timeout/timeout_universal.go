@@ -24,7 +24,7 @@ sources:
        kuma.io/service: demo-client
 destinations:
    - match:
-       kuma.io/service: echo-server_kuma-test_svc_8080
+       kuma.io/service: test-server
        kuma.io/protocol: http
 conf:
    delay:
@@ -41,7 +41,7 @@ sources:
     kuma.io/service: '*'
 destinations:
 - match:
-    kuma.io/service: echo-server_kuma-test_svc_8080
+    kuma.io/service: test-server
 conf:
   connectTimeout: 10s
   http:
@@ -60,13 +60,14 @@ conf:
 		err = universalCluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		echoServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal(AppModeEchoServer, "default", "universal-1", echoServerToken)(universalCluster)
+		err = TestServerUniversal("test-server", "default", echoServerToken, WithArgs([]string{"echo", "--instance", "universal-1"}))(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
+
 		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -82,13 +83,13 @@ conf:
 	It("should reset the connection by timeout", func() {
 		// check echo-server is up and running
 		stdout, _, err := universalCluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+			"curl", "-v", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		start := time.Now()
 		_, _, err = universalCluster.Exec("", "", "demo-client",
-			"curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+			"curl", "-v", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		elapsed := time.Since(start)
 		Expect(elapsed > 5*time.Second).To(BeTrue())
@@ -100,7 +101,7 @@ conf:
 		// then
 		Eventually(func() bool {
 			stdout, _, _ := universalCluster.Exec("", "", "demo-client",
-				"curl", "-v", "echo-server_kuma-test_svc_8080.mesh")
+				"curl", "-v", "test-server.mesh")
 			return strings.Contains(stdout, "upstream request timeout")
 		}, "30s", "500ms").Should(BeTrue())
 	})

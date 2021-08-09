@@ -1,12 +1,8 @@
 package hybrid
 
 import (
-	"strings"
-
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -38,7 +34,7 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 		Expect(err).ToNot(HaveOccurred())
 		globalCP := globalCluster.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		echoServerToken, err := globalCP.GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
@@ -52,8 +48,8 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone...)).
-			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)).
+			Install(TestServerUniversal("test-server", "default", echoServerToken, WithArgs([]string{"echo", "--instance", "universal-1"}))).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -78,22 +74,8 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 
 	It("communication in between apps in zone works", func() {
 		stdout, _, err := zoneCluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-
-		retry.DoWithRetry(zoneCluster.GetTesting(), "curl remote service",
-			DefaultRetries, DefaultTimeout,
-			func() (string, error) {
-				stdout, _, err = zoneCluster.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "localhost:4001")
-				if err != nil {
-					return "should retry", err
-				}
-				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
-					return "Accessing service successful", nil
-				}
-				return "should retry", errors.Errorf("should retry")
-			})
 	})
 }
