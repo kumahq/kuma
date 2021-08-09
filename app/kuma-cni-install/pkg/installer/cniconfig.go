@@ -282,13 +282,13 @@ func insertCNIConfig(newCNIConfig, existingCNIConfig []byte) ([]byte, error) {
 		newMap = map[string]interface{}{
 			"name":       "k8s-pod-network",
 			"cniVersion": "0.3.1",
-			"plugins":    []map[string]interface{}{
+			"plugins": []map[string]interface{}{
 				existingMap,
 				kumaMap,
 			},
 		}
 	} else {
-		// Assume it is a network list file
+		// Assume it is a network list file```
 		newMap = existingMap
 		plugins, err := GetPlugins(newMap)
 		if err != nil {
