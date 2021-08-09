@@ -23,12 +23,15 @@ func ServiceProbes() {
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "dp-demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal("dp-echo-server", "default", "universal", echoServerToken, ProxyOnly(), ServiceProbe())(cluster)
+		err = TestServerUniversal("test-server", "default", echoServerToken,
+			WithArgs([]string{"echo", "--instance", "universal-1"}),
+			ProxyOnly(),
+			ServiceProbe())(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken, ServiceProbe())(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -44,7 +47,7 @@ func ServiceProbes() {
 
 	It("should update dataplane.inbound.health", func() {
 		Eventually(func() (string, error) {
-			output, err := cluster.GetKumactlOptions().RunKumactlAndGetOutputV(Verbose, "get", "dataplane", "dp-echo-server", "-oyaml")
+			output, err := cluster.GetKumactlOptions().RunKumactlAndGetOutputV(Verbose, "get", "dataplane", "test-server", "-oyaml")
 			if err != nil {
 				return "", err
 			}
