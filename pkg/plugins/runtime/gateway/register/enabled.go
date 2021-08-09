@@ -4,6 +4,7 @@ package register
 
 import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/entities"
+	api_definitions "github.com/kumahq/kuma/pkg/api-server/definitions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	kds_definitions "github.com/kumahq/kuma/pkg/kds/definitions"
@@ -29,6 +30,13 @@ func init() {
 		kds_definitions.KdsDefinition{
 			Type:      core_mesh.GatewayType,
 			Direction: kds_definitions.FromZoneToGlobal,
+		})
+
+	api_definitions.All = append(api_definitions.All,
+		api_definitions.ResourceWsDefinition{
+			Type:      core_mesh.GatewayType,
+			Path:      "gateways",
+			AdminOnly: false,
 		})
 
 	entities.All = append(entities.All, entities.Definition{
