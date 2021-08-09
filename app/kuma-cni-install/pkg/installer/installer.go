@@ -174,15 +174,17 @@ func checkInstall(cfg *Config, cniConfigFilepath string) error {
 	if err != nil {
 		return err
 	}
+
 	defaultCNIConfigFilepath := filepath.Join(cfg.MountedCNINetDir, defaultCNIConfigFilename)
+
 	if defaultCNIConfigFilepath != cniConfigFilepath {
 		if len(cfg.CNIConfName) > 0 {
 			// Install was run with overridden CNI config file so don't error out on preempt check
 			// Likely the only use for this is testing the script
 			log.Printf("CNI config file %s preempted by %s", cniConfigFilepath, defaultCNIConfigFilepath)
-		} else {
-			return fmt.Errorf("CNI config file %s preempted by %s", cniConfigFilepath, defaultCNIConfigFilepath)
 		}
+
+		return fmt.Errorf("CNI config file %s preempted by %s", cniConfigFilepath, defaultCNIConfigFilepath)
 	}
 
 	if !fileExists(cniConfigFilepath) {
@@ -195,15 +197,18 @@ func checkInstall(cfg *Config, cniConfigFilepath string) error {
 		if err != nil {
 			return err
 		}
+
 		plugins, err := GetPlugins(cniConfigMap)
 		if err != nil {
 			return errors.Wrap(err, cniConfigFilepath)
 		}
+
 		for _, rawPlugin := range plugins {
 			plugin, err := GetPlugin(rawPlugin)
 			if err != nil {
 				return errors.Wrap(err, cniConfigFilepath)
 			}
+
 			if plugin["type"] == "kuma-cni" {
 				return nil
 			}
@@ -211,6 +216,7 @@ func checkInstall(cfg *Config, cniConfigFilepath string) error {
 
 		return fmt.Errorf("kuma-cni CNI config removed from CNI config file: %s", cniConfigFilepath)
 	}
+
 	// Verify that Kuma CNI config exists as a standalone plugin
 	cniConfigMap, err := ReadCNIConfigMap(cniConfigFilepath)
 	if err != nil {
@@ -220,5 +226,6 @@ func checkInstall(cfg *Config, cniConfigFilepath string) error {
 	if cniConfigMap["type"] != "kuma-cni" {
 		return fmt.Errorf("kuma-cni CNI config file modified: %s", cniConfigFilepath)
 	}
+
 	return nil
 }

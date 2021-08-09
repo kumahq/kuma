@@ -74,14 +74,9 @@ func createCNIConfigFile(ctx context.Context, cfg *Config, saToken string) (stri
 
 func readCNIConfigTemplate(template cniConfigTemplate) ([]byte, error) {
 	if fileExists(template.cniNetworkConfigFile) {
-		cniConfig, err := ioutil.ReadFile(template.cniNetworkConfigFile)
-		if err != nil {
-			return nil, err
-		}
-
 		log.Printf("Using CNI config template from %s", template.cniNetworkConfigFile)
 
-		return cniConfig, nil
+		return ioutil.ReadFile(template.cniNetworkConfigFile)
 	}
 
 	if template.cniNetworkConfig == "" {

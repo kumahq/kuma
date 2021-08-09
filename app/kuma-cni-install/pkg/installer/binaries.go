@@ -6,9 +6,8 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/pkg/errors"
-
 	"github.com/coreos/etcd/pkg/fileutil"
+	"github.com/pkg/errors"
 )
 
 func copyDir(srcDir string, dstDir string) error {
