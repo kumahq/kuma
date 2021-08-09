@@ -4,23 +4,18 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
-
+	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/golang/protobuf/proto"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("DataplaneInsightSink", func() {
@@ -58,7 +53,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			var latestUpsert *DataplaneInsightUpsert
 
 			// given
-			sink := callbacks.NewDataplaneInsightSink(accessor, func() *time.Ticker { return ticker }, 1*time.Millisecond, recorder)
+			sink := callbacks.NewDataplaneInsightSink(core_mesh.DataplaneType, accessor, func() *time.Ticker { return ticker }, 1*time.Millisecond, recorder)
 			go sink.Start(stop)
 
 			// when
@@ -136,7 +131,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 
 		BeforeEach(func() {
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
-			err := store.Create(context.Background(), mesh_core.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
+			err := store.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -149,14 +144,15 @@ var _ = Describe("DataplaneInsightSink", func() {
 				ConnectTime:            util_proto.MustTimestampProto(t0),
 				Status:                 mesh_proto.NewSubscriptionStatus(),
 			}
-			dataplaneInsight := mesh_core.NewDataplaneInsightResource()
+			dataplaneType := core_mesh.DataplaneType
+			dataplaneInsight := core_mesh.NewDataplaneInsightResource()
 			lastSeenVersion := ""
 
 			// given
 			statusStore := callbacks.NewDataplaneInsightStore(manager.NewResourceManager(store))
 
 			// when
-			err := statusStore.Upsert(key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription))
+			err := statusStore.Upsert(dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -190,7 +186,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			subscription.Status.Lds.ResponsesSent += 1
 			subscription.Status.Total.ResponsesSent += 1
 			// and
-			err = statusStore.Upsert(key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription))
+			err = statusStore.Upsert(dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -247,7 +243,7 @@ type DataplaneInsightStoreRecorder struct {
 	Upserts chan DataplaneInsightUpsert
 }
 
-func (s *DataplaneInsightStoreRecorder) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
+func (s *DataplaneInsightStoreRecorder) Upsert(resourceType core_model.ResourceType, dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
 	s.Upserts <- DataplaneInsightUpsert{dataplaneId, subscription}
 	return nil
 }

@@ -4,13 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/metrics"
-
-	"github.com/kumahq/kuma/pkg/xds/cache/once"
-
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/xds/cache/once"
 )
 
 // Cache is needed to share and cache Hashes among goroutines which

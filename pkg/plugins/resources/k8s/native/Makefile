@@ -1,8 +1,4 @@
-.PHONY: all test manager run install crd/install crd/uninstall crd/upgrade deploy manifests fmt vet generate \
-		docker-build docker-push controller-gen
-
-# Image URL to use all building/pushing image targets
-IMG ?= kuma/kuma-controller-manager:latest
+.PHONY: all test install crd/install crd/uninstall crd/upgrade deploy manifests generate controller-gen
 
 # TODO(yskopets): CRD generation is broken since introduction of .proto definitions
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
@@ -22,23 +18,15 @@ export TEST_ASSET_KUBE_APISERVER=$(KUBE_APISERVER_PATH)
 export TEST_ASSET_ETCD=$(ETCD_PATH)
 export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 
-all: manager
+all:
 
 GO_TEST ?= go test
 GO_TEST_OPTS ?=
 COVERAGE_PROFILE ?= cover.out
 
 # Run tests
-test: generate fmt vet manifests
+test: generate manifests
 	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./api/... ./controllers/...
-
-# Build manager binary
-manager: generate fmt vet
-	go build -o bin/manager main.go
-
-# Run against the configured Kubernetes cluster in ~/.kube/config
-run: generate fmt vet
-	go run ./main.go
 
 # Install CRDs into a cluster
 install: manifests
@@ -62,27 +50,9 @@ deploy: manifests
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/...;./controllers/..." $(CRD_OUTPUT)
 
-# Run go fmt against code
-fmt:
-	go fmt ./...
-
-# Run go vet against code
-vet:
-	go vet ./...
-
 # Generate code
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt,year=$$(date +%Y) paths=./api/...
-
-# Build the docker image
-docker-build: test
-	docker build . -t ${IMG}
-	@echo "updating kustomize image patch file for manager resource"
-	sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
-
-# Push the docker image
-docker-push:
-	docker push ${IMG}
 
 # find or download controller-gen
 # download controller-gen if necessary

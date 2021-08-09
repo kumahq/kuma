@@ -3,11 +3,9 @@ package resources
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestResources(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Resources Suite")
+	test.RunSpecs(t, "Resources Suite")
 }

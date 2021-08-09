@@ -5,20 +5,18 @@ import (
 	"fmt"
 
 	"github.com/ghodss/yaml"
-
-	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	core_validators "github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
-
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
+	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	core_validators "github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("ServiceValidator", func() {

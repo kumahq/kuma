@@ -9,9 +9,10 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -33,9 +34,9 @@ var _ = Describe("DNSGenerator", func() {
 			gen := &generator.DNSGenerator{}
 
 			dnsResolver := resolver.NewDNSResolver("mesh")
-			dnsResolver.SetVIPs(map[string]string{
-				"backend_test-ns_svc_8080": "240.0.0.0",
-				"httpbin":                  "240.0.0.1",
+			dnsResolver.SetVIPs(vips.List{
+				vips.NewServiceEntry("backend_test-ns_svc_8080"): "240.0.0.0",
+				vips.NewServiceEntry("httpbin"):                  "240.0.0.1",
 			})
 			ctx := xds_context.Context{
 				ConnectionInfo: xds_context.ConnectionInfo{
@@ -46,7 +47,7 @@ var _ = Describe("DNSGenerator", func() {
 					DNSResolver: dnsResolver,
 				},
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
@@ -71,7 +72,7 @@ var _ = Describe("DNSGenerator", func() {
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 			proxy := &model.Proxy{
 				Id: *model.BuildProxyId("", "side-car"),
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",
 					},
@@ -79,12 +80,9 @@ var _ = Describe("DNSGenerator", func() {
 				},
 				APIVersion: envoy_common.APIV3,
 				Routing: model.Routing{
-					OutboundTargets: map[model.ServiceName][]model.Endpoint{
-						"httpbin": {
-							{
-								Target: "httpbin.org",
-							},
-						},
+					VipDomains: []model.VIPDomains{
+						{Address: "240.0.0.1", Domains: []string{"httpbin.mesh"}},
+						{Address: "240.0.0.0", Domains: []string{"backend.test-ns.svc.8080.mesh", "backend_test-ns_svc_8080.mesh"}},
 					},
 				},
 				Metadata: &model.DataplaneMetadata{

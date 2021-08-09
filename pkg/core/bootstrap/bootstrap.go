@@ -4,22 +4,9 @@ import (
 	"context"
 	"net"
 
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-
-	"github.com/kumahq/kuma/pkg/api-server/customization"
-	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
-	"github.com/kumahq/kuma/pkg/dp-server/server"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
-
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
-	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
-
-	"github.com/kumahq/kuma/pkg/events"
-
+	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -29,6 +16,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplaneinsight"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -42,7 +31,14 @@ import (
 	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dp-server/server"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/events"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 )
 
 func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
@@ -287,28 +283,41 @@ func initializeCaManagers(builder *core_runtime.Builder) error {
 
 func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
-	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
-	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
+	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, nil)
 
 	meshValidator := mesh_managers.MeshValidator{
 		CaManagers: builder.CaManagers(),
 		Store:      builder.ResourceStore(),
 	}
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator)
-	customManagers[mesh.MeshType] = meshManager
+	customizableManager.Customize(
+		mesh.MeshType,
+		mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator),
+	)
 
-	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Zone.Name)
-	customManagers[mesh.DataplaneType] = dpManager
+	customizableManager.Customize(
+		mesh.DataplaneType,
+		dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Zone.Name),
+	)
 
-	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
-	customManagers[mesh.DataplaneInsightType] = dpInsightManager
+	customizableManager.Customize(
+		mesh.DataplaneInsightType,
+		dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
+	)
 
-	zoneValidator := zone.Validator{Store: builder.ResourceStore()}
-	zoneManager := zone.NewZoneManager(builder.ResourceStore(), zoneValidator)
-	customManagers[system.ZoneType] = zoneManager
+	customizableManager.Customize(
+		system.ZoneType,
+		zone.NewZoneManager(builder.ResourceStore(), zone.Validator{Store: builder.ResourceStore()}),
+	)
 
-	zoneInsightManager := zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone)
-	customManagers[system.ZoneInsightType] = zoneInsightManager
+	customizableManager.Customize(
+		system.ZoneInsightType,
+		zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone),
+	)
+
+	customizableManager.Customize(
+		mesh.ZoneIngressInsightType,
+		zoneingressinsight.NewZoneIngressInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
+	)
 
 	var cipher secret_cipher.Cipher
 	switch cfg.Store.Type {
@@ -326,9 +335,16 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	default:
 		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
 	}
-	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator)
-	customManagers[system.SecretType] = secretManager
-	customManagers[system.GlobalSecretType] = secret_manager.NewGlobalSecretManager(builder.SecretStore(), cipher)
+
+	customizableManager.Customize(
+		system.SecretType,
+		secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator),
+	)
+
+	customizableManager.Customize(
+		system.GlobalSecretType,
+		secret_manager.NewGlobalSecretManager(builder.SecretStore(), cipher),
+	)
 
 	builder.WithResourceManager(customizableManager)
 

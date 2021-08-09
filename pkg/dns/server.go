@@ -7,15 +7,12 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-
-	"github.com/pkg/errors"
-
 	"github.com/miekg/dns"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 

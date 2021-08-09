@@ -6,9 +6,8 @@ import (
 
 	"github.com/patrickmn/go-cache"
 
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"

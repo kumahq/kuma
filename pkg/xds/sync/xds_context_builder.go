@@ -3,13 +3,14 @@ package sync
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -39,16 +40,19 @@ func newXDSContextBuilder(
 	}
 }
 
-func (c *xdsContextBuilder) buildMeshedContext(streamId int64, meshName string, meshHash string) (*xds_context.Context, error) {
+func (c *xdsContextBuilder) buildMeshedContext(dpKey core_model.ResourceKey, meshHash string) (*xds_context.Context, error) {
 	ctx := context.Background()
-	xdsCtx := c.buildContext(streamId)
-
-	mesh := core_mesh.NewMeshResource()
-	if err := c.resManager.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
+	xdsCtx, err := c.buildContext(dpKey)
+	if err != nil {
 		return nil, err
 	}
 
-	dataplanes, err := xds_topology.GetDataplanes(syncLog, context.Background(), c.resManager, c.lookupIP, meshName)
+	mesh := core_mesh.NewMeshResource()
+	if err := c.resManager.Get(ctx, mesh, core_store.GetByKey(dpKey.Mesh, core_model.NoMesh)); err != nil {
+		return nil, err
+	}
+
+	dataplanes, err := xds_topology.GetDataplanes(syncLog, context.Background(), c.resManager, c.lookupIP, dpKey.Mesh)
 	if err != nil {
 		return nil, err
 	}
@@ -60,11 +64,15 @@ func (c *xdsContextBuilder) buildMeshedContext(streamId int64, meshName string, 
 	return xdsCtx, nil
 }
 
-func (c *xdsContextBuilder) buildContext(streamId int64) *xds_context.Context {
+func (c *xdsContextBuilder) buildContext(dpKey core_model.ResourceKey) (*xds_context.Context, error) {
+	connectionInfo := c.connectionInfoTracker.ConnectionInfo(dpKey)
+	if connectionInfo == nil {
+		return nil, errors.New("connection info is not found")
+	}
 	return &xds_context.Context{
 		ControlPlane:     c.cpContext,
-		ConnectionInfo:   c.connectionInfoTracker.ConnectionInfo(streamId),
+		ConnectionInfo:   *connectionInfo,
 		Mesh:             xds_context.MeshContext{},
 		EnvoyAdminClient: c.envoyAdminClient,
-	}
+	}, nil
 }

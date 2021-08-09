@@ -19,11 +19,9 @@ package firewalld_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestFirewalld(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Firewalld Suite")
+	test.RunSpecs(t, "Firewalld Suite")
 }

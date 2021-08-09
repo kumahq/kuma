@@ -5,15 +5,13 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
 	. "github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
@@ -60,8 +58,8 @@ var _ = Describe("DNS server", func() {
 		It("should resolve", func() {
 			// given
 			var err error
-			dnsResolver.SetVIPs(map[string]string{
-				"service": "240.0.0.1",
+			dnsResolver.SetVIPs(vips.List{
+				vips.NewServiceEntry("service"): "240.0.0.1",
 			})
 			ip, err = dnsResolver.ForwardLookupFQDN("service.mesh")
 			Expect(err).ToNot(HaveOccurred())
@@ -86,8 +84,8 @@ var _ = Describe("DNS server", func() {
 
 		It("should resolve concurrent", func() {
 			// given
-			dnsResolver.SetVIPs(map[string]string{
-				"service": "240.0.0.1",
+			dnsResolver.SetVIPs(vips.List{
+				vips.NewServiceEntry("service"): "240.0.0.1",
 			})
 			ip, err := dnsResolver.ForwardLookupFQDN("service.mesh")
 			Expect(err).ToNot(HaveOccurred())
@@ -118,8 +116,8 @@ var _ = Describe("DNS server", func() {
 
 		It("should resolve IPv6 concurrent", func() {
 			// given
-			dnsResolver.SetVIPs(map[string]string{
-				"service": "fd00::1",
+			dnsResolver.SetVIPs(vips.List{
+				vips.NewServiceEntry("service"): "fd00::1",
 			})
 			ip, err := dnsResolver.ForwardLookupFQDN("service.mesh")
 			Expect(err).ToNot(HaveOccurred())
@@ -151,8 +149,8 @@ var _ = Describe("DNS server", func() {
 		It("should not resolve", func() {
 			// given
 			var err error
-			dnsResolver.SetVIPs(map[string]string{
-				"service": "240.0.0.1",
+			dnsResolver.SetVIPs(vips.List{
+				vips.NewServiceEntry("service"): "240.0.0.1",
 			})
 			ip, err = dnsResolver.ForwardLookupFQDN("service.mesh")
 			Expect(err).ToNot(HaveOccurred())
@@ -177,7 +175,7 @@ var _ = Describe("DNS server", func() {
 
 		It("should not resolve when no vips", func() {
 			// given
-			dnsResolver.SetVIPs(map[string]string{})
+			dnsResolver.SetVIPs(vips.List{})
 
 			// when
 			client := new(dns.Client)
@@ -202,7 +200,7 @@ var _ = Describe("DNS server", func() {
 			// given
 			var err error
 			dnsResolver.SetVIPs(vips.List{
-				"my.service": "240.0.0.1",
+				vips.NewServiceEntry("my.service"): "240.0.0.1",
 			})
 			ip, err = dnsResolver.ForwardLookupFQDN("my.service.mesh")
 			Expect(err).ToNot(HaveOccurred())
@@ -229,7 +227,7 @@ var _ = Describe("DNS server", func() {
 			// given
 			var err error
 			dnsResolver.SetVIPs(vips.List{
-				"my-service_test-namespace_svc_80": "240.0.0.1",
+				vips.NewServiceEntry("my-service_test-namespace_svc_80"): "240.0.0.1",
 			})
 			ip, err = dnsResolver.ForwardLookupFQDN("my-service_test-namespace_svc_80.mesh")
 			Expect(err).ToNot(HaveOccurred())

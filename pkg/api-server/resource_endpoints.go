@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/api-server/authz"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-
 	"github.com/emicklei/go-restful"
 
+	"github.com/kumahq/kuma/pkg/api-server/authz"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -39,7 +38,7 @@ type resourceEndpoints struct {
 }
 
 func (r *resourceEndpoints) auth() restful.FilterFunction {
-	if r.ResourceWsDefinition.Admin {
+	if r.ResourceWsDefinition.AdminOnly {
 		return r.adminAuth.Validate
 	}
 	return authz.NoAuth
@@ -48,8 +47,8 @@ func (r *resourceEndpoints) auth() restful.FilterFunction {
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource).
 		Filter(r.auth()).
-		Doc(fmt.Sprintf("Get a %s", r.Name)).
-		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
+		Doc(fmt.Sprintf("Get a %s", r.Path)).
+		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Path)).DataType("string")).
 		Returns(200, "OK", nil).
 		Returns(404, "Not found", nil))
 }
@@ -73,7 +72,7 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix).To(r.listResources).
 		Filter(r.auth()).
-		Doc(fmt.Sprintf("List of %s", r.Name)).
+		Doc(fmt.Sprintf("List of %s", r.Path)).
 		Param(ws.PathParameter("size", "size of page").DataType("int")).
 		Param(ws.PathParameter("offset", "offset of page to list").DataType("string")).
 		Returns(200, "OK", nil))
@@ -108,8 +107,8 @@ func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pa
 	} else {
 		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
 			Filter(r.auth()).
-			Doc(fmt.Sprintf("Updates a %s", r.Name)).
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
+			Doc(fmt.Sprintf("Updates a %s", r.Path)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Path)).DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(201, "Created", nil))
 	}
@@ -179,8 +178,8 @@ func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix
 	} else {
 		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
 			Filter(r.auth()).
-			Doc(fmt.Sprintf("Deletes a %s", r.Name)).
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
+			Doc(fmt.Sprintf("Deletes a %s", r.Path)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Path)).DataType("string")).
 			Returns(200, "OK", nil))
 	}
 }

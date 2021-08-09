@@ -13,7 +13,7 @@ import (
 type k8SDeployment struct {
 	ip   string
 	name string
-	args []string
+	cmd  Command
 }
 
 var _ Deployment = &k8SDeployment{}
@@ -78,7 +78,7 @@ func (k *k8SDeployment) GetExternalAppAddress() string {
 }
 
 func (k *k8SDeployment) GetCert() string {
-	// We do not implement Runtime Ceritficate injection on K8s
+	// We do not implement Runtime Certificate injection on K8s
 	// The functionality is test on Universal which is good for now
 	panic("not implemented")
 }

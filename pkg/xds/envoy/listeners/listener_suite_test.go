@@ -3,11 +3,9 @@ package listeners_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestListener(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Listener Suite")
+	test.RunSpecs(t, "Listener Suite")
 }

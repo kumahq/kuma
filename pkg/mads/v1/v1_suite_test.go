@@ -3,11 +3,9 @@ package v1_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestHttp(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "MADS v1 Suite")
+	test.RunSpecs(t, "MADS v1 Suite")
 }

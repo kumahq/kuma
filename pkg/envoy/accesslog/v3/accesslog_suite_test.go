@@ -3,11 +3,9 @@ package v3_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestAccesslog(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Accesslog Suite")
+	test.RunSpecs(t, "Accesslog Suite")
 }

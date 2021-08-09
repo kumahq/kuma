@@ -9,13 +9,11 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
@@ -64,8 +62,8 @@ func (m *Persistence) Get() (global List, meshed map[string]List, errs error) {
 		if resource.Spec.Config == "" {
 			continue
 		}
-		v := List{}
-		if err := json.Unmarshal([]byte(resource.Spec.Config), &v); err != nil {
+		v, err := m.unmarshal(resource.Spec.GetConfig())
+		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
@@ -75,23 +73,39 @@ func (m *Persistence) Get() (global List, meshed map[string]List, errs error) {
 	return
 }
 
+func (m *Persistence) unmarshal(config string) (List, error) {
+	v := List{}
+	if err := json.Unmarshal([]byte(config), &v); err == nil {
+		return v, nil
+	}
+	// backwards compatibility
+	backwardCompatible := map[string]string{}
+	if err := json.Unmarshal([]byte(config), &backwardCompatible); err != nil {
+		return nil, err
+	}
+	v = List{}
+	for service, vip := range backwardCompatible {
+		v[NewServiceEntry(service)] = vip
+	}
+	return v, nil
+}
+
 func (m *Persistence) GetByMesh(mesh string) (List, error) {
 	name := fmt.Sprintf(template, mesh)
-	vips := List{}
 	resource := config_model.NewConfigResource()
 	err := m.configManager.Get(context.Background(), resource, store.GetByKey(name, ""))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
-			return vips, nil
+			return List{}, nil
 		}
 		return nil, err
 	}
 
 	if resource.Spec.Config == "" {
-		return vips, nil
+		return List{}, nil
 	}
 
-	err = json.Unmarshal([]byte(resource.Spec.Config), &vips)
+	vips, err := m.unmarshal(resource.Spec.GetConfig())
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal")
 	}
@@ -118,7 +132,7 @@ func (m *Persistence) Set(mesh string, vips List) error {
 	resource.Spec.Config = string(jsonBytes)
 
 	if create {
-		meshRes := mesh_core.NewMeshResource()
+		meshRes := core_mesh.NewMeshResource()
 		if err := m.resourceManager.Get(ctx, meshRes, store.GetByKey(mesh, model.NoMesh)); err != nil {
 			return err
 		}

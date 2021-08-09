@@ -1,10 +1,10 @@
 package tls_test
 
 import (
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 var _ = Describe("SNI", func() {

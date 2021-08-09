@@ -14,10 +14,7 @@ type DNSResolver interface {
 	GetDomain() string
 	SetVIPs(list vips.List)
 	GetVIPs() vips.List
-
-	ForwardLookup(service string) (string, error)
 	ForwardLookupFQDN(name string) (string, error)
-	ReverseLookup(ip string) (string, error)
 }
 
 type dnsResolver struct {
@@ -50,18 +47,6 @@ func (s *dnsResolver) GetVIPs() vips.List {
 	return s.viplist
 }
 
-func (s *dnsResolver) ForwardLookup(service string) (string, error) {
-	s.RLock()
-	defer s.RUnlock()
-
-	ip, found := s.viplist[service]
-
-	if !found {
-		return "", errors.Errorf("service [%s] not found in domain [%s].", service, s.domain)
-	}
-	return ip, nil
-}
-
 func (s *dnsResolver) ForwardLookupFQDN(name string) (string, error) {
 	s.RLock()
 	defer s.RUnlock()
@@ -79,25 +64,12 @@ func (s *dnsResolver) ForwardLookupFQDN(name string) (string, error) {
 		return "", err
 	}
 
-	ip, found := s.viplist[service]
+	ip, found := s.viplist[vips.NewServiceEntry(service)]
 	if !found {
 		return "", errors.Errorf("service [%s] not found in domain [%s].", service, domain)
 	}
 
 	return ip, nil
-}
-
-func (s *dnsResolver) ReverseLookup(ip string) (string, error) {
-	s.RLock()
-	defer s.RUnlock()
-
-	for service, serviceIP := range s.viplist {
-		if serviceIP == ip {
-			return service + "." + s.domain, nil
-		}
-	}
-
-	return "", errors.Errorf("IP [%s] not found", ip)
 }
 
 func (s *dnsResolver) domainFromName(name string) (string, error) {

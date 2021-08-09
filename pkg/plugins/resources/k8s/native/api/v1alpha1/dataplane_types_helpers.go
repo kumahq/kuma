@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -45,13 +45,13 @@ func (l *Dataplane) Scope() model.Scope {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.Dataplane{}, &Dataplane{
+	registry.RegisterObjectType(&mesh_proto.Dataplane{}, &Dataplane{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "Dataplane",
 		},
 	})
-	registry.RegisterListType(&proto.Dataplane{}, &DataplaneList{
+	registry.RegisterListType(&mesh_proto.Dataplane{}, &DataplaneList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "DataplaneList",

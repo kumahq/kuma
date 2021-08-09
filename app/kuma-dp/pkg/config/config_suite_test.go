@@ -3,11 +3,9 @@ package config_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestConfig(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Kuma DP Config Suite")
+	test.RunSpecs(t, "Kuma DP Config Suite")
 }

@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kumahq/kuma/pkg/core/xds"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
@@ -15,8 +15,12 @@ import (
 var _ = Describe("Dataplane Metadata Tracker", func() {
 
 	tracker := NewDataplaneMetadataTracker()
-	callbacks := util_xds_v2.AdaptCallbacks(tracker)
+	callbacks := util_xds_v2.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
+	dpKey := core_model.ResourceKey{
+		Mesh: "default",
+		Name: "example",
+	}
 	req := v2.DiscoveryRequest{
 		Node: &envoy_core.Node{
 			Id: "default.example",
@@ -41,17 +45,17 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		metadata := tracker.Metadata(streamId)
+		metadata := tracker.Metadata(dpKey)
 
 		// then
 		Expect(metadata.GetDataplaneToken()).To(Equal("token"))
 
 		// when
-		tracker.OnStreamClosed(streamId)
+		callbacks.OnStreamClosed(streamId)
 
 		// then metadata should be deleted
-		metadata = tracker.Metadata(streamId)
-		Expect(metadata).To(Equal(&xds.DataplaneMetadata{}))
+		metadata = tracker.Metadata(dpKey)
+		Expect(metadata).To(BeNil())
 	})
 
 	It("should track metadata with empty Node in consecutive DiscoveryRequests", func() {
@@ -68,7 +72,7 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		metadata := tracker.Metadata(streamId)
+		metadata := tracker.Metadata(dpKey)
 
 		// then
 		Expect(metadata.GetDataplaneToken()).To(Equal("token"))

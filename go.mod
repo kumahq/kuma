@@ -18,6 +18,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
+	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-kit/kit v0.11.0
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.1
@@ -26,10 +27,10 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/gruntwork-io/terratest v0.30.15
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
+	github.com/iancoleman/orderedmap v0.2.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
-	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
+	github.com/kumahq/protoc-gen-kumadoc v0.1.7
 	github.com/lib/pq v1.10.2
 	github.com/miekg/dns v1.1.42
 	github.com/onsi/ginkgo v1.16.4
@@ -52,6 +53,7 @@ require (
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.17.0
+	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
 	golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
@@ -63,17 +65,13 @@ require (
 	k8s.io/api v0.18.14
 	k8s.io/apiextensions-apiserver v0.18.14
 	k8s.io/apimachinery v0.18.14
-	k8s.io/client-go v10.0.0+incompatible
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
+	k8s.io/client-go v0.18.14
+	k8s.io/utils v0.0.0-20210709001253-0e1f9d693477
 	sigs.k8s.io/controller-runtime v0.6.4
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
 
 replace (
-	github.com/kumahq/kuma/api => ./api
-	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
 	github.com/kumahq/kuma/pkg/transparentproxy/istio => ./pkg/transparentproxy/istio
-
 	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
-	k8s.io/client-go => k8s.io/client-go v0.18.14
 )

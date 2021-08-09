@@ -3,11 +3,9 @@ package faultinjections
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestMatcher(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "FaultInjection Matcher Suite")
+	test.RunSpecs(t, "FaultInjection Matcher Suite")
 }

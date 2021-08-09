@@ -6,9 +6,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-
 	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/common"
 	mads_v1alpha1_client "github.com/kumahq/kuma/pkg/mads/v1alpha1/client"

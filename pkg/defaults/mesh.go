@@ -3,7 +3,7 @@ package defaults
 import (
 	"context"
 
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
@@ -13,7 +13,7 @@ var defaultMeshKey = core_model.ResourceKey{
 }
 
 func (d *defaultsComponent) createMeshIfNotExist(ctx context.Context) error {
-	mesh := mesh_core.NewMeshResource()
+	mesh := core_mesh.NewMeshResource()
 	err := d.resManager.Get(ctx, mesh, core_store.GetBy(defaultMeshKey))
 	if err == nil {
 		log.V(1).Info("default Mesh already exists. Skip creating default Mesh.")

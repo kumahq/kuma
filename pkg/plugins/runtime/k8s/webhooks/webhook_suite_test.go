@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -17,11 +15,12 @@ import (
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestWebhook(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Webhooks Suite")
+	test.RunSpecs(t, "Webhooks Suite")
 }
 
 var decoder *kube_admission.Decoder

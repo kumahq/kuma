@@ -4,15 +4,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
-
-	util_net "github.com/kumahq/kuma/pkg/util/net"
-
 	"github.com/gruntwork-io/terratest/modules/docker"
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/pkg/errors"
+
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
 type DockerContainer struct {

@@ -4,12 +4,11 @@ import (
 	"context"
 	"sync"
 
-	"google.golang.org/protobuf/types/known/structpb"
-
 	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -17,7 +16,7 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
-var statusTrackerLog = core.Log.WithName("xds").WithName("statusTracker")
+var statusTrackerLog = core.Log.WithName("xds").WithName("status-tracker")
 
 type DataplaneStatusTracker interface {
 	util_xds.Callbacks
@@ -28,10 +27,12 @@ type SubscriptionStatusAccessor interface {
 	GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription)
 }
 
-type DataplaneInsightSinkFactoryFunc = func(SubscriptionStatusAccessor) DataplaneInsightSink
+type DataplaneInsightSinkFactoryFunc = func(core_model.ResourceType, SubscriptionStatusAccessor) DataplaneInsightSink
 
-func NewDataplaneStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
-	createStatusSink DataplaneInsightSinkFactoryFunc) DataplaneStatusTracker {
+func NewDataplaneStatusTracker(
+	runtimeInfo core_runtime.RuntimeInfo,
+	createStatusSink DataplaneInsightSinkFactoryFunc,
+) DataplaneStatusTracker {
 	return &dataplaneStatusTracker{
 		runtimeInfo:      runtimeInfo,
 		createStatusSink: createStatusSink,
@@ -114,15 +115,32 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 	state.mu.Lock() // write access to the per Dataplane info
 	defer state.mu.Unlock()
 
-	// infer Dataplane id
 	if state.dataplaneId == (core_model.ResourceKey{}) {
+		var dpType core_model.ResourceType
+		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
+
+		// If the dataplane was started with a resource YAML, then it
+		// will be serialized in the node metadata and we would know
+		// the underlying type directly. Since that is optional, we
+		// can't depend on it here, so we map from the proxy type,
+		// which is guaranteed.
+		switch md.GetProxyType() {
+		case mesh_proto.IngressProxyType:
+			dpType = core_mesh.ZoneIngressType
+		case mesh_proto.DataplaneProxyType:
+			dpType = core_mesh.DataplaneType
+		}
+
+		// Infer the Dataplane ID.
 		if proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
 			state.dataplaneId = proxyId.ToResourceKey()
-			if err := readVersion(req.Metadata(), state.subscription.Version); err != nil {
+			if md.GetVersion() != nil {
+				state.subscription.Version = md.GetVersion()
+			} else {
 				statusTrackerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Metadata())
 			}
-			// kick off async Dataplane status flusher
-			go c.createStatusSink(state).Start(state.stop)
+			// Kick off the async Dataplane status flusher.
+			go c.createStatusSink(dpType, state).Start(state.stop)
 		} else {
 			statusTrackerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "req", req)
 		}
@@ -179,18 +197,4 @@ func (s *streamState) GetStatus() (core_model.ResourceKey, *mesh_proto.Discovery
 
 func (s *streamState) Close() {
 	close(s.stop)
-}
-
-func readVersion(metadata *structpb.Struct, version *mesh_proto.Version) error {
-	if metadata == nil {
-		return nil
-	}
-	rawVersion := metadata.Fields["version"].GetStructValue()
-	if rawVersion != nil {
-		err := util_proto.ToTyped(rawVersion, version)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

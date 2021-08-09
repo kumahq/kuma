@@ -6,13 +6,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("CreateDownstreamTlsContext()", func() {
@@ -23,7 +22,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			// given
 			ctx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: mesh_core.NewMeshResource(),
+					Resource: core_mesh.NewMeshResource(),
 				},
 			}
 			metadata := &core_xds.DataplaneMetadata{}
@@ -55,7 +54,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 						SdsTlsCert: []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
-						Resource: &mesh_core.MeshResource{
+						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "default",
 							},
@@ -198,7 +197,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			// given
 			ctx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: mesh_core.NewMeshResource(),
+					Resource: core_mesh.NewMeshResource(),
 				},
 			}
 			metadata := &core_xds.DataplaneMetadata{}
@@ -231,7 +230,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 						SdsTlsCert: []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
-						Resource: &mesh_core.MeshResource{
+						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "default",
 							},

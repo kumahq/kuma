@@ -3,11 +3,9 @@ package endpoints_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestEndpoints(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Endpoints Suite")
+	test.RunSpecs(t, "Endpoints Suite")
 }

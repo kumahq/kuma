@@ -7,19 +7,18 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/core"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_component "github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	"github.com/kumahq/kuma/pkg/defaults"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
@@ -46,13 +45,13 @@ var _ = Describe("Defaults Component", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), mesh_core.NewMeshResource(), core_store.GetByKey(core_model.DefaultMesh, core_model.NoMesh))
+			err = manager.Get(context.Background(), core_mesh.NewMeshResource(), core_store.GetByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should not override already created mesh", func() {
 			// given
-			mesh := &mesh_core.MeshResource{
+			mesh := &core_mesh.MeshResource{
 				Spec: &v1alpha1.Mesh{
 					Mtls: &v1alpha1.Mesh_Mtls{
 						EnabledBackend: "builtin",
@@ -72,7 +71,7 @@ var _ = Describe("Defaults Component", func() {
 			err = component.Start(nil)
 
 			// then
-			mesh = mesh_core.NewMeshResource()
+			mesh = core_mesh.NewMeshResource()
 			Expect(err).ToNot(HaveOccurred())
 			err = manager.Get(context.Background(), mesh, core_store.GetByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
@@ -100,7 +99,7 @@ var _ = Describe("Defaults Component", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), mesh_core.NewMeshResource(), core_store.GetByKey("default", "default"))
+			err = manager.Get(context.Background(), core_mesh.NewMeshResource(), core_store.GetByKey("default", "default"))
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 		})
 	})
@@ -128,7 +127,7 @@ var _ = Describe("Defaults Component", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = manager.Get(context.Background(), system.NewGlobalSecretResource(), core_store.GetByKey("zone-ingress-token-signing-key", core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), mesh_core.NewMeshResource(), core_store.GetByKey(core_model.DefaultMesh, core_model.NoMesh))
+			err = manager.Get(context.Background(), core_mesh.NewMeshResource(), core_store.GetByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		})
 

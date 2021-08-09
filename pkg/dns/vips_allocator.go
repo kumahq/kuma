@@ -2,21 +2,19 @@ package dns
 
 import (
 	"context"
-	"sort"
 	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 )
 
 var vipsAllocatorLog = core.Log.WithName("dns-vips-allocator")
@@ -146,18 +144,8 @@ func (d *VIPsAllocator) newIPAM(initialVIPs vips.List) (IPAM, error) {
 	return ipam, nil
 }
 
-type ServiceSet map[string]bool
-
-func (s ServiceSet) ToArray() (services []string) {
-	for service := range s {
-		services = append(services, service)
-	}
-	sort.Strings(services)
-	return
-}
-
-func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (ServiceSet, error) {
-	serviceSet := make(map[string]bool)
+func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (vips.EntrySet, error) {
+	serviceSet := make(vips.EntrySet)
 
 	dataplanes := core_mesh.DataplaneResourceList{}
 	if err := rm.List(context.Background(), &dataplanes); err != nil {
@@ -178,11 +166,11 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (ServiceSe
 				if service.Mesh != mesh {
 					continue
 				}
-				serviceSet[service.Tags[mesh_proto.ServiceTag]] = true
+				serviceSet[vips.NewServiceEntry(service.Tags[mesh_proto.ServiceTag])] = true
 			}
 		} else {
 			for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
-				serviceSet[inbound.GetService()] = true
+				serviceSet[vips.NewServiceEntry(inbound.GetService())] = true
 			}
 		}
 	}
@@ -197,7 +185,7 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (ServiceSe
 			if service.Mesh != mesh {
 				continue
 			}
-			serviceSet[service.Tags[mesh_proto.ServiceTag]] = true
+			serviceSet[vips.NewServiceEntry(service.Tags[mesh_proto.ServiceTag])] = true
 		}
 	}
 
@@ -206,14 +194,15 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (ServiceSe
 		return nil, err
 	}
 	for _, es := range externalServices.Items {
-		serviceSet[es.Spec.GetService()] = true
+		serviceSet[vips.NewServiceEntry(es.Spec.GetService())] = true
+		serviceSet[vips.NewHostEntry(es.Spec.GetHost())] = true
 	}
 
 	return serviceSet, nil
 }
 
-func UpdateMeshedVIPs(global, meshed vips.List, ipam IPAM, serviceSet ServiceSet) (updated bool, errs error) {
-	for _, service := range serviceSet.ToArray() {
+func UpdateMeshedVIPs(global, meshed vips.List, ipam IPAM, entrySet vips.EntrySet) (updated bool, errs error) {
+	for _, service := range entrySet.ToArray() {
 		_, found := meshed[service]
 		if found {
 			continue
@@ -234,7 +223,7 @@ func UpdateMeshedVIPs(global, meshed vips.List, ipam IPAM, serviceSet ServiceSet
 		vipsAllocatorLog.Info("adding", "service", service, "ip", ip)
 	}
 	for service, ip := range meshed {
-		if _, found := serviceSet[service]; !found {
+		if _, found := entrySet[service]; !found {
 			updated = true
 			_ = ipam.FreeIP(ip)
 			delete(meshed, service)

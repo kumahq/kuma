@@ -22,9 +22,9 @@ endef
 PROTOC_VERSION := 3.14.0
 PROTOC_PGV_VERSION := v0.4.1
 GOLANG_PROTOBUF_VERSION := v1.5.2
-DATAPLANE_API_LATEST_VERSION := master
+DATAPLANE_API_LATEST_VERSION := main
 DATAPLANE_API_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/envoyproxy,data-plane-api))
-UDPA_LATEST_VERSION := master
+UDPA_LATEST_VERSION := main
 UDPA_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/cncf,udpa))
 GOOGLEAPIS_LATEST_VERSION := master
 GOOGLEAPIS_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/googleapis,googleapis))
@@ -42,33 +42,34 @@ protoc_search_go_packages := \
 protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(GOPATH_DIR)/pkg/mod/$(go_package))
 
 go_import_mapping_entries := \
+	envoy/annotations/deprecation.proto=github.com/envoyproxy/go-control-plane/envoy/annotations \
+	envoy/api/v2/core/address.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
+	envoy/api/v2/core/backoff.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
+	envoy/api/v2/core/base.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
+	envoy/api/v2/core/http_uri.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
+	envoy/api/v2/core/http_uri.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
+	envoy/api/v2/core/socket_option.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
+	envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2 \
+	envoy/config/core/v3/address.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
+	envoy/config/core/v3/backoff.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
+	envoy/config/core/v3/base.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
+	envoy/config/core/v3/http_uri.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
+	envoy/config/core/v3/socket_option.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
+	envoy/service/discovery/v3/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3 \
+	envoy/type/http_status.proto=github.com/envoyproxy/go-control-plane/envoy/type \
+	envoy/type/percent.proto=github.com/envoyproxy/go-control-plane/envoy/type \
+	envoy/type/semantic_version.proto=github.com/envoyproxy/go-control-plane/envoy/type \
+	envoy/type/v3/percent.proto=github.com/envoyproxy/go-control-plane/envoy/type/v3 \
+	envoy/type/v3/semantic_version.proto=github.com/envoyproxy/go-control-plane/envoy/type/v3 \
 	google/protobuf/any.proto=google.golang.org/protobuf/types/known/anypb \
 	google/protobuf/duration.proto=google.golang.org/protobuf/types/known/durationpb \
 	google/protobuf/struct.proto=google.golang.org/protobuf/types/known/structpb \
 	google/protobuf/timestamp.proto=google.golang.org/protobuf/types/known/timestamppb \
 	google/protobuf/wrappers.proto=google.golang.org/protobuf/types/known/wrapperspb \
-	envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2 \
-	envoy/service/discovery/v3/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3 \
 	udpa/annotations/migrate.proto=github.com/cncf/udpa/go/udpa/annotations \
 	udpa/annotations/status.proto=github.com/cncf/udpa/go/udpa/annotations \
 	udpa/annotations/versioning.proto=github.com/cncf/udpa/go/udpa/annotations \
-	envoy/api/v2/core/socket_option.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
-	envoy/api/v2/core/address.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
-	envoy/api/v2/core/backoff.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
-	envoy/api/v2/core/http_uri.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
-	envoy/api/v2/core/base.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
-	envoy/api/v2/core/http_uri.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2/core \
-	envoy/type/percent.proto=github.com/envoyproxy/go-control-plane/envoy/type \
-	envoy/type/semantic_version.proto=github.com/envoyproxy/go-control-plane/envoy/type \
-	envoy/type/http_status.proto=github.com/envoyproxy/go-control-plane/envoy/type \
-	envoy/config/core/v3/socket_option.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
-	envoy/config/core/v3/address.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
-	envoy/config/core/v3/backoff.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
-	envoy/config/core/v3/http_uri.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3 \
-	envoy/type/v3/percent.proto=github.com/envoyproxy/go-control-plane/envoy/type/v3 \
-	envoy/type/v3/semantic_version.proto=github.com/envoyproxy/go-control-plane/envoy/type/v3 \
-	envoy/config/core/v3/base.proto=github.com/envoyproxy/go-control-plane/envoy/config/core/v3
-
+	xds/core/v3/context_params.proto=github.com/cncf/udpa/go/xds/core/v3
 
 # see https://makefiletutorial.com/
 comma := ,

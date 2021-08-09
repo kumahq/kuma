@@ -3,11 +3,9 @@ package universal_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestUniversal(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Sds Auth Universal Suite")
+	test.RunSpecs(t, "Sds Auth Universal Suite")
 }

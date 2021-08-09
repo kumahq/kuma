@@ -13,9 +13,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_model "github.com/kumahq/kuma/pkg/core/xds"
-	core_xds_v3 "github.com/kumahq/kuma/pkg/core/xds/v3"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -41,10 +40,10 @@ var _ = Describe("Reconcile", func() {
 			}
 		})
 
-		var xdsContext core_xds_v3.XdsContext
+		var xdsContext XdsContext
 
 		BeforeEach(func() {
-			xdsContext = core_xds_v3.NewXdsContext()
+			xdsContext = NewXdsContext()
 		})
 
 		snapshot := envoy_cache.Snapshot{
@@ -103,7 +102,7 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			// given
-			dataplane := &mesh_core.DataplaneResource{
+			dataplane := &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Mesh:    "demo",
 					Name:    "example",

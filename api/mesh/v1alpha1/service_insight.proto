@@ -13,6 +13,8 @@ message ServiceInsight {
   option (kuma.mesh.resource).type = "ServiceInsight";
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).ws.name = "service-insight";
+  option (kuma.mesh.resource).ws.read_only = true;
 
   google.protobuf.Timestamp last_sync = 1;
 

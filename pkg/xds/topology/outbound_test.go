@@ -5,22 +5,21 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	. "github.com/kumahq/kuma/pkg/xds/topology"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	. "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ = Describe("TrafficRoute", func() {
 	const defaultMeshName = "default"
-	defaultMeshWithMTLS := &mesh_core.MeshResource{
+	defaultMeshWithMTLS := &core_mesh.MeshResource{
 		Meta: &test_model.ResourceMeta{
 			Name: defaultMeshName,
 		},
@@ -30,7 +29,7 @@ var _ = Describe("TrafficRoute", func() {
 			},
 		},
 	}
-	defaultMeshWithoutMTLS := &mesh_core.MeshResource{
+	defaultMeshWithoutMTLS := &core_mesh.MeshResource{
 		Meta: &test_model.ResourceMeta{
 			Name: defaultMeshName,
 		},
@@ -40,7 +39,7 @@ var _ = Describe("TrafficRoute", func() {
 			},
 		},
 	}
-	defaultMeshWithLocality := &mesh_core.MeshResource{
+	defaultMeshWithLocality := &core_mesh.MeshResource{
 		Meta: &test_model.ResourceMeta{
 			Name: defaultMeshName,
 		},
@@ -61,7 +60,7 @@ var _ = Describe("TrafficRoute", func() {
 	Describe("GetOutboundTargets()", func() {
 		It("should pick proper dataplanes for each outbound destination", func() {
 			// given
-			backend := &mesh_core.DataplaneResource{ // dataplane that is a source of traffic
+			backend := &core_mesh.DataplaneResource{ // dataplane that is a source of traffic
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "backend",
@@ -88,7 +87,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}
-			redisV1 := &mesh_core.DataplaneResource{ // dataplane that must become a target
+			redisV1 := &core_mesh.DataplaneResource{ // dataplane that must become a target
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "redis-v1",
@@ -106,7 +105,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}
-			redisV3 := &mesh_core.DataplaneResource{ // dataplane that must be ingored (due to `version: v3`)
+			redisV3 := &core_mesh.DataplaneResource{ // dataplane that must be ingored (due to `version: v3`)
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "redis-v3",
@@ -124,7 +123,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}
-			elasticEU := &mesh_core.DataplaneResource{ // dataplane that must be ingored (due to `kuma.io/region: eu`)
+			elasticEU := &core_mesh.DataplaneResource{ // dataplane that must be ingored (due to `kuma.io/region: eu`)
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "elastic-eu",
@@ -142,7 +141,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}
-			elasticUS := &mesh_core.DataplaneResource{ // dataplane that must become a target
+			elasticUS := &core_mesh.DataplaneResource{ // dataplane that must become a target
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "elastic-us",
@@ -160,11 +159,11 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}
-			dataplanes := &mesh_core.DataplaneResourceList{
-				Items: []*mesh_core.DataplaneResource{backend, redisV1, redisV3, elasticEU, elasticUS},
+			dataplanes := &core_mesh.DataplaneResourceList{
+				Items: []*core_mesh.DataplaneResource{backend, redisV1, redisV3, elasticEU, elasticUS},
 			}
 
-			externalServices := &mesh_core.ExternalServiceResourceList{}
+			externalServices := &core_mesh.ExternalServiceResourceList{}
 
 			// when
 			targets := BuildEndpointMap(defaultMeshWithMTLS, "zone-1", dataplanes.Items, nil, externalServices.Items, dataSourceLoader)
@@ -244,9 +243,9 @@ var _ = Describe("TrafficRoute", func() {
 
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
-			dataplanes       []*mesh_core.DataplaneResource
-			externalServices []*mesh_core.ExternalServiceResource
-			mesh             *mesh_core.MeshResource
+			dataplanes       []*core_mesh.DataplaneResource
+			externalServices []*core_mesh.ExternalServiceResource
+			mesh             *core_mesh.MeshResource
 			expected         core_xds.EndpointMap
 		}
 		DescribeTable("should include only those dataplanes that match given selectors",
@@ -257,12 +256,12 @@ var _ = Describe("TrafficRoute", func() {
 				Expect(endpoints).To(Equal(given.expected))
 			},
 			Entry("no dataplanes", testCase{
-				dataplanes: []*mesh_core.DataplaneResource{},
+				dataplanes: []*core_mesh.DataplaneResource{},
 				mesh:       defaultMeshWithMTLS,
 				expected:   core_xds.EndpointMap{},
 			}),
 			Entry("ingress in the list of dataplanes", testCase{
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
 						Spec: &mesh_proto.Dataplane{
@@ -409,7 +408,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("ingresses in the list of dataplanes from different meshes", testCase{
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
 						Spec: &mesh_proto.Dataplane{
@@ -477,7 +476,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("ingress is not included if mtls is off", testCase{
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
 						Spec: &mesh_proto.Dataplane{
@@ -534,8 +533,8 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("external service no TLS", testCase{
-				dataplanes: []*mesh_core.DataplaneResource{},
-				externalServices: []*mesh_core.ExternalServiceResource{
+				dataplanes: []*core_mesh.DataplaneResource{},
+				externalServices: []*core_mesh.ExternalServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
 						Spec: &mesh_proto.ExternalService{
@@ -561,8 +560,8 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("external service with TLS disabled", testCase{
-				dataplanes: []*mesh_core.DataplaneResource{},
-				externalServices: []*mesh_core.ExternalServiceResource{
+				dataplanes: []*core_mesh.DataplaneResource{},
+				externalServices: []*core_mesh.ExternalServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
 						Spec: &mesh_proto.ExternalService{
@@ -590,8 +589,8 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("external service with TLS enabled", testCase{
-				dataplanes: []*mesh_core.DataplaneResource{},
-				externalServices: []*mesh_core.ExternalServiceResource{
+				dataplanes: []*core_mesh.DataplaneResource{},
+				externalServices: []*core_mesh.ExternalServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
 						Spec: &mesh_proto.ExternalService{
@@ -619,8 +618,8 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("external service with TLS enabled and Locality", testCase{
-				dataplanes: []*mesh_core.DataplaneResource{},
-				externalServices: []*mesh_core.ExternalServiceResource{
+				dataplanes: []*core_mesh.DataplaneResource{},
+				externalServices: []*core_mesh.ExternalServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
 						Spec: &mesh_proto.ExternalService{
@@ -649,7 +648,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 			}),
 			Entry("unhealthy dataplane", testCase{
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Name: "dp-1", Mesh: defaultMeshName},
 						Spec: &mesh_proto.Dataplane{

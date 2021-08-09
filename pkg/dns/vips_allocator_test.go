@@ -7,19 +7,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
-	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
@@ -96,8 +93,8 @@ var _ = Describe("VIP Allocator", func() {
 		vipList, err = persistence.GetByMesh("mesh-2")
 		Expect(err).ToNot(HaveOccurred())
 
-		for _, service := range []string{"backend", "frontend", "web"} {
-			ip, err := r.ForwardLookup(service)
+		for _, service := range []string{"backend.mesh", "frontend.mesh", "web.mesh"} {
+			ip, err := r.ForwardLookupFQDN(service)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ip).To(HavePrefix("240.0.0"))
 		}
@@ -111,8 +108,8 @@ var _ = Describe("VIP Allocator", func() {
 		// we add VIPs directly to the 'persistence' object
 		// that emulates situation when IPAM is fresh and doesn't aware of allocated VIPs
 		err := persistence.Set("mesh-1", vips.List{
-			"frontend": "240.0.0.0",
-			"backend":  "240.0.0.1",
+			vips.NewServiceEntry("frontend"): "240.0.0.0",
+			vips.NewServiceEntry("backend"):  "240.0.0.1",
 		})
 		Expect(err).ToNot(HaveOccurred())
 
@@ -127,9 +124,9 @@ var _ = Describe("VIP Allocator", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// then
 		Expect(vipList).To(Equal(vips.List{
-			"frontend": "240.0.0.0",
-			"backend":  "240.0.0.1",
-			"database": "240.0.0.2",
+			vips.NewServiceEntry("frontend"): "240.0.0.0",
+			vips.NewServiceEntry("backend"):  "240.0.0.1",
+			vips.NewServiceEntry("database"): "240.0.0.2",
 		}))
 	})
 
@@ -259,13 +256,14 @@ var _ = Describe("BuildServiceSet", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(serviceSet).To(Equal(dns.ServiceSet{
-			"backend":     true,
-			"frontend":    true,
-			"database":    true,
-			"metrics":     true,
-			"ingress-svc": true,
-			"es-backend":  true,
+		Expect(serviceSet).To(Equal(vips.EntrySet{
+			vips.NewServiceEntry("backend"):           true,
+			vips.NewServiceEntry("frontend"):          true,
+			vips.NewServiceEntry("database"):          true,
+			vips.NewServiceEntry("metrics"):           true,
+			vips.NewServiceEntry("ingress-svc"):       true,
+			vips.NewServiceEntry("es-backend"):        true,
+			vips.NewHostEntry("external.service.com"): true,
 		}))
 	})
 })
@@ -276,9 +274,9 @@ var _ = Describe("UpdateMeshedVIPs", func() {
 		vipsList := vips.List{}
 		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
-		serviceSet := dns.ServiceSet{
-			"backend":  true,
-			"frontend": true,
+		serviceSet := vips.EntrySet{
+			vips.NewServiceEntry("backend"):  true,
+			vips.NewServiceEntry("frontend"): true,
 		}
 		// when
 		updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
@@ -287,21 +285,21 @@ var _ = Describe("UpdateMeshedVIPs", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(updated).To(BeTrue())
 		Expect(vipsList).To(Equal(vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
+			vips.NewServiceEntry("backend"):  "240.0.0.0",
+			vips.NewServiceEntry("frontend"): "240.0.0.1",
 		}))
 	})
 
 	It("should free IP for deleted service", func() {
 		// setup
 		vipsList := vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
+			vips.NewServiceEntry("backend"):  "240.0.0.0",
+			vips.NewServiceEntry("frontend"): "240.0.0.1",
 		}
 		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
-		serviceSet := dns.ServiceSet{
-			"backend": true,
+		serviceSet := vips.EntrySet{
+			vips.NewServiceEntry("backend"): true,
 		}
 		// when
 		updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
@@ -309,21 +307,21 @@ var _ = Describe("UpdateMeshedVIPs", func() {
 		// then
 		Expect(updated).To(BeTrue())
 		Expect(vipsList).To(Equal(vips.List{
-			"backend": "240.0.0.0",
+			vips.NewServiceEntry("backend"): "240.0.0.0",
 		}))
 	})
 
 	It("should return updated=false if nothing changed", func() {
 		// setup
 		vipsList := vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
+			vips.NewServiceEntry("backend"):  "240.0.0.0",
+			vips.NewServiceEntry("frontend"): "240.0.0.1",
 		}
 		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
-		serviceSet := dns.ServiceSet{
-			"backend":  true,
-			"frontend": true,
+		serviceSet := vips.EntrySet{
+			vips.NewServiceEntry("backend"):  true,
+			vips.NewServiceEntry("frontend"): true,
 		}
 		// when
 		updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
@@ -331,28 +329,28 @@ var _ = Describe("UpdateMeshedVIPs", func() {
 		// then
 		Expect(updated).To(BeFalse())
 		Expect(vipsList).To(Equal(vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
+			vips.NewServiceEntry("backend"):  "240.0.0.0",
+			vips.NewServiceEntry("frontend"): "240.0.0.1",
 		}))
 	})
 
 	It("should generate the same VIP for services across meshes", func() {
 		// setup
 		global := vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
-			"database": "240.0.0.10",
+			vips.NewServiceEntry("backend"):  "240.0.0.0",
+			vips.NewServiceEntry("frontend"): "240.0.0.1",
+			vips.NewServiceEntry("database"): "240.0.0.10",
 		}
 		meshed := vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
+			vips.NewServiceEntry("backend"):  "240.0.0.0",
+			vips.NewServiceEntry("frontend"): "240.0.0.1",
 		}
 		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
-		serviceSet := dns.ServiceSet{
-			"backend":  true,
-			"frontend": true,
-			"database": true,
+		serviceSet := vips.EntrySet{
+			vips.NewServiceEntry("backend"):  true,
+			vips.NewServiceEntry("frontend"): true,
+			vips.NewServiceEntry("database"): true,
 		}
 		// when
 		updated, err := dns.UpdateMeshedVIPs(global, meshed, ipam, serviceSet)
@@ -360,9 +358,9 @@ var _ = Describe("UpdateMeshedVIPs", func() {
 		// then
 		Expect(updated).To(BeTrue())
 		Expect(meshed).To(Equal(vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
-			"database": "240.0.0.10",
+			vips.NewServiceEntry("backend"):  "240.0.0.0",
+			vips.NewServiceEntry("frontend"): "240.0.0.1",
+			vips.NewServiceEntry("database"): "240.0.0.10",
 		}))
 	})
 })

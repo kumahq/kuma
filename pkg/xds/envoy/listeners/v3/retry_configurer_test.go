@@ -7,10 +7,9 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -26,8 +25,8 @@ var _ = Describe("RetryConfigurer", func() {
 		service          string
 		routes           envoy_common.Routes
 		dpTags           mesh_proto.MultiValueTagSet
-		protocol         mesh_core.Protocol
-		retry            *mesh_core.RetryResource
+		protocol         core_mesh.Protocol
+		retry            *core_mesh.RetryResource
 		expected         string
 	}
 
@@ -75,7 +74,7 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "http",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
@@ -143,7 +142,7 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "http",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
@@ -230,7 +229,7 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "grpc",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Grpc: &mesh_proto.Retry_Conf_Grpc{
@@ -298,7 +297,7 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "grpc",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Grpc: &mesh_proto.Retry_Conf_Grpc{

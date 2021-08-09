@@ -19,12 +19,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -33,6 +31,7 @@ import (
 	"github.com/kumahq/kuma/pkg/mads/v1/service"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/util/test"
 )
 
@@ -138,16 +137,16 @@ var _ = Describe("MADS http service", func() {
 	})
 
 	Describe("with resources", func() {
-		createMesh := func(mesh *mesh_core.MeshResource) error {
+		createMesh := func(mesh *core_mesh.MeshResource) error {
 			return resManager.Create(context.Background(), mesh, store.CreateByKey(mesh.GetMeta().GetName(), model.NoMesh))
 		}
 
-		createDataPlane := func(dp *mesh_core.DataplaneResource) error {
+		createDataPlane := func(dp *core_mesh.DataplaneResource) error {
 			err := resManager.Create(context.Background(), dp, store.CreateByKey(dp.Meta.GetName(), dp.GetMeta().GetMesh()))
 			return err
 		}
 
-		var mesh = &mesh_core.MeshResource{
+		var mesh = &core_mesh.MeshResource{
 			Meta: &test_model.ResourceMeta{
 				Name: "test",
 			},
@@ -164,7 +163,7 @@ var _ = Describe("MADS http service", func() {
 			},
 		}
 
-		var dp1 = &mesh_core.DataplaneResource{
+		var dp1 = &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
 				Name: "dp-1",
 				Mesh: mesh.GetMeta().GetName(),
@@ -182,7 +181,7 @@ var _ = Describe("MADS http service", func() {
 			},
 		}
 
-		var dp2 = &mesh_core.DataplaneResource{
+		var dp2 = &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
 				Name: "dp-2",
 				Mesh: mesh.GetMeta().GetName(),

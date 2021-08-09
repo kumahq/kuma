@@ -20,6 +20,8 @@ message ProxyTemplate {
   option (kuma.mesh.resource).name = "ProxyTemplateResource";
   option (kuma.mesh.resource).type = "ProxyTemplate";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "proxytemplate";
 
   // List of Dataplane selectors.
   // +optional

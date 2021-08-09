@@ -4,11 +4,10 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
-
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
 
 type TcpProxyConfigurer struct {

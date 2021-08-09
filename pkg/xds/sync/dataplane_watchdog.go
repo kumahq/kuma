@@ -4,20 +4,18 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
 type DataplaneWatchdogDependencies struct {
-	resManager            manager.ResourceManager
 	dataplaneProxyBuilder *DataplaneProxyBuilder
 	dataplaneReconciler   SnapshotReconciler
 	ingressProxyBuilder   *IngressProxyBuilder
@@ -29,9 +27,8 @@ type DataplaneWatchdogDependencies struct {
 
 type DataplaneWatchdog struct {
 	DataplaneWatchdogDependencies
-	key      core_model.ResourceKey
-	streamId int64
-	log      logr.Logger
+	key core_model.ResourceKey
+	log logr.Logger
 
 	// state of watchdog
 	lastHash         string // last Mesh hash that was used to **successfully** generate Reconcile Envoy config
@@ -39,25 +36,28 @@ type DataplaneWatchdog struct {
 	proxyTypeSettled bool
 }
 
-func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, proxyId *core_xds.ProxyId, streamId int64) *DataplaneWatchdog {
+func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, dpKey core_model.ResourceKey) *DataplaneWatchdog {
 	return &DataplaneWatchdog{
 		DataplaneWatchdogDependencies: deps,
-		key:                           proxyId.ToResourceKey(),
-		streamId:                      streamId,
-		log:                           core.Log.WithValues("key", proxyId.ToResourceKey(), "streamID", streamId),
+		key:                           dpKey,
+		log:                           core.Log.WithValues("key", dpKey),
 		proxyTypeSettled:              false,
 	}
 }
 
 func (d *DataplaneWatchdog) Sync() error {
 	ctx := context.Background()
+	metadata := d.metadataTracker.Metadata(d.key)
+	if metadata == nil {
+		return errors.New("metadata cannot be nil")
+	}
 
 	if d.dpType == "" {
-		d.dpType = d.metadataTracker.Metadata(d.streamId).GetProxyType()
+		d.dpType = metadata.GetProxyType()
 	}
 	// backwards compatibility
 	if d.dpType == mesh_proto.DataplaneProxyType && !d.proxyTypeSettled {
-		dataplane := mesh_core.NewDataplaneResource()
+		dataplane := core_mesh.NewDataplaneResource()
 		if err := d.dataplaneProxyBuilder.CachingResManager.Get(ctx, dataplane, store.GetBy(d.key)); err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ func (d *DataplaneWatchdog) Sync() error {
 		d.proxyTypeSettled = true
 	}
 	switch d.dpType {
-	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
+	case mesh_proto.DataplaneProxyType:
 		return d.syncDataplane()
 	case mesh_proto.IngressProxyType:
 		return d.syncIngress()
@@ -80,7 +80,7 @@ func (d *DataplaneWatchdog) Sync() error {
 func (d *DataplaneWatchdog) Cleanup() error {
 	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
-	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
+	case mesh_proto.DataplaneProxyType:
 		return d.dataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
 		return d.ingressReconciler.Clear(&proxyID)
@@ -102,11 +102,11 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 	}
 	d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", snapshotHash)
 
-	envoyCtx, err := d.xdsContextBuilder.buildMeshedContext(d.streamId, d.key.Mesh, d.lastHash)
+	envoyCtx, err := d.xdsContextBuilder.buildMeshedContext(d.key, d.lastHash)
 	if err != nil {
 		return err
 	}
-	proxy, err := d.dataplaneProxyBuilder.build(d.key, d.streamId, &envoyCtx.Mesh)
+	proxy, err := d.dataplaneProxyBuilder.build(d.key, envoyCtx)
 	if err != nil {
 		return err
 	}
@@ -119,8 +119,11 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 
 // syncIngress synces state of Ingress Dataplane. Notice that it does not use Mesh Hash yet because Ingress supports many Meshes.
 func (d *DataplaneWatchdog) syncIngress() error {
-	envoyCtx := d.xdsContextBuilder.buildContext(d.streamId)
-	proxy, err := d.ingressProxyBuilder.build(d.key, d.streamId)
+	envoyCtx, err := d.xdsContextBuilder.buildContext(d.key)
+	if err != nil {
+		return err
+	}
+	proxy, err := d.ingressProxyBuilder.build(d.key)
 	if err != nil {
 		return err
 	}

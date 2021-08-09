@@ -3,11 +3,9 @@ package api_server_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestWs(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "API Server")
+	test.RunSpecs(t, "API Server")
 }

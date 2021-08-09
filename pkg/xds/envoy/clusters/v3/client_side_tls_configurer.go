@@ -7,11 +7,10 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
-	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
-
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
+	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
 type ClientSideTLSConfigurer struct {

@@ -8,7 +8,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -41,9 +41,9 @@ func (v *ServiceValidator) validate(svc *kube_core.Service) error {
 	for _, svcPort := range svc.Spec.Ports {
 		protocolAnnotation := fmt.Sprintf("%d.service.kuma.io/protocol", svcPort.Port)
 		protocolAnnotationValue, exists := svc.Annotations[protocolAnnotation]
-		if exists && mesh_core.ParseProtocol(protocolAnnotationValue) == mesh_core.ProtocolUnknown {
+		if exists && core_mesh.ParseProtocol(protocolAnnotationValue) == core_mesh.ProtocolUnknown {
 			verr.AddViolationAt(validators.RootedAt("metadata").Field("annotations").Key(protocolAnnotation),
-				fmt.Sprintf("value %q is not valid. %s", protocolAnnotationValue, mesh_core.AllowedValuesHint(mesh_core.SupportedProtocols.Strings()...)))
+				fmt.Sprintf("value %q is not valid. %s", protocolAnnotationValue, core_mesh.AllowedValuesHint(core_mesh.SupportedProtocols.Strings()...)))
 		}
 	}
 	return verr.OrNil()

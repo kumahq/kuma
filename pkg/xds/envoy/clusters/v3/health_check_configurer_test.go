@@ -3,25 +3,24 @@ package clusters_test
 import (
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("HealthCheckConfigurer", func() {
 
 	type testCase struct {
 		clusterName string
-		healthCheck *mesh_core.HealthCheckResource
+		healthCheck *core_mesh.HealthCheckResource
 		expected    string
 	}
 
@@ -30,8 +29,8 @@ var _ = Describe("HealthCheckConfigurer", func() {
 			// when
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
-				Configure(clusters.HealthCheck(mesh_core.ProtocolHTTP, given.healthCheck)).
-				Configure(clusters.Timeout(mesh_core.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
+				Configure(clusters.HealthCheck(core_mesh.ProtocolHTTP, given.healthCheck)).
+				Configure(clusters.Timeout(core_mesh.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
 				Build()
 
 			// then
@@ -43,7 +42,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		},
 		Entry("HealthCheck with neither active nor passive checks", testCase{
 			clusterName: "testCluster",
-			healthCheck: mesh_core.NewHealthCheckResource(),
+			healthCheck: core_mesh.NewHealthCheckResource(),
 			expected: `
             connectTimeout: 5s
             edsClusterConfig:
@@ -55,7 +54,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		}),
 		Entry("HealthCheck with active checks", testCase{
 			clusterName: "testCluster",
-			healthCheck: &mesh_core.HealthCheckResource{
+			healthCheck: &core_mesh.HealthCheckResource{
 				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
@@ -90,7 +89,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		}),
 		Entry("HealthCheck with provided TCP Send/Receive properties", testCase{
 			clusterName: "testCluster",
-			healthCheck: &mesh_core.HealthCheckResource{
+			healthCheck: &core_mesh.HealthCheckResource{
 				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
@@ -137,7 +136,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		}),
 		Entry("HealthCheck with provided TCP Send only properties", testCase{
 			clusterName: "testCluster",
-			healthCheck: &mesh_core.HealthCheckResource{
+			healthCheck: &core_mesh.HealthCheckResource{
 				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
@@ -177,7 +176,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		}),
 		Entry("HealthCheck with provided HTTP configuration", testCase{
 			clusterName: "testCluster",
-			healthCheck: &mesh_core.HealthCheckResource{
+			healthCheck: &core_mesh.HealthCheckResource{
 				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
@@ -238,7 +237,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		}),
 		Entry("HealthCheck with provided both, TCP and HTTP configurations", testCase{
 			clusterName: "testCluster",
-			healthCheck: &mesh_core.HealthCheckResource{
+			healthCheck: &core_mesh.HealthCheckResource{
 				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
@@ -318,7 +317,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		}),
 		Entry("HealthCheck with jitter", testCase{
 			clusterName: "testCluster",
-			healthCheck: &mesh_core.HealthCheckResource{
+			healthCheck: &core_mesh.HealthCheckResource{
 				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
@@ -357,7 +356,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		}),
 		Entry("HealthCheck with panic threshold", testCase{
 			clusterName: "testCluster",
-			healthCheck: &mesh_core.HealthCheckResource{
+			healthCheck: &core_mesh.HealthCheckResource{
 				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
@@ -394,7 +393,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		}),
 		Entry("HealthCheck with panic threshold, fail traffic on panic", testCase{
 			clusterName: "testCluster",
-			healthCheck: &mesh_core.HealthCheckResource{
+			healthCheck: &core_mesh.HealthCheckResource{
 				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
@@ -434,7 +433,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		}),
 		Entry("HealthCheck with event log path", testCase{
 			clusterName: "testCluster",
-			healthCheck: &mesh_core.HealthCheckResource{
+			healthCheck: &core_mesh.HealthCheckResource{
 				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},

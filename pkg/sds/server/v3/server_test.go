@@ -7,38 +7,35 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pkg/errors"
-	prometheus_client "github.com/prometheus/client_model/go"
-
-	sds_server "github.com/kumahq/kuma/pkg/sds/server"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
-
 	envoy_api_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_service_secret "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	prometheus_client "github.com/prometheus/client_model/go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	dp_server_cfg "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	sds_server "github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/runtime"
 	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 var _ = Describe("SDS Server", func() {
@@ -76,7 +73,7 @@ var _ = Describe("SDS Server", func() {
 		resManager = runtime.ResourceManager()
 
 		// setup default mesh with active mTLS and 2 CA
-		meshRes := mesh_core.MeshResource{
+		meshRes := core_mesh.MeshResource{
 			Spec: &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: "ca-1",
@@ -107,7 +104,7 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup backend dataplane
-		dpRes := mesh_core.DataplaneResource{
+		dpRes := core_mesh.DataplaneResource{
 			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
@@ -170,7 +167,7 @@ var _ = Describe("SDS Server", func() {
 
 	BeforeEach(func() {
 		// make sure no insight is present
-		err := resManager.Delete(context.Background(), mesh_core.NewDataplaneInsightResource(), core_store.DeleteByKey("backend-01", "default"))
+		err := resManager.Delete(context.Background(), core_mesh.NewDataplaneInsightResource(), core_store.DeleteByKey("backend-01", "default"))
 		if !core_store.IsResourceNotFound(err) {
 			Expect(err).ToNot(HaveOccurred())
 		}
@@ -214,7 +211,7 @@ var _ = Describe("SDS Server", func() {
 
 		// and insight is generated (insight is updated async, to does not have to be done before response is sent)
 		Eventually(func() error {
-			dpInsight := mesh_core.NewDataplaneInsightResource()
+			dpInsight := core_mesh.NewDataplaneInsightResource()
 			err := resManager.Get(context.Background(), dpInsight, core_store.GetByKey("backend-01", "default"))
 			if err != nil {
 				return err
@@ -268,7 +265,7 @@ var _ = Describe("SDS Server", func() {
 
 			// and wait for the insight
 			Eventually(func() error {
-				return resManager.Get(context.Background(), mesh_core.NewDataplaneInsightResource(), core_store.GetByKey("backend-01", "default"))
+				return resManager.Get(context.Background(), core_mesh.NewDataplaneInsightResource(), core_store.GetByKey("backend-01", "default"))
 			}, "30s", "1s").ShouldNot(HaveOccurred())
 		}))
 
@@ -278,7 +275,7 @@ var _ = Describe("SDS Server", func() {
 
 		It("should return pair when CA is changed", test.Within(time.Minute, func() {
 			// when
-			meshRes := mesh_core.NewMeshResource()
+			meshRes := core_mesh.NewMeshResource()
 			Expect(resManager.Get(context.Background(), meshRes, core_store.GetByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "" // we need to first disable mTLS
 			Expect(resManager.Update(context.Background(), meshRes)).To(Succeed())
@@ -300,7 +297,7 @@ var _ = Describe("SDS Server", func() {
 
 			// and insight is generated (insight is updated async, to does not have to be done before response is sent)
 			Eventually(func() error {
-				dpInsight := mesh_core.NewDataplaneInsightResource()
+				dpInsight := core_mesh.NewDataplaneInsightResource()
 				err := resManager.Get(context.Background(), dpInsight, core_store.GetByKey("backend-01", "default"))
 				if err != nil {
 					return err
@@ -334,7 +331,7 @@ var _ = Describe("SDS Server", func() {
 
 		It("should return a new pair when dataplane has changed", test.Within(time.Minute, func() {
 			// when
-			dpRes := mesh_core.NewDataplaneResource()
+			dpRes := core_mesh.NewDataplaneResource()
 			Expect(resManager.Get(context.Background(), dpRes, core_store.GetByKey("backend-01", "default"))).To(Succeed())
 			dpRes.Spec.Networking.Inbound[0].Tags["version"] = "xyz"
 

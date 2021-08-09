@@ -5,21 +5,19 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
-	core_ca "github.com/kumahq/kuma/pkg/core/ca"
-	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+
+	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 // MeshReconciler reconciles a Mesh object
@@ -45,7 +43,7 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 		if kube_apierrs.IsNotFound(err) {
 			// Force delete associated resources. It will return an error ErrorResourceNotFound because Mesh was already deleted but we still need to cleanup resources
 			// Remove this part after https://github.com/kumahq/kuma/issues/1137 is implemented.
-			err := r.ResourceManager.Delete(ctx, mesh_core.NewMeshResource(), store.DeleteByKey(req.Name, req.Name))
+			err := r.ResourceManager.Delete(ctx, core_mesh.NewMeshResource(), store.DeleteByKey(req.Name, req.Name))
 			if err == nil || store.IsResourceNotFound(err) {
 				return kube_ctrl.Result{}, nil
 			}
@@ -55,7 +53,7 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 		return kube_ctrl.Result{}, err
 	}
 
-	meshResource := mesh_core.NewMeshResource()
+	meshResource := core_mesh.NewMeshResource()
 	if err := r.Converter.ToCoreResource(mesh, meshResource); err != nil {
 		log.Error(err, "unable to convert Mesh k8s object into core model")
 		return kube_ctrl.Result{}, err

@@ -5,7 +5,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/universal/outbound"
 )
 
 var _ core_plugins.RuntimePlugin = &plugin{}
@@ -21,28 +20,11 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		return nil
 	}
 
-	if err := addVIPOutboundsReconciler(rt); err != nil {
-		return err
-	}
-
 	if err := addDNS(rt); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func addVIPOutboundsReconciler(rt core_runtime.Runtime) error {
-	vipOutboundsReconciler, err := outbound.NewVIPOutboundsReconciler(
-		rt.ReadOnlyResourceManager(),
-		rt.ResourceManager(),
-		rt.DNSResolver(),
-		rt.Config().XdsServer.DataplaneStatusFlushInterval,
-	)
-	if err != nil {
-		return err
-	}
-	return rt.Add(vipOutboundsReconciler)
 }
 
 func addDNS(rt core_runtime.Runtime) error {

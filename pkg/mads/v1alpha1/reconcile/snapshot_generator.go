@@ -3,14 +3,13 @@ package reconcile
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/mads/generator"
-
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/mads/generator"
 	mads_cache "github.com/kumahq/kuma/pkg/mads/v1alpha1/cache"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
@@ -51,13 +50,13 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.
 	return mads_cache.NewSnapshot("", core_xds.ResourceList(resources).ToIndex()), nil
 }
 
-func (s *snapshotGenerator) getMeshesWithPrometheusEnabled(ctx context.Context) ([]*mesh_core.MeshResource, error) {
-	meshList := &mesh_core.MeshResourceList{}
+func (s *snapshotGenerator) getMeshesWithPrometheusEnabled(ctx context.Context) ([]*core_mesh.MeshResource, error) {
+	meshList := &core_mesh.MeshResourceList{}
 	if err := s.resourceManager.List(ctx, meshList); err != nil {
 		return nil, err
 	}
 
-	meshes := make([]*mesh_core.MeshResource, 0)
+	meshes := make([]*core_mesh.MeshResource, 0)
 	for _, mesh := range meshList.Items {
 		if mesh.HasPrometheusMetricsEnabled() {
 			meshes = append(meshes, mesh)
@@ -66,10 +65,10 @@ func (s *snapshotGenerator) getMeshesWithPrometheusEnabled(ctx context.Context) 
 	return meshes, nil
 }
 
-func (s *snapshotGenerator) getDataplanes(ctx context.Context, meshes []*mesh_core.MeshResource) ([]*mesh_core.DataplaneResource, error) {
-	dataplanes := make([]*mesh_core.DataplaneResource, 0)
+func (s *snapshotGenerator) getDataplanes(ctx context.Context, meshes []*core_mesh.MeshResource) ([]*core_mesh.DataplaneResource, error) {
+	dataplanes := make([]*core_mesh.DataplaneResource, 0)
 	for _, mesh := range meshes {
-		dataplaneList := &mesh_core.DataplaneResourceList{}
+		dataplaneList := &core_mesh.DataplaneResourceList{}
 		if err := s.resourceManager.List(ctx, dataplaneList, core_store.ListByMesh(mesh.Meta.GetName())); err != nil {
 			return nil, err
 		}
