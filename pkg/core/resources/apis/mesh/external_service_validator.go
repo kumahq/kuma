@@ -36,6 +36,10 @@ func validateExternalServiceNetworking(networking *mesh_proto.ExternalService_Ne
 	} else {
 		err.Add(validateExtarnalServiceAddress(path, networking.Address))
 	}
+
+	if networking.GetTls().GetServerName() != nil && networking.GetTls().GetServerName().GetValue() == "" {
+		err.AddViolationAt(path.Field("tls").Field("serverName"), "cannot be empty")
+	}
 	return err
 }
 
