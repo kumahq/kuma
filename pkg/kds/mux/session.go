@@ -3,7 +3,7 @@ package mux
 import (
 	"sync/atomic"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
@@ -31,11 +31,11 @@ func NewSession(peerID string, stream MultiplexStream, stop <-chan struct{}) Ses
 		done:   make(chan struct{}, 1),
 		err:    make(chan error, 1),
 		serverStream: &kdsServerStream{
-			requests:        make(chan *envoy_api_v2.DiscoveryRequest, 1),
+			requests:        make(chan *envoy_sd.DiscoveryRequest, 1),
 			MultiplexStream: stream,
 		},
 		clientStream: &kdsClientStream{
-			responses:       make(chan *envoy_api_v2.DiscoveryResponse, 1),
+			responses:       make(chan *envoy_sd.DiscoveryResponse, 1),
 			MultiplexStream: stream,
 		},
 		closed: int32(0),
@@ -66,9 +66,13 @@ func (s *session) handle(stream MultiplexStream, stop <-chan struct{}) error {
 		}
 		switch v := msg.Value.(type) {
 		case *mesh_proto.Message_Request:
-			s.serverStream.put(v.Request)
+			s.serverStream.put(DiscoveryRequestV3(v.Request))
+		case *mesh_proto.Message_RequestV3:
+			s.serverStream.put(v.RequestV3)
 		case *mesh_proto.Message_Response:
-			s.clientStream.put(v.Response)
+			s.clientStream.put(DiscoveryResponseV3(v.Response))
+		case *mesh_proto.Message_ResponseV3:
+			s.clientStream.put(v.ResponseV3)
 		}
 	}
 }

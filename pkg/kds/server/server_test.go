@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -49,8 +49,8 @@ var _ = Describe("KDS Server", func() {
 			ResourceStore:      s,
 			MockStream:         stream,
 			Wg:                 wg,
-			Responses:          map[string]*v2.DiscoveryResponse{},
-			LastACKedResponses: map[string]*v2.DiscoveryResponse{},
+			Responses:          map[string]*envoy_sd.DiscoveryResponse{},
+			LastACKedResponses: map[string]*envoy_sd.DiscoveryResponse{},
 		}
 	})
 
