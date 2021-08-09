@@ -26,7 +26,7 @@ func ResilienceStandaloneUniversal() {
 
 		optsUniversal = []DeployOptionsFunc{
 			WithPostgres(postgres.From(universal, Kuma1).GetEnvVars()),
-			WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "30s"),
+			WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
 		}
 
 		err = NewClusterSetup().

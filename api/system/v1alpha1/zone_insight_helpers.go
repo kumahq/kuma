@@ -60,10 +60,6 @@ func (x *ZoneInsight) IsOnline() bool {
 	return false
 }
 
-func (x *KDSSubscription) SetCandidateForDisconnect(b bool) {
-	x.CandidateForDisconnect = b
-}
-
 func (x *KDSSubscription) SetDisconnectTime(time time.Time) {
 	x.DisconnectTime = timestamppb.New(time)
 }

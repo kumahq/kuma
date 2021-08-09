@@ -18,38 +18,50 @@ var (
 	finalizerLog = core.Log.WithName("finalizer")
 )
 
-// subscriptionFinalizer is a component that allows to finalize subscriptions for Insights.
-// The component iterates over all online Insights on every tick and marks their last
-// subscriptions as a candidate for disconnection. If subscription has already been marked as
-// a candidate then component finalizes the subscription by setting DisconnectTime.
+// Every Insight has a statusSink that periodically increments the 'generation' counter while Kuma CP <-> DPP
+// connection is active. This updates happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout / 2.
 //
-// Every Insight has a statusSink that periodically updates Subscriptions. That's why if there
-// is an active connection between Kuma CP and DPP (or Global CP and Zone CP) then Subscription
-// will be unmarked back from the candidate status. If there is no active connection then after 2 ticks
-// Insight will be considered Offline.
+// subscriptionFinalizer is a component that allows to finalize subscriptions for Insights. The component iterates
+// over all online Insights and checks that 'generation' counter was changed since the last check. This check
+// happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout. If 'generation' counter didn't change then component
+// finalizes the subscription by setting DisconnectTime.
 //
 // This component allows to solve the corner case we had with Insights:
 // 1. Kuma CP is down
 // 2. DPP is down
 // 3. Kuma CP is up
 // 4. DPP status is Online whereas it should be Offline
+
+type descriptor struct {
+	id         string
+	generation uint32
+}
+
+type insightMap map[core_model.ResourceKey]*descriptor
+
+type insightsByType map[core_model.ResourceType]insightMap
+
 type subscriptionFinalizer struct {
 	rm        manager.ResourceManager
 	newTicker func() *time.Ticker
 	types     []core_model.ResourceType
+	insights  insightsByType
 }
 
 func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
+	insights := insightsByType{}
 	for _, typ := range types {
 		if err := validateType(typ); err != nil {
 			return nil, err
 		}
+		insights[typ] = map[core_model.ResourceKey]*descriptor{}
 	}
 
 	return &subscriptionFinalizer{
 		rm:        rm,
 		types:     types,
 		newTicker: newTicker,
+		insights:  insights,
 	}, nil
 }
 
@@ -62,8 +74,8 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 		select {
 		case <-ticker.C:
 			for _, typ := range f.types {
-				if err := f.finalize(typ); err != nil {
-					finalizerLog.Error(err, "unable to finalize subscription", "type", typ)
+				if err := f.checkGeneration(typ); err != nil {
+					finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
 				}
 			}
 		case <-stop:
@@ -73,29 +85,41 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (f *subscriptionFinalizer) finalize(typ core_model.ResourceType) error {
+func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType) error {
+	// get all the insights for provided type
 	ctx := context.Background()
 	insights, _ := registry.Global().NewList(typ)
 	if err := f.rm.List(ctx, insights); err != nil {
 		return err
 	}
 
+	// delete items from the map that don't exist in the upstream
+	f.upstreamSync(insights)
+
 	for _, item := range insights.GetItems() {
 		log := finalizerLog.WithValues("type", typ, "name", item.GetMeta().GetName(), "mesh", item.GetMeta().GetMesh())
+		key := core_model.MetaToResourceKey(item.GetMeta())
 		insight := item.GetSpec().(kuma_interfaces.Insight)
+
 		if !insight.IsOnline() {
+			delete(f.insights[typ], key)
 			continue
 		}
-		if insight.GetLastSubscription().GetCandidateForDisconnect() {
-			log.V(1).Info("mark subscription as disconnected")
-			insight.GetLastSubscription().SetDisconnectTime(core.Now())
-		} else {
-			log.V(1).Info("mark subscription as a candidate for disconnect")
 
-			// the CandidateForDisconnect flag will be unset in the DataplaneInsightSink (or ZoneInsightSink)
-			// if the connection is active
-			insight.GetLastSubscription().SetCandidateForDisconnect(true)
+		old, ok := f.insights[typ][key]
+		if !ok || old.id != insight.GetLastSubscription().GetId() || old.generation != insight.GetLastSubscription().GetGeneration() {
+			// something changed since the last check, either subscriptionId or generation were updated
+			// don't finalize the subscription, update map with fresh data
+			f.insights[typ][key] = &descriptor{
+				id:         insight.GetLastSubscription().GetId(),
+				generation: insight.GetLastSubscription().GetGeneration(),
+			}
+			continue
 		}
+
+		log.V(1).Info("mark subscription as disconnected")
+		insight.GetLastSubscription().SetDisconnectTime(core.Now())
+
 		upsertInsight, _ := registry.Global().NewObject(typ)
 		err := manager.Upsert(f.rm, core_model.MetaToResourceKey(item.GetMeta()), upsertInsight, func(_ core_model.Resource) bool {
 			upsertInsight.GetSpec().(kuma_interfaces.Insight).UpdateSubscription(insight.GetLastSubscription())
@@ -104,8 +128,21 @@ func (f *subscriptionFinalizer) finalize(typ core_model.ResourceType) error {
 		if err != nil {
 			log.Error(err, "unable to finalize subscription")
 		}
+		delete(f.insights[typ], key)
 	}
 	return nil
+}
+
+func (f *subscriptionFinalizer) upstreamSync(insights core_model.ResourceList) {
+	byResourceKey := map[core_model.ResourceKey]bool{}
+	for _, item := range insights.GetItems() {
+		byResourceKey[core_model.MetaToResourceKey(item.GetMeta())] = true
+	}
+	for rk := range f.insights[insights.GetItemType()] {
+		if !byResourceKey[rk] {
+			delete(f.insights[insights.GetItemType()], rk)
+		}
+	}
 }
 
 func validateType(typ core_model.ResourceType) error {

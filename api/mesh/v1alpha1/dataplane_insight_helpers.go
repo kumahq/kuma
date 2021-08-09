@@ -126,10 +126,6 @@ func (x *DataplaneInsight) GetLastSubscription() helpers.Subscription {
 	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
 }
 
-func (x *DiscoverySubscription) SetCandidateForDisconnect(b bool) {
-	x.CandidateForDisconnect = b
-}
-
 func (x *DiscoverySubscription) SetDisconnectTime(t time.Time) {
 	x.DisconnectTime = timestamppb.New(t)
 }

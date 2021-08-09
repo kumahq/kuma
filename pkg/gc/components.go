@@ -42,14 +42,14 @@ func setupFinalizer(rt runtime.Runtime) error {
 	switch rt.Config().Mode {
 	case config_core.Standalone:
 		newTicker = func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout / 2)
+			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout)
 		}
 		resourceTypes = []model.ResourceType{
 			mesh.DataplaneInsightType,
 		}
 	case config_core.Zone:
 		newTicker = func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout / 2)
+			return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout)
 		}
 		resourceTypes = []model.ResourceType{
 			mesh.DataplaneInsightType,
@@ -57,7 +57,7 @@ func setupFinalizer(rt runtime.Runtime) error {
 		}
 	case config_core.Global:
 		newTicker = func() *time.Ticker {
-			return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout / 2)
+			return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout)
 		}
 		resourceTypes = []model.ResourceType{
 			system.ZoneInsightType,

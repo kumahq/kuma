@@ -32,7 +32,7 @@ func ResilienceMultizoneUniversalPostgres() {
 
 		optsGlobal = []DeployOptionsFunc{
 			WithPostgres(postgres.From(global, Kuma1).GetEnvVars()),
-			WithEnv("KUMA_METRICS_ZONE_IDLE_TIMEOUT", "30s"),
+			WithEnv("KUMA_METRICS_ZONE_IDLE_TIMEOUT", "10s"),
 		}
 
 		err = NewClusterSetup().
@@ -55,7 +55,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		optsZone1 = []DeployOptionsFunc{
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithPostgres(postgres.From(zoneUniversal, Kuma2).GetEnvVars()),
-			WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "30s"),
+			WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
 		}
 
 		err = NewClusterSetup().

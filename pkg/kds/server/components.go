@@ -53,6 +53,9 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 			func() *time.Ticker {
 				return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval)
 			},
+			func() *time.Ticker {
+				return time.NewTicker(rt.Config().Metrics.Zone.IdleTimeout / 2)
+			},
 			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval/10,
 			NewZonesInsightStore(rt.ResourceManager()),
 			l)

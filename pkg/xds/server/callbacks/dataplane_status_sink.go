@@ -30,33 +30,52 @@ func NewDataplaneInsightSink(
 	dataplaneType core_model.ResourceType,
 	accessor SubscriptionStatusAccessor,
 	newTicker func() *time.Ticker,
+	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
 	store DataplaneInsightStore) DataplaneInsightSink {
 	return &dataplaneInsightSink{
-		newTicker:     newTicker,
-		dataplaneType: dataplaneType,
-		accessor:      accessor,
-		flushBackoff:  flushBackoff,
-		store:         store,
+		flushTicker:      newTicker,
+		generationTicker: generationTicker,
+		dataplaneType:    dataplaneType,
+		accessor:         accessor,
+		flushBackoff:     flushBackoff,
+		store:            store,
 	}
 }
 
 var _ DataplaneInsightSink = &dataplaneInsightSink{}
 
 type dataplaneInsightSink struct {
-	newTicker     func() *time.Ticker
-	dataplaneType core_model.ResourceType
-	accessor      SubscriptionStatusAccessor
-	store         DataplaneInsightStore
-	flushBackoff  time.Duration
+	flushTicker      func() *time.Ticker
+	generationTicker func() *time.Ticker
+	dataplaneType    core_model.ResourceType
+	accessor         SubscriptionStatusAccessor
+	store            DataplaneInsightStore
+	flushBackoff     time.Duration
 }
 
 func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
-	ticker := s.newTicker()
-	defer ticker.Stop()
+	flushTicker := s.flushTicker()
+	defer flushTicker.Stop()
+
+	generationTicker := s.generationTicker()
+	defer generationTicker.Stop()
+
+	var lastStoredState *mesh_proto.DiscoverySubscription
+	var generation uint32
 
 	flush := func(closing bool) {
 		dataplaneID, currentState := s.accessor.GetStatus()
+		select {
+		case <-generationTicker.C:
+			generation++
+		default:
+		}
+		currentState.Generation = generation
+		if proto.Equal(currentState, lastStoredState) {
+			return
+		}
+
 		if err := s.store.Upsert(s.dataplaneType, dataplaneID, currentState); err != nil {
 			switch {
 			case closing:
@@ -83,12 +102,13 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			}
 		} else {
 			sinkLog.V(1).Info("DataplaneInsight saved", "dataplaneid", dataplaneID, "subscription", currentState)
+			lastStoredState = currentState
 		}
 	}
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-flushTicker.C:
 			flush(false)
 			// On Kubernetes, because of the cache subsequent Get, Update requests can fail, because the cache is not strongly consistent.
 			// We handle the Resource Conflict logging on V1, but we can try to avoid the situation with backoff
@@ -121,20 +141,12 @@ func (s *dataplaneInsightStore) Upsert(
 	case core_mesh.ZoneIngressType:
 		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) bool {
 			insight := resource.(*core_mesh.ZoneIngressInsightResource)
-			if proto.Equal(subscription, insight.Spec.GetLastSubscription()) {
-				// resource didn't change, no need to update
-				return false
-			}
 			insight.Spec.UpdateSubscription(subscription)
 			return true
 		})
 	case core_mesh.DataplaneType:
 		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) bool {
 			insight := resource.(*core_mesh.DataplaneInsightResource)
-			if proto.Equal(subscription, insight.Spec.GetLastSubscription()) {
-				// resource didn't change, no need to update
-				return false
-			}
 			insight.Spec.UpdateSubscription(subscription)
 			return true
 		})

@@ -23,35 +23,54 @@ type ZoneInsightStore interface {
 
 func NewZoneInsightSink(
 	accessor StatusAccessor,
-	newTicker func() *time.Ticker,
+	flushTicker func() *time.Ticker,
+	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
 	store ZoneInsightStore,
 	log logr.Logger) ZoneInsightSink {
 	return &zoneInsightSink{
-		newTicker:    newTicker,
-		flushBackoff: flushBackoff,
-		accessor:     accessor,
-		store:        store,
-		log:          log,
+		flushTicker:      flushTicker,
+		generationTicker: generationTicker,
+		flushBackoff:     flushBackoff,
+		accessor:         accessor,
+		store:            store,
+		log:              log,
 	}
 }
 
 var _ ZoneInsightSink = &zoneInsightSink{}
 
 type zoneInsightSink struct {
-	newTicker    func() *time.Ticker
-	flushBackoff time.Duration
-	accessor     StatusAccessor
-	store        ZoneInsightStore
-	log          logr.Logger
+	flushTicker      func() *time.Ticker
+	generationTicker func() *time.Ticker
+	flushBackoff     time.Duration
+	accessor         StatusAccessor
+	store            ZoneInsightStore
+	log              logr.Logger
 }
 
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {
-	ticker := s.newTicker()
-	defer ticker.Stop()
+	flushTicker := s.flushTicker()
+	defer flushTicker.Stop()
+
+	generationTicker := s.generationTicker()
+	defer generationTicker.Stop()
+
+	var lastStoredState *system_proto.KDSSubscription
+	var generation uint32
 
 	flush := func() {
 		zone, currentState := s.accessor.GetStatus()
+		select {
+		case <-generationTicker.C:
+			generation++
+		default:
+		}
+		currentState.Generation = generation
+		if proto.Equal(currentState, lastStoredState) {
+			return
+		}
+
 		if err := s.store.Upsert(zone, currentState); err != nil {
 			if store.IsResourceConflict(err) {
 				s.log.V(1).Info("failed to flush ZoneInsight because it was updated in other place. Will retry in the next tick", "zone", zone)
@@ -60,12 +79,13 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 			}
 		} else {
 			s.log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
+			lastStoredState = currentState
 		}
 	}
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-flushTicker.C:
 			flush()
 			time.Sleep(s.flushBackoff)
 		case <-stop:
@@ -91,12 +111,7 @@ func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSub
 	}
 	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(s.resManager, key, zoneInsight, func(resource core_model.Resource) bool {
-		insight := resource.(*system.ZoneInsightResource)
-		if proto.Equal(subscription, insight.Spec.GetLastSubscription()) {
-			// resource didn't change, no need to update
-			return false
-		}
-		insight.Spec.UpdateSubscription(subscription)
+		zoneInsight.Spec.UpdateSubscription(subscription)
 		return true
 	})
 }

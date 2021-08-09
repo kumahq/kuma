@@ -15,7 +15,7 @@ type Insight interface {
 
 type Subscription interface {
 	proto.Message
-	GetCandidateForDisconnect() bool
-	SetCandidateForDisconnect(bool)
+	GetId() string
+	GetGeneration() uint32
 	SetDisconnectTime(time time.Time)
 }
