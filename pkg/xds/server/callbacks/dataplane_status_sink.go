@@ -139,16 +139,14 @@ func (s *dataplaneInsightStore) Upsert(
 ) error {
 	switch dataplaneType {
 	case core_mesh.ZoneIngressType:
-		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) bool {
+		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) {
 			insight := resource.(*core_mesh.ZoneIngressInsightResource)
 			insight.Spec.UpdateSubscription(subscription)
-			return true
 		})
 	case core_mesh.DataplaneType:
-		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) bool {
+		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) {
 			insight := resource.(*core_mesh.DataplaneInsightResource)
 			insight.Spec.UpdateSubscription(subscription)
-			return true
 		})
 	default:
 		// Return a designated precondition error since we don't expect other dataplane types.

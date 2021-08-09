@@ -110,8 +110,7 @@ func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSub
 		Name: zone,
 	}
 	zoneInsight := system.NewZoneInsightResource()
-	return manager.Upsert(s.resManager, key, zoneInsight, func(resource core_model.Resource) bool {
+	return manager.Upsert(s.resManager, key, zoneInsight, func(resource core_model.Resource) {
 		zoneInsight.Spec.UpdateSubscription(subscription)
-		return true
 	})
 }

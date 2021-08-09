@@ -121,9 +121,8 @@ func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType) err
 		insight.GetLastSubscription().SetDisconnectTime(core.Now())
 
 		upsertInsight, _ := registry.Global().NewObject(typ)
-		err := manager.Upsert(f.rm, core_model.MetaToResourceKey(item.GetMeta()), upsertInsight, func(_ core_model.Resource) bool {
+		err := manager.Upsert(f.rm, core_model.MetaToResourceKey(item.GetMeta()), upsertInsight, func(_ core_model.Resource) {
 			upsertInsight.GetSpec().(kuma_interfaces.Insight).UpdateSubscription(insight.GetLastSubscription())
-			return true
 		})
 		if err != nil {
 			log.Error(err, "unable to finalize subscription")
