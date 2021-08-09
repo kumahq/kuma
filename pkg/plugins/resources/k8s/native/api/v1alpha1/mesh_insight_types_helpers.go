@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -45,13 +45,13 @@ func (in *MeshInsightList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.MeshInsight{}, &MeshInsight{
+	registry.RegisterObjectType(&mesh_proto.MeshInsight{}, &MeshInsight{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "MeshInsight",
 		},
 	})
-	registry.RegisterListType(&proto.MeshInsight{}, &MeshInsightList{
+	registry.RegisterListType(&mesh_proto.MeshInsight{}, &MeshInsightList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "MeshInsightList",

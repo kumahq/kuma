@@ -19,7 +19,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -31,14 +31,14 @@ type testDataplaneOverviewClient struct {
 	receivedGateway bool
 	receivedIngress bool
 	total           uint32
-	overviews       []*mesh_core.DataplaneOverviewResource
+	overviews       []*core_mesh.DataplaneOverviewResource
 }
 
-func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string, gateway bool, ingress bool) (*mesh_core.DataplaneOverviewResourceList, error) {
+func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string, gateway bool, ingress bool) (*core_mesh.DataplaneOverviewResourceList, error) {
 	c.receivedTags = tags
 	c.receivedGateway = gateway
 	c.receivedIngress = ingress
-	return &mesh_core.DataplaneOverviewResourceList{
+	return &core_mesh.DataplaneOverviewResourceList{
 		Items: c.overviews,
 		Pagination: model.Pagination{
 			Total: c.total,
@@ -51,7 +51,7 @@ var _ resources.DataplaneOverviewClient = &testDataplaneOverviewClient{}
 var _ = Describe("kumactl inspect dataplanes", func() {
 
 	var now, t1, t2 time.Time
-	var sampleDataplaneOverview []*mesh_core.DataplaneOverviewResource
+	var sampleDataplaneOverview []*core_mesh.DataplaneOverviewResource
 
 	BeforeEach(func() {
 		now, _ = time.Parse(time.RFC3339, "2019-07-17T18:08:41+00:00")
@@ -59,7 +59,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
 		time.Local = time.UTC
 
-		sampleDataplaneOverview = []*mesh_core.DataplaneOverviewResource{
+		sampleDataplaneOverview = []*core_mesh.DataplaneOverviewResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh:             "default",

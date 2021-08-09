@@ -7,7 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/generator"
@@ -21,8 +21,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 	Describe("Generate()", func() {
 
 		type testCase struct {
-			meshes     []*mesh_core.MeshResource
-			dataplanes []*mesh_core.DataplaneResource
+			meshes     []*core_mesh.MeshResource
+			dataplanes []*core_mesh.DataplaneResource
 			expected   []*core_xds.Resource
 		}
 
@@ -44,7 +44,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				expected: []*core_xds.Resource{},
 			}),
 			Entry("Dataplane without Mesh", testCase{
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "backend-01",
@@ -67,7 +67,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				expected: []*core_xds.Resource{},
 			}),
 			Entry("Dataplane inside a Mesh without Prometheus enabled", testCase{
-				meshes: []*mesh_core.MeshResource{
+				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
@@ -75,7 +75,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						Spec: &mesh_proto.Mesh{},
 					},
 				},
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "backend-01",
@@ -106,7 +106,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				expected: []*core_xds.Resource{},
 			}),
 			Entry("Dataplane without inbound interfaces", testCase{
-				meshes: []*mesh_core.MeshResource{
+				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
@@ -128,7 +128,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						},
 					},
 				},
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "gateway-01",
@@ -173,7 +173,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 			}),
 			Entry("Dataplane with multiple inbound interfaces", testCase{
-				meshes: []*mesh_core.MeshResource{
+				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
@@ -195,7 +195,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						},
 					},
 				},
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "backend-01",
@@ -258,7 +258,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 			}),
 			Entry("Dataplane with a user-defined plural tag", testCase{
-				meshes: []*mesh_core.MeshResource{
+				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
@@ -280,7 +280,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						},
 					},
 				},
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "backend-01",
@@ -330,7 +330,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 			}),
 			Entry("Dataplane with unsafe characters in tag's name and value", testCase{
-				meshes: []*mesh_core.MeshResource{
+				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
@@ -352,7 +352,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						},
 					},
 				},
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "backend-01",
@@ -403,7 +403,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 			}),
 			Entry("multiple Meshes and Dataplanes", testCase{
-				meshes: []*mesh_core.MeshResource{
+				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
@@ -446,7 +446,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						},
 					},
 				},
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "backend-01",
@@ -544,7 +544,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 			}),
 			Entry("should include `k8s_kuma_io_namespace` and `k8s_kuma_io_name` labels on Kubernetes", testCase{
-				meshes: []*mesh_core.MeshResource{
+				meshes: []*core_mesh.MeshResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
@@ -566,7 +566,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						},
 					},
 				},
-				dataplanes: []*mesh_core.DataplaneResource{
+				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "backend-5c89f4d995-85znn.my-namespace",
