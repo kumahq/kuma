@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -45,13 +45,13 @@ func (l *FaultInjectionList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.FaultInjection{}, &FaultInjection{
+	registry.RegisterObjectType(&mesh_proto.FaultInjection{}, &FaultInjection{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "FaultInjection",
 		},
 	})
-	registry.RegisterListType(&proto.FaultInjection{}, &FaultInjectionList{
+	registry.RegisterListType(&mesh_proto.FaultInjection{}, &FaultInjectionList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "FaultInjectionList",

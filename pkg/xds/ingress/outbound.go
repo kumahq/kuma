@@ -2,12 +2,12 @@ package ingress
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_core.DataplaneResource) core_xds.EndpointMap {
+func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*core_mesh.DataplaneResource) core_xds.EndpointMap {
 	if len(destinations) == 0 {
 		return nil
 	}

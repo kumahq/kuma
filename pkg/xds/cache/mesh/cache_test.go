@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -50,10 +50,10 @@ func (c *countingResourcesManager) List(ctx context.Context, list core_model.Res
 }
 
 var _ = Describe("MeshSnapshot Cache", func() {
-	testDataplaneResources := func(n int, mesh, version, address string) []*mesh_core.DataplaneResource {
-		resources := []*mesh_core.DataplaneResource{}
+	testDataplaneResources := func(n int, mesh, version, address string) []*core_mesh.DataplaneResource {
+		resources := []*core_mesh.DataplaneResource{}
 		for i := 0; i < n; i++ {
-			resources = append(resources, &mesh_core.DataplaneResource{
+			resources = append(resources, &core_mesh.DataplaneResource{
 				Meta: &model.ResourceMeta{Mesh: mesh, Name: fmt.Sprintf("dp-%d", i), Version: version},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
@@ -64,10 +64,10 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		}
 		return resources
 	}
-	testTrafficRouteResources := func(n int, mesh, version string) []*mesh_core.TrafficRouteResource {
-		resources := []*mesh_core.TrafficRouteResource{}
+	testTrafficRouteResources := func(n int, mesh, version string) []*core_mesh.TrafficRouteResource {
+		resources := []*core_mesh.TrafficRouteResource{}
 		for i := 0; i < n; i++ {
-			resources = append(resources, &mesh_core.TrafficRouteResource{
+			resources = append(resources, &core_mesh.TrafficRouteResource{
 				Meta: &model.ResourceMeta{Mesh: mesh, Name: fmt.Sprintf("tr-%d", i), Version: version},
 				Spec: &mesh_proto.TrafficRoute{},
 			})
@@ -91,7 +91,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		meshCache, err = mesh.NewCache(countingManager, expiration,
-			[]core_model.ResourceType{mesh_core.DataplaneType, mesh_core.TrafficRouteType},
+			[]core_model.ResourceType{core_mesh.DataplaneType, core_mesh.TrafficRouteType},
 			func(s string) ([]net.IP, error) {
 				return []net.IP{net.ParseIP(s)}, nil
 			}, metrics)
@@ -101,7 +101,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 	BeforeEach(func() {
 		for i := 0; i < 3; i++ {
 			mesh := fmt.Sprintf("mesh-%d", i)
-			err := s.Create(context.Background(), mesh_core.NewMeshResource(), core_store.CreateByKey(mesh, core_model.NoMesh))
+			err := s.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, dp := range testDataplaneResources(baseLen, mesh, "v1", "192.168.0.1") {
@@ -131,7 +131,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(countingManager.listQueries).To(Equal(2)) // should be the same
 
 		By("updating Dataplane in store and waiting until cache invalidation")
-		dp := mesh_core.NewDataplaneResource()
+		dp := core_mesh.NewDataplaneResource()
 		err = s.Get(context.Background(), dp, core_store.GetByKey("dp-1", "mesh-0"))
 		Expect(err).ToNot(HaveOccurred())
 		dp.Spec.Networking.Address = "1.1.1.1"
@@ -158,7 +158,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		hash2, err := meshCache.GetHash(context.Background(), "mesh-2")
 		Expect(err).ToNot(HaveOccurred())
 
-		dp := mesh_core.NewDataplaneResource()
+		dp := core_mesh.NewDataplaneResource()
 		err = s.Get(context.Background(), dp, core_store.GetByKey("dp-1", "mesh-0"))
 		Expect(err).ToNot(HaveOccurred())
 		dp.Spec.Networking.Address = "1.1.1.1"

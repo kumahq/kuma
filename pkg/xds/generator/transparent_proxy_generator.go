@@ -3,7 +3,7 @@ package generator
 import (
 	"github.com/pkg/errors"
 
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -78,7 +78,7 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 		Configure(envoy_listeners.OutboundListener(outboundName, allIP, redirectPortOutbound, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxy(outboundName, envoy_common.NewCluster(envoy_common.WithService(outboundName)))).
-			Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, "external", proxy.Policies.Logs[mesh_core.PassThroughService], proxy)))).
+			Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, "external", proxy.Policies.Logs[core_mesh.PassThroughService], proxy)))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {

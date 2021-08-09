@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -41,7 +41,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 		Entry("Mesh has no Tracing configuration", testCase{
 			proxy: &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
@@ -74,7 +74,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 		Entry("should create cluster for Zipkin", testCase{
 			proxy: &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",

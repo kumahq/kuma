@@ -13,7 +13,7 @@ import (
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
@@ -43,7 +43,7 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 		if kube_apierrs.IsNotFound(err) {
 			// Force delete associated resources. It will return an error ErrorResourceNotFound because Mesh was already deleted but we still need to cleanup resources
 			// Remove this part after https://github.com/kumahq/kuma/issues/1137 is implemented.
-			err := r.ResourceManager.Delete(ctx, mesh_core.NewMeshResource(), store.DeleteByKey(req.Name, req.Name))
+			err := r.ResourceManager.Delete(ctx, core_mesh.NewMeshResource(), store.DeleteByKey(req.Name, req.Name))
 			if err == nil || store.IsResourceNotFound(err) {
 				return kube_ctrl.Result{}, nil
 			}
@@ -53,7 +53,7 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 		return kube_ctrl.Result{}, err
 	}
 
-	meshResource := mesh_core.NewMeshResource()
+	meshResource := core_mesh.NewMeshResource()
 	if err := r.Converter.ToCoreResource(mesh, meshResource); err != nil {
 		log.Error(err, "unable to convert Mesh k8s object into core model")
 		return kube_ctrl.Result{}, err

@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -62,7 +62,7 @@ func newInspectDataplanesCmd(pctx *cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-func printDataplaneOverviews(now time.Time, dataplaneOverviews *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
+func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "KUMA-DP VERSION", "ENVOY VERSION", "NOTES"},
 		NextRow: func() func() []string {
