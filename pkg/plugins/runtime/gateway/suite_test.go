@@ -58,7 +58,7 @@ func StoreNamedFixture(rt runtime.Runtime, name string) error {
 
 	var opts []store.CreateOptionsFunc
 
-	switch r.Scope() {
+	switch r.Descriptor().Scope {
 	case core_model.ScopeGlobal:
 		opts = append(opts, store.CreateByKey(r.GetMeta().GetName(), ""))
 	case core_model.ScopeMesh:

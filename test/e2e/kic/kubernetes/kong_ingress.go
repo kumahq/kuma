@@ -14,9 +14,10 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/kic"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
-func testEchoServer(port int) error {
+func requestTestServerThroughKong(port int) error {
 	var netClient = &http.Client{
 		Timeout: time.Second * 10,
 	}
@@ -36,6 +37,52 @@ func testEchoServer(port int) error {
 
 	return nil
 }
+
+const ingress = `
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: kuma-test
+  name: k8s-ingress
+  annotations:
+    kubernetes.io/ingress.class: kong
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        backend:
+          serviceName: test-server
+          servicePort: 80
+`
+
+const ingressMeshDNS = `
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-server-externalname
+  namespace: kuma-test
+spec:
+  type: ExternalName
+  externalName: test-server.kuma-test.svc.80.mesh
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: kuma-test
+  name: k8s-ingress-dot-mesh
+  annotations:
+    kubernetes.io/ingress.class: kong
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        backend:
+          serviceName: test-server-externalname
+          servicePort: 80
+`
 
 func KICKubernetes() {
 	// IPv6 curently not supported by Kong Ingress Controller
@@ -62,12 +109,12 @@ metadata:
 	E2EBeforeSuite(func() {
 		k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
 		Expect(err).ToNot(HaveOccurred())
-		// Global
+
 		kubernetes = k8sClusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Standalone, kubernetesOps...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(EchoServerK8s("default")).
+			Install(testserver.Install()).
 			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
 		err = kubernetes.VerifyKuma()
@@ -89,18 +136,14 @@ metadata:
 		err := NewClusterSetup().
 			Install(kic.KongIngressController()).
 			Install(kic.KongIngressNodePort()).
-			Install(EchoServerK8sIngress()).
+			Install(YamlK8s(ingress)).
 			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
 
-		retry.DoWithRetry(kubernetes.GetTesting(), "connect to echo server via KIC",
+		retry.DoWithRetry(kubernetes.GetTesting(), "connect to test server via KIC",
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				err = testEchoServer(kic.NodePortHTTP())
-				if err != nil {
-					return "", err
-				}
-				return "ok", nil
+				return "", requestTestServerThroughKong(kic.NodePortHTTP())
 			})
 
 		Expect(err).ToNot(HaveOccurred())
@@ -111,18 +154,14 @@ metadata:
 		err := NewClusterSetup().
 			Install(kic.KongIngressController(kic.WithNamespace(ingressNamespace))).
 			Install(kic.KongIngressNodePort(kic.WithNamespace(ingressNamespace))).
-			Install(EchoServerK8sIngressWithMeshDNS()).
+			Install(YamlK8s(ingressMeshDNS)).
 			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
 
-		retry.DoWithRetry(kubernetes.GetTesting(), "connect to echo server via KIC",
+		retry.DoWithRetry(kubernetes.GetTesting(), "connect to test server via KIC",
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				err = testEchoServer(kic.NodePortHTTP())
-				if err != nil {
-					return "", err
-				}
-				return "ok", nil
+				return "", requestTestServerThroughKong(kic.NodePortHTTP())
 			})
 
 		Expect(err).ToNot(HaveOccurred())

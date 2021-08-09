@@ -22,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-	"github.com/kumahq/kuma/pkg/kds/definitions"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/zone"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -46,7 +45,7 @@ var _ = Describe("Zone Sync", func() {
 	zoneName := "zone-1"
 
 	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) component.Component {
-		return kds_client.NewKDSSink(core.Log, definitions.All.Select(definitions.ConsumedByZone), kds_client.NewKDSStream(cs, zoneName), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
+		return kds_client.NewKDSSink(core.Log, registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(cs, zoneName), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
 	}
 	start := func(comp component.Component, stop chan struct{}) {
 		go func() {
@@ -87,7 +86,7 @@ var _ = Describe("Zone Sync", func() {
 		wg.Add(1)
 
 		kdsCtx := kds_context.DefaultContext(manager.NewResourceManager(globalStore), "global")
-		serverStream := setup.StartServer(globalStore, wg, "global", definitions.All.Select(definitions.ConsumedByZone), kdsCtx.GlobalProvidedFilter)
+		serverStream := setup.StartServer(globalStore, wg, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter)
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)
@@ -154,14 +153,9 @@ var _ = Describe("Zone Sync", func() {
 		}
 
 		// take all mesh-scoped types and exclude types that won't be synced
-		actualConsumedTypes := []model.ResourceType{}
-		for _, typ := range registry.Global().ListTypes() {
-			obj, err := registry.Global().NewObject(typ)
-			Expect(err).ToNot(HaveOccurred())
-			if obj.Scope() == model.ScopeMesh && !excludeTypes[typ] {
-				actualConsumedTypes = append(actualConsumedTypes, typ)
-			}
-		}
+		actualConsumedTypes := registry.Global().ObjectTypes(model.HasScope(model.ScopeMesh), model.TypeFilterFn(func(descriptor model.ResourceTypeDescriptor) bool {
+			return !excludeTypes[descriptor.Name]
+		}))
 
 		// plus 2 global-scope types
 		extraTypes := []model.ResourceType{
@@ -172,7 +166,7 @@ var _ = Describe("Zone Sync", func() {
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
-		Expect(actualConsumedTypes).To(ConsistOf(definitions.All.Select(definitions.ConsumedByZone)))
+		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone))))
 	})
 
 	It("should not delete predefined ConfigMaps in the Zone cluster", func() {

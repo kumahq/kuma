@@ -77,9 +77,9 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 
 			if proxyResource != nil {
-				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.GetType() {
+				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.Descriptor().Name {
 					return errors.Errorf("invalid proxy resource type %q, expected %s",
-						proxyResource.GetType(), resType)
+						proxyResource.Descriptor().Name, resType)
 				}
 
 				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {

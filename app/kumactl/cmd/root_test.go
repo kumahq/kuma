@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/util/test"
 )
 
@@ -34,6 +35,7 @@ var _ = Describe("kumactl root cmd", func() {
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
+				Registry:           registry.NewTypeRegistry(),
 				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
 		}
@@ -67,6 +69,7 @@ currentContext: local
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
+				Registry:           registry.NewTypeRegistry(),
 				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
 		}

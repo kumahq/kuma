@@ -45,7 +45,7 @@ func readResource(cmd *cobra.Command, r *kuma_dp.DataplaneRuntime) (model.Resour
 		return nil, err
 	}
 
-	if err := core_mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Scope()); err.HasViolations() {
+	if err := core_mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Descriptor().Scope); err.HasViolations() {
 		return nil, &err
 	}
 

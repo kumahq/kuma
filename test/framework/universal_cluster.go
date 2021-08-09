@@ -212,18 +212,20 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		return err
 	}
 
+	if opts.dpVersion != "" {
+		// override needs to be before setting up transparent proxy.
+		// Otherwise, we won't be able to fetch specific Kuma DP version.
+		if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
+			return err
+		}
+	}
+
 	builtindns := opts.builtindns == nil || *opts.builtindns
 	if transparent {
 		app.setupTransparent(c.apps[AppModeCP].ip, builtindns)
 	}
 
 	ip := app.ip
-
-	if opts.dpVersion != "" {
-		if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
-			return err
-		}
-	}
 
 	err = c.CreateDP(app, opts.name, ip, dpyaml, token, builtindns)
 	if err != nil {

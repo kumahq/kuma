@@ -11,13 +11,13 @@ type from struct{}
 
 func (c *from) Resource(r model.Resource) *Resource {
 	var meshName string
-	if r.Scope() == model.ScopeMesh {
+	if r.Descriptor().Scope == model.ScopeMesh {
 		meshName = r.GetMeta().GetMesh()
 	}
 	return &Resource{
 		Meta: ResourceMeta{
 			Mesh:             meshName,
-			Type:             string(r.GetType()),
+			Type:             string(r.Descriptor().Name),
 			Name:             r.GetMeta().GetName(),
 			CreationTime:     r.GetMeta().GetCreationTime(),
 			ModificationTime: r.GetMeta().GetModificationTime(),

@@ -616,7 +616,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			resource := sample_model.NewTrafficRouteResource()
 			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, name, mesh)))
 		})
 
 		It("should delete non-existing resource", func() {

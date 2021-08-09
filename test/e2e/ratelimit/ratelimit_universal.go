@@ -20,7 +20,7 @@ sources:
    kuma.io/service: "*"
 destinations:
 - match:
-   kuma.io/service: echo-server_kuma-test_svc_8080
+   kuma.io/service: test-server
 conf:
   http:
     requests: 2
@@ -50,7 +50,7 @@ conf:
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 
 		webToken, err := cluster.GetKuma().GenerateDpToken("default", "web")
@@ -60,7 +60,7 @@ conf:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken, WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("web", "default", webToken, WithTransparentProxy(true))).
 			Setup(cluster)
@@ -85,7 +85,7 @@ conf:
 		return func() int {
 			succeeded := 0
 			for i := 0; i < total; i++ {
-				_, _, err := cluster.Exec("", "", client, "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+				_, _, err := cluster.Exec("", "", client, "curl", "-v", "--fail", "test-server.mesh")
 				if err == nil {
 					succeeded++
 				}
@@ -112,7 +112,7 @@ sources:
     kuma.io/service: "demo-client"
 destinations:
 - match:
-    kuma.io/service: echo-server_kuma-test_svc_8080
+    kuma.io/service: test-server
 conf:
   http:
     requests: 4
@@ -142,7 +142,7 @@ sources:
     kuma.io/service: "demo-client"
 destinations:
 - match:
-    kuma.io/service: echo-server_kuma-test_svc_8080
+    kuma.io/service: test-server
 conf:
   http:
     requests: 4
@@ -156,7 +156,7 @@ sources:
     kuma.io/service: "web"
 destinations:
 - match:
-    kuma.io/service: echo-server_kuma-test_svc_8080
+    kuma.io/service: test-server
 conf:
   http:
     requests: 1
