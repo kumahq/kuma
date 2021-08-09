@@ -19,6 +19,7 @@ var (
 
 func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker DataplaneMetadataTracker, apiVersion envoy.APIVersion) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
+		ConfigManager:         rt.ConfigManager(),
 		CachingResManager:     rt.ReadOnlyResourceManager(),
 		NonCachingResManager:  rt.ResourceManager(),
 		LookupIP:              rt.LookupIP(),
@@ -30,6 +31,7 @@ func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker Datap
 		RateLimitMatcher:      ratelimits.RateLimitMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		Zone:                  rt.Config().Multizone.Zone.Name,
 		apiVersion:            apiVersion,
+		TopLevelDomain:        rt.Config().DNSServer.Domain,
 	}
 }
 

@@ -66,7 +66,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache, rt.DNSResolver())
+	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache)
 	if err != nil {
 		return err
 	}
