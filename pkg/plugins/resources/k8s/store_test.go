@@ -526,7 +526,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), coreName, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, coreName, mesh)))
 		})
 
 		It("should delete an existing resource", func() {

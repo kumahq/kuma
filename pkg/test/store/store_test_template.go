@@ -86,7 +86,7 @@ func ExecuteStoreTests(
 			err := s.Create(context.Background(), resource, store.CreateByKey(name, mesh))
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(resource.GetType(), name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(resource.Descriptor().Name, name, mesh)))
 		})
 	})
 
@@ -110,7 +110,7 @@ func ExecuteStoreTests(
 			err = s.Update(context.Background(), resource)
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceConflict(resource.GetType(), name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceConflict(resource.Descriptor().Name, name, mesh)))
 		})
 
 		It("should update an existing resource", func() {
@@ -167,7 +167,7 @@ func ExecuteStoreTests(
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, name, mesh)))
 		})
 
 		It("should not delete resource from another mesh", func() {
@@ -208,7 +208,7 @@ func ExecuteStoreTests(
 			err = s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then resource cannot be found
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, name, mesh)))
 		})
 	})
 
@@ -222,7 +222,7 @@ func ExecuteStoreTests(
 			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then
-			Expect(err).To(MatchError(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
+			Expect(err).To(MatchError(store.ErrorResourceNotFound(resource.Descriptor().Name, name, mesh)))
 		})
 
 		It("should return an error if resource is not found in given mesh", func() {
@@ -236,7 +236,7 @@ func ExecuteStoreTests(
 			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, name, mesh)))
 		})
 
 		It("should return an existing resource", func() {

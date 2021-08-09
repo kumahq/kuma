@@ -26,10 +26,6 @@ func NewTrafficRouteResource() *TrafficRouteResource {
 	}
 }
 
-func (t *TrafficRouteResource) GetType() model.ResourceType {
-	return TrafficRouteType
-}
-
 func (t *TrafficRouteResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
@@ -60,8 +56,8 @@ func (t *TrafficRouteResource) Validate() error {
 	return err.OrNil()
 }
 
-func (t *TrafficRouteResource) Scope() model.ResourceScope {
-	return model.ScopeMesh
+func (t *TrafficRouteResource) Descriptor() model.ResourceTypeDescriptor {
+	return TrafficRouteResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &TrafficRouteResourceList{}
@@ -100,7 +96,17 @@ func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var TrafficRouteResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewTrafficRouteResource())
-	registry.RegistryListType(&TrafficRouteResourceList{})
+	TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:         TrafficRouteType,
+		Resource:     NewTrafficRouteResource(),
+		ResourceList: &TrafficRouteResourceList{},
+		ReadOnly:     false,
+		AdminOnly:    false,
+		Scope:        model.ScopeMesh,
+		WsPath:       "sample-traffic-routes",
+	}
+	registry.RegisterType(TrafficRouteResourceTypeDescriptor)
 }

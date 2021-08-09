@@ -146,7 +146,7 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 			if core_store.IsResourceNotFound(err) {
 				return retry.RetryableError(errors.Errorf(
 					"resource %q not found; create a %s in Kuma CP first or pass it as an argument to kuma-dp",
-					proxyId, resource.GetType()))
+					proxyId, resource.Descriptor().Name))
 			}
 			return err
 		})

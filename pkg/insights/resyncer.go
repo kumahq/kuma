@@ -30,6 +30,7 @@ func ServiceInsightName(mesh string) string {
 }
 
 type Config struct {
+	Registry           registry.TypeRegistry
 	ResourceManager    manager.ResourceManager
 	EventReaderFactory events.ListenerFactory
 	MinResyncTimeout   time.Duration
@@ -48,6 +49,7 @@ type resyncer struct {
 	meshInsightMux     sync.Mutex
 	serviceInsightMux  sync.Mutex
 	rateLimiters       map[string]ratelimit.Allower
+	registry           registry.TypeRegistry
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -66,6 +68,7 @@ func NewResyncer(config *Config) component.Component {
 		rm:                 config.ResourceManager,
 		rateLimiterFactory: config.RateLimiterFactory,
 		rateLimiters:       map[string]ratelimit.Allower{},
+		registry:           config.Registry,
 	}
 
 	r.tick = config.Tick
@@ -108,6 +111,10 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		if !ok {
 			continue
 		}
+		desc, err := r.registry.DescriptorFor(resourceChanged.Type)
+		if err != nil {
+			log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+		}
 		if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
 			r.deleteRateLimiter(resourceChanged.Key.Name)
 		}
@@ -116,7 +123,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
 			}
 		}
-		if !meshScoped(resourceChanged.Type) {
+		if desc.Scope == model.ScopeGlobal {
 			continue
 		}
 		if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
@@ -146,13 +153,6 @@ func (r *resyncer) deleteRateLimiter(mesh string) {
 		return
 	}
 	delete(r.rateLimiters, mesh)
-}
-
-func meshScoped(t model.ResourceType) bool {
-	if obj, err := registry.Global().NewObject(t); err != nil || obj.Scope() != model.ScopeMesh {
-		return false
-	}
-	return true
 }
 
 func (r *resyncer) createOrUpdateServiceInsights() error {
@@ -330,20 +330,15 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
 	}
 
-	for _, resType := range registry.Global().ListTypes() {
-		if !meshScoped(resType) || resType == core_mesh.DataplaneType || resType == core_mesh.DataplaneInsightType {
-			continue
-		}
-		list, err := registry.Global().NewList(resType)
-		if err != nil {
-			return err
-		}
+	for _, resDesc := range r.registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.Not(model.Named(core_mesh.DataplaneType, core_mesh.DataplaneInsightType))) {
+		list := resDesc.NewList()
+
 		if err := r.rm.List(context.Background(), list, store.ListByMesh(mesh)); err != nil {
 			return err
 		}
 
 		if len(list.GetItems()) != 0 {
-			insight.Policies[string(resType)] = &mesh_proto.MeshInsight_PolicyStat{
+			insight.Policies[string(resDesc.Name)] = &mesh_proto.MeshInsight_PolicyStat{
 				Total: uint32(len(list.GetItems())),
 			}
 		}
