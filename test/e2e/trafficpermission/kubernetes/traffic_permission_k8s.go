@@ -36,12 +36,24 @@ func TrafficPermission() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	hasDefaultTrafficPermission := func() bool {
-		out, err := k8s.RunKubectlAndGetOutputE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(), "get", "trafficpermissions")
-		if err != nil {
-			return false
-		}
-		return strings.Contains(out, "allow-all-default")
+	noDefaultTrafficPermission := func() {
+		Eventually(func() bool {
+			out, err := k8s.RunKubectlAndGetOutputE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(), "get", "trafficpermissions")
+			if err != nil {
+				return false
+			}
+			return !strings.Contains(out, "allow-all-default")
+		}, "30s", "1s").Should(BeTrue())
+	}
+
+	defaultPoliciesCreated := func() {
+		Eventually(func() bool {
+			out, err := k8s.RunKubectlAndGetOutputE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(), "get", "meshes", "-o", "yaml")
+			if err != nil {
+				return false
+			}
+			return strings.Contains(out, "k8s.kuma.io/mesh-defaults-generated")
+		}, "30s", "1s").Should(BeTrue())
 	}
 
 	restartKumaCP := func() {
@@ -53,18 +65,19 @@ func TrafficPermission() {
 	}
 
 	It("should not create deleted default traffic permission after Kuma CP restart", func() {
-		Eventually(hasDefaultTrafficPermission, "30s", "1s").Should(BeTrue())
+		// given
+		defaultPoliciesCreated()
 
 		// when
 		removeDefaultTrafficPermission()
 		// then
-		Eventually(hasDefaultTrafficPermission, "30s", "1s").Should(BeFalse())
+		noDefaultTrafficPermission()
 
 		// when
 		restartKumaCP()
 		// and when
 		time.Sleep(10 * time.Second)
 		// then
-		Eventually(hasDefaultTrafficPermission, "30s", "1s").Should(BeFalse())
+		noDefaultTrafficPermission()
 	})
 }
