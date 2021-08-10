@@ -183,161 +183,6 @@ func WaitPodsNotAvailable(namespace, app string) InstallFunc {
 	}
 }
 
-func EchoServerK8sIngress() InstallFunc {
-	ingress := `
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  namespace: kuma-test
-  name: k8s-ingress
-  annotations:
-    kubernetes.io/ingress.class: kong
-spec:
-  rules:
-  - http:
-      paths:
-      - path: /
-        backend:
-          serviceName: echo-server
-          servicePort: 80
-`
-	return YamlK8s(ingress)
-}
-
-func EchoServerK8sIngressWithMeshDNS() InstallFunc {
-	ingress := `
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: echo-server-externalname
-  namespace: kuma-test
-spec:
-  type: ExternalName
-  externalName: echo-server.kuma-test.svc.80.mesh
----
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  namespace: kuma-test
-  name: k8s-ingress-dot-mesh
-  annotations:
-    kubernetes.io/ingress.class: kong
-spec:
-  rules:
-  - http:
-      paths:
-      - path: /
-        backend:
-          serviceName: echo-server-externalname
-          servicePort: 80
-`
-	return YamlK8s(ingress)
-}
-
-func EchoServerK8s(mesh string) InstallFunc {
-	const name = "echo-server"
-	service := `
-apiVersion: v1
-kind: Service
-metadata:
-  name: echo-server
-  namespace: kuma-test
-  annotations:
-    80.service.kuma.io/protocol: http
-spec:
-  ports:
-    - port: 80
-      name: http
-  selector:
-    app: echo-server
-`
-	deployment := `
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: echo-server
-  namespace: kuma-test
-  labels:
-    app: echo-server
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: echo-server
-  template:
-    metadata:
-      annotations:
-        kuma.io/mesh: %s
-      labels:
-        app: echo-server
-    spec:
-      containers:
-        - name: echo-server
-          image: %s
-          imagePullPolicy: IfNotPresent
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 3
-            periodSeconds: 3
-          ports:
-            - containerPort: 80
-          command: [ "ncat" ]
-          args:
-            - -lk
-            - -p
-            - "80"
-            - --sh-exec
-            - '/usr/bin/printf "HTTP/1.1 200 OK\nContent-Length: 5\n\n Echo\n"'
-          resources:
-            limits:
-              cpu: 50m
-              memory: 128Mi
-
-`
-	return Combine(
-		YamlK8s(service),
-		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage())),
-		WaitService(TestNamespace, name),
-		WaitNumPods(1, name),
-		WaitPodsAvailable(TestNamespace, name),
-	)
-}
-
-func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc) InstallFunc {
-	return func(cluster Cluster) error {
-		opts := newDeployOpt(fs...)
-		args := []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo " + echo + "\n\"'"}
-		appYaml := ""
-		if opts.protocol == "" {
-			opts.protocol = "http"
-		}
-		if opts.serviceName == "" {
-			opts.serviceName = "echo-server_kuma-test_svc_8080"
-		}
-		if opts.serviceVersion == "" {
-			opts.serviceVersion = "v1"
-		}
-		switch {
-		case opts.transparent:
-			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", opts.serviceName,
-				opts.protocol, opts.serviceVersion, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
-		case opts.serviceProbe:
-			appYaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, mesh, "8080", "80", opts.serviceName,
-				opts.protocol, opts.serviceVersion)
-		default:
-			appYaml = fmt.Sprintf(EchoServerDataplane, mesh, "8080", "80", opts.serviceName, opts.protocol, opts.serviceVersion)
-		}
-		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeEchoServer), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
-		return cluster.DeployApp(fs...)
-	}
-}
-
 func IngressUniversalOldType(mesh, token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
@@ -507,6 +352,14 @@ func TestServerUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 		if opts.serviceName == "" {
 			opts.serviceName = "test-server"
 		}
+
+		serviceProbe := ""
+		if opts.serviceProbe {
+			serviceProbe =
+				`    serviceProbe:
+      tcp: {}`
+		}
+
 		args = append(args, "--port", "8080")
 		appYaml := fmt.Sprintf(`
 type: Dataplane
@@ -522,16 +375,18 @@ networking:
       kuma.io/protocol: %s
       version: %s
       team: server-owners
+%s
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
     redirectPortOutbound: %s
-`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 
 		fs = append(fs,
 			WithName(name),
 			WithMesh(mesh),
 			WithAppname("test-server"),
+			WithTransparentProxy(true), // test server is always ment to use with transparent proxy
 			WithToken(token),
 			WithArgs(args),
 			WithYaml(appYaml),
