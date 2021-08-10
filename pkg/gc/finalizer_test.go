@@ -2,6 +2,7 @@ package gc_test
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -35,7 +36,9 @@ var _ = Describe("Subscription Finalizer", func() {
 		}, system.ZoneInsightType)
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
+			mtxNow.RLock()
 			_ = finalizer.Start(stop)
+			mtxNow.RUnlock()
 		}()
 	}
 
@@ -97,6 +100,8 @@ var _ = Describe("Subscription Finalizer", func() {
 
 	listCalled := func(times uint32) func() bool {
 		return func() bool {
+			rm.mtxList.Lock()
+			defer rm.mtxList.Unlock()
 			return rm.list == times
 		}
 	}
@@ -152,10 +157,14 @@ var _ = Describe("Subscription Finalizer", func() {
 
 type countingManager struct {
 	core_manager.ResourceManager
-	list uint32
+	mtxList sync.Mutex
+	list    uint32
 }
 
 func (c *countingManager) List(ctx context.Context, rl core_model.ResourceList, opts ...store.ListOptionsFunc) error {
+	c.mtxList.Lock()
+	defer c.mtxList.Unlock()
+
 	c.list++
 	return c.ResourceManager.List(ctx, rl, opts...)
 }
