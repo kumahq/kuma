@@ -14,7 +14,7 @@ import (
 var _ = Describe("VIPOutbounds", func() {
 
 	type outboundTestCase struct {
-		whenOutbounds map[vips.Entry]vips.VirtualOutbound
+		whenOutbounds map[vips.HostnameEntry]vips.VirtualOutbound
 		thenVips      []xds.VIPDomains
 		thenOutbounds []*mesh_proto.Dataplane_Networking_Outbound
 	}
@@ -28,13 +28,13 @@ var _ = Describe("VIPOutbounds", func() {
 			Expect(outbounds).To(Equal(tc.thenOutbounds))
 		},
 		Entry("empty", outboundTestCase{
-			whenOutbounds: map[vips.Entry]vips.VirtualOutbound{},
+			whenOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{},
 		}),
 		Entry("host port backcompat", outboundTestCase{
-			whenOutbounds: map[vips.Entry]vips.VirtualOutbound{
+			whenOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewHostEntry("example.com"): {
 					Address: "240.0.0.1",
-					Outbounds: []vips.MeshOutbound{
+					Outbounds: []vips.OutboundEntry{
 						{Port: 1234, TagSet: map[string]string{mesh_proto.ServiceTag: "foo"}},
 					},
 				},
@@ -47,21 +47,39 @@ var _ = Describe("VIPOutbounds", func() {
 				{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "foo"}},
 			},
 		}),
+		Entry("host port no backcompat when using port 80", outboundTestCase{
+			whenOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{
+				vips.NewHostEntry("example.com"): {
+					Address: "240.0.0.1",
+					Outbounds: []vips.OutboundEntry{
+						{Port: 81, TagSet: map[string]string{mesh_proto.ServiceTag: "bar"}},
+						{Port: 80, TagSet: map[string]string{mesh_proto.ServiceTag: "foo"}},
+					},
+				},
+			},
+			thenVips: []xds.VIPDomains{
+				{Address: "240.0.0.1", Domains: []string{"example.com"}},
+			},
+			thenOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
+				{Address: "240.0.0.1", Port: 81, Tags: map[string]string{mesh_proto.ServiceTag: "bar"}},
+				{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "foo"}},
+			},
+		}),
 		Entry("with no address doesn't generate vips or outbounds", outboundTestCase{
-			whenOutbounds: map[vips.Entry]vips.VirtualOutbound{
+			whenOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("example"): {
 					Address: "",
-					Outbounds: []vips.MeshOutbound{
+					Outbounds: []vips.OutboundEntry{
 						{Port: 1234, TagSet: map[string]string{mesh_proto.ServiceTag: "foo"}},
 					},
 				},
 			},
 		}),
 		Entry("service generates hostnames", outboundTestCase{
-			whenOutbounds: map[vips.Entry]vips.VirtualOutbound{
+			whenOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("example"): {
 					Address: "240.0.0.1",
-					Outbounds: []vips.MeshOutbound{
+					Outbounds: []vips.OutboundEntry{
 						{TagSet: map[string]string{mesh_proto.ServiceTag: "example"}},
 					},
 				},
@@ -73,11 +91,28 @@ var _ = Describe("VIPOutbounds", func() {
 				{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "example"}},
 			},
 		}),
+		Entry("service with port add backcompat", outboundTestCase{
+			whenOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{
+				vips.NewServiceEntry("example"): {
+					Address: "240.0.0.1",
+					Outbounds: []vips.OutboundEntry{
+						{TagSet: map[string]string{mesh_proto.ServiceTag: "example"}, Port: 1234},
+					},
+				},
+			},
+			thenVips: []xds.VIPDomains{
+				{Address: "240.0.0.1", Domains: []string{"example.mesh"}},
+			},
+			thenOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
+				{Address: "240.0.0.1", Port: 1234, Tags: map[string]string{mesh_proto.ServiceTag: "example"}},
+				{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "example"}},
+			},
+		}),
 		Entry("service normalizes hostnames", outboundTestCase{
-			whenOutbounds: map[vips.Entry]vips.VirtualOutbound{
+			whenOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("example_svc_80"): {
 					Address: "240.0.0.1",
-					Outbounds: []vips.MeshOutbound{
+					Outbounds: []vips.OutboundEntry{
 						{TagSet: map[string]string{mesh_proto.ServiceTag: "example_svc_80"}},
 					},
 				},
@@ -90,17 +125,17 @@ var _ = Describe("VIPOutbounds", func() {
 			},
 		}),
 		Entry("multi outbounds work", outboundTestCase{
-			whenOutbounds: map[vips.Entry]vips.VirtualOutbound{
+			whenOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewFqdnEntry("my-foo-service-generated.mesh"): {
 					Address: "240.0.0.1",
-					Outbounds: []vips.MeshOutbound{
+					Outbounds: []vips.OutboundEntry{
 						{Port: 1234, TagSet: map[string]string{mesh_proto.ServiceTag: "foo", "version": "1"}},
 						{Port: 1235, TagSet: map[string]string{mesh_proto.ServiceTag: "foo", "version": "2"}},
 					},
 				},
 				vips.NewFqdnEntry("my-bar-service-generated.mesh"): {
 					Address: "240.0.0.2",
-					Outbounds: []vips.MeshOutbound{
+					Outbounds: []vips.OutboundEntry{
 						{Port: 1234, TagSet: map[string]string{mesh_proto.ServiceTag: "bar", "version": "1"}},
 						{Port: 1235, TagSet: map[string]string{mesh_proto.ServiceTag: "bar", "version": "2"}},
 					},

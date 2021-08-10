@@ -56,7 +56,7 @@ var _ = Describe("DNS server", func() {
 		})
 
 		type dnsTestCase struct {
-			givenVips vips.List
+			givenVips map[vips.HostnameEntry]string
 			whenQuery string
 			whenType  dns.Type
 			// If ip is empty this will be consider as a dns miss
@@ -93,43 +93,43 @@ var _ = Describe("DNS server", func() {
 				}
 			},
 			Entry("should resolve", dnsTestCase{
-				givenVips: vips.List{vips.NewServiceEntry("service"): "240.0.0.1"},
+				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("service"): "240.0.0.1"},
 				whenQuery: "service.mesh",
 				whenType:  dns.Type(dns.TypeA),
 				thenIp:    "240.0.0.1",
 			}),
 			Entry("should not resolve with no vips", dnsTestCase{
-				givenVips: vips.List{},
+				givenVips: map[vips.HostnameEntry]string{},
 				whenQuery: "service.mesh",
 				whenType:  dns.Type(dns.TypeA),
 				thenIp:    "",
 			}),
 			Entry("should not resolve", dnsTestCase{
-				givenVips: vips.List{vips.NewServiceEntry("service"): "240.0.0.1"},
+				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("service"): "240.0.0.1"},
 				whenQuery: "not-service.mesh",
 				whenType:  dns.Type(dns.TypeA),
 				thenIp:    "",
 			}),
 			Entry("should resolve services with '.'", dnsTestCase{
-				givenVips: vips.List{vips.NewServiceEntry("my.service"): "240.0.0.1"},
+				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("my.service"): "240.0.0.1"},
 				whenQuery: "my.service.mesh",
 				whenType:  dns.Type(dns.TypeA),
 				thenIp:    "240.0.0.1",
 			}),
 			Entry("should resolve converted services with '.'", dnsTestCase{
-				givenVips: vips.List{vips.NewServiceEntry("my-service_test-namespace_svc_80"): "240.0.0.1"},
+				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("my-service_test-namespace_svc_80"): "240.0.0.1"},
 				whenQuery: "my-service.test-namespace.svc.80.mesh",
 				whenType:  dns.Type(dns.TypeA),
 				thenIp:    "240.0.0.1",
 			}),
 			Entry("should resolve fqdn service with .mesh", dnsTestCase{
-				givenVips: vips.List{vips.NewFqdnEntry("my.service.foo.mesh"): "240.0.0.1"},
+				givenVips: map[vips.HostnameEntry]string{vips.NewFqdnEntry("my.service.foo.mesh"): "240.0.0.1"},
 				whenQuery: "my.service.foo.mesh",
 				whenType:  dns.Type(dns.TypeA),
 				thenIp:    "240.0.0.1",
 			}),
 			Entry("should resolve, service entry has priority over fqdn entry", dnsTestCase{
-				givenVips: vips.List{
+				givenVips: map[vips.HostnameEntry]string{
 					vips.NewFqdnEntry("my.service.foo.mesh"): "240.0.0.2",
 					vips.NewServiceEntry("my.service.foo"):   "240.0.0.1",
 				},
@@ -138,7 +138,7 @@ var _ = Describe("DNS server", func() {
 				thenIp:    "240.0.0.1",
 			}),
 			Entry("should resolve, simple fqdn entry", dnsTestCase{
-				givenVips: vips.List{
+				givenVips: map[vips.HostnameEntry]string{
 					vips.NewFqdnEntry("service.com.mesh"): "240.0.0.2",
 				},
 				whenQuery: "service.com.mesh",
@@ -149,7 +149,7 @@ var _ = Describe("DNS server", func() {
 
 		It("should resolve concurrent", func() {
 			// given
-			dnsResolver.SetVIPs(vips.List{
+			dnsResolver.SetVIPs(map[vips.HostnameEntry]string{
 				vips.NewServiceEntry("service"): "240.0.0.1",
 			})
 			ip, err := dnsResolver.ForwardLookupFQDN("service.mesh")
@@ -181,7 +181,7 @@ var _ = Describe("DNS server", func() {
 
 		It("should resolve IPv6 concurrent", func() {
 			// given
-			dnsResolver.SetVIPs(vips.List{
+			dnsResolver.SetVIPs(map[vips.HostnameEntry]string{
 				vips.NewServiceEntry("service"): "fd00::1",
 			})
 			ip, err := dnsResolver.ForwardLookupFQDN("service.mesh")

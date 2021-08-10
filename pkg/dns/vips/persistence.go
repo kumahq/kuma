@@ -46,13 +46,13 @@ func NewPersistence(resourceManager manager.ReadOnlyResourceManager, configManag
 	}
 }
 
-func (m *Persistence) Get() (meshed map[string]*VirtualOutboundView, errs error) {
+func (m *Persistence) Get() (meshed map[string]*VirtualOutboundMeshView, errs error) {
 	resourceList := &config_model.ConfigResourceList{}
 	if err := m.configManager.List(context.Background(), resourceList); err != nil {
 		return nil, err
 	}
 
-	meshed = map[string]*VirtualOutboundView{}
+	meshed = map[string]*VirtualOutboundMeshView{}
 	for _, resource := range resourceList.Items {
 		mesh, ok := MeshFromConfigKey(resource.Meta.GetName())
 		if !ok {
@@ -71,12 +71,12 @@ func (m *Persistence) Get() (meshed map[string]*VirtualOutboundView, errs error)
 	return
 }
 
-func (m *Persistence) unmarshal(config string) (*VirtualOutboundView, error) {
-	res := map[Entry]VirtualOutbound{}
+func (m *Persistence) unmarshal(config string) (*VirtualOutboundMeshView, error) {
+	res := map[HostnameEntry]VirtualOutbound{}
 	if err := json.Unmarshal([]byte(config), &res); err == nil {
 		return NewVirtualOutboundView(res), nil
 	}
-	backCompat := List{}
+	backCompat := map[HostnameEntry]string{}
 	if err := json.Unmarshal([]byte(config), &backCompat); err != nil {
 		// backwards compatibility
 		backwardCompatible := map[string]string{}
@@ -95,19 +95,19 @@ func (m *Persistence) unmarshal(config string) (*VirtualOutboundView, error) {
 	return NewVirtualOutboundView(res), nil
 }
 
-func (m *Persistence) GetByMesh(mesh string) (*VirtualOutboundView, error) {
+func (m *Persistence) GetByMesh(mesh string) (*VirtualOutboundMeshView, error) {
 	name := fmt.Sprintf(template, mesh)
 	resource := config_model.NewConfigResource()
 	err := m.configManager.Get(context.Background(), resource, store.GetByKey(name, ""))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
-			return NewVirtualOutboundView(map[Entry]VirtualOutbound{}), nil
+			return NewVirtualOutboundView(map[HostnameEntry]VirtualOutbound{}), nil
 		}
 		return nil, err
 	}
 
 	if resource.Spec.Config == "" {
-		return NewVirtualOutboundView(map[Entry]VirtualOutbound{}), nil
+		return NewVirtualOutboundView(map[HostnameEntry]VirtualOutbound{}), nil
 	}
 
 	virtualOutboundView, err := m.unmarshal(resource.Spec.GetConfig())
@@ -118,7 +118,7 @@ func (m *Persistence) GetByMesh(mesh string) (*VirtualOutboundView, error) {
 	return virtualOutboundView, nil
 }
 
-func (m *Persistence) Set(mesh string, vips *VirtualOutboundView) error {
+func (m *Persistence) Set(mesh string, vips *VirtualOutboundMeshView) error {
 	ctx := context.Background()
 	name := fmt.Sprintf(template, mesh)
 	resource := config_model.NewConfigResource()

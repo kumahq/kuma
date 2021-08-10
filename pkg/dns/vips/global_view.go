@@ -9,12 +9,12 @@ import (
 // GlobalView keeps a list of all hostname/ips and add the possibility to allocate new ips
 type GlobalView struct {
 	ipam         *ipam.IPAM
-	ipToHostname map[string]Entry
-	hostnameToIp map[Entry]string
+	ipToHostname map[string]HostnameEntry
+	hostnameToIp map[HostnameEntry]string
 }
 
-// Reserve add an ip/host to the list of reserved ips (useful when loading an existing store).
-func (g *GlobalView) Reserve(hostname Entry, ip string) error {
+// Reserve add an ip/host to the list of reserved ips (useful when loading an existing view).
+func (g *GlobalView) Reserve(hostname HostnameEntry, ip string) error {
 	err := g.ipam.Reserve(net.ParseIP(ip))
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func (g *GlobalView) Reserve(hostname Entry, ip string) error {
 }
 
 // Allocate assign an ip to a host
-func (g *GlobalView) Allocate(hostname Entry) (string, error) {
+func (g *GlobalView) Allocate(hostname HostnameEntry) (string, error) {
 	ip := g.hostnameToIp[hostname]
 	if ip != "" {
 		return ip, nil
@@ -40,7 +40,7 @@ func (g *GlobalView) Allocate(hostname Entry) (string, error) {
 	return ip, nil
 }
 
-func (g *GlobalView) VipList() map[Entry]string {
+func (g *GlobalView) ToVIPMap() map[HostnameEntry]string {
 	return g.hostnameToIp
 }
 
@@ -51,8 +51,8 @@ func NewGlobalView(cidr string) (*GlobalView, error) {
 	}
 
 	return &GlobalView{
-		hostnameToIp: map[Entry]string{},
-		ipToHostname: map[string]Entry{},
+		hostnameToIp: map[HostnameEntry]string{},
+		ipToHostname: map[string]HostnameEntry{},
 		ipam:         newIPAM,
 	}, nil
 }

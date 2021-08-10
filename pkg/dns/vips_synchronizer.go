@@ -67,13 +67,6 @@ func (d *vipsSynchronizer) synchronize() error {
 	if err != nil {
 		return err
 	}
-	vipList := vips.List{}
-	for _, voView := range voByMesh {
-		for _, v := range voView.Keys() {
-			vo := voView.Get(v)
-			vipList[v] = vo.Address
-		}
-	}
-	d.resolver.SetVIPs(vipList)
+	d.resolver.SetVIPs(vips.ToVIPMap(voByMesh))
 	return nil
 }

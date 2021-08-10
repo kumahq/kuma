@@ -94,19 +94,19 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 	}
 	for _, mesh := range meshes {
 		if _, ok := byMesh[mesh]; !ok {
-			byMesh[mesh] = vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{})
+			byMesh[mesh] = vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
 		}
-		for _, key := range byMesh[mesh].Keys() {
-			vo := byMesh[mesh].Get(key)
-			err := gv.Reserve(key, vo.Address)
+		for _, hostEntry := range byMesh[mesh].HostnameEntries() {
+			vo := byMesh[mesh].Get(hostEntry)
+			err := gv.Reserve(hostEntry, vo.Address)
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	forEachMesh := func(mesh string, meshed *vips.VirtualOutboundView) error {
-		newVirtualOutboundView, err := BuildServiceSet(d.rm, mesh)
+	forEachMesh := func(mesh string, meshed *vips.VirtualOutboundMeshView) error {
+		newVirtualOutboundView, err := BuildVirtualOutboundMeshView(d.rm, mesh)
 		if err != nil {
 			return err
 		}
@@ -131,13 +131,13 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		}
 	}
 
-	d.resolver.SetVIPs(gv.VipList())
+	d.resolver.SetVIPs(gv.ToVIPMap())
 
 	return errs
 }
 
-func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (*vips.VirtualOutboundView, error) {
-	outboundSet := vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{})
+func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, mesh string) (*vips.VirtualOutboundMeshView, error) {
+	outboundSet := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
 
 	dataplanes := core_mesh.DataplaneResourceList{}
 	if err := rm.List(context.Background(), &dataplanes); err != nil {
@@ -156,12 +156,12 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (*vips.Vir
 		if dp.Spec.IsIngress() {
 			for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
 				if service.Mesh == mesh {
-					err = multierr.Append(err, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag]))
+					err = multierr.Append(err, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
 				}
 			}
 		} else {
 			for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
-				err = multierr.Append(err, addDefault(outboundSet, inbound.GetService()))
+				err = multierr.Append(err, addDefault(outboundSet, inbound.GetService(), 0))
 			}
 		}
 	}
@@ -174,7 +174,7 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (*vips.Vir
 	for _, zi := range zoneIngresses.Items {
 		for _, service := range zi.Spec.GetAvailableServices() {
 			if service.Mesh == mesh {
-				err = multierr.Append(err, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag]))
+				err = multierr.Append(err, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
 			}
 		}
 	}
@@ -184,11 +184,11 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (*vips.Vir
 		return nil, err
 	}
 	for _, es := range externalServices.Items {
-		err = multierr.Append(err, addDefault(outboundSet, es.Spec.GetService()))
-		err = multierr.Append(err, outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.MeshOutbound{
+		err = multierr.Append(err, addDefault(outboundSet, es.Spec.GetService(), es.Spec.GetPortUInt32()))
+		err = multierr.Append(err, outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
 			Port:   es.Spec.GetPortUInt32(),
 			TagSet: map[string]string{mesh_proto.ServiceTag: es.Spec.GetService()},
-			Origin: "host",
+			Origin: vips.OriginHost,
 		}))
 	}
 
@@ -198,12 +198,12 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (*vips.Vir
 	return outboundSet, nil
 }
 
-func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundView) (errs error) {
+func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundMeshView) (errs error) {
 	// Assign ips for all services
-	for _, key := range voView.Keys() {
-		vo := voView.Get(key)
+	for _, hostnameEntry := range voView.HostnameEntries() {
+		vo := voView.Get(hostnameEntry)
 		if vo.Address == "" {
-			ip, err := global.Allocate(key)
+			ip, err := global.Allocate(hostnameEntry)
 			if err != nil {
 				errs = multierr.Append(errs, err)
 			} else {
@@ -214,6 +214,10 @@ func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundView) (er
 	return errs
 }
 
-func addDefault(outboundSet *vips.VirtualOutboundView, service string) error {
-	return outboundSet.Add(vips.NewServiceEntry(service), vips.MeshOutbound{TagSet: map[string]string{mesh_proto.ServiceTag: service}, Origin: "default"})
+func addDefault(outboundSet *vips.VirtualOutboundMeshView, service string, port uint32) error {
+	return outboundSet.Add(vips.NewServiceEntry(service), vips.OutboundEntry{
+		TagSet: map[string]string{mesh_proto.ServiceTag: service},
+		Origin: vips.OriginService,
+		Port:   port,
+	})
 }

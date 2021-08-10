@@ -112,7 +112,7 @@ var _ = Describe("Meshed Persistence", func() {
 		It("should return vips for mesh", func() {
 			actual, err := meshedPersistence.GetByMesh("mesh-2")
 			Expect(err).ToNot(HaveOccurred())
-			expected := vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{
+			expected := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend_2"):  {Address: "240.0.1.1"},
 				vips.NewServiceEntry("frontend_2"): {Address: "240.0.1.3"},
 				vips.NewServiceEntry("postgres_2"): {Address: "240.0.1.0"},
@@ -133,7 +133,7 @@ var _ = Describe("Meshed Persistence", func() {
 		})
 
 		It("should create a new config", func() {
-			vipsMesh1 := vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{
+			vipsMesh1 := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend"): {Address: "240.0.0.1"},
 			})
 
@@ -143,7 +143,7 @@ var _ = Describe("Meshed Persistence", func() {
 			Expect(countingCm.create).To(Equal(1))
 			Expect(countingCm.update).To(Equal(0))
 
-			vipsMesh2 := vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{
+			vipsMesh2 := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("frontend"): {Address: "240.0.0.2"},
 			})
 			err = meshedPersistence.Set("mesh-2", vipsMesh2)
@@ -154,7 +154,7 @@ var _ = Describe("Meshed Persistence", func() {
 		})
 
 		It("should update existing config", func() {
-			vipsMesh1 := vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{
+			vipsMesh1 := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend"): vips.VirtualOutbound{Address: "240.0.0.1"},
 			})
 			err := meshedPersistence.Set("mesh-1", vipsMesh1)
@@ -163,7 +163,7 @@ var _ = Describe("Meshed Persistence", func() {
 			Expect(countingCm.create).To(Equal(1))
 			Expect(countingCm.update).To(Equal(0))
 
-			Expect(vipsMesh1.Add(vips.NewServiceEntry("frontend"), vips.MeshOutbound{})).ToNot(HaveOccurred())
+			Expect(vipsMesh1.Add(vips.NewServiceEntry("frontend"), vips.OutboundEntry{})).ToNot(HaveOccurred())
 			err = meshedPersistence.Set("mesh-1", vipsMesh1)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(countingCm.get).To(Equal(2))
@@ -201,36 +201,36 @@ var _ = Describe("Meshed Persistence", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and then
-			expectedMesh1 := vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{
+			expectedMesh1 := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend"):  {Address: "240.0.0.1"},
 				vips.NewServiceEntry("frontend"): {Address: "240.0.0.3"},
 				vips.NewServiceEntry("postgres"): {Address: "240.0.0.0"},
 				vips.NewServiceEntry("redis"):    {Address: "240.0.0.2"},
 			})
-			Expect(meshed["mesh-1"].Keys()).To(Equal(expectedMesh1.Keys()))
+			Expect(meshed["mesh-1"].HostnameEntries()).To(Equal(expectedMesh1.HostnameEntries()))
 			// and then
-			expectedMesh2 := vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{
+			expectedMesh2 := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend_2"):  {Address: "240.0.1.1"},
 				vips.NewServiceEntry("frontend_2"): {Address: "240.0.1.3"},
 				vips.NewHostEntry("host.com"):      {Address: "240.0.1.4"},
 			})
-			Expect(meshed["mesh-2"].Keys()).To(Equal(expectedMesh2.Keys()))
+			Expect(meshed["mesh-2"].HostnameEntries()).To(Equal(expectedMesh2.HostnameEntries()))
 			// and then
-			expectedMesh3 := vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{
+			expectedMesh3 := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend_3"):  {Address: "240.0.2.1"},
 				vips.NewServiceEntry("frontend_3"): {Address: "240.0.2.3"},
 				vips.NewHostEntry("host.com"):      {Address: "240.0.1.4"},
 			})
-			Expect(meshed["mesh-3"]).To(WithTransform(func(vo *vips.VirtualOutboundView) []vips.Entry {
-				return vo.Keys()
-			}, Equal(expectedMesh3.Keys())))
-			for _, k := range meshed["mesh-3"].Keys() {
+			Expect(meshed["mesh-3"]).To(WithTransform(func(vo *vips.VirtualOutboundMeshView) []vips.HostnameEntry {
+				return vo.HostnameEntries()
+			}, Equal(expectedMesh3.HostnameEntries())))
+			for _, k := range meshed["mesh-3"].HostnameEntries() {
 				Expect(meshed["mesh-3"].Get(k)).To(Equal(expectedMesh3.Get(k)))
 			}
 		})
 
 		It("should update old version with new one", func() {
-			newVIPs := vips.NewVirtualOutboundView(map[vips.Entry]vips.VirtualOutbound{
+			newVIPs := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend"):  {Address: "240.0.0.1"},
 				vips.NewServiceEntry("frontend"): {Address: "240.0.0.3"},
 				vips.NewHostEntry("kuma.io"):     {Address: "240.0.1.4"},

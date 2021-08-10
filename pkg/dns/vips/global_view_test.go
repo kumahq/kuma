@@ -48,12 +48,12 @@ var _ = Describe("global view", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		vips := map[vips.Entry]string{
+		vips := map[vips.HostnameEntry]string{
 			vips.NewServiceEntry("foo.bar"): ip1,
 			vips.NewServiceEntry("bar.bar"): ip2,
 		}
 
-		Expect(gv.VipList()).To(Equal(vips))
+		Expect(gv.ToVIPMap()).To(Equal(vips))
 	})
 
 	It("should allocate 2^16 IP addresses", func() {
