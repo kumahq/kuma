@@ -21,11 +21,11 @@ import (
 var _ = Describe("Subscription Finalizer", func() {
 	sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
 
-	var rm core_manager.ResourceManager
+	var rm *countingManager
 	var finalizer component.Component
 
 	BeforeEach(func() {
-		rm = core_manager.NewResourceManager(memory.NewStore())
+		rm = &countingManager{ResourceManager: core_manager.NewResourceManager(memory.NewStore())}
 	})
 
 	startSubscriptionFinalizer := func(ticks chan time.Time, stop chan struct{}) {
@@ -95,6 +95,12 @@ var _ = Describe("Subscription Finalizer", func() {
 		Expect(rm.Update(context.Background(), zoneInsight)).To(Succeed())
 	}
 
+	listCalled := func(times uint32) func() bool {
+		return func() bool {
+			return rm.list == times
+		}
+	}
+
 	It("should finalize subscription after idle timeout", func() {
 		stop := make(chan struct{})
 		defer close(stop)
@@ -106,15 +112,18 @@ var _ = Describe("Subscription Finalizer", func() {
 
 		// finalizer should memorize the current generation = 0
 		ticks <- time.Time{}
+		Eventually(listCalled(1), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeTrue())
 
 		incGeneration()
 		// finalizer should memorize the new generation = 1
 		ticks <- time.Time{}
+		Eventually(listCalled(2), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeTrue())
 
 		// finalizer should observe the generation didn't change and set DisconnectTime
 		ticks <- time.Time{}
+		Eventually(listCalled(3), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeFalse())
 	})
 
@@ -129,12 +138,24 @@ var _ = Describe("Subscription Finalizer", func() {
 
 		// finalizer should memorize the current generation = 0
 		ticks <- time.Time{}
+		Eventually(listCalled(1), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeTrue())
 
 		addNewSubscription()
 
 		// generation is the same, but last subscriptionId was changed
 		ticks <- time.Time{}
+		Eventually(listCalled(2), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeTrue())
 	})
 })
+
+type countingManager struct {
+	core_manager.ResourceManager
+	list uint32
+}
+
+func (c *countingManager) List(ctx context.Context, rl core_model.ResourceList, opts ...store.ListOptionsFunc) error {
+	c.list++
+	return c.ResourceManager.List(ctx, rl, opts...)
+}
