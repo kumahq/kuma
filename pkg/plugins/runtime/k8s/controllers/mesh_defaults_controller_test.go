@@ -84,20 +84,15 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 	It("should not create a new default policy if it was deleted", func() {
 
 		createMesh()
-
 		Expect(hasTrafficPermissions()).To(BeFalse())
 
 		reconcile()
-
 		Expect(hasTrafficPermissions()).To(BeTrue())
 
 		deleteTrafficPermission()
-
 		Expect(hasTrafficPermissions()).To(BeFalse())
 
 		reconcile()
-
 		Expect(hasTrafficPermissions()).To(BeFalse())
-
 	})
 })
