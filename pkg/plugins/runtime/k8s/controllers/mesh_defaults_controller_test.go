@@ -14,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	resources_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
@@ -53,7 +53,7 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 
 	createMesh := func() {
 		Expect(
-			resourceManager.Create(context.Background(), mesh.NewMeshResource(), core_store.CreateByKey("default", model.NoMesh)),
+			resourceManager.Create(context.Background(), mesh.NewMeshResource(), core_store.CreateByKey("default", core_model.NoMesh)),
 		).To(Succeed())
 	}
 
@@ -82,7 +82,6 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 	}
 
 	It("should not create a new default policy if it was deleted", func() {
-
 		createMesh()
 		Expect(hasTrafficPermissions()).To(BeFalse())
 

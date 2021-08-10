@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -29,13 +30,16 @@ type MeshDefaultsReconciler struct {
 func (r *MeshDefaultsReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	mesh := core_mesh.NewMeshResource()
 	if err := r.ResourceManager.Get(context.Background(), mesh, store.GetByKey(req.Name, core_model.NoMesh)); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return kube_ctrl.Result{}, nil
+		}
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not get default mesh resources")
 	}
 
 	// Before creating default policies for the mesh we want to ensure that this mesh wasn't processed before.
 	// We can't rely on filtering by CreateFunc, because apparently it sends the create event every time resource
 	// is added to the underlying Informer. That's why on the Kuma CP restart Mesh will be processed the second time
-	if processed := mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sProcessed]; processed == "true" {
+	if processed := mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sMeshDefaultsGenerated]; processed == "true" {
 		return kube_ctrl.Result{}, nil
 	}
 
@@ -43,10 +47,10 @@ func (r *MeshDefaultsReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Res
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not create default mesh resources")
 	}
 
-	if mesh.GetMeta().(*k8s.KubernetesMetaAdapter).Annotations == nil {
+	if mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations() == nil {
 		mesh.GetMeta().(*k8s.KubernetesMetaAdapter).Annotations = map[string]string{}
 	}
-	mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sProcessed] = "true"
+	mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sMeshDefaultsGenerated] = "true"
 	if err := r.ResourceManager.Update(context.Background(), mesh, store.ModifiedAt(core.Now())); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not update default mesh resources")
 	}

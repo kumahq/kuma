@@ -15,9 +15,8 @@ const (
 	// The value has a format of a Kubernetes label name.
 	k8sNameComponent = "k8s.kuma.io/name"
 
-	// K8sProcessed identifies that resource was already processed on creation. Specifically it's used to avoid
-	// creation of default resources twice when Kuma CP restarts
-	K8sProcessed = "k8s.kuma.io/processed"
+	// K8sMeshDefaultsGenerated identifies that default resources for mesh were successfully generated
+	K8sMeshDefaultsGenerated = "k8s.kuma.io/mesh-defaults-generated"
 
 	// Kubernetes secret type to differentiate Kuma System secrets. Secret is bound to a mesh
 	MeshSecretType = "system.kuma.io/secret"
