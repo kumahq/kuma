@@ -79,7 +79,7 @@ func readCNIConfigTemplate(template cniConfigTemplate) ([]byte, error) {
 		return ioutil.ReadFile(template.cniNetworkConfigFile)
 	}
 
-	if template.cniNetworkConfig == "" {
+	if template.cniNetworkConfig != "" {
 		log.Printf("Using CNI config template from CNI_NETWORK_CONFIG environment variable.")
 
 		return []byte(template.cniNetworkConfig), nil
