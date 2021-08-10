@@ -5,10 +5,11 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 func TrafficPermission() {
@@ -52,7 +53,6 @@ func TrafficPermission() {
 	}
 
 	It("should not create deleted default traffic permission after Kuma CP restart", func() {
-
 		Eventually(hasDefaultTrafficPermission, "30s", "1s").Should(BeTrue())
 
 		// when
