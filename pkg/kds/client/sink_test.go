@@ -35,7 +35,7 @@ var _ = Describe("KDS Sink", func() {
 		}
 	})
 
-	It("", func() {
+	It("should verify KDS exchange", func() {
 		vrf := kds_verifier.New().
 			Exec(kds_verifier.WaitRequest(defaultTimeout, func(req *envoy_sd.DiscoveryRequest) {
 				Expect(req.TypeUrl).To(Equal(string(mesh.MeshType)))

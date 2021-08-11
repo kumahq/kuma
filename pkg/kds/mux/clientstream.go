@@ -25,9 +25,9 @@ func (k *kdsClientStream) Send(request *envoy_sd.DiscoveryRequest) error {
 	kdsVersion := KDSVersion(k.Context())
 	switch kdsVersion {
 	case KDSVersionV2:
-		msg = &mesh_proto.Message{Value: &mesh_proto.Message_Request{Request: DiscoveryRequestV2(request)}}
+		msg = &mesh_proto.Message{Value: &mesh_proto.Message_LegacyRequest{LegacyRequest: DiscoveryRequestV2(request)}}
 	case KDSVersionV3:
-		msg = &mesh_proto.Message{Value: &mesh_proto.Message_RequestV3{RequestV3: request}}
+		msg = &mesh_proto.Message{Value: &mesh_proto.Message_Request{Request: request}}
 	default:
 		return UnsupportedKDSVersion(kdsVersion)
 	}

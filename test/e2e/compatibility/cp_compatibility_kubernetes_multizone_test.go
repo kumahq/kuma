@@ -6,4 +6,4 @@ import (
 	"github.com/kumahq/kuma/test/e2e/compatibility"
 )
 
-var _ = Describe("Test Kubernetes Multizone Compatibility", compatibility.CpCompatibilityMutltizoneKubernetes)
+var _ = Describe("Test Kubernetes Multizone Compatibility", compatibility.CpCompatibilityMultizoneKubernetes)

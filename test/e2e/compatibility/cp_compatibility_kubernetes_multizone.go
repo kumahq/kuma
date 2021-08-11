@@ -17,7 +17,7 @@ import (
 var OldChart = "0.6.3"
 var UpstreamImageRegistry = "kumahq"
 
-func CpCompatibilityMutltizoneKubernetes() {
+func CpCompatibilityMultizoneKubernetes() {
 	var globalCluster Cluster
 	var globalReleaseName string
 	var globalDeployOptsFuncs = KumaK8sDeployOpts

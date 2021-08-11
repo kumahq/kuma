@@ -65,14 +65,14 @@ func (s *session) handle(stream MultiplexStream, stop <-chan struct{}) error {
 			return err
 		}
 		switch v := msg.Value.(type) {
+		case *mesh_proto.Message_LegacyRequest:
+			s.serverStream.put(DiscoveryRequestV3(v.LegacyRequest))
 		case *mesh_proto.Message_Request:
-			s.serverStream.put(DiscoveryRequestV3(v.Request))
-		case *mesh_proto.Message_RequestV3:
-			s.serverStream.put(v.RequestV3)
+			s.serverStream.put(v.Request)
+		case *mesh_proto.Message_LegacyResponse:
+			s.clientStream.put(DiscoveryResponseV3(v.LegacyResponse))
 		case *mesh_proto.Message_Response:
-			s.clientStream.put(DiscoveryResponseV3(v.Response))
-		case *mesh_proto.Message_ResponseV3:
-			s.clientStream.put(v.ResponseV3)
+			s.clientStream.put(v.Response)
 		}
 	}
 }
