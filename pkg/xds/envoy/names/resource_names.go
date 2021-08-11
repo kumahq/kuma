@@ -70,3 +70,7 @@ func GetTracingClusterName(backendName string) string {
 func GetDNSListenerName() string {
 	return "kuma:dns"
 }
+
+func GetGatewayListenerName(gatewayName string, protoName string, port uint32) string {
+	return strings.Join([]string{gatewayName, protoName, strconv.Itoa(int(port))}, ":")
+}

@@ -1,0 +1,8 @@
+type: TrafficTrace
+name: trace-all
+mesh: tracing
+selectors:
+- match:
+    kuma.io/service: '*'
+conf:
+  backend: jaeger-collector

@@ -70,3 +70,11 @@ type RouteConfigurationBuilderOptFunc func(config *RouteConfigurationBuilderConf
 func (f RouteConfigurationBuilderOptFunc) ApplyTo(config *RouteConfigurationBuilderConfig) {
 	f(config)
 }
+
+// AddRouteConfigurationConfigurer produces an option that adds the given
+// configurer to the route coonfiguration builder.
+func AddRouteConfigurationConfigurer(c v3.RouteConfigurationConfigurer) RouteConfigurationBuilderOpt {
+	return RouteConfigurationBuilderOptFunc(func(config *RouteConfigurationBuilderConfig) {
+		config.AddV3(c)
+	})
+}

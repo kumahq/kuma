@@ -37,12 +37,12 @@ type DataplaneProxyBuilder struct {
 	RateLimitMatcher      ratelimits.RateLimitMatcher
 
 	Zone           string
-	apiVersion     envoy.APIVersion
+	APIVersion     envoy.APIVersion
 	ConfigManager  config_manager.ConfigManager
 	TopLevelDomain string
 }
 
-func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, envoyContext *xds_context.Context) (*xds.Proxy, error) {
+func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *xds_context.Context) (*xds.Proxy, error) {
 	ctx := context.Background()
 
 	dp, err := p.resolveDataplane(ctx, key)
@@ -62,7 +62,7 @@ func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, envoyContext *
 
 	proxy := &xds.Proxy{
 		Id:         xds.FromResourceKey(key),
-		APIVersion: p.apiVersion,
+		APIVersion: p.APIVersion,
 		Dataplane:  dp,
 		Metadata:   p.MetadataTracker.Metadata(key),
 		Routing:    *routing,

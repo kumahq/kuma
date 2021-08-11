@@ -70,3 +70,11 @@ type VirtualHostBuilderOptFunc func(config *VirtualHostBuilderConfig)
 func (f VirtualHostBuilderOptFunc) ApplyTo(config *VirtualHostBuilderConfig) {
 	f(config)
 }
+
+// AddVirtualHostConfigurer production an option that adds the given
+// configurer to the virtual host builder.
+func AddVirtualHostConfigurer(c v3.VirtualHostConfigurer) VirtualHostBuilderOpt {
+	return VirtualHostBuilderOptFunc(func(config *VirtualHostBuilderConfig) {
+		config.AddV3(c)
+	})
+}
