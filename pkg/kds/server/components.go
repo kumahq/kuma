@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -17,13 +17,13 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.ResourceType, serverID string, refresh time.Duration, filter reconcile.ResourceFilter, insight bool) (Server, error) {
 	hasher, cache := newKDSContext(log)
 	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter)
-	versioner := util_xds.SnapshotAutoVersioner{UUID: core.NewUUID}
+	versioner := util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
 	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode)
 	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
@@ -33,11 +33,11 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 	if err != nil {
 		return nil, err
 	}
-	callbacks := util_xds_v2.CallbacksChain{
+	callbacks := util_xds_v3.CallbacksChain{
 		&typeAdjustCallbacks{},
-		util_xds_v2.NewControlPlaneIdCallbacks(serverID),
-		util_xds_v2.AdaptCallbacks(util_xds.LoggingCallbacks{Log: log}),
-		util_xds_v2.AdaptCallbacks(statsCallbacks),
+		util_xds_v3.NewControlPlaneIdCallbacks(serverID),
+		util_xds_v3.AdaptCallbacks(util_xds.LoggingCallbacks{Log: log}),
+		util_xds_v3.AdaptCallbacks(statsCallbacks),
 		syncTracker,
 	}
 	if insight {
@@ -75,7 +75,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 	if err := metrics.Register(kdsGenerationsErrors); err != nil {
 		return nil, err
 	}
-	return util_xds_v2.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
+	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
 		log := log.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
@@ -97,10 +97,10 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 	}), nil
 }
 
-func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds.SnapshotCache) {
+func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) {
 	hasher := hasher{}
 	logger := util_xds.NewLogger(log)
-	return hasher, util_xds.NewSnapshotCache(false, hasher, logger)
+	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
 }
 
 type hasher struct {

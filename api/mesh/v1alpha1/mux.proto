@@ -5,6 +5,7 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "envoy/api/v2/discovery.proto";
+import "envoy/service/discovery/v3/discovery.proto";
 
 service MultiplexService {
   rpc StreamMessage(stream Message) returns (stream Message);
@@ -12,7 +13,9 @@ service MultiplexService {
 
 message Message {
   oneof value {
-    envoy.api.v2.DiscoveryRequest request = 1;
-    envoy.api.v2.DiscoveryResponse response = 2;
+    envoy.api.v2.DiscoveryRequest legacy_request = 1;
+    envoy.api.v2.DiscoveryResponse legacy_response = 2;
+    envoy.service.discovery.v3.DiscoveryRequest request = 3;
+    envoy.service.discovery.v3.DiscoveryResponse response = 4;
   }
 }
