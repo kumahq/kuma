@@ -71,8 +71,11 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	}()
 	muxClient := mesh_proto.NewMultiplexServiceClient(conn)
 
-	withClientIDCtx := metadata.AppendToOutgoingContext(c.ctx, "client-id", c.clientID)
-	stream, err := muxClient.StreamMessage(withClientIDCtx)
+	withKDSCtx := metadata.AppendToOutgoingContext(c.ctx,
+		"client-id", c.clientID,
+		KDSVersionHeaderKey, KDSVersionV3,
+	)
+	stream, err := muxClient.StreamMessage(withKDSCtx)
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -12,18 +12,30 @@ import (
 
 type kdsClientStream struct {
 	MultiplexStream
-	responses chan *envoy_api_v2.DiscoveryResponse
+	responses chan *envoy_sd.DiscoveryResponse
 }
 
-func (k *kdsClientStream) put(response *envoy_api_v2.DiscoveryResponse) {
+func (k *kdsClientStream) put(response *envoy_sd.DiscoveryResponse) {
 	k.responses <- response
 }
 
-func (k *kdsClientStream) Send(request *envoy_api_v2.DiscoveryRequest) error {
-	return k.MultiplexStream.Send(&mesh_proto.Message{Value: &mesh_proto.Message_Request{Request: request}})
+func (k *kdsClientStream) Send(request *envoy_sd.DiscoveryRequest) error {
+	var msg *mesh_proto.Message
+
+	kdsVersion := KDSVersion(k.Context())
+	switch kdsVersion {
+	case KDSVersionV2:
+		msg = &mesh_proto.Message{Value: &mesh_proto.Message_LegacyRequest{LegacyRequest: DiscoveryRequestV2(request)}}
+	case KDSVersionV3:
+		msg = &mesh_proto.Message{Value: &mesh_proto.Message_Request{Request: request}}
+	default:
+		return UnsupportedKDSVersion(kdsVersion)
+	}
+
+	return k.MultiplexStream.Send(msg)
 }
 
-func (k *kdsClientStream) Recv() (*envoy_api_v2.DiscoveryResponse, error) {
+func (k *kdsClientStream) Recv() (*envoy_sd.DiscoveryResponse, error) {
 	if r, ok := <-k.responses; ok {
 		return r, nil
 	}
