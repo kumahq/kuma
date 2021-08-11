@@ -15,8 +15,8 @@ message DataplaneInsight {
   option (kuma.mesh.resource).type = "DataplaneInsight";
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).skip_validation = true;
-  option (kuma.mesh.ws).name = "dataplane-insight";
-  option (kuma.mesh.ws).read_only = true;
+  option (kuma.mesh.resource).ws.name = "dataplane-insight";
+  option (kuma.mesh.resource).ws.read_only = true;
 
   // List of ADS subscriptions created by a given Dataplane.
   repeated DiscoverySubscription subscriptions = 1;
