@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"sort"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
@@ -42,6 +43,10 @@ func FindServices(svcs *kube_core.ServiceList, predicates ...ServicePredicate) [
 			matching = append(matching, svc)
 		}
 	}
+	// Sort by name so that inbound order is similar across zones regardless of the order services got created.
+	sort.Slice(matching, func(i, j int) bool {
+		return matching[i].Name < matching[j].Name
+	})
 	return matching
 }
 
