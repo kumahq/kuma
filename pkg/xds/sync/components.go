@@ -30,6 +30,8 @@ func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker Datap
 		RateLimitMatcher:      ratelimits.RateLimitMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		Zone:                  rt.Config().Multizone.Zone.Name,
 		APIVersion:            apiVersion,
+		ConfigManager:         rt.ConfigManager(),
+		TopLevelDomain:        rt.Config().DNSServer.Domain,
 	}
 }
 

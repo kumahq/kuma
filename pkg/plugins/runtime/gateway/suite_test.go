@@ -107,7 +107,6 @@ func MakeDataplaneProxy(rt runtime.Runtime, key core_model.ResourceKey) *core_xd
 			SdsTlsCert:        nil,
 			AdminProxyKeyPair: nil,
 			CLACache:          nil,
-			DNSResolver:       rt.DNSResolver(),
 		},
 		Mesh: xds_context.MeshContext{
 			Resource:   mesh,

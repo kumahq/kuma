@@ -5,6 +5,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
@@ -16,7 +17,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -35,8 +36,10 @@ type DataplaneProxyBuilder struct {
 	FaultInjectionMatcher faultinjections.FaultInjectionMatcher
 	RateLimitMatcher      ratelimits.RateLimitMatcher
 
-	Zone       string
-	APIVersion envoy.APIVersion
+	Zone           string
+	APIVersion     envoy.APIVersion
+	ConfigManager  config_manager.ConfigManager
+	TopLevelDomain string
 }
 
 func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *xds_context.Context) (*xds.Proxy, error) {
@@ -47,7 +50,7 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *
 		return nil, err
 	}
 
-	routing, destinations, err := p.resolveRouting(ctx, &envoyContext.Mesh, envoyContext.ControlPlane.DNSResolver, dp)
+	routing, destinations, err := p.resolveRouting(ctx, &envoyContext.Mesh, dp)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +91,6 @@ func (p *DataplaneProxyBuilder) resolveDataplane(ctx context.Context, key core_m
 func (p *DataplaneProxyBuilder) resolveRouting(
 	ctx context.Context,
 	meshContext *xds_context.MeshContext,
-	dnsResolver resolver.DNSResolver,
 	dataplane *core_mesh.DataplaneResource,
 ) (*xds.Routing, xds.DestinationMap, error) {
 	externalServices := &core_mesh.ExternalServiceResourceList{}
@@ -109,16 +111,21 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	var domains []xds.VIPDomains
 	outbounds := dataplane.Spec.Networking.Outbound
 	if dataplane.Spec.Networking.GetTransparentProxying() != nil {
+		pers := vips.NewPersistence(p.CachingResManager, p.ConfigManager)
+		virtualOutboundView, err := pers.GetByMesh(dataplane.Meta.GetMesh())
+		if err != nil {
+			return nil, nil, err
+		}
 		// resolve all the domains
-		domains, outbounds = xds_topology.VIPOutbounds(core_model.MetaToResourceKey(dataplane.Meta), meshContext.Dataplanes.Items, zoneIngresses.Items, dnsResolver.GetVIPs(), dnsResolver.GetDomain(), matchedExternalServices)
+		domains, outbounds = xds_topology.VIPOutbounds(virtualOutboundView, p.TopLevelDomain)
 
-		// Update the outbound of the dataplane with the vips
-		vips := map[string]bool{}
+		// Update the outbound of the dataplane with the generatedVips
+		generatedVips := map[string]bool{}
 		for _, ob := range outbounds {
-			vips[ob.Address] = true
+			generatedVips[ob.Address] = true
 		}
 		for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
-			if vips[outbound.Address] { // Useful while we still have resources with computed vip outbounds
+			if generatedVips[outbound.Address] { // Useful while we still have resources with computed vip outbounds
 				continue
 			}
 			outbounds = append(outbounds, outbound)
