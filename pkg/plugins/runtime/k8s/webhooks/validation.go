@@ -18,8 +18,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	kds_global "github.com/kumahq/kuma/pkg/kds/global"
-	kds_zone "github.com/kumahq/kuma/pkg/kds/zone"
+	"github.com/kumahq/kuma/pkg/kds/definitions"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -108,11 +107,11 @@ func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8
 	switch h.mode {
 	case core.Zone:
 		// Although Remote CP consumes Dataplane (Ingress) we also apply Dataplane on Remote
-		if resType != core_mesh.DataplaneType && kds_zone.ConsumesType(resType) {
+		if resType != core_mesh.DataplaneType && definitions.All.TypeHasFlag(resType, definitions.ConsumedByZone) {
 			return syncErrorResponse(resType, core.Zone)
 		}
 	case core.Global:
-		if kds_global.ConsumesType(resType) {
+		if definitions.All.TypeHasFlag(resType, definitions.ConsumedByGlobal) {
 			return syncErrorResponse(resType, core.Global)
 		}
 	}
