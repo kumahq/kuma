@@ -9,18 +9,18 @@ import (
 	prom_util "github.com/prometheus/prometheus/util/strutil"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
-func IndexMeshes(meshes []*mesh_core.MeshResource) map[string]*mesh_core.MeshResource {
-	index := make(map[string]*mesh_core.MeshResource)
+func IndexMeshes(meshes []*core_mesh.MeshResource) map[string]*core_mesh.MeshResource {
+	index := make(map[string]*core_mesh.MeshResource)
 	for _, mesh := range meshes {
 		index[mesh.Meta.GetName()] = mesh
 	}
 	return index
 }
 
-func Address(dataplane *mesh_core.DataplaneResource, endpoint *mesh_proto.PrometheusMetricsBackendConfig) string {
+func Address(dataplane *core_mesh.DataplaneResource, endpoint *mesh_proto.PrometheusMetricsBackendConfig) string {
 	// TODO: handle a case where Dataplane's IP is unknown
 	// For now, we export such a Dataplane with an empty IP address, so that the error state will be at least visible on the Prometheus side
 	return net.JoinHostPort(dataplane.GetIP(), strconv.FormatUint(uint64(endpoint.GetPort()), 10))
@@ -32,7 +32,7 @@ func MultiValue(values []string) string {
 	return "," + strings.Join(values, ",") + ","
 }
 
-func DataplaneLabels(dataplane *mesh_core.DataplaneResource) map[string]string {
+func DataplaneLabels(dataplane *core_mesh.DataplaneResource) map[string]string {
 	labels := map[string]string{}
 	// first, we copy user-defined tags
 	tags := dataplane.Spec.TagSet()
@@ -58,7 +58,7 @@ func DataplaneLabels(dataplane *mesh_core.DataplaneResource) map[string]string {
 	return labels
 }
 
-func DataplaneAssignmentName(dataplane *mesh_core.DataplaneResource) string {
+func DataplaneAssignmentName(dataplane *core_mesh.DataplaneResource) string {
 	// unique name, e.g. REST API uri
 	return fmt.Sprintf("/meshes/%s/dataplanes/%s", dataplane.Meta.GetMesh(), dataplane.Meta.GetName())
 }

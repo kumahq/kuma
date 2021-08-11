@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -27,7 +27,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 	plainCtx := xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{},
 		Mesh: xds_context.MeshContext{
-			Resource: &mesh_core.MeshResource{
+			Resource: &core_mesh.MeshResource{
 				Meta: meta,
 				Spec: &mesh_proto.Mesh{},
 			},
@@ -42,7 +42,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			SdsTlsCert: []byte("12345"),
 		},
 		Mesh: xds_context.MeshContext{
-			Resource: &mesh_core.MeshResource{
+			Resource: &core_mesh.MeshResource{
 				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "builtin",
@@ -160,7 +160,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			}
 			proxy := &model.Proxy{
 				Id: *model.BuildProxyId("default", "side-car"),
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name:    "dp-1",
 						Mesh:    given.ctx.Mesh.Resource.Meta.GetName(),
@@ -174,7 +174,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 40001,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Destination: mesh_proto.MatchService("api-http"),
@@ -187,7 +187,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 40002,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Destination: mesh_proto.MatchService("api-tcp"),
@@ -204,7 +204,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 40003,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Destination: mesh_proto.MatchService("api-http2"),
@@ -223,7 +223,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 40004,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Destination: mesh_proto.MatchService("api-grpc"),
@@ -236,7 +236,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 18080,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Destination: mesh_proto.MatchService("backend"),
@@ -249,7 +249,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 54321,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Split: []*mesh_proto.TrafficRoute_Split{{
@@ -274,7 +274,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 18081,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Destination: mesh_proto.TagSelector{"kuma.io/service": "es", "kuma.io/protocol": "http"},
@@ -284,7 +284,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 18082,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
@@ -316,7 +316,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						},
 					},
 					CircuitBreakers: model.CircuitBreakerMap{
-						"api-http": &mesh_core.CircuitBreakerResource{
+						"api-http": &core_mesh.CircuitBreakerResource{
 							Spec: &mesh_proto.CircuitBreaker{
 								Conf: &mesh_proto.CircuitBreaker_Conf{
 									Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
@@ -501,7 +501,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		}
 		proxy := &model.Proxy{
 			Id: *model.BuildProxyId("default", "side-car"),
-			Dataplane: &mesh_core.DataplaneResource{
+			Dataplane: &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Version: "1",
 				},
@@ -513,7 +513,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 18080,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Destination: mesh_proto.MatchService("backend.kuma-system"),
@@ -523,7 +523,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 54321,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},

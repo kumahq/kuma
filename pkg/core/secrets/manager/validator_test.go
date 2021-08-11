@@ -13,7 +13,7 @@ import (
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_datasource "github.com/kumahq/kuma/pkg/core/datasource"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -43,7 +43,7 @@ var _ = Describe("Secret Validator", func() {
 		caManagers["builtin"] = ca_builtin.NewBuiltinCaManager(secManager)
 		caManagers["provided"] = ca_provided.NewProvidedCaManager(core_datasource.NewDataSourceLoader(secManager))
 
-		mesh := &mesh_core.MeshResource{
+		mesh := &core_mesh.MeshResource{
 			Spec: &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: "ca-1",

@@ -2,7 +2,7 @@ package clusters
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -10,13 +10,13 @@ import (
 	endpoints_v3 "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 )
 
-func OutlierDetection(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterBuilderOpt {
+func OutlierDetection(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.OutlierDetectionConfigurer{CircuitBreaker: circuitBreaker})
 	})
 }
 
-func CircuitBreaker(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterBuilderOpt {
+func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.CircuitBreakerConfigurer{CircuitBreaker: circuitBreaker})
 	})
@@ -74,7 +74,7 @@ func EdsCluster(name string) ClusterBuilderOpt {
 	})
 }
 
-func HealthCheck(protocol mesh_core.Protocol, healthCheck *mesh_core.HealthCheckResource) ClusterBuilderOpt {
+func HealthCheck(protocol core_mesh.Protocol, healthCheck *core_mesh.HealthCheckResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.HealthCheckConfigurer{
 			HealthCheck: healthCheck,
@@ -115,7 +115,7 @@ func LB(lb *mesh_proto.TrafficRoute_LoadBalancer) ClusterBuilderOpt {
 	})
 }
 
-func Timeout(protocol mesh_core.Protocol, conf *mesh_proto.Timeout_Conf) ClusterBuilderOpt {
+func Timeout(protocol core_mesh.Protocol, conf *mesh_proto.Timeout_Conf) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.TimeoutConfigurer{
 			Protocol: protocol,
@@ -127,7 +127,7 @@ func Timeout(protocol mesh_core.Protocol, conf *mesh_proto.Timeout_Conf) Cluster
 func DefaultTimeout() ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.TimeoutConfigurer{
-			Protocol: mesh_core.ProtocolTCP,
+			Protocol: core_mesh.ProtocolTCP,
 		})
 	})
 }

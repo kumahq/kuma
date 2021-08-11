@@ -4,6 +4,7 @@ linters:
     - gci
     - gocritic
     - govet
+    - importas
     - misspell
     - unconvert
     - whitespace
@@ -22,6 +23,12 @@ linters-settings:
       - singleCaseSwitch
   gci:
     local-prefixes: github.com/kumahq/kuma
+  importas:
+    alias:
+    - pkg: github.com/kumahq/kuma/pkg/core/resources/apis/mesh
+      alias: core_mesh
+    - pkg: github.com/kumahq/kuma/api/mesh/v1alpha1
+      alias: mesh_proto
 
 issues:
   fix: true

@@ -5,7 +5,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/tls"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -90,7 +90,7 @@ func InboundListener(listenerName string, address string, port uint32, protocol 
 	})
 }
 
-func NetworkRBAC(statsName string, rbacEnabled bool, permission *mesh_core.TrafficPermissionResource) FilterChainBuilderOpt {
+func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.TrafficPermissionResource) FilterChainBuilderOpt {
 	if !rbacEnabled {
 		return FilterChainBuilderOptFunc(nil)
 	}
@@ -233,7 +233,7 @@ func FilterChain(builder *FilterChainBuilder) ListenerBuilderOpt {
 	})
 }
 
-func MaxConnectAttempts(retry *mesh_core.RetryResource) FilterChainBuilderOpt {
+func MaxConnectAttempts(retry *core_mesh.RetryResource) FilterChainBuilderOpt {
 	if retry == nil || retry.Spec.Conf.GetTcp() == nil {
 		return FilterChainBuilderOptFunc(nil)
 	}
@@ -244,8 +244,8 @@ func MaxConnectAttempts(retry *mesh_core.RetryResource) FilterChainBuilderOpt {
 }
 
 func Retry(
-	retry *mesh_core.RetryResource,
-	protocol mesh_core.Protocol,
+	retry *core_mesh.RetryResource,
+	protocol core_mesh.Protocol,
 ) FilterChainBuilderOpt {
 	if retry == nil {
 		return FilterChainBuilderOptFunc(nil)
@@ -257,7 +257,7 @@ func Retry(
 	})
 }
 
-func Timeout(timeout *mesh_proto.Timeout_Conf, protocol mesh_core.Protocol) FilterChainBuilderOpt {
+func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_mesh.Protocol) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.TimeoutConfigurer{
 		Conf:     timeout,
 		Protocol: protocol,
