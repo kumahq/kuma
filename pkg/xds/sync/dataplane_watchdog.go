@@ -108,7 +108,11 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 	if err != nil {
 		return err
 	}
+<<<<<<< HEAD
 	proxy, err := d.dataplaneProxyBuilder.build(d.key, &envoyCtx.Mesh)
+=======
+	proxy, err := d.dataplaneProxyBuilder.Build(d.key, envoyCtx)
+>>>>>>> 71862d83 (feat(kuma-cp) generate gateway listeners (#2488))
 	if err != nil {
 		return err
 	}
