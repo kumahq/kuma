@@ -5,11 +5,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
-
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 )
 
 var _ = Describe("Endpoints", func() {

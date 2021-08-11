@@ -4,9 +4,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 )
 
 const (

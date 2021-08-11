@@ -6,9 +6,12 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	kube_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 
 	"github.com/kumahq/kuma/pkg/config"
 	conf "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
@@ -16,11 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	inject "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 	"github.com/kumahq/kuma/pkg/test/matchers"
-
-	kube_core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-
-	"github.com/ghodss/yaml"
 )
 
 var _ = Describe("Injector", func() {

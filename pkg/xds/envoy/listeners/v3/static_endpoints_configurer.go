@@ -7,14 +7,11 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
-
 	"github.com/kumahq/kuma/pkg/tls"
-
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
 type StaticEndpointsConfigurer struct {

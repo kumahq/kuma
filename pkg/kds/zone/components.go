@@ -3,24 +3,21 @@ package zone
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
-
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/kds/mux"
-	kds_server "github.com/kumahq/kuma/pkg/kds/server"
-	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
+	"github.com/kumahq/kuma/pkg/kds/mux"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
 var (

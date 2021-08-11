@@ -12,8 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/config"
 
-	"github.com/kumahq/kuma/pkg/util/net"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -23,6 +21,7 @@ import (
 	mads_v1_client "github.com/kumahq/kuma/pkg/mads/v1/client"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/util/net"
 )
 
 type testRuntime struct {

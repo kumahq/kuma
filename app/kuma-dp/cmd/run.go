@@ -9,18 +9,16 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )

@@ -6,19 +6,17 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/kumahq/kuma/pkg/mads/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-
+	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-
 	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
+	"github.com/kumahq/kuma/pkg/mads/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type Client struct {

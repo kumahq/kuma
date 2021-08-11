@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
-
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 )

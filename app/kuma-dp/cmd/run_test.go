@@ -13,8 +13,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -23,6 +21,7 @@ import (
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("run", func() {

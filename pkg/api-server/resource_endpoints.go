@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/api-server/authz"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-
 	"github.com/emicklei/go-restful"
 
+	"github.com/kumahq/kuma/pkg/api-server/authz"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"

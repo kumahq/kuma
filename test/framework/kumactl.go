@@ -7,15 +7,13 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-
+	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/gruntwork-io/terratest/modules/retry"
+	"github.com/gruntwork-io/terratest/modules/shell"
+	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/gruntwork-io/terratest/modules/testing"
-
-	"github.com/gruntwork-io/terratest/modules/logger"
-	"github.com/gruntwork-io/terratest/modules/shell"
+	"github.com/kumahq/kuma/pkg/config/core"
 )
 
 type KumactlOptions struct {

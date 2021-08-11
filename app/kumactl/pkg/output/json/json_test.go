@@ -10,10 +10,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/json"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )

@@ -14,23 +14,20 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
-	"github.com/kumahq/kuma/pkg/api-server/customization"
-
 	"github.com/emicklei/go-restful"
+	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/authz"
+	"github.com/kumahq/kuma/pkg/api-server/customization"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime"

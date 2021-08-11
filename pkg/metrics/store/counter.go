@@ -4,13 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/metrics"

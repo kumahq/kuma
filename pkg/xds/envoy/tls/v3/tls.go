@@ -5,14 +5,12 @@ import (
 	envoy_grpc_credential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-
-	"github.com/kumahq/kuma/pkg/tls"
-	"github.com/kumahq/kuma/pkg/util/proto"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/tls"
+	"github.com/kumahq/kuma/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )

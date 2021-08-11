@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/util/test"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl config control-planes list", func() {

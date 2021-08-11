@@ -3,8 +3,6 @@ package sync
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/ratelimits"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -12,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	"github.com/kumahq/kuma/pkg/core/permissions"
+	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"

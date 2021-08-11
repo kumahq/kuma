@@ -3,28 +3,23 @@ package reconcile_test
 import (
 	"context"
 
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/mads/v1alpha1/reconcile"
-
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/util/proto"
-
-	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
-
 	mads_cache "github.com/kumahq/kuma/pkg/mads/v1alpha1/cache"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1alpha1/generator"
-
+	. "github.com/kumahq/kuma/pkg/mads/v1alpha1/reconcile"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("snapshotGenerator", func() {

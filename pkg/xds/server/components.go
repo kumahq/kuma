@@ -7,14 +7,13 @@ import (
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 	v3 "github.com/kumahq/kuma/pkg/xds/server/v3"
-
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 )
 
 var (

@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/kumahq/kuma/test/framework"
 )
 

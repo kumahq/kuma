@@ -4,12 +4,11 @@ import (
 	"context"
 	"io/ioutil"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-
 	"github.com/pkg/errors"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
