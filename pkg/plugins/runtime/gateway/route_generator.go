@@ -1,8 +1,6 @@
 package gateway
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -19,7 +17,8 @@ type RouteGenerator struct {
 var _ generator.ResourceGenerator = &RouteGenerator{}
 
 func (r RouteGenerator) Generate(ctx xds_context.Context, proxy *xds.Proxy) (*xds.ResourceSet, error) {
-	return nil, errors.New("not implemented")
+	log.V(2).Info("Gateway route generation not implemented")
+	return nil, nil
 }
 
 // DefaultRouteName is the well-known name of the default route configuration.
