@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/helpers"
+	"github.com/kumahq/kuma/api/generic"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -271,7 +271,7 @@ func (d *DataplaneInsightStoreRecorder) Create(ctx context.Context, resource cor
 	opts := core_store.NewCreateOptions(optionsFunc...)
 	d.Creates <- DataplaneInsightOperation{
 		ResourceKey:           core_model.ResourceKey{Mesh: opts.Mesh, Name: opts.Name},
-		DiscoverySubscription: resource.GetSpec().(helpers.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription),
+		DiscoverySubscription: resource.GetSpec().(generic.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription),
 	}
 	return nil
 }
@@ -282,7 +282,7 @@ func (d *DataplaneInsightStoreRecorder) Update(ctx context.Context, resource cor
 	}
 	d.Updates <- DataplaneInsightOperation{
 		ResourceKey:           core_model.ResourceKey{Mesh: resource.GetMeta().GetMesh(), Name: resource.GetMeta().GetName()},
-		DiscoverySubscription: resource.GetSpec().(helpers.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription),
+		DiscoverySubscription: resource.GetSpec().(generic.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription),
 	}
 	return nil
 }

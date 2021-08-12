@@ -24,52 +24,52 @@ type ZoneInsightStore interface {
 func NewZoneInsightSink(
 	accessor StatusAccessor,
 	flushTicker func() *time.Ticker,
-	generationTicker func() *time.Ticker,
+	forceUpdateTicker func() *time.Ticker,
 	flushBackoff time.Duration,
 	store ZoneInsightStore,
 	log logr.Logger) ZoneInsightSink {
 	return &zoneInsightSink{
-		flushTicker:      flushTicker,
-		generationTicker: generationTicker,
-		flushBackoff:     flushBackoff,
-		accessor:         accessor,
-		store:            store,
-		log:              log,
+		flushTicker:       flushTicker,
+		forceUpdateTicker: forceUpdateTicker,
+		flushBackoff:      flushBackoff,
+		accessor:          accessor,
+		store:             store,
+		log:               log,
 	}
 }
 
 var _ ZoneInsightSink = &zoneInsightSink{}
 
 type zoneInsightSink struct {
-	flushTicker      func() *time.Ticker
-	generationTicker func() *time.Ticker
-	flushBackoff     time.Duration
-	accessor         StatusAccessor
-	store            ZoneInsightStore
-	log              logr.Logger
+	flushTicker       func() *time.Ticker
+	forceUpdateTicker func() *time.Ticker
+	flushBackoff      time.Duration
+	accessor          StatusAccessor
+	store             ZoneInsightStore
+	log               logr.Logger
 }
 
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 	flushTicker := s.flushTicker()
 	defer flushTicker.Stop()
 
-	generationTicker := s.generationTicker()
-	defer generationTicker.Stop()
+	forceUpdateTicker := s.forceUpdateTicker()
+	defer forceUpdateTicker.Stop()
 
 	var lastStoredState *system_proto.KDSSubscription
-	var generation uint32
+	forceUpdate := false
 
 	flush := func() {
 		zone, currentState := s.accessor.GetStatus()
 		select {
-		case <-generationTicker.C:
-			generation++
+		case <-forceUpdateTicker.C:
+			forceUpdate = true
 		default:
 		}
-		currentState.Generation = generation
-		if proto.Equal(currentState, lastStoredState) {
+		if proto.Equal(currentState, lastStoredState) && !forceUpdate {
 			return
 		}
+		forceUpdate = false
 
 		if err := s.store.Upsert(zone, currentState); err != nil {
 			if store.IsResourceConflict(err) {

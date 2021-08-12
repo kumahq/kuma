@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	kuma_interfaces "github.com/kumahq/kuma/api/helpers"
+	"github.com/kumahq/kuma/api/generic"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -18,12 +18,13 @@ var (
 	finalizerLog = core.Log.WithName("finalizer")
 )
 
-// Every Insight has a statusSink that periodically increments the 'generation' counter while Kuma CP <-> DPP
-// connection is active. This updates happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout / 2.
+// Every Insight has a statusSink that periodically changes ResourceVersion while Kuma CP <-> DPP
+// connection is active. This updates happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout / 2
+// even if no real updates of the resource happen.
 //
 // subscriptionFinalizer is a component that allows to finalize subscriptions for Insights. The component iterates
-// over all online Insights and checks that 'generation' counter was changed since the last check. This check
-// happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout. If 'generation' counter didn't change then component
+// over all online Insights and checks that ResourceVersion was changed since the last check. This check
+// happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout. If ResourceVersion didn't change then component
 // finalizes the subscription by setting DisconnectTime.
 //
 // This component allows to solve the corner case we had with Insights:
@@ -32,12 +33,7 @@ var (
 // 3. Kuma CP is up
 // 4. DPP status is Online whereas it should be Offline
 
-type descriptor struct {
-	id         string
-	generation uint32
-}
-
-type insightMap map[core_model.ResourceKey]*descriptor
+type insightMap map[core_model.ResourceKey]string
 
 type insightsByType map[core_model.ResourceType]insightMap
 
@@ -51,10 +47,10 @@ type subscriptionFinalizer struct {
 func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time.Ticker, types ...core_model.ResourceType) (component.Component, error) {
 	insights := insightsByType{}
 	for _, typ := range types {
-		if err := validateType(typ); err != nil {
-			return nil, err
+		if !isInsightType(typ) {
+			return nil, errors.Errorf("%q type is not an Insight", typ)
 		}
-		insights[typ] = map[core_model.ResourceKey]*descriptor{}
+		insights[typ] = map[core_model.ResourceKey]string{}
 	}
 
 	return &subscriptionFinalizer{
@@ -74,8 +70,8 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 		select {
 		case <-ticker.C:
 			for _, typ := range f.types {
-				if err := f.checkGeneration(typ); err != nil {
-					finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
+				if err := f.checkResourceVersion(typ); err != nil {
+					finalizerLog.Error(err, "unable to check insight's resourceVersion", "type", typ)
 				}
 			}
 		case <-stop:
@@ -85,35 +81,31 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType) error {
+func (f *subscriptionFinalizer) checkResourceVersion(typ core_model.ResourceType) error {
 	// get all the insights for provided type
-	ctx := context.Background()
 	insights, _ := registry.Global().NewList(typ)
-	if err := f.rm.List(ctx, insights); err != nil {
+	if err := f.rm.List(context.Background(), insights); err != nil {
 		return err
 	}
 
 	// delete items from the map that don't exist in the upstream
-	f.upstreamSync(insights)
+	f.removeDeletedInsights(insights)
 
 	for _, item := range insights.GetItems() {
 		log := finalizerLog.WithValues("type", typ, "name", item.GetMeta().GetName(), "mesh", item.GetMeta().GetMesh())
 		key := core_model.MetaToResourceKey(item.GetMeta())
-		insight := item.GetSpec().(kuma_interfaces.Insight)
+		insight := item.GetSpec().(generic.Insight)
 
 		if !insight.IsOnline() {
 			delete(f.insights[typ], key)
 			continue
 		}
 
-		old, ok := f.insights[typ][key]
-		if !ok || old.id != insight.GetLastSubscription().GetId() || old.generation != insight.GetLastSubscription().GetGeneration() {
-			// something changed since the last check, either subscriptionId or generation were updated
-			// don't finalize the subscription, update map with fresh data
-			f.insights[typ][key] = &descriptor{
-				id:         insight.GetLastSubscription().GetId(),
-				generation: insight.GetLastSubscription().GetGeneration(),
-			}
+		oldVersion, ok := f.insights[typ][key]
+		if !ok || oldVersion != item.GetMeta().GetVersion() {
+			// resourceVersion changed since the last check, don't finalize
+			// the subscription, update map with fresh data
+			f.insights[typ][key] = item.GetMeta().GetVersion()
 			continue
 		}
 
@@ -122,17 +114,18 @@ func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType) err
 
 		upsertInsight, _ := registry.Global().NewObject(typ)
 		err := manager.Upsert(f.rm, core_model.MetaToResourceKey(item.GetMeta()), upsertInsight, func(_ core_model.Resource) {
-			upsertInsight.GetSpec().(kuma_interfaces.Insight).UpdateSubscription(insight.GetLastSubscription())
+			upsertInsight.GetSpec().(generic.Insight).UpdateSubscription(insight.GetLastSubscription())
 		})
 		if err != nil {
 			log.Error(err, "unable to finalize subscription")
+			return err
 		}
 		delete(f.insights[typ], key)
 	}
 	return nil
 }
 
-func (f *subscriptionFinalizer) upstreamSync(insights core_model.ResourceList) {
+func (f *subscriptionFinalizer) removeDeletedInsights(insights core_model.ResourceList) {
 	byResourceKey := map[core_model.ResourceKey]bool{}
 	for _, item := range insights.GetItems() {
 		byResourceKey[core_model.MetaToResourceKey(item.GetMeta())] = true
@@ -144,16 +137,13 @@ func (f *subscriptionFinalizer) upstreamSync(insights core_model.ResourceList) {
 	}
 }
 
-func validateType(typ core_model.ResourceType) error {
+func isInsightType(typ core_model.ResourceType) bool {
 	obj, err := registry.Global().NewObject(typ)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	_, ok := obj.GetSpec().(kuma_interfaces.Insight)
-	if !ok {
-		return errors.Errorf("type %v doesn't implement interfaces.Insight", typ)
-	}
-	return nil
+	_, ok := obj.GetSpec().(generic.Insight)
+	return ok
 }
 
 func (f *subscriptionFinalizer) NeedLeaderElection() bool {

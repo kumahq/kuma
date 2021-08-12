@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/kumahq/kuma/api/helpers"
+	"github.com/kumahq/kuma/api/generic"
 )
 
 func NewSubscriptionStatus() *KDSSubscriptionStatus {
@@ -44,7 +44,7 @@ func (x *ZoneInsight) GetLatestSubscription() (*KDSSubscription, *time.Time) {
 	return x.Subscriptions[idx], latest
 }
 
-func (x *ZoneInsight) GetLastSubscription() helpers.Subscription {
+func (x *ZoneInsight) GetLastSubscription() generic.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil
 	}
@@ -72,7 +72,7 @@ func (x *ZoneInsight) Sum(v func(*KDSSubscription) uint64) uint64 {
 	return result
 }
 
-func (x *ZoneInsight) UpdateSubscription(s helpers.Subscription) {
+func (x *ZoneInsight) UpdateSubscription(s generic.Subscription) {
 	if x == nil {
 		return
 	}

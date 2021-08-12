@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/kumahq/kuma/api/helpers"
+	"github.com/kumahq/kuma/api/generic"
 )
 
 func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
@@ -70,7 +70,7 @@ func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time
 	return nil
 }
 
-func (x *DataplaneInsight) UpdateSubscription(s helpers.Subscription) {
+func (x *DataplaneInsight) UpdateSubscription(s generic.Subscription) {
 	if x == nil {
 		return
 	}
@@ -119,7 +119,7 @@ func (x *DataplaneInsight) GetLatestSubscription() (*DiscoverySubscription, *tim
 	return x.Subscriptions[idx], latest
 }
 
-func (x *DataplaneInsight) GetLastSubscription() helpers.Subscription {
+func (x *DataplaneInsight) GetLastSubscription() generic.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil
 	}

@@ -63,7 +63,7 @@ func setupFinalizer(rt runtime.Runtime) error {
 			system.ZoneInsightType,
 		}
 	default:
-		return errors.Errorf("unknown Kuma CP mode %v", rt.Config().Mode)
+		return errors.Errorf("unknown Kuma CP mode %s", rt.Config().Mode)
 	}
 
 	finalizer, err := NewSubscriptionFinalizer(rt.ResourceManager(), newTicker, resourceTypes...)

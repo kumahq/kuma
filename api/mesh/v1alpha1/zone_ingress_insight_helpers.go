@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/kumahq/kuma/api/helpers"
+	"github.com/kumahq/kuma/api/generic"
 )
 
 func (x *ZoneIngressInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
@@ -17,7 +17,7 @@ func (x *ZoneIngressInsight) GetSubscription(id string) (int, *DiscoverySubscrip
 	return -1, nil
 }
 
-func (x *ZoneIngressInsight) UpdateSubscription(s helpers.Subscription) {
+func (x *ZoneIngressInsight) UpdateSubscription(s generic.Subscription) {
 	if x == nil {
 		return
 	}
@@ -55,7 +55,7 @@ func (x *ZoneIngressInsight) IsOnline() bool {
 	return false
 }
 
-func (x *ZoneIngressInsight) GetLastSubscription() helpers.Subscription {
+func (x *ZoneIngressInsight) GetLastSubscription() generic.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil
 	}

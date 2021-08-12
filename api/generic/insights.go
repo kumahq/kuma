@@ -1,4 +1,4 @@
-package helpers
+package generic
 
 import (
 	"time"
@@ -15,7 +15,5 @@ type Insight interface {
 
 type Subscription interface {
 	proto.Message
-	GetId() string
-	GetGeneration() uint32
 	SetDisconnectTime(time time.Time)
 }
