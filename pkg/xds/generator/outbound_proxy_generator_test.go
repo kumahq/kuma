@@ -13,6 +13,7 @@ import (
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -35,11 +36,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 	}
 
 	mtlsCtx := xds_context.Context{
-		ConnectionInfo: xds_context.ConnectionInfo{
-			Authority: "kuma-system:5677",
-		},
 		ControlPlane: &xds_context.ControlPlaneContext{
-			SdsTlsCert: []byte("12345"),
+			Secrets: &xds.TestSecrets{},
 		},
 		Mesh: xds_context.MeshContext{
 			Resource: &core_mesh.MeshResource{

@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 type DataplaneWatchdogDependencies struct {
@@ -23,6 +24,7 @@ type DataplaneWatchdogDependencies struct {
 	xdsContextBuilder     *xdsContextBuilder
 	meshCache             *mesh.Cache
 	metadataTracker       DataplaneMetadataTracker
+	secrets               secrets.Secrets
 }
 
 type DataplaneWatchdog struct {
@@ -81,6 +83,7 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
+		d.secrets.Cleanup(d.key)
 		return d.dataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
 		return d.ingressReconciler.Clear(&proxyID)
@@ -96,11 +99,18 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 	if err != nil {
 		return err
 	}
-	if d.lastHash != "" && snapshotHash == d.lastHash {
-		// Kuma policies (including Dataplanes and Mesh) has not change therefore there is no need to regenerate configuration.
+	certInfo := d.secrets.Info(d.key)
+	syncForCert := certInfo != nil && certInfo.ExpiringSoon() // check if we need to regenerate config because identity cert is expiring soon.
+	syncForConfig := snapshotHash != d.lastHash               // check if we need to regenerate config because Kuma policies has changed.
+	if !syncForCert && !syncForConfig {
 		return nil
 	}
-	d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", snapshotHash)
+	if syncForConfig {
+		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", snapshotHash)
+	}
+	if syncForCert {
+		d.log.V(1).Info("certs expiring soon, reconcile")
+	}
 
 	envoyCtx, err := d.xdsContextBuilder.buildMeshedContext(d.key, d.lastHash)
 	if err != nil {
@@ -109,6 +119,9 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 	proxy, err := d.dataplaneProxyBuilder.Build(d.key, envoyCtx)
 	if err != nil {
 		return err
+	}
+	if !envoyCtx.Mesh.Resource.MTLSEnabled() {
+		d.secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
 	}
 	if err := d.dataplaneReconciler.Reconcile(*envoyCtx, proxy); err != nil {
 		return err

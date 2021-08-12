@@ -22,11 +22,10 @@ func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBui
 	})
 }
 
-func ClientSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, clientService string, tags []envoy.Tags) ClusterBuilderOpt {
+func ClientSideMTLS(ctx xds_context.Context, clientService string, tags []envoy.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
 			Ctx:           ctx,
-			Metadata:      metadata,
 			ClientService: clientService,
 			Tags:          tags,
 		})
@@ -34,11 +33,10 @@ func ClientSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadat
 }
 
 // UnknownDestinationClientSideMTLS configures cluster with mTLS for a mesh but without extensive destination verification (only Mesh is verified)
-func UnknownDestinationClientSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) ClusterBuilderOpt {
+func UnknownDestinationClientSideMTLS(ctx xds_context.Context) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
 			Ctx:           ctx,
-			Metadata:      metadata,
 			ClientService: "*",
 			Tags:          nil,
 		})

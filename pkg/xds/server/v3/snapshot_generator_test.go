@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_cache_v3 "github.com/kumahq/kuma/pkg/util/cache/v3"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -37,11 +38,8 @@ var _ = Describe("Reconcile", func() {
 		It("Generate Snapshot per Envoy Node", func() {
 			// given
 			ctx := xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-system:5677",
-				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("12345"),
+					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{

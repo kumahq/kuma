@@ -199,7 +199,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 				edsClusterBuilder.
 					Configure(envoy_clusters.EdsCluster(cluster.Name())).
 					Configure(envoy_clusters.LB(cluster.LB())).
-					Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, []envoy_common.Tags{cluster.Tags()})).
+					Configure(envoy_clusters.ClientSideMTLS(ctx, serviceName, []envoy_common.Tags{cluster.Tags()})).
 					Configure(envoy_clusters.Http2())
 			}
 			edsCluster, err := edsClusterBuilder.Build()

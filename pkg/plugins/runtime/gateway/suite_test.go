@@ -104,7 +104,6 @@ func MakeDataplaneProxy(rt runtime.Runtime, key core_model.ResourceKey) *core_xd
 
 	proxy, err := b.Build(key, &xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{
-			SdsTlsCert:        nil,
 			AdminProxyKeyPair: nil,
 			CLACache:          nil,
 		},
@@ -112,7 +111,6 @@ func MakeDataplaneProxy(rt runtime.Runtime, key core_model.ResourceKey) *core_xd
 			Resource:   mesh,
 			Dataplanes: &dataplanes,
 		},
-		ConnectionInfo:   xds_context.ConnectionInfo{},
 		EnvoyAdminClient: nil,
 	})
 	Expect(err).To(Succeed())
