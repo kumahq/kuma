@@ -85,11 +85,6 @@ bootstrapServer:
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
 
-# Envoy SDS server configuration
-sdsServer:
-  # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
-  dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
-
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
@@ -348,7 +343,7 @@ diagnostics:
   # If true, enables https://golang.org/pkg/net/http/pprof/ debug endpoints
   debugEndpoints: false # ENV: KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS
 
-# Dataplane Server configuration that servers API like Bootstrap/XDS/SDS for the Dataplane.
+# Dataplane Server configuration that servers API like Bootstrap/XDS for the Dataplane.
 dpServer:
   # Port of the DP Server
   port: 5678 # ENV: KUMA_DP_SERVER_PORT

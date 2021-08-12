@@ -10,7 +10,7 @@ import (
 
 var _ config.Config = &DpServerConfig{}
 
-// Dataplane Server configuration that servers API like Bootstrap/XDS/SDS.
+// Dataplane Server configuration that servers API like Bootstrap/XDS.
 type DpServerConfig struct {
 	// Port of the DP Server
 	Port int `yaml:"port" envconfig:"kuma_dp_server_port"`
