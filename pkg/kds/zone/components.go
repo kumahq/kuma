@@ -8,10 +8,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
-	"github.com/kumahq/kuma/pkg/kds/definitions"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
@@ -27,7 +27,8 @@ var (
 
 func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multizone.Zone.Name
-	kdsServer, err := kds_server.New(kdsZoneLog, rt, definitions.All.Select(definitions.ProvidedByZone),
+	reg := registry.Global()
+	kdsServer, err := kds_server.New(kdsZoneLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByZone)),
 		zone, rt.Config().Multizone.Zone.KDS.RefreshInterval,
 		rt.KDSContext().ZoneProvidedFilter, false)
 	if err != nil {
@@ -43,7 +44,7 @@ func Setup(rt core_runtime.Runtime) error {
 				log.Error(err, "StreamKumaResources finished with an error")
 			}
 		}()
-		sink := kds_client.NewKDSSink(log, definitions.All.Select(definitions.ConsumedByZone), kds_client.NewKDSStream(session.ClientStream(), zone),
+		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone),
 			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
 		)
 		go func() {
