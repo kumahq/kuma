@@ -9,7 +9,7 @@ import (
 
 func TestE2ECompatibility(t *testing.T) {
 	if framework.IsK8sClustersStarted() {
-		test.RunSpecs(t, "E2E Deploy Suite")
+		test.RunSpecs(t, "E2E Compatibility Suite")
 	} else {
 		t.SkipNow()
 	}

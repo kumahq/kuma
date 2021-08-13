@@ -277,6 +277,17 @@ spec:
 	)
 }
 
+func NamespaceWithSidecarInjection(namespace string) InstallFunc {
+	return YamlK8s(fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+  annotations:
+    kuma.io/sidecar-injection: "enabled"
+`, namespace))
+}
+
 func DemoClientJobK8s(mesh, destination string) InstallFunc {
 	const name = "demo-job-client"
 	deployment := `

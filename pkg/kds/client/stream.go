@@ -3,8 +3,8 @@ package client
 import (
 	"fmt"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -28,16 +28,16 @@ var _ KDSStream = &stream{}
 
 type stream struct {
 	streamClient   mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient
-	latestACKed    map[string]*envoy.DiscoveryResponse
-	latestReceived map[string]*envoy.DiscoveryResponse
+	latestACKed    map[string]*envoy_sd.DiscoveryResponse
+	latestReceived map[string]*envoy_sd.DiscoveryResponse
 	clientId       string
 }
 
 func NewKDSStream(s mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient, clientId string) KDSStream {
 	return &stream{
 		streamClient:   s,
-		latestACKed:    make(map[string]*envoy.DiscoveryResponse),
-		latestReceived: make(map[string]*envoy.DiscoveryResponse),
+		latestACKed:    make(map[string]*envoy_sd.DiscoveryResponse),
+		latestReceived: make(map[string]*envoy_sd.DiscoveryResponse),
 		clientId:       clientId,
 	}
 }
@@ -54,7 +54,7 @@ func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 	if err != nil {
 		return err
 	}
-	return s.streamClient.Send(&envoy.DiscoveryRequest{
+	return s.streamClient.Send(&envoy_sd.DiscoveryRequest{
 		VersionInfo:   "",
 		ResponseNonce: "",
 		Node: &envoy_core.Node{
@@ -88,7 +88,7 @@ func (s *stream) ACK(typ string) error {
 	if latestReceived == nil {
 		return nil
 	}
-	err := s.streamClient.Send(&envoy.DiscoveryRequest{
+	err := s.streamClient.Send(&envoy_sd.DiscoveryRequest{
 		VersionInfo:   latestReceived.VersionInfo,
 		ResponseNonce: latestReceived.Nonce,
 		ResourceNames: []string{},
@@ -109,7 +109,7 @@ func (s *stream) NACK(typ string, err error) error {
 		return nil
 	}
 	latestACKed := s.latestACKed[typ]
-	return s.streamClient.Send(&envoy.DiscoveryRequest{
+	return s.streamClient.Send(&envoy_sd.DiscoveryRequest{
 		VersionInfo:   latestACKed.GetVersionInfo(),
 		ResponseNonce: latestReceived.Nonce,
 		ResourceNames: []string{},

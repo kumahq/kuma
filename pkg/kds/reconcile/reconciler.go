@@ -3,17 +3,17 @@ package reconcile
 import (
 	"context"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 var log = core.Log.WithName("kds").WithName("reconcile")
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache, generator SnapshotGenerator, versioner util_xds.SnapshotVersioner, mode config_core.CpMode) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache, generator SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner, mode config_core.CpMode) Reconciler {
 	return &reconciler{
 		hasher:    hasher,
 		cache:     cache,
@@ -25,9 +25,9 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache, ge
 
 type reconciler struct {
 	hasher    envoy_cache.NodeHash
-	cache     util_xds.SnapshotCache
+	cache     util_xds_v3.SnapshotCache
 	generator SnapshotGenerator
-	versioner util_xds.SnapshotVersioner
+	versioner util_xds_v3.SnapshotVersioner
 	mode      config_core.CpMode
 }
 
@@ -46,7 +46,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	return r.cache.SetSnapshot(id, new)
 }
 
-func (r *reconciler) logChanges(new util_xds.Snapshot, old util_xds.Snapshot, node *envoy_core.Node) {
+func (r *reconciler) logChanges(new util_xds_v3.Snapshot, old util_xds_v3.Snapshot, node *envoy_core.Node) {
 	for _, typ := range new.GetSupportedTypes() {
 		if old != nil && old.GetVersion(typ) != new.GetVersion(typ) {
 			client := node.Id

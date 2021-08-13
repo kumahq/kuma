@@ -5,9 +5,10 @@ import (
 	"sync"
 	"time"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/kds/mux"
@@ -29,7 +30,7 @@ func (t *testMultiplexStream) Recv() (*mesh_proto.Message, error) {
 }
 
 func (t *testMultiplexStream) Context() context.Context {
-	panic("implement me")
+	return metadata.AppendToOutgoingContext(context.Background(), mux.KDSVersionHeaderKey, mux.KDSVersionV3)
 }
 
 var _ = Describe("Multiplex Session", func() {
@@ -46,28 +47,28 @@ var _ = Describe("Multiplex Session", func() {
 		})
 
 		It("should Send to clientSession's ClientStream and Recv from serverSession's ServerStream", func() {
-			err := clientSession.ClientStream().Send(&envoy_api_v2.DiscoveryRequest{VersionInfo: "1"})
+			err := clientSession.ClientStream().Send(&envoy_sd.DiscoveryRequest{VersionInfo: "1"})
 			Expect(err).ToNot(HaveOccurred())
 			msg, err := serverSession.ServerStream().Recv()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(msg.VersionInfo).To(Equal("1"))
 		})
 		It("should Send to serverSession's ServerStream and Recv from clientSession's ClientStream", func() {
-			err := serverSession.ServerStream().Send(&envoy_api_v2.DiscoveryResponse{VersionInfo: "2"})
+			err := serverSession.ServerStream().Send(&envoy_sd.DiscoveryResponse{VersionInfo: "2"})
 			Expect(err).ToNot(HaveOccurred())
 			msg, err := clientSession.ClientStream().Recv()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(msg.VersionInfo).To(Equal("2"))
 		})
 		It("should Send to clientSession's ServerStream and Recv from serverSession's ClientStream", func() {
-			err := clientSession.ServerStream().Send(&envoy_api_v2.DiscoveryResponse{VersionInfo: "3"})
+			err := clientSession.ServerStream().Send(&envoy_sd.DiscoveryResponse{VersionInfo: "3"})
 			Expect(err).ToNot(HaveOccurred())
 			msg, err := serverSession.ClientStream().Recv()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(msg.VersionInfo).To(Equal("3"))
 		})
 		It("should Send to serverSession's ClientStream and Recv from clientSession's ServerStream", func() {
-			err := serverSession.ClientStream().Send(&envoy_api_v2.DiscoveryRequest{VersionInfo: "4"})
+			err := serverSession.ClientStream().Send(&envoy_sd.DiscoveryRequest{VersionInfo: "4"})
 			Expect(err).ToNot(HaveOccurred())
 			msg, err := clientSession.ServerStream().Recv()
 			Expect(err).ToNot(HaveOccurred())
@@ -98,9 +99,9 @@ var _ = Describe("Multiplex Session", func() {
 					wg.Done()
 				}()
 
-				err := clientSession.ServerStream().Send(&envoy_api_v2.DiscoveryResponse{VersionInfo: "2"})
+				err := clientSession.ServerStream().Send(&envoy_sd.DiscoveryResponse{VersionInfo: "2"})
 				Expect(err).ToNot(HaveOccurred())
-				err = clientSession.ClientStream().Send(&envoy_api_v2.DiscoveryRequest{VersionInfo: "1"})
+				err = clientSession.ClientStream().Send(&envoy_sd.DiscoveryRequest{VersionInfo: "1"})
 				Expect(err).ToNot(HaveOccurred())
 
 				resp, err := serverSession.ClientStream().Recv()
