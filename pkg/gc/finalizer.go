@@ -113,8 +113,8 @@ func (f *subscriptionFinalizer) checkResourceVersion(typ core_model.ResourceType
 		insight.GetLastSubscription().SetDisconnectTime(core.Now())
 
 		upsertInsight, _ := registry.Global().NewObject(typ)
-		err := manager.Upsert(f.rm, core_model.MetaToResourceKey(item.GetMeta()), upsertInsight, func(_ core_model.Resource) {
-			upsertInsight.GetSpec().(generic.Insight).UpdateSubscription(insight.GetLastSubscription())
+		err := manager.Upsert(f.rm, key, upsertInsight, func(r core_model.Resource) error {
+			return upsertInsight.GetSpec().(generic.Insight).UpdateSubscription(insight.GetLastSubscription())
 		})
 		if err != nil {
 			log.Error(err, "unable to finalize subscription")

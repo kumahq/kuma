@@ -10,7 +10,7 @@ type Insight interface {
 	proto.Message
 	IsOnline() bool
 	GetLastSubscription() Subscription
-	UpdateSubscription(Subscription)
+	UpdateSubscription(Subscription) error
 }
 
 type Subscription interface {

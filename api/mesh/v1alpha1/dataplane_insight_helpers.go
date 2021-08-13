@@ -4,10 +4,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kumahq/kuma/api/generic"
 )
+
+var _ generic.Insight = &DataplaneInsight{}
 
 func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
 	return &DiscoverySubscriptionStatus{
@@ -70,13 +73,13 @@ func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time
 	return nil
 }
 
-func (x *DataplaneInsight) UpdateSubscription(s generic.Subscription) {
+func (x *DataplaneInsight) UpdateSubscription(s generic.Subscription) error {
 	if x == nil {
-		return
+		return nil
 	}
 	discoverySubscription, ok := s.(*DiscoverySubscription)
 	if !ok {
-		return
+		return errors.Errorf("invalid type %T for DataplaneInsight", s)
 	}
 	i, old := x.GetSubscription(discoverySubscription.Id)
 	if old != nil {
@@ -85,6 +88,7 @@ func (x *DataplaneInsight) UpdateSubscription(s generic.Subscription) {
 		x.finalizeSubscriptions()
 		x.Subscriptions = append(x.Subscriptions, discoverySubscription)
 	}
+	return nil
 }
 
 // If Kuma CP was killed ungracefully then we can get a subscription without a DisconnectTime.

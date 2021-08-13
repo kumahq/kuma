@@ -3,10 +3,13 @@ package v1alpha1
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kumahq/kuma/api/generic"
 )
+
+var _ generic.Insight = &ZoneInsight{}
 
 func NewSubscriptionStatus() *KDSSubscriptionStatus {
 	return &KDSSubscriptionStatus{
@@ -72,13 +75,13 @@ func (x *ZoneInsight) Sum(v func(*KDSSubscription) uint64) uint64 {
 	return result
 }
 
-func (x *ZoneInsight) UpdateSubscription(s generic.Subscription) {
+func (x *ZoneInsight) UpdateSubscription(s generic.Subscription) error {
 	if x == nil {
-		return
+		return nil
 	}
 	kdsSubscription, ok := s.(*KDSSubscription)
 	if !ok {
-		return
+		return errors.Errorf("invalid type %T for ZoneInsight", s)
 	}
 	i, old := x.GetSubscription(kdsSubscription.Id)
 	if old != nil {
@@ -87,6 +90,7 @@ func (x *ZoneInsight) UpdateSubscription(s generic.Subscription) {
 		x.finalizeSubscriptions()
 		x.Subscriptions = append(x.Subscriptions, kdsSubscription)
 	}
+	return nil
 }
 
 // If Global CP was killed ungracefully then we can get a subscription without a DisconnectTime.
