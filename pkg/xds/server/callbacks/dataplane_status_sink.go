@@ -30,52 +30,51 @@ func NewDataplaneInsightSink(
 	dataplaneType core_model.ResourceType,
 	accessor SubscriptionStatusAccessor,
 	newTicker func() *time.Ticker,
-	forceUpdateTicker func() *time.Ticker,
+	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
 	store DataplaneInsightStore) DataplaneInsightSink {
 	return &dataplaneInsightSink{
-		flushTicker:       newTicker,
-		forceUpdateTicker: forceUpdateTicker,
-		dataplaneType:     dataplaneType,
-		accessor:          accessor,
-		flushBackoff:      flushBackoff,
-		store:             store,
+		flushTicker:      newTicker,
+		generationTicker: generationTicker,
+		dataplaneType:    dataplaneType,
+		accessor:         accessor,
+		flushBackoff:     flushBackoff,
+		store:            store,
 	}
 }
 
 var _ DataplaneInsightSink = &dataplaneInsightSink{}
 
 type dataplaneInsightSink struct {
-	flushTicker       func() *time.Ticker
-	forceUpdateTicker func() *time.Ticker
-	dataplaneType     core_model.ResourceType
-	accessor          SubscriptionStatusAccessor
-	store             DataplaneInsightStore
-	flushBackoff      time.Duration
+	flushTicker      func() *time.Ticker
+	generationTicker func() *time.Ticker
+	dataplaneType    core_model.ResourceType
+	accessor         SubscriptionStatusAccessor
+	store            DataplaneInsightStore
+	flushBackoff     time.Duration
 }
 
 func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	flushTicker := s.flushTicker()
 	defer flushTicker.Stop()
 
-	forceUpdateTicker := s.forceUpdateTicker()
-	defer forceUpdateTicker.Stop()
+	generationTicker := s.generationTicker()
+	defer generationTicker.Stop()
 
 	var lastStoredState *mesh_proto.DiscoverySubscription
-	forceUpdate := false
+	var generation uint32
 
 	flush := func(closing bool) {
 		dataplaneID, currentState := s.accessor.GetStatus()
 		select {
-		case <-forceUpdateTicker.C:
-			forceUpdate = true
+		case <-generationTicker.C:
+			generation++
 		default:
 		}
-
-		if proto.Equal(currentState, lastStoredState) && !forceUpdate {
+		currentState.Generation = generation
+		if proto.Equal(currentState, lastStoredState) {
 			return
 		}
-		forceUpdate = false
 
 		if err := s.store.Upsert(s.dataplaneType, dataplaneID, currentState); err != nil {
 			switch {

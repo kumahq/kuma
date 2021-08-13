@@ -58,6 +58,7 @@ var _ = Describe("Subscription Finalizer", func() {
 						GlobalInstanceId: "cp-1",
 						ConnectTime:      proto.MustTimestampProto(sampleTime.Add(1 * time.Hour)),
 						Status:           system_proto.NewSubscriptionStatus(),
+						Generation:       0,
 					},
 				},
 			},
@@ -72,12 +73,12 @@ var _ = Describe("Subscription Finalizer", func() {
 		return zoneInsight.Spec.IsOnline()
 	}
 
-	updateVersion := func() {
+	incGeneration := func() {
 		zoneInsight := system.NewZoneInsightResource()
 		Expect(
 			rm.Get(context.Background(), zoneInsight, store.GetByKey("zone-1", core_model.NoMesh)),
 		).To(Succeed())
-		// empty update to increment the ResourceVersion
+		zoneInsight.Spec.GetLastSubscription().(*system_proto.KDSSubscription).Generation++
 		Expect(rm.Update(context.Background(), zoneInsight)).To(Succeed())
 	}
 
@@ -92,6 +93,7 @@ var _ = Describe("Subscription Finalizer", func() {
 			GlobalInstanceId: "cp-1",
 			ConnectTime:      proto.MustTimestampProto(sampleTime.Add(2 * time.Hour)),
 			Status:           system_proto.NewSubscriptionStatus(),
+			Generation:       0,
 		})
 		Expect(rm.Update(context.Background(), zoneInsight)).To(Succeed())
 	}
@@ -113,24 +115,24 @@ var _ = Describe("Subscription Finalizer", func() {
 
 		createZoneInsight()
 
-		// finalizer should memorize the current resourceVersion
+		// finalizer should memorize the current generation = 0
 		ticks <- time.Time{}
 		Eventually(listCalled(1), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeTrue())
 
-		updateVersion()
-		// finalizer should memorize the new resourceVersion
+		incGeneration()
+		// finalizer should memorize the new generation = 1
 		ticks <- time.Time{}
 		Eventually(listCalled(2), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeTrue())
 
-		// finalizer should observe the resourceVersion didn't change and set DisconnectTime
+		// finalizer should observe the generation didn't change and set DisconnectTime
 		ticks <- time.Time{}
 		Eventually(listCalled(3), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeFalse())
 	})
 
-	It("should not finalize subscription if resourceVersion is the same, but subscription id was changed", func() {
+	It("should not finalize subscription if generation is the same, but subscription id was changed", func() {
 		stop := make(chan struct{})
 		defer close(stop)
 		ticks := make(chan time.Time)
@@ -139,14 +141,14 @@ var _ = Describe("Subscription Finalizer", func() {
 
 		createZoneInsight()
 
-		// finalizer should memorize the current resourceVersion
+		// finalizer should memorize the current generation = 0
 		ticks <- time.Time{}
 		Eventually(listCalled(1), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeTrue())
 
 		addNewSubscription()
 
-		// resourceVersion is the same, but last subscriptionId was changed
+		// generation is the same, but last subscriptionId was changed
 		ticks <- time.Time{}
 		Eventually(listCalled(2), "5s", "100ms").Should(BeTrue())
 		Eventually(isOnline, "5s", "100ms").Should(BeTrue())

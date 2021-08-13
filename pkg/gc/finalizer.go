@@ -18,13 +18,12 @@ var (
 	finalizerLog = core.Log.WithName("finalizer")
 )
 
-// Every Insight has a statusSink that periodically changes ResourceVersion while Kuma CP <-> DPP
-// connection is active. This updates happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout / 2
-// even if no real updates of the resource happen.
+// Every Insight has a statusSink that periodically increments the 'generation' counter while Kuma CP <-> DPP
+// connection is active. This updates happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout / 2.
 //
 // subscriptionFinalizer is a component that allows to finalize subscriptions for Insights. The component iterates
-// over all online Insights and checks that ResourceVersion was changed since the last check. This check
-// happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout. If ResourceVersion didn't change then component
+// over all online Insights and checks that 'generation' counter was changed since the last check. This check
+// happens every <KumaCP.Config>.Metrics.Dataplane.IdleTimeout. If 'generation' counter didn't change then component
 // finalizes the subscription by setting DisconnectTime.
 //
 // This component allows to solve the corner case we had with Insights:
@@ -33,7 +32,12 @@ var (
 // 3. Kuma CP is up
 // 4. DPP status is Online whereas it should be Offline
 
-type insightMap map[core_model.ResourceKey]string
+type descriptor struct {
+	id         string
+	generation uint32
+}
+
+type insightMap map[core_model.ResourceKey]*descriptor
 
 type insightsByType map[core_model.ResourceType]insightMap
 
@@ -50,7 +54,7 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, newTicker func() *time
 		if !isInsightType(typ) {
 			return nil, errors.Errorf("%q type is not an Insight", typ)
 		}
-		insights[typ] = map[core_model.ResourceKey]string{}
+		insights[typ] = map[core_model.ResourceKey]*descriptor{}
 	}
 
 	return &subscriptionFinalizer{
@@ -70,8 +74,8 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 		select {
 		case <-ticker.C:
 			for _, typ := range f.types {
-				if err := f.checkResourceVersion(typ); err != nil {
-					finalizerLog.Error(err, "unable to check insight's resourceVersion", "type", typ)
+				if err := f.checkGeneration(typ); err != nil {
+					finalizerLog.Error(err, "unable to check subscription's generation", "type", typ)
 				}
 			}
 		case <-stop:
@@ -81,7 +85,7 @@ func (f *subscriptionFinalizer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (f *subscriptionFinalizer) checkResourceVersion(typ core_model.ResourceType) error {
+func (f *subscriptionFinalizer) checkGeneration(typ core_model.ResourceType) error {
 	// get all the insights for provided type
 	insights, _ := registry.Global().NewList(typ)
 	if err := f.rm.List(context.Background(), insights); err != nil {
@@ -101,11 +105,14 @@ func (f *subscriptionFinalizer) checkResourceVersion(typ core_model.ResourceType
 			continue
 		}
 
-		oldVersion, ok := f.insights[typ][key]
-		if !ok || oldVersion != item.GetMeta().GetVersion() {
-			// resourceVersion changed since the last check, don't finalize
-			// the subscription, update map with fresh data
-			f.insights[typ][key] = item.GetMeta().GetVersion()
+		old, ok := f.insights[typ][key]
+		if !ok || old.id != insight.GetLastSubscription().GetId() || old.generation != insight.GetLastSubscription().GetGeneration() {
+			// something changed since the last check, either subscriptionId or generation were updated
+			// don't finalize the subscription, update map with fresh data
+			f.insights[typ][key] = &descriptor{
+				id:         insight.GetLastSubscription().GetId(),
+				generation: insight.GetLastSubscription().GetGeneration(),
+			}
 			continue
 		}
 
