@@ -34,7 +34,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			// when
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
-				Configure(clusters.ClientSideMTLS(given.ctx, given.metadata, given.clientService, given.tags)).
+				Configure(clusters.ClientSideMTLS(given.ctx, given.clientService, given.tags)).
 				Configure(clusters.Timeout(core_mesh.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
 				Build()
 
@@ -49,12 +49,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			clusterName:   "testCluster",
 			clientService: "backend",
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-control-plane:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("CERTIFICATE"),
-				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -94,22 +88,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                     validationContextSdsSecretConfig:
                       name: mesh_ca
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - envoyGrpc:
-                            clusterName: ads_cluster
-                        transportApiVersion: V3
+                      ads: {}
                       resourceApiVersion: V3
             type: EDS`,
 		}),
@@ -117,12 +101,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			clusterName:   "testCluster",
 			clientService: "backend",
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-control-plane:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("CERTIFICATE"),
-				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -175,22 +153,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                       validationContextSdsSecretConfig:
                         name: mesh_ca
                         sdsConfig:
-                          apiConfigSource:
-                            apiType: GRPC
-                            grpcServices:
-                            - envoyGrpc:
-                                clusterName: ads_cluster
-                            transportApiVersion: V3
+                          ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   sni: backend{cluster=1,mesh=default}
             - match:
@@ -208,22 +176,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                       validationContextSdsSecretConfig:
                         name: mesh_ca
                         sdsConfig:
-                          apiConfigSource:
-                            apiType: GRPC
-                            grpcServices:
-                            - envoyGrpc:
-                                clusterName: ads_cluster
-                            transportApiVersion: V3
+                          ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   sni: backend{cluster=2,mesh=default}
             type: EDS`,
@@ -232,12 +190,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			clusterName:   "testCluster",
 			clientService: "backend",
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-control-plane:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("CERTIFICATE"),
-				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -285,28 +237,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                     validationContextSdsSecretConfig:
                       name: mesh_ca
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                            initialMetadata:
-                            - key: authorization
-                              value: token
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - envoyGrpc:
-                            clusterName: ads_cluster
-                          initialMetadata:
-                          - key: authorization
-                            value: token
-                        transportApiVersion: V3
+                      ads: {}
                       resourceApiVersion: V3
                 sni: backend{mesh=default,version=v1}
             type: EDS`,

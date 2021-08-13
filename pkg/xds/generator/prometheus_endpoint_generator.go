@@ -125,7 +125,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 						RewritePath: statsPath,
 					},
 				})).
-				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
+				Configure(envoy_listeners.ServerSideMTLS(ctx)).
 				Configure(envoy_listeners.NetworkRBAC(prometheusListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface])),
 			)).
 			Build()

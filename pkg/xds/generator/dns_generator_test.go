@@ -31,28 +31,13 @@ var _ = Describe("DNSGenerator", func() {
 			// setup
 			gen := &generator.DNSGenerator{}
 			ctx := xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-system:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("12345"),
-				},
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: &mesh_proto.Mesh{
-							Mtls: &mesh_proto.Mesh_Mtls{
-								EnabledBackend: "builtin",
-								Backends: []*mesh_proto.CertificateAuthorityBackend{
-									{
-										Name: "builtin",
-										Type: "builtin",
-									},
-								},
-							},
-						},
+						Spec: &mesh_proto.Mesh{},
 					},
 				},
 			}

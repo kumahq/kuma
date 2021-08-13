@@ -152,22 +152,12 @@ resources:
             validationContextSdsSecretConfig:
               name: mesh_ca
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
           - name: identity_cert
             sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: ads_cluster
-                transportApiVersion: V3
+              ads: {}
               resourceApiVersion: V3
         sni: api-http{mesh=mesh1}
     type: EDS
@@ -202,22 +192,12 @@ resources:
             validationContextSdsSecretConfig:
               name: mesh_ca
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
           - name: identity_cert
             sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: ads_cluster
-                transportApiVersion: V3
+              ads: {}
               resourceApiVersion: V3
         sni: api-tcp{mesh=mesh1}
     type: EDS
@@ -248,22 +228,12 @@ resources:
             validationContextSdsSecretConfig:
               name: mesh_ca
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
           - name: identity_cert
             sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: ads_cluster
-                transportApiVersion: V3
+              ads: {}
               resourceApiVersion: V3
         sni: backend{mesh=mesh1}
     type: EDS
@@ -293,22 +263,12 @@ resources:
             validationContextSdsSecretConfig:
               name: mesh_ca
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
           - name: identity_cert
             sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: ads_cluster
-                transportApiVersion: V3
+              ads: {}
               resourceApiVersion: V3
         sni: db{mesh=mesh1,role=master}
     type: EDS
@@ -338,22 +298,12 @@ resources:
             validationContextSdsSecretConfig:
               name: mesh_ca
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
           - name: identity_cert
             sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: ads_cluster
-                transportApiVersion: V3
+              ads: {}
               resourceApiVersion: V3
         sni: db{mesh=mesh1,role=replica}
     type: EDS

@@ -27,7 +27,7 @@ var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 
 // dataplaneSyncTracker tracks XDS streams that are connected to the CP and fire up a watchdog.
 // Watchdog should be run only once for given dataplane regardless of the number of streams.
-// For ADS there is only one stream for DP, but this is not the case with SDS
+// For ADS there is only one stream for DP.
 //
 // Node info can be (but does not have to be) carried only on the first XDS request. That's why need streamsAssociation map
 // that indicates that the stream was already associated

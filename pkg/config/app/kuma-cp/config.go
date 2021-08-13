@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
-	"github.com/kumahq/kuma/pkg/config/sds"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 )
@@ -117,8 +116,6 @@ type Config struct {
 	BootstrapServer *bootstrap.BootstrapServerConfig `yaml:"bootstrapServer,omitempty"`
 	// Envoy XDS server configuration
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer,omitempty"`
-	// Envoy SDS server configuration
-	SdsServer *sds.SdsServerConfig `yaml:"sdsServer,omitempty"`
 	// Monitoring Assignment Discovery Service (MADS) server configuration
 	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer,omitempty"`
 	// API Server configuration
@@ -148,7 +145,6 @@ func (c *Config) Sanitize() {
 	c.Store.Sanitize()
 	c.BootstrapServer.Sanitize()
 	c.XdsServer.Sanitize()
-	c.SdsServer.Sanitize()
 	c.MonitoringAssignmentServer.Sanitize()
 	c.ApiServer.Sanitize()
 	c.Runtime.Sanitize()
@@ -166,7 +162,6 @@ func DefaultConfig() Config {
 		Mode:                       core.Standalone,
 		Store:                      store.DefaultStoreConfig(),
 		XdsServer:                  xds.DefaultXdsServerConfig(),
-		SdsServer:                  sds.DefaultSdsServerConfig(),
 		MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
 		ApiServer:                  api_server.DefaultApiServerConfig(),
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
@@ -222,9 +217,6 @@ func (c *Config) Validate() error {
 		if err := c.BootstrapServer.Validate(); err != nil {
 			return errors.Wrap(err, "Bootstrap Server validation failed")
 		}
-		if err := c.SdsServer.Validate(); err != nil {
-			return errors.Wrap(err, "SDS Server validation failed")
-		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
 		}
@@ -246,9 +238,6 @@ func (c *Config) Validate() error {
 		}
 		if err := c.BootstrapServer.Validate(); err != nil {
 			return errors.Wrap(err, "Bootstrap Server validation failed")
-		}
-		if err := c.SdsServer.Validate(); err != nil {
-			return errors.Wrap(err, "SDS Server validation failed")
 		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")

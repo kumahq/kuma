@@ -48,7 +48,6 @@ func defaultIngressProxyBuilder(rt core_runtime.Runtime, metadataTracker Datapla
 func DefaultDataplaneWatchdogFactory(
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
-	connectionInfoTracker ConnectionInfoTracker,
 	dataplaneReconciler SnapshotReconciler,
 	ingressReconciler SnapshotReconciler,
 	xdsMetrics *xds_metrics.Metrics,
@@ -58,7 +57,7 @@ func DefaultDataplaneWatchdogFactory(
 ) (DataplaneWatchdogFactory, error) {
 	dataplaneProxyBuilder := defaultDataplaneProxyBuilder(rt, metadataTracker, apiVersion)
 	ingressProxyBuilder := defaultIngressProxyBuilder(rt, metadataTracker, apiVersion)
-	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, connectionInfoTracker, rt.ReadOnlyResourceManager(), rt.LookupIP(), rt.EnvoyAdminClient())
+	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, rt.ReadOnlyResourceManager(), rt.LookupIP(), rt.EnvoyAdminClient())
 
 	deps := DataplaneWatchdogDependencies{
 		dataplaneProxyBuilder: dataplaneProxyBuilder,
@@ -68,6 +67,7 @@ func DefaultDataplaneWatchdogFactory(
 		xdsContextBuilder:     xdsContextBuilder,
 		meshCache:             meshSnapshotCache,
 		metadataTracker:       metadataTracker,
+		secrets:               envoyCpCtx.Secrets,
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,
