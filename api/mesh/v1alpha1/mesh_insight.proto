@@ -44,4 +44,7 @@ message MeshInsight {
     map<string, DataplaneStat> envoy = 2;
   }
   DpVersions dpVersions = 4;
+
+  // Connected Dataplanes grouped by mTLS backends
+  map<string, DataplaneStat> mTLSBackends = 5;
 }

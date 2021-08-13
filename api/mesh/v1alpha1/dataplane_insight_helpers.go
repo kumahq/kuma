@@ -50,7 +50,7 @@ func (ds *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscript
 	return -1, nil
 }
 
-func (ds *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time) error {
+func (ds *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time, backend string) error {
 	if ds.MTLS == nil {
 		ds.MTLS = &DataplaneInsight_MTLS{}
 	}
@@ -64,6 +64,7 @@ func (ds *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Tim
 	if err := ts.CheckValid(); err != nil {
 		return err
 	}
+	ds.MTLS.Backend = backend
 	ds.MTLS.LastCertificateRegeneration = ts
 	return nil
 }

@@ -36,6 +36,9 @@ message DataplaneInsight {
 
     // Number of certificate regenerations for a Dataplane.
     uint32 certificate_regenerations = 3;
+
+    // Backend that was used to generate current certificate
+    string backend = 4;
   }
 }
 

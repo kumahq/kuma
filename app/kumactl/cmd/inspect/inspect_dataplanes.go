@@ -64,7 +64,23 @@ func newInspectDataplanesCmd(pctx *cmd.RootContext) *cobra.Command {
 
 func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "KUMA-DP VERSION", "ENVOY VERSION", "NOTES"},
+		Headers: []string{
+			"MESH",
+			"NAME",
+			"TAGS",
+			"STATUS",
+			"LAST CONNECTED AGO",
+			"LAST UPDATED AGO",
+			"TOTAL UPDATES",
+			"TOTAL ERRORS",
+			"CERT REGENERATED AGO",
+			"CERT EXPIRATION",
+			"CERT REGENERATIONS",
+			"CERT BACKEND",
+			"KUMA-DP VERSION",
+			"ENVOY VERSION",
+			"NOTES",
+		},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -97,6 +113,12 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 				}
 				dataplaneInsight.GetMTLS().GetCertificateExpirationTime()
 				certRegenerations := strconv.Itoa(int(dataplaneInsight.GetMTLS().GetCertificateRegenerations()))
+				certBackend := dataplaneInsight.GetMTLS().GetBackend()
+				if dataplaneInsight.GetMTLS() == nil {
+					certBackend = "-"
+				} else if dataplaneInsight.GetMTLS().Backend == "" {
+					certBackend = "unknown" // backwards compatibility with Kuma 1.2.x
+				}
 
 				var kumaDpVersion string
 				var envoyVersion string
@@ -121,6 +143,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 					table.Ago(lastCertGeneration, now),   // CERT REGENERATED AGO
 					table.Date(certExpiration),           // CERT EXPIRATION
 					certRegenerations,                    // CERT REGENERATIONS
+					certBackend,                          // CERT BACKEND
 					kumaDpVersion,                        // KUMA-DP VERSION
 					envoyVersion,                         // ENVOY VERSION
 					strings.Join(errs, ";"),              // NOTES

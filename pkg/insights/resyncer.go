@@ -283,10 +283,10 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			KumaDp: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 			Envoy:  map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 		},
+		MTLSBackends: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 	}
 
 	dataplanes := &core_mesh.DataplaneResourceList{}
-
 	if err := r.rm.List(context.Background(), dataplanes, store.ListByMesh(mesh)); err != nil {
 		return err
 	}
@@ -294,7 +294,6 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	insight.Dataplanes.Total = uint32(len(dataplanes.GetItems()))
 
 	dpInsights := &core_mesh.DataplaneInsightResourceList{}
-
 	if err := r.rm.List(context.Background(), dpInsights, store.ListByMesh(mesh)); err != nil {
 		return err
 	}
@@ -328,6 +327,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 
 		updateTotal(kumaDpVersion, insight.DpVersions.KumaDp)
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
+		updateMTLSBackend(dpInsight.GetMTLS(), status, insight.MTLSBackends)
 	}
 
 	for _, resDesc := range r.registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.Not(model.Named(core_mesh.DataplaneType, core_mesh.DataplaneInsightType))) {
@@ -362,6 +362,34 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		return err
 	}
 	return nil
+}
+
+func updateMTLSBackend(
+	mtlsInsight *mesh_proto.DataplaneInsight_MTLS,
+	status core_mesh.Status,
+	stats map[string]*mesh_proto.MeshInsight_DataplaneStat,
+) {
+	if mtlsInsight == nil {
+		return
+	}
+
+	backend := mtlsInsight.GetBackend()
+	if backend == "" {
+		backend = "unknown" // backwards compatibility for Kuma 1.2.x
+	}
+	if stat := stats[backend]; stat == nil {
+		stats[backend] = &mesh_proto.MeshInsight_DataplaneStat{}
+	}
+
+	switch status {
+	case core_mesh.Online:
+		stats[backend].Online++
+	case core_mesh.PartiallyDegraded:
+		stats[backend].PartiallyDegraded++
+	case core_mesh.Offline:
+		stats[backend].Offline++
+	}
+	stats[backend].Total++
 }
 
 func updateTotal(version string, dpStats map[string]*mesh_proto.MeshInsight_DataplaneStat) {

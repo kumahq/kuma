@@ -141,8 +141,10 @@ func (s *dataplaneInsightStore) Upsert(dataplaneType core_model.ResourceType, da
 		err := manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) {
 			insight := resource.(*core_mesh.DataplaneInsightResource)
 			insight.Spec.UpdateSubscription(subscription)
-			if secretsInfo != nil && (insight.Spec.MTLS == nil || insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration) {
-				updateCertErr = insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration)
+			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
+				insight.Spec.MTLS = nil
+			} else if insight.Spec.MTLS == nil || insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration {
+				updateCertErr = insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.MTLS.EnabledBackend)
 			}
 		})
 		if err != nil {

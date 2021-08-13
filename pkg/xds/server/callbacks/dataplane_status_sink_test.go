@@ -83,6 +83,9 @@ var _ = Describe("DataplaneInsightSink", func() {
               total: {}
 `))
 
+			// and
+			Expect(latestUpsert.secretsInfo).To(Equal(xds.TestSecretsInfo))
+
 			// when - time tick after changes
 			subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(t0.Add(2 * time.Second))
 			subscription.Status.Lds.ResponsesSent += 1
@@ -239,13 +242,14 @@ var _ callbacks.DataplaneInsightStore = &DataplaneInsightStoreRecorder{}
 type DataplaneInsightUpsert struct {
 	core_model.ResourceKey
 	*mesh_proto.DiscoverySubscription
+	secretsInfo *secrets.Info
 }
 
 type DataplaneInsightStoreRecorder struct {
 	Upserts chan DataplaneInsightUpsert
 }
 
-func (s *DataplaneInsightStoreRecorder) Upsert(dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, certInfo *secrets.Info) error {
-	s.Upserts <- DataplaneInsightUpsert{dataplaneID, subscription}
+func (s *DataplaneInsightStoreRecorder) Upsert(dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, secretsInfo *secrets.Info) error {
+	s.Upserts <- DataplaneInsightUpsert{dataplaneID, subscription, secretsInfo}
 	return nil
 }
