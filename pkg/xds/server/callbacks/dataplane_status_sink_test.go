@@ -15,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
@@ -66,6 +67,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			sink := callbacks.NewDataplaneInsightSink(
 				core_mesh.DataplaneType,
 				accessor,
+				&xds.TestSecrets{},
 				func() *time.Ticker { return ticker },
 				func() *time.Ticker { return &time.Ticker{C: make(chan time.Time)} },
 				1*time.Millisecond,
@@ -171,7 +173,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			statusStore := callbacks.NewDataplaneInsightStore(manager.NewResourceManager(store))
 
 			// when
-			err := statusStore.Upsert(dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription))
+			err := statusStore.Upsert(dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -205,7 +207,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			subscription.Status.Lds.ResponsesSent += 1
 			subscription.Status.Total.ResponsesSent += 1
 			// and
-			err = statusStore.Upsert(dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription))
+			err = statusStore.Upsert(dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

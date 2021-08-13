@@ -3,8 +3,6 @@ package sync
 import (
 	"context"
 
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -16,27 +14,24 @@ import (
 )
 
 type xdsContextBuilder struct {
-	resManager            manager.ReadOnlyResourceManager
-	connectionInfoTracker ConnectionInfoTracker
-	lookupIP              lookup.LookupIPFunc
-	envoyAdminClient      admin.EnvoyAdminClient
+	resManager       manager.ReadOnlyResourceManager
+	lookupIP         lookup.LookupIPFunc
+	envoyAdminClient admin.EnvoyAdminClient
 
 	cpContext *xds_context.ControlPlaneContext
 }
 
 func newXDSContextBuilder(
 	cpContext *xds_context.ControlPlaneContext,
-	connectionInfoTracker ConnectionInfoTracker,
 	resManager manager.ReadOnlyResourceManager,
 	lookupIP lookup.LookupIPFunc,
 	envoyAdminClient admin.EnvoyAdminClient,
 ) *xdsContextBuilder {
 	return &xdsContextBuilder{
-		resManager:            resManager,
-		connectionInfoTracker: connectionInfoTracker,
-		lookupIP:              lookupIP,
-		envoyAdminClient:      envoyAdminClient,
-		cpContext:             cpContext,
+		resManager:       resManager,
+		lookupIP:         lookupIP,
+		envoyAdminClient: envoyAdminClient,
+		cpContext:        cpContext,
 	}
 }
 
@@ -65,13 +60,8 @@ func (c *xdsContextBuilder) buildMeshedContext(dpKey core_model.ResourceKey, mes
 }
 
 func (c *xdsContextBuilder) buildContext(dpKey core_model.ResourceKey) (*xds_context.Context, error) {
-	connectionInfo := c.connectionInfoTracker.ConnectionInfo(dpKey)
-	if connectionInfo == nil {
-		return nil, errors.New("connection info is not found")
-	}
 	return &xds_context.Context{
 		ControlPlane:     c.cpContext,
-		ConnectionInfo:   *connectionInfo,
 		Mesh:             xds_context.MeshContext{},
 		EnvoyAdminClient: c.envoyAdminClient,
 	}, nil

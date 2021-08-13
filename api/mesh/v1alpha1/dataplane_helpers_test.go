@@ -10,7 +10,7 @@ import (
 
 var _ = Describe("MultiValueTagSet", func() {
 
-	Describe("Keys()", func() {
+	Describe("HostnameEntries()", func() {
 		type testCase struct {
 			value    MultiValueTagSet
 			expected []string

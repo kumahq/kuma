@@ -2,7 +2,6 @@ package vips
 
 import (
 	"fmt"
-	"sort"
 )
 
 type EntryType int
@@ -10,6 +9,7 @@ type EntryType int
 const (
 	Service EntryType = iota
 	Host
+	FullyQualifiedDomain
 )
 
 func (t EntryType) String() string {
@@ -18,63 +18,48 @@ func (t EntryType) String() string {
 		return "service"
 	case Host:
 		return "host"
+	case FullyQualifiedDomain:
+		return "fqdn"
 	default:
 		return "undefined"
 	}
 }
 
-type Entry struct {
+// HostnameEntry is the definition of a DNS entry. The type indicates where the entry comes from
+// (.e.g: Service is auto-generated, FullyQualifiedDomain comes from `virtual-outbound` policies...)
+type HostnameEntry struct {
 	Type EntryType `json:"type"`
 	Name string    `json:"name"`
 }
 
-func (e Entry) String() string {
+func (e HostnameEntry) String() string {
 	return fmt.Sprintf("%s:%s", e.Type, e.Name)
 }
 
-func (e Entry) MarshalText() (text []byte, err error) {
+func (e HostnameEntry) MarshalText() (text []byte, err error) {
 	return []byte(fmt.Sprintf("%d:%s", e.Type, e.Name)), nil
 }
 
-func (e *Entry) UnmarshalText(text []byte) error {
+func (e *HostnameEntry) UnmarshalText(text []byte) error {
 	_, err := fmt.Sscanf(string(text), "%v:%s", &e.Type, &e.Name)
 	return err
 }
 
-func NewHostEntry(host string) Entry {
-	return Entry{Host, host}
-}
-
-func NewServiceEntry(name string) Entry {
-	return Entry{Service, name}
-}
-
-type EntrySet map[Entry]bool
-
-func (s EntrySet) ToArray() (entries []Entry) {
-	for entry := range s {
-		entries = append(entries, entry)
+func (e *HostnameEntry) Less(o *HostnameEntry) bool {
+	if e.Type == o.Type {
+		return e.Name < o.Name
 	}
-	sort.SliceStable(entries, func(i, j int) bool {
-		// Sort by entry type, then name.
-		return entries[i].Type < entries[j].Type ||
-			entries[i].Name < entries[j].Name
-	})
-	return
+	return e.Type < o.Type
 }
 
-type List map[Entry]string
-
-func (vips List) Append(other List) {
-	for k, v := range other {
-		vips[k] = v
-	}
+func NewHostEntry(host string) HostnameEntry {
+	return HostnameEntry{Host, host}
 }
 
-func (vips List) FQDNsByIPs() map[string]Entry {
-	ipToDomain := map[string]Entry{}
-	for domain, ip := range vips {
-		ipToDomain[ip] = domain
-	}
-	return ipToDomain
+func NewServiceEntry(name string) HostnameEntry {
+	return HostnameEntry{Service, name}
+}
+
+func NewFqdnEntry(name string) HostnameEntry {
+	return HostnameEntry{FullyQualifiedDomain, name}
 }

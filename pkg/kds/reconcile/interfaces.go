@@ -3,9 +3,9 @@ package reconcile
 import (
 	"context"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 // Reconciler re-computes configuration for a given node.
@@ -15,5 +15,5 @@ type Reconciler interface {
 
 // Generates a snapshot of xDS resources for a given node.
 type SnapshotGenerator interface {
-	GenerateSnapshot(context.Context, *envoy_core.Node) (util_xds.Snapshot, error)
+	GenerateSnapshot(context.Context, *envoy_core.Node) (util_xds_v3.Snapshot, error)
 }

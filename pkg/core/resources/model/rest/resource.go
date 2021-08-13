@@ -59,7 +59,7 @@ func NewFromModel(m model.Resource) *Resource {
 	meta := m.GetMeta()
 	return &Resource{
 		Meta: ResourceMeta{
-			Type:             string(m.GetType()),
+			Type:             string(m.Descriptor().Name),
 			Mesh:             meta.GetMesh(),
 			Name:             meta.GetName(),
 			CreationTime:     meta.GetCreationTime(),

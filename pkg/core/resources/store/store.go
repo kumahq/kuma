@@ -46,7 +46,7 @@ func (s *strictResourceStore) Create(ctx context.Context, r model.Resource, fs .
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Create() requires options.Name to be a non-empty value")
 	}
-	if r.Scope() == model.ScopeMesh && opts.Mesh == "" {
+	if r.Descriptor().Scope == model.ScopeMesh && opts.Mesh == "" {
 		return fmt.Errorf("ResourceStore.Create() requires options.Mesh to be a non-empty value")
 	}
 	return s.delegate.Create(ctx, r, fs...)
@@ -70,7 +70,7 @@ func (s *strictResourceStore) Delete(ctx context.Context, r model.Resource, fs .
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Delete() requires options.Name to be a non-empty value")
 	}
-	if r.Scope() == model.ScopeMesh && opts.Mesh == "" {
+	if r.Descriptor().Scope == model.ScopeMesh && opts.Mesh == "" {
 		return fmt.Errorf("ResourceStore.Delete() requires options.Mesh to be a non-empty value")
 	}
 	if r.GetMeta() != nil {
@@ -95,7 +95,7 @@ func (s *strictResourceStore) Get(ctx context.Context, r model.Resource, fs ...G
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Get() requires options.Name to be a non-empty value")
 	}
-	if r.Scope() == model.ScopeMesh && opts.Mesh == "" {
+	if r.Descriptor().Scope == model.ScopeMesh && opts.Mesh == "" {
 		return fmt.Errorf("ResourceStore.Get() requires options.Mesh to be a non-empty value")
 	}
 	return s.delegate.Get(ctx, r, fs...)

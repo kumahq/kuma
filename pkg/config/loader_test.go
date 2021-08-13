@@ -238,8 +238,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.NoTrafficInterval).To(Equal(7 * time.Second))
 			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
-
-			Expect(cfg.SdsServer.DataplaneConfigurationRefreshInterval).To(Equal(11 * time.Second))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -432,8 +430,6 @@ dpServer:
       noTrafficInterval: 7s
       healthyThreshold: 8
       unhealthyThreshold: 9
-sdsServer:
-  dataplaneConfigurationRefreshInterval: 11s
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -568,7 +564,6 @@ sdsServer:
 				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
-				"KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "11s",
 			},
 			yamlFileConfig: "",
 		}),

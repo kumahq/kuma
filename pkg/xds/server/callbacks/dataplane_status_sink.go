@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 var sinkLog = core.Log.WithName("xds").WithName("sink")
@@ -23,12 +24,13 @@ type DataplaneInsightStore interface {
 	// Upsert creates or updates the subscription, storing it with
 	// the key dataplaneID. dataplaneType gives the resource type of
 	// the dataplane proxy that has subscribed.
-	Upsert(dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error
+	Upsert(dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, secretsInfo *secrets.Info) error
 }
 
 func NewDataplaneInsightSink(
 	dataplaneType core_model.ResourceType,
 	accessor SubscriptionStatusAccessor,
+	secrets secrets.Secrets,
 	newTicker func() *time.Ticker,
 	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
@@ -38,6 +40,7 @@ func NewDataplaneInsightSink(
 		generationTicker: generationTicker,
 		dataplaneType:    dataplaneType,
 		accessor:         accessor,
+		secrets:          secrets,
 		flushBackoff:     flushBackoff,
 		store:            store,
 	}
@@ -50,6 +53,7 @@ type dataplaneInsightSink struct {
 	generationTicker func() *time.Ticker
 	dataplaneType    core_model.ResourceType
 	accessor         SubscriptionStatusAccessor
+	secrets          secrets.Secrets
 	store            DataplaneInsightStore
 	flushBackoff     time.Duration
 }
@@ -62,21 +66,25 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	defer generationTicker.Stop()
 
 	var lastStoredState *mesh_proto.DiscoverySubscription
+	var lastStoredSecretsInfo *secrets.Info
 	var generation uint32
 
 	flush := func(closing bool) {
 		dataplaneID, currentState := s.accessor.GetStatus()
+		secretsInfo := s.secrets.Info(dataplaneID)
+
 		select {
 		case <-generationTicker.C:
 			generation++
 		default:
 		}
 		currentState.Generation = generation
-		if proto.Equal(currentState, lastStoredState) {
+
+		if proto.Equal(currentState, lastStoredState) && secretsInfo == lastStoredSecretsInfo {
 			return
 		}
 
-		if err := s.store.Upsert(s.dataplaneType, dataplaneID, currentState); err != nil {
+		if err := s.store.Upsert(s.dataplaneType, dataplaneID, currentState, secretsInfo); err != nil {
 			switch {
 			case closing:
 				// When XDS stream is closed, Dataplane Status Tracker executes OnStreamClose which closes stop channel
@@ -103,6 +111,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		} else {
 			sinkLog.V(1).Info("DataplaneInsight saved", "dataplaneid", dataplaneID, "subscription", currentState)
 			lastStoredState = currentState
+			lastStoredSecretsInfo = secretsInfo
 		}
 	}
 
@@ -132,11 +141,7 @@ type dataplaneInsightStore struct {
 	resManager manager.ResourceManager
 }
 
-func (s *dataplaneInsightStore) Upsert(
-	dataplaneType core_model.ResourceType,
-	dataplaneID core_model.ResourceKey,
-	subscription *mesh_proto.DiscoverySubscription,
-) error {
+func (s *dataplaneInsightStore) Upsert(dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, secretsInfo *secrets.Info) error {
 	switch dataplaneType {
 	case core_mesh.ZoneIngressType:
 		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) error {
@@ -146,7 +151,13 @@ func (s *dataplaneInsightStore) Upsert(
 	case core_mesh.DataplaneType:
 		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.DataplaneInsightResource)
-			return insight.Spec.UpdateSubscription(subscription)
+			if err := insight.Spec.UpdateSubscription(subscription); err != nil {
+				return err
+			}
+			if secretsInfo != nil && (insight.Spec.MTLS == nil || insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration) {
+				return insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration)
+			}
+			return nil
 		})
 	default:
 		// Return a designated precondition error since we don't expect other dataplane types.

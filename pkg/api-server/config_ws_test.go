@@ -252,9 +252,6 @@ var _ = Describe("Config WS", func() {
               "dataplaneCleanupAge": "72h0m0s"
             }
           },
-          "sdsServer": {
-            "dataplaneConfigurationRefreshInterval": "1s"
-          },
           "dpServer": {
             "port": 5678,
             "tlsCertFile": "",

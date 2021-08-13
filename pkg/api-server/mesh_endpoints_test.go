@@ -230,7 +230,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			resource := mesh.NewMeshResource()
 			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, name))
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, name)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, name, name)))
 		})
 
 		It("should delete non-existing resource", func() {

@@ -19,8 +19,6 @@ import (
 // Keep in mind that it does not solve many xDS streams across many instances of the Control Plane.
 // If there are many instances of the Control Plane and Dataplane reconnects, there might be an old stream
 // in one instance of CP and a new stream in a new instance of CP.
-//
-// Those callbacks may be also used with SDS. In case of SDS, at this moment Envoy creates many SDS streams to the Control Plane.
 type DataplaneCallbacks interface {
 	// OnProxyConnected is executed when proxy is connected after it was disconnected before.
 	OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error

@@ -151,7 +151,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 			metadata.Resource = r
 		default:
 			metadataLog.Error(err, "invalid dataplane resource type",
-				"resource", r.GetType(),
+				"resource", r.Descriptor().Name,
 				"field", fieldDataplaneDataplaneResource,
 				"value", value)
 		}

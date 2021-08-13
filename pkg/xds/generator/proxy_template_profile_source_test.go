@@ -17,6 +17,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/runtime"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -71,16 +72,13 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				},
 			}
 			ctx := xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-system:5677",
-				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("12345"),
 					AdminProxyKeyPair: &tls.KeyPair{
 						CertPEM: []byte("LS0=="),
 						KeyPEM:  []byte("LS0=="),
 					},
 					CLACache: &dummyCLACache{outboundTargets: outboundTargets},
+					Secrets:  &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{

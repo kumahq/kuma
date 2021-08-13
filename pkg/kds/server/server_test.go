@@ -2,11 +2,12 @@ package server_test
 
 import (
 	"context"
+	"reflect"
 	"sync"
 	"time"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,8 +15,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/kds/definitions"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
@@ -43,14 +44,14 @@ var _ = Describe("KDS Server", func() {
 
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		stream := kds_setup.StartServer(s, wg, "test-cluster", definitions.All.Get(), reconcile.Any)
+		stream := kds_setup.StartServer(s, wg, "test-cluster", registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any)
 
 		tc = &kds_verifier.TestContextImpl{
 			ResourceStore:      s,
 			MockStream:         stream,
 			Wg:                 wg,
-			Responses:          map[string]*v2.DiscoveryResponse{},
-			LastACKedResponses: map[string]*v2.DiscoveryResponse{},
+			Responses:          map[string]*envoy_sd.DiscoveryResponse{},
+			LastACKedResponses: map[string]*envoy_sd.DiscoveryResponse{},
 		}
 	})
 
@@ -81,7 +82,13 @@ var _ = Describe("KDS Server", func() {
 			kds_samples.Config,
 			kds_samples.Gateway,
 		}).
-			To(HaveLen(len(definitions.All)))
+			To(WithTransform(func(messages []proto.Message) []string {
+				var res []string
+				for _, m := range messages {
+					res = append(res, reflect.TypeOf(m).String())
+				}
+				return res
+			}, HaveLen(len(registry.Global().ObjectTypes(model.HasKdsEnabled())))))
 
 		vrf := kds_verifier.New().
 			// NOTE: The resources all have to be created before any DiscoveryRequests are made.

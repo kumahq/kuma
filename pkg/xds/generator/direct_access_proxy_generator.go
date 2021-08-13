@@ -65,7 +65,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 
 	directAccessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 		Configure(envoy_clusters.PassThroughCluster("direct_access")).
-		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(ctx, proxy.Metadata)).
+		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(ctx)).
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate cluster: direct_access")

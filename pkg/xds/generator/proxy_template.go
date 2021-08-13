@@ -80,6 +80,7 @@ func NewDefaultProxyProfile() ResourceGenerator {
 	return CompositeResourceGenerator{
 		AdminProxyGenerator{},
 		PrometheusEndpointGenerator{},
+		SecretsProxyGenerator{},
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
 		OutboundProxyGenerator{},

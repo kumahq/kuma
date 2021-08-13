@@ -95,7 +95,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	if err := s.client.Update(context.Background(), cm); err != nil {
 		if kube_apierrs.IsConflict(err) {
-			return core_store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
+			return core_store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
 		}
 		return errors.Wrap(err, "failed to update k8s resource")
 	}
@@ -133,7 +133,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	cm := &kube_core.ConfigMap{}
 	if err := s.client.Get(ctx, kube_client.ObjectKey{Namespace: s.namespace, Name: opts.Name}, cm); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return core_store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
+			return core_store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to get k8s Config")
 	}

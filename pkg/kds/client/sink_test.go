@@ -3,7 +3,7 @@ package client_test
 import (
 	"time"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -35,12 +35,12 @@ var _ = Describe("KDS Sink", func() {
 		}
 	})
 
-	It("", func() {
+	It("should verify KDS exchange", func() {
 		vrf := kds_verifier.New().
-			Exec(kds_verifier.WaitRequest(defaultTimeout, func(req *envoy_api_v2.DiscoveryRequest) {
+			Exec(kds_verifier.WaitRequest(defaultTimeout, func(req *envoy_sd.DiscoveryRequest) {
 				Expect(req.TypeUrl).To(Equal(string(mesh.MeshType)))
 			})).
-			Exec(kds_verifier.WaitRequest(defaultTimeout, func(req *envoy_api_v2.DiscoveryRequest) {
+			Exec(kds_verifier.WaitRequest(defaultTimeout, func(req *envoy_sd.DiscoveryRequest) {
 				Expect(req.TypeUrl).To(Equal(string(mesh.DataplaneType)))
 			})).
 			Exec(kds_verifier.DiscoveryResponse(
@@ -48,7 +48,7 @@ var _ = Describe("KDS Sink", func() {
 					{Meta: &test_model.ResourceMeta{Name: "mesh1"}, Spec: samples.Mesh1},
 					{Meta: &test_model.ResourceMeta{Name: "mesh2"}, Spec: samples.Mesh2},
 				}}, "1", "1")).
-			Exec(kds_verifier.WaitRequest(defaultTimeout, func(rs *envoy_api_v2.DiscoveryRequest) {
+			Exec(kds_verifier.WaitRequest(defaultTimeout, func(rs *envoy_sd.DiscoveryRequest) {
 				Expect(rs.VersionInfo).To(Equal("1"))
 				Expect(rs.ResponseNonce).To(Equal("1"))
 				Expect(rs.TypeUrl).To(Equal(string(mesh.MeshType)))

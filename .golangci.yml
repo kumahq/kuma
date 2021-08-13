@@ -12,7 +12,6 @@ linters:
 run:
   skip-files:
     - app/kumactl/pkg/k8s/kubectl_proxy.go # excluded to keep as close to original file from K8S repository
-    - pkg/sds/server/sds.go # excluded to keep as close to original file from Envoy repository
     - pkg/xds/server/server.go # excluded to keep as close to original file from Envoy repository
     - pkg/xds/server/server_test.go # excluded to keep as close to original file from Envoy repository
   modules-download-mode: readonly
