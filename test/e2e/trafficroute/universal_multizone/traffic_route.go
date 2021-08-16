@@ -67,6 +67,10 @@ routing:
 			Install(Kuma(core.Zone, optsZone1...)).
 			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma3)).
+			Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
+				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithServiceVersion("v1"),
+			)).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone1.VerifyKuma()
@@ -80,10 +84,6 @@ routing:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone2...)).
-			Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v1"}),
-				WithServiceVersion("v1"),
-			)).
 			Install(TestServerUniversal("dp-echo-2", defaultMesh, testServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v2"}),
 				WithServiceVersion("v2"),
@@ -118,6 +118,9 @@ routing:
 			err := global.GetKumactlOptions().KumactlDelete("traffic-route", item, "default")
 			Expect(err).ToNot(HaveOccurred())
 		}
+
+		// reapply Mesh with localityawareloadbalancing off
+		YamlUniversal(meshMTLSOn(defaultMesh, "false"))
 	})
 
 	E2EAfterSuite(func() {
@@ -360,6 +363,41 @@ conf:
 					HaveLen(2),
 					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(2, 1)),
 					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(8, 1)),
+				),
+			)
+		})
+	})
+
+	Context("locality aware loadbalancing", func() {
+		It("should loadbalance all requests equally by default", func() {
+			Eventually(func() (map[string]int, error) {
+				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(40))
+			}, "30s", "500ms").Should(
+				And(
+					HaveLen(4),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), Not(BeNil())),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil())),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil())),
+					// todo(jakubdyszkiewicz) uncomment when https://github.com/kumahq/kuma/issues/2563 is fixed
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(10, 1)),
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(10, 1)),
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), ApproximatelyEqual(10, 1)),
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), ApproximatelyEqual(10, 1)),
+				),
+			)
+		})
+
+		It("should keep the request in the zone when locality aware loadbalancing is enabled", func() {
+			// given
+			Expect(YamlUniversal(meshMTLSOn(defaultMesh, "true"))(global)).To(Succeed())
+
+			Eventually(func() (map[string]int, error) {
+				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+			}, "30s", "500ms").Should(
+				And(
+					HaveLen(1),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
 				),
 			)
 		})

@@ -35,7 +35,6 @@ name: %s
 `, mesh)
 	}
 
-	const iterations = 100
 	const defaultMesh = "default"
 	const nonDefaultMesh = "non-default"
 
@@ -155,50 +154,5 @@ name: %s
 				}
 				return "should retry", errors.Errorf("should retry")
 			})
-	})
-
-	It("should distribute requests cross zones", func() {
-		// given services in zone1 and zone2 in a mesh with disabled Locality Aware Load Balancing
-
-		// when executing requests from zone 1
-		responses := 0
-		for i := 0; i < iterations; i++ {
-			stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			Expect(stdout).To(ContainSubstring("universal"))
-
-			if strings.Contains(stdout, "universal1") {
-				responses++
-			}
-		}
-
-		// then some requests are routed to the same zone and some are not
-		Expect(responses > iterations/8).To(BeTrue())
-		Expect(responses < iterations*7/8).To(BeTrue())
-	})
-
-	It("should use locality aware load balancing", func() {
-		// given services in zone1 and zone2 in a mesh with enabled Locality Aware Load Balancing
-		err := YamlUniversal(meshMTLSOn(nonDefaultMesh, "true"))(global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// when executing requests from zone 2
-		responses := 0
-		for i := 0; i < iterations; i++ {
-			stdout, _, err := zone2.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			Expect(stdout).To(ContainSubstring("universal"))
-
-			if strings.Contains(stdout, "universal2") {
-				responses++
-			}
-		}
-
-		// then all the requests are routed to the same zone 2
-		Expect(responses).To(Equal(iterations))
 	})
 }
