@@ -54,6 +54,7 @@ type deployOptions struct {
 	serviceVersion string
 	mesh           string
 	dpVersion      string
+	kumactlFlow    bool
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -69,6 +70,14 @@ func WithPostgres(envVars map[string]string) DeployOptionsFunc {
 		for key, value := range envVars {
 			o.env[key] = value
 		}
+	}
+}
+
+// WithKumactlFlow allows to create Dataplane resource before the actual data plane proxy start.
+// If proxy is disconnected, resource won't be deleted from the storage and will be displayed as Offline.
+func WithKumactlFlow() DeployOptionsFunc {
+	return func(options *deployOptions) {
+		options.kumactlFlow = true
 	}
 }
 

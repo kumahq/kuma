@@ -234,9 +234,9 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 		}
 	}
 
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, core_mesh.NewServiceInsightResource(), func(resource model.Resource) {
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
-		_ = resource.SetSpec(insight)
+		return resource.SetSpec(insight)
 	})
 	if err != nil {
 		if manager.IsMeshNotFound(err) {
@@ -344,9 +344,9 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		}
 	}
 
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) {
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
-		_ = resource.SetSpec(insight)
+		return resource.SetSpec(insight)
 	})
 	if err != nil {
 		if manager.IsMeshNotFound(err) {

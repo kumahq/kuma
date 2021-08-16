@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -33,46 +32,59 @@ func NewDataplaneInsightSink(
 	accessor SubscriptionStatusAccessor,
 	secrets secrets.Secrets,
 	newTicker func() *time.Ticker,
+	generationTicker func() *time.Ticker,
 	flushBackoff time.Duration,
 	store DataplaneInsightStore) DataplaneInsightSink {
 	return &dataplaneInsightSink{
-		newTicker:     newTicker,
-		dataplaneType: dataplaneType,
-		accessor:      accessor,
-		secrets:       secrets,
-		flushBackoff:  flushBackoff,
-		store:         store,
+		flushTicker:      newTicker,
+		generationTicker: generationTicker,
+		dataplaneType:    dataplaneType,
+		accessor:         accessor,
+		secrets:          secrets,
+		flushBackoff:     flushBackoff,
+		store:            store,
 	}
 }
 
 var _ DataplaneInsightSink = &dataplaneInsightSink{}
 
 type dataplaneInsightSink struct {
-	newTicker     func() *time.Ticker
-	dataplaneType core_model.ResourceType
-	accessor      SubscriptionStatusAccessor
-	secrets       secrets.Secrets
-	store         DataplaneInsightStore
-	flushBackoff  time.Duration
+	flushTicker      func() *time.Ticker
+	generationTicker func() *time.Ticker
+	dataplaneType    core_model.ResourceType
+	accessor         SubscriptionStatusAccessor
+	secrets          secrets.Secrets
+	store            DataplaneInsightStore
+	flushBackoff     time.Duration
 }
 
 func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
-	ticker := s.newTicker()
-	defer ticker.Stop()
+	flushTicker := s.flushTicker()
+	defer flushTicker.Stop()
+
+	generationTicker := s.generationTicker()
+	defer generationTicker.Stop()
 
 	var lastStoredState *mesh_proto.DiscoverySubscription
 	var lastStoredSecretsInfo *secrets.Info
+	var generation uint32
 
 	flush := func(closing bool) {
 		dataplaneID, currentState := s.accessor.GetStatus()
 		secretsInfo := s.secrets.Info(dataplaneID)
 
+		select {
+		case <-generationTicker.C:
+			generation++
+		default:
+		}
+		currentState.Generation = generation
+
 		if proto.Equal(currentState, lastStoredState) && secretsInfo == lastStoredSecretsInfo {
 			return
 		}
 
-		copy := proto.Clone(currentState).(*mesh_proto.DiscoverySubscription)
-		if err := s.store.Upsert(s.dataplaneType, dataplaneID, copy, secretsInfo); err != nil {
+		if err := s.store.Upsert(s.dataplaneType, dataplaneID, currentState, secretsInfo); err != nil {
 			switch {
 			case closing:
 				// When XDS stream is closed, Dataplane Status Tracker executes OnStreamClose which closes stop channel
@@ -105,7 +117,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-flushTicker.C:
 			flush(false)
 			// On Kubernetes, because of the cache subsequent Get, Update requests can fail, because the cache is not strongly consistent.
 			// We handle the Resource Conflict logging on V1, but we can try to avoid the situation with backoff
@@ -132,28 +144,25 @@ type dataplaneInsightStore struct {
 func (s *dataplaneInsightStore) Upsert(dataplaneType core_model.ResourceType, dataplaneID core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription, secretsInfo *secrets.Info) error {
 	switch dataplaneType {
 	case core_mesh.ZoneIngressType:
-		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) {
+		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneIngressInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.ZoneIngressInsightResource)
-			insight.Spec.UpdateSubscription(subscription)
+			return insight.Spec.UpdateSubscription(subscription)
 		})
 	case core_mesh.DataplaneType:
-		var updateCertErr error
-		err := manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) {
+		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.DataplaneInsightResource)
-			insight.Spec.UpdateSubscription(subscription)
+			if err := insight.Spec.UpdateSubscription(subscription); err != nil {
+				return err
+			}
 			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
 				insight.Spec.MTLS = nil
 			} else if insight.Spec.MTLS == nil || insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration {
-				updateCertErr = insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.MTLS.EnabledBackend)
+				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.MTLS.EnabledBackend); err != nil {
+					return err
+				}
 			}
+			return nil
 		})
-		if err != nil {
-			return err
-		}
-		if updateCertErr != nil {
-			return errors.Wrap(updateCertErr, "could not update cert in DataplaneInsight")
-		}
-		return nil
 	default:
 		// Return a designated precondition error since we don't expect other dataplane types.
 		return store.ErrorResourcePreconditionFailed(dataplaneType, dataplaneID.Name, dataplaneID.Mesh)
