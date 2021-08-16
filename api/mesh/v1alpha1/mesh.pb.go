@@ -26,11 +26,13 @@ const (
 type CertificateAuthorityBackend_Mode int32
 
 const (
-	// A STRICT mode implies server validates the connection and accepts only encrypted TLS traffic
+	// A STRICT mode implies server validates the connection and accepts only
+	// encrypted TLS traffic
 	CertificateAuthorityBackend_STRICT CertificateAuthorityBackend_Mode = 0
-	// A PERMISSIVE mode implies outbounds encrypt traffic the same way it happens in strict mode, but
-	// inbounds accept both TLS and plaintext traffic. This allows applications residing in the mesh to
-	// accept requests from outside of the mesh.
+	// A PERMISSIVE mode implies outbounds encrypt traffic the same way it
+	// happens in strict mode, but inbounds accept both TLS and plaintext
+	// traffic. This allows applications residing in the mesh to accept requests
+	// from outside of the mesh.
 	CertificateAuthorityBackend_PERMISSIVE CertificateAuthorityBackend_Mode = 1
 )
 
@@ -190,7 +192,8 @@ type CertificateAuthorityBackend struct {
 	DpCert *CertificateAuthorityBackend_DpCert `protobuf:"bytes,3,opt,name=dpCert,proto3" json:"dpCert,omitempty"`
 	// Configuration of the backend
 	Conf *structpb.Struct `protobuf:"bytes,4,opt,name=conf,proto3" json:"conf,omitempty"`
-	// Mode defines the behaviour of inbound listeners with regard to traffic encryption
+	// Mode defines the behaviour of inbound listeners with regard to traffic
+	// encryption
 	Mode CertificateAuthorityBackend_Mode `protobuf:"varint,5,opt,name=mode,proto3,enum=kuma.mesh.v1alpha1.CertificateAuthorityBackend_Mode" json:"mode,omitempty"`
 }
 
