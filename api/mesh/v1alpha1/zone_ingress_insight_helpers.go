@@ -3,8 +3,13 @@ package v1alpha1
 import (
 	"time"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/kumahq/kuma/api/generic"
 )
+
+var _ generic.Insight = &ZoneIngressInsight{}
 
 func (x *ZoneIngressInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
 	for i, s := range x.GetSubscriptions() {
@@ -15,17 +20,22 @@ func (x *ZoneIngressInsight) GetSubscription(id string) (int, *DiscoverySubscrip
 	return -1, nil
 }
 
-func (x *ZoneIngressInsight) UpdateSubscription(s *DiscoverySubscription) {
+func (x *ZoneIngressInsight) UpdateSubscription(s generic.Subscription) error {
 	if x == nil {
-		return
+		return nil
 	}
-	i, old := x.GetSubscription(s.Id)
+	discoverySubscription, ok := s.(*DiscoverySubscription)
+	if !ok {
+		return errors.Errorf("invalid type %T for ZoneIngressInsight", s)
+	}
+	i, old := x.GetSubscription(discoverySubscription.Id)
 	if old != nil {
-		x.Subscriptions[i] = s
+		x.Subscriptions[i] = discoverySubscription
 	} else {
 		x.finalizeSubscriptions()
-		x.Subscriptions = append(x.Subscriptions, s)
+		x.Subscriptions = append(x.Subscriptions, discoverySubscription)
 	}
+	return nil
 }
 
 // If Kuma CP was killed ungracefully then we can get a subscription without a DisconnectTime.
@@ -49,6 +59,14 @@ func (x *ZoneIngressInsight) IsOnline() bool {
 	return false
 }
 
+func (x *ZoneIngressInsight) GetLastSubscription() generic.Subscription {
+	if len(x.GetSubscriptions()) == 0 {
+		return nil
+	}
+	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
+}
+
+// todo(lobkovilya): delete GetLatestSubscription, use GetLastSubscription instead
 func (x *ZoneIngressInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
 	if len(x.GetSubscriptions()) == 0 {
 		return nil, nil

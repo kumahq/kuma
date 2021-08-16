@@ -102,10 +102,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DNS")
 					return err
 				}
-				if err := gc.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up GC")
-					return err
-				}
 				if err := xds.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up XDS")
 					return err
@@ -137,10 +133,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := dns.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up DNS")
-					return err
-				}
-				if err := gc.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up GC")
 					return err
 				}
 				if err := xds.Setup(rt); err != nil {
@@ -184,6 +176,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			if err := metrics.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Metrics")
+				return err
+			}
+			if err := gc.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up GC")
 				return err
 			}
 

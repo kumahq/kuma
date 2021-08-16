@@ -117,16 +117,16 @@ func NewDataplaneLifecycle(resManager manager.ResourceManager, shutdownCh <-chan
 func (d *DataplaneLifecycle) registerDataplane(dp *core_mesh.DataplaneResource) error {
 	key := model.MetaToResourceKey(dp.GetMeta())
 	existing := core_mesh.NewDataplaneResource()
-	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) {
-		_ = existing.SetSpec(dp.GetSpec()) // ignore error because the spec type is the same
+	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
+		return existing.SetSpec(dp.GetSpec())
 	})
 }
 
 func (d *DataplaneLifecycle) registerZoneIngress(zi *core_mesh.ZoneIngressResource) error {
 	key := model.MetaToResourceKey(zi.GetMeta())
 	existing := core_mesh.NewZoneIngressResource()
-	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) {
-		_ = existing.SetSpec(zi.GetSpec()) // ignore error because the spec type is the same
+	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
+		return existing.SetSpec(zi.GetSpec())
 	})
 }
 
