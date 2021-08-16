@@ -30,11 +30,11 @@ message Retry {
   // List of selectors to match dataplanes that retry policy should be
   // configured for
   repeated Selector sources = 1
-    [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
 
   // List of selectors to match services that need to be health checked.
   repeated Selector destinations = 2
-    [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
 
   message Conf {
     message BackOff {

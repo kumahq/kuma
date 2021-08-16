@@ -28,11 +28,11 @@ message RateLimit {
 
   // List of selectors to match dataplanes that rate limit will be applied for
   repeated Selector sources = 1
-    [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
 
   // List of selectors to match services that need to be rate limited.
   repeated Selector destinations = 2
-    [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
 
   message Conf {
     message Http {
