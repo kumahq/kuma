@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
@@ -54,16 +54,10 @@ func (ds *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Tim
 	if ds.MTLS == nil {
 		ds.MTLS = &DataplaneInsight_MTLS{}
 	}
-	ts := timestamppb.New(expiration)
-	if err := ts.CheckValid(); err != nil {
-		return err
-	}
+	ts := util_proto.MustTimestampProto(expiration)
 	ds.MTLS.CertificateExpirationTime = ts
 	ds.MTLS.CertificateRegenerations++
-	ts = timestamppb.New(generation)
-	if err := ts.CheckValid(); err != nil {
-		return err
-	}
+	ts = util_proto.MustTimestampProto(generation)
 	ds.MTLS.LastCertificateRegeneration = ts
 	return nil
 }
@@ -85,7 +79,7 @@ func (ds *DataplaneInsight) UpdateSubscription(s *DiscoverySubscription) {
 // Because of the way we process subscriptions the lack of DisconnectTime on old subscription
 // will cause wrong status.
 func (ds *DataplaneInsight) finalizeSubscriptions() {
-	now := timestamppb.Now()
+	now := util_proto.Now()
 	for _, subscription := range ds.GetSubscriptions() {
 		if subscription.DisconnectTime == nil {
 			subscription.DisconnectTime = now
