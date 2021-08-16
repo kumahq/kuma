@@ -12,6 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type HealthCheckConfigurer struct {
@@ -145,8 +146,8 @@ func buildHealthCheck(conf *mesh_proto.HealthCheck_Conf) *envoy_core.HealthCheck
 		},
 		Interval:                     conf.Interval,
 		Timeout:                      conf.Timeout,
-		UnhealthyThreshold:           &wrapperspb.UInt32Value{Value: conf.UnhealthyThreshold},
-		HealthyThreshold:             &wrapperspb.UInt32Value{Value: conf.HealthyThreshold},
+		UnhealthyThreshold:           util_proto.UInt32(conf.UnhealthyThreshold),
+		HealthyThreshold:             util_proto.UInt32(conf.HealthyThreshold),
 		InitialJitter:                conf.InitialJitter,
 		IntervalJitter:               conf.IntervalJitter,
 		IntervalJitterPercent:        conf.IntervalJitterPercent,

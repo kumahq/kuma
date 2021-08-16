@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/plugins/secrets/k8s"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("KubernetesStore", func() {
@@ -88,9 +88,7 @@ var _ = Describe("KubernetesStore", func() {
 			// given
 			secret := &core_system.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: &wrapperspb.BytesValue{
-						Value: []byte("example"),
-					},
+					Data: util_proto.Bytes([]byte("example")),
 				},
 			}
 			expected := backend.ParseYAML(`
@@ -129,9 +127,7 @@ var _ = Describe("KubernetesStore", func() {
 			// given
 			secret := &core_system.GlobalSecretResource{
 				Spec: &system_proto.Secret{
-					Data: &wrapperspb.BytesValue{
-						Value: []byte("example"),
-					},
+					Data: util_proto.Bytes([]byte("example")),
 				},
 			}
 			expected := backend.ParseYAML(`
@@ -351,9 +347,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			secret1.Spec = &system_proto.Secret{
-				Data: &wrapperspb.BytesValue{
-					Value: []byte("example"),
-				},
+				Data: util_proto.Bytes([]byte("example")),
 			}
 			err = s.Update(context.Background(), secret1)
 			// then
@@ -361,9 +355,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			secret2.Spec = &system_proto.Secret{
-				Data: &wrapperspb.BytesValue{
-					Value: []byte("another"),
-				},
+				Data: util_proto.Bytes([]byte("another")),
 			}
 			err = s.Update(context.Background(), secret2)
 			// then

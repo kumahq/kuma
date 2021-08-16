@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -15,6 +12,7 @@ import (
 	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
 	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_validators "github.com/kumahq/kuma/pkg/core/validators"
@@ -84,9 +82,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 
 	certSecret := &core_system.SecretResource{
 		Spec: &system_proto.Secret{
-			Data: &wrapperspb.BytesValue{
-				Value: keyPair.CertPEM,
-			},
+			Data: util_proto.Bytes(keyPair.CertPEM),
 		},
 	}
 	if err := b.secretManager.Create(ctx, certSecret, core_store.CreateBy(certSecretResKey(mesh, backend.Name))); err != nil {
@@ -95,9 +91,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 
 	keySecret := &core_system.SecretResource{
 		Spec: &system_proto.Secret{
-			Data: &wrapperspb.BytesValue{
-				Value: keyPair.KeyPEM,
-			},
+			Data: util_proto.Bytes(keyPair.KeyPEM),
 		},
 	}
 	if err := b.secretManager.Create(ctx, keySecret, core_store.CreateBy(keySecretResKey(mesh, backend.Name))); err != nil {

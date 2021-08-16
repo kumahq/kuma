@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -25,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/util"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var (
@@ -74,7 +74,7 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 		kdsGlobalLog.Info("creating Zone", "name", name)
 		zone := &system.ZoneResource{
 			Spec: &system_proto.Zone{
-				Enabled: &wrapperspb.BoolValue{Value: true},
+				Enabled: util_proto.Bool(true),
 			},
 		}
 		if err := resManager.Create(context.Background(), zone, store.CreateByKey(name, model.NoMesh)); err != nil {

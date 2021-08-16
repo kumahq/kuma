@@ -7,8 +7,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/core/faultinjections"
@@ -20,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Match", func() {
@@ -55,8 +54,8 @@ var _ = Describe("Match", func() {
 				Destinations: destinations,
 				Conf: &mesh_proto.FaultInjection_Conf{
 					Delay: &mesh_proto.FaultInjection_Conf_Delay{
-						Percentage: &wrapperspb.DoubleValue{Value: 50},
-						Value:      &durationpb.Duration{Seconds: 5},
+						Percentage: util_proto.Double(50),
+						Value:      util_proto.Duration(time.Second * 5),
 					},
 				},
 			},

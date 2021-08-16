@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -232,18 +231,14 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 10,
-										},
+										Weight: util_proto.UInt32(10),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"version":             "v2",
 										},
 									},
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 90,
-										},
+										Weight: util_proto.UInt32(90),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"region":              "eu",
@@ -404,18 +399,14 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 10,
-										},
+										Weight: util_proto.UInt32(10),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"version":             "v2",
 										},
 									},
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 90,
-										},
+										Weight: util_proto.UInt32(90),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"region":              "eu",
@@ -436,9 +427,7 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 10,
-										},
+										Weight: util_proto.UInt32(10),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "frontend",
 											"region":              "eu",
@@ -446,9 +435,7 @@ var _ = Describe("IngressGenerator", func() {
 										},
 									},
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 90,
-										},
+										Weight: util_proto.UInt32(90),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "frontend",
 											"cloud":               "aks",
