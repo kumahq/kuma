@@ -3,7 +3,8 @@ package v3
 import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type SourceMatcherConfigurer struct {
@@ -15,7 +16,7 @@ func (c *SourceMatcherConfigurer) Configure(filterChain *envoy_listener.FilterCh
 		SourcePrefixRanges: []*envoy_core.CidrRange{
 			{
 				AddressPrefix: c.Address,
-				PrefixLen:     &wrapperspb.UInt32Value{Value: 32},
+				PrefixLen:     util_proto.UInt32(32),
 			},
 		},
 	}

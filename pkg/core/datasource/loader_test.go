@@ -7,7 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -18,6 +17,7 @@ import (
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("DataSource Loader", func() {
@@ -35,9 +35,7 @@ var _ = Describe("DataSource Loader", func() {
 			// given
 			secretResource := system.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: &wrapperspb.BytesValue{
-						Value: []byte("abc"),
-					},
+					Data: util_proto.Bytes([]byte("abc")),
 				},
 			}
 			err := secretManager.Create(context.Background(), &secretResource, store.CreateByKey("test-secret", "default"))
@@ -106,9 +104,7 @@ var _ = Describe("DataSource Loader", func() {
 			// when
 			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
 				Type: &system_proto.DataSource_Inline{
-					Inline: &wrapperspb.BytesValue{
-						Value: []byte("abc"),
-					},
+					Inline: util_proto.Bytes([]byte("abc")),
 				},
 			})
 

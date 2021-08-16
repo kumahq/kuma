@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -15,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Timeout", func() {
@@ -56,7 +56,7 @@ var _ = Describe("Timeout", func() {
 				Spec: &mesh_proto.Timeout{
 					Sources:      []*mesh_proto.Selector{{Match: map[string]string{mesh_proto.ServiceTag: "frontend", "version": "v1"}}},
 					Destinations: []*mesh_proto.Selector{{Match: map[string]string{mesh_proto.ServiceTag: "redis"}}},
-					Conf:         &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(10 * time.Second)},
+					Conf:         &mesh_proto.Timeout_Conf{ConnectTimeout: util_proto.Duration(10 * time.Second)},
 				},
 			}
 
@@ -78,7 +78,7 @@ var _ = Describe("Timeout", func() {
 				Spec: &mesh_proto.Timeout{
 					Sources:      []*mesh_proto.Selector{{Match: map[string]string{mesh_proto.ServiceTag: "*"}}},
 					Destinations: []*mesh_proto.Selector{{Match: map[string]string{mesh_proto.ServiceTag: "*"}}},
-					Conf:         &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(10 * time.Second)},
+					Conf:         &mesh_proto.Timeout_Conf{ConnectTimeout: util_proto.Duration(10 * time.Second)},
 				},
 			}
 

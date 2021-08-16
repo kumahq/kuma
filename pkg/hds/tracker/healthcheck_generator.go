@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/hds/cache"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -51,28 +52,28 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 
 		var timeout *durationpb.Duration
 		if serviceProbe.Timeout == nil {
-			timeout = durationpb.New(g.config.CheckDefaults.Timeout)
+			timeout = util_proto.Duration(g.config.CheckDefaults.Timeout)
 		} else {
 			timeout = serviceProbe.Timeout
 		}
 
 		var interval *durationpb.Duration
 		if serviceProbe.Timeout == nil {
-			interval = durationpb.New(g.config.CheckDefaults.Interval)
+			interval = util_proto.Duration(g.config.CheckDefaults.Interval)
 		} else {
 			interval = serviceProbe.Interval
 		}
 
 		var healthyThreshold *wrapperspb.UInt32Value
 		if serviceProbe.HealthyThreshold == nil {
-			healthyThreshold = &wrapperspb.UInt32Value{Value: g.config.CheckDefaults.HealthyThreshold}
+			healthyThreshold = util_proto.UInt32(g.config.CheckDefaults.HealthyThreshold)
 		} else {
 			healthyThreshold = serviceProbe.HealthyThreshold
 		}
 
 		var unhealthyThreshold *wrapperspb.UInt32Value
 		if serviceProbe.UnhealthyThreshold == nil {
-			unhealthyThreshold = &wrapperspb.UInt32Value{Value: g.config.CheckDefaults.UnhealthyThreshold}
+			unhealthyThreshold = util_proto.UInt32(g.config.CheckDefaults.UnhealthyThreshold)
 		} else {
 			unhealthyThreshold = serviceProbe.UnhealthyThreshold
 		}
@@ -99,7 +100,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 					Interval:           interval,
 					HealthyThreshold:   healthyThreshold,
 					UnhealthyThreshold: unhealthyThreshold,
-					NoTrafficInterval:  durationpb.New(g.config.CheckDefaults.NoTrafficInterval),
+					NoTrafficInterval:  util_proto.Duration(g.config.CheckDefaults.NoTrafficInterval),
 					HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
 						TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
 					},
@@ -110,7 +111,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 
 	hcs := &envoy_service_health.HealthCheckSpecifier{
 		ClusterHealthChecks: healthChecks,
-		Interval:            durationpb.New(g.config.Interval),
+		Interval:            util_proto.Duration(g.config.Interval),
 	}
 
 	return cache.NewSnapshot("", hcs), nil

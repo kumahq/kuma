@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -230,7 +229,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port:     1234,
 											Path:     "/non-standard-path",
-											SkipMTLS: &wrapperspb.BoolValue{Value: false},
+											SkipMTLS: util_proto.Bool(false),
 											Tags: map[string]string{
 												"kuma.io/service": "dataplane-metrics",
 											},
@@ -284,7 +283,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port:     1234,
 											Path:     "/non-standard-path",
-											SkipMTLS: &wrapperspb.BoolValue{Value: false},
+											SkipMTLS: util_proto.Bool(false),
 											Tags: map[string]string{
 												"kuma.io/service": "dataplane-metrics",
 											},
@@ -408,7 +407,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port:     1234,
 											Path:     "/non-standard-path",
-											SkipMTLS: &wrapperspb.BoolValue{Value: false},
+											SkipMTLS: util_proto.Bool(false),
 											Tags: map[string]string{
 												"kuma.io/service": "dataplane-metrics",
 											},
@@ -537,7 +536,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port:     1234,
 											Path:     "/non-standard-path",
-											SkipMTLS: &wrapperspb.BoolValue{Value: true},
+											SkipMTLS: util_proto.Bool(true),
 											Tags: map[string]string{
 												"kuma.io/service": "dataplane-metrics",
 											},
