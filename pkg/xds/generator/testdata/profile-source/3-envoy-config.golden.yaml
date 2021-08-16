@@ -210,6 +210,10 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: inbound:192.168.0.1:80
     trafficDirection: INBOUND
 - name: kuma:envoy:admin

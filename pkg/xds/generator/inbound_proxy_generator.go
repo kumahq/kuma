@@ -65,7 +65,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		// generate LDS resource
 		service := iface.GetService()
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
-		filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
+		filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
 			switch protocol {
 			// configuration for HTTP case
@@ -94,15 +94,32 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 				// configuration for non-HTTP cases
 				filterChainBuilder.Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
 			}
+			if serverSideMTLS {
+				filterChainBuilder.
+					Configure(envoy_listeners.ServerSideMTLS(ctx))
+			}
 			return filterChainBuilder.
-				Configure(envoy_listeners.ServerSideMTLS(ctx)).
 				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]))
-		}()
-		inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
+		}
+
+		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, model.SocketAddressProtocolTCP)).
-			Configure(envoy_listeners.FilterChain(filterChainBuilder)).
-			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-			Build()
+			Configure(envoy_listeners.TLSInspector()).
+			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))
+
+		switch ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
+		case mesh_proto.CertificateAuthorityBackend_STRICT:
+			listenerBuilder.
+				Configure(envoy_listeners.FilterChain(filterChainBuilder(true)))
+		case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
+			listenerBuilder.
+				Configure(envoy_listeners.FilterChain(filterChainBuilder(false).
+					Configure(envoy_listeners.FilterChainMatch("raw_buffer")))).
+				Configure(envoy_listeners.FilterChain(filterChainBuilder(true).
+					Configure(envoy_listeners.FilterChainMatch("tls"))))
+		}
+
+		inboundListener, err := listenerBuilder.Build()
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
 		}
