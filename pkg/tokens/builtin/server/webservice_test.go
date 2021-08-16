@@ -15,11 +15,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
-
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
 type staticTokenIssuer struct {
