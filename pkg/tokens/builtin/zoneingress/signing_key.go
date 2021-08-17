@@ -6,14 +6,14 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/pkg/errors"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/pkg/errors"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const (

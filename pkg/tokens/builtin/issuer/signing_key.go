@@ -8,18 +8,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/pkg/errors"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/pkg/errors"
 )
-
-var log = core.Log.WithName("tokens")
 
 const (
 	defaultRsaBits = 2048
