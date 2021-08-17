@@ -11,8 +11,6 @@ import (
 	"github.com/kumahq/kuma/test/framework"
 )
 
-const tracingNamespace = "kuma-tracing"
-
 type k8SDeployment struct {
 	port uint32
 }
@@ -45,7 +43,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	}
 
 	k8s.WaitUntilNumPodsCreated(cluster.GetTesting(),
-		cluster.GetKubectlOptions(tracingNamespace),
+		cluster.GetKubectlOptions(framework.DefaultTracingNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=jaeger",
 		},
@@ -54,7 +52,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		framework.DefaultTimeout)
 
 	pods := k8s.ListPods(cluster.GetTesting(),
-		cluster.GetKubectlOptions(tracingNamespace),
+		cluster.GetKubectlOptions(framework.DefaultTracingNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=jaeger",
 		},
@@ -64,7 +62,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	}
 
 	k8s.WaitUntilPodAvailable(cluster.GetTesting(),
-		cluster.GetKubectlOptions(tracingNamespace),
+		cluster.GetKubectlOptions(framework.DefaultTracingNamespace),
 		pods[0].Name,
 		framework.DefaultRetries,
 		framework.DefaultTimeout)
@@ -75,7 +73,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	}
 	t.port = port
 
-	cluster.(*framework.K8sCluster).PortForwardPod(tracingNamespace, pods[0].Name, port, 16686)
+	cluster.(*framework.K8sCluster).PortForwardPod(framework.DefaultTracingNamespace, pods[0].Name, port, 16686)
 	return nil
 }
 
@@ -92,6 +90,6 @@ func (t *k8SDeployment) Delete(cluster framework.Cluster) error {
 	if err != nil {
 		return err
 	}
-	cluster.(*framework.K8sCluster).WaitNamespaceDelete(tracingNamespace)
+	cluster.(*framework.K8sCluster).WaitNamespaceDelete(framework.DefaultTracingNamespace)
 	return nil
 }
