@@ -10,13 +10,26 @@ import (
 )
 
 var APIIndexResponseFn = kumaAPIIndexResponse
+var hostname string
+var instanceId string
+var clusterId string
 
-func addIndexWsEndpoints(ws *restful.WebService) error {
-	response, err := APIIndexResponseFn()
+func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, getClusterId func() string) error {
+	hostname, err := os.Hostname()
 	if err != nil {
 		return err
 	}
 	ws.Route(ws.GET("/").To(func(req *restful.Request, resp *restful.Response) {
+		if instanceId == "" {
+			instanceId = getInstanceId()
+		}
+
+		if clusterId == "" {
+			clusterId = getClusterId()
+		}
+
+		response := APIIndexResponseFn(hostname, instanceId, clusterId)
+
 		if err := resp.WriteAsJson(response); err != nil {
 			log.Error(err, "Could not write the index response")
 		}
@@ -24,14 +37,12 @@ func addIndexWsEndpoints(ws *restful.WebService) error {
 	return nil
 }
 
-func kumaAPIIndexResponse() (interface{}, error) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, err
-	}
+func kumaAPIIndexResponse(hostname string, instanceId string, clusterId string) interface{} {
 	return types.IndexResponse{
-		Hostname: hostname,
-		Tagline:  kuma_version.Product,
-		Version:  kuma_version.Build.Version,
-	}, nil
+		Hostname:   hostname,
+		Tagline:    kuma_version.Product,
+		Version:    kuma_version.Build.Version,
+		InstanceId: instanceId,
+		ClusterId:  clusterId,
+	}
 }
