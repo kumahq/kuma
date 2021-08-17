@@ -1,11 +1,11 @@
 package samples
 
 import (
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var (
@@ -54,8 +54,8 @@ var (
 		}},
 		Conf: &mesh_proto.FaultInjection_Conf{
 			Abort: &mesh_proto.FaultInjection_Conf_Abort{
-				Percentage: &wrapperspb.DoubleValue{Value: 90},
-				HttpStatus: &wrapperspb.UInt32Value{Value: 404},
+				Percentage: util_proto.Double(90),
+				HttpStatus: util_proto.UInt32(404),
 			},
 		},
 	}
@@ -151,8 +151,8 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.HealthCheck_Conf{
-			Interval: &durationpb.Duration{Seconds: 5},
-			Timeout:  &durationpb.Duration{Seconds: 7},
+			Interval: util_proto.Duration(time.Second * 5),
+			Timeout:  util_proto.Duration(time.Second * 7),
 		},
 	}
 	TrafficLog = &mesh_proto.TrafficLog{
@@ -195,9 +195,7 @@ var (
 		}},
 		Conf: &mesh_proto.TrafficRoute_Conf{
 			Split: []*mesh_proto.TrafficRoute_Split{{
-				Weight: &wrapperspb.UInt32Value{
-					Value: 10,
-				},
+				Weight: util_proto.UInt32(10),
 				Destination: map[string]string{
 					"version": "v2",
 				},
@@ -233,19 +231,11 @@ var (
 		}},
 		Conf: &mesh_proto.Retry_Conf{
 			Http: &mesh_proto.Retry_Conf_Http{
-				NumRetries: &wrapperspb.UInt32Value{
-					Value: 5,
-				},
-				PerTryTimeout: &durationpb.Duration{
-					Seconds: 200000000,
-				},
+				NumRetries:    util_proto.UInt32(5),
+				PerTryTimeout: util_proto.Duration(time.Second * 200000000),
 				BackOff: &mesh_proto.Retry_Conf_BackOff{
-					BaseInterval: &durationpb.Duration{
-						Nanos: 200000000,
-					},
-					MaxInterval: &durationpb.Duration{
-						Seconds: 1,
-					},
+					BaseInterval: util_proto.Duration(time.Nanosecond * 200000000),
+					MaxInterval:  util_proto.Duration(time.Second * 1),
 				},
 				RetriableStatusCodes: []uint32{500, 502},
 			},
@@ -263,38 +253,25 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.Timeout_Conf{
-
-			ConnectTimeout: &durationpb.Duration{
-				Seconds: 5,
-			},
+			ConnectTimeout: util_proto.Duration(time.Second * 5),
 			Tcp: &mesh_proto.Timeout_Conf_Tcp{
-				IdleTimeout: &durationpb.Duration{
-					Seconds: 5,
-				},
+				IdleTimeout: util_proto.Duration(time.Second * 5),
 			},
 			Http: &mesh_proto.Timeout_Conf_Http{
-				RequestTimeout: &durationpb.Duration{
-					Seconds: 5,
-				},
-				IdleTimeout: &durationpb.Duration{
-					Seconds: 5,
-				},
+				RequestTimeout: util_proto.Duration(time.Second * 5),
+				IdleTimeout:    util_proto.Duration(time.Second * 5),
 			},
 			Grpc: &mesh_proto.Timeout_Conf_Grpc{
-				StreamIdleTimeout: &durationpb.Duration{
-					Seconds: 5,
-				},
-				MaxStreamDuration: &durationpb.Duration{
-					Seconds: 5,
-				},
+				StreamIdleTimeout: util_proto.Duration(time.Second * 5),
+				MaxStreamDuration: util_proto.Duration(time.Second * 5),
 			},
 		},
 	}
 	Secret = &system_proto.Secret{
-		Data: &wrapperspb.BytesValue{Value: []byte("secret key")},
+		Data: util_proto.Bytes([]byte("secret key")),
 	}
 	GlobalSecret = &system_proto.Secret{
-		Data: &wrapperspb.BytesValue{Value: []byte("global secret key")},
+		Data: util_proto.Bytes([]byte("global secret key")),
 	}
 	Config = &system_proto.Config{
 		Config: "sample config",

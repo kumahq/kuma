@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,6 +17,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const (
@@ -263,9 +263,7 @@ func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out core_mode
 	})
 	if secret.Data != nil {
 		_ = out.SetSpec(&system_proto.Secret{
-			Data: &wrapperspb.BytesValue{
-				Value: secret.Data["value"],
-			},
+			Data: util_proto.Bytes(secret.Data["value"]),
 		})
 	}
 	return nil

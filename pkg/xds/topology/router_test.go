@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -18,6 +17,7 @@ import (
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	. "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -90,15 +90,11 @@ var _ = Describe("TrafficRoute", func() {
 					Conf: &mesh_proto.TrafficRoute_Conf{
 						Split: []*mesh_proto.TrafficRoute_Split{
 							{
-								Weight: &wrapperspb.UInt32Value{
-									Value: 10,
-								},
+								Weight:      util_proto.UInt32(10),
 								Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
 							},
 							{
-								Weight: &wrapperspb.UInt32Value{
-									Value: 90,
-								},
+								Weight:      util_proto.UInt32(90),
 								Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
 							},
 						},
@@ -120,15 +116,11 @@ var _ = Describe("TrafficRoute", func() {
 					Conf: &mesh_proto.TrafficRoute_Conf{
 						Split: []*mesh_proto.TrafficRoute_Split{
 							{
-								Weight: &wrapperspb.UInt32Value{
-									Value: 30,
-								},
+								Weight:      util_proto.UInt32(30),
 								Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic", "region": "us"},
 							},
 							{
-								Weight: &wrapperspb.UInt32Value{
-									Value: 70,
-								},
+								Weight:      util_proto.UInt32(70),
 								Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic", "region": "eu"},
 							},
 						},
@@ -150,9 +142,7 @@ var _ = Describe("TrafficRoute", func() {
 					Conf: &mesh_proto.TrafficRoute_Conf{
 						Split: []*mesh_proto.TrafficRoute_Split{
 							{
-								Weight: &wrapperspb.UInt32Value{
-									Value: 100,
-								},
+								Weight:      util_proto.UInt32(100),
 								Destination: mesh_proto.TagSelector{"kuma.io/service": "blackhole"},
 							},
 						},
@@ -240,9 +230,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "blackhole"},
 									},
 								},
@@ -284,9 +272,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "hollygrail"},
 									},
 								},
@@ -308,9 +294,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "blackhole"},
 									},
 								},
@@ -360,9 +344,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
 									},
 								},
@@ -383,9 +365,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
 									},
 								},
@@ -435,9 +415,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
 									},
 								},
@@ -458,9 +436,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
 									},
 								},
@@ -510,9 +486,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
 									},
 								},
@@ -533,9 +507,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
 									},
 								},
@@ -586,9 +558,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
 									},
 								},
@@ -610,9 +580,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
 									},
 								},
@@ -675,9 +643,7 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight: &wrapperspb.UInt32Value{
-										Value: 100,
-									},
+									Weight:      util_proto.UInt32(100),
 									Destination: mesh_proto.MatchAnyService(),
 								},
 								},
@@ -703,9 +669,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis"},
 									},
 								},
@@ -729,9 +693,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic"},
 									},
 								},
@@ -776,9 +738,7 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight: &wrapperspb.UInt32Value{
-										Value: 100,
-									},
+									Weight:      util_proto.UInt32(100),
 									Destination: mesh_proto.MatchAnyService(),
 								},
 								},
@@ -799,9 +759,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic", "version": "v1"},
 									},
 								},
@@ -827,9 +785,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis"},
 									},
 								},
@@ -853,9 +809,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic", "version": "v1"},
 									},
 								},
@@ -926,15 +880,11 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "role": "master"},
 									},
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "role": "replica"},
 									},
 								},
@@ -949,9 +899,7 @@ var _ = Describe("TrafficRoute", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 100,
-										},
+										Weight:      util_proto.UInt32(100),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "google"},
 									},
 								},

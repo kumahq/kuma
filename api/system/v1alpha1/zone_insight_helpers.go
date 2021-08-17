@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func NewSubscriptionStatus() *KDSSubscriptionStatus {
@@ -75,7 +75,7 @@ func (m *ZoneInsight) UpdateSubscription(s *KDSSubscription) {
 // Because of the way we process subscriptions the lack of DisconnectTime on old subscription
 // will cause wrong status.
 func (m *ZoneInsight) finalizeSubscriptions() {
-	now := timestamppb.Now()
+	now := util_proto.Now()
 	for _, subscription := range m.GetSubscriptions() {
 		if subscription.DisconnectTime == nil {
 			subscription.DisconnectTime = now

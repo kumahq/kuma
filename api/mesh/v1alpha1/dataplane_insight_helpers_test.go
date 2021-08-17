@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/kumahq/kuma/api/internal/util/proto"
 	. "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("DataplaneHelpers", func() {

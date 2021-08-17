@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/kumahq/kuma/api/internal/util/proto"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Zone Insights", func() {
