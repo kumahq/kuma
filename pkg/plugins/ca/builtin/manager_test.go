@@ -45,7 +45,7 @@ var _ = Describe("Builtin CA Manager", func() {
 
 	Context("Ensure", func() {
 		It("should create a CA", func() {
-			//given
+			// given
 			mesh := "default"
 			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
@@ -83,7 +83,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		})
 
 		It("should create a configured CA", func() {
-			//given
+			// given
 			mesh := "default"
 			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
@@ -115,7 +115,7 @@ var _ = Describe("Builtin CA Manager", func() {
 
 	Context("GetRootCert", func() {
 		It("should retrieve created certs", func() {
-			//given
+			// given
 			mesh := "default"
 			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
@@ -151,7 +151,7 @@ var _ = Describe("Builtin CA Manager", func() {
 
 	Context("GenerateDataplaneCert", func() {
 		It("should generate dataplane certs", func() {
-			//given
+			// given
 			mesh := "default"
 			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
