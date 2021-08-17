@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/test"
 )
 
-var _ = Describe("kumactl install tracing", func() {
+var _ = Describe("kumactl uninstall tracing", func() {
 
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
@@ -28,7 +28,7 @@ var _ = Describe("kumactl install tracing", func() {
 		goldenFile string
 	}
 
-	DescribeTable("should install transparent proxy",
+	DescribeTable("should uninstall transparent proxy",
 		func(given testCase) {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()

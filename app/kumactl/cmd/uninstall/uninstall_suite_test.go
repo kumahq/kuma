@@ -6,6 +6,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 )
 
-func TestInstallCmd(t *testing.T) {
+func TestUninstallCmd(t *testing.T) {
 	test.RunSpecs(t, "Uninstall Cmd Suite")
 }
