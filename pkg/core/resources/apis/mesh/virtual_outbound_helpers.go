@@ -66,13 +66,12 @@ func (t *VirtualOutboundResource) EvalHost(tags map[string]string) (string, erro
 }
 
 func (t *VirtualOutboundResource) FilterTags(tags map[string]string) map[string]string {
-	out := map[string]string{
-		mesh_proto.ServiceTag: tags[mesh_proto.ServiceTag],
-	}
-
+	out := map[string]string{}
 	for _, v := range t.Spec.Conf.Parameters {
 		tagKey := tagKeyOrName(v)
-		out[tagKey] = tags[tagKey]
+		if tagValue, exists := tags[tagKey]; exists {
+			out[tagKey] = tagValue
+		}
 	}
 	return out
 }
