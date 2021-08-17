@@ -30,6 +30,8 @@ const (
 	OriginService = "service"
 )
 
+var OriginVirtualOutbound = func(name string) string { return "virtual-outbound:" + name }
+
 type OutboundEntry struct {
 	Port   uint32
 	TagSet map[string]string

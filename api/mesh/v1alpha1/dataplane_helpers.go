@@ -276,10 +276,6 @@ func (s TagSelector) Equal(other TagSelector) bool {
 	return len(s) == 0 && len(other) == 0 || len(s) == len(other) && reflect.DeepEqual(s, other)
 }
 
-func MatchAll() TagSelector {
-	return nil
-}
-
 func MatchAnyService() TagSelector {
 	return MatchService(MatchAllTag)
 }
@@ -469,6 +465,10 @@ type TagSelectorRank struct {
 	ExactMatches int
 	// Number of tags that match by a wildcard ('*').
 	WildcardMatches int
+}
+
+func (r TagSelectorRank) Zero() bool {
+	return r.ExactMatches == 0 && r.WildcardMatches == 0
 }
 
 func (r TagSelectorRank) CombinedWith(other TagSelectorRank) TagSelectorRank {

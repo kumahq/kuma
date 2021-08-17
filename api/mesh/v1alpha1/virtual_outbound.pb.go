@@ -90,7 +90,8 @@ type VirtualOutbound_Conf struct {
 	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
 	// Port the gotemplate to generate the port from the Parameters map
 	Port string `protobuf:"bytes,2,opt,name=port,proto3" json:"port,omitempty"`
-	// Parameters a mapping between tag keys and template parameter key. This must always contain at least `kuma.io/service`
+	// Parameters a mapping between tag keys and template parameter key. This
+	// must always contain at least `kuma.io/service`
 	Parameters []*VirtualOutbound_Conf_TemplateParameter `protobuf:"bytes,3,rep,name=parameters,proto3" json:"parameters,omitempty"`
 }
 
@@ -155,7 +156,8 @@ type VirtualOutbound_Conf_TemplateParameter struct {
 
 	// Name the name of the template parameter (must be alphanumeric).
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// TagKey the name of the tag in the Kuma outbound (optional if absent it will use Name).
+	// TagKey the name of the tag in the Kuma outbound (optional if absent it
+	// will use Name).
 	TagKey string `protobuf:"bytes,2,opt,name=tag_key,json=tagKey,proto3" json:"tag_key,omitempty"`
 }
 
