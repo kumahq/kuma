@@ -45,7 +45,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	}
 
 	k8s.WaitUntilNumPodsCreated(cluster.GetTesting(),
-		cluster.GetKubectlOptions(tracingNamespace),
+		cluster.GetKubectlOptions(framework.DefaultTracingNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=jaeger",
 		},
@@ -54,7 +54,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		framework.DefaultTimeout)
 
 	pods := k8s.ListPods(cluster.GetTesting(),
-		cluster.GetKubectlOptions(tracingNamespace),
+		cluster.GetKubectlOptions(framework.DefaultTracingNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=jaeger",
 		},
