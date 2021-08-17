@@ -19,7 +19,6 @@ Management tool for Kuma.
 ### SEE ALSO
 
 * [kumactl apply](kumactl_apply.md)	 - Create or modify Kuma resources
-* [kumactl completion](kumactl_completion.md)	 - Output shell completion code for bash, fish or zsh
 * [kumactl config](kumactl_config.md)	 - Manage kumactl config
 * [kumactl delete](kumactl_delete.md)	 - Delete Kuma resources
 * [kumactl generate](kumactl_generate.md)	 - Generate resources, tokens, etc

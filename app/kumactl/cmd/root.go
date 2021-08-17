@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd/apply"
-	"github.com/kumahq/kuma/app/kumactl/cmd/completion"
 	"github.com/kumahq/kuma/app/kumactl/cmd/config"
 	"github.com/kumahq/kuma/app/kumactl/cmd/delete"
 	"github.com/kumahq/kuma/app/kumactl/cmd/generate"
@@ -99,7 +98,6 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&args.noConfig, "no-config", false, "if set no config file and config directory will be created")
 	// sub-commands
 	cmd.AddCommand(apply.NewApplyCmd(root))
-	cmd.AddCommand(completion.NewCompletionCommand(root))
 	cmd.AddCommand(config.NewConfigCmd(root))
 	cmd.AddCommand(delete.NewDeleteCmd(root))
 	cmd.AddCommand(generate.NewGenerateCmd(root))
