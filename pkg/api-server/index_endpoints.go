@@ -10,12 +10,11 @@ import (
 )
 
 var APIIndexResponseFn = kumaAPIIndexResponse
-var hostname string
-var instanceId string
-var clusterId string
 
 func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, getClusterId func() string) error {
 	hostname, err := os.Hostname()
+	var instanceId string
+	var clusterId string
 	if err != nil {
 		return err
 	}
