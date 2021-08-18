@@ -226,16 +226,13 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 	// As EKS and AWS generally returns dns records of load balancers instead of
 	//  IP addresses, accessing this data (hostname) was only tested there,
 	//  so the env var was created for that purpose
-	if UseLoadBalancer() && UseHostnameInsteadOfIP() {
+	if UseLoadBalancer() {
 		svc := c.GetKumaCPSvcs()[0]
 
-		ip, hostname := svc.Status.LoadBalancer.Ingress[0].IP, svc.Status.LoadBalancer.Ingress[0].Hostname
-		var address string
+		address := svc.Status.LoadBalancer.Ingress[0].IP
 
-		if ip != "" {
-			address = ip
-		} else if hostname != "" {
-			address = hostname
+		if UseHostnameInsteadOfIP() {
+			address = svc.Status.LoadBalancer.Ingress[0].Hostname
 		}
 
 		return "grpcs://" + address + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
