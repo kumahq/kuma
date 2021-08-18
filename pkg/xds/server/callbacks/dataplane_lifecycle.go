@@ -43,25 +43,27 @@ func (d *DataplaneLifecycle) OnProxyReconnected(streamID core_xds.StreamID, dpKe
 }
 
 func (d *DataplaneLifecycle) register(streamID core_xds.StreamID, dpKey model.ResourceKey, md core_xds.DataplaneMetadata) error {
-	if md.GetProxyType() == mesh_proto.DataplaneProxyType && md.GetDataplaneResource() != nil {
+	switch {
+	case md.GetProxyType() == mesh_proto.DataplaneProxyType && md.GetDataplaneResource() != nil:
 		dp := md.GetDataplaneResource()
 		lifecycleLog.Info("registering dataplane", "dataplane", dp, "dataplaneKey", dpKey, "streamID", streamID)
 		if err := d.registerDataplane(dp); err != nil {
 			return errors.Wrap(err, "could not register dataplane passed in kuma-dp run")
 		}
-		d.createdDpByCallbacks[dpKey] = mesh_proto.DataplaneProxyType
-		return nil
-	}
-
-	if md.GetProxyType() == mesh_proto.IngressProxyType && md.GetZoneIngressResource() != nil {
+	case md.GetProxyType() == mesh_proto.IngressProxyType && md.GetZoneIngressResource() != nil:
 		zi := md.GetZoneIngressResource()
 		lifecycleLog.Info("registering zone ingress", "zoneIngress", zi, "zoneIngressKey", dpKey, "streamID", streamID)
 		if err := d.registerZoneIngress(zi); err != nil {
 			return errors.Wrap(err, "could not register zone ingress passed in kuma-dp run")
 		}
-		d.createdDpByCallbacks[dpKey] = mesh_proto.IngressProxyType
+	default:
 		return nil
 	}
+
+	d.Lock()
+	d.createdDpByCallbacks[dpKey] = md.GetProxyType()
+	d.Unlock()
+
 	return nil
 }
 
@@ -78,27 +80,27 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(streamID core_xds.StreamID, dpK
 	}
 
 	d.Lock()
-	defer d.Unlock()
 	proxyType, createdByCallbacks := d.createdDpByCallbacks[dpKey]
+	if createdByCallbacks {
+		delete(d.createdDpByCallbacks, dpKey)
+	}
+	d.Unlock()
+
 	if !createdByCallbacks {
 		return
 	}
-	delete(d.createdDpByCallbacks, dpKey)
 
-	if proxyType == mesh_proto.DataplaneProxyType {
+	switch proxyType {
+	case mesh_proto.DataplaneProxyType:
 		lifecycleLog.Info("unregistering dataplane", "dataplaneKey", dpKey, "streamID", streamID)
 		if err := d.unregisterDataplane(dpKey); err != nil {
 			lifecycleLog.Error(err, "could not unregister dataplane")
 		}
-		return
-	}
-
-	if proxyType == mesh_proto.IngressProxyType {
+	case mesh_proto.IngressProxyType:
 		lifecycleLog.Info("unregistering zone ingress", "zoneIngressKey", dpKey, "streamID", streamID)
 		if err := d.unregisterZoneIngress(dpKey); err != nil {
 			lifecycleLog.Error(err, "could not unregister zone ingress")
 		}
-		return
 	}
 }
 
@@ -115,16 +117,16 @@ func NewDataplaneLifecycle(resManager manager.ResourceManager, shutdownCh <-chan
 func (d *DataplaneLifecycle) registerDataplane(dp *core_mesh.DataplaneResource) error {
 	key := model.MetaToResourceKey(dp.GetMeta())
 	existing := core_mesh.NewDataplaneResource()
-	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) {
-		_ = existing.SetSpec(dp.GetSpec()) // ignore error because the spec type is the same
+	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
+		return existing.SetSpec(dp.GetSpec())
 	})
 }
 
 func (d *DataplaneLifecycle) registerZoneIngress(zi *core_mesh.ZoneIngressResource) error {
 	key := model.MetaToResourceKey(zi.GetMeta())
 	existing := core_mesh.NewZoneIngressResource()
-	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) {
-		_ = existing.SetSpec(zi.GetSpec()) // ignore error because the spec type is the same
+	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
+		return existing.SetSpec(zi.GetSpec())
 	})
 }
 

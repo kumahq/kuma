@@ -6,8 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -30,7 +28,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
 				Configure(clusters.OutlierDetection(given.circuitBreaker)).
-				Configure(clusters.Timeout(core_mesh.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
+				Configure(clusters.Timeout(core_mesh.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: util_proto.Duration(5 * time.Second)})).
 				Build()
 
 			// then
@@ -117,9 +115,9 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
 				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-							TotalErrors:   &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrapperspb.UInt32Value{Value: 21}},
-							GatewayErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrapperspb.UInt32Value{Value: 11}},
-							LocalErrors:   &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrapperspb.UInt32Value{Value: 6}},
+							TotalErrors:   &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: util_proto.UInt32(21)},
+							GatewayErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: util_proto.UInt32(11)},
+							LocalErrors:   &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: util_proto.UInt32(6)},
 						},
 					},
 				},
@@ -172,9 +170,9 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 							StandardDeviation: &mesh_proto.CircuitBreaker_Conf_Detectors_StandardDeviation{
-								RequestVolume: &wrapperspb.UInt32Value{Value: 7},
-								MinimumHosts:  &wrapperspb.UInt32Value{Value: 8},
-								Factor:        &wrapperspb.DoubleValue{Value: 1.9},
+								RequestVolume: util_proto.UInt32(7),
+								MinimumHosts:  util_proto.UInt32(8),
+								Factor:        util_proto.Double(1.9),
 							},
 						},
 					},
@@ -229,9 +227,9 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 							Failure: &mesh_proto.CircuitBreaker_Conf_Detectors_Failure{
-								RequestVolume: &wrapperspb.UInt32Value{Value: 7},
-								MinimumHosts:  &wrapperspb.UInt32Value{Value: 8},
-								Threshold:     &wrapperspb.UInt32Value{Value: 85},
+								RequestVolume: util_proto.UInt32(7),
+								MinimumHosts:  util_proto.UInt32(8),
+								Threshold:     util_proto.UInt32(85),
 							},
 						},
 					},

@@ -2,6 +2,8 @@ package callbacks_test
 
 import (
 	"context"
+	"fmt"
+	"sync"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -183,5 +185,77 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		// then DP is not deleted because Kuma CP was shutting down
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should not race when registering concurrently", func() {
+		const streamID = 123
+
+		wg := sync.WaitGroup{}
+
+		for i := 0; i < 10; i++ {
+			wg.Add(1)
+
+			go func(num int) {
+				defer GinkgoRecover()
+
+				streamID := int64(streamID + num)
+				nodeID := fmt.Sprintf("default.backend-%d", num)
+
+				// given
+				req := v2.DiscoveryRequest{
+					Node: &envoy_core.Node{
+						Id: nodeID,
+						Metadata: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"dataplane.resource": &structpb.Value{
+									Kind: &structpb.Value_StringValue{
+										StringValue: fmt.Sprintf(`
+                                {
+                                  "type": "Dataplane",
+                                  "mesh": "default",
+                                  "name": "%s",
+                                  "networking": {
+                                    "address": "127.0.0.%d",
+                                    "inbound": [
+                                      {
+                                        "port": 22022,
+                                        "servicePort": 8443,
+                                        "tags": {
+                                          "kuma.io/service": "backend"
+                                        }
+                                      },
+                                    ]
+                                  }
+                                }
+                                `, nodeID, num),
+									},
+								},
+							},
+						},
+					},
+				}
+
+				// when
+				err := callbacks.OnStreamRequest(streamID, &req)
+				Expect(err).ToNot(HaveOccurred())
+
+				// then dp is created
+				err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey(nodeID, "default"))
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				callbacks.OnStreamClosed(streamID)
+
+				// then dataplane should be deleted
+				err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
+				Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+
+				wg.Done()
+			}(i)
+
+		}
+
+		wg.Wait()
+
 	})
 })

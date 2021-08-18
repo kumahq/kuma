@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 	v3 "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
 
@@ -62,7 +63,17 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache)
+
+	secrets, err := secrets.NewSecrets(
+		secrets.NewCaProvider(rt.CaManagers()),
+		secrets.NewIdentityProvider(rt.CaManagers()),
+		rt.Metrics(),
+	)
+	if err != nil {
+		return err
+	}
+
+	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache, secrets)
 	if err != nil {
 		return err
 	}

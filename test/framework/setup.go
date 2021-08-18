@@ -201,7 +201,7 @@ func IngressUniversalOldType(mesh, token string) InstallFunc {
 
 		publicAddress := uniCluster.apps[AppIngress].ip
 		dpyaml := fmt.Sprintf(IngressDataplaneOldType, mesh, publicAddress, kdsPort, kdsPort)
-		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token, false)
+		return uniCluster.CreateDP(app, "ingress", mesh, app.ip, dpyaml, token, false)
 	}
 }
 

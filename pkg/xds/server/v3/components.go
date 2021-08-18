@@ -20,6 +20,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 	xds_callbacks "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
@@ -43,10 +44,9 @@ func RegisterXDS(
 	authCallbacks := auth.NewCallbacks(rt.ReadOnlyResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
 
 	metadataTracker := xds_callbacks.NewDataplaneMetadataTracker()
-	connectionInfoTracker := xds_callbacks.NewConnectionInfoTracker()
 	reconciler := DefaultReconciler(rt, xdsContext)
 	ingressReconciler := DefaultIngressReconciler(rt, xdsContext)
-	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, metadataTracker, connectionInfoTracker, reconciler, ingressReconciler, xdsMetrics, meshSnapshotCache, envoyCpCtx, envoy_common.APIV3)
+	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, metadataTracker, reconciler, ingressReconciler, xdsMetrics, meshSnapshotCache, envoyCpCtx, envoy_common.APIV3)
 	if err != nil {
 		return err
 	}
@@ -54,12 +54,11 @@ func RegisterXDS(
 	callbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(connectionInfoTracker)),
 		util_xds_v3.AdaptCallbacks(authCallbacks),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory.New))),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(metadataTracker)),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneLifecycle(rt.ResourceManager(), rt.ShutdownCh()))),
-		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt)),
+		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff)),
 		newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
 	}
@@ -108,14 +107,18 @@ func DefaultIngressReconciler(rt core_runtime.Runtime, xdsContext XdsContext) xd
 	}
 }
 
-func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) xds_callbacks.DataplaneStatusTracker {
+func DefaultDataplaneStatusTracker(rt core_runtime.Runtime, secrets secrets.Secrets) xds_callbacks.DataplaneStatusTracker {
 	return xds_callbacks.NewDataplaneStatusTracker(rt,
 		func(dataplaneType core_model.ResourceType, accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
 			return xds_callbacks.NewDataplaneInsightSink(
 				dataplaneType,
 				accessor,
+				secrets,
 				func() *time.Ticker {
 					return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval)
+				},
+				func() *time.Ticker {
+					return time.NewTicker(rt.Config().Metrics.Dataplane.IdleTimeout / 2)
 				},
 				rt.Config().XdsServer.DataplaneStatusFlushInterval/10,
 				xds_callbacks.NewDataplaneInsightStore(rt.ResourceManager()),

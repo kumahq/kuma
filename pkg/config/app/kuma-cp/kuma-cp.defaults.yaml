@@ -85,11 +85,6 @@ bootstrapServer:
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
 
-# Envoy SDS server configuration
-sdsServer:
-  # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
-  dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
-
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
@@ -270,11 +265,15 @@ metrics:
     enabled: true # ENV: KUMA_METRICS_DATAPLANE_ENABLED
     # How many latest subscriptions will be stored in DataplaneInsight object, if equals 0 then unlimited
     subscriptionLimit: 2 # ENV: KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT
+    # How long data plane proxy can stay Online without active xDS connection
+    idleTimeout: 5m # ENV: KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT
   zone:
     # Enables collecting metrics from Zone
     enabled: true # ENV: KUMA_METRICS_ZONE_ENABLED
     # How many latest subscriptions will be stored in ZoneInsights object, if equals 0 then unlimited
     subscriptionLimit: 10 # ENV: KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT
+    # How long zone can stay Online without active KDS connection
+    idleTimeout: 5m # ENV: KUMA_METRICS_ZONE_IDLE_TIMEOUT
   mesh:
     # Min time that should pass between MeshInsight resync
     minResyncTimeout: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT
@@ -348,7 +347,7 @@ diagnostics:
   # If true, enables https://golang.org/pkg/net/http/pprof/ debug endpoints
   debugEndpoints: false # ENV: KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS
 
-# Dataplane Server configuration that servers API like Bootstrap/XDS/SDS for the Dataplane.
+# Dataplane Server configuration that servers API like Bootstrap/XDS for the Dataplane.
 dpServer:
   # Port of the DP Server
   port: 5678 # ENV: KUMA_DP_SERVER_PORT

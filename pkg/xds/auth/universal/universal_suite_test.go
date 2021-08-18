@@ -7,5 +7,5 @@ import (
 )
 
 func TestUniversal(t *testing.T) {
-	test.RunSpecs(t, "Sds Auth Universal Suite")
+	test.RunSpecs(t, "XDS Auth Universal Suite")
 }

@@ -25,7 +25,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 		statsName        string
 		clusters         []envoy_common.Cluster
 		ctx              xds_context.Context
-		metadata         core_xds.DataplaneMetadata
 		expected         string
 	}
 
@@ -35,7 +34,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(ServerSideMTLS(given.ctx, &given.metadata)).
+					Configure(ServerSideMTLS(given.ctx)).
 					Configure(TcpProxy(given.statsName, given.clusters...)))).
 				Build()
 			// then
@@ -57,12 +56,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 				envoy_common.WithWeight(200),
 			)},
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-control-plane:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("CERTIFICATE"),
-				},
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -106,22 +100,12 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                       validationContextSdsSecretConfig:
                         name: mesh_ca
                         sdsConfig:
-                          apiConfigSource:
-                            apiType: GRPC
-                            grpcServices:
-                            - envoyGrpc:
-                                clusterName: ads_cluster
-                            transportApiVersion: V3
+                          ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   requireClientCertificate: true
             name: inbound:192.168.0.1:8080
@@ -138,12 +122,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 				envoy_common.WithWeight(200),
 			)},
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-control-plane:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("CERTIFICATE"),
-				},
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
@@ -162,9 +141,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 						},
 					},
 				},
-			},
-			metadata: core_xds.DataplaneMetadata{
-				DataplaneToken: "token",
 			},
 			expected: `
             address:
@@ -190,28 +166,12 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                       validationContextSdsSecretConfig:
                         name: mesh_ca
                         sdsConfig:
-                          apiConfigSource:
-                            apiType: GRPC
-                            grpcServices:
-                            - envoyGrpc:
-                                clusterName: ads_cluster
-                              initialMetadata:
-                              - key: authorization
-                                value: token
-                            transportApiVersion: V3
+                          ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                            initialMetadata:
-                            - key: authorization
-                              value: token
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   requireClientCertificate: true
             name: inbound:192.168.0.1:8080

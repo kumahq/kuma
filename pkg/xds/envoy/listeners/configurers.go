@@ -54,10 +54,9 @@ func StaticTlsEndpoints(virtualHostName string, keyPair *tls.KeyPair, paths []*e
 	})
 }
 
-func ServerSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) FilterChainBuilderOpt {
+func ServerSideMTLS(ctx xds_context.Context) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
-		Ctx:      ctx,
-		Metadata: metadata,
+		Ctx: ctx,
 	})
 }
 

@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
-	"github.com/kumahq/kuma/pkg/config/sds"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 )
@@ -53,8 +52,9 @@ func (m *Metrics) Validate() error {
 }
 
 type DataplaneMetrics struct {
-	Enabled           bool `yaml:"enabled" envconfig:"kuma_metrics_dataplane_enabled"`
-	SubscriptionLimit int  `yaml:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
+	Enabled           bool          `yaml:"enabled" envconfig:"kuma_metrics_dataplane_enabled"`
+	SubscriptionLimit int           `yaml:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
+	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"kuma_metrics_dataplane_idle_timeout"`
 }
 
 func (d *DataplaneMetrics) Sanitize() {
@@ -68,8 +68,9 @@ func (d *DataplaneMetrics) Validate() error {
 }
 
 type ZoneMetrics struct {
-	Enabled           bool `yaml:"enabled" envconfig:"kuma_metrics_zone_enabled"`
-	SubscriptionLimit int  `yaml:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
+	Enabled           bool          `yaml:"enabled" envconfig:"kuma_metrics_zone_enabled"`
+	SubscriptionLimit int           `yaml:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
+	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"kuma_metrics_zone_idle_timeout"`
 }
 
 func (d *ZoneMetrics) Sanitize() {
@@ -117,8 +118,6 @@ type Config struct {
 	BootstrapServer *bootstrap.BootstrapServerConfig `yaml:"bootstrapServer,omitempty"`
 	// Envoy XDS server configuration
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer,omitempty"`
-	// Envoy SDS server configuration
-	SdsServer *sds.SdsServerConfig `yaml:"sdsServer,omitempty"`
 	// Monitoring Assignment Discovery Service (MADS) server configuration
 	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer,omitempty"`
 	// API Server configuration
@@ -148,7 +147,6 @@ func (c *Config) Sanitize() {
 	c.Store.Sanitize()
 	c.BootstrapServer.Sanitize()
 	c.XdsServer.Sanitize()
-	c.SdsServer.Sanitize()
 	c.MonitoringAssignmentServer.Sanitize()
 	c.ApiServer.Sanitize()
 	c.Runtime.Sanitize()
@@ -166,7 +164,6 @@ func DefaultConfig() Config {
 		Mode:                       core.Standalone,
 		Store:                      store.DefaultStoreConfig(),
 		XdsServer:                  xds.DefaultXdsServerConfig(),
-		SdsServer:                  sds.DefaultSdsServerConfig(),
 		MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
 		ApiServer:                  api_server.DefaultApiServerConfig(),
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
@@ -178,10 +175,12 @@ func DefaultConfig() Config {
 			Dataplane: &DataplaneMetrics{
 				Enabled:           true,
 				SubscriptionLimit: 2,
+				IdleTimeout:       5 * time.Minute,
 			},
 			Zone: &ZoneMetrics{
 				Enabled:           true,
 				SubscriptionLimit: 10,
+				IdleTimeout:       5 * time.Minute,
 			},
 			Mesh: &MeshMetrics{
 				MinResyncTimeout: 1 * time.Second,
@@ -222,9 +221,6 @@ func (c *Config) Validate() error {
 		if err := c.BootstrapServer.Validate(); err != nil {
 			return errors.Wrap(err, "Bootstrap Server validation failed")
 		}
-		if err := c.SdsServer.Validate(); err != nil {
-			return errors.Wrap(err, "SDS Server validation failed")
-		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
 		}
@@ -246,9 +242,6 @@ func (c *Config) Validate() error {
 		}
 		if err := c.BootstrapServer.Validate(); err != nil {
 			return errors.Wrap(err, "Bootstrap Server validation failed")
-		}
-		if err := c.SdsServer.Validate(); err != nil {
-			return errors.Wrap(err, "SDS Server validation failed")
 		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")

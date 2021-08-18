@@ -6,13 +6,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -35,11 +35,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 	}
 
 	mtlsCtx := xds_context.Context{
-		ConnectionInfo: xds_context.ConnectionInfo{
-			Authority: "kuma-system:5677",
-		},
 		ControlPlane: &xds_context.ControlPlaneContext{
-			SdsTlsCert: []byte("12345"),
+			Secrets: &xds.TestSecrets{},
 		},
 		Mesh: xds_context.MeshContext{
 			Resource: &core_mesh.MeshResource{
@@ -253,19 +250,14 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 10,
-										},
+										Weight:      util_proto.UInt32(10),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "master"},
 									}, {
-										Weight: &wrapperspb.UInt32Value{
-											Value: 90,
-										},
+										Weight:      util_proto.UInt32(90),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "replica"},
 									}, {
-										Weight: &wrapperspb.UInt32Value{
-											Value: 0,
-										}, // should be excluded from Envoy configuration
+										Weight: util_proto.UInt32(0),
+										// should be excluded from Envoy configuration
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "canary"},
 									}},
 								},

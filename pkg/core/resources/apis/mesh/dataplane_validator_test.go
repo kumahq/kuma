@@ -299,6 +299,29 @@ var _ = Describe("Dataplane", func() {
                 - field: networking
                   message: has to contain at least one inbound interface or gateway`,
 		}),
+		Entry("missing networking", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default`,
+			expected: `
+                violations:
+                - field: networking
+                  message: must be defined`,
+		}),
+		Entry("networking empty", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking: {}`,
+			expected: `
+                violations:
+                - field: networking
+                  message: has to contain at least one inbound interface or gateway
+                - field: networking.address
+                  message: address can't be empty`,
+		}),
 		Entry("networking.address: empty", testCase{
 			dataplane: `
                 type: Dataplane

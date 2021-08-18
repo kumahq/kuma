@@ -83,22 +83,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.1:80
@@ -137,3 +127,19 @@ resources:
     name: outbound:passthrough:ipv4
     trafficDirection: OUTBOUND
     useOriginalDst: true
+- name: identity_cert
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: identity_cert
+    tlsCertificate:
+      certificateChain:
+        inlineBytes: Q0VSVA==
+      privateKey:
+        inlineBytes: S0VZ
+- name: mesh_ca
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: mesh_ca
+    validationContext:
+      trustedCa:
+        inlineBytes: Q0E=
