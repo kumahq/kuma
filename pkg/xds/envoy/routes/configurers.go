@@ -17,6 +17,18 @@ func CommonVirtualHost(name string) VirtualHostBuilderOpt {
 	)
 }
 
+func DomainNames(domainNames ...string) VirtualHostBuilderOpt {
+	if len(domainNames) == 0 {
+		return VirtualHostBuilderOptFunc(nil)
+	}
+
+	return AddVirtualHostConfigurer(
+		v3.VirtualHostMustConfigureFunc(func(vh *envoy_route.VirtualHost) {
+			vh.Domains = domainNames
+		}),
+	)
+}
+
 func Routes(routes envoy_common.Routes) VirtualHostBuilderOpt {
 	return AddVirtualHostConfigurer(
 		&v3.RoutesConfigurer{
