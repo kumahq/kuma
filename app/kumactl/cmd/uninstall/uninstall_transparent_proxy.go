@@ -11,13 +11,13 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 )
 
-type transparenProxyArgs struct {
+type transparentProxyArgs struct {
 	DryRun  bool
 	Verbose bool
 }
 
 func newUninstallTransparentProxy() *cobra.Command {
-	args := transparenProxyArgs{
+	args := transparentProxyArgs{
 		DryRun:  false,
 		Verbose: false,
 	}
