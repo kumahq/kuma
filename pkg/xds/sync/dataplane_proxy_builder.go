@@ -38,11 +38,7 @@ type DataplaneProxyBuilder struct {
 	APIVersion envoy.APIVersion
 }
 
-<<<<<<< HEAD
-func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, meshCtx *xds_context.MeshContext) (*xds.Proxy, error) {
-=======
 func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *xds_context.Context) (*xds.Proxy, error) {
->>>>>>> 71862d83 (feat(kuma-cp) generate gateway listeners (#2488))
 	ctx := context.Background()
 
 	dp, err := p.resolveDataplane(ctx, key)
@@ -50,12 +46,12 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *
 		return nil, err
 	}
 
-	routing, destinations, err := p.resolveRouting(ctx, meshCtx, dp)
+	routing, destinations, err := p.resolveRouting(ctx, &envoyContext.Mesh, dp)
 	if err != nil {
 		return nil, err
 	}
 
-	matchedPolicies, err := p.matchPolicies(ctx, meshCtx, dp, destinations)
+	matchedPolicies, err := p.matchPolicies(ctx, &envoyContext.Mesh, dp, destinations)
 	if err != nil {
 		return nil, err
 	}
