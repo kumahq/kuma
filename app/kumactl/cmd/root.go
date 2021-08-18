@@ -87,7 +87,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			if kumaBuildVersion == nil {
 				cmd.PrintErr("WARNING: Unable to confirm the server supports this kumactl version\n")
 			} else if kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product {
-				cmd.PrintErr("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version + " Server Instance Id: " + kumaBuildVersion.InstanceId + " Service Cluster Id: " + kumaBuildVersion.ClusterId + "\n")
+				cmd.PrintErr("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version + "\n")
 			}
 			return nil
 		},
