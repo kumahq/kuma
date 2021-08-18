@@ -1,0 +1,312 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "config.proto"; // kumadoc options
+import "google/protobuf/wrappers.proto";
+import "mesh/options.proto";
+import "mesh/v1alpha1/selector.proto";
+import "validate/validate.proto";
+
+option (doc.config) = {
+  type : Policy,
+  name : "GatewayRoute",
+  file_name : "gateway-route"
+};
+
+message GatewayRoute {
+
+  option (kuma.mesh.resource).name = "GatewayRouteResource";
+  option (kuma.mesh.resource).type = "GatewayRoute";
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).skip_registration = true;
+
+  option (kuma.mesh.resource).ws.name = "gateway-route";
+
+  // Backend selects a target for HTTP request forwarding.
+  message Backend {
+    // Weight is the proportion of requests this backend will receive
+    // when a forwarding rules specifies multiple backends. Traffic
+    // weight is computed as "weight/sum(all weights)".
+    //
+    // A weight of 0 means that the destination will be ignored.
+    uint32 weight = 1
+        [ (validate.rules).message = {required : true}, (doc.required) = true ];
+
+    // Destination is a selector to match the individual endpoints to
+    // which the gateway will forward.
+    map<string, string> destination = 2 [
+      (doc.required) = true,
+      (validate.rules).map = {
+        min_pairs : 1,
+        keys : {string : {min_len : 1}},
+        values : {string : {min_len : 1}}
+      }
+    ];
+  };
+
+  // UDP routes are valid for UDP listeners.
+  message UdpRoute {
+    option (doc.hide) = true;
+
+    message Match {};
+
+    message Rule {
+      repeated Match matches = 1;
+      repeated Backend backends = 2
+          [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+    };
+
+    repeated Rule rules = 1
+        [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+  };
+
+  // TLS routes are valid for listeners that accept connections over TLS.
+  message TcpRoute {
+    option (doc.hide) = true;
+
+    message Match {};
+
+    message Rule {
+      repeated Match matches = 1;
+      repeated Backend backends = 2
+          [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+    };
+
+    repeated Rule rules = 1
+        [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+  };
+
+  // TLS routes are valid for listeners that accept connections over TLS.
+  // This can be a raw TLS connection, but can also be used to forward
+  // HTTP and other protocols that layer on top of TLS.
+  message TlsRoute {
+    option (doc.hide) = true;
+
+    message Match {};
+
+    message Rule {
+      repeated Match matches = 1;
+      repeated Backend backends = 2
+          [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+    };
+
+    // Hostnames lists the server names for which this route is valid. The
+    // hostnames are matched against the TLS Server Name Indication extension
+    // send by the client.
+    repeated string hostnames = 1;
+    repeated Rule rules = 2
+        [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+  };
+
+  // HTTP routes are valid for listeners that accept HTTP/1.1 and HTTP/2 over
+  // both TCP and TLS.
+  message HttpRoute {
+    // Match specifies the criteria for when a HTTP request matches a rule.
+    // The match is only considered successful if all of the specified
+    // conditions succeed (AND semantics). At least one match condition
+    // must be given.
+    message Match {
+      // Path matches may be "EXACT", "PREFIX", or "REGEX" matches. If
+      // the match type is not specified, "EXACT" is the default.
+      message Path {
+        enum MatchType {
+          EXACT = 0;
+          PREFIX = 1;
+          REGEX = 2;
+        }
+
+        MatchType match = 1;
+
+        // Value is the path to match against. For EXACT and PREFIX match
+        // types, it must be a HTTP URI path. For the REGEX match type,
+        // it must be a RE2 regular expression.
+        string value = 2 [
+          (doc.required) = true,
+          (validate.rules).message = {required : true},
+          (validate.rules).string.min_len = 1
+        ];
+      };
+
+      // Header matches a value in a HTTP request header. Not that if
+      // the header is defined to have multiple values, a REGEX match
+      // must be used to match a specific value.
+      message Header {
+        enum MatchType {
+          EXACT = 0;
+          REGEX = 1;
+        }
+
+        MatchType match = 1;
+
+        // Name of the HTTP header containing the value to match.
+        string name = 2 [
+          (doc.required) = true,
+          (validate.rules).message = {required : true}
+        ];
+
+        // Value that the HTTP header value should be matched against.
+        string value = 3 [
+          (doc.required) = true,
+          (validate.rules).message = {required : true}
+        ];
+      };
+
+      // Query matches against HTTP request query parameters.
+      message Query {
+        enum MatchType {
+          EXACT = 0;
+          REGEX = 1;
+        }
+
+        MatchType match = 1;
+
+        // Name of the query parameter containing the value to match.
+        string name = 2 [
+          (doc.required) = true,
+          (validate.rules).message = {required : true}
+        ];
+
+        // Value that the query parameter value should be matched against.
+        string value = 3 [
+          (doc.required) = true,
+          (validate.rules).message = {required : true}
+        ];
+      };
+
+      enum Method {
+        NONE = 0;
+        CONNECT = 1;
+        DELETE = 2;
+        GET = 3;
+        HEAD = 4;
+        OPTIONS = 5;
+        PATCH = 6;
+        POST = 7;
+        PUT = 8;
+        TRACE = 9;
+      };
+
+      Path path = 1;
+      Method method = 2;
+      repeated Header headers = 3;
+      repeated Query query_parameters = 4;
+    };
+
+    message Filter {
+      message RequestHeader {
+        message Header {
+          string name = 1 [
+            (doc.required) = true,
+            (validate.rules).message = {required : true}
+          ];
+          string value = 2 [
+            (doc.required) = true,
+            (validate.rules).message = {required : true}
+          ];
+        }
+
+        repeated Header set = 1;
+        repeated Header add = 2;
+        repeated string remove = 3;
+      };
+
+      // The mirror filter sends a percentage of HTTP requests to the
+      // given backend. The gateway ignores any responses to these requests.
+      message Mirror {
+        // Backend denotes the service to which requests will be mirrored. The
+        // "weight" field must not be given.
+        Backend backend = 1 [
+          (doc.required) = true,
+          (validate.rules).message = {required : true}
+        ];
+
+        // Percentage specifies the percentage of requests to mirror to
+        // the backend (in the range 0.0 - 100.0, inclusive).
+        google.protobuf.DoubleValue percentage = 2
+            [ (doc.required) = true, (validate.rules).double.lte = 100.0 ];
+      };
+
+      // The redirect filter responds to the HTTP request immediately,
+      // without forwarding it to any backend. The response is a HTTP
+      // redirect message.
+      message Redirect {
+        // The scheme for the redirect URL. Usually "http" or "https".
+        string scheme = 1 [
+          (doc.required) = true,
+          (validate.rules).message = {required : true}
+        ];
+
+        // The hostname to redirect to.
+        string hostname = 2 [
+          (doc.required) = true,
+          (validate.rules).message = {required : true}
+        ];
+
+        // The port to redirect to.
+        uint32 port = 3 [ (validate.rules).uint32.lt = 65535 ];
+
+        // The HTTP response status code. This must be in the range 300 - 308.
+        uint32 status_code = 4 [
+          (doc.required) = true,
+          (validate.rules).message = {required : true},
+          (validate.rules).uint32.gte = 300,
+          (validate.rules).uint32.lte = 308
+        ];
+      };
+
+      oneof filter {
+        RequestHeader request_header = 1;
+        Mirror mirror = 2;
+        Redirect redirect = 3;
+      }
+    };
+
+    message Rule {
+      // Matches are checked in order. If any match is successful, the
+      // rule is selected (OR semantics).
+      repeated Match matches = 1
+          [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+
+      // Filters are request processing steps that are applied to
+      // matched requests.
+      repeated Filter filters = 2;
+
+      // Backends is the set of services to which the gateway will
+      // forward requests.
+      repeated Backend backends = 3
+          [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+    };
+
+    // Hostnames lists the server names for which this route is valid. The
+    // hostnames are matched against the TLS Server Name Indication extension
+    // if this is a TLS session. They are also matched against the HTTP host
+    // (authority) header in the client's HTTP request.
+    repeated string hostnames = 1;
+
+    // Rules specifies how the gateway should match and process HTTP requests.
+    repeated Rule rules = 2
+        [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+  };
+
+  message Conf {
+    // Each route resource may contain routing table entries for exactly one
+    // protocol type.
+    oneof route {
+      UdpRoute udp = 1;
+      TcpRoute tcp = 2;
+      TlsRoute tls = 3;
+      HttpRoute http = 4;
+    };
+  };
+
+  // Selectors is used to match this resource to Gateway listener.
+  repeated Selector selectors = 1
+      [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+
+  // Conf specifies the route configuration.
+  Conf conf = 2
+      [ (doc.required) = true, (validate.rules).message.required = true ];
+}
