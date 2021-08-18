@@ -8,7 +8,6 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -17,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -161,11 +161,11 @@ func (l ListenerGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy
 
 					// TODO(jpeach) set path_with_escaped_slashes_action when we upgrade to Envoy v1.19.
 
-					hcm.RequestHeadersTimeout = durationpb.New(DefaultRequestHeadersTimeoutMsec)
-					hcm.StreamIdleTimeout = durationpb.New(DefaultStreamIdleTimeoutMsec)
+					hcm.RequestHeadersTimeout = util_proto.Duration(DefaultRequestHeadersTimeoutMsec)
+					hcm.StreamIdleTimeout = util_proto.Duration(DefaultStreamIdleTimeoutMsec)
 
 					hcm.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{
-						IdleTimeout:                  durationpb.New(DefaultIdleTimeout),
+						IdleTimeout:                  util_proto.Duration(DefaultIdleTimeout),
 						HeadersWithUnderscoresAction: envoy_config_core_v3.HttpProtocolOptions_REJECT_REQUEST,
 					}
 

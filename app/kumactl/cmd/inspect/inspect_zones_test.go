@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
@@ -61,7 +60,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: &wrapperspb.BoolValue{Value: true}},
+					Zone: &system_proto.Zone{Enabled: util_proto.Bool(true)},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -163,7 +162,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: &wrapperspb.BoolValue{Value: true}},
+					Zone: &system_proto.Zone{Enabled: util_proto.Bool(true)},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -189,7 +188,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: &wrapperspb.BoolValue{Value: false}},
+					Zone: &system_proto.Zone{Enabled: util_proto.Bool(false)},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{

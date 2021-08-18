@@ -8,19 +8,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
-
-var log = core.Log.WithName("tokens")
 
 const (
 	defaultRsaBits = 2048
@@ -54,9 +50,7 @@ func CreateSigningKey() (*system.SecretResource, error) {
 		return res, errors.Wrap(err, "failed to generate rsa key")
 	}
 	res.Spec = &system_proto.Secret{
-		Data: &wrapperspb.BytesValue{
-			Value: x509.MarshalPKCS1PrivateKey(key),
-		},
+		Data: util_proto.Bytes(x509.MarshalPKCS1PrivateKey(key)),
 	}
 	return res, nil
 }

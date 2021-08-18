@@ -7,7 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -24,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
 	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Global Sync", func() {
@@ -61,7 +61,7 @@ var _ = Describe("Global Sync", func() {
 
 		// Create Zone resources for each Kuma CP Zone
 		for i := 0; i < numOfZones; i++ {
-			zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: &wrapperspb.BoolValue{Value: true}}}
+			zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: util_proto.Bool(true)}}
 			err := globalStore.Create(context.Background(), zone, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		}

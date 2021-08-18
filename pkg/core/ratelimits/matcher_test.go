@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/core/ratelimits"
@@ -19,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Match", func() {
@@ -48,9 +48,7 @@ var _ = Describe("Match", func() {
 				Conf: &mesh_proto.RateLimit_Conf{
 					Http: &mesh_proto.RateLimit_Conf_Http{
 						Requests: 100,
-						Interval: &durationpb.Duration{
-							Seconds: 3,
-						},
+						Interval: util_proto.Duration(time.Second * 3),
 					},
 				},
 			},

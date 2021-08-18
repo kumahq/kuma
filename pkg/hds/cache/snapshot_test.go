@@ -7,9 +7,9 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/kumahq/kuma/pkg/hds/cache"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Snapshot", func() {
@@ -62,7 +62,7 @@ var _ = Describe("Snapshot", func() {
 		It("should return HealthCheckSpecifier", func() {
 			// given
 			hcs := &envoy_service_health_v3.HealthCheckSpecifier{
-				Interval: durationpb.New(12 * time.Second),
+				Interval: util_proto.Duration(12 * time.Second),
 				ClusterHealthChecks: []*envoy_service_health_v3.ClusterHealthCheck{
 					{ClusterName: "localhost:80"},
 					{ClusterName: "localhost:9080"},
@@ -79,7 +79,7 @@ var _ = Describe("Snapshot", func() {
 		It("should return `nil` for unsupported resource types", func() {
 			// given
 			hcs := &envoy_service_health_v3.HealthCheckSpecifier{
-				Interval: durationpb.New(12 * time.Second),
+				Interval: util_proto.Duration(12 * time.Second),
 				ClusterHealthChecks: []*envoy_service_health_v3.ClusterHealthCheck{
 					{ClusterName: "localhost:80"},
 					{ClusterName: "localhost:9080"},
@@ -103,7 +103,7 @@ var _ = Describe("Snapshot", func() {
 		It("should return proper version for a supported resource type", func() {
 			// given
 			hcs := &envoy_service_health_v3.HealthCheckSpecifier{
-				Interval: durationpb.New(12 * time.Second),
+				Interval: util_proto.Duration(12 * time.Second),
 				ClusterHealthChecks: []*envoy_service_health_v3.ClusterHealthCheck{
 					{ClusterName: "localhost:80"},
 					{ClusterName: "localhost:9080"},
@@ -118,7 +118,7 @@ var _ = Describe("Snapshot", func() {
 		It("should return an empty string for unsupported resource type", func() {
 			// given
 			hcs := &envoy_service_health_v3.HealthCheckSpecifier{
-				Interval: durationpb.New(12 * time.Second),
+				Interval: util_proto.Duration(12 * time.Second),
 				ClusterHealthChecks: []*envoy_service_health_v3.ClusterHealthCheck{
 					{ClusterName: "localhost:80"},
 					{ClusterName: "localhost:9080"},
@@ -144,7 +144,7 @@ var _ = Describe("Snapshot", func() {
 		It("should return a new Snapshot if version has changed", func() {
 			// given
 			hcs := &envoy_service_health_v3.HealthCheckSpecifier{
-				Interval: durationpb.New(12 * time.Second),
+				Interval: util_proto.Duration(12 * time.Second),
 				ClusterHealthChecks: []*envoy_service_health_v3.ClusterHealthCheck{
 					{ClusterName: "localhost:80"},
 					{ClusterName: "localhost:9080"},
@@ -162,7 +162,7 @@ var _ = Describe("Snapshot", func() {
 		It("should return the same Snapshot if version has not changed", func() {
 			// given
 			hcs := &envoy_service_health_v3.HealthCheckSpecifier{
-				Interval: durationpb.New(12 * time.Second),
+				Interval: util_proto.Duration(12 * time.Second),
 				ClusterHealthChecks: []*envoy_service_health_v3.ClusterHealthCheck{
 					{ClusterName: "localhost:80"},
 					{ClusterName: "localhost:9080"},
@@ -180,7 +180,7 @@ var _ = Describe("Snapshot", func() {
 		It("should return the same Snapshot if resource type is not supported", func() {
 			// given
 			hcs := &envoy_service_health_v3.HealthCheckSpecifier{
-				Interval: durationpb.New(12 * time.Second),
+				Interval: util_proto.Duration(12 * time.Second),
 				ClusterHealthChecks: []*envoy_service_health_v3.ClusterHealthCheck{
 					{ClusterName: "localhost:80"},
 					{ClusterName: "localhost:9080"},

@@ -21,6 +21,11 @@ func (d *DataplaneResource) Validate() error {
 
 	net := validators.RootedAt("networking")
 
+	if d.Spec.GetNetworking() == nil {
+		err.AddViolationAt(net, "must be defined")
+		return err.OrNil()
+	}
+
 	switch {
 	case d.Spec.IsIngress():
 		err.Add(validateIngressNetworking(d.Spec.GetNetworking()))

@@ -53,6 +53,7 @@ var HelmSubChartPrefix = ""
 var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
 var KumaGlobalZoneSyncServiceName = "kuma-global-zone-sync"
+var DefaultTracingNamespace = "kuma-tracing"
 
 var CNIApp = "kuma-cni"
 var CNINamespace = "kube-system"

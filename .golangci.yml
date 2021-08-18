@@ -15,6 +15,9 @@ run:
     - pkg/xds/server/server.go # excluded to keep as close to original file from Envoy repository
     - pkg/xds/server/server_test.go # excluded to keep as close to original file from Envoy repository
   modules-download-mode: readonly
+  skip-dirs-use-default: false # The default skip omits "builtin" directories, which we have.
+  skip-dirs:
+  - (^|/)vendored($|/)
 
 linters-settings:
   gocritic:
@@ -28,6 +31,8 @@ linters-settings:
       alias: core_mesh
     - pkg: github.com/kumahq/kuma/api/mesh/v1alpha1
       alias: mesh_proto
+    - pkg: github.com/kumahq/kuma/pkg/util/proto
+      alias: util_proto
 
 issues:
   fix: true
@@ -56,4 +61,3 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: package sigs.k8s.io/controller-runtime/pkg/client/fake is deprecated" # https://github.com/kumahq/kuma/issues/2460
-
