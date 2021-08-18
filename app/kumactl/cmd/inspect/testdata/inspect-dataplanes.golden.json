@@ -167,7 +167,11 @@
           "certificateExpirationTime": "2020-05-08T08:28:22Z",
           "lastCertificateRegeneration": "2019-07-16T19:48:08Z",
           "certificateRegenerations": 10,
-          "backend": "ca-1"
+          "issuedBackend": "ca-1",
+          "supportedBackends": [
+            "ca-1",
+            "ca-2"
+          ]
         }
       }
     },

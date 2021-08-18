@@ -283,7 +283,10 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			KumaDp: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 			Envoy:  map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 		},
-		MTLSBackends: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
+		MTLS: &mesh_proto.MeshInsight_MTLS{
+			IssuedBackends:    map[string]*mesh_proto.MeshInsight_DataplaneStat{},
+			SupportedBackends: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
+		},
 	}
 
 	dataplanes := &core_mesh.DataplaneResourceList{}
@@ -327,7 +330,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 
 		updateTotal(kumaDpVersion, insight.DpVersions.KumaDp)
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
-		updateMTLSBackend(dpInsight.GetMTLS(), status, insight.MTLSBackends)
+		updateMTLS(dpInsight.GetMTLS(), status, insight.MTLS)
 	}
 
 	for _, resDesc := range r.registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.Not(model.Named(core_mesh.DataplaneType, core_mesh.DataplaneInsightType))) {
@@ -364,32 +367,44 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	return nil
 }
 
-func updateMTLSBackend(
-	mtlsInsight *mesh_proto.DataplaneInsight_MTLS,
-	status core_mesh.Status,
-	stats map[string]*mesh_proto.MeshInsight_DataplaneStat,
-) {
+func updateMTLS(mtlsInsight *mesh_proto.DataplaneInsight_MTLS, status core_mesh.Status, stats *mesh_proto.MeshInsight_MTLS) {
 	if mtlsInsight == nil {
 		return
 	}
 
-	backend := mtlsInsight.GetBackend()
+	backend := mtlsInsight.GetIssuedBackend()
 	if backend == "" {
 		backend = "unknown" // backwards compatibility for Kuma 1.2.x
 	}
-	if stat := stats[backend]; stat == nil {
-		stats[backend] = &mesh_proto.MeshInsight_DataplaneStat{}
+	if stat := stats.IssuedBackends[backend]; stat == nil {
+		stats.IssuedBackends[backend] = &mesh_proto.MeshInsight_DataplaneStat{}
 	}
 
 	switch status {
 	case core_mesh.Online:
-		stats[backend].Online++
+		stats.IssuedBackends[backend].Online++
 	case core_mesh.PartiallyDegraded:
-		stats[backend].PartiallyDegraded++
+		stats.IssuedBackends[backend].PartiallyDegraded++
 	case core_mesh.Offline:
-		stats[backend].Offline++
+		stats.IssuedBackends[backend].Offline++
 	}
-	stats[backend].Total++
+	stats.IssuedBackends[backend].Total++
+
+	for _, backend := range mtlsInsight.GetSupportedBackends() {
+		if stat := stats.SupportedBackends[backend]; stat == nil {
+			stats.SupportedBackends[backend] = &mesh_proto.MeshInsight_DataplaneStat{}
+		}
+
+		switch status {
+		case core_mesh.Online:
+			stats.SupportedBackends[backend].Online++
+		case core_mesh.PartiallyDegraded:
+			stats.SupportedBackends[backend].PartiallyDegraded++
+		case core_mesh.Offline:
+			stats.SupportedBackends[backend].Offline++
+		}
+		stats.SupportedBackends[backend].Total++
+	}
 }
 
 func updateTotal(version string, dpStats map[string]*mesh_proto.MeshInsight_DataplaneStat) {

@@ -185,7 +185,8 @@ var _ = Describe("Insight Persistence", func() {
 
 		dp1 := core_mesh.NewDataplaneInsightResource()
 		dp1.Spec.MTLS = &mesh_proto.DataplaneInsight_MTLS{
-			Backend: "ca-1",
+			IssuedBackend:     "ca-1",
+			SupportedBackends: []string{"ca-1"},
 		}
 		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
@@ -196,7 +197,8 @@ var _ = Describe("Insight Persistence", func() {
 
 		dp2 := core_mesh.NewDataplaneInsightResource()
 		dp2.Spec.MTLS = &mesh_proto.DataplaneInsight_MTLS{
-			Backend: "ca-2",
+			IssuedBackend:     "ca-2",
+			SupportedBackends: []string{"ca-1", "ca-2"},
 		}
 		dp2.Spec.Subscriptions = append(dp2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 			ConnectTime: &timestamppb.Timestamp{
@@ -218,11 +220,18 @@ var _ = Describe("Insight Persistence", func() {
 		}, "10s", "100ms").Should(BeNil())
 
 		// then
-		Expect(meshInsight.Spec.MTLSBackends).To(HaveLen(2))
-		Expect(meshInsight.Spec.MTLSBackends["ca-1"].Total).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.MTLSBackends["ca-1"].Offline).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.MTLSBackends["ca-2"].Total).To(Equal(uint32(1)))
-		Expect(meshInsight.Spec.MTLSBackends["ca-2"].Online).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.IssuedBackends).To(HaveLen(2))
+		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-1"].Total).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-1"].Offline).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-2"].Total).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-2"].Online).To(Equal(uint32(1)))
+
+		Expect(meshInsight.Spec.MTLS.SupportedBackends).To(HaveLen(2))
+		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Total).To(Equal(uint32(2)))
+		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Offline).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Online).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-2"].Total).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-2"].Online).To(Equal(uint32(1)))
 	})
 
 	It("should not count dataplane as a policy", func() {

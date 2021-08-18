@@ -101,7 +101,8 @@ var _ = Describe("DataplaneInsightSink", func() {
 `))
 
 			// and
-			Expect(latestOperation.DataplaneInsight_MTLS.Backend).To(Equal(xds.TestSecretsInfo.MTLS.EnabledBackend))
+			Expect(latestOperation.DataplaneInsight_MTLS.IssuedBackend).To(Equal(xds.TestSecretsInfo.IssuedBackend))
+			Expect(latestOperation.DataplaneInsight_MTLS.SupportedBackends).To(Equal(xds.TestSecretsInfo.SupportedBackends))
 
 			// when - time tick after changes
 			subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(t0.Add(2 * time.Second))

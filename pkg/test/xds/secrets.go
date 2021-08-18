@@ -22,6 +22,8 @@ var TestSecretsInfo = &secrets.Info{
 		EnabledBackend: "ca-1",
 		Backends:       nil,
 	},
+	IssuedBackend:     "ca-1",
+	SupportedBackends: []string{"ca-1"},
 }
 
 type TestSecrets struct {

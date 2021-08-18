@@ -1,6 +1,7 @@
 package callbacks
 
 import (
+	"reflect"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -157,7 +158,18 @@ func (s *dataplaneInsightStore) Upsert(dataplaneType core_model.ResourceType, da
 			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
 				insight.Spec.MTLS = nil
 			} else if insight.Spec.MTLS == nil || insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration {
-				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.MTLS.EnabledBackend); err != nil {
+				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.MTLS.EnabledBackend, nil); err != nil {
+					return err
+				}
+			}
+
+			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
+				insight.Spec.MTLS = nil
+			} else if insight.Spec.MTLS == nil ||
+				insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration ||
+				insight.Spec.MTLS.IssuedBackend != secretsInfo.IssuedBackend ||
+				!reflect.DeepEqual(insight.Spec.MTLS.SupportedBackends, secretsInfo.SupportedBackends) {
+				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.IssuedBackend, secretsInfo.SupportedBackends); err != nil {
 					return err
 				}
 			}

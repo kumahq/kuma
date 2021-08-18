@@ -38,7 +38,10 @@ message DataplaneInsight {
     uint32 certificate_regenerations = 3;
 
     // Backend that was used to generate current certificate
-    string backend = 4;
+    string issuedBackend = 4;
+
+    // Supported backends (CA).
+    repeated string supportedBackends = 5;
   }
 }
 

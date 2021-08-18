@@ -45,6 +45,13 @@ message MeshInsight {
   }
   DpVersions dpVersions = 4;
 
-  // Connected Dataplanes grouped by mTLS backends
-  map<string, DataplaneStat> mTLSBackends = 5;
+  message MTLS {
+    // Dataplanes grouped by issued backends.
+    map<string, DataplaneStat> issuedBackends = 1;
+    // Dataplanes grouped by supported backends.
+    map<string, DataplaneStat> supportedBackends = 2;
+  }
+
+  // mTLS statistics
+  MTLS mTLS = 5;
 }

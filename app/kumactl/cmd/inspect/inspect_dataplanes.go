@@ -77,6 +77,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 			"CERT EXPIRATION",
 			"CERT REGENERATIONS",
 			"CERT BACKEND",
+			"SUPPORTED CERT BACKENDS",
 			"KUMA-DP VERSION",
 			"ENVOY VERSION",
 			"NOTES",
@@ -113,12 +114,13 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 				}
 				dataplaneInsight.GetMTLS().GetCertificateExpirationTime()
 				certRegenerations := strconv.Itoa(int(dataplaneInsight.GetMTLS().GetCertificateRegenerations()))
-				certBackend := dataplaneInsight.GetMTLS().GetBackend()
+				certBackend := dataplaneInsight.GetMTLS().GetIssuedBackend()
 				if dataplaneInsight.GetMTLS() == nil {
 					certBackend = "-"
-				} else if dataplaneInsight.GetMTLS().Backend == "" {
+				} else if dataplaneInsight.GetMTLS().GetIssuedBackend() == "" {
 					certBackend = "unknown" // backwards compatibility with Kuma 1.2.x
 				}
+				supportedBackend := strings.Join(dataplaneInsight.GetMTLS().GetSupportedBackends(), ",")
 
 				var kumaDpVersion string
 				var envoyVersion string
@@ -144,6 +146,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 					table.Date(certExpiration),           // CERT EXPIRATION
 					certRegenerations,                    // CERT REGENERATIONS
 					certBackend,                          // CERT BACKEND
+					supportedBackend,                     // SUPPORTED CERT BACKENDS
 					kumaDpVersion,                        // KUMA-DP VERSION
 					envoyVersion,                         // ENVOY VERSION
 					strings.Join(errs, ";"),              // NOTES
