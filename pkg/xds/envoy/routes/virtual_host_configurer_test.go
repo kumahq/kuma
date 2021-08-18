@@ -12,9 +12,10 @@ import (
 
 var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 
+	type Opt = VirtualHostBuilderOpt
 	type testCase struct {
-		virtualHostName string
-		expected        string
+		opts     []Opt
+		expected string
 	}
 
 	Context("V3", func() {
@@ -23,7 +24,7 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 				// when
 				routeConfiguration, err := NewRouteConfigurationBuilder(envoy.APIV3).
 					Configure(VirtualHost(NewVirtualHostBuilder(envoy.APIV3).
-						Configure(CommonVirtualHost(given.virtualHostName)))).
+						Configure(given.opts...))).
 					Build()
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -36,7 +37,32 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("basic virtual host", testCase{
-				virtualHostName: "backend",
+				opts: []Opt{CommonVirtualHost("backend")},
+				expected: `
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend
+`,
+			}),
+			Entry("virtual host with domains", testCase{
+				opts: []Opt{
+					CommonVirtualHost("backend"),
+					DomainNames("foo.example.com", "bar.example.com"),
+				},
+				expected: `
+            virtualHosts:
+            - domains:
+              - foo.example.com
+              - bar.example.com
+              name: backend
+`,
+			}),
+			Entry("virtual host with empty domains", testCase{
+				opts: []Opt{
+					CommonVirtualHost("backend"),
+					DomainNames(),
+				},
 				expected: `
             virtualHosts:
             - domains:

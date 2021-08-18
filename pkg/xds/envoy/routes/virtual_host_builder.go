@@ -68,7 +68,9 @@ func (c *VirtualHostBuilderConfig) AddV3(configurer v3.VirtualHostConfigurer) {
 type VirtualHostBuilderOptFunc func(config *VirtualHostBuilderConfig)
 
 func (f VirtualHostBuilderOptFunc) ApplyTo(config *VirtualHostBuilderConfig) {
-	f(config)
+	if f != nil {
+		f(config)
+	}
 }
 
 // AddVirtualHostConfigurer production an option that adds the given
