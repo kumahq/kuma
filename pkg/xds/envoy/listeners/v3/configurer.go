@@ -2,6 +2,7 @@ package v3
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 )
 
 // ListenerConfigurer is responsible for configuring a single aspect of the entire Envoy listener,
@@ -16,6 +17,34 @@ type ListenerConfigurer interface {
 type FilterChainConfigurer interface {
 	// Configure configures a single aspect on a given Envoy filter chain.
 	Configure(filterChain *envoy_listener.FilterChain) error
+}
+
+// HttpConnectionManagerConfigureFunc adapts a HttpConnectionManager
+// configuration function to the FilterChainConfigurer interface.
+type HttpConnectionManagerConfigureFunc func(hcm *envoy_hcm.HttpConnectionManager) error
+
+func (f HttpConnectionManagerConfigureFunc) Configure(filterChain *envoy_listener.FilterChain) error {
+	if f != nil {
+		return UpdateHTTPConnectionManager(filterChain, f)
+	}
+
+	return nil
+}
+
+// HttpConnectionManagerMustConfigureFunc adapts a HttpConnectionManager
+// configuration function that never fails to the FilterChainConfigurer
+// interface.
+type HttpConnectionManagerMustConfigureFunc func(hcm *envoy_hcm.HttpConnectionManager)
+
+func (f HttpConnectionManagerMustConfigureFunc) Configure(filterChain *envoy_listener.FilterChain) error {
+	if f != nil {
+		return UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+			f(hcm)
+			return nil
+		})
+	}
+
+	return nil
 }
 
 // ListenerConfigureFunc adapts a configuration function to the

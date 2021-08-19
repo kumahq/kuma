@@ -35,10 +35,10 @@ type DataplaneProxyBuilder struct {
 	RateLimitMatcher      ratelimits.RateLimitMatcher
 
 	Zone       string
-	apiVersion envoy.APIVersion
+	APIVersion envoy.APIVersion
 }
 
-func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, meshCtx *xds_context.MeshContext) (*xds.Proxy, error) {
+func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *xds_context.Context) (*xds.Proxy, error) {
 	ctx := context.Background()
 
 	dp, err := p.resolveDataplane(ctx, key)
@@ -46,19 +46,19 @@ func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, meshCtx *xds_c
 		return nil, err
 	}
 
-	routing, destinations, err := p.resolveRouting(ctx, meshCtx, dp)
+	routing, destinations, err := p.resolveRouting(ctx, &envoyContext.Mesh, dp)
 	if err != nil {
 		return nil, err
 	}
 
-	matchedPolicies, err := p.matchPolicies(ctx, meshCtx, dp, destinations)
+	matchedPolicies, err := p.matchPolicies(ctx, &envoyContext.Mesh, dp, destinations)
 	if err != nil {
 		return nil, err
 	}
 
 	proxy := &xds.Proxy{
 		Id:         xds.FromResourceKey(key),
-		APIVersion: p.apiVersion,
+		APIVersion: p.APIVersion,
 		Dataplane:  dp,
 		Metadata:   p.MetadataTracker.Metadata(key),
 		Routing:    *routing,
