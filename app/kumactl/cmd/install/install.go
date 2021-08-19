@@ -22,10 +22,7 @@ func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newInstallLogging(pctx))
 	cmd.AddCommand(newInstallDemoCmd(&pctx.InstallDemoContext))
 	cmd.AddCommand(newInstallGatewayCmd(pctx))
-
-	for _, subcommand := range additionalSubcommands {
-		cmd.AddCommand(subcommand())
-	}
+	cmd.AddCommand(newInstallTransparentProxy())
 
 	return cmd
 }

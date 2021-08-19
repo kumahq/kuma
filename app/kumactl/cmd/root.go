@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd/get"
 	"github.com/kumahq/kuma/app/kumactl/cmd/inspect"
 	"github.com/kumahq/kuma/app/kumactl/cmd/install"
+	"github.com/kumahq/kuma/app/kumactl/cmd/uninstall"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	kumactl_config "github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_errors "github.com/kumahq/kuma/app/kumactl/pkg/errors"
@@ -105,11 +106,8 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(get.NewGetCmd(root))
 	cmd.AddCommand(inspect.NewInspectCmd(root))
 	cmd.AddCommand(install.NewInstallCmd(root))
+	cmd.AddCommand(uninstall.NewUninstallCmd())
 	cmd.AddCommand(version.NewVersionCmd())
-
-	for _, subcommand := range additionalSubcommands {
-		cmd.AddCommand(subcommand(root))
-	}
 
 	kumactl_cmd.WrapRunnables(cmd, kumactl_errors.FormatErrorWrapper)
 	return cmd
