@@ -2,30 +2,27 @@ package server_test
 
 import (
 	"context"
+	"reflect"
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
-	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
-
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/proto"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/kds"
-	kds_verifier "github.com/kumahq/kuma/pkg/test/kds/verifier"
-
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
+	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
+	kds_verifier "github.com/kumahq/kuma/pkg/test/kds/verifier"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var (
@@ -47,14 +44,14 @@ var _ = Describe("KDS Server", func() {
 
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		stream := kds_setup.StartServer(s, wg, "test-cluster", kds.SupportedTypes, reconcile.Any)
+		stream := kds_setup.StartServer(s, wg, "test-cluster", registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any)
 
 		tc = &kds_verifier.TestContextImpl{
 			ResourceStore:      s,
 			MockStream:         stream,
 			Wg:                 wg,
-			Responses:          map[string]*v2.DiscoveryResponse{},
-			LastACKedResponses: map[string]*v2.DiscoveryResponse{},
+			Responses:          map[string]*envoy_sd.DiscoveryResponse{},
+			LastACKedResponses: map[string]*envoy_sd.DiscoveryResponse{},
 		}
 	})
 
@@ -83,8 +80,15 @@ var _ = Describe("KDS Server", func() {
 			kds_samples.ZoneIngress,
 			kds_samples.ZoneIngressInsight,
 			kds_samples.Config,
+			kds_samples.Gateway,
 		}).
-			To(HaveLen(len(kds.SupportedTypes)))
+			To(WithTransform(func(messages []proto.Message) []string {
+				var res []string
+				for _, m := range messages {
+					res = append(res, reflect.TypeOf(m).String())
+				}
+				return res
+			}, HaveLen(len(registry.Global().ObjectTypes(model.HasKdsEnabled())))))
 
 		vrf := kds_verifier.New().
 			// NOTE: The resources all have to be created before any DiscoveryRequests are made.

@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -18,6 +17,7 @@ var IgnoredTypes = map[model.ResourceType]bool{
 	system.GlobalSecretType:     true,
 	system.ConfigType:           true,
 	mesh.ZoneIngressInsightType: true, // uses DataplaneInsight under the hood
+	mesh.GatewayType:            true, // Gateway is only in Universal.
 }
 
 var _ = Describe("Consistent Kind Types", func() {
@@ -35,7 +35,7 @@ var _ = Describe("Consistent Kind Types", func() {
 			obj, err := k8sTypes.NewObject(res.GetSpec())
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(obj.GetObjectKind().GroupVersionKind().Kind).To(Equal(string(res.GetType())))
+			Expect(obj.GetObjectKind().GroupVersionKind().Kind).To(Equal(string(res.Descriptor().Name)))
 		}
 	})
 
@@ -43,17 +43,17 @@ var _ = Describe("Consistent Kind Types", func() {
 		types := core_registry.Global()
 		k8sTypes := k8s_registry.Global()
 
-		for _, typ := range types.ListTypes() {
-			if IgnoredTypes[typ] {
+		for _, desc := range types.ObjectDescriptors() {
+			if IgnoredTypes[desc.Name] {
 				continue
 			}
 
-			res, err := types.NewObject(typ)
+			res, err := types.NewObject(desc.Name)
 			Expect(err).ToNot(HaveOccurred())
 			obj, err := k8sTypes.NewObject(res.GetSpec())
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(obj.GetObjectKind().GroupVersionKind().Kind).To(Equal(string(res.GetType())))
+			Expect(obj.GetObjectKind().GroupVersionKind().Kind).To(Equal(string(res.Descriptor().Name)))
 		}
 	})
 })

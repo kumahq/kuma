@@ -3,11 +3,9 @@ package logs_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestMatcher(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Log Matcher Suite")
+	test.RunSpecs(t, "Log Matcher Suite")
 }

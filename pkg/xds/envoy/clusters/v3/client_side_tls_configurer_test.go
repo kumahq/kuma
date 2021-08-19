@@ -6,15 +6,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
 
@@ -32,7 +29,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
 				Configure(clusters.ClientSideTLS(given.endpoints)).
-				Configure(clusters.Timeout(mesh_core.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
+				Configure(clusters.Timeout(core_mesh.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: util_proto.Duration(5 * time.Second)})).
 				Build()
 
 			// then
@@ -71,7 +68,38 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
               commonTlsContext: {}
-              sni: httpbin.org:3000
+              sni: httpbin.org
+        type: EDS
+`}),
+		Entry("cluster with mTLS and empty SNI because target is an IP address", testCase{
+			clusterName: "testCluster",
+			endpoints: []xds.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   3000,
+					Tags:   nil,
+					Weight: 100,
+					ExternalService: &xds.ExternalService{
+						TLSEnabled: true,
+					},
+				},
+			},
+
+			expected: `
+        connectTimeout: 5s
+        edsClusterConfig:
+          edsConfig:
+            ads: {}
+            resourceApiVersion: V3
+        name: testCluster
+        transportSocketMatches:
+        - match: {}
+          name: 192.168.0.1
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+              commonTlsContext: {}
         type: EDS
 `}),
 		Entry("cluster with mTLS and certs", testCase{
@@ -88,6 +116,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 						ClientCert:         []byte("clientcert"),
 						ClientKey:          []byte("clientkey"),
 						AllowRenegotiation: true,
+						ServerName:         "custom",
 					},
 				},
 			},
@@ -118,7 +147,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
                       - exact: httpbin.org
                       trustedCa:
                         inlineBytes: Y2FjZXJ0
-                  sni: httpbin.org:3000
+                  sni: custom
             type: EDS
 `}),
 	)

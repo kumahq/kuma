@@ -7,29 +7,24 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	utilpointer "k8s.io/utils/pointer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
 
 var _ = Describe("PodToDataplane(..)", func() {
@@ -140,7 +135,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, nil, vips.List{})
+			err = converter.PodToDataplane(dataplane, pod, services, otherDataplanes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -337,7 +332,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, nil, vips.List{})
+				err = converter.PodToDataplane(dataplane, pod, services, nil)
 
 				// then
 				Expect(err).To(HaveOccurred())

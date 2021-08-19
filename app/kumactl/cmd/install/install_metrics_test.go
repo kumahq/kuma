@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/util/test"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -41,6 +42,7 @@ var _ = Describe("kumactl install metrics", func() {
 		func(given testCase) {
 			// given
 			rootCtx := kumactl_cmd.DefaultRootContext()
+			rootCtx.Runtime.NewAPIServerClient = test.GetMockNewAPIServerClient()
 			rootCtx.InstallMetricsContext.TemplateArgs.KumaPrometheusSdVersion = "0.0.1"
 			rootCmd := cmd.NewRootCmd(rootCtx)
 			rootCmd.SetArgs(append([]string{"install", "metrics"}, given.extraArgs...))

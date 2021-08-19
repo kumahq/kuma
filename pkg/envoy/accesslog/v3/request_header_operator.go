@@ -3,10 +3,9 @@ package v3
 import (
 	"fmt"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 )
 
 const (

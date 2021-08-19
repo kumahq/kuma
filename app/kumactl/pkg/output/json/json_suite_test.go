@@ -3,11 +3,9 @@ package json_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestJson(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Json Suite")
+	test.RunSpecs(t, "Json Suite")
 }

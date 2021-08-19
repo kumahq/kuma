@@ -8,10 +8,9 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -102,7 +101,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	}
 
 	iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
-	var listener envoy.NamedResource
+	var listener envoy_common.NamedResource
 	if secureMetrics(prometheusEndpoint, ctx.Mesh.Resource) {
 		listener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP)).
@@ -126,7 +125,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 						RewritePath: statsPath,
 					},
 				})).
-				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
+				Configure(envoy_listeners.ServerSideMTLS(ctx)).
 				Configure(envoy_listeners.NetworkRBAC(prometheusListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface])),
 			)).
 			Build()
@@ -156,6 +155,6 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	return resources, nil
 }
 
-func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, mesh *mesh_core.MeshResource) bool {
+func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, mesh *core_mesh.MeshResource) bool {
 	return !cfg.SkipMTLS.GetValue() && mesh.MTLSEnabled()
 }

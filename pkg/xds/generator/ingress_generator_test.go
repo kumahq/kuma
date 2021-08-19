@@ -6,17 +6,15 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -25,7 +23,7 @@ var _ = Describe("IngressGenerator", func() {
 		dataplane       string
 		expected        string
 		outboundTargets core_xds.EndpointMap
-		trafficRoutes   *mesh_core.TrafficRouteResourceList
+		trafficRoutes   *core_mesh.TrafficRouteResourceList
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -35,7 +33,7 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane := &mesh_proto.Dataplane{}
 			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
-			zoneIngress, err := mesh_core.NewZoneIngressResourceFromDataplane(&mesh_core.DataplaneResource{
+			zoneIngress, err := core_mesh.NewZoneIngressResourceFromDataplane(&core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Version: "1",
 				},
@@ -115,8 +113,8 @@ var _ = Describe("IngressGenerator", func() {
 					},
 				},
 			},
-			trafficRoutes: &mesh_core.TrafficRouteResourceList{
-				Items: []*mesh_core.TrafficRouteResource{
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -143,8 +141,8 @@ var _ = Describe("IngressGenerator", func() {
 `,
 			expected:        "02.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{},
-			trafficRoutes: &mesh_core.TrafficRouteResourceList{
-				Items: []*mesh_core.TrafficRouteResource{
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -207,8 +205,8 @@ var _ = Describe("IngressGenerator", func() {
 					},
 				},
 			},
-			trafficRoutes: &mesh_core.TrafficRouteResourceList{
-				Items: []*mesh_core.TrafficRouteResource{
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -233,18 +231,14 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 10,
-										},
+										Weight: util_proto.UInt32(10),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"version":             "v2",
 										},
 									},
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 90,
-										},
+										Weight: util_proto.UInt32(90),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"region":              "eu",
@@ -363,8 +357,8 @@ var _ = Describe("IngressGenerator", func() {
 					},
 				},
 			},
-			trafficRoutes: &mesh_core.TrafficRouteResourceList{
-				Items: []*mesh_core.TrafficRouteResource{
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -405,18 +399,14 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 10,
-										},
+										Weight: util_proto.UInt32(10),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"version":             "v2",
 										},
 									},
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 90,
-										},
+										Weight: util_proto.UInt32(90),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"region":              "eu",
@@ -437,9 +427,7 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 10,
-										},
+										Weight: util_proto.UInt32(10),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "frontend",
 											"region":              "eu",
@@ -447,9 +435,7 @@ var _ = Describe("IngressGenerator", func() {
 										},
 									},
 									{
-										Weight: &wrapperspb.UInt32Value{
-											Value: 90,
-										},
+										Weight: util_proto.UInt32(90),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "frontend",
 											"cloud":               "aks",
@@ -485,8 +471,8 @@ var _ = Describe("IngressGenerator", func() {
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
 				"backend": {},
 			},
-			trafficRoutes: &mesh_core.TrafficRouteResourceList{
-				Items: []*mesh_core.TrafficRouteResource{
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{

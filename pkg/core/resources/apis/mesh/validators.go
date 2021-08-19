@@ -10,11 +10,10 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 type SelectorValidatorFunc func(path validators.PathBuilder, selector map[string]string) validators.ValidationError
@@ -140,6 +139,47 @@ func ValidateThreshold(path validators.PathBuilder, threshold uint32) (err valid
 	return
 }
 
+// ValidatePort validates that port is a valid TCP or UDP port number.
+func ValidatePort(path validators.PathBuilder, port uint32) validators.ValidationError {
+	err := validators.ValidationError{}
+
+	if port == 0 || port > 65535 {
+		err.AddViolationAt(path, "port must be in the range [1, 65535]")
+	}
+
+	return err
+}
+
+const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
+
+var domainRegexp = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
+
+// ValidateHostname validates a gateway hostname field. A hostname may be one of
+//	- '*'
+//	- '*.domain.name'
+//	- 'domain.name'
+func ValidateHostname(path validators.PathBuilder, hostname string) validators.ValidationError {
+	if hostname == "*" {
+		return validators.ValidationError{}
+	}
+
+	err := validators.ValidationError{}
+
+	if strings.HasPrefix(hostname, "*.") {
+		if !domainRegexp.MatchString(strings.TrimPrefix(hostname, "*.")) {
+			err.AddViolationAt(path, "invalid wildcard domain")
+		}
+
+		return err
+	}
+
+	if !domainRegexp.MatchString(hostname) {
+		err.AddViolationAt(path, "invalid hostname")
+	}
+
+	return err
+}
+
 func AllowedValuesHint(values ...string) string {
 	options := strings.Join(values, ", ")
 	if len(values) == 0 {
@@ -213,4 +253,28 @@ func ValidateResourceYAMLPatch(msg proto.Message, resYAML string) error {
 		json = []byte(resYAML)
 	}
 	return (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(json), msg)
+}
+
+// SelectorKeyNotInSet returns a TagKeyValidatorFunc that checks the tag key
+// is not any one of the given names.
+func SelectorKeyNotInSet(keyName ...string) TagKeyValidatorFunc {
+	set := map[string]struct{}{}
+
+	for _, k := range keyName {
+		set[k] = struct{}{}
+	}
+
+	return TagKeyValidatorFunc(
+		func(path validators.PathBuilder, key string) validators.ValidationError {
+			err := validators.ValidationError{}
+
+			if _, ok := set[key]; ok {
+				err.AddViolationAt(
+					path.Key(key),
+					fmt.Sprintf("tag name must not be %q", key),
+				)
+			}
+
+			return err
+		})
 }

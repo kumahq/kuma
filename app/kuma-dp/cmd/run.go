@@ -71,14 +71,15 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 
 			proxyResource, err = readResource(cmd, &cfg.DataplaneRuntime)
 			if err != nil {
-				runLog.Error(err, "failed to read %s policy", cfg.Dataplane.ProxyType)
+				runLog.Error(err, "failed to read policy", "proxyType", cfg.Dataplane.ProxyType)
+
 				return err
 			}
 
 			if proxyResource != nil {
-				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.GetType() {
+				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.Descriptor().Name {
 					return errors.Errorf("invalid proxy resource type %q, expected %s",
-						proxyResource.GetType(), resType)
+						proxyResource.Descriptor().Name, resType)
 				}
 
 				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {

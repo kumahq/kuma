@@ -4,22 +4,19 @@ import (
 	"context"
 	"time"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-
-	"github.com/go-logr/logr"
-
 	"github.com/kumahq/kuma/pkg/core"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	mads_reconcile "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
 
 func NewSnapshotGenerator(rm core_manager.ReadOnlyResourceManager) util_xds_v3.SnapshotGenerator {

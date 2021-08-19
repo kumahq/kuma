@@ -15,6 +15,9 @@ message ZoneIngressInsight {
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).kds.send_to_global = true;
+  option (kuma.mesh.resource).ws.name = "zone-ingress-insight";
+  option (kuma.mesh.resource).ws.read_only = true;
 
   // List of ADS subscriptions created by a given Zone Kuma CP.
   repeated DiscoverySubscription subscriptions = 1;

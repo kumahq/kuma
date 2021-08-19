@@ -5,17 +5,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
-
-	kuma_mesh "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	util_envoy "github.com/kumahq/kuma/pkg/util/envoy"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
+	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
 type ProxyTemplateGenerator struct {
-	ProxyTemplate *kuma_mesh.ProxyTemplate
+	ProxyTemplate *mesh_proto.ProxyTemplate
 }
 
 func (g *ProxyTemplateGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
@@ -44,7 +44,7 @@ func (g *ProxyTemplateGenerator) Generate(ctx xds_context.Context, proxy *model.
 const OriginProxyTemplateRaw = "proxy-template-raw"
 
 type ProxyTemplateRawSource struct {
-	Resources []*kuma_mesh.ProxyTemplateRawResource
+	Resources []*mesh_proto.ProxyTemplateRawResource
 }
 
 func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
@@ -64,31 +64,6 @@ func (s *ProxyTemplateRawSource) Generate(_ xds_context.Context, proxy *model.Pr
 	return resources, nil
 }
 
-var predefinedProfiles = make(map[string]ResourceGenerator)
-
-func NewDefaultProxyProfile() ResourceGenerator {
-	return CompositeResourceGenerator{
-		AdminProxyGenerator{},
-		PrometheusEndpointGenerator{},
-		TransparentProxyGenerator{},
-		InboundProxyGenerator{},
-		OutboundProxyGenerator{},
-		DirectAccessProxyGenerator{},
-		TracingProxyGenerator{},
-		ProbeProxyGenerator{},
-		DNSGenerator{},
-	}
-}
-
-func init() {
-	RegisterProfile(mesh_core.ProfileDefaultProxy, NewDefaultProxyProfile())
-	RegisterProfile(IngressProxy, CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
-}
-
-func RegisterProfile(profileName string, generator ResourceGenerator) {
-	predefinedProfiles[profileName] = generator
-}
-
 type ProxyTemplateProfileSource struct {
 	ProfileName string
 }
@@ -99,4 +74,41 @@ func (s *ProxyTemplateProfileSource) Generate(ctx xds_context.Context, proxy *mo
 		return nil, fmt.Errorf("profile{name=%q}: unknown profile", s.ProfileName)
 	}
 	return g.Generate(ctx, proxy)
+}
+
+func NewDefaultProxyProfile() ResourceGenerator {
+	return CompositeResourceGenerator{
+		AdminProxyGenerator{},
+		PrometheusEndpointGenerator{},
+		SecretsProxyGenerator{},
+		TransparentProxyGenerator{},
+		InboundProxyGenerator{},
+		OutboundProxyGenerator{},
+		DirectAccessProxyGenerator{},
+		TracingProxyGenerator{},
+		ProbeProxyGenerator{},
+		DNSGenerator{},
+	}
+}
+
+// DefaultTemplateResolver is the default template resolver that xDS
+// generators fall back to if they are otherwise unable to determine which
+// ProxyTemplate resource to apply. Plugins may modify this variable.
+var DefaultTemplateResolver template.ProxyTemplateResolver = &template.StaticProxyTemplateResolver{
+	Template: &mesh_proto.ProxyTemplate{
+		Conf: &mesh_proto.ProxyTemplate_Conf{
+			Imports: []string{core_mesh.ProfileDefaultProxy},
+		},
+	},
+}
+
+var predefinedProfiles = make(map[string]ResourceGenerator)
+
+func init() {
+	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
+	RegisterProfile(IngressProxy, CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
+}
+
+func RegisterProfile(profileName string, generator ResourceGenerator) {
+	predefinedProfiles[profileName] = generator
 }

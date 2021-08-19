@@ -53,13 +53,13 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 	opts := store.NewCreateOptions(fs...)
 
 	var owner model.Resource
-	if resource.Scope() == model.ScopeMesh {
+	if resource.Descriptor().Scope == model.ScopeMesh {
 		owner = core_mesh.NewMeshResource()
 		if err := r.Store.Get(ctx, owner, store.GetByKey(opts.Mesh, model.NoMesh)); err != nil {
 			return MeshNotFound(opts.Mesh)
 		}
 	}
-	if resource.GetType() == core_mesh.MeshInsightType {
+	if resource.Descriptor().Name == core_mesh.MeshInsightType {
 		owner = core_mesh.NewMeshResource()
 		if err := r.Store.Get(ctx, owner, store.GetByKey(opts.Name, model.NoMesh)); err != nil {
 			return MeshNotFound(opts.Name)
@@ -123,7 +123,7 @@ func NewUpsertOpts(fs ...UpsertFunc) UpsertOpts {
 	return opts
 }
 
-func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource), fs ...UpsertFunc) error {
+func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource) error, fs ...UpsertFunc) error {
 	upsert := func() error {
 		create := false
 		err := manager.Get(context.Background(), resource, store.GetBy(key))
@@ -134,7 +134,9 @@ func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resou
 				return err
 			}
 		}
-		fn(resource)
+		if err := fn(resource); err != nil {
+			return err
+		}
 		if create {
 			return manager.Create(context.Background(), resource, store.CreateBy(key))
 		} else {

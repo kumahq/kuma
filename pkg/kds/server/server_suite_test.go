@@ -3,11 +3,9 @@ package server_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestKDS(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "KDS Suite")
+	test.RunSpecs(t, "KDS Suite")
 }

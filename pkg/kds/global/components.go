@@ -5,68 +5,35 @@ import (
 	"fmt"
 	"strings"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-
 	"github.com/pkg/errors"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/kds/mux"
-	kds_server "github.com/kumahq/kuma/pkg/kds/server"
-
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/client"
+	"github.com/kumahq/kuma/pkg/kds/mux"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var (
 	kdsGlobalLog = core.Log.WithName("kds-global")
-
-	// ProvidedTypes lists the resource types provided by the Global
-	// CP to the Zone CP.
-	ProvidedTypes = []model.ResourceType{
-		core_mesh.CircuitBreakerType,
-		core_mesh.DataplaneType,
-		core_mesh.ExternalServiceType,
-		core_mesh.FaultInjectionType,
-		core_mesh.HealthCheckType,
-		core_mesh.MeshType,
-		core_mesh.ProxyTemplateType,
-		core_mesh.RateLimitType,
-		core_mesh.RetryType,
-		core_mesh.TimeoutType,
-		core_mesh.TrafficLogType,
-		core_mesh.TrafficPermissionType,
-		core_mesh.TrafficRouteType,
-		core_mesh.TrafficTraceType,
-		core_mesh.ZoneIngressType,
-		system.ConfigType,
-		system.GlobalSecretType,
-		system.SecretType,
-	}
-
-	// ConsumedTypes lists the resource types consumed from the Zone
-	// CP by the Global CP.
-	ConsumedTypes = []model.ResourceType{
-		core_mesh.DataplaneInsightType,
-		core_mesh.DataplaneType,
-		core_mesh.ZoneIngressInsightType,
-		core_mesh.ZoneIngressType,
-	}
 )
 
 func Setup(rt runtime.Runtime) (err error) {
-	kdsServer, err := kds_server.New(kdsGlobalLog, rt, ProvidedTypes,
+	reg := registry.Global()
+	kdsServer, err := kds_server.New(kdsGlobalLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal)),
 		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
 		rt.KDSContext().GlobalProvidedFilter, true)
 	if err != nil {
@@ -87,7 +54,7 @@ func Setup(rt runtime.Runtime) (err error) {
 			log.Error(err, "Global CP could not create a zone")
 			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry
 		}
-		sink := client.NewKDSSink(log, ConsumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
+		sink := client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)), kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
 		go func() {
 			if err := sink.Start(session.Done()); err != nil {
 				log.Error(err, "KDSSink finished with an error")
@@ -107,7 +74,7 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 		kdsGlobalLog.Info("creating Zone", "name", name)
 		zone := &system.ZoneResource{
 			Spec: &system_proto.Zone{
-				Enabled: &wrapperspb.BoolValue{Value: true},
+				Enabled: util_proto.Bool(true),
 			},
 		}
 		if err := resManager.Create(context.Background(), zone, store.CreateByKey(name, model.NoMesh)); err != nil {
@@ -142,13 +109,4 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			}), sync_store.Zone(clusterName))
 		},
 	}
-}
-
-func ConsumesType(typ model.ResourceType) bool {
-	for _, consumedTyp := range ConsumedTypes {
-		if consumedTyp == typ {
-			return true
-		}
-	}
-	return false
 }

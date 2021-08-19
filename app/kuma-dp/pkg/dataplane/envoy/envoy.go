@@ -11,16 +11,15 @@ import (
 	"strings"
 	"time"
 
-	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	pkg_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-
 	"github.com/pkg/errors"
 
+	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	pkg_log "github.com/kumahq/kuma/pkg/log"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var (
@@ -212,9 +211,10 @@ func (e *Envoy) version() (*EnvoyVersion, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("the envoy excutable was found at %s but an error occurred when executing it with arg %s", resolvedPath, arg))
 	}
-	build := strings.Trim(string(output), "\n")
-	build = regexp.MustCompile(`:(.*)`).FindString(build)
-	build = strings.Trim(build, ":")
+	build := strings.ReplaceAll(string(output), "\r\n", "\n")
+	build = strings.Trim(build, "\n")
+	build = regexp.MustCompile(`version:(.*)`).FindString(build)
+	build = strings.Trim(build, "version:")
 	build = strings.Trim(build, " ")
 	version := regexp.MustCompile(`/([0-9.]+)/`).FindString(build)
 	version = strings.Trim(version, "/")

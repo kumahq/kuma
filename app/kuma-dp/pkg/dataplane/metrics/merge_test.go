@@ -64,13 +64,13 @@ var _ = Describe("Merge", func() {
 			input:    "./testdata/counter-with-labels.in",
 			expected: "./testdata/counter-with-labels.out",
 		}),
-		Entry("should not merge unmergeable clusters for Counter with labels", testCase{
-			input:    "./testdata/counter-unmergeable.in",
-			expected: "./testdata/counter-unmergeable.out",
-		}),
 		Entry("should merge clusters for Counter", testCase{
 			input:    "./testdata/counter-sparse.in",
 			expected: "./testdata/counter-sparse.out",
+		}),
+		Entry("should merge clusters for Counter with status codes label", testCase{
+			input:    "./testdata/counter-status-codes.in",
+			expected: "./testdata/counter-status-codes.out",
 		}),
 	)
 })

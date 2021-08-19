@@ -6,16 +6,14 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/gruntwork-io/terratest/modules/random"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
 func AppDeploymentWithHelmChart() {
@@ -70,7 +68,7 @@ metadata:
 		err = NewClusterSetup().
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
-			Install(EchoServerK8s("default")).
+			Install(testserver.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -102,19 +100,19 @@ metadata:
 
 		Eventually(func() (string, error) {
 			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server")
+				"curl", "-v", "-m", "3", "--fail", "test-server")
 			return stderr, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
 		Eventually(func() (string, error) {
 			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_80.mesh")
+				"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
 			return stderr, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
 		Eventually(func() (string, error) { // should access a service with . instead of _
 			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server.kuma-test.svc.80.mesh")
+				"curl", "-v", "-m", "3", "--fail", "test-server.kuma-test.svc.80.mesh")
 			return stderr, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 	})

@@ -2,15 +2,15 @@ package v3
 
 import (
 	"sort"
+	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_data_dns "github.com/envoyproxy/go-control-plane/envoy/data/dns/v3"
 	envoy_dns "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/dns_filter/v3alpha"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type DNSConfigurer struct {
@@ -19,7 +19,7 @@ type DNSConfigurer struct {
 }
 
 func (c *DNSConfigurer) Configure(listener *envoy_listener.Listener) error {
-	pbst, err := proto.MarshalAnyDeterministic(c.dnsFilter())
+	pbst, err := util_proto.MarshalAnyDeterministic(c.dnsFilter())
 	if err != nil {
 		return err
 	}
@@ -35,21 +35,17 @@ func (c *DNSConfigurer) Configure(listener *envoy_listener.Listener) error {
 
 func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 	var virtualDomains []*envoy_data_dns.DnsTable_DnsVirtualDomain
-	for domain, ip := range c.VIPs {
+	for domain, ips := range c.VIPs {
 		virtualDomains = append(virtualDomains, &envoy_data_dns.DnsTable_DnsVirtualDomain{
 			Name: domain,
 			Endpoint: &envoy_data_dns.DnsTable_DnsEndpoint{
 				EndpointConfig: &envoy_data_dns.DnsTable_DnsEndpoint_AddressList{
 					AddressList: &envoy_data_dns.DnsTable_AddressList{
-						Address: []string{
-							ip,
-						},
+						Address: []string{ips},
 					},
 				},
 			},
-			AnswerTtl: &durationpb.Duration{
-				Seconds: 30,
-			},
+			AnswerTtl: util_proto.Duration(time.Second * 30),
 		})
 	}
 	sort.Stable(DnsTableByName(virtualDomains)) // for stable Envoy config

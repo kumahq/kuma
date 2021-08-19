@@ -6,13 +6,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("CreateDownstreamTlsContext()", func() {
@@ -23,13 +21,12 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			// given
 			ctx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: mesh_core.NewMeshResource(),
+					Resource: core_mesh.NewMeshResource(),
 				},
 			}
-			metadata := &core_xds.DataplaneMetadata{}
 
 			// when
-			snippet, err := v3.CreateDownstreamTlsContext(ctx, metadata)
+			snippet, err := v3.CreateDownstreamTlsContext(ctx)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -40,7 +37,6 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 	Context("when mTLS is enabled on a given Mesh", func() {
 
 		type testCase struct {
-			metadata *core_xds.DataplaneMetadata
 			expected string
 		}
 
@@ -48,14 +44,8 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			func(given testCase) {
 				// given
 				ctx := xds_context.Context{
-					ConnectionInfo: xds_context.ConnectionInfo{
-						Authority: "kuma-control-plane:5677",
-					},
-					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsTlsCert: []byte("CERTIFICATE"),
-					},
 					Mesh: xds_context.MeshContext{
-						Resource: &mesh_core.MeshResource{
+						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "default",
 							},
@@ -75,7 +65,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := v3.CreateDownstreamTlsContext(ctx, given.metadata)
+				snippet, err := v3.CreateDownstreamTlsContext(ctx)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -86,7 +76,6 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("metadata is `nil`", testCase{
-				metadata: nil,
 				expected: `
                 commonTlsContext:
                   combinedValidationContext:
@@ -96,95 +85,14 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                     validationContextSdsSecretConfig:
                       name: mesh_ca
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - envoyGrpc:
-                            clusterName: ads_cluster
-                        transportApiVersion: V3
+                      ads: {}
                       resourceApiVersion: V3
-                requireClientCertificate: true
-`,
-			}),
-			Entry("dataplane without a token", testCase{
-				metadata: &core_xds.DataplaneMetadata{},
-				expected: `
-                commonTlsContext:
-                  combinedValidationContext:
-                    defaultValidationContext:
-                      matchSubjectAltNames:
-                      - prefix: spiffe://default/
-                    validationContextSdsSecretConfig:
-                      name: mesh_ca
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
-                        resourceApiVersion: V3
-                  tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
-                    sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - envoyGrpc:
-                            clusterName: ads_cluster
-                        transportApiVersion: V3
-                      resourceApiVersion: V3
-                requireClientCertificate: true
-`,
-			}),
-			Entry("dataplane with a token", testCase{
-				metadata: &core_xds.DataplaneMetadata{
-					DataplaneToken: "sampletoken",
-				},
-				expected: `
-                commonTlsContext:
-                  combinedValidationContext:
-                    defaultValidationContext:
-                      matchSubjectAltNames:
-                      - prefix: spiffe://default/
-                    validationContextSdsSecretConfig:
-                      name: mesh_ca
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                            initialMetadata:
-                            - key: authorization
-                              value: sampletoken
-                          transportApiVersion: V3
-                        resourceApiVersion: V3
-                  tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
-                    sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - envoyGrpc:
-                            clusterName: ads_cluster
-                          initialMetadata:
-                          - key: authorization
-                            value: sampletoken
-                        transportApiVersion: V3
-                      resourceApiVersion: V3
-                requireClientCertificate: true
-`,
+                requireClientCertificate: true`,
 			}),
 		)
 	})
@@ -198,13 +106,12 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			// given
 			ctx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: mesh_core.NewMeshResource(),
+					Resource: core_mesh.NewMeshResource(),
 				},
 			}
-			metadata := &core_xds.DataplaneMetadata{}
 
 			// when
-			snippet, err := v3.CreateUpstreamTlsContext(ctx, metadata, "backend", "backend")
+			snippet, err := v3.CreateUpstreamTlsContext(ctx, "backend", "backend")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -215,7 +122,6 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 	Context("when mTLS is enabled on a given Mesh", func() {
 
 		type testCase struct {
-			metadata        *core_xds.DataplaneMetadata
 			upstreamService string
 			expected        string
 		}
@@ -224,14 +130,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			func(given testCase) {
 				// given
 				ctx := xds_context.Context{
-					ConnectionInfo: xds_context.ConnectionInfo{
-						Authority: "kuma-control-plane:5677",
-					},
-					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsTlsCert: []byte("CERTIFICATE"),
-					},
 					Mesh: xds_context.MeshContext{
-						Resource: &mesh_core.MeshResource{
+						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "default",
 							},
@@ -251,7 +151,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := v3.CreateUpstreamTlsContext(ctx, given.metadata, given.upstreamService, "")
+				snippet, err := v3.CreateUpstreamTlsContext(ctx, given.upstreamService, "")
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -262,7 +162,6 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("metadata is `nil`", testCase{
-				metadata:        nil,
 				upstreamService: "backend",
 				expected: `
                 commonTlsContext:
@@ -273,94 +172,13 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                     validationContextSdsSecretConfig:
                       name: mesh_ca
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - envoyGrpc:
-                            clusterName: ads_cluster
-                        transportApiVersion: V3
-                      resourceApiVersion: V3
-`,
-			}),
-			Entry("dataplane without a token", testCase{
-				metadata:        &core_xds.DataplaneMetadata{},
-				upstreamService: "backend",
-				expected: `
-                commonTlsContext:
-                  combinedValidationContext:
-                    defaultValidationContext:
-                      matchSubjectAltNames:
-                      - exact: spiffe://default/backend
-                    validationContextSdsSecretConfig:
-                      name: mesh_ca
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
-                        resourceApiVersion: V3
-                  tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
-                    sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - envoyGrpc:
-                            clusterName: ads_cluster
-                        transportApiVersion: V3
-                      resourceApiVersion: V3
-`,
-			}),
-			Entry("dataplane with token", testCase{
-				metadata: &core_xds.DataplaneMetadata{
-					DataplaneToken: "sampletoken",
-				},
-				upstreamService: "backend",
-				expected: `
-                commonTlsContext:
-                  combinedValidationContext:
-                    defaultValidationContext:
-                      matchSubjectAltNames:
-                      - exact: spiffe://default/backend
-                    validationContextSdsSecretConfig:
-                      name: mesh_ca
-                      sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                            initialMetadata:
-                            - key: authorization
-                              value: sampletoken
-                          transportApiVersion: V3
-                        resourceApiVersion: V3
-                  tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
-                    sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - envoyGrpc:
-                            clusterName: ads_cluster
-                          initialMetadata:
-                          - key: authorization
-                            value: sampletoken
-                        transportApiVersion: V3
-                      resourceApiVersion: V3
-`,
+                      ads: {}
+                      resourceApiVersion: V3`,
 			}),
 		)
 	})

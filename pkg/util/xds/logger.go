@@ -3,9 +3,8 @@ package xds
 import (
 	"fmt"
 
-	"github.com/go-logr/logr"
-
 	envoy_log "github.com/envoyproxy/go-control-plane/pkg/log"
+	"github.com/go-logr/logr"
 )
 
 func NewLogger(log logr.Logger) envoy_log.Logger {

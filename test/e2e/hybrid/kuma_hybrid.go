@@ -4,16 +4,15 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/pkg/errors"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
 func KubernetesUniversalDeployment() {
@@ -71,7 +70,7 @@ metadata:
 
 		globalCP := global.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "echo-server_kuma-test_svc_8080")
+		echoServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
@@ -105,7 +104,7 @@ metadata:
 			Install(Kuma(core.Zone, optsZone2...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(EchoServerK8s(nonDefaultMesh)).
+			Install(testserver.Install(testserver.WithMesh(nonDefaultMesh))).
 			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
@@ -121,7 +120,10 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone3...)).
-			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal", echoServerToken, WithTransparentProxy(true), WithBuiltinDNS(false))).
+			Install(TestServerUniversal("dp-echo", nonDefaultMesh, echoServerToken,
+				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithServiceName("test-server"),
+			)).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(false))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone3)
@@ -138,7 +140,7 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone4...)).
-			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken)).
+			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone4)
 		Expect(err).ToNot(HaveOccurred())
@@ -194,19 +196,18 @@ metadata:
 			return nil
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
-		// todo (lobkovilya): echo-server is restarting because of ncat problem, uncomment this as soon as it will be replaces with test-server
-		// Eventually(func() error {
-		//	output, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes", "--mesh", "non-default")
-		//	if err != nil {
-		//		return err
-		//	}
-		//
-		//	re := regexp.MustCompile(`Online`)
-		//	if len(re.FindAllString(output, -1)) != 6 {
-		//		return errors.New("not all dataplanes are online")
-		//	}
-		//	return nil
-		// }, "30s", "1s").ShouldNot(HaveOccurred())
+		Eventually(func() error {
+			output, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes", "--mesh", "non-default")
+			if err != nil {
+				return err
+			}
+
+			re := regexp.MustCompile(`Online`)
+			if len(re.FindAllString(output, -1)) != 6 {
+				return errors.New("not all dataplanes are online")
+			}
+			return nil
+		}, "30s", "1s").ShouldNot(HaveOccurred())
 	})
 
 	It("should access allservices", func() {
@@ -225,7 +226,7 @@ metadata:
 
 		// k8s access remote k8s service
 		_, stderr, err := zone1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_80.mesh")
+			"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
@@ -244,34 +245,34 @@ metadata:
 
 		// k8s access remote universal service
 		_, stderr, err = zone2.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+			"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// Zone 3
 		// universal access remote k8s service
 		stdout, _, err := zone3.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+			"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// Zone 4
 		// universal access remote universal service
 		stdout, _, err = zone4.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 
-	PIt("should support jobs with a sidecar", func() {
+	It("should support jobs with a sidecar", func() {
 		// when deploy job that connects to a service on other K8S cluster
-		err := DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_80.mesh")(zone1)
+		err := DemoClientJobK8s(nonDefaultMesh, "test-server_kuma-test_svc_80.mesh")(zone1)
 
 		// then job is properly cleaned up and finished
 		Expect(err).ToNot(HaveOccurred())
 
 		// when deploy job that connects to a service on other Universal cluster
-		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_8080.mesh")(zone2)
+		err = DemoClientJobK8s(nonDefaultMesh, "test-server.mesh")(zone2)
 
 		// then job is properly cleaned up and finished
 		Expect(err).ToNot(HaveOccurred())

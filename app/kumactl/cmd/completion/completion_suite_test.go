@@ -3,11 +3,9 @@ package completion_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestCompletionCmd(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Completion Cmd Suite")
+	test.RunSpecs(t, "Completion Cmd Suite")
 }

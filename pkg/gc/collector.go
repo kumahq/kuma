@@ -13,6 +13,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
+var (
+	gcLog = core.Log.WithName("garbage-collector")
+)
+
 type collector struct {
 	rm         manager.ResourceManager
 	cleanupAge time.Duration

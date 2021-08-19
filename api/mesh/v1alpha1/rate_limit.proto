@@ -16,6 +16,8 @@ message RateLimit {
   option (kuma.mesh.resource).name = "RateLimitResource";
   option (kuma.mesh.resource).type = "RateLimit";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "rate-limit";
 
   // List of selectors to match dataplanes that rate limit will be applied for
   repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];

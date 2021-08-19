@@ -7,13 +7,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/xds/cache/once"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/xds/cache/once"
 )
 
 var _ = Describe("OnceCache", func() {

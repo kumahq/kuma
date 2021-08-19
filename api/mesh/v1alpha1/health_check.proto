@@ -23,6 +23,8 @@ message HealthCheck {
   option (kuma.mesh.resource).name = "HealthCheckResource";
   option (kuma.mesh.resource).type = "HealthCheck";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "health-check";
 
   // List of selectors to match dataplanes that should be configured to do
   // health checks.

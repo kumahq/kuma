@@ -3,13 +3,13 @@ package v1alpha1_test
 import (
 	"time"
 
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/kumahq/kuma/api/internal/util/proto"
 	. "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("DataplaneHelpers", func() {
@@ -37,7 +37,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				}
 
 				// when
-				status.UpdateSubscription(subscription)
+				Expect(status.UpdateSubscription(subscription)).To(Succeed())
 
 				// then
 				Expect(util_proto.ToYAML(status)).To(MatchYAML(`
@@ -76,7 +76,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				}
 
 				// when
-				status.UpdateSubscription(subscription)
+				Expect(status.UpdateSubscription(subscription)).To(Succeed())
 
 				// then
 				Expect(util_proto.ToYAML(status)).To(MatchYAML(`
@@ -117,14 +117,38 @@ var _ = Describe("DataplaneHelpers", func() {
 				}
 
 				// when
-				dataplaneInsight.UpdateSubscription(&DiscoverySubscription{
+				Expect(dataplaneInsight.UpdateSubscription(&DiscoverySubscription{
 					Id:          "3",
 					ConnectTime: util_proto.MustTimestampProto(t1.Add(3 * time.Hour)),
-				})
+				})).To(Succeed())
 
 				// then
 				_, subscription := dataplaneInsight.GetSubscription("2")
 				Expect(subscription.DisconnectTime).ToNot(BeNil())
+			})
+
+			It("should return error for wrong subscription type", func() {
+				// given
+				dataplaneInsight := &DataplaneInsight{
+					Subscriptions: []*DiscoverySubscription{
+						{
+							Id:             "1",
+							ConnectTime:    util_proto.MustTimestampProto(t1),
+							DisconnectTime: util_proto.MustTimestampProto(t1.Add(1 * time.Hour)),
+						},
+						{
+							Id:          "2",
+							ConnectTime: util_proto.MustTimestampProto(t1.Add(2 * time.Hour)),
+						},
+					},
+				}
+
+				// when
+				err := dataplaneInsight.UpdateSubscription(&system_proto.KDSSubscription{})
+
+				// then
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("invalid type *v1alpha1.KDSSubscription for DataplaneInsight"))
 			})
 		})
 

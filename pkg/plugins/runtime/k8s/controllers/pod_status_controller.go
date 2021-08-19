@@ -3,16 +3,9 @@ package controllers
 import (
 	"context"
 
-	"go.uber.org/multierr"
-
-	"github.com/pkg/errors"
-
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -23,8 +16,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 // PodStatusReconciler tracks pods status changes and signals kuma-dp when it has to complete

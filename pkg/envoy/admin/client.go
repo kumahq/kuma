@@ -15,14 +15,14 @@ import (
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 type EnvoyAdminClient interface {
-	GenerateAPIToken(dataplane *mesh_core.DataplaneResource) (string, error)
-	PostQuit(dataplane *mesh_core.DataplaneResource) error
+	GenerateAPIToken(dataplane *core_mesh.DataplaneResource) (string, error)
+	PostQuit(dataplane *core_mesh.DataplaneResource) error
 }
 
 type envoyAdminClient struct {
@@ -57,7 +57,7 @@ const (
 	quitquitquit = "quitquitquit"
 )
 
-func (a *envoyAdminClient) GenerateAPIToken(dataplane *mesh_core.DataplaneResource) (string, error) {
+func (a *envoyAdminClient) GenerateAPIToken(dataplane *core_mesh.DataplaneResource) (string, error) {
 	mesh := dataplane.Meta.GetMesh()
 	key, err := a.getOrCreateSigningKey(mesh)
 	if err != nil {
@@ -82,7 +82,7 @@ func (a *envoyAdminClient) getOrCreateSigningKey(mesh string) (string, error) {
 	return string(key), nil
 }
 
-func (a *envoyAdminClient) adminAddress(dataplane *mesh_core.DataplaneResource) string {
+func (a *envoyAdminClient) adminAddress(dataplane *core_mesh.DataplaneResource) string {
 	ip := dataplane.GetIP()
 	// TODO: this will work perfectly fine with K8s, but will fail for Universal
 	// The real allocated admin port is part of the DP metadata, but it is attached to a particular CP,
@@ -93,7 +93,7 @@ func (a *envoyAdminClient) adminAddress(dataplane *mesh_core.DataplaneResource) 
 	return net.JoinHostPort(ip, strconv.FormatUint(uint64(portUint), 10))
 }
 
-func (a *envoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) error {
+func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) error {
 	token, err := a.GenerateAPIToken(dataplane)
 	if err != nil {
 		return err

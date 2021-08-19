@@ -12,10 +12,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -50,15 +49,15 @@ var _ = Describe("Service Insight Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey("mesh-1", core_model.NoMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey("mesh-2", core_model.NoMesh), store.CreatedAt(t1))
+		err = resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-2", core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	createServiceInsight := func(name, mesh string, serviceInsight *mesh_proto.ServiceInsight) {
-		serviceInsightResource := mesh_core.ServiceInsightResource{
+		serviceInsightResource := core_mesh.ServiceInsightResource{
 			Spec: serviceInsight,
 		}
 		err := resourceStore.Create(context.Background(), &serviceInsightResource, store.CreateByKey(name, mesh), store.CreatedAt(t1))

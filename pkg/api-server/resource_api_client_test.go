@@ -6,22 +6,21 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/kumahq/kuma/pkg/api-server/customization"
+	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
-	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	"github.com/kumahq/kuma/pkg/api-server/customization"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/test"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
-
-	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 type resourceApiClient struct {
@@ -117,12 +116,14 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		config.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 	}
 
-	defs := append(definitions.All, SampleTrafficRouteWsDefinition)
+	defs := append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor)
 	resources := manager.NewResourceManager(store)
 	wsManager := customization.NewAPIList()
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, wsManager, defs, &cfg, enableGUI, metrics)
+	getInstanceId := func() string { return "instance-id" }
+	getClusterId := func() string { return "cluster-id" }
+	apiServer, err := api_server.NewApiServer(resources, wsManager, defs, &cfg, enableGUI, metrics, getInstanceId, getClusterId)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

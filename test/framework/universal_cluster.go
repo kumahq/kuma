@@ -6,13 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"go.uber.org/multierr"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/util/template"
 )
 
 type UniversalCluster struct {
@@ -175,17 +176,17 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string, builtindns bool) error {
+func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, token string, builtindns bool) error {
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns, false)
+	app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, false)
 	return app.dpApp.Start()
 }
 
-func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, appname, ip, dpyaml, token string, builtindns bool) error {
+func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns, true)
+	app.CreateDP(token, cpAddress, name, "", ip, dpyaml, builtindns, true)
 	return app.dpApp.Start()
 }
 
@@ -194,7 +195,6 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	appname := opts.appname
 	token := opts.token
 	transparent := opts.transparent
-	dpyaml := opts.appYaml
 	args := opts.appArgs
 
 	if opts.mesh == "" {
@@ -212,6 +212,25 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		return err
 	}
 
+	if opts.kumactlFlow {
+		dataplaneResource := template.Render(opts.appYaml, map[string]string{
+			"name":    opts.name,
+			"address": app.ip,
+		})
+		err := c.GetKumactlOptions().KumactlApplyFromString(string(dataplaneResource))
+		if err != nil {
+			return err
+		}
+	}
+
+	if opts.dpVersion != "" {
+		// override needs to be before setting up transparent proxy.
+		// Otherwise, we won't be able to fetch specific Kuma DP version.
+		if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
+			return err
+		}
+	}
+
 	builtindns := opts.builtindns == nil || *opts.builtindns
 	if transparent {
 		app.setupTransparent(c.apps[AppModeCP].ip, builtindns)
@@ -219,13 +238,14 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 
 	ip := app.ip
 
-	if opts.dpVersion != "" {
-		if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
-			return err
-		}
+	var dataplaneResource string
+	if opts.kumactlFlow {
+		dataplaneResource = ""
+	} else {
+		dataplaneResource = opts.appYaml
 	}
 
-	err = c.CreateDP(app, opts.name, ip, dpyaml, token, builtindns)
+	err = c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns)
 	if err != nil {
 		return err
 	}

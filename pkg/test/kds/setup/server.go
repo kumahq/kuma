@@ -4,20 +4,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
-	kds_server "github.com/kumahq/kuma/pkg/kds/server"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	. "github.com/onsi/gomega"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	test_grpc "github.com/kumahq/kuma/pkg/test/grpc"
 )
 

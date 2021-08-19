@@ -15,6 +15,8 @@ message Zone {
   option (kuma.mesh.resource).type = "Zone";
   option (kuma.mesh.resource).package = "system";
   option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).ws.name = "zone";
 
   // enable allows to turn the zone on/off and exclude the whole zone from
   // balancing traffic on it

@@ -219,10 +219,12 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Metrics.Zone.Enabled).To(BeFalse())
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
+			Expect(cfg.Metrics.Zone.IdleTimeout).To(Equal(2 * time.Minute))
 			Expect(cfg.Metrics.Mesh.MinResyncTimeout).To(Equal(35 * time.Second))
 			Expect(cfg.Metrics.Mesh.MaxResyncTimeout).To(Equal(27 * time.Second))
 			Expect(cfg.Metrics.Dataplane.Enabled).To(BeFalse())
 			Expect(cfg.Metrics.Dataplane.SubscriptionLimit).To(Equal(47))
+			Expect(cfg.Metrics.Dataplane.IdleTimeout).To(Equal(1 * time.Minute))
 
 			Expect(cfg.DpServer.TlsCertFile).To(Equal("/test/path"))
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
@@ -236,8 +238,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.NoTrafficInterval).To(Equal(7 * time.Second))
 			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
-
-			Expect(cfg.SdsServer.DataplaneConfigurationRefreshInterval).To(Equal(11 * time.Second))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -406,12 +406,14 @@ metrics:
   zone:
     enabled: false
     subscriptionLimit: 23
+    idleTimeout: 2m
   mesh:
     minResyncTimeout: 35s
     maxResyncTimeout: 27s
   dataplane:
     subscriptionLimit: 47
     enabled: false
+    idleTimeout: 1m
 dpServer:
   tlsCertFile: /test/path
   tlsKeyFile: /test/path/key
@@ -428,8 +430,6 @@ dpServer:
       noTrafficInterval: 7s
       healthyThreshold: 8
       unhealthyThreshold: 9
-sdsServer:
-  dataplaneConfigurationRefreshInterval: 11s
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -546,10 +546,12 @@ sdsServer:
 				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
 				"KUMA_METRICS_ZONE_ENABLED":                                                                "false",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
+				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
 				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "27s",
 				"KUMA_METRICS_DATAPLANE_ENABLED":                                                           "false",
 				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "35s",
 				"KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT":                                                "47",
+				"KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT":                                                      "1m",
 				"KUMA_DP_SERVER_TLS_CERT_FILE":                                                             "/test/path",
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
 				"KUMA_DP_SERVER_AUTH_TYPE":                                                                 "dpToken",
@@ -562,7 +564,6 @@ sdsServer:
 				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
-				"KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "11s",
 			},
 			yamlFileConfig: "",
 		}),

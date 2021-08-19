@@ -6,9 +6,7 @@ import (
 	"github.com/go-errors/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	"github.com/kumahq/kuma/pkg/core"
-
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -85,7 +83,7 @@ func (m *dataplaneManager) setInboundsClusterTag(dp *core_mesh.DataplaneResource
 }
 
 func (m *dataplaneManager) setGatewayClusterTag(dp *core_mesh.DataplaneResource) {
-	if m.zone == "" || dp.Spec.Networking == nil || dp.Spec.Networking.Gateway == nil {
+	if m.zone == "" || dp.Spec.GetNetworking().GetGateway() == nil {
 		return
 	}
 	if dp.Spec.Networking.Gateway.Tags == nil {

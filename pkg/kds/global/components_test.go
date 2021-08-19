@@ -5,32 +5,25 @@ import (
 	"fmt"
 	"sync"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
-
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
-
-	"github.com/kumahq/kuma/pkg/kds"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/global"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Global Sync", func() {
@@ -51,7 +44,7 @@ var _ = Describe("Global Sync", func() {
 		for i := 0; i < numOfZones; i++ {
 			wg.Add(1)
 			zoneStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), kds.SupportedTypes, reconcile.Any)
+			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
 			zoneStores = append(zoneStores, zoneStore)
 		}
@@ -68,7 +61,7 @@ var _ = Describe("Global Sync", func() {
 
 		// Create Zone resources for each Kuma CP Zone
 		for i := 0; i < numOfZones; i++ {
-			zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: &wrapperspb.BoolValue{Value: true}}}
+			zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: util_proto.Bool(true)}}
 			err := globalStore.Create(context.Background(), zone, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		}
@@ -175,20 +168,16 @@ var _ = Describe("Global Sync", func() {
 		excludeTypes := map[model.ResourceType]bool{
 			mesh.DataplaneInsightType:  true,
 			mesh.DataplaneOverviewType: true,
+			mesh.GatewayType:           true, // Gateways are zone-local.
 			mesh.ServiceInsightType:    true,
 			mesh.ServiceOverviewType:   true,
 			sample.TrafficRouteType:    true,
 		}
 
 		// take all mesh-scoped types and exclude types that won't be synced
-		actualProvidedTypes := []model.ResourceType{}
-		for _, typ := range registry.Global().ListTypes() {
-			obj, err := registry.Global().NewObject(typ)
-			Expect(err).ToNot(HaveOccurred())
-			if obj.Scope() == model.ScopeMesh && !excludeTypes[typ] {
-				actualProvidedTypes = append(actualProvidedTypes, typ)
-			}
-		}
+		actualProvidedTypes := registry.Global().ObjectTypes(model.HasScope(model.ScopeMesh), model.TypeFilterFn(func(descriptor model.ResourceTypeDescriptor) bool {
+			return !excludeTypes[descriptor.Name]
+		}))
 
 		// plus 4 global-scope types
 		extraTypes := []model.ResourceType{
@@ -199,8 +188,7 @@ var _ = Describe("Global Sync", func() {
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
-		Expect(actualProvidedTypes).To(HaveLen(len(global.ProvidedTypes)))
-		Expect(actualProvidedTypes).To(ConsistOf(global.ProvidedTypes))
+		Expect(actualProvidedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal))))
 	})
 
 })

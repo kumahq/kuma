@@ -6,10 +6,10 @@ import (
 	"github.com/pkg/errors"
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
-func EnsureEnabledCA(ctx context.Context, caManagers core_ca.Managers, mesh *mesh_core.MeshResource, meshName string) error {
+func EnsureEnabledCA(ctx context.Context, caManagers core_ca.Managers, mesh *core_mesh.MeshResource, meshName string) error {
 	if mesh.GetEnabledCertificateAuthorityBackend() != nil {
 		backend := mesh.GetEnabledCertificateAuthorityBackend()
 		caManager, exist := caManagers[backend.Type]

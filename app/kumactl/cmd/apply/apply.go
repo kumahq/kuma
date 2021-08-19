@@ -9,20 +9,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/util/template"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/util/template"
 )
 
 const (
@@ -106,11 +104,11 @@ $ kumactl apply -f https://example.com/resource.yaml
 					continue
 				}
 				bytes := template.Render(rawResource, ctx.args.vars)
-				res, err := rest.UnmarshallToCore(bytes)
+				res, err := rest_types.UnmarshallToCore(bytes)
 				if err != nil {
 					return errors.Wrap(err, "YAML contains invalid resource")
 				}
-				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Scope()); err.HasViolations() {
+				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Descriptor().Scope); err.HasViolations() {
 					return err.OrNil()
 				}
 				resources = append(resources, res)
@@ -130,7 +128,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 						return err
 					}
 
-					if err := upsert(rs, resource); err != nil {
+					if err := upsert(pctx.Runtime.Registry, rs, resource); err != nil {
 						return err
 					}
 				}
@@ -145,8 +143,8 @@ $ kumactl apply -f https://example.com/resource.yaml
 	return cmd
 }
 
-func upsert(rs store.ResourceStore, res model.Resource) error {
-	newRes, err := registry.Global().NewObject(res.GetType())
+func upsert(typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) error {
+	newRes, err := typeRegistry.NewObject(res.Descriptor().Name)
 	if err != nil {
 		return err
 	}

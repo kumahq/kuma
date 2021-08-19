@@ -1,17 +1,15 @@
 package clusters
 
 import (
-	"fmt"
-
+	"github.com/asaskevich/govalidator"
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
-	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
-
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
+	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
 type ClientSideTLSConfigurer struct {
@@ -23,13 +21,19 @@ var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	for _, ep := range c.Endpoints {
 		if ep.ExternalService.TLSEnabled {
+			sni := ep.ExternalService.ServerName
+			if ep.ExternalService.ServerName == "" && govalidator.IsDNSName(ep.Target) {
+				// SNI can only be a hostname, not IP
+				sni = ep.Target
+			}
+
 			tlsContext, err := envoy_tls.UpstreamTlsContextOutsideMesh(
 				ep.ExternalService.CaCert,
 				ep.ExternalService.ClientCert,
 				ep.ExternalService.ClientKey,
 				ep.ExternalService.AllowRenegotiation,
 				ep.Target,
-				fmt.Sprintf("%s:%d", ep.Target, ep.Port),
+				sni,
 			)
 			if err != nil {
 				return err

@@ -3,11 +3,9 @@ package metadata_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestMetadata(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Kubernetes Metadata")
+	test.RunSpecs(t, "Kubernetes Metadata")
 }

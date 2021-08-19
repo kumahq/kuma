@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -20,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Match", func() {
@@ -63,9 +62,7 @@ var _ = Describe("Match", func() {
 				Conf: &mesh_proto.RateLimit_Conf{
 					Http: &mesh_proto.RateLimit_Conf_Http{
 						Requests: 100,
-						Interval: &durationpb.Duration{
-							Seconds: 3,
-						},
+						Interval: util_proto.Duration(time.Second * 3),
 					},
 				},
 			},

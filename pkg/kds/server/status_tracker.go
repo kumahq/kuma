@@ -4,23 +4,19 @@ import (
 	"context"
 	"sync"
 
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"github.com/go-logr/logr"
+	"github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/kds/util"
-	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
-
-	"github.com/go-logr/logr"
-
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
-	"github.com/golang/protobuf/proto"
-
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/kds/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 type StatusTracker interface {
@@ -47,7 +43,7 @@ func NewStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
 var _ StatusTracker = &statusTracker{}
 
 type statusTracker struct {
-	util_xds_v2.NoopCallbacks
+	util_xds_v3.NoopCallbacks
 	runtimeInfo      core_runtime.RuntimeInfo
 	createStatusSink ZoneInsightSinkFactoryFunc
 	mu               sync.RWMutex // protects access to the fields below
@@ -111,7 +107,7 @@ func (c *statusTracker) OnStreamClosed(streamID int64) {
 
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequest) error {
+func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy_sd.DiscoveryRequest) error {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 
@@ -147,7 +143,7 @@ func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequ
 }
 
 // OnStreamResponse is called immediately prior to sending a response on a stream.
-func (c *statusTracker) OnStreamResponse(streamID int64, req *envoy.DiscoveryRequest, resp *envoy.DiscoveryResponse) {
+func (c *statusTracker) OnStreamResponse(streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 

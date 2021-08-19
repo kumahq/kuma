@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -36,7 +35,6 @@ name: %s
 `, mesh)
 	}
 
-	const iterations = 100
 	const defaultMesh = "default"
 	const nonDefaultMesh = "non-default"
 
@@ -62,7 +60,7 @@ name: %s
 
 		globalCP := global.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "echo-server_kuma-test_svc_8080")
+		testServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
@@ -81,7 +79,7 @@ name: %s
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone1...)).
-			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal1", echoServerToken, WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", nonDefaultMesh, testServerToken, WithArgs([]string{"echo", "--instance", "universal1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone1)
@@ -99,7 +97,7 @@ name: %s
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone2...)).
-			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal2", echoServerToken, WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", nonDefaultMesh, testServerToken, WithArgs([]string{"echo", "--instance", "universal2"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone2)
@@ -133,7 +131,7 @@ name: %s
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+					"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 				if err != nil {
 					return "should retry", err
 				}
@@ -147,7 +145,7 @@ name: %s
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				stdout, _, err := zone2.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+					"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 				if err != nil {
 					return "should retry", err
 				}
@@ -156,50 +154,5 @@ name: %s
 				}
 				return "should retry", errors.Errorf("should retry")
 			})
-	})
-
-	It("should distribute requests cross zones", func() {
-		// given services in zone1 and zone2 in a mesh with disabled Locality Aware Load Balancing
-
-		// when executing requests from zone 1
-		responses := 0
-		for i := 0; i < iterations; i++ {
-			stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			Expect(stdout).To(ContainSubstring("universal"))
-
-			if strings.Contains(stdout, "universal1") {
-				responses++
-			}
-		}
-
-		// then some requests are routed to the same zone and some are not
-		Expect(responses > iterations/8).To(BeTrue())
-		Expect(responses < iterations*7/8).To(BeTrue())
-	})
-
-	It("should use locality aware load balancing", func() {
-		// given services in zone1 and zone2 in a mesh with enabled Locality Aware Load Balancing
-		err := YamlUniversal(meshMTLSOn(nonDefaultMesh, "true"))(global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// when executing requests from zone 2
-		responses := 0
-		for i := 0; i < iterations; i++ {
-			stdout, _, err := zone2.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			Expect(stdout).To(ContainSubstring("universal"))
-
-			if strings.Contains(stdout, "universal2") {
-				responses++
-			}
-		}
-
-		// then all the requests are routed to the same zone 2
-		Expect(responses).To(Equal(iterations))
 	})
 }

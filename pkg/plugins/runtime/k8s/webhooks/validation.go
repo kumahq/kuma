@@ -18,8 +18,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	kds_global "github.com/kumahq/kuma/pkg/kds/global"
-	kds_zone "github.com/kumahq/kuma/pkg/kds/zone"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -75,11 +73,11 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		return resp
 	}
 
-	if err := h.converter.ToCoreResource(obj.(k8s_model.KubernetesObject), coreRes); err != nil {
+	if err := h.converter.ToCoreResource(obj, coreRes); err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Scope()); err.HasViolations() {
+	if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Descriptor().Scope); err.HasViolations() {
 		return convertValidationErrorOf(err, obj, obj.GetObjectMeta())
 	}
 
@@ -105,16 +103,12 @@ func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8
 		return admission.Allowed("")
 	}
 
-	switch h.mode {
-	case core.Zone:
-		// Although Remote CP consumes Dataplane (Ingress) we also apply Dataplane on Remote
-		if resType != core_mesh.DataplaneType && kds_zone.ConsumesType(resType) {
-			return syncErrorResponse(resType, core.Zone)
-		}
-	case core.Global:
-		if kds_global.ConsumesType(resType) {
-			return syncErrorResponse(resType, core.Global)
-		}
+	descriptor, err := h.coreRegistry.DescriptorFor(resType)
+	if err != nil {
+		return syncErrorResponse(resType, h.mode)
+	}
+	if (h.mode == core.Global && descriptor.KDSFlags.Has(core_model.ConsumedByGlobal)) || (h.mode == core.Zone && resType != core_mesh.DataplaneType && descriptor.KDSFlags.Has(core_model.ConsumedByZone)) {
+		return syncErrorResponse(resType, h.mode)
 	}
 	return admission.Allowed("")
 }

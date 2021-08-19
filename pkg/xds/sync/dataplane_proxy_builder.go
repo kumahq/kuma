@@ -3,20 +3,21 @@ package sync
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/ratelimits"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	"github.com/kumahq/kuma/pkg/core/permissions"
+	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -35,11 +36,13 @@ type DataplaneProxyBuilder struct {
 	FaultInjectionMatcher faultinjections.FaultInjectionMatcher
 	RateLimitMatcher      ratelimits.RateLimitMatcher
 
-	Zone       string
-	apiVersion envoy.APIVersion
+	Zone           string
+	APIVersion     envoy.APIVersion
+	ConfigManager  config_manager.ConfigManager
+	TopLevelDomain string
 }
 
-func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, meshCtx *xds_context.MeshContext) (*xds.Proxy, error) {
+func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *xds_context.Context) (*xds.Proxy, error) {
 	ctx := context.Background()
 
 	dp, err := p.resolveDataplane(ctx, key)
@@ -47,19 +50,19 @@ func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, meshCtx *xds_c
 		return nil, err
 	}
 
-	routing, destinations, err := p.resolveRouting(ctx, meshCtx, dp)
+	routing, destinations, err := p.resolveRouting(ctx, &envoyContext.Mesh, dp)
 	if err != nil {
 		return nil, err
 	}
 
-	matchedPolicies, err := p.matchPolicies(ctx, meshCtx, dp, destinations)
+	matchedPolicies, err := p.matchPolicies(ctx, &envoyContext.Mesh, dp, destinations)
 	if err != nil {
 		return nil, err
 	}
 
 	proxy := &xds.Proxy{
 		Id:         xds.FromResourceKey(key),
-		APIVersion: p.apiVersion,
+		APIVersion: p.APIVersion,
 		Dataplane:  dp,
 		Metadata:   p.MetadataTracker.Metadata(key),
 		Routing:    *routing,
@@ -105,6 +108,31 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		return nil, nil, err
 	}
 
+	var domains []xds.VIPDomains
+	outbounds := dataplane.Spec.Networking.Outbound
+	if dataplane.Spec.Networking.GetTransparentProxying() != nil {
+		pers := vips.NewPersistence(p.CachingResManager, p.ConfigManager)
+		virtualOutboundView, err := pers.GetByMesh(dataplane.Meta.GetMesh())
+		if err != nil {
+			return nil, nil, err
+		}
+		// resolve all the domains
+		domains, outbounds = xds_topology.VIPOutbounds(virtualOutboundView, p.TopLevelDomain)
+
+		// Update the outbound of the dataplane with the generatedVips
+		generatedVips := map[string]bool{}
+		for _, ob := range outbounds {
+			generatedVips[ob.Address] = true
+		}
+		for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
+			if generatedVips[outbound.Address] { // Useful while we still have resources with computed vip outbounds
+				continue
+			}
+			outbounds = append(outbounds, outbound)
+		}
+	}
+	dataplane.Spec.Networking.Outbound = outbounds
+
 	// pick a single the most specific route for each outbound interface
 	routes, err := xds_topology.GetRoutes(ctx, dataplane, p.CachingResManager)
 	if err != nil {
@@ -120,6 +148,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	routing := &xds.Routing{
 		TrafficRoutes:   routes,
 		OutboundTargets: outbound,
+		VipDomains:      domains,
 	}
 	return routing, destinations, nil
 }

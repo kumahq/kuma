@@ -22,6 +22,8 @@ message TrafficRoute {
   option (kuma.mesh.resource).name = "TrafficRouteResource";
   option (kuma.mesh.resource).type = "TrafficRoute";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "traffic-route";
 
   // List of selectors to match data plane proxies that are sources of traffic.
   repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];

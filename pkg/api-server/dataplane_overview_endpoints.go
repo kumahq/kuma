@@ -5,18 +5,16 @@ import (
 	"reflect"
 	"strings"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-
-	"github.com/kumahq/kuma/pkg/core/validators"
-
 	"github.com/emicklei/go-restful"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 type dataplaneOverviewEndpoints struct {

@@ -6,10 +6,10 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const (
@@ -39,9 +39,7 @@ func genGrpcRetryPolicy(
 	}
 
 	if conf.NumRetries != nil {
-		policy.NumRetries = &wrapperspb.UInt32Value{
-			Value: conf.NumRetries.Value,
-		}
+		policy.NumRetries = util_proto.UInt32(conf.NumRetries.Value)
 	}
 
 	if conf.BackOff != nil {
@@ -80,9 +78,7 @@ func genHttpRetryPolicy(
 	}
 
 	if conf.NumRetries != nil {
-		policy.NumRetries = &wrapperspb.UInt32Value{
-			Value: conf.NumRetries.Value,
-		}
+		policy.NumRetries = util_proto.UInt32(conf.NumRetries.Value)
 	}
 
 	if conf.BackOff != nil {

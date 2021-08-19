@@ -3,10 +3,9 @@ package runtime
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/plugins/runtime/universal"
-
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/config/plugins/runtime/universal"
 )
 
 func DefaultRuntimeConfig() *RuntimeConfig {

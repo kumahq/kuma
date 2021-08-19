@@ -10,12 +10,10 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-
-	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/pkg/errors"
-
 	"github.com/gruntwork-io/terratest/modules/docker"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/pkg/errors"
 
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
@@ -368,14 +366,9 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	return nil
 }
 
-func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, builtindns, ingress bool) {
+func (s *UniversalApp) CreateDP(token, cpAddress, name, mesh, ip, dpyaml string, builtindns, ingress bool) {
 	// create the token file on the app container
-	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
-	if err != nil {
-		panic(err)
-	}
-
-	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + dpyaml + "\"", ">", "/kuma/dpyaml-" + appname}).Run()
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + name}).Run()
 	if err != nil {
 		panic(err)
 	}
@@ -385,12 +378,25 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, bu
 		"runuser", "-u", "kuma-dp", "--",
 		"/usr/bin/kuma-dp", "run",
 		"--cp-address=" + cpAddress,
-		"--dataplane-token-file=/kuma/token-" + appname,
-		"--dataplane-file=/kuma/dpyaml-" + appname,
-		"--dataplane-var", "name=" + appname,
-		"--dataplane-var", "address=" + ip,
+		"--dataplane-token-file=/kuma/token-" + name,
 		"--binary-path", "/usr/local/bin/envoy",
 	}
+
+	if dpyaml != "" {
+		err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + dpyaml + "\"", ">", "/kuma/dpyaml-" + name}).Run()
+		if err != nil {
+			panic(err)
+		}
+		args = append(args,
+			"--dataplane-file=/kuma/dpyaml-"+name,
+			"--dataplane-var", "name="+name,
+			"--dataplane-var", "address="+ip)
+	} else {
+		args = append(args,
+			"--name="+name,
+			"--mesh="+mesh)
+	}
+
 	if builtindns {
 		args = append(args, "--dns-enabled")
 	}
@@ -449,6 +455,7 @@ func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 
 type SshApp struct {
 	cmd    *exec.Cmd
+	stdin  bytes.Buffer
 	stdout bytes.Buffer
 	stderr bytes.Buffer
 	port   string
@@ -460,6 +467,7 @@ func NewSshApp(verbose bool, port string, env []string, args []string) *SshApp {
 	}
 	app.cmd = app.SshCmd(env, args)
 
+	inWriters := []io.Reader{&app.stdin}
 	outWriters := []io.Writer{&app.stdout}
 	errWriters := []io.Writer{&app.stderr}
 	if verbose {
@@ -468,6 +476,7 @@ func NewSshApp(verbose bool, port string, env []string, args []string) *SshApp {
 	}
 	app.cmd.Stdout = io.MultiWriter(outWriters...)
 	app.cmd.Stderr = io.MultiWriter(errWriters...)
+	app.cmd.Stdin = io.MultiReader(inWriters...)
 	return app
 }
 

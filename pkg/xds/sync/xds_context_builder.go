@@ -14,33 +14,33 @@ import (
 )
 
 type xdsContextBuilder struct {
-	resManager            manager.ReadOnlyResourceManager
-	connectionInfoTracker ConnectionInfoTracker
-	lookupIP              lookup.LookupIPFunc
-	envoyAdminClient      admin.EnvoyAdminClient
+	resManager       manager.ReadOnlyResourceManager
+	lookupIP         lookup.LookupIPFunc
+	envoyAdminClient admin.EnvoyAdminClient
 
 	cpContext *xds_context.ControlPlaneContext
 }
 
 func newXDSContextBuilder(
 	cpContext *xds_context.ControlPlaneContext,
-	connectionInfoTracker ConnectionInfoTracker,
 	resManager manager.ReadOnlyResourceManager,
 	lookupIP lookup.LookupIPFunc,
 	envoyAdminClient admin.EnvoyAdminClient,
 ) *xdsContextBuilder {
 	return &xdsContextBuilder{
-		resManager:            resManager,
-		connectionInfoTracker: connectionInfoTracker,
-		lookupIP:              lookupIP,
-		envoyAdminClient:      envoyAdminClient,
-		cpContext:             cpContext,
+		resManager:       resManager,
+		lookupIP:         lookupIP,
+		envoyAdminClient: envoyAdminClient,
+		cpContext:        cpContext,
 	}
 }
 
 func (c *xdsContextBuilder) buildMeshedContext(dpKey core_model.ResourceKey, meshHash string) (*xds_context.Context, error) {
 	ctx := context.Background()
-	xdsCtx := c.buildContext(dpKey)
+	xdsCtx, err := c.buildContext(dpKey)
+	if err != nil {
+		return nil, err
+	}
 
 	mesh := core_mesh.NewMeshResource()
 	if err := c.resManager.Get(ctx, mesh, core_store.GetByKey(dpKey.Mesh, core_model.NoMesh)); err != nil {
@@ -59,11 +59,10 @@ func (c *xdsContextBuilder) buildMeshedContext(dpKey core_model.ResourceKey, mes
 	return xdsCtx, nil
 }
 
-func (c *xdsContextBuilder) buildContext(dpKey core_model.ResourceKey) *xds_context.Context {
+func (c *xdsContextBuilder) buildContext(dpKey core_model.ResourceKey) (*xds_context.Context, error) {
 	return &xds_context.Context{
 		ControlPlane:     c.cpContext,
-		ConnectionInfo:   *c.connectionInfoTracker.ConnectionInfo(dpKey), // todo handle nil
 		Mesh:             xds_context.MeshContext{},
 		EnvoyAdminClient: c.envoyAdminClient,
-	}
+	}, nil
 }

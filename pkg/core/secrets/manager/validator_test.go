@@ -4,13 +4,16 @@ import (
 	"context"
 
 	"github.com/ghodss/yaml"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_datasource "github.com/kumahq/kuma/pkg/core/datasource"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -22,10 +25,6 @@ import (
 	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/util/proto"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Secret Validator", func() {
@@ -44,7 +43,7 @@ var _ = Describe("Secret Validator", func() {
 		caManagers["builtin"] = ca_builtin.NewBuiltinCaManager(secManager)
 		caManagers["provided"] = ca_provided.NewProvidedCaManager(core_datasource.NewDataSourceLoader(secManager))
 
-		mesh := &mesh_core.MeshResource{
+		mesh := &core_mesh.MeshResource{
 			Spec: &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: "ca-1",

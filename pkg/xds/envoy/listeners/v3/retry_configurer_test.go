@@ -1,16 +1,15 @@
 package v3_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -26,8 +25,8 @@ var _ = Describe("RetryConfigurer", func() {
 		service          string
 		routes           envoy_common.Routes
 		dpTags           mesh_proto.MultiValueTagSet
-		protocol         mesh_core.Protocol
-		retry            *mesh_core.RetryResource
+		protocol         core_mesh.Protocol
+		retry            *core_mesh.RetryResource
 		expected         string
 	}
 
@@ -75,13 +74,11 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "http",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
-							NumRetries: &wrapperspb.UInt32Value{
-								Value: 7,
-							},
+							NumRetries: util_proto.UInt32(7),
 						},
 					},
 				},
@@ -143,23 +140,15 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "http",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
-							NumRetries: &wrapperspb.UInt32Value{
-								Value: 3,
-							},
-							PerTryTimeout: &durationpb.Duration{
-								Seconds: 1,
-							},
+							NumRetries:    util_proto.UInt32(3),
+							PerTryTimeout: util_proto.Duration(time.Second * 1),
 							BackOff: &mesh_proto.Retry_Conf_BackOff{
-								BaseInterval: &durationpb.Duration{
-									Nanos: 200000000,
-								},
-								MaxInterval: &durationpb.Duration{
-									Nanos: 500000000,
-								},
+								BaseInterval: util_proto.Duration(time.Nanosecond * 200000000),
+								MaxInterval:  util_proto.Duration(time.Nanosecond * 500000000),
 							},
 							RetriableStatusCodes: []uint32{500, 502},
 						},
@@ -230,13 +219,11 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "grpc",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Grpc: &mesh_proto.Retry_Conf_Grpc{
-							NumRetries: &wrapperspb.UInt32Value{
-								Value: 18,
-							},
+							NumRetries: util_proto.UInt32(18),
 						},
 					},
 				},
@@ -298,23 +285,15 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "grpc",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Grpc: &mesh_proto.Retry_Conf_Grpc{
-							NumRetries: &wrapperspb.UInt32Value{
-								Value: 2,
-							},
-							PerTryTimeout: &durationpb.Duration{
-								Seconds: 2,
-							},
+							NumRetries:    util_proto.UInt32(2),
+							PerTryTimeout: util_proto.Duration(time.Second * 2),
 							BackOff: &mesh_proto.Retry_Conf_BackOff{
-								BaseInterval: &durationpb.Duration{
-									Nanos: 400000000,
-								},
-								MaxInterval: &durationpb.Duration{
-									Seconds: 1,
-								},
+								BaseInterval: util_proto.Duration(time.Nanosecond * 400000000),
+								MaxInterval:  util_proto.Duration(time.Second * 1),
 							},
 							RetryOn: []mesh_proto.Retry_Conf_Grpc_RetryOn{
 								mesh_proto.Retry_Conf_Grpc_cancelled,

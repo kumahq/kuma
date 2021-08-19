@@ -3,65 +3,32 @@ package zone
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
-
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/kds/mux"
-	kds_server "github.com/kumahq/kuma/pkg/kds/server"
-	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
+	"github.com/kumahq/kuma/pkg/kds/mux"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
 var (
 	kdsZoneLog = core.Log.WithName("kds-zone")
-
-	// ProvidedTypes lists the resource types provided by the Zone
-	// CP to the Global CP.
-	ProvidedTypes = []model.ResourceType{
-		mesh.DataplaneInsightType,
-		mesh.DataplaneType,
-		mesh.ZoneIngressInsightType,
-		mesh.ZoneIngressType,
-	}
-
-	// ConsumedTypes lists the resource types consumed from the
-	// Global CP by the Zone CP.
-	ConsumedTypes = []model.ResourceType{
-		mesh.CircuitBreakerType,
-		mesh.DataplaneType,
-		mesh.ExternalServiceType,
-		mesh.FaultInjectionType,
-		mesh.HealthCheckType,
-		mesh.MeshType,
-		mesh.ProxyTemplateType,
-		mesh.RateLimitType,
-		mesh.RetryType,
-		mesh.TimeoutType,
-		mesh.TrafficLogType,
-		mesh.TrafficPermissionType,
-		mesh.TrafficRouteType,
-		mesh.TrafficTraceType,
-		mesh.ZoneIngressType,
-		system.ConfigType,
-		system.GlobalSecretType,
-		system.SecretType,
-	}
 )
 
 func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multizone.Zone.Name
-	kdsServer, err := kds_server.New(kdsZoneLog, rt, ProvidedTypes,
+	reg := registry.Global()
+	kdsServer, err := kds_server.New(kdsZoneLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByZone)),
 		zone, rt.Config().Multizone.Zone.KDS.RefreshInterval,
 		rt.KDSContext().ZoneProvidedFilter, false)
 	if err != nil {
@@ -77,7 +44,7 @@ func Setup(rt core_runtime.Runtime) error {
 				log.Error(err, "StreamKumaResources finished with an error")
 			}
 		}()
-		sink := kds_client.NewKDSSink(log, ConsumedTypes, kds_client.NewKDSStream(session.ClientStream(), zone),
+		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone),
 			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
 		)
 		go func() {
@@ -136,13 +103,4 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 			return syncer.Sync(rs)
 		},
 	}
-}
-
-func ConsumesType(typ model.ResourceType) bool {
-	for _, consumedTyp := range ConsumedTypes {
-		if consumedTyp == typ {
-			return true
-		}
-	}
-	return false
 }

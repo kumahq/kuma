@@ -9,10 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -34,14 +35,11 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 					ProxyTemplate: given.template,
 				}
 				ctx := xds_context.Context{
-					ConnectionInfo: xds_context.ConnectionInfo{
-						Authority: "kuma-system:5677",
-					},
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsTlsCert: []byte("12345"),
+						Secrets: &xds.TestSecrets{},
 					},
 					Mesh: xds_context.MeshContext{
-						Resource: &mesh_core.MeshResource{
+						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
@@ -61,7 +59,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 			Entry("should fail when raw xDS resource is not valid", testCase{
 				proxy: &model.Proxy{
 					Id: *model.BuildProxyId("", "demo.backend-01"),
-					Dataplane: &mesh_core.DataplaneResource{
+					Dataplane: &core_mesh.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Name:    "backend-01",
 							Mesh:    "demo",
@@ -88,7 +86,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				template: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
 						Imports: []string{
-							mesh_core.ProfileDefaultProxy,
+							core_mesh.ProfileDefaultProxy,
 						},
 						Resources: []*mesh_proto.ProxyTemplateRawResource{{
 							Name:     "raw-name",
@@ -123,14 +121,11 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 
 				// given
 				ctx := xds_context.Context{
-					ConnectionInfo: xds_context.ConnectionInfo{
-						Authority: "kuma-system:5677",
-					},
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsTlsCert: []byte("12345"),
+						Secrets: &xds.TestSecrets{},
 					},
 					Mesh: xds_context.MeshContext{
-						Resource: &mesh_core.MeshResource{
+						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
@@ -153,7 +148,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 				proxy := &model.Proxy{
 					Id: *model.BuildProxyId("", "demo.backend-01"),
-					Dataplane: &mesh_core.DataplaneResource{
+					Dataplane: &core_mesh.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Name:    "backend-01",
 							Mesh:    "demo",

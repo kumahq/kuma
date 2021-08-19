@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
 	kube_auth "k8s.io/api/authentication/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -34,7 +33,7 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 	case *core_mesh.ZoneIngressResource:
 		return k.authZoneIngress(ctx, resource, credential)
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.GetType())
+		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 }
 

@@ -3,15 +3,13 @@ package universal
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	"github.com/pkg/errors"
-
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
@@ -47,7 +45,7 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, resource mode
 	case *core_mesh.ZoneIngressResource:
 		return u.authZoneIngress(ctx, resource, credential)
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.GetType())
+		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 }
 

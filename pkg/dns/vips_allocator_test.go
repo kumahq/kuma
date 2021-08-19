@@ -7,19 +7,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
-	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
@@ -91,7 +88,7 @@ var _ = Describe("VIP Allocator", func() {
 		// then
 		vipList, err := persistence.GetByMesh("mesh-1")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(vipList).To(HaveLen(2))
+		Expect(vipList.HostnameEntries()).To(HaveLen(2))
 
 		vipList, err = persistence.GetByMesh("mesh-2")
 		Expect(err).ToNot(HaveOccurred())
@@ -102,7 +99,7 @@ var _ = Describe("VIP Allocator", func() {
 			Expect(ip).To(HavePrefix("240.0.0"))
 		}
 
-		Expect(vipList).To(HaveLen(1))
+		Expect(vipList.HostnameEntries()).To(HaveLen(1))
 	})
 
 	It("should respect already allocated VIPs in case of IPAM restarts", func() {
@@ -110,10 +107,10 @@ var _ = Describe("VIP Allocator", func() {
 		persistence := vips.NewPersistence(rm, cm)
 		// we add VIPs directly to the 'persistence' object
 		// that emulates situation when IPAM is fresh and doesn't aware of allocated VIPs
-		err := persistence.Set("mesh-1", vips.List{
-			vips.NewServiceEntry("frontend"): "240.0.0.0",
-			vips.NewServiceEntry("backend"):  "240.0.0.1",
-		})
+		err := persistence.Set("mesh-1", vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+			vips.NewServiceEntry("frontend"): {Address: "240.0.0.0"},
+			vips.NewServiceEntry("backend"):  {Address: "240.0.0.1"},
+		}))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
@@ -126,11 +123,15 @@ var _ = Describe("VIP Allocator", func() {
 		vipList, err := persistence.GetByMesh("mesh-1")
 		Expect(err).ToNot(HaveOccurred())
 		// then
-		Expect(vipList).To(Equal(vips.List{
-			vips.NewServiceEntry("frontend"): "240.0.0.0",
-			vips.NewServiceEntry("backend"):  "240.0.0.1",
-			vips.NewServiceEntry("database"): "240.0.0.2",
-		}))
+		expected := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+			vips.NewServiceEntry("backend"):  {Address: "240.0.0.1"},
+			vips.NewServiceEntry("database"): {Address: "240.0.0.2"},
+			vips.NewServiceEntry("frontend"): {Address: "240.0.0.0"},
+		})
+		Expect(vipList.HostnameEntries()).To(Equal(expected.HostnameEntries()))
+		for _, k := range vipList.HostnameEntries() {
+			Expect(vipList.Get(k).Address).To(Equal(expected.Get(k).Address))
+		}
 	})
 
 	It("should return error if failed to update VIP config", func() {
@@ -169,7 +170,7 @@ var _ = Describe("VIP Allocator", func() {
 	})
 })
 
-var _ = Describe("BuildServiceSet", func() {
+var _ = Describe("BuildVirtualOutboundMeshView", func() {
 	var rm manager.ResourceManager
 
 	BeforeEach(func() {
@@ -255,115 +256,62 @@ var _ = Describe("BuildServiceSet", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		serviceSet, err := dns.BuildServiceSet(rm, "mesh-1")
+		serviceSet, err := dns.BuildVirtualOutboundMeshView(rm, "mesh-1")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Expect(serviceSet).To(Equal(vips.EntrySet{
-			vips.NewServiceEntry("backend"):           true,
-			vips.NewServiceEntry("frontend"):          true,
-			vips.NewServiceEntry("database"):          true,
-			vips.NewServiceEntry("metrics"):           true,
-			vips.NewServiceEntry("ingress-svc"):       true,
-			vips.NewServiceEntry("es-backend"):        true,
-			vips.NewHostEntry("external.service.com"): true,
-		}))
+		expected := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
+		Expect(expected.Add(vips.NewServiceEntry("backend"), vips.OutboundEntry{Port: 0, TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}, Origin: "service"})).ToNot(HaveOccurred())
+		Expect(expected.Add(vips.NewServiceEntry("database"), vips.OutboundEntry{Port: 0, TagSet: map[string]string{mesh_proto.ServiceTag: "database"}, Origin: "service"})).ToNot(HaveOccurred())
+		Expect(expected.Add(vips.NewServiceEntry("metrics"), vips.OutboundEntry{Port: 0, TagSet: map[string]string{mesh_proto.ServiceTag: "metrics"}, Origin: "service"})).ToNot(HaveOccurred())
+		Expect(expected.Add(vips.NewServiceEntry("frontend"), vips.OutboundEntry{Port: 0, TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}, Origin: "service"})).ToNot(HaveOccurred())
+		Expect(expected.Add(vips.NewServiceEntry("ingress-svc"), vips.OutboundEntry{Port: 0, TagSet: map[string]string{mesh_proto.ServiceTag: "ingress-svc"}, Origin: "service"})).ToNot(HaveOccurred())
+		Expect(expected.Add(vips.NewServiceEntry("es-backend"), vips.OutboundEntry{Port: 8080, TagSet: map[string]string{mesh_proto.ServiceTag: "es-backend"}, Origin: "service"})).ToNot(HaveOccurred())
+		Expect(expected.Add(vips.NewHostEntry("external.service.com"), vips.OutboundEntry{Port: 8080, TagSet: map[string]string{mesh_proto.ServiceTag: "es-backend"}, Origin: "host"})).ToNot(HaveOccurred())
+
+		Expect(serviceSet.HostnameEntries()).To(Equal(expected.HostnameEntries()))
+		for _, k := range serviceSet.HostnameEntries() {
+			Expect(serviceSet.Get(k)).To(Equal(expected.Get(k)))
+		}
 	})
 })
 
-var _ = Describe("UpdateMeshedVIPs", func() {
+var _ = Describe("AllocateVIPs", func() {
 	It("should allocate new VIPs", func() {
 		// setup
-		vipsList := vips.List{}
-		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
+		gv, err := vips.NewGlobalView("240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
-		serviceSet := vips.EntrySet{
-			vips.NewServiceEntry("backend"):  true,
-			vips.NewServiceEntry("frontend"): true,
-		}
+		serviceSet := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
+		Expect(serviceSet.Add(vips.NewServiceEntry("backend"), vips.OutboundEntry{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}})).ToNot(HaveOccurred())
+		Expect(serviceSet.Add(vips.NewServiceEntry("frontend"), vips.OutboundEntry{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}})).ToNot(HaveOccurred())
 		// when
-		updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
+		err = dns.AllocateVIPs(gv, serviceSet)
 		Expect(err).ToNot(HaveOccurred())
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(updated).To(BeTrue())
-		Expect(vipsList).To(Equal(vips.List{
-			vips.NewServiceEntry("backend"):  "240.0.0.0",
-			vips.NewServiceEntry("frontend"): "240.0.0.1",
-		}))
-	})
-
-	It("should free IP for deleted service", func() {
-		// setup
-		vipsList := vips.List{
-			vips.NewServiceEntry("backend"):  "240.0.0.0",
-			vips.NewServiceEntry("frontend"): "240.0.0.1",
-		}
-		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
-		Expect(err).ToNot(HaveOccurred())
-		serviceSet := vips.EntrySet{
-			vips.NewServiceEntry("backend"): true,
-		}
-		// when
-		updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
-		Expect(err).ToNot(HaveOccurred())
-		// then
-		Expect(updated).To(BeTrue())
-		Expect(vipsList).To(Equal(vips.List{
-			vips.NewServiceEntry("backend"): "240.0.0.0",
-		}))
-	})
-
-	It("should return updated=false if nothing changed", func() {
-		// setup
-		vipsList := vips.List{
-			vips.NewServiceEntry("backend"):  "240.0.0.0",
-			vips.NewServiceEntry("frontend"): "240.0.0.1",
-		}
-		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
-		Expect(err).ToNot(HaveOccurred())
-		serviceSet := vips.EntrySet{
-			vips.NewServiceEntry("backend"):  true,
-			vips.NewServiceEntry("frontend"): true,
-		}
-		// when
-		updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
-		Expect(err).ToNot(HaveOccurred())
-		// then
-		Expect(updated).To(BeFalse())
-		Expect(vipsList).To(Equal(vips.List{
-			vips.NewServiceEntry("backend"):  "240.0.0.0",
-			vips.NewServiceEntry("frontend"): "240.0.0.1",
-		}))
+		Expect(serviceSet.HostnameEntries()).To(Equal([]vips.HostnameEntry{vips.NewServiceEntry("backend"), vips.NewServiceEntry("frontend")}))
+		Expect(serviceSet.Get(vips.NewServiceEntry("backend")).Address).ToNot(BeEmpty())
+		Expect(serviceSet.Get(vips.NewServiceEntry("frontend")).Address).ToNot(BeEmpty())
 	})
 
 	It("should generate the same VIP for services across meshes", func() {
 		// setup
-		global := vips.List{
-			vips.NewServiceEntry("backend"):  "240.0.0.0",
-			vips.NewServiceEntry("frontend"): "240.0.0.1",
-			vips.NewServiceEntry("database"): "240.0.0.10",
-		}
-		meshed := vips.List{
-			vips.NewServiceEntry("backend"):  "240.0.0.0",
-			vips.NewServiceEntry("frontend"): "240.0.0.1",
-		}
-		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
+		gv, err := vips.NewGlobalView("240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
-		serviceSet := vips.EntrySet{
-			vips.NewServiceEntry("backend"):  true,
-			vips.NewServiceEntry("frontend"): true,
-			vips.NewServiceEntry("database"): true,
-		}
+		Expect(gv.Reserve(vips.NewServiceEntry("backend"), "240.0.0.0")).ToNot(HaveOccurred())
+		Expect(gv.Reserve(vips.NewServiceEntry("frontend"), "240.0.0.1")).ToNot(HaveOccurred())
+		Expect(gv.Reserve(vips.NewServiceEntry("database"), "240.0.0.10")).ToNot(HaveOccurred())
+		Expect(err).ToNot(HaveOccurred())
+		serviceSet := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
+		Expect(serviceSet.Add(vips.NewServiceEntry("backend"), vips.OutboundEntry{Origin: "default", TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}})).ToNot(HaveOccurred())
+		Expect(serviceSet.Add(vips.NewServiceEntry("frontend"), vips.OutboundEntry{Origin: "default", TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}})).ToNot(HaveOccurred())
+		Expect(serviceSet.Add(vips.NewServiceEntry("database"), vips.OutboundEntry{Origin: "default", TagSet: map[string]string{mesh_proto.ServiceTag: "database"}})).ToNot(HaveOccurred())
 		// when
-		updated, err := dns.UpdateMeshedVIPs(global, meshed, ipam, serviceSet)
+		err = dns.AllocateVIPs(gv, serviceSet)
 		Expect(err).ToNot(HaveOccurred())
 		// then
-		Expect(updated).To(BeTrue())
-		Expect(meshed).To(Equal(vips.List{
-			vips.NewServiceEntry("backend"):  "240.0.0.0",
-			vips.NewServiceEntry("frontend"): "240.0.0.1",
-			vips.NewServiceEntry("database"): "240.0.0.10",
-		}))
+		Expect(serviceSet.HostnameEntries()).To(Equal([]vips.HostnameEntry{vips.NewServiceEntry("backend"), vips.NewServiceEntry("database"), vips.NewServiceEntry("frontend")}))
+		Expect(serviceSet.Get(vips.NewServiceEntry("backend")).Address).To(Equal("240.0.0.0"))
+		Expect(serviceSet.Get(vips.NewServiceEntry("frontend")).Address).To(Equal("240.0.0.1"))
+		Expect(serviceSet.Get(vips.NewServiceEntry("database")).Address).To(Equal("240.0.0.10"))
 	})
 })

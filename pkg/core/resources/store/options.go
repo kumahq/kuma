@@ -12,7 +12,6 @@ type CreateOptions struct {
 	Mesh         string
 	CreationTime time.Time
 	Owner        core_model.Resource
-	Synced       bool
 }
 
 type CreateOptionsFunc func(*CreateOptions)
@@ -48,26 +47,13 @@ func CreateWithOwner(owner core_model.Resource) CreateOptionsFunc {
 	}
 }
 
-func CreateSynced() CreateOptionsFunc {
-	return func(opts *CreateOptions) {
-		opts.Synced = true
-	}
-}
-
 type UpdateOptions struct {
 	ModificationTime time.Time
-	Synced           bool
 }
 
 func ModifiedAt(modificationTime time.Time) UpdateOptionsFunc {
 	return func(opts *UpdateOptions) {
 		opts.ModificationTime = modificationTime
-	}
-}
-
-func UpdateSynced() UpdateOptionsFunc {
-	return func(opts *UpdateOptions) {
-		opts.Synced = true
 	}
 }
 

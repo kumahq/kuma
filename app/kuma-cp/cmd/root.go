@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -10,7 +11,9 @@ import (
 	"github.com/kumahq/kuma/pkg/cmd/version"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	_ "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshalling Envoy protobuf works
+
+	// import Envoy protobuf definitions so (un)marshalling Envoy protobuf works
+	_ "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var (
@@ -37,8 +40,13 @@ func newRootCmd() *cobra.Command {
 			}
 
 			if args.outputPath != "" {
-				fmt.Printf("logs will be stored in %v", args.outputPath)
-				core.SetLogger(core.NewLoggerWithRotation(level, args.outputPath, args.maxSize, args.maxBackups, args.maxAge))
+				output, err := filepath.Abs(args.outputPath)
+				if err != nil {
+					return err
+				}
+
+				fmt.Printf("%s: logs will be stored in %q\n", "kuma-cp", output)
+				core.SetLogger(core.NewLoggerWithRotation(level, output, args.maxSize, args.maxBackups, args.maxAge))
 			} else {
 				core.SetLogger(core.NewLogger(level))
 			}

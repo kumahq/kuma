@@ -50,22 +50,12 @@ resources:
             validationContextSdsSecretConfig:
               name: mesh_ca
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
           - name: identity_cert
             sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: ads_cluster
-                transportApiVersion: V3
+              ads: {}
               resourceApiVersion: V3
         sni: db{mesh=demo}
     type: EDS
@@ -101,22 +91,12 @@ resources:
             validationContextSdsSecretConfig:
               name: mesh_ca
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
           - name: identity_cert
             sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: ads_cluster
-                transportApiVersion: V3
+              ads: {}
               resourceApiVersion: V3
         sni: elastic{mesh=demo}
     type: EDS
@@ -222,22 +202,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.1:80
@@ -376,22 +346,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: kuma:metrics:prometheus
@@ -428,3 +388,19 @@ resources:
           statPrefix: elastic
     name: outbound:127.0.0.1:59200
     trafficDirection: OUTBOUND
+- name: identity_cert
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: identity_cert
+    tlsCertificate:
+      certificateChain:
+        inlineBytes: Q0VSVA==
+      privateKey:
+        inlineBytes: S0VZ
+- name: mesh_ca
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: mesh_ca
+    validationContext:
+      trustedCa:
+        inlineBytes: Q0E=

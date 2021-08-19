@@ -2,13 +2,11 @@ package k8s
 
 import (
 	"github.com/pkg/errors"
-
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	kube_core "k8s.io/api/core/v1"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
-
-	kube_core "k8s.io/api/core/v1"
 )
 
 var _ core_plugins.ConfigStorePlugin = &plugin{}

@@ -8,17 +8,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-
-	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
-
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -61,16 +59,16 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 		ptr := func(s string) *string { return &s }
 		ownerName = ptr(opts.Owner.GetMeta().GetName())
 		ownerMesh = ptr(opts.Owner.GetMeta().GetMesh())
-		ownerType = ptr(string(opts.Owner.GetType()))
+		ownerType = ptr(string(opts.Owner.Descriptor().Name))
 	}
 
 	version := 0
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
-	_, err = r.db.Exec(statement, opts.Name, opts.Mesh, resource.GetType(), version, string(bytes),
+	_, err = r.db.Exec(statement, opts.Name, opts.Mesh, resource.Descriptor().Name, version, string(bytes),
 		opts.CreationTime.UTC(), opts.CreationTime.UTC(), ownerName, ownerMesh, ownerType)
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
-			return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Name, opts.Mesh)
+			return store.ErrorResourceAlreadyExists(resource.Descriptor().Name, opts.Name, opts.Mesh)
 		}
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
@@ -106,14 +104,14 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 		opts.ModificationTime.UTC(),
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
-		resource.GetType(),
+		resource.Descriptor().Name,
 		version,
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query %s", statement)
 	}
 	if rows, _ := result.RowsAffected(); rows != 1 { // error ignored, postgres supports RowsAffected()
-		return store.ErrorResourceConflict(resource.GetType(), resource.GetMeta().GetName(), resource.GetMeta().GetMesh())
+		return store.ErrorResourceConflict(resource.Descriptor().Name, resource.GetMeta().GetName(), resource.GetMeta().GetMesh())
 	}
 
 	// update resource's meta with new version
@@ -131,12 +129,12 @@ func (r *postgresResourceStore) Delete(_ context.Context, resource model.Resourc
 	opts := store.NewDeleteOptions(fs...)
 
 	statement := `DELETE FROM resources WHERE name=$1 AND type=$2 AND mesh=$3`
-	result, err := r.db.Exec(statement, opts.Name, resource.GetType(), opts.Mesh)
+	result, err := r.db.Exec(statement, opts.Name, resource.Descriptor().Name, opts.Mesh)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 	if rows, _ := result.RowsAffected(); rows == 0 { // error ignored, postgres supports RowsAffected()
-		return store.ErrorResourceNotFound(resource.GetType(), opts.Name, opts.Mesh)
+		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 
 	return nil
@@ -146,14 +144,14 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 	opts := store.NewGetOptions(fs...)
 
 	statement := `SELECT spec, version, creation_time, modification_time FROM resources WHERE name=$1 AND mesh=$2 AND type=$3;`
-	row := r.db.QueryRow(statement, opts.Name, opts.Mesh, resource.GetType())
+	row := r.db.QueryRow(statement, opts.Name, opts.Mesh, resource.Descriptor().Name)
 
 	var spec string
 	var version int
 	var creationTime, modificationTime time.Time
 	err := row.Scan(&spec, &version, &creationTime, &modificationTime)
 	if err == sql.ErrNoRows {
-		return store.ErrorResourceNotFound(resource.GetType(), opts.Name, opts.Mesh)
+		return store.ErrorResourceNotFound(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
@@ -173,7 +171,7 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 	resource.SetMeta(meta)
 
 	if opts.Version != "" && resource.GetMeta().GetVersion() != opts.Version {
-		return store.ErrorResourcePreconditionFailed(resource.GetType(), opts.Name, opts.Mesh)
+		return store.ErrorResourcePreconditionFailed(resource.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	return nil
 }

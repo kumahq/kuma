@@ -23,6 +23,8 @@ message ExternalService {
   option (kuma.mesh.resource).name = "ExternalServiceResource";
   option (kuma.mesh.resource).type = "ExternalService";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "external-service";
 
   // Networking describes the properties of the external service connectivity
   message Networking {
@@ -48,6 +50,10 @@ message ExternalService {
       // However, some servers requires this setting, especially when using
       // mTLS.
       google.protobuf.BoolValue allowRenegotiation = 5;
+
+      // ServerName overrides the default Server Name Indicator set by Kuma.
+      // The default value is set to "address" specified in "networking".
+      google.protobuf.StringValue server_name = 6;
     }
 
     TLS tls = 2;

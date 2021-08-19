@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -67,7 +66,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 		globalCP := globalCluster.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		testServerToken, err := globalCP.GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 
 		// Zone universal
@@ -79,7 +78,7 @@ spec:
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Zone, optsZoneUniversal...)).
-			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
+			Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
@@ -155,16 +154,15 @@ spec:
 	})
 
 	trafficAllowed := func() {
-		stdout, _, err := zoneKube.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+		_, _, err := zoneKube.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("Echo universal"))
 	}
 
 	trafficBlocked := func() {
 		Eventually(func() error {
 			_, _, err := zoneKube.Exec(TestNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			return err
 		}, "30s", "1s").Should(HaveOccurred())
 	}
@@ -232,7 +230,7 @@ spec:
         kuma.io/service: demo-client_kuma-test_svc
   destinations:
     - match:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
 `
 		err := YamlK8s(yaml)(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -259,7 +257,7 @@ spec:
         newtag: client
   destinations:
     - match:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
 `
 		err := YamlK8s(yaml)(globalCluster)
 		Expect(err).ToNot(HaveOccurred())

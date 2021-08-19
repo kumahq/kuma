@@ -30,6 +30,7 @@ func ServiceInsightName(mesh string) string {
 }
 
 type Config struct {
+	Registry           registry.TypeRegistry
 	ResourceManager    manager.ResourceManager
 	EventReaderFactory events.ListenerFactory
 	MinResyncTimeout   time.Duration
@@ -48,6 +49,7 @@ type resyncer struct {
 	meshInsightMux     sync.Mutex
 	serviceInsightMux  sync.Mutex
 	rateLimiters       map[string]ratelimit.Allower
+	registry           registry.TypeRegistry
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -66,6 +68,7 @@ func NewResyncer(config *Config) component.Component {
 		rm:                 config.ResourceManager,
 		rateLimiterFactory: config.RateLimiterFactory,
 		rateLimiters:       map[string]ratelimit.Allower{},
+		registry:           config.Registry,
 	}
 
 	r.tick = config.Tick
@@ -108,6 +111,10 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		if !ok {
 			continue
 		}
+		desc, err := r.registry.DescriptorFor(resourceChanged.Type)
+		if err != nil {
+			log.Error(err, "Resource is not registered in the registry, ignoring it", "resource", resourceChanged.Type)
+		}
 		if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
 			r.deleteRateLimiter(resourceChanged.Key.Name)
 		}
@@ -116,7 +123,7 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 				log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
 			}
 		}
-		if !meshScoped(resourceChanged.Type) {
+		if desc.Scope == model.ScopeGlobal {
 			continue
 		}
 		if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
@@ -146,13 +153,6 @@ func (r *resyncer) deleteRateLimiter(mesh string) {
 		return
 	}
 	delete(r.rateLimiters, mesh)
-}
-
-func meshScoped(t model.ResourceType) bool {
-	if obj, err := registry.Global().NewObject(t); err != nil || obj.Scope() != model.ScopeMesh {
-		return false
-	}
-	return true
 }
 
 func (r *resyncer) createOrUpdateServiceInsights() error {
@@ -234,9 +234,9 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 		}
 	}
 
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, core_mesh.NewServiceInsightResource(), func(resource model.Resource) {
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
-		_ = resource.SetSpec(insight)
+		return resource.SetSpec(insight)
 	})
 	if err != nil {
 		if manager.IsMeshNotFound(err) {
@@ -283,10 +283,13 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			KumaDp: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 			Envoy:  map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 		},
+		MTLS: &mesh_proto.MeshInsight_MTLS{
+			IssuedBackends:    map[string]*mesh_proto.MeshInsight_DataplaneStat{},
+			SupportedBackends: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
+		},
 	}
 
 	dataplanes := &core_mesh.DataplaneResourceList{}
-
 	if err := r.rm.List(context.Background(), dataplanes, store.ListByMesh(mesh)); err != nil {
 		return err
 	}
@@ -294,7 +297,6 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	insight.Dataplanes.Total = uint32(len(dataplanes.GetItems()))
 
 	dpInsights := &core_mesh.DataplaneInsightResourceList{}
-
 	if err := r.rm.List(context.Background(), dpInsights, store.ListByMesh(mesh)); err != nil {
 		return err
 	}
@@ -328,30 +330,26 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 
 		updateTotal(kumaDpVersion, insight.DpVersions.KumaDp)
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
+		updateMTLS(dpInsight.GetMTLS(), status, insight.MTLS)
 	}
 
-	for _, resType := range registry.Global().ListTypes() {
-		if !meshScoped(resType) || resType == core_mesh.DataplaneType || resType == core_mesh.DataplaneInsightType {
-			continue
-		}
-		list, err := registry.Global().NewList(resType)
-		if err != nil {
-			return err
-		}
+	for _, resDesc := range r.registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.Not(model.Named(core_mesh.DataplaneType, core_mesh.DataplaneInsightType))) {
+		list := resDesc.NewList()
+
 		if err := r.rm.List(context.Background(), list, store.ListByMesh(mesh)); err != nil {
 			return err
 		}
 
 		if len(list.GetItems()) != 0 {
-			insight.Policies[string(resType)] = &mesh_proto.MeshInsight_PolicyStat{
+			insight.Policies[string(resDesc.Name)] = &mesh_proto.MeshInsight_PolicyStat{
 				Total: uint32(len(list.GetItems())),
 			}
 		}
 	}
 
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) {
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
-		_ = resource.SetSpec(insight)
+		return resource.SetSpec(insight)
 	})
 	if err != nil {
 		if manager.IsMeshNotFound(err) {
@@ -367,6 +365,46 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		return err
 	}
 	return nil
+}
+
+func updateMTLS(mtlsInsight *mesh_proto.DataplaneInsight_MTLS, status core_mesh.Status, stats *mesh_proto.MeshInsight_MTLS) {
+	if mtlsInsight == nil {
+		return
+	}
+
+	backend := mtlsInsight.GetIssuedBackend()
+	if backend == "" {
+		backend = "unknown" // backwards compatibility for Kuma 1.2.x
+	}
+	if stat := stats.IssuedBackends[backend]; stat == nil {
+		stats.IssuedBackends[backend] = &mesh_proto.MeshInsight_DataplaneStat{}
+	}
+
+	switch status {
+	case core_mesh.Online:
+		stats.IssuedBackends[backend].Online++
+	case core_mesh.PartiallyDegraded:
+		stats.IssuedBackends[backend].PartiallyDegraded++
+	case core_mesh.Offline:
+		stats.IssuedBackends[backend].Offline++
+	}
+	stats.IssuedBackends[backend].Total++
+
+	for _, backend := range mtlsInsight.GetSupportedBackends() {
+		if stat := stats.SupportedBackends[backend]; stat == nil {
+			stats.SupportedBackends[backend] = &mesh_proto.MeshInsight_DataplaneStat{}
+		}
+
+		switch status {
+		case core_mesh.Online:
+			stats.SupportedBackends[backend].Online++
+		case core_mesh.PartiallyDegraded:
+			stats.SupportedBackends[backend].PartiallyDegraded++
+		case core_mesh.Offline:
+			stats.SupportedBackends[backend].Offline++
+		}
+		stats.SupportedBackends[backend].Total++
+	}
 }
 
 func updateTotal(version string, dpStats map[string]*mesh_proto.MeshInsight_DataplaneStat) {

@@ -7,11 +7,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl root cmd", func() {
@@ -35,7 +35,8 @@ var _ = Describe("kumactl root cmd", func() {
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+				Registry:           registry.NewTypeRegistry(),
+				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
 		}
 		rootCmd := cmd.NewRootCmd(rootCtx)
@@ -68,7 +69,8 @@ currentContext: local
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+				Registry:           registry.NewTypeRegistry(),
+				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
 		}
 		rootCmd := cmd.NewRootCmd(rootCtx)

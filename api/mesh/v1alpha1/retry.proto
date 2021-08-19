@@ -23,6 +23,9 @@ message Retry {
   option (kuma.mesh.resource).name = "RetryResource";
   option (kuma.mesh.resource).type = "Retry";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "retry";
+  option (kuma.mesh.resource).ws.plural = "retries";
 
   // List of selectors to match dataplanes that retry policy should be
   // configured for

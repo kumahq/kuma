@@ -7,14 +7,14 @@ import (
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 	v3 "github.com/kumahq/kuma/pkg/xds/server/v3"
-
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 )
 
 var (
@@ -33,13 +33,9 @@ var (
 
 func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.ResourceType {
 	types := []core_model.ResourceType{}
-	for _, typ := range registry.Global().ListTypes() {
-		r, err := registry.Global().NewObject(typ)
-		if err != nil {
-			panic(err)
-		}
-		if r.Scope() == core_model.ScopeMesh && !exclude[typ] {
-			types = append(types, typ)
+	for _, desc := range registry.Global().ObjectDescriptors() {
+		if desc.Scope == core_model.ScopeMesh && !exclude[desc.Name] {
+			types = append(types, desc.Name)
 		}
 	}
 	for typ := range HashMeshIncludedGlobalResources {
@@ -67,7 +63,17 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache, rt.DNSResolver())
+
+	secrets, err := secrets.NewSecrets(
+		secrets.NewCaProvider(rt.CaManagers()),
+		secrets.NewIdentityProvider(rt.CaManagers()),
+		rt.Metrics(),
+	)
+	if err != nil {
+		return err
+	}
+
+	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache, secrets)
 	if err != nil {
 		return err
 	}

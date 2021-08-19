@@ -11,21 +11,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	errors_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	sample_api "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources/model"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	errors_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
-
+	sample_api "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("RemoteStore", func() {
@@ -50,8 +48,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "traffic-routes"),
-				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
+				sample_core.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
+				mesh.MeshType:                core_rest.NewResourceApi(core_model.ScopeGlobal, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -68,8 +66,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "traffic-routes"),
-				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
+				sample_core.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
+				mesh.MeshType:                core_rest.NewResourceApi(core_model.ScopeMesh, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)

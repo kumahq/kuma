@@ -1,13 +1,12 @@
 package v3_test
 
 import (
+	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
-
-	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 )
 
 var _ = Describe("TextSpan", func() {

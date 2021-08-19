@@ -3,20 +3,16 @@ package controllers
 import (
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-
 	"github.com/pkg/errors"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -35,13 +31,10 @@ func (p *PodConverter) PodToDataplane(
 	dataplane *mesh_k8s.Dataplane,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	zoneIngresses []*mesh_k8s.ZoneIngress,
-	vips vips.List,
 ) error {
 	dataplane.Mesh = MeshFor(pod)
-	dataplaneProto, err := p.DataplaneFor(pod, services, externalServices, others, zoneIngresses, vips)
+	dataplaneProto, err := p.DataplaneFor(pod, services, others)
 	if err != nil {
 		return err
 	}
@@ -81,10 +74,7 @@ func MeshFor(pod *kube_core.Pod) string {
 func (p *PodConverter) DataplaneFor(
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	zoneIngresses []*mesh_k8s.ZoneIngress,
-	vips vips.List,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
@@ -145,7 +135,7 @@ func (p *PodConverter) DataplaneFor(
 		dataplane.Networking.Inbound = ifaces
 	}
 
-	ofaces, err := p.OutboundInterfacesFor(pod, others, zoneIngresses, externalServices, vips)
+	ofaces, err := p.OutboundInterfacesFor(pod, others)
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +162,7 @@ func GatewayFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Se
 		return nil, err
 	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
+		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 		Tags: interfaces[0].Tags, // InboundInterfacesFor() returns either a non-empty list or an error
 	}, nil
 }
