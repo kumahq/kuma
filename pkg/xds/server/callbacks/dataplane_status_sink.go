@@ -155,13 +155,6 @@ func (s *dataplaneInsightStore) Upsert(dataplaneType core_model.ResourceType, da
 			if err := insight.Spec.UpdateSubscription(subscription); err != nil {
 				return err
 			}
-			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
-				insight.Spec.MTLS = nil
-			} else if insight.Spec.MTLS == nil || insight.Spec.MTLS.CertificateExpirationTime.AsTime() != secretsInfo.Expiration {
-				if err := insight.Spec.UpdateCert(secretsInfo.Generation, secretsInfo.Expiration, secretsInfo.MTLS.EnabledBackend, nil); err != nil {
-					return err
-				}
-			}
 
 			if secretsInfo == nil { // it means mTLS was disabled, we need to clear stats
 				insight.Spec.MTLS = nil
