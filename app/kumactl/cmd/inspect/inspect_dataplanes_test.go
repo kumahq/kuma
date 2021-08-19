@@ -3,7 +3,6 @@ package inspect_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
@@ -22,6 +21,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -239,6 +239,8 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 								Seconds: 1563306488,
 							},
 							CertificateRegenerations: 10,
+							IssuedBackend:            "ca-1",
+							SupportedBackends:        []string{"ca-1", "ca-2"},
 						},
 					},
 				},
@@ -427,15 +429,10 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 
 				// when
 				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
 
-				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
 				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(buf.String()).To(given.matcher(expected))
+				Expect(buf.String()).To(matchers.MatchGoldenEqual(filepath.Join("testdata", given.goldenFile)))
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
