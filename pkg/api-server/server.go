@@ -72,7 +72,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, wsManager customization.APIInstaller, defs []model.ResourceTypeDescriptor, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, wsManager customization.APIInstaller, defs []model.ResourceTypeDescriptor, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics, getInstanceId func() string, getClusterId func() string) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 
@@ -102,7 +102,7 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 	addResourcesEndpoints(ws, defs, resManager, cfg)
 	container.Add(ws)
 
-	if err := addIndexWsEndpoints(ws); err != nil {
+	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
 	configWs, err := configWs(cfg)
@@ -338,7 +338,7 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), registry.Global().ObjectDescriptors(model.HasWsEnabled()), &cfg, cfg.Mode != config_core.Zone, rt.Metrics())
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), registry.Global().ObjectDescriptors(model.HasWsEnabled()), &cfg, cfg.Mode != config_core.Zone, rt.Metrics(), rt.GetInstanceId, rt.GetClusterId)
 	if err != nil {
 		return err
 	}
