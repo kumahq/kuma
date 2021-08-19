@@ -2,12 +2,13 @@ package listeners
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/tls"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -274,7 +275,7 @@ func DNS(vips map[string]string, emptyDnsPort uint32) ListenerBuilderOpt {
 func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {
 	return AddListenerConfigurer(
 		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			l.PerConnectionBufferLimitBytes = wrapperspb.UInt32(bytes)
+			l.PerConnectionBufferLimitBytes = util_proto.UInt32(bytes)
 		}))
 }
 
@@ -289,6 +290,40 @@ func EnableReusePort(enable bool) ListenerBuilderOpt {
 func EnableFreebind(enable bool) ListenerBuilderOpt {
 	return AddListenerConfigurer(
 		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			l.Freebind = wrapperspb.Bool(enable)
+			l.Freebind = util_proto.Bool(enable)
 		}))
+}
+
+// ServerHeader sets the value that the HttpConnectionManager will write
+// to the "Server" header in HTTP responses.
+func ServerHeader(name string) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(
+		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+			hcm.ServerName = name
+		}),
+	)
+}
+
+// EnablePathNormalization enables HTTP request path normalization.
+func EnablePathNormalization() FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(
+		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+			hcm.NormalizePath = util_proto.Bool(true)
+			hcm.MergeSlashes = true
+
+			// TODO(jpeach) set path_with_escaped_slashes_action when we upgrade to Envoy v1.19.
+		}),
+	)
+}
+
+// StripHostPort strips the port component before matching the HTTP host
+// header (authority) to the available virtual hosts.
+func StripHostPort() FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(
+		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+			hcm.StripPortMode = &envoy_hcm.HttpConnectionManager_StripAnyHostPort{
+				StripAnyHostPort: true,
+			}
+		}),
+	)
 }
