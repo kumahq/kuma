@@ -32,18 +32,21 @@ func (r *RateLimitValidator) validateDestinations(ctx context.Context, mesh stri
 		hasNonService := false
 		hasExternalService := false
 		for tag, value := range dest.GetMatch() {
-			if tag == "kuma.io/service" {
+			if tag == mesh_proto.ServiceTag {
 				svc := core_mesh.NewExternalServiceResource()
 				err := r.Store.Get(ctx, svc, store.GetByKey(value, mesh))
 				if err == nil {
 					hasExternalService = true
+				} else if !store.IsResourceNotFound(err) {
+					validationErr.AddViolation("externalservice", err.Error())
+					return validationErr
 				}
 			} else {
 				hasNonService = true
 			}
 		}
 		if hasNonService && hasExternalService {
-			validationErr.AddViolation("ratelimit", "rate limit applied to external service only supports kuma.io/service as destination match")
+			validationErr.AddViolation("ratelimit", "RateLimit applied to external service only supports kuma.io/service as destination match")
 		}
 	}
 	return validationErr.OrNil()
