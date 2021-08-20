@@ -64,7 +64,24 @@ func newInspectDataplanesCmd(pctx *cmd.RootContext) *cobra.Command {
 
 func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "KUMA-DP VERSION", "ENVOY VERSION", "NOTES"},
+		Headers: []string{
+			"MESH",
+			"NAME",
+			"TAGS",
+			"STATUS",
+			"LAST CONNECTED AGO",
+			"LAST UPDATED AGO",
+			"TOTAL UPDATES",
+			"TOTAL ERRORS",
+			"CERT REGENERATED AGO",
+			"CERT EXPIRATION",
+			"CERT REGENERATIONS",
+			"CERT BACKEND",
+			"SUPPORTED CERT BACKENDS",
+			"KUMA-DP VERSION",
+			"ENVOY VERSION",
+			"NOTES",
+		},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -97,6 +114,13 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 				}
 				dataplaneInsight.GetMTLS().GetCertificateExpirationTime()
 				certRegenerations := strconv.Itoa(int(dataplaneInsight.GetMTLS().GetCertificateRegenerations()))
+				certBackend := dataplaneInsight.GetMTLS().GetIssuedBackend()
+				if dataplaneInsight.GetMTLS() == nil {
+					certBackend = "-"
+				} else if dataplaneInsight.GetMTLS().GetIssuedBackend() == "" {
+					certBackend = "unknown" // backwards compatibility with Kuma 1.2.x
+				}
+				supportedBackend := strings.Join(dataplaneInsight.GetMTLS().GetSupportedBackends(), ",")
 
 				var kumaDpVersion string
 				var envoyVersion string
@@ -121,6 +145,8 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 					table.Ago(lastCertGeneration, now),   // CERT REGENERATED AGO
 					table.Date(certExpiration),           // CERT EXPIRATION
 					certRegenerations,                    // CERT REGENERATIONS
+					certBackend,                          // CERT BACKEND
+					supportedBackend,                     // SUPPORTED CERT BACKENDS
 					kumaDpVersion,                        // KUMA-DP VERSION
 					envoyVersion,                         // ENVOY VERSION
 					strings.Join(errs, ";"),              // NOTES

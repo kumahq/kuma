@@ -9,13 +9,6 @@ import (
 
 type Token = string
 
-//type DpType = string
-//
-//const (
-//	DpTypeDataplane = "dataplane"
-//	DpTypeIngress   = "ingress"
-//)
-
 type DataplaneIdentity struct {
 	Name string
 	Mesh string

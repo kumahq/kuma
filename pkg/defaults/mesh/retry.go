@@ -6,14 +6,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var defaultRetry = &mesh_proto.Retry{
@@ -33,22 +32,22 @@ var defaultRetry = &mesh_proto.Retry{
 	},
 	Conf: &mesh_proto.Retry_Conf{
 		Http: &mesh_proto.Retry_Conf_Http{
-			NumRetries:    wrapperspb.UInt32(5),
-			PerTryTimeout: durationpb.New(16 * time.Second), // this has to be greater than RequestTimeout from the default Timeout policy
+			NumRetries:    util_proto.UInt32(5),
+			PerTryTimeout: util_proto.Duration(16 * time.Second),
 			BackOff: &mesh_proto.Retry_Conf_BackOff{
-				BaseInterval: durationpb.New(25 * time.Millisecond),
-				MaxInterval:  durationpb.New(250 * time.Millisecond),
+				BaseInterval: util_proto.Duration(25 * time.Millisecond),
+				MaxInterval:  util_proto.Duration(250 * time.Millisecond),
 			},
 		},
 		Tcp: &mesh_proto.Retry_Conf_Tcp{
 			MaxConnectAttempts: 5,
 		},
 		Grpc: &mesh_proto.Retry_Conf_Grpc{
-			NumRetries:    wrapperspb.UInt32(5),
-			PerTryTimeout: durationpb.New(16 * time.Second), // this has to be greater than RequestTimeout from the default Timeout policy
+			NumRetries:    util_proto.UInt32(5),
+			PerTryTimeout: util_proto.Duration(16 * time.Second),
 			BackOff: &mesh_proto.Retry_Conf_BackOff{
-				BaseInterval: durationpb.New(25 * time.Millisecond),
-				MaxInterval:  durationpb.New(250 * time.Millisecond),
+				BaseInterval: util_proto.Duration(25 * time.Millisecond),
+				MaxInterval:  util_proto.Duration(250 * time.Millisecond),
 			},
 		},
 	},

@@ -1,13 +1,13 @@
 package listeners
 
 import (
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/tls"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -29,14 +29,6 @@ func Tracing(backend *mesh_proto.TracingBackend, service string) FilterChainBuil
 		Backend: backend,
 		Service: service,
 	})
-}
-
-func TLSInspector() ListenerBuilderOpt {
-	return AddListenerConfigurer(&v3.TLSInspectorConfigurer{})
-}
-
-func OriginalDstForwarder() ListenerBuilderOpt {
-	return AddListenerConfigurer(&v3.OriginalDstForwarderConfigurer{})
 }
 
 func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
@@ -81,15 +73,6 @@ func SourceMatcher(address string) FilterChainBuilderOpt {
 	})
 }
 
-func InboundListener(listenerName string, address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
-	return AddListenerConfigurer(&v3.InboundListenerConfigurer{
-		Protocol:     protocol,
-		ListenerName: listenerName,
-		Address:      address,
-		Port:         port,
-	})
-}
-
 func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.TrafficPermissionResource) FilterChainBuilderOpt {
 	if !rbacEnabled {
 		return FilterChainBuilderOptFunc(nil)
@@ -99,28 +82,6 @@ func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.Traff
 		StatsName:  statsName,
 		Permission: permission,
 	})
-}
-
-func OutboundListener(listenerName string, address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
-	return AddListenerConfigurer(&v3.OutboundListenerConfigurer{
-		Protocol:     protocol,
-		ListenerName: listenerName,
-		Address:      address,
-		Port:         port,
-	})
-}
-
-func TransparentProxying(transparentProxying *mesh_proto.Dataplane_Networking_TransparentProxying) ListenerBuilderOpt {
-	virtual := transparentProxying.GetRedirectPortOutbound() != 0 && transparentProxying.GetRedirectPortInbound() != 0
-	if virtual {
-		return AddListenerConfigurer(&v3.TransparentProxyingConfigurer{})
-	}
-
-	return ListenerBuilderOptFunc(nil)
-}
-
-func NoBindToPort() ListenerBuilderOpt {
-	return AddListenerConfigurer(&v3.TransparentProxyingConfigurer{})
 }
 
 func TcpProxy(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
@@ -227,12 +188,6 @@ func HttpOutboundRoute(service string, routes envoy_common.Routes, dpTags mesh_p
 	})
 }
 
-func FilterChain(builder *FilterChainBuilder) ListenerBuilderOpt {
-	return AddListenerConfigurer(&ListenerFilterChainConfigurerV3{
-		builder: builder,
-	})
-}
-
 func MaxConnectAttempts(retry *core_mesh.RetryResource) FilterChainBuilderOpt {
 	if retry == nil || retry.Spec.Conf.GetTcp() == nil {
 		return FilterChainBuilderOptFunc(nil)
@@ -264,31 +219,36 @@ func Timeout(timeout *mesh_proto.Timeout_Conf, protocol core_mesh.Protocol) Filt
 	})
 }
 
-func DNS(vips map[string]string, emptyDnsPort uint32) ListenerBuilderOpt {
-	return AddListenerConfigurer(&v3.DNSConfigurer{
-		VIPs:         vips,
-		EmptyDNSPort: emptyDnsPort,
-	})
+// ServerHeader sets the value that the HttpConnectionManager will write
+// to the "Server" header in HTTP responses.
+func ServerHeader(name string) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(
+		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+			hcm.ServerName = name
+		}),
+	)
 }
 
-func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {
-	return AddListenerConfigurer(
-		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			l.PerConnectionBufferLimitBytes = wrapperspb.UInt32(bytes)
-		}))
+// EnablePathNormalization enables HTTP request path normalization.
+func EnablePathNormalization() FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(
+		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+			hcm.NormalizePath = util_proto.Bool(true)
+			hcm.MergeSlashes = true
+
+			// TODO(jpeach) set path_with_escaped_slashes_action when we upgrade to Envoy v1.19.
+		}),
+	)
 }
 
-func EnableReusePort(enable bool) ListenerBuilderOpt {
-	return AddListenerConfigurer(
-		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			// TODO(jpeach) in Envoy 1.20, this field is deprecated in favor of EnableReusePort.
-			l.ReusePort = enable
-		}))
-}
-
-func EnableFreebind(enable bool) ListenerBuilderOpt {
-	return AddListenerConfigurer(
-		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			l.Freebind = wrapperspb.Bool(enable)
-		}))
+// StripHostPort strips the port component before matching the HTTP host
+// header (authority) to the available virtual hosts.
+func StripHostPort() FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(
+		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+			hcm.StripPortMode = &envoy_hcm.HttpConnectionManager_StripAnyHostPort{
+				StripAnyHostPort: true,
+			}
+		}),
+	)
 }

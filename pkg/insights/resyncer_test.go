@@ -174,6 +174,66 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(envoy["1.15.0"].Offline).To(Equal(uint32(2)))
 	})
 
+	It("should count dataplanes by mTLS backends", func() {
+		// given mesh
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// and dp1 with ca-1 backend
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp1 := core_mesh.NewDataplaneInsightResource()
+		dp1.Spec.MTLS = &mesh_proto.DataplaneInsight_MTLS{
+			IssuedBackend:     "ca-1",
+			SupportedBackends: []string{"ca-1"},
+		}
+		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// and dp2 with ca-2 backend
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp2 := core_mesh.NewDataplaneInsightResource()
+		dp2.Spec.MTLS = &mesh_proto.DataplaneInsight_MTLS{
+			IssuedBackend:     "ca-2",
+			SupportedBackends: []string{"ca-1", "ca-2"},
+		}
+		dp2.Spec.Subscriptions = append(dp2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamppb.Timestamp{
+				Seconds: 100,
+			},
+		})
+		err = rm.Create(context.Background(), dp2, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when resyncer generates insight
+		nowMtx.Lock()
+		now = now.Add(60 * time.Second)
+		nowMtx.Unlock()
+		tickCh <- now
+
+		meshInsight := core_mesh.NewMeshInsightResource()
+		Eventually(func() error {
+			return rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
+		}, "10s", "100ms").Should(BeNil())
+
+		// then
+		Expect(meshInsight.Spec.MTLS.IssuedBackends).To(HaveLen(2))
+		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-1"].Total).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-1"].Offline).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-2"].Total).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.IssuedBackends["ca-2"].Online).To(Equal(uint32(1)))
+
+		Expect(meshInsight.Spec.MTLS.SupportedBackends).To(HaveLen(2))
+		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Total).To(Equal(uint32(2)))
+		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Offline).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-1"].Online).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-2"].Total).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.MTLS.SupportedBackends["ca-2"].Online).To(Equal(uint32(1)))
+	})
+
 	It("should not count dataplane as a policy", func() {
 		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())

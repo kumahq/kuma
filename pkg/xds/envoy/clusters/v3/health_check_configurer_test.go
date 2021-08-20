@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -30,7 +29,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
 				Configure(clusters.HealthCheck(core_mesh.ProtocolHTTP, given.healthCheck)).
-				Configure(clusters.Timeout(core_mesh.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
+				Configure(clusters.Timeout(core_mesh.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: util_proto.Duration(5 * time.Second)})).
 				Build()
 
 			// then
@@ -63,11 +62,11 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:           durationpb.New(5 * time.Second),
-						Timeout:            durationpb.New(4 * time.Second),
+						Interval:           util_proto.Duration(5 * time.Second),
+						Timeout:            util_proto.Duration(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
-						ReuseConnection:    &wrapperspb.BoolValue{Value: false},
+						ReuseConnection:    util_proto.Bool(false),
 					},
 				},
 			},
@@ -98,14 +97,14 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "frontend"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:           durationpb.New(5 * time.Second),
-						Timeout:            durationpb.New(4 * time.Second),
+						Interval:           util_proto.Duration(5 * time.Second),
+						Timeout:            util_proto.Duration(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
 						Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
-							Send: &wrapperspb.BytesValue{
-								Value: []byte("foo"),
-							},
+							Send: util_proto.Bytes(
+								[]byte("foo")),
+
 							Receive: []*wrapperspb.BytesValue{
 								{Value: []byte("bar")},
 								{Value: []byte("baz")},
@@ -145,14 +144,13 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "frontend"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:           durationpb.New(5 * time.Second),
-						Timeout:            durationpb.New(4 * time.Second),
+						Interval:           util_proto.Duration(5 * time.Second),
+						Timeout:            util_proto.Duration(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
 						Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
-							Send: &wrapperspb.BytesValue{
-								Value: []byte("foo"),
-							},
+							Send: util_proto.Bytes(
+								[]byte("foo")),
 						},
 					},
 				},
@@ -185,8 +183,8 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "frontend"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:           durationpb.New(5 * time.Second),
-						Timeout:            durationpb.New(4 * time.Second),
+						Interval:           util_proto.Duration(5 * time.Second),
+						Timeout:            util_proto.Duration(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
 						Http: &mesh_proto.HealthCheck_Conf_Http{
@@ -198,7 +196,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 										Key:   "foobar",
 										Value: "foobaz",
 									},
-									Append: &wrapperspb.BoolValue{Value: false},
+									Append: util_proto.Bool(false),
 								},
 							},
 							ExpectedStatuses: []*wrapperspb.UInt32Value{
@@ -246,8 +244,8 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "frontend"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:           durationpb.New(5 * time.Second),
-						Timeout:            durationpb.New(4 * time.Second),
+						Interval:           util_proto.Duration(5 * time.Second),
+						Timeout:            util_proto.Duration(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
 						Http: &mesh_proto.HealthCheck_Conf_Http{
@@ -259,7 +257,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 										Key:   "foobar",
 										Value: "foobaz",
 									},
-									Append: &wrapperspb.BoolValue{Value: false},
+									Append: util_proto.Bool(false),
 								},
 							},
 							ExpectedStatuses: []*wrapperspb.UInt32Value{
@@ -268,9 +266,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 							},
 						},
 						Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
-							Send: &wrapperspb.BytesValue{
-								Value: []byte("foo"),
-							},
+							Send: util_proto.Bytes([]byte("foo")),
 							Receive: []*wrapperspb.BytesValue{
 								{Value: []byte("bar")},
 								{Value: []byte("baz")},
@@ -326,12 +322,12 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:              durationpb.New(5 * time.Second),
-						Timeout:               durationpb.New(4 * time.Second),
+						Interval:              util_proto.Duration(5 * time.Second),
+						Timeout:               util_proto.Duration(4 * time.Second),
 						UnhealthyThreshold:    3,
 						HealthyThreshold:      2,
-						InitialJitter:         durationpb.New(6 * time.Second),
-						IntervalJitter:        durationpb.New(7 * time.Second),
+						InitialJitter:         util_proto.Duration(6 * time.Second),
+						IntervalJitter:        util_proto.Duration(7 * time.Second),
 						IntervalJitterPercent: 50,
 					},
 				},
@@ -365,8 +361,8 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:              durationpb.New(5 * time.Second),
-						Timeout:               durationpb.New(4 * time.Second),
+						Interval:              util_proto.Duration(5 * time.Second),
+						Timeout:               util_proto.Duration(4 * time.Second),
 						UnhealthyThreshold:    3,
 						HealthyThreshold:      2,
 						HealthyPanicThreshold: &wrapperspb.FloatValue{Value: 90},
@@ -402,12 +398,12 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:              durationpb.New(5 * time.Second),
-						Timeout:               durationpb.New(4 * time.Second),
+						Interval:              util_proto.Duration(5 * time.Second),
+						Timeout:               util_proto.Duration(4 * time.Second),
 						UnhealthyThreshold:    3,
 						HealthyThreshold:      2,
 						HealthyPanicThreshold: &wrapperspb.FloatValue{Value: 90},
-						FailTrafficOnPanic:    &wrapperspb.BoolValue{Value: true},
+						FailTrafficOnPanic:    util_proto.Bool(true),
 					},
 				},
 			},
@@ -442,13 +438,13 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:                     durationpb.New(5 * time.Second),
-						Timeout:                      durationpb.New(4 * time.Second),
-						NoTrafficInterval:            durationpb.New(6 * time.Second),
+						Interval:                     util_proto.Duration(5 * time.Second),
+						Timeout:                      util_proto.Duration(4 * time.Second),
+						NoTrafficInterval:            util_proto.Duration(6 * time.Second),
 						UnhealthyThreshold:           3,
 						HealthyThreshold:             2,
 						EventLogPath:                 "/event/log/path",
-						AlwaysLogHealthCheckFailures: &wrapperspb.BoolValue{Value: true},
+						AlwaysLogHealthCheckFailures: util_proto.Bool(true),
 					},
 				},
 			},

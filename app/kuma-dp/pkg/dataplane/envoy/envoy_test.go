@@ -194,7 +194,7 @@ var _ = Describe("Envoy", func() {
 	})
 
 	Describe("Parse version", func() {
-		It("should properly read envoy version", func() {
+		It("should properly read envoy version for unix-based systems", func() {
 			// given
 			cfg := kuma_dp.Config{
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
@@ -216,6 +216,30 @@ var _ = Describe("Envoy", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(version.Version).To(Equal("1.15.0"))
 			Expect(version.Build).To(Equal("50ef0945fa2c5da4bff7627c3abf41fdd3b7cffd/1.15.0/clean-getenvoy-2aa564b-envoy/RELEASE/BoringSSL"))
+		})
+
+		It("should properly read envoy version for windows", func() {
+			// given
+			cfg := kuma_dp.Config{
+				DataplaneRuntime: kuma_dp.DataplaneRuntime{
+					BinaryPath: filepath.Join("testdata", "envoy-mock-windows.exit-0.sh"),
+					ConfigDir:  configDir,
+				},
+			}
+
+			// when
+			dataplane, err := New(Opts{
+				Config: cfg,
+				Stdout: &bytes.Buffer{},
+				Stderr: &bytes.Buffer{},
+			})
+			Expect(err).ToNot(HaveOccurred())
+			version, err := dataplane.version()
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(version.Version).To(Equal("1.19.0"))
+			Expect(version.Build).To(Equal("68fe53a889416fd8570506232052b06f5a531541/1.19.0/Modified/RELEASE/BoringSSL"))
 		})
 	})
 })

@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kumahq/kuma/api/generic"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ generic.Insight = &DataplaneInsight{}
@@ -55,20 +55,22 @@ func (x *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscripti
 	return -1, nil
 }
 
-func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time) error {
+func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time, issuedBackend string, supportedBackends []string) error {
 	if x.MTLS == nil {
 		x.MTLS = &DataplaneInsight_MTLS{}
 	}
-	ts := timestamppb.New(expiration)
+	ts := util_proto.MustTimestampProto(expiration)
 	if err := ts.CheckValid(); err != nil {
 		return err
 	}
 	x.MTLS.CertificateExpirationTime = ts
 	x.MTLS.CertificateRegenerations++
-	ts = timestamppb.New(generation)
+	ts = util_proto.MustTimestampProto(generation)
 	if err := ts.CheckValid(); err != nil {
 		return err
 	}
+	x.MTLS.IssuedBackend = issuedBackend
+	x.MTLS.SupportedBackends = supportedBackends
 	x.MTLS.LastCertificateRegeneration = ts
 	return nil
 }
@@ -95,7 +97,7 @@ func (x *DataplaneInsight) UpdateSubscription(s generic.Subscription) error {
 // Because of the way we process subscriptions the lack of DisconnectTime on old subscription
 // will cause wrong status.
 func (x *DataplaneInsight) finalizeSubscriptions() {
-	now := timestamppb.Now()
+	now := util_proto.Now()
 	for _, subscription := range x.GetSubscriptions() {
 		if subscription.DisconnectTime == nil {
 			subscription.DisconnectTime = now
@@ -131,7 +133,7 @@ func (x *DataplaneInsight) GetLastSubscription() generic.Subscription {
 }
 
 func (x *DiscoverySubscription) SetDisconnectTime(t time.Time) {
-	x.DisconnectTime = timestamppb.New(t)
+	x.DisconnectTime = util_proto.MustTimestampProto(t)
 }
 
 func (x *DataplaneInsight) Sum(v func(*DiscoverySubscription) uint64) uint64 {

@@ -11,7 +11,8 @@ import (
 )
 
 type CaProvider interface {
-	Get(context.Context, *core_mesh.MeshResource) (*core_xds.CaSecret, error)
+	// Get returns all PEM encoded CAs, a list of CAs that were used to generate a secret and an error.
+	Get(context.Context, *core_mesh.MeshResource) (*core_xds.CaSecret, []string, error)
 }
 
 func NewCaProvider(caManagers core_ca.Managers) CaProvider {
@@ -24,23 +25,23 @@ type meshCaProvider struct {
 	caManagers core_ca.Managers
 }
 
-func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) (*core_xds.CaSecret, error) {
+func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) (*core_xds.CaSecret, []string, error) {
 	backend := mesh.GetEnabledCertificateAuthorityBackend()
 	if backend == nil {
-		return nil, errors.New("CA backend is nil")
+		return nil, nil, errors.New("CA backend is nil")
 	}
 
 	caManager, exist := s.caManagers[backend.Type]
 	if !exist {
-		return nil, errors.Errorf("CA manager of type %s not exist", backend.Type)
+		return nil, nil, errors.Errorf("CA manager of type %s not exist", backend.Type)
 	}
 
 	certs, err := caManager.GetRootCert(ctx, mesh.GetMeta().GetName(), backend)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get root certs")
+		return nil, nil, errors.Wrap(err, "could not get root certs")
 	}
 
 	return &core_xds.CaSecret{
 		PemCerts: certs,
-	}, nil
+	}, []string{backend.Name}, nil
 }

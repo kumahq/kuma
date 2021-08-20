@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	util_proto "github.com/kumahq/kuma/api/internal/util/proto"
 	. "github.com/kumahq/kuma/api/observability/v1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Monitoring Assignment Discovery Service", func() {

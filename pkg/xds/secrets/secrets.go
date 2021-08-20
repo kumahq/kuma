@@ -34,6 +34,9 @@ type Info struct {
 
 	Tags mesh_proto.MultiValueTagSet
 	MTLS *mesh_proto.Mesh_Mtls
+
+	IssuedBackend     string
+	SupportedBackends []string
 }
 
 func (c *Info) CertLifetime() time.Duration {
@@ -113,11 +116,6 @@ func (c *secrets) Get(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.Me
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "could not generate certificates")
 		}
-		info, err := newCertInfo(certs.identity, mesh.Spec.Mtls, tags)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "could not extract info about certificate")
-		}
-		certs.info = info
 		c.Lock()
 		c.cachedCerts[dpKey] = certs
 		c.Unlock()
@@ -157,37 +155,47 @@ func (c *secrets) shouldGenerateCerts(info *Info, mtls *mesh_proto.Mesh_Mtls, ta
 }
 
 func (c *secrets) generateCerts(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (*certs, error) {
+	tags := dataplane.Spec.TagSet()
 	requestor := Identity{
-		Services: dataplane.Spec.TagSet(),
+		Services: tags,
 		Mesh:     dataplane.GetMeta().GetMesh(),
 	}
-	identity, err := c.identityProvider.Get(context.Background(), requestor, mesh)
+	identity, issuedBackend, err := c.identityProvider.Get(context.Background(), requestor, mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get Dataplane cert pair")
 	}
 	c.certGenerationsMetric.WithLabelValues(requestor.Mesh).Inc()
 
-	ca, err := c.caProvider.Get(context.Background(), mesh)
+	ca, supportedBackends, err := c.caProvider.Get(context.Background(), mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get mesh CA cert")
 	}
+
+	info, err := newCertInfo(identity, mesh.Spec.Mtls, tags, issuedBackend, supportedBackends)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not extract info about certificate")
+	}
+
 	return &certs{
 		identity: identity,
 		ca:       ca,
+		info:     info,
 	}, nil
 }
 
-func newCertInfo(identityCert *core_xds.IdentitySecret, mtls *mesh_proto.Mesh_Mtls, tags mesh_proto.MultiValueTagSet) (*Info, error) {
+func newCertInfo(identityCert *core_xds.IdentitySecret, mtls *mesh_proto.Mesh_Mtls, tags mesh_proto.MultiValueTagSet, issuedBackend string, supportedBackends []string) (*Info, error) {
 	block, _ := pem.Decode(identityCert.PemCerts[0])
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
 		return nil, err
 	}
 	certInfo := &Info{
-		Tags:       tags,
-		MTLS:       mtls,
-		Expiration: cert.NotAfter,
-		Generation: core.Now(),
+		Tags:              tags,
+		MTLS:              mtls,
+		Expiration:        cert.NotAfter,
+		Generation:        core.Now(),
+		IssuedBackend:     issuedBackend,
+		SupportedBackends: supportedBackends,
 	}
 	return certInfo, nil
 }

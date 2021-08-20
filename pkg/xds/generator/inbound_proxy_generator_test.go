@@ -3,12 +3,11 @@ package generator_test
 import (
 	"io/ioutil"
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -130,8 +129,8 @@ var _ = Describe("InboundProxyGenerator", func() {
 							},
 							Conf: &mesh_proto.FaultInjection_Conf{
 								Delay: &mesh_proto.FaultInjection_Conf_Delay{
-									Percentage: &wrapperspb.DoubleValue{Value: 50},
-									Value:      &durationpb.Duration{Seconds: 5},
+									Percentage: util_proto.Double(50),
+									Value:      util_proto.Duration(time.Second * 5),
 								},
 							},
 						},
@@ -162,9 +161,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 								Conf: &mesh_proto.RateLimit_Conf{
 									Http: &mesh_proto.RateLimit_Conf_Http{
 										Requests: 200,
-										Interval: &durationpb.Duration{
-											Seconds: 10,
-										},
+										Interval: util_proto.Duration(time.Second * 10),
 									},
 								},
 							},
@@ -186,20 +183,14 @@ var _ = Describe("InboundProxyGenerator", func() {
 								Conf: &mesh_proto.RateLimit_Conf{
 									Http: &mesh_proto.RateLimit_Conf_Http{
 										Requests: 100,
-										Interval: &durationpb.Duration{
-											Seconds: 2,
-										},
+										Interval: util_proto.Duration(time.Second * 2),
 										OnRateLimit: &mesh_proto.RateLimit_Conf_Http_OnRateLimit{
-											Status: &wrapperspb.UInt32Value{
-												Value: 404,
-											},
+											Status: util_proto.UInt32(404),
 											Headers: []*mesh_proto.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
 												{
-													Key:   "x-rate-limited",
-													Value: "true",
-													Append: &wrapperspb.BoolValue{
-														Value: false,
-													},
+													Key:    "x-rate-limited",
+													Value:  "true",
+													Append: util_proto.Bool(false),
 												},
 											},
 										},

@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
@@ -23,6 +22,7 @@ import (
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("kumactl get secrets", func() {
@@ -37,9 +37,7 @@ var _ = Describe("kumactl get secrets", func() {
 					Name: "sec-1",
 				},
 				Spec: &system_proto.Secret{
-					Data: &wrapperspb.BytesValue{
-						Value: []byte("test"),
-					},
+					Data: util_proto.Bytes([]byte("test")),
 				},
 			},
 			{
@@ -48,9 +46,7 @@ var _ = Describe("kumactl get secrets", func() {
 					Name: "sec-2",
 				},
 				Spec: &system_proto.Secret{
-					Data: &wrapperspb.BytesValue{
-						Value: []byte("test2"),
-					},
+					Data: util_proto.Bytes([]byte("test2")),
 				},
 			},
 		}

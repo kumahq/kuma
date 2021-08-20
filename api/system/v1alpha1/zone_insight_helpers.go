@@ -4,9 +4,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kumahq/kuma/api/generic"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ generic.Insight = &ZoneInsight{}
@@ -97,7 +98,7 @@ func (x *ZoneInsight) UpdateSubscription(s generic.Subscription) error {
 // Because of the way we process subscriptions the lack of DisconnectTime on old subscription
 // will cause wrong status.
 func (x *ZoneInsight) finalizeSubscriptions() {
-	now := timestamppb.Now()
+	now := util_proto.Now()
 	for _, subscription := range x.GetSubscriptions() {
 		if subscription.DisconnectTime == nil {
 			subscription.DisconnectTime = now
