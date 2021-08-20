@@ -81,13 +81,12 @@ reusable:
         tags:
           ignore: /.*/ # we don't want to run master workflow on commits with tag because use_local_kuma_images has to be false for all the jobs to pass
 
-    # filters for the eks-e2e workflow
+    # filters for the {a,e}ks-e2e workflow
     master_only_workflow_filters: &master_only_workflow_filters
       filters:
         branches:
           only:
             - master
-            - /^release-.*/
 
     # filters for the kuma-commit workflow
     commit_workflow_filters: &commit_workflow_filters
