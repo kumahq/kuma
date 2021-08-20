@@ -25,6 +25,7 @@ var (
 func WithMesh(mesh string, name string) ResourceKey {
 	return ResourceKey{Mesh: mesh, Name: name}
 }
+
 func WithoutMesh(name string) ResourceKey {
 	return ResourceKey{Mesh: NoMesh, Name: name}
 }

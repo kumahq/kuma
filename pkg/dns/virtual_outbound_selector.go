@@ -15,27 +15,23 @@ type voMatch struct {
 
 func Match(vos []*core_mesh.VirtualOutboundResource, tags map[string]string) []*core_mesh.VirtualOutboundResource {
 	var matchingVirtualOutbounds []voMatch
-	byNames := map[string]bool{}
 
 	for _, vo := range vos {
-		if !byNames[vo.Meta.GetName()] {
-			bestSelector := mesh_proto.TagSelector{}
-			bestRank := mesh_proto.TagSelectorRank{}
-			for _, selector := range vo.Selectors() {
-				tagSelector := mesh_proto.TagSelector(selector.Match)
-				if tagSelector.Matches(tags) {
-					r := tagSelector.Rank()
-					if bestRank.CompareTo(r) < 0 {
-						bestRank = r
-						bestSelector = tagSelector
-					}
+		bestSelector := mesh_proto.TagSelector{}
+		bestRank := mesh_proto.TagSelectorRank{}
+		for _, selector := range vo.Selectors() {
+			tagSelector := mesh_proto.TagSelector(selector.Match)
+			if tagSelector.Matches(tags) {
+				r := tagSelector.Rank()
+				if bestRank.CompareTo(r) < 0 {
+					bestRank = r
+					bestSelector = tagSelector
 				}
 			}
-			// If we don't have a bestSelector it means we don't match
-			if len(bestSelector) > 0 {
-				matchingVirtualOutbounds = append(matchingVirtualOutbounds, voMatch{bestSelector: bestSelector, rank: bestRank, vob: vo})
-				byNames[vo.Meta.GetName()] = true
-			}
+		}
+		// If we don't have a bestSelector it means we don't match
+		if len(bestSelector) > 0 {
+			matchingVirtualOutbounds = append(matchingVirtualOutbounds, voMatch{bestSelector: bestSelector, rank: bestRank, vob: vo})
 		}
 	}
 

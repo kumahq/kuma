@@ -20,7 +20,6 @@ func (t *VirtualOutboundResource) validateSelectors() validators.ValidationError
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
 			RequireAtLeastOneTag: true,
-			RequireService:       true,
 		},
 	})
 }

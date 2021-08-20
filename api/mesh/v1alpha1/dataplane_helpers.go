@@ -467,10 +467,6 @@ type TagSelectorRank struct {
 	WildcardMatches int
 }
 
-func (r TagSelectorRank) Zero() bool {
-	return r.ExactMatches == 0 && r.WildcardMatches == 0
-}
-
 func (r TagSelectorRank) CombinedWith(other TagSelectorRank) TagSelectorRank {
 	return TagSelectorRank{
 		ExactMatches:    r.ExactMatches + other.ExactMatches,

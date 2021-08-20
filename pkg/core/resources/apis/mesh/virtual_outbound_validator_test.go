@@ -105,8 +105,6 @@ var _ = Describe("VirtualOutbound_validator", func() {
                 violations:
                   - field: selectors[0].match
                     message: must have at least one tag
-                  - field: selectors[0].match
-                    message: mandatory tag "kuma.io/service" is missing
 `,
 		}),
 		Entry("selectors with empty tags values", testCase{
@@ -152,8 +150,6 @@ var _ = Describe("VirtualOutbound_validator", func() {
                   message: tag value must be non-empty
                 - field: selectors[1].match
                   message: must have at least one tag
-                - field: selectors[1].match
-                  message: mandatory tag "kuma.io/service" is missing
 `,
 		}),
 		Entry("bad host template", testCase{

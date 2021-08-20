@@ -26,26 +26,25 @@ message VirtualOutbound {
   option (kuma.mesh.resource).ws.name = "virtual-outbound";
 
   // List of selectors to match dataplanes that this policy applies to
-  repeated Selector selectors = 1;
+  repeated Selector selectors = 1 [ (doc.required) = true ];
+  Conf conf = 2 [ (doc.required) = true ];
 
   message Conf {
     // Host the gotemplate to generate the hostname from the Parameters map
-    string host = 1;
+    string host = 1 [ (doc.required) = true ];
     // Port the gotemplate to generate the port from the Parameters map
-    string port = 2;
+    string port = 2 [ (doc.required) = true ];
     // Parameters a mapping between tag keys and template parameter key. This
     // must always contain at least `kuma.io/service`
-    repeated TemplateParameter parameters = 3;
+    repeated TemplateParameter parameters = 3 [ (doc.required) = true ];
 
     // A mapping between a template parameter and a dataplane outbound tag name.
     message TemplateParameter {
       // Name the name of the template parameter (must be alphanumeric).
-      string name = 1;
+      string name = 1 [ (doc.required) = true ];
       // TagKey the name of the tag in the Kuma outbound (optional if absent it
       // will use Name).
       string tag_key = 2;
     }
   }
-
-  Conf conf = 3;
 }

@@ -87,7 +87,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 	return corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      map[string]string{"app": k.Name()},
-			Annotations: map[string]string{},
+			Annotations: map[string]string{"kuma.io/mesh": k.opts.Mesh},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
