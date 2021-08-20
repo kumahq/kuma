@@ -100,6 +100,10 @@ var _ = Describe("DataplaneInsightSink", func() {
               total: {}
 `))
 
+			// and
+			Expect(latestOperation.DataplaneInsight_MTLS.IssuedBackend).To(Equal(xds.TestSecretsInfo.IssuedBackend))
+			Expect(latestOperation.DataplaneInsight_MTLS.SupportedBackends).To(Equal(xds.TestSecretsInfo.SupportedBackends))
+
 			// when - time tick after changes
 			subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(t0.Add(2 * time.Second))
 			subscription.Status.Lds.ResponsesSent += 1
@@ -258,6 +262,7 @@ var _ manager.ResourceManager = &DataplaneInsightStoreRecorder{}
 type DataplaneInsightOperation struct {
 	core_model.ResourceKey
 	*mesh_proto.DiscoverySubscription
+	*mesh_proto.DataplaneInsight_MTLS
 }
 
 type DataplaneInsightStoreRecorder struct {
@@ -274,6 +279,7 @@ func (d *DataplaneInsightStoreRecorder) Create(ctx context.Context, resource cor
 	d.Creates <- DataplaneInsightOperation{
 		ResourceKey:           core_model.ResourceKey{Mesh: opts.Mesh, Name: opts.Name},
 		DiscoverySubscription: resource.GetSpec().(generic.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription),
+		DataplaneInsight_MTLS: resource.GetSpec().(*mesh_proto.DataplaneInsight).MTLS,
 	}
 	return nil
 }
@@ -285,6 +291,7 @@ func (d *DataplaneInsightStoreRecorder) Update(ctx context.Context, resource cor
 	d.Updates <- DataplaneInsightOperation{
 		ResourceKey:           core_model.ResourceKey{Mesh: resource.GetMeta().GetMesh(), Name: resource.GetMeta().GetName()},
 		DiscoverySubscription: resource.GetSpec().(generic.Insight).GetLastSubscription().(*mesh_proto.DiscoverySubscription),
+		DataplaneInsight_MTLS: resource.GetSpec().(*mesh_proto.DataplaneInsight).MTLS,
 	}
 	return nil
 }

@@ -70,7 +70,9 @@ var _ = Describe("Index Endpoints", func() {
 		{
 			"hostname": "%s",
 			"tagline": "Kuma",
-			"version": "1.2.3"
+			"version": "1.2.3",
+			"instanceId": "instance-id",
+			"clusterId": "cluster-id"
 		}`, hostname)
 
 		Expect(body).To(MatchJSON(expected))

@@ -12,6 +12,7 @@ func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install various Kuma components.",
 		Long:  `Install various Kuma components.`,
 	}
+
 	// sub-commands
 	cmd.AddCommand(newInstallControlPlaneCmd(&pctx.InstallCpContext))
 	cmd.AddCommand(newInstallCrdsCmd(&pctx.InstallCRDContext))
@@ -19,8 +20,9 @@ func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newInstallTracing(pctx))
 	cmd.AddCommand(newInstallDNS())
 	cmd.AddCommand(newInstallLogging(pctx))
-	cmd.AddCommand(newInstallTransparentProxy())
 	cmd.AddCommand(newInstallDemoCmd(&pctx.InstallDemoContext))
 	cmd.AddCommand(newInstallGatewayCmd(pctx))
+	cmd.AddCommand(newInstallTransparentProxy())
+
 	return cmd
 }

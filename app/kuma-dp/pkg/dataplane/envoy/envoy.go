@@ -211,9 +211,10 @@ func (e *Envoy) version() (*EnvoyVersion, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("the envoy excutable was found at %s but an error occurred when executing it with arg %s", resolvedPath, arg))
 	}
-	build := strings.Trim(string(output), "\n")
-	build = regexp.MustCompile(`:(.*)`).FindString(build)
-	build = strings.Trim(build, ":")
+	build := strings.ReplaceAll(string(output), "\r\n", "\n")
+	build = strings.Trim(build, "\n")
+	build = regexp.MustCompile(`version:(.*)`).FindString(build)
+	build = strings.Trim(build, "version:")
 	build = strings.Trim(build, " ")
 	version := regexp.MustCompile(`/([0-9.]+)/`).FindString(build)
 	version = strings.Trim(version, "/")

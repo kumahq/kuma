@@ -121,7 +121,9 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	wsManager := customization.NewAPIList()
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, wsManager, defs, &cfg, enableGUI, metrics)
+	getInstanceId := func() string { return "instance-id" }
+	getClusterId := func() string { return "cluster-id" }
+	apiServer, err := api_server.NewApiServer(resources, wsManager, defs, &cfg, enableGUI, metrics, getInstanceId, getClusterId)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

@@ -45,7 +45,7 @@ type reportsBuffer struct {
 func fetchDataplanes(rt core_runtime.Runtime) (*mesh.DataplaneResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(context.Background(), &dataplanes); err != nil {
-		return nil, errors.Wrap(err, "Could not fetch dataplanes")
+		return nil, errors.Wrap(err, "could not fetch dataplanes")
 	}
 
 	return &dataplanes, nil
@@ -54,7 +54,7 @@ func fetchDataplanes(rt core_runtime.Runtime) (*mesh.DataplaneResourceList, erro
 func fetchMeshes(rt core_runtime.Runtime) (*mesh.MeshResourceList, error) {
 	meshes := mesh.MeshResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(context.Background(), &meshes); err != nil {
-		return nil, errors.Wrap(err, "Could not fetch meshes")
+		return nil, errors.Wrap(err, "could not fetch meshes")
 	}
 
 	return &meshes, nil
@@ -63,7 +63,7 @@ func fetchMeshes(rt core_runtime.Runtime) (*mesh.MeshResourceList, error) {
 func fetchZones(rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
 	zones := system.ZoneResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(context.Background(), &zones); err != nil {
-		return nil, errors.Wrap(err, "Could not fetch zones")
+		return nil, errors.Wrap(err, "could not fetch zones")
 	}
 
 	return &zones, nil
@@ -175,12 +175,12 @@ func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer) {
 	go func() {
 		err := buffer.dispatch(rt, pingHost, pingPort, "start")
 		if err != nil {
-			log.V(2).Info("Failed sending usage info", err)
+			log.V(2).Info("failed sending usage info", "cause", err.Error())
 		}
 		for range time.Tick(time.Second * pingInterval) {
 			err := buffer.dispatch(rt, pingHost, pingPort, "ping")
 			if err != nil {
-				log.V(2).Info("Failed sending usage info", err)
+				log.V(2).Info("failed sending usage info", "cause", err.Error())
 			}
 		}
 	}()
