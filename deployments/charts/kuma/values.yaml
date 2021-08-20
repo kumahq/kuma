@@ -62,10 +62,10 @@ controlPlane:
   service:
     # -- (string) Optionally override of the Kuma Control Plane Service's name
     name:
-
     # -- Service type of the Kuma Control Plane
     type: ClusterIP
-
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
     # -- Additional annotations to put on the Kuma Control Plane
     annotations: { }
 
@@ -73,6 +73,8 @@ controlPlane:
   globalZoneSyncService:
     # -- Service type of the Global-zone sync
     type: LoadBalancer
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
     # -- Additional annotations to put on the Global Zone Sync Service
     annotations: { }
     # -- Port on which Global Zone Sync Service is exposed
