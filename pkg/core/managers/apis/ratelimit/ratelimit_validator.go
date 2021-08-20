@@ -14,11 +14,11 @@ type RateLimitValidator struct {
 }
 
 func (r *RateLimitValidator) ValidateCreate(ctx context.Context, mesh string, resource *core_mesh.RateLimitResource) error {
-	return r.validateDestinations(ctx, mesh, resource.Spec.Destinations)
+	return r.validateDestinations(ctx, mesh, resource.Destinations())
 }
 
 func (r *RateLimitValidator) ValidateUpdate(ctx context.Context, previousRateLimit *core_mesh.RateLimitResource, newRateLimit *core_mesh.RateLimitResource) error {
-	return r.validateDestinations(ctx, previousRateLimit.GetMeta().GetMesh(), newRateLimit.Spec.Destinations)
+	return r.validateDestinations(ctx, previousRateLimit.GetMeta().GetMesh(), newRateLimit.Destinations())
 }
 
 func (r *RateLimitValidator) ValidateDelete(ctx context.Context, name string) error {
@@ -31,7 +31,7 @@ func (r *RateLimitValidator) validateDestinations(ctx context.Context, mesh stri
 	for _, dest := range dests {
 		hasNonService := false
 		hasExternalService := false
-		for tag, value := range dest.Match {
+		for tag, value := range dest.GetMatch() {
 			if tag == "kuma.io/service" {
 				svc := core_mesh.NewExternalServiceResource()
 				err := r.Store.Get(ctx, svc, store.GetByKey(value, mesh))
