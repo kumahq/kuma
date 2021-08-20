@@ -31,59 +31,33 @@ var _ = Describe("Secret Validator", func() {
 
 	var validator secrets_manager.SecretValidator
 	var resManager core_manager.ResourceManager
+	var caManagers core_ca.Managers
 
 	BeforeEach(func() {
 		memoryStore := resources_memory.NewStore()
 		resManager = core_manager.NewResourceManager(memoryStore)
-		caManagers := core_ca.Managers{}
+		caManagers = core_ca.Managers{}
 		secrets_manager.NewSecretValidator(caManagers, memoryStore)
 		validator = secrets_manager.NewSecretValidator(caManagers, memoryStore)
 		secManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(memoryStore), cipher.None(), validator)
 
 		caManagers["builtin"] = ca_builtin.NewBuiltinCaManager(secManager)
 		caManagers["provided"] = ca_provided.NewProvidedCaManager(core_datasource.NewDataSourceLoader(secManager))
-
-		mesh := &core_mesh.MeshResource{
-			Spec: &mesh_proto.Mesh{
-				Mtls: &mesh_proto.Mesh_Mtls{
-					EnabledBackend: "ca-1",
-					Backends: []*mesh_proto.CertificateAuthorityBackend{
-						{
-							Name: "ca-1",
-							Type: "builtin",
-						},
-						{
-							Name: "ca-2",
-							Type: "provided",
-							Conf: proto.MustToStruct(&provided_config.ProvidedCertificateAuthorityConfig{
-								Cert: &system_proto.DataSource{
-									Type: &system_proto.DataSource_Secret{
-										Secret: "my-ca-cert",
-									},
-								},
-								Key: &system_proto.DataSource{
-									Type: &system_proto.DataSource_Secret{
-										Secret: "my-ca-key",
-									},
-								},
-							}),
-						},
-					},
-				},
-			},
-		}
-		err := resManager.Create(context.Background(), mesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-		err = core_managers.EnsureEnabledCA(context.Background(), caManagers, mesh, model.DefaultMesh)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	type testCase struct {
+		mesh       *core_mesh.MeshResource
 		secretName string
 		expected   string
 	}
 	DescribeTable("should validate that secrets are in use",
 		func(given testCase) {
+			// given
+			err := resManager.Create(context.Background(), given.mesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+			err = core_managers.EnsureCAs(context.Background(), caManagers, given.mesh, model.DefaultMesh)
+			Expect(err).ToNot(HaveOccurred())
+
 			// when
 			verr := validator.ValidateDelete(context.Background(), given.secretName, "default")
 
@@ -93,6 +67,19 @@ var _ = Describe("Secret Validator", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("when secret is used in builtin CA", testCase{
+			mesh: &core_mesh.MeshResource{
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "ca-1",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "ca-1",
+								Type: "builtin",
+							},
+						},
+					},
+				},
+			},
 			secretName: "default.ca-builtin-cert-ca-1",
 			expected: `
             violations:
@@ -100,6 +87,31 @@ var _ = Describe("Secret Validator", func() {
               message: The secret "default.ca-builtin-cert-ca-1" that you are trying to remove is currently in use in Mesh "default" in mTLS backend "ca-1". Please remove the reference from the "ca-1" backend before removing the secret.`,
 		}),
 		Entry("when secret is used in provided CA", testCase{
+			mesh: &core_mesh.MeshResource{
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "ca-2",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "ca-2",
+								Type: "provided",
+								Conf: proto.MustToStruct(&provided_config.ProvidedCertificateAuthorityConfig{
+									Cert: &system_proto.DataSource{
+										Type: &system_proto.DataSource_Secret{
+											Secret: "my-ca-cert",
+										},
+									},
+									Key: &system_proto.DataSource{
+										Type: &system_proto.DataSource_Secret{
+											Secret: "my-ca-key",
+										},
+									},
+								}),
+							},
+						},
+					},
+				},
+			},
 			secretName: "my-ca-cert",
 			expected: `
             violations:
@@ -109,8 +121,12 @@ var _ = Describe("Secret Validator", func() {
 	)
 
 	It("should pass validation of secrets that are not in use", func() {
+		// given
+		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
 		// when
-		err := validator.ValidateDelete(context.Background(), "some-not-used-secret", "default")
+		err = validator.ValidateDelete(context.Background(), "some-not-used-secret", "default")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
