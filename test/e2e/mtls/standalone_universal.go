@@ -2,8 +2,8 @@ package mtls
 
 import (
 	"fmt"
+	"net"
 	"regexp"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,7 +30,7 @@ func StandaloneUniversal() {
 		Expect(universal.DismissCluster()).To(Succeed())
 	})
 
-	createMesh := func(name, mode string) {
+	createMeshMTLS := func(name, mode string) {
 		meshYaml := fmt.Sprintf(
 			`
 type: Mesh
@@ -52,22 +52,15 @@ mtls:
 		).To(Succeed())
 	}
 
-	runTestServer := func(mesh string) {
+	runTestServer := func(mesh string, tls bool) {
 		echoServerToken, err := universal.GetKuma().GenerateDpToken(mesh, "test-server")
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(TestServerUniversal("test-server", mesh, echoServerToken,
-			WithArgs([]string{"echo", "--instance", "universal-1"}))(universal)).To(Succeed())
-	}
-
-	checkInsideMeshConnection := func() {
-		Eventually(func() bool {
-			stdout, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "test-server.mesh")
-			if err != nil {
-				return false
-			}
-			return strings.Contains(stdout, "HTTP/1.1 200 OK")
-		}, "30s", "1s").Should(BeTrue())
+		args := []string{"echo", "--instance", "universal-1"}
+		if tls {
+			args = append(args, "--tls", "--crt=/kuma/server.crt", "--key=/kuma/server.key")
+		}
+		Expect(TestServerUniversal("test-server", mesh, echoServerToken, WithArgs(args), WithProtocol("tcp"))(universal)).To(Succeed())
 	}
 
 	getServiceEndpoint := func() string {
@@ -89,51 +82,83 @@ mtls:
 		return addr
 	}
 
-	checkOutsideMeshConnection := func() {
-		addr := getServiceEndpoint()
-
-		Eventually(func() bool {
-			stdout, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", addr)
-			if err != nil {
-				return false
-			}
-			return strings.Contains(stdout, "HTTP/1.1 200 OK")
-		}, "30s", "1s").Should(BeTrue())
-	}
-
-	checkNoOutsideMeshConnection := func() {
-		addr := getServiceEndpoint()
-
-		Eventually(func() bool {
-			stdout, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", addr)
-			if err != nil {
-				return false
-			}
-			return strings.Contains(stdout, "HTTP/1.1 200 OK")
-		}, "30s", "1s").Should(BeFalse())
-	}
-
 	It("should support STRICT mTLS mode", func() {
-		createMesh("default", "STRICT")
+		createMeshMTLS("default", "STRICT")
 
-		runTestServer("default")
+		runTestServer("default", false)
 
 		runDemoClient("default")
 
-		checkInsideMeshConnection()
+		// check the inside-mesh communication
+		Eventually(func() error {
+			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "test-server.mesh")
+			return err
+		}, "30s", "1s").ShouldNot(HaveOccurred())
 
-		checkNoOutsideMeshConnection()
+		// check the outside-mesh communication (using direct IP:PORT allows bypassing outbound listeners)
+		addr := getServiceEndpoint()
+		Eventually(func() error {
+			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", addr)
+			return err
+		}, "30s", "1s").ShouldNot(Succeed())
 	})
 
 	It("should support PERMISSIVE mTLS mode", func() {
-		createMesh("default", "PERMISSIVE")
+		createMeshMTLS("default", "PERMISSIVE")
 
-		runTestServer("default")
+		runTestServer("default", false)
 
 		runDemoClient("default")
 
-		checkInsideMeshConnection()
+		// check the inside-mesh communication
+		Eventually(func() error {
+			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "test-server.mesh")
+			return err
+		}, "30s", "1s").ShouldNot(HaveOccurred())
 
-		checkOutsideMeshConnection()
+		// check the outside-mesh communication (using direct IP:PORT allows bypassing outbound listeners)
+		addr := getServiceEndpoint()
+		Eventually(func() error {
+			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", addr)
+			return err
+		}, "30s", "1s").ShouldNot(HaveOccurred())
+	})
+
+	It("should support mTLS if connection already TLS", func() {
+		createMeshMTLS("default", "STRICT")
+
+		runTestServer("default", true)
+
+		runDemoClient("default")
+
+		Eventually(func() error {
+			cmd := []string{"curl", "-v", "-m", "3", "--fail", "--cacert", "/kuma/server.crt", "https://test-server.mesh:80"}
+			_, _, err := universal.Exec("", "", "demo-client", cmd...)
+			return err
+		}, "30s", "1s").ShouldNot(HaveOccurred())
+	})
+
+	It("should support PERMISSIVE mTLS mode if the client is using TLS", func() {
+		createMeshMTLS("default", "PERMISSIVE")
+
+		runTestServer("default", true)
+
+		runDemoClient("default")
+
+		// check the inside-mesh communication with mTLS over TLS
+		Eventually(func() error {
+			cmd := []string{"curl", "-v", "-m", "3", "--fail", "--cacert", "/kuma/server.crt", "https://test-server.mesh:80"}
+			_, _, err := universal.Exec("", "", "demo-client", cmd...)
+			return err
+		}, "30s", "1s").ShouldNot(HaveOccurred())
+
+		// check the outside-mesh communication with mTLS over TLS
+		// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
+		host, _, _ := net.SplitHostPort(getServiceEndpoint())
+		Eventually(func() error {
+			cmd := []string{"curl", "-v", "-m", "3", "--resolve", fmt.Sprintf("test-server.mesh:80:%s", host), "--fail", "--cacert", "/kuma/server.crt", "https://test-server.mesh:80"}
+			_, _, err := universal.Exec("", "", "demo-client", cmd...)
+			return err
+		}, "30s", "1s").ShouldNot(HaveOccurred())
 	})
 }

@@ -14,6 +14,9 @@ func newEchoHTTPCmd() *cobra.Command {
 	args := struct {
 		port     uint32
 		instance string
+		tls      bool
+		crtFile  string
+		keyFile  string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "echo",
@@ -43,10 +46,16 @@ func newEchoHTTPCmd() *cobra.Command {
 					panic(err)
 				}
 			})
+			if args.tls {
+				return http.ListenAndServeTLS(fmt.Sprintf(":%d", args.port), args.crtFile, args.keyFile, nil)
+			}
 			return http.ListenAndServe(fmt.Sprintf(":%d", args.port), nil)
 		},
 	}
 	cmd.PersistentFlags().Uint32Var(&args.port, "port", 10011, "port server is listening on")
 	cmd.PersistentFlags().StringVar(&args.instance, "instance", "unknown", "will be included in response")
+	cmd.PersistentFlags().BoolVar(&args.tls, "tls", false, "")
+	cmd.PersistentFlags().StringVar(&args.crtFile, "crt", "./test/server/certs/server.crt", "")
+	cmd.PersistentFlags().StringVar(&args.keyFile, "key", "./test/server/certs/server.key", "")
 	return cmd
 }

@@ -26,11 +26,11 @@ const (
 type CertificateAuthorityBackend_Mode int32
 
 const (
-	// A STRICT mode implies server validates the connection and accepts only
-	// encrypted TLS traffic
+	// A STRICT mode implies that the server validates the connection and
+	// accepts only encrypted TLS traffic
 	CertificateAuthorityBackend_STRICT CertificateAuthorityBackend_Mode = 0
-	// A PERMISSIVE mode implies outbounds encrypt traffic the same way it
-	// happens in strict mode, but inbounds accept both TLS and plaintext
+	// A PERMISSIVE mode implies that the outbounds encrypt traffic the same way
+	// it happens in strict mode, but inbounds accept both TLS and plaintext
 	// traffic. This allows applications residing in the mesh to accept requests
 	// from outside of the mesh.
 	CertificateAuthorityBackend_PERMISSIVE CertificateAuthorityBackend_Mode = 1

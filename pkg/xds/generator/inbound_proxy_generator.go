@@ -14,6 +14,7 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
 // OriginInbound is a marker to indicate by which ProxyGenerator resources were generated.
@@ -114,9 +115,13 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
 			listenerBuilder.
 				Configure(envoy_listeners.FilterChain(filterChainBuilder(false).
-					Configure(envoy_listeners.FilterChainMatch("raw_buffer")))).
+					Configure(envoy_listeners.FilterChainMatch("raw_buffer", nil, nil)))).
+				Configure(envoy_listeners.FilterChain(filterChainBuilder(false).
+					Configure(envoy_listeners.FilterChainMatch("tls", nil, nil)))).
 				Configure(envoy_listeners.FilterChain(filterChainBuilder(true).
-					Configure(envoy_listeners.FilterChainMatch("tls"))))
+					Configure(envoy_listeners.FilterChainMatch("tls", nil, xds_tls.KumaALPNProtocols))))
+		default:
+			return nil, errors.New("unknown mode for CA backend")
 		}
 
 		inboundListener, err := listenerBuilder.Build()
