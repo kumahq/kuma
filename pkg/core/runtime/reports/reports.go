@@ -65,8 +65,24 @@ func fetchZones(rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
 	if err := rt.ReadOnlyResourceManager().List(context.Background(), &zones); err != nil {
 		return nil, errors.Wrap(err, "could not fetch zones")
 	}
-
 	return &zones, nil
+}
+
+func fetchNumOfServices(rt core_runtime.Runtime) (int, int, error) {
+	insights := mesh.ServiceInsightResourceList{}
+	if err := rt.ReadOnlyResourceManager().List(context.Background(), &insights); err != nil {
+		return -1, -1, errors.Wrap(err, "could not fetch service insights")
+	}
+	internalServices := 0
+	for _, insight := range insights.Items {
+		internalServices += len(insight.Spec.Services)
+	}
+
+	externalServicesList := mesh.ExternalServiceResourceList{}
+	if err := rt.ReadOnlyResourceManager().List(context.Background(), &externalServicesList); err != nil {
+		return -1, -1, errors.Wrap(err, "coult not fetch external services")
+	}
+	return internalServices, len(externalServicesList.Items), nil
 }
 
 func (b *reportsBuffer) marshall() (string, error) {
@@ -120,6 +136,14 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 		}
 		b.mutable["zones_total"] = strconv.Itoa(len(zones.Items))
 	}
+
+	internalServices, externalServices, err := fetchNumOfServices(rt)
+	if err != nil {
+		return err
+	}
+	b.mutable["internal_services"] = strconv.Itoa(internalServices)
+	b.mutable["external_services"] = strconv.Itoa(externalServices)
+	b.mutable["services_total"] = strconv.Itoa(internalServices + externalServices)
 	return nil
 }
 
