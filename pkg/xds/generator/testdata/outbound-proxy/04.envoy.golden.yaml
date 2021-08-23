@@ -145,6 +145,8 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
+          alpnProtocols:
+          - kuma
           combinedValidationContext:
             defaultValidationContext:
               matchSubjectAltNames:
@@ -185,6 +187,8 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
+          alpnProtocols:
+          - kuma
           combinedValidationContext:
             defaultValidationContext:
               matchSubjectAltNames:
@@ -221,6 +225,8 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
+          alpnProtocols:
+          - kuma
           combinedValidationContext:
             defaultValidationContext:
               matchSubjectAltNames:
@@ -256,6 +262,8 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
+          alpnProtocols:
+          - kuma
           combinedValidationContext:
             defaultValidationContext:
               matchSubjectAltNames:
@@ -291,6 +299,8 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
+          alpnProtocols:
+          - kuma
           combinedValidationContext:
             defaultValidationContext:
               matchSubjectAltNames:

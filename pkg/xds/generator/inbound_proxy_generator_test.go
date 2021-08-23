@@ -26,6 +26,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 	type testCase struct {
 		dataplaneFile string
 		expected      string
+		mode          mesh_proto.CertificateAuthorityBackend_Mode
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -48,6 +49,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 									{
 										Name: "builtin",
 										Type: "builtin",
+										Mode: given.mode,
 									},
 								},
 							},
@@ -234,6 +236,16 @@ var _ = Describe("InboundProxyGenerator", func() {
 		Entry("04. transparent_proxying=true, ip_addresses=2, ports=2", testCase{
 			dataplaneFile: "4-dataplane.input.yaml",
 			expected:      "4-envoy-config.golden.yaml",
+		}),
+		Entry("05. transparent_proxying=false, ip_addresses=2, ports=2, mode=permissive", testCase{
+			dataplaneFile: "5-dataplane.input.yaml",
+			expected:      "5-envoy-config.golden.yaml",
+			mode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE,
+		}),
+		Entry("06. transparent_proxying=true, ip_addresses=2, ports=2, mode=permissive", testCase{
+			dataplaneFile: "6-dataplane.input.yaml",
+			expected:      "6-envoy-config.golden.yaml",
+			mode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE,
 		}),
 	)
 })
