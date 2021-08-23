@@ -58,9 +58,9 @@ func newEchoHTTPCmd() *cobra.Command {
 	if r == "" || err != nil {
 		r = "unknown"
 	}
-	cmd.PersistentFlags().StringVar(&args.instance, "instance", "unknown", "will be included in response")
-	cmd.PersistentFlags().BoolVar(&args.tls, "tls", false, "")
-	cmd.PersistentFlags().StringVar(&args.crtFile, "crt", "./test/server/certs/server.crt", "")
-	cmd.PersistentFlags().StringVar(&args.keyFile, "key", "./test/server/certs/server.key", "")
+	cmd.PersistentFlags().StringVar(&args.instance, "instance", r, "will be included in response")
+	cmd.PersistentFlags().BoolVar(&args.tls, "tls", false, "run the server with TLS enabled")
+	cmd.PersistentFlags().StringVar(&args.crtFile, "crt", "./test/server/certs/server.crt", "path to the server's TLS cert")
+	cmd.PersistentFlags().StringVar(&args.keyFile, "key", "./test/server/certs/server.key", "path to the server's TLS key")
 	return cmd
 }
