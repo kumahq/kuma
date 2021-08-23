@@ -18,7 +18,7 @@ type k8SDeployment struct {
 var _ Deployment = &k8SDeployment{}
 
 func (t *k8SDeployment) ZipkinCollectorURL() string {
-	return "http://jaeger-collector.kuma-tracing:9411/api/v2/spans"
+	return fmt.Sprintf("http://jaeger-collector.%s:9411/api/v2/spans", framework.DefaultTracingNamespace)
 }
 
 func (t *k8SDeployment) TracedServices() ([]string, error) {
