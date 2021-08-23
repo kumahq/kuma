@@ -72,15 +72,10 @@ func (m *externalServiceManager) Delete(ctx context.Context, resource core_model
 	if err := m.externalServiceValidator.ValidateDelete(ctx, opts.Name); err != nil {
 		return err
 	}
-	var notFoundErr error
 	if err := m.store.Delete(ctx, externalService, fs...); err != nil {
-		if core_store.IsResourceNotFound(err) {
-			notFoundErr = err
-		} else { // ignore other errors so we can retry removing other resources
-			return err
-		}
+		return err
 	}
-	return notFoundErr
+	return nil
 }
 
 func (m *externalServiceManager) DeleteAll(ctx context.Context, list core_model.ResourceList, fs ...core_store.DeleteAllOptionsFunc) error {

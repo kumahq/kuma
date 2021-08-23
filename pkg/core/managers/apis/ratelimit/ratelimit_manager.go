@@ -72,15 +72,10 @@ func (m *rateLimitManager) Delete(ctx context.Context, resource core_model.Resou
 	if err := m.rateLimitValidator.ValidateDelete(ctx, opts.Name); err != nil {
 		return err
 	}
-	var notFoundErr error
 	if err := m.store.Delete(ctx, rateLimit, fs...); err != nil {
-		if core_store.IsResourceNotFound(err) {
-			notFoundErr = err
-		} else { // ignore other errors so we can retry removing other resources
-			return err
-		}
+		return err
 	}
-	return notFoundErr
+	return nil
 }
 
 func (m *rateLimitManager) DeleteAll(ctx context.Context, list core_model.ResourceList, fs ...core_store.DeleteAllOptionsFunc) error {
