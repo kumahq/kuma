@@ -308,4 +308,19 @@ var (
 			}},
 		},
 	}
+	VirtualOutbound = &mesh_proto.VirtualOutbound{
+		Selectors: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "virtual-outbound",
+			},
+		}},
+		Conf: &mesh_proto.VirtualOutbound_Conf{
+			Host: "{{.service}}.mesh",
+			Port: "{{.port}}",
+			Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
+				{Name: "port"},
+				{Name: "service", TagKey: "kuma.io/service"},
+			},
+		},
+	}
 )

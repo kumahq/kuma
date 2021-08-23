@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -53,6 +54,10 @@ func newEchoHTTPCmd() *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().Uint32Var(&args.port, "port", 10011, "port server is listening on")
+	r, err := os.Hostname()
+	if r == "" || err != nil {
+		r = "unknown"
+	}
 	cmd.PersistentFlags().StringVar(&args.instance, "instance", "unknown", "will be included in response")
 	cmd.PersistentFlags().BoolVar(&args.tls, "tls", false, "")
 	cmd.PersistentFlags().StringVar(&args.crtFile, "crt", "./test/server/certs/server.crt", "")
