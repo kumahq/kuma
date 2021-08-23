@@ -71,7 +71,7 @@ func fetchZones(rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
 func fetchNumOfServices(rt core_runtime.Runtime) (int, int, error) {
 	insights := mesh.ServiceInsightResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(context.Background(), &insights); err != nil {
-		return -1, -1, errors.Wrap(err, "could not fetch service insights")
+		return 0, 0, errors.Wrap(err, "could not fetch service insights")
 	}
 	internalServices := 0
 	for _, insight := range insights.Items {
@@ -80,7 +80,7 @@ func fetchNumOfServices(rt core_runtime.Runtime) (int, int, error) {
 
 	externalServicesList := mesh.ExternalServiceResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(context.Background(), &externalServicesList); err != nil {
-		return -1, -1, errors.Wrap(err, "coult not fetch external services")
+		return 0, 0, errors.Wrap(err, "coult not fetch external services")
 	}
 	return internalServices, len(externalServicesList.Items), nil
 }
