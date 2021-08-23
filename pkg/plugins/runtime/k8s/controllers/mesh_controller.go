@@ -60,7 +60,7 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 	}
 
 	// Ensure CA Managers are created
-	if err := core_managers.EnsureEnabledCA(ctx, r.CaManagers, meshResource, meshResource.Meta.GetName()); err != nil {
+	if err := core_managers.EnsureCAs(ctx, r.CaManagers, meshResource, meshResource.Meta.GetName()); err != nil {
 		log.Error(err, "unable to ensure that mesh CAs are created")
 		return kube_ctrl.Result{}, err
 	}
