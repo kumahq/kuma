@@ -89,6 +89,13 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 				ResourceConverter: r.ResourceConverter,
 			},
 		}).
+		Watches(&kube_source.Kind{Type: &mesh_k8s.VirtualOutbound{}}, &kube_handler.EnqueueRequestsFromMapFunc{
+			ToRequests: &VirtualOutboundToConfigMapsMapper{
+				Client:          mgr.GetClient(),
+				Log:             r.Log.WithName("virtualoutbound-to-configmap-mapper"),
+				SystemNamespace: r.SystemNamespace,
+			},
+		}).
 		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, &kube_handler.EnqueueRequestsFromMapFunc{
 			ToRequests: &ExternalServiceToConfigMapsMapper{
 				Client:          mgr.GetClient(),
@@ -220,6 +227,24 @@ func (m *ExternalServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []ku
 	cause, ok := obj.Object.(*mesh_k8s.ExternalService)
 	if !ok {
 		m.Log.WithValues("externalService", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
+		return nil
+	}
+
+	return []kube_reconile.Request{{
+		NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(cause.Mesh)},
+	}}
+}
+
+type VirtualOutboundToConfigMapsMapper struct {
+	kube_client.Client
+	Log             logr.Logger
+	SystemNamespace string
+}
+
+func (m *VirtualOutboundToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
+	cause, ok := obj.Object.(*mesh_k8s.VirtualOutbound)
+	if !ok {
+		m.Log.WithValues("virtualOutbound", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
 		return nil
 	}
 

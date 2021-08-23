@@ -7,12 +7,21 @@ import (
 )
 
 type DeploymentOpts struct {
-	Mesh string
+	Name            string
+	Namespace       string
+	Mesh            string
+	WithStatefulSet bool
+	Args            []string
+	Replicas        int32
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {
 	return DeploymentOpts{
-		Mesh: "default",
+		Mesh:      "default",
+		Args:      []string{},
+		Name:      "test-server",
+		Namespace: framework.TestNamespace,
+		Replicas:  1,
 	}
 }
 
@@ -24,18 +33,42 @@ func WithMesh(mesh string) DeploymentOptsFn {
 	}
 }
 
+func WithName(name string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.Name = name
+	}
+}
+
+func WithNamespace(namespace string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.Namespace = namespace
+	}
+}
+
+func WithReplicas(n int32) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.Replicas = n
+	}
+}
+
+func WithStatefulSet(apply bool) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.WithStatefulSet = apply
+	}
+}
+
+func WithArgs(args ...string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.Args = args
+	}
+}
+
 type TestServer interface {
 }
 
 type Deployment interface {
 	framework.Deployment
 	TestServer
-}
-
-const DeploymentName = "test-server"
-
-func From(cluster framework.Cluster) TestServer {
-	return cluster.Deployment(DeploymentName).(TestServer)
 }
 
 func Install(fn ...DeploymentOptsFn) framework.InstallFunc {

@@ -41,20 +41,21 @@ type deployOptions struct {
 	runPostgresMigration bool
 
 	// app specific
-	namespace      string
-	appname        string
-	name           string
-	appYaml        string
-	appArgs        []string
-	token          string
-	transparent    bool
-	builtindns     *bool // true by default
-	protocol       string
-	serviceName    string
-	serviceVersion string
-	mesh           string
-	dpVersion      string
-	kumactlFlow    bool
+	namespace       string
+	appname         string
+	name            string
+	appYaml         string
+	appArgs         []string
+	token           string
+	transparent     bool
+	builtindns      *bool // true by default
+	protocol        string
+	serviceName     string
+	serviceVersion  string
+	serviceInstance string
+	mesh            string
+	dpVersion       string
+	kumactlFlow     bool
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -114,6 +115,12 @@ func WithServiceName(name string) DeployOptionsFunc {
 func WithServiceVersion(version string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.serviceVersion = version
+	}
+}
+
+func WithServiceInstance(instance string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.serviceInstance = instance
 	}
 }
 
