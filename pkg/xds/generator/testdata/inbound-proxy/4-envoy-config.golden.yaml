@@ -71,6 +71,10 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: inbound:192.168.0.1:443
     trafficDirection: INBOUND
 - name: inbound:192.168.0.1:80
@@ -220,6 +224,10 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: inbound:192.168.0.1:80
     trafficDirection: INBOUND
 - name: inbound:192.168.0.2:443
@@ -262,6 +270,10 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: inbound:192.168.0.2:443
     trafficDirection: INBOUND
 - name: inbound:192.168.0.2:80
@@ -323,5 +335,9 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: inbound:192.168.0.2:80
     trafficDirection: INBOUND

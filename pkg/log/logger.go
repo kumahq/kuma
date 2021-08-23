@@ -74,7 +74,7 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		// accessor. Passing -10 ensures that levels up to `V(10)`
 		// will work, which seems like plenty.
 		lvl = zap.NewAtomicLevelAt(-10)
-		opts = append(opts, zap.Development(), zap.AddStacktrace(zap.ErrorLevel))
+		opts = append(opts, zap.AddStacktrace(zap.ErrorLevel))
 	default:
 		lvl = zap.NewAtomicLevelAt(zap.InfoLevel)
 	}

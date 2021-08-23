@@ -11,9 +11,8 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
-	managers_externalservice "github.com/kumahq/kuma/pkg/core/managers/apis/external_service"
-	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	managers_ratelimit "github.com/kumahq/kuma/pkg/core/managers/apis/ratelimit"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/external_service"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/ratelimit"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -241,20 +240,16 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().Store.Kubernetes.SystemNamespace)
 	composite.AddValidator(handler)
 
-	coreMeshValidator := managers_mesh.MeshValidator{
-		CaManagers: rt.CaManagers(),
-		Store:      rt.ResourceStore(),
-	}
-	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, converter, rt.ResourceManager())
+	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.MeshValidator(), converter, rt.ResourceManager())
 	composite.AddValidator(k8sMeshValidator)
 
-	rateLimitValidator := managers_ratelimit.RateLimitValidator{
+	rateLimitValidator := ratelimit.RateLimitValidator{
 		Store: rt.ResourceStore(),
 	}
 	k8sRateLimitValidator := k8s_webhooks.NewRateLimitValidatorWebhook(rateLimitValidator, converter)
 	composite.AddValidator(k8sRateLimitValidator)
 
-	externalServiceValidator := managers_externalservice.ExternalServiceValidator{
+	externalServiceValidator := external_service.ExternalServiceValidator{
 		Store: rt.ResourceStore(),
 	}
 	k8sExternalServiceValidator := k8s_webhooks.NewExternalServiceValidatorWebhook(externalServiceValidator, converter)
