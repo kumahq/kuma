@@ -11,11 +11,6 @@ import (
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-// KumaALPNProtocols are set for UpstreamTlsContext to show that mTLS is created by mesh.
-// On the inbound side we have to distinguish Kuma mTLS and application TLS to properly
-// support PERMISSIVE mode
-var KumaALPNProtocols = []string{"kuma"}
-
 // CreateDownstreamTlsContext creates DownstreamTlsContext for incoming connections
 // It verifies that incoming connection has TLS certificate signed by Mesh CA with URI SAN of prefix spiffe://{mesh_name}/
 // It secures inbound listener with certificate of "identity_cert" that will be received from the SDS (it contains URI SANs of all inbounds).
@@ -55,7 +50,7 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, upstreamService string, s
 	if err != nil {
 		return nil, err
 	}
-	commonTlsContext.AlpnProtocols = KumaALPNProtocols
+	commonTlsContext.AlpnProtocols = xds_tls.KumaALPNProtocols
 	return &envoy_tls.UpstreamTlsContext{
 		CommonTlsContext: commonTlsContext,
 		Sni:              sni,

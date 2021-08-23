@@ -14,7 +14,7 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
+	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 // OriginInbound is a marker to indicate by which ProxyGenerator resources were generated.
