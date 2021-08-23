@@ -13,6 +13,7 @@ type MetricsTemplateArgs struct {
 	KumaPrometheusSdImage   string
 	KumaPrometheusSdVersion string
 	KumaCpAddress           string
+	KumaCpApiAddress        string
 	WithoutPrometheus       bool
 	WithoutGrafana          bool
 	Dashboards              []Dashboard
@@ -29,6 +30,7 @@ func DefaultInstallMetricsContext() InstallMetricsContext {
 			KumaPrometheusSdImage:   "docker.io/kumahq/kuma-prometheus-sd",
 			KumaPrometheusSdVersion: kuma_version.Build.GitTag,
 			KumaCpAddress:           "grpc://kuma-control-plane.kuma-system:5676",
+			KumaCpApiAddress:        "http://kuma-control-plane.kuma-system:5681",
 			WithoutPrometheus:       false,
 			WithoutGrafana:          false,
 		},
