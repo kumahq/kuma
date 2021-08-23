@@ -105,8 +105,8 @@ func (c *MonitoringAssignmentClientConfig) Validate() (errs error) {
 
 	if c.ApiVersion == "" {
 		errs = multierr.Append(errs, errors.Errorf(".ApiVersion must be non-empty"))
-	} else if c.ApiVersion != mads.API_V1 && c.ApiVersion != mads.API_V1_ALPHA1 {
-		errs = multierr.Append(errs, errors.Errorf(".ApiVersion must be v1 or v1alpha1, got: %s", c.ApiVersion))
+	} else if c.ApiVersion != mads.API_V1 {
+		errs = multierr.Append(errs, errors.Errorf(".ApiVersion must be v1, got: %s", c.ApiVersion))
 	}
 
 	return

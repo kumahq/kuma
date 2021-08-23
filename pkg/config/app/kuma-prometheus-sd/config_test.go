@@ -35,7 +35,7 @@ var _ = Describe("Config", func() {
 			env := map[string]string{
 				"KUMA_MONITORING_ASSIGNMENT_CLIENT_URL":         "grpc://kuma-control-plane.internal:5682",
 				"KUMA_MONITORING_ASSIGNMENT_CLIENT_NAME":        "custom",
-				"KUMA_MONITORING_ASSIGNMENT_CLIENT_API_VERSION": "v1alpha1",
+				"KUMA_MONITORING_ASSIGNMENT_CLIENT_API_VERSION": "v1",
 				"KUMA_PROMETHEUS_OUTPUT_FILE":                   "/path/to/file",
 			}
 			for key, value := range env {
