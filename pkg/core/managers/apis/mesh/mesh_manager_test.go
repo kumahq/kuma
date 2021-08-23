@@ -1,4 +1,4 @@
-package mesh
+package mesh_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -45,8 +46,8 @@ var _ = Describe("Mesh Manager", func() {
 		}
 
 		manager := manager.NewResourceManager(resStore)
-		validator := MeshValidator{CaManagers: caManagers, Store: resStore}
-		resManager = NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
+		validator := mesh.NewMeshValidator(caManagers, resStore)
+		resManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
 	})
 
 	Describe("Create()", func() {
