@@ -373,7 +373,7 @@ conf:
 		// there are not enough "client -> zoneingress -> server" connections to have proper loadbalancing
 		// If a client is connected to ZoneIngress, ZoneIngress opens connection to a server.
 		// ZoneIngress is a simple TCP passthrough proxy therefore it cannot spread requests to many instances.
-		// If concurrency is low, we only iniate 2 connections to ZoneIngress which is not enough to cover all instances.
+// If concurrency is low, we only initiate 2 connections to ZoneIngress which is not enough to cover all instances.
 		//
 		// We can adjust concurrency once https://github.com/kumahq/kuma/issues/1920 is fixed
 		// or if we change the behaviour of ZoneIngress
