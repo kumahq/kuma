@@ -381,6 +381,7 @@ conf:
 			// or if we change the behaviour of ZoneIngress
 			if runtime.NumCPU() < 4 {
 				Skip("concurrency too low")
+				return
 			}
 
 			Eventually(func() (map[string]int, error) {
