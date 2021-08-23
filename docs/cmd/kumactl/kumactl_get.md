@@ -57,6 +57,8 @@ Show Kuma resources.
 * [kumactl get traffic-routes](kumactl_get_traffic-routes.md)	 - Show TrafficRoute
 * [kumactl get traffic-trace](kumactl_get_traffic-trace.md)	 - Show a single TrafficTrace resource
 * [kumactl get traffic-traces](kumactl_get_traffic-traces.md)	 - Show TrafficTrace
+* [kumactl get virtual-outbound](kumactl_get_virtual-outbound.md)	 - Show a single VirtualOutbound resource
+* [kumactl get virtual-outbounds](kumactl_get_virtual-outbounds.md)	 - Show VirtualOutbound
 * [kumactl get zone](kumactl_get_zone.md)	 - Show a single Zone resource
 * [kumactl get zone-ingress](kumactl_get_zone-ingress.md)	 - Show a single ZoneIngress resource
 * [kumactl get zone-ingresses](kumactl_get_zone-ingresses.md)	 - Show ZoneIngress
