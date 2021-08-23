@@ -2,6 +2,7 @@ package universal_multizone
 
 import (
 	"fmt"
+	"runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -369,15 +370,19 @@ conf:
 	})
 
 	Context("locality aware loadbalancing", func() {
-		// todo(jakubdyszkiewicz) test fails because of low --concurency in CI
-		// there are not enough "client -> zoneingress -> server" connections to have proper loadbalancing
-		// If a client is connected to ZoneIngress, ZoneIngress opens connection to a server.
-		// ZoneIngress is a simple TCP passthrough proxy therefore it cannot spread requests to many instances.
-// If concurrency is low, we only initiate 2 connections to ZoneIngress which is not enough to cover all instances.
-		//
-		// We can adjust concurrency once https://github.com/kumahq/kuma/issues/1920 is fixed
-		// or if we change the behaviour of ZoneIngress
-		PIt("should loadbalance all requests equally by default", func() {
+		It("should loadbalance all requests equally by default", func() {
+			// todo(jakubdyszkiewicz) test fails because of low --concurency in CI
+			// there are not enough "client -> zoneingress -> server" connections to have proper loadbalancing
+			// If a client is connected to ZoneIngress, ZoneIngress opens connection to a server.
+			// ZoneIngress is a simple TCP passthrough proxy therefore it cannot spread requests to many instances.
+	// If concurrency is low, we only initiate 2 connections to ZoneIngress which is not enough to cover all instances.
+			//
+			// We can adjust concurrency once https://github.com/kumahq/kuma/issues/1920 is fixed
+			// or if we change the behaviour of ZoneIngress
+			if runtime.NumCPU() < 4 {
+				Skip("concurrency too low")
+			}
+
 			Eventually(func() (map[string]int, error) {
 				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(40))
 			}, "30s", "500ms").Should(
