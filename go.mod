@@ -13,7 +13,6 @@ require (
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210310174751-14ce79b5761d
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-kit/kit v0.11.0
 	github.com/go-logr/logr v0.1.0

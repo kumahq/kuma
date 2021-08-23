@@ -3,6 +3,7 @@ linters:
     - bodyclose
     - gci
     - gocritic
+    - gomodguard
     - govet
     - importas
     - misspell
@@ -33,6 +34,12 @@ linters-settings:
       alias: mesh_proto
     - pkg: github.com/kumahq/kuma/pkg/util/proto
       alias: util_proto
+  gomodguard:
+    blocked:
+      modules:
+      - github.com/go-errors/errors:
+          recommendations:
+          - github.com/pkg/errors
 
 issues:
   fix: true
