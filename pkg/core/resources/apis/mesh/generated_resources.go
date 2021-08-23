@@ -2021,6 +2021,106 @@ func init() {
 }
 
 const (
+	VirtualOutboundType model.ResourceType = "VirtualOutbound"
+)
+
+var _ model.Resource = &VirtualOutboundResource{}
+
+type VirtualOutboundResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.VirtualOutbound
+}
+
+func NewVirtualOutboundResource() *VirtualOutboundResource {
+	return &VirtualOutboundResource{
+		Spec: &mesh_proto.VirtualOutbound{},
+	}
+}
+
+func (t *VirtualOutboundResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *VirtualOutboundResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *VirtualOutboundResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *VirtualOutboundResource) Selectors() []*mesh_proto.Selector {
+	return t.Spec.GetSelectors()
+}
+
+func (t *VirtualOutboundResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.VirtualOutbound)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		t.Spec = protoType
+		return nil
+	}
+}
+
+func (t *VirtualOutboundResource) Descriptor() model.ResourceTypeDescriptor {
+	return VirtualOutboundResourceTypeDescriptor
+}
+
+var _ model.ResourceList = &VirtualOutboundResourceList{}
+
+type VirtualOutboundResourceList struct {
+	Items      []*VirtualOutboundResource
+	Pagination model.Pagination
+}
+
+func (l *VirtualOutboundResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *VirtualOutboundResourceList) GetItemType() model.ResourceType {
+	return VirtualOutboundType
+}
+
+func (l *VirtualOutboundResourceList) NewItem() model.Resource {
+	return NewVirtualOutboundResource()
+}
+
+func (l *VirtualOutboundResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*VirtualOutboundResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*VirtualOutboundResource)(nil), r)
+	}
+}
+
+func (l *VirtualOutboundResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+var VirtualOutboundResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           VirtualOutboundType,
+	Resource:       NewVirtualOutboundResource(),
+	ResourceList:   &VirtualOutboundResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "virtual-outbounds",
+	KumactlArg:     "virtual-outbound",
+	KumactlListArg: "virtual-outbounds",
+}
+
+func init() {
+	registry.RegisterType(VirtualOutboundResourceTypeDescriptor)
+}
+
+const (
 	ZoneIngressType model.ResourceType = "ZoneIngress"
 )
 

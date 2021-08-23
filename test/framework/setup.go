@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"bytes"
 	"fmt"
 	"time"
 
@@ -9,12 +10,58 @@ import (
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 
+	kumav1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/tls"
 )
 
 type InstallFunc func(cluster Cluster) error
+
+var K8sScheme = runtime.NewScheme()
+
+func init() {
+	err := corev1.AddToScheme(K8sScheme)
+	if err != nil {
+		panic(err)
+	}
+	err = appsv1.AddToScheme(K8sScheme)
+	if err != nil {
+		panic(err)
+	}
+	err = kumav1alpha1.AddToScheme(K8sScheme)
+	if err != nil {
+		panic(err)
+	}
+}
+
+var Serializer = k8sjson.NewSerializerWithOptions(
+	k8sjson.DefaultMetaFactory, K8sScheme, K8sScheme,
+	k8sjson.SerializerOptions{
+		Yaml:   true,
+		Pretty: true,
+		Strict: true,
+	},
+)
+
+func YamlK8sObject(obj runtime.Object) InstallFunc {
+	return func(cluster Cluster) error {
+		b := bytes.Buffer{}
+		err := Serializer.Encode(obj, &b)
+		if err != nil {
+			return err
+		}
+		_, err = retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
+			func() (s string, err error) {
+				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), b.String())
+			})
+		return err
+	}
+}
 
 func YamlK8s(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
@@ -72,7 +119,7 @@ func WaitService(namespace, service string) InstallFunc {
 func WaitNumPodsNamespace(namespace string, num int, app string) InstallFunc {
 	return func(c Cluster) error {
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(namespace),
-			kube_meta.ListOptions{
+			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
 			}, num, DefaultRetries, DefaultTimeout)
 		return nil
@@ -82,7 +129,7 @@ func WaitNumPodsNamespace(namespace string, num int, app string) InstallFunc {
 func WaitNumPods(num int, app string) InstallFunc {
 	return func(c Cluster) error {
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(),
-			kube_meta.ListOptions{
+			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
 			}, num, DefaultRetries, DefaultTimeout)
 		return nil
@@ -92,7 +139,7 @@ func WaitNumPods(num int, app string) InstallFunc {
 func WaitPodsAvailable(namespace, app string) InstallFunc {
 	return func(c Cluster) error {
 		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
-			kube_meta.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
+			metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
 		if err != nil {
 			return err
 		}
@@ -137,7 +184,7 @@ func WaitUntilPodCompleteE(t testing.TestingT, options *k8s.KubectlOptions, podN
 func WaitPodsComplete(namespace, app string) InstallFunc {
 	return func(c Cluster) error {
 		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
-			kube_meta.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
+			metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
 		if err != nil {
 			return err
 		}
@@ -154,7 +201,7 @@ func WaitPodsComplete(namespace, app string) InstallFunc {
 func WaitPodsNotAvailable(namespace, app string) InstallFunc {
 	return func(c Cluster) error {
 		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
-			kube_meta.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
+			metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
 		if err != nil {
 			return err
 		}
@@ -361,6 +408,9 @@ func TestServerUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 		if opts.serviceName == "" {
 			opts.serviceName = "test-server"
 		}
+		if opts.serviceInstance == "" {
+			opts.serviceInstance = "1"
+		}
 
 		serviceProbe := ""
 		if opts.serviceProbe {
@@ -383,13 +433,14 @@ networking:
       kuma.io/service: %s
       kuma.io/protocol: %s
       version: %s
+      instance: '%s'
       team: server-owners
 %s
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
     redirectPortOutbound: %s
-`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 
 		fs = append(fs,
 			WithName(name),

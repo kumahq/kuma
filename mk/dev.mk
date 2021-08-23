@@ -126,7 +126,7 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and k
 	@if [ ! -e $(KUBEBUILDER_PATH) ]; then \
 		echo "Installing Kubebuilder $(CI_KUBEBUILDER_VERSION) ..." \
 		&& set -x \
-		&& $(CURL_DOWNLOAD) https://go.kubebuilder.io/dl/$(CI_KUBEBUILDER_VERSION)/$(GOOS)/$(GOARCH) | tar -xz -C /tmp/ \
+		&& $(CURL_DOWNLOAD) https://github.com/kubernetes-sigs/kubebuilder/releases/download/v$(CI_KUBEBUILDER_VERSION)/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH).tar.gz | tar -xz -C /tmp/ \
 		&& mkdir -p $(KUBEBUILDER_DIR) \
 		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH)/* $(KUBEBUILDER_DIR) \
 		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH) \

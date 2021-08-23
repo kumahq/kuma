@@ -81,6 +81,7 @@ var _ = Describe("KDS Server", func() {
 			kds_samples.ZoneIngressInsight,
 			kds_samples.Config,
 			kds_samples.Gateway,
+			kds_samples.VirtualOutbound,
 		}).
 			To(WithTransform(func(messages []proto.Message) []string {
 				var res []string
