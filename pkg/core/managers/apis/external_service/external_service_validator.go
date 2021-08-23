@@ -46,7 +46,7 @@ func (r *ExternalServiceValidator) validateRateLimits(ctx context.Context, mesh 
 			matchesNonService := false
 			for tag, value := range dest.GetMatch() {
 				if tag == mesh_proto.ServiceTag {
-					if value == service {
+					if value == service || value == mesh_proto.MatchAllTag {
 						matchesThisService = true
 					}
 				} else {

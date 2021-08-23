@@ -78,6 +78,46 @@ var _ = Describe("RateLimit Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("Should treat as inbound and allow by default, allow service=*", func() {
+			// given
+			meshName := "mesh-1"
+			resKey := model.ResourceKey{
+				Mesh: meshName,
+				Name: "ratelimit1",
+			}
+
+			// when
+			ratelimit := core_mesh.RateLimitResource{
+				Spec: &mesh_proto.RateLimit{
+					Sources: []*mesh_proto.Selector{
+						&mesh_proto.Selector{
+							Match: map[string]string{
+								"kuma.io/service": "service1",
+							},
+						},
+					},
+					Destinations: []*mesh_proto.Selector{
+						&mesh_proto.Selector{
+							Match: map[string]string{
+								"kuma.io/service": "*",
+								"version":         "v1",
+							},
+						},
+					},
+					Conf: &mesh_proto.RateLimit_Conf{
+						Http: &mesh_proto.RateLimit_Conf_Http{
+							Requests: 100,
+							Interval: util_proto.Duration(time.Second * 10),
+						},
+					},
+				},
+			}
+			err := rateLimitManager.Create(context.Background(), &ratelimit, store.CreateBy(resKey))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("Should allow outbound with only service tag", func() {
 			// given
 			meshName := "mesh-1"
@@ -115,6 +155,63 @@ var _ = Describe("RateLimit Manager", func() {
 						&mesh_proto.Selector{
 							Match: map[string]string{
 								"kuma.io/service": "service2",
+							},
+						},
+					},
+					Conf: &mesh_proto.RateLimit_Conf{
+						Http: &mesh_proto.RateLimit_Conf_Http{
+							Requests: 100,
+							Interval: util_proto.Duration(time.Second * 10),
+						},
+					},
+				},
+			}
+			err := externalServiceManager.Create(context.Background(), &externalService, store.CreateBy(esKey))
+			Expect(err).ToNot(HaveOccurred())
+
+			err = rateLimitManager.Create(context.Background(), &ratelimit, store.CreateBy(rlKey))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("Should allow outbound with only service tag = *", func() {
+			// given
+			meshName := "mesh-1"
+			rlKey := model.ResourceKey{
+				Mesh: meshName,
+				Name: "ratelimit1",
+			}
+
+			esKey := model.ResourceKey{
+				Mesh: meshName,
+				Name: "service2-name",
+			}
+
+			// when
+			externalService := core_mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "example.com:80",
+					},
+					Tags: map[string]string{
+						"kuma.io/service": "service2",
+					},
+				},
+			}
+			ratelimit := core_mesh.RateLimitResource{
+				Spec: &mesh_proto.RateLimit{
+					Sources: []*mesh_proto.Selector{
+						&mesh_proto.Selector{
+							Match: map[string]string{
+								"kuma.io/service": "service1",
+							},
+						},
+					},
+					Destinations: []*mesh_proto.Selector{
+						&mesh_proto.Selector{
+							Match: map[string]string{
+								"kuma.io/service": "*",
 							},
 						},
 					},
@@ -373,6 +470,75 @@ var _ = Describe("RateLimit Manager", func() {
 				},
 			}))
 		})
+
+		It("Should disallow outbound with service=* + other tag", func() {
+			// given
+			meshName := "mesh-1"
+			rlKey := model.ResourceKey{
+				Mesh: meshName,
+				Name: "ratelimit1",
+			}
+
+			esKey := model.ResourceKey{
+				Mesh: meshName,
+				Name: "service2",
+			}
+
+			// when
+			externalService := core_mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "example.com:80",
+					},
+					Tags: map[string]string{
+						"kuma.io/service": "service2",
+					},
+				},
+			}
+			ratelimit := core_mesh.RateLimitResource{
+				Spec: &mesh_proto.RateLimit{
+					Sources: []*mesh_proto.Selector{
+						&mesh_proto.Selector{
+							Match: map[string]string{
+								"kuma.io/service": "service1",
+							},
+						},
+					},
+					Destinations: []*mesh_proto.Selector{
+						&mesh_proto.Selector{
+							Match: map[string]string{
+								"kuma.io/service": "*",
+							},
+						},
+					},
+					Conf: &mesh_proto.RateLimit_Conf{
+						Http: &mesh_proto.RateLimit_Conf_Http{
+							Requests: 100,
+							Interval: util_proto.Duration(time.Second * 10),
+						},
+					},
+				},
+			}
+			err := externalServiceManager.Create(context.Background(), &externalService, store.CreateBy(esKey))
+			Expect(err).ToNot(HaveOccurred())
+
+			err = rateLimitManager.Create(context.Background(), &ratelimit, store.CreateBy(rlKey))
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			ratelimit.Spec.Destinations[0].Match["version"] = "v1"
+			err = rateLimitManager.Update(context.Background(), &ratelimit)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(&validators.ValidationError{
+				Violations: []validators.Violation{
+					{
+						Field:   "ratelimit",
+						Message: "RateLimit applied to external service only supports kuma.io/service as destination match",
+					},
+				},
+			}))
+		})
+
 	})
 
 })

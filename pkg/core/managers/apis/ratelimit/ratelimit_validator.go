@@ -49,12 +49,16 @@ func (r *RateLimitValidator) validateDestinations(ctx context.Context, mesh stri
 		}
 	}
 
+	if len(esLookup) == 0 {
+		return nil
+	}
+
 	for _, dest := range dests {
 		hasNonService := false
 		hasExternalService := false
 		for tag, value := range dest.GetMatch() {
 			if tag == mesh_proto.ServiceTag {
-				if _, exist := esLookup[value]; exist {
+				if _, exist := esLookup[value]; exist || value == mesh_proto.MatchAllTag {
 					hasExternalService = true
 				}
 			} else {
