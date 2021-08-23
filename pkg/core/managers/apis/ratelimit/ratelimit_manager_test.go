@@ -145,7 +145,7 @@ var _ = Describe("RateLimit Manager", func() {
 
 			esKey := model.ResourceKey{
 				Mesh: meshName,
-				Name: "service2",
+				Name: "service2-name",
 			}
 
 			// when

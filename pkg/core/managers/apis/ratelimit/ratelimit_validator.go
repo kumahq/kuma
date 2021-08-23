@@ -28,18 +28,34 @@ func (r *RateLimitValidator) ValidateDelete(ctx context.Context, name string) er
 func (r *RateLimitValidator) validateDestinations(ctx context.Context, mesh string, dests []*mesh_proto.Selector) error {
 	validationErr := &validators.ValidationError{}
 	// A ratelimit on an external service can only match kuma.io/service tags
+	externalServices := &core_mesh.ExternalServiceResourceList{}
+	err := r.Store.List(ctx, externalServices, store.ListByMesh(mesh))
+	if err != nil {
+		if store.IsResourceNotFound(err) {
+			return nil
+		} else {
+			validationErr.AddViolation("ratelimit", err.Error())
+			return validationErr
+		}
+	}
+
+	esLookup := map[string]bool{}
+	for _, externalService := range externalServices.Items {
+		spec := externalService.GetSpec().(*mesh_proto.ExternalService)
+		for tag, value := range spec.GetTags() {
+			if tag == mesh_proto.ServiceTag {
+				esLookup[value] = true
+			}
+		}
+	}
+
 	for _, dest := range dests {
 		hasNonService := false
 		hasExternalService := false
 		for tag, value := range dest.GetMatch() {
 			if tag == mesh_proto.ServiceTag {
-				svc := core_mesh.NewExternalServiceResource()
-				err := r.Store.Get(ctx, svc, store.GetByKey(value, mesh))
-				if err == nil {
+				if _, exist := esLookup[value]; exist {
 					hasExternalService = true
-				} else if !store.IsResourceNotFound(err) {
-					validationErr.AddViolation("externalservice", err.Error())
-					return validationErr
 				}
 			} else {
 				hasNonService = true
