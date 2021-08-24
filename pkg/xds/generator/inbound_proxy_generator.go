@@ -105,7 +105,6 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 
 		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, model.SocketAddressProtocolTCP)).
-			Configure(envoy_listeners.TLSInspector()).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))
 
 		switch ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
@@ -114,6 +113,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 				Configure(envoy_listeners.FilterChain(filterChainBuilder(true)))
 		case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
 			listenerBuilder.
+				Configure(envoy_listeners.TLSInspector()).
 				Configure(envoy_listeners.FilterChain(filterChainBuilder(false).
 					Configure(envoy_listeners.FilterChainMatch("raw_buffer", nil, nil)))).
 				Configure(envoy_listeners.FilterChain(filterChainBuilder(false).
