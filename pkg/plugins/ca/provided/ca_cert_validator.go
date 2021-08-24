@@ -33,14 +33,8 @@ func validateCaCert(signingPair util_tls.KeyPair) (verr validators.ValidationErr
 		if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
 			verr.AddViolationAt(path, "key usage extension 'keyCertSign' must be set (see X509-SVID: 4.3. Key Usage)")
 		}
-		if cert.KeyUsage&x509.KeyUsageDigitalSignature != 0 {
-			verr.AddViolationAt(path, "key usage extension 'digitalSignature' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)")
-		}
 		if cert.KeyUsage&x509.KeyUsageKeyAgreement != 0 {
 			verr.AddViolationAt(path, "key usage extension 'keyAgreement' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)")
-		}
-		if cert.KeyUsage&x509.KeyUsageKeyEncipherment != 0 {
-			verr.AddViolationAt(path, "key usage extension 'keyEncipherment' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)")
 		}
 	}
 	return
