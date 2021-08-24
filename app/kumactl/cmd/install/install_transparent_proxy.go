@@ -213,7 +213,7 @@ func modifyIpTables(cmd *cobra.Command, args *transparentProxyArgs) error {
 	}
 
 	if !args.DryRun {
-		_, _ = cmd.OutOrStdout().Write([]byte("kumactl is about to apply the iptables rules that will enable transparent proxying on the machine. The SSH connection may drop. If that happens, just reconnect again."))
+		_, _ = cmd.OutOrStdout().Write([]byte("kumactl is about to apply the iptables rules that will enable transparent proxying on the machine. The SSH connection may drop. If that happens, just reconnect again.\n"))
 	}
 	output, err := tp.Setup(&config.TransparentProxyConfig{
 		DryRun:                 args.DryRun,
