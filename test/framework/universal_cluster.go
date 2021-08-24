@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config/core"
