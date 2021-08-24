@@ -251,19 +251,19 @@ var _ = Describe("FieldOperator", func() {
 			}),
 			Entry("PROTOCOL", testCase{
 				field:    "PROTOCOL",
-				expected: ``, // replicate Envoy's behaviour
+				expected: ``, // replicate Envoy's behavior
 			}),
 			Entry("RESPONSE_CODE", testCase{
 				field:    "RESPONSE_CODE",
-				expected: `0`, // replicate Envoy's behaviour
+				expected: `0`, // replicate Envoy's behavior
 			}),
 			Entry("RESPONSE_CODE_DETAILS", testCase{
 				field:    "RESPONSE_CODE_DETAILS",
-				expected: ``, // replicate Envoy's behaviour
+				expected: ``, // replicate Envoy's behavior
 			}),
 			Entry("REQUEST_DURATION: ``", testCase{
 				field:    "REQUEST_DURATION",
-				expected: ``, // replicate Envoy's behaviour
+				expected: ``, // replicate Envoy's behavior
 			}),
 			Entry("REQUEST_DURATION: `57` millis", testCase{
 				field: "REQUEST_DURATION",
@@ -272,11 +272,11 @@ var _ = Describe("FieldOperator", func() {
 						TimeToLastRxByte: util_proto.Duration(57000 * time.Microsecond),
 					},
 				},
-				expected: ``, // replicate Envoy's behaviour
+				expected: ``, // replicate Envoy's behavior
 			}),
 			Entry("RESPONSE_DURATION: ``", testCase{
 				field:    "RESPONSE_DURATION",
-				expected: ``, // replicate Envoy's behaviour
+				expected: ``, // replicate Envoy's behavior
 			}),
 			Entry("RESPONSE_DURATION: `102` millis", testCase{
 				field: "RESPONSE_DURATION",
@@ -285,11 +285,11 @@ var _ = Describe("FieldOperator", func() {
 						TimeToFirstUpstreamRxByte: util_proto.Duration(102000 * time.Microsecond),
 					},
 				},
-				expected: ``, // replicate Envoy's behaviour
+				expected: ``, // replicate Envoy's behavior
 			}),
 			Entry("RESPONSE_TX_DURATION: ``", testCase{
 				field:    "RESPONSE_TX_DURATION",
-				expected: ``, // replicate Envoy's behaviour
+				expected: ``, // replicate Envoy's behavior
 			}),
 			Entry("RESPONSE_TX_DURATION: no TimeToFirstUpstreamRxByte", testCase{
 				field: "RESPONSE_TX_DURATION",
@@ -298,7 +298,7 @@ var _ = Describe("FieldOperator", func() {
 						TimeToLastDownstreamTxByte: util_proto.Duration(123000 * time.Microsecond),
 					},
 				},
-				expected: ``, // replicate Envoy's behaviour
+				expected: ``, // replicate Envoy's behavior
 			}),
 			Entry("RESPONSE_TX_DURATION: no TimeToLastDownstreamTxByte", testCase{
 				field: "RESPONSE_TX_DURATION",
@@ -307,7 +307,7 @@ var _ = Describe("FieldOperator", func() {
 						TimeToFirstUpstreamRxByte: util_proto.Duration(102000 * time.Microsecond),
 					},
 				},
-				expected: ``, // replicate Envoy's behaviour
+				expected: ``, // replicate Envoy's behavior
 			}),
 			Entry("RESPONSE_TX_DURATION: `23` millis", testCase{
 				field: "RESPONSE_TX_DURATION",
@@ -317,7 +317,7 @@ var _ = Describe("FieldOperator", func() {
 						TimeToLastDownstreamTxByte: util_proto.Duration(123000 * time.Microsecond),
 					},
 				},
-				expected: ``, // replicate Envoy's behaviour
+				expected: ``, // replicate Envoy's behavior
 			}),
 		)
 	})

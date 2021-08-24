@@ -1,4 +1,4 @@
-package mesh
+package mesh_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -45,8 +46,8 @@ var _ = Describe("Mesh Manager", func() {
 		}
 
 		manager := manager.NewResourceManager(resStore)
-		validator := MeshValidator{CaManagers: caManagers, Store: resStore}
-		resManager = NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
+		validator := mesh.NewMeshValidator(caManagers, resStore)
+		resManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
 	})
 
 	Describe("Create()", func() {
@@ -65,10 +66,6 @@ var _ = Describe("Mesh Manager", func() {
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
 							{
 								Name: "builtin-1",
-								Type: "builtin",
-							},
-							{
-								Name: "builtin-2",
 								Type: "builtin",
 							},
 						},
@@ -199,10 +196,6 @@ var _ = Describe("Mesh Manager", func() {
 								Name: "ca-1",
 								Type: "provided",
 							},
-							{
-								Name: "ca-2",
-								Type: "provided",
-							},
 						},
 					},
 				},
@@ -210,7 +203,7 @@ var _ = Describe("Mesh Manager", func() {
 			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
 
 			// then
-			Expect(err).To(MatchError("mtls.backends[0].config.cert: has to be defined; mtls.backends[0].config.key: has to be defined; mtls.backends[1].config.cert: has to be defined; mtls.backends[1].config.key: has to be defined"))
+			Expect(err).To(MatchError("mtls.backends[0].config.cert: has to be defined; mtls.backends[0].config.key: has to be defined"))
 		})
 	})
 
@@ -289,10 +282,6 @@ var _ = Describe("Mesh Manager", func() {
 								Name: "builtin-1",
 								Type: "builtin",
 							},
-							{
-								Name: "builtin-2",
-								Type: "builtin",
-							},
 						},
 					},
 				},
@@ -303,6 +292,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to change CA
+			mesh.Spec.Mtls.Backends[0].Name = "builtin-2"
 			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
 			err = resManager.Update(context.Background(), &mesh)
 
@@ -335,10 +325,6 @@ var _ = Describe("Mesh Manager", func() {
 								Name: "builtin-1",
 								Type: "builtin",
 							},
-							{
-								Name: "builtin-2",
-								Type: "builtin",
-							},
 						},
 					},
 				},
@@ -349,6 +335,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to enable mTLS change CA
+			mesh.Spec.Mtls.Backends[0].Name = "builtin-2"
 			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
 			err = resManager.Update(context.Background(), &mesh)
 

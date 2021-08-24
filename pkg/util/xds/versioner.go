@@ -24,7 +24,7 @@ func (v SnapshotAutoVersioner) Version(new, old Snapshot) Snapshot {
 	for _, typ := range new.GetSupportedTypes() {
 		version := new.GetVersion(typ)
 		if version != "" {
-			// favour a version assigned by resource generator
+			// favor a version assigned by resource generator
 			continue
 		}
 		if old != nil && v.equal(new.GetResources(typ), old.GetResources(typ)) {

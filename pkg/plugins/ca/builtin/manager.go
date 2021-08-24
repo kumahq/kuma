@@ -10,7 +10,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
-	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -69,7 +69,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 
 	var opts []certOptsFn
 	if cfg.GetCaCert().GetExpiration() != "" {
-		duration, err := mesh_helper.ParseDuration(cfg.GetCaCert().GetExpiration())
+		duration, err := core_mesh.ParseDuration(cfg.GetCaCert().GetExpiration())
 		if err != nil {
 			return err
 		}
@@ -130,7 +130,7 @@ func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh strin
 
 	var opts []ca_issuer.CertOptsFn
 	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
-		duration, err := mesh_helper.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		duration, err := core_mesh.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
 		if err != nil {
 			return core_ca.KeyPair{}, err
 		}

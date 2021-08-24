@@ -14,6 +14,7 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -25,6 +26,7 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 // BuilderContext provides access to Builder's interim state.
@@ -44,7 +46,9 @@ type BuilderContext interface {
 	EventReaderFactory() events.ListenerFactory
 	APIManager() api_server.APIManager
 	XDSHooks() *xds_hooks.Hooks
+	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
+	MeshValidator() core_managers.MeshValidator
 	KDSContext() *kds_context.Context
 }
 
@@ -71,8 +75,10 @@ type Builder struct {
 	erf        events.ListenerFactory
 	apim       api_server.APIManager
 	xdsh       *xds_hooks.Hooks
+	cap        secrets.CaProvider
 	dps        *dp_server.DpServer
 	kdsctx     *kds_context.Context
+	mv         core_managers.MeshValidator
 	shutdownCh <-chan struct{}
 	*runtimeInfo
 }
@@ -194,8 +200,18 @@ func (b *Builder) WithXDSHooks(xdsh *xds_hooks.Hooks) *Builder {
 	return b
 }
 
+func (b *Builder) WithCAProvider(cap secrets.CaProvider) *Builder {
+	b.cap = cap
+	return b
+}
+
 func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
 	b.dps = dps
+	return b
+}
+
+func (b *Builder) WithMeshValidator(mv core_managers.MeshValidator) *Builder {
+	b.mv = mv
 	return b
 }
 
@@ -247,11 +263,17 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.xdsh == nil {
 		return nil, errors.Errorf("XDSHooks has not been configured")
 	}
+	if b.cap == nil {
+		return nil, errors.Errorf("CAProvider has not been configured")
+	}
 	if b.dps == nil {
 		return nil, errors.Errorf("DpServer has not been configured")
 	}
 	if b.kdsctx == nil {
 		return nil, errors.Errorf("KDSContext has not been configured")
+	}
+	if b.mv == nil {
+		return nil, errors.Errorf("MeshValidator has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
@@ -273,8 +295,10 @@ func (b *Builder) Build() (Runtime, error) {
 			erf:        b.erf,
 			apim:       b.apim,
 			xdsh:       b.xdsh,
+			cap:        b.cap,
 			dps:        b.dps,
 			kdsctx:     b.kdsctx,
+			mv:         b.mv,
 			shutdownCh: b.shutdownCh,
 		},
 		Manager: b.cm,
@@ -335,11 +359,17 @@ func (b *Builder) APIManager() api_server.APIManager {
 func (b *Builder) XDSHooks() *xds_hooks.Hooks {
 	return b.xdsh
 }
+func (b *Builder) CAProvider() secrets.CaProvider {
+	return b.cap
+}
 func (b *Builder) DpServer() *dp_server.DpServer {
 	return b.dps
 }
 func (b *Builder) KDSContext() *kds_context.Context {
 	return b.kdsctx
+}
+func (b *Builder) MeshValidator() core_managers.MeshValidator {
+	return b.mv
 }
 func (b *Builder) ShutdownCh() <-chan struct{} {
 	return b.shutdownCh

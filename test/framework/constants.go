@@ -28,7 +28,6 @@ const (
 	defaultKumactlConfig         = "${HOME}/.kumactl/%s-config"
 	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-%s-config"
 
-	envKUMACTLBIN  = "KUMACTLBIN"
 	envK8SCLUSTERS = "K8SCLUSTERS"
 	envAPIVersion  = "API_VERSION"
 	envIPv6        = "IPV6"
@@ -53,6 +52,7 @@ var HelmSubChartPrefix = ""
 var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
 var KumaGlobalZoneSyncServiceName = "kuma-global-zone-sync"
+var DefaultTracingNamespace = "kuma-tracing"
 
 var CNIApp = "kuma-cni"
 var CNINamespace = "kube-system"

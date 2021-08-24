@@ -27,6 +27,7 @@ import (
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 var _ core_runtime.RuntimeInfo = &TestRuntimeInfo{}
@@ -63,6 +64,7 @@ func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 
 	builder.WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore()))
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
+	builder.WithMeshValidator(mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()))
 
 	rm := newResourceManager(builder)
 	builder.WithResourceManager(rm).
@@ -77,6 +79,7 @@ func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
+	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)
@@ -99,10 +102,7 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-	validator := mesh_managers.MeshValidator{
-		CaManagers: builder.CaManagers(),
-	}
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), validator)
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.MeshValidator())
 	customManagers[core_mesh.MeshType] = meshManager
 
 	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil)
