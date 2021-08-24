@@ -4,12 +4,20 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
+<<<<<<< HEAD
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+=======
+	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
+>>>>>>> 975fafac (chore(*) enforce use of correct errors module (#2624))
 
 	"github.com/kumahq/kuma/pkg/tls"
 )

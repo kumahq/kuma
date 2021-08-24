@@ -3,6 +3,7 @@ linters:
     - bodyclose
     - gci
     - gocritic
+    - gomodguard
     - govet
     - importas
     - misspell
@@ -34,6 +35,19 @@ linters-settings:
       alias: mesh_proto
     - pkg: github.com/kumahq/kuma/pkg/util/proto
       alias: util_proto
+<<<<<<< HEAD
+=======
+  gomodguard:
+    blocked:
+      modules:
+      - github.com/go-errors/errors:
+          recommendations:
+          - github.com/pkg/errors
+  misspell:
+    locale: US
+    ignore-words:
+    - cancelled # US English should be "canceled", but this is in the Retry API, so we can't change it.
+>>>>>>> 975fafac (chore(*) enforce use of correct errors module (#2624))
 
 issues:
   fix: true

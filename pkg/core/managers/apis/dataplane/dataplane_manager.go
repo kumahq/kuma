@@ -3,7 +3,7 @@ package dataplane
 import (
 	"context"
 
-	"github.com/go-errors/errors"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
