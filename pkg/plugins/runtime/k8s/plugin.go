@@ -11,7 +11,12 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
+<<<<<<< HEAD
 	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+=======
+	externalservice "github.com/kumahq/kuma/pkg/core/managers/apis/external_service"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/ratelimit"
+>>>>>>> 972c0fc3 (feat(kuma-cp) Add rate-limit to outbound interfaces (#2435))
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -245,6 +250,18 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	}
 	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, converter, rt.ResourceManager())
 	composite.AddValidator(k8sMeshValidator)
+
+	rateLimitValidator := ratelimit.RateLimitValidator{
+		Store: rt.ResourceStore(),
+	}
+	k8sRateLimitValidator := k8s_webhooks.NewRateLimitValidatorWebhook(rateLimitValidator, converter)
+	composite.AddValidator(k8sRateLimitValidator)
+
+	externalServiceValidator := externalservice.ExternalServiceValidator{
+		Store: rt.ResourceStore(),
+	}
+	k8sExternalServiceValidator := k8s_webhooks.NewExternalServiceValidatorWebhook(externalServiceValidator, converter)
+	composite.AddValidator(k8sExternalServiceValidator)
 
 	coreZoneValidator := zone.Validator{Store: rt.ResourceStore()}
 	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator)
