@@ -6,6 +6,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
 func RateLimitOnUniversal() {
@@ -63,6 +64,7 @@ conf:
 			Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "universal-1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("web", "default", webToken, WithTransparentProxy(true))).
+			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer81)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -86,6 +88,20 @@ conf:
 			succeeded := 0
 			for i := 0; i < total; i++ {
 				_, _, err := cluster.Exec("", "", client, "curl", "-v", "--fail", "test-server.mesh")
+				if err == nil {
+					succeeded++
+				}
+			}
+
+			return succeeded
+		}
+	}
+
+	verifyRateLimitExternal := func(client string, total int) func() int {
+		return func() int {
+			succeeded := 0
+			for i := 0; i < total; i++ {
+				_, _, err := cluster.Exec("", "", client, "curl", "-v", "--fail", "external-service.mesh")
 				if err == nil {
 					succeeded++
 				}
@@ -174,5 +190,42 @@ conf:
 		Eventually(verifyRateLimit("web", 5), "60s", "1s").Should(Equal(1))
 		// verify determinism by running it once again with shorter timeout
 		Eventually(verifyRateLimit("web", 5), "30s", "1s").Should(Equal(1))
+	})
+
+	It("should limit echo server as external service", func() {
+		externalService := `
+type: ExternalService
+mesh: default
+name: external-service
+tags:
+  kuma.io/service: external-service
+  kuma.io/protocol: http
+networking:
+  address: "kuma-3_externalservice-http-server:81"
+`
+		specificRateLimitPolicy := `
+type: RateLimit
+mesh: default
+name: rate-limit-demo-client
+sources:
+- match:
+    kuma.io/service: "demo-client"
+destinations:
+- match:
+    kuma.io/service: "external-service"
+conf:
+  http:
+    requests: 4
+    interval: 10s
+`
+		err := YamlUniversal(externalService)(cluster)
+		Expect(err).ToNot(HaveOccurred())
+		err = YamlUniversal(specificRateLimitPolicy)(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// demo-client specific RateLimit works
+		Eventually(verifyRateLimitExternal("demo-client", 5), "60s", "1s").Should(Equal(4))
+		// verify determinism by running it once again with shorter timeout
+		Eventually(verifyRateLimitExternal("demo-client", 5), "30s", "1s").Should(Equal(4))
 	})
 }

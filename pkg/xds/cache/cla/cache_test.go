@@ -146,9 +146,9 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 				cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 				Expect(err).ToNot(HaveOccurred())
 
-				marshalled, err := json.Marshal(cla) // to imitate Read access to 'cla'
+				marshaled, err := json.Marshal(cla) // to imitate Read access to 'cla'
 				Expect(err).ToNot(HaveOccurred())
-				Expect(len(marshalled) > 0).To(BeTrue())
+				Expect(len(marshaled) > 0).To(BeTrue())
 				wg.Done()
 			}()
 		}

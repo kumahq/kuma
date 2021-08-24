@@ -26,10 +26,10 @@ message CircuitBreaker {
   option (kuma.mesh.resource).ws.name = "circuit-breaker";
 
   // List of selectors to match dataplanes that are sources of traffic.
-  repeated Selector sources = 1;
+  repeated Selector sources = 1 [ (doc.required) = true ];
 
   // List of selectors to match services that are destinations of traffic.
-  repeated Selector destinations = 2;
+  repeated Selector destinations = 2 [ (doc.required) = true ];
 
   message Conf {
     // Time interval between ejection analysis sweeps
@@ -102,5 +102,5 @@ message CircuitBreaker {
     Thresholds thresholds = 6;
   }
 
-  Conf conf = 3;
+  Conf conf = 3 [ (doc.required) = true ];
 }

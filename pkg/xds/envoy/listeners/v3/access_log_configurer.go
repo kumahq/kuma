@@ -89,14 +89,14 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 	if err := format.ConfigureHttpLog(httpGrpcAccessLog); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure %T according to the format string: %s", httpGrpcAccessLog, format)
 	}
-	marshalled, err := proto.MarshalAnyDeterministic(httpGrpcAccessLog)
+	marshaled, err := proto.MarshalAnyDeterministic(httpGrpcAccessLog)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshall %T", httpGrpcAccessLog)
 	}
 	return &envoy_accesslog.AccessLog{
 		Name: "envoy.access_loggers.http_grpc",
 		ConfigType: &envoy_accesslog.AccessLog_TypedConfig{
-			TypedConfig: marshalled,
+			TypedConfig: marshaled,
 		},
 	}, nil
 }
@@ -121,14 +121,14 @@ func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (
 		},
 		Path: cfg.Path,
 	}
-	marshalled, err := proto.MarshalAnyDeterministic(fileAccessLog)
+	marshaled, err := proto.MarshalAnyDeterministic(fileAccessLog)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshall %T", fileAccessLog)
 	}
 	return &envoy_accesslog.AccessLog{
 		Name: "envoy.access_loggers.file",
 		ConfigType: &envoy_accesslog.AccessLog_TypedConfig{
-			TypedConfig: marshalled,
+			TypedConfig: marshaled,
 		},
 	}, nil
 }

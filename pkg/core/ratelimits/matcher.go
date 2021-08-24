@@ -22,7 +22,7 @@ type RateLimitMatcher struct {
 func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (core_xds.RateLimitsMap, error) {
 	ratelimits := &core_mesh.RateLimitResourceList{}
 	if err := m.ResourceManager.List(ctx, ratelimits, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
-		return nil, errors.Wrap(err, "could not retrieve ratelimits")
+		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not retrieve ratelimits")
 	}
 
 	return buildRateLimitMap(dataplane, mesh, splitPoliciesBySourceMatch(ratelimits.Items))
@@ -40,18 +40,31 @@ func buildRateLimitMap(
 
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch additional inbounds")
+		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
 	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies)
 
-	result := core_xds.RateLimitsMap{}
+	result := core_xds.RateLimitsMap{
+		Inbound:  core_xds.InboundRateLimitsMap{},
+		Outbound: core_xds.OutboundRateLimitsMap{},
+	}
 	for inbound, connectionPolicies := range policyMap {
-		result[inbound] = []*mesh_proto.RateLimit{}
 		for _, policy := range connectionPolicies {
-			result[inbound] = append(result[inbound], policy.(*core_mesh.RateLimitResource).Spec)
+			result.Inbound[inbound] = append(result.Inbound[inbound], policy.(*core_mesh.RateLimitResource).Spec)
 		}
 	}
+
+	outboundMap := policy.SelectOutboundConnectionPolicies(dataplane, policies)
+
+	for _, outbound := range dataplane.Spec.GetNetworking().GetOutbound() {
+		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		if policy, exists := outboundMap[serviceName]; exists {
+			oface := dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
+			result.Outbound[oface] = policy.(*core_mesh.RateLimitResource).Spec
+		}
+	}
+
 	return result, nil
 }
 

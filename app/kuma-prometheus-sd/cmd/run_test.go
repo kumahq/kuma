@@ -48,7 +48,7 @@ var _ = Describe("run", func() {
 		By("waiting for Kuma Prometheus SD to become ready")
 
 		// when
-		By("signalling Kuma Prometheus SD to stop")
+		By("signaling Kuma Prometheus SD to stop")
 		close(stopCh)
 
 		// then
