@@ -23,7 +23,7 @@ func DefaultInstallMetricsContext() InstallMetricsContext {
 	return InstallMetricsContext{
 		TemplateArgs: MetricsTemplateArgs{
 			Namespace:               "kuma-metrics",
-			KumaCpAddress:           "grpc://kuma-control-plane.kuma-system:5676",
+			KumaCpAddress:           "http://kuma-control-plane.kuma-system:5676",
 			KumaCpApiAddress:        "http://kuma-control-plane.kuma-system:5681",
 			WithoutPrometheus:       false,
 			WithoutGrafana:          false,
