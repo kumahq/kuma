@@ -155,7 +155,7 @@ var _ = Describe("run", func() {
 			}
 
 			// when
-			By("signalling the dataplane manager to stop")
+			By("signaling the dataplane manager to stop")
 			close(stopCh)
 
 			// then
