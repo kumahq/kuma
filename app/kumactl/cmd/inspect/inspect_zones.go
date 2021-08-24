@@ -2,6 +2,7 @@ package inspect
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"time"
 
@@ -49,8 +50,9 @@ func newInspectZonesCmd(ctx *cmd.RootContext) *cobra.Command {
 }
 
 func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourceList, out io.Writer) error {
+	var unmarshallErr error
 	data := printers.Table{
-		Headers: []string{"NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "ZONE-CP VERSION"},
+		Headers: []string{"NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "ZONE-CP VERSION", "BACKEND"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -82,6 +84,21 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 					}
 				}
 
+				var backend string
+				if lastSubscription.GetConfig() != "" {
+					// Unmarshall only what we need to avoid dependency on the whole config
+					cfg := struct {
+						Store struct {
+							Type string `json:"type"`
+						} `json:"store"`
+					}{}
+					if err := json.Unmarshal([]byte(lastSubscription.GetConfig()), &cfg); err != nil {
+						unmarshallErr = errors.Wrap(err, "could not unmarshal CP config")
+					} else {
+						backend = cfg.Store.Type
+					}
+				}
+
 				return []string{
 					meta.GetName(),                       // NAME,
 					onlineStatus,                         // STATUS
@@ -90,9 +107,13 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 					table.Number(totalResponsesSent),     // TOTAL UPDATES
 					table.Number(totalResponsesRejected), // TOTAL ERRORS
 					zoneCPVersion,                        // ZONE-CP VERSION
+					backend,                              // BACKEND
 				}
 			}
 		}(),
 	}
-	return printers.NewTablePrinter().Print(data, out)
+	if err := printers.NewTablePrinter().Print(data, out); err != nil {
+		return err
+	}
+	return unmarshallErr
 }

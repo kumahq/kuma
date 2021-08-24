@@ -10,7 +10,7 @@ import (
 func StartClient(clientStreams []*grpc.MockClientStream, resourceTypes []model.ResourceType, stopCh chan struct{}, cb *kds_client.Callbacks) {
 	for i := 0; i < len(clientStreams); i++ {
 		item := clientStreams[i]
-		comp := kds_client.NewKDSSink(core.Log.Logger, resourceTypes, kds_client.NewKDSStream(item, "client-1"), cb)
+		comp := kds_client.NewKDSSink(core.Log.Logger, resourceTypes, kds_client.NewKDSStream(item, "client-1", ""), cb)
 		go func() {
 			_ = comp.Start(stopCh)
 			_ = item.CloseSend()
