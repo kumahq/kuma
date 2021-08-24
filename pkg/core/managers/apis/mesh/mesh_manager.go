@@ -71,7 +71,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := m.meshValidator.ValidateCreate(ctx, opts.Name, mesh); err != nil {
 		return err
 	}
-	if err := EnsureEnabledCA(ctx, m.caManagers, mesh, opts.Name); err != nil {
+	if err := EnsureCAs(ctx, m.caManagers, mesh, opts.Name); err != nil {
 		return err
 	}
 
@@ -138,7 +138,7 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	if err := m.meshValidator.ValidateUpdate(ctx, currentMesh, mesh); err != nil {
 		return err
 	}
-	if err := EnsureEnabledCA(ctx, m.caManagers, mesh, mesh.Meta.GetName()); err != nil {
+	if err := EnsureCAs(ctx, m.caManagers, mesh, mesh.Meta.GetName()); err != nil {
 		return err
 	}
 	return m.store.Update(ctx, mesh, append(fs, core_store.ModifiedAt(time.Now()))...)

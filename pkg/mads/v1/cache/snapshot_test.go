@@ -5,13 +5,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
-	. "github.com/kumahq/kuma/pkg/mads/v1alpha1/cache"
+	observability_proto "github.com/kumahq/kuma/api/observability/v1"
+	. "github.com/kumahq/kuma/pkg/mads/v1/cache"
 )
 
 var _ = Describe("Snapshot", func() {
 
-	expectedType := "type.googleapis.com/kuma.observability.v1alpha1.MonitoringAssignment"
+	expectedType := "type.googleapis.com/kuma.observability.v1.MonitoringAssignment"
 
 	Describe("GetSupportedTypes()", func() {
 		It("should always return ['type.googleapis.com/kuma.observability.v1alpha1.MonitoringAssignment']", func() {
@@ -44,7 +44,8 @@ var _ = Describe("Snapshot", func() {
 			// when
 			snapshot = NewSnapshot("v2", map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
-					Name: "/meshes/default/dataplanes/backend",
+					Mesh:    "default",
+					Service: "backend",
 				},
 			})
 			// then
@@ -64,7 +65,8 @@ var _ = Describe("Snapshot", func() {
 			// given
 			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
-					Name: "/meshes/default/dataplanes/backend",
+					Mesh:    "default",
+					Service: "backend",
 				},
 			}
 			// when
@@ -77,7 +79,8 @@ var _ = Describe("Snapshot", func() {
 			// given
 			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
-					Name: "/meshes/default/dataplanes/backend",
+					Mesh:    "default",
+					Service: "backend",
 				},
 			}
 			// when
@@ -99,7 +102,8 @@ var _ = Describe("Snapshot", func() {
 			// given
 			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
-					Name: "/meshes/default/dataplanes/backend",
+					Mesh:    "default",
+					Service: "backend",
 				},
 			}
 			// when
@@ -112,7 +116,8 @@ var _ = Describe("Snapshot", func() {
 			// given
 			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
-					Name: "/meshes/default/dataplanes/backend",
+					Mesh:    "default",
+					Service: "backend",
 				},
 			}
 			// when
@@ -136,7 +141,8 @@ var _ = Describe("Snapshot", func() {
 			// given
 			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
-					Name: "/meshes/default/dataplanes/backend",
+					Mesh:    "default",
+					Service: "backend",
 				},
 			}
 			snapshot := NewSnapshot("v1", assignments)
@@ -152,7 +158,8 @@ var _ = Describe("Snapshot", func() {
 			// given
 			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
-					Name: "/meshes/default/dataplanes/backend",
+					Mesh:    "default",
+					Service: "backend",
 				},
 			}
 			snapshot := NewSnapshot("v1", assignments)
@@ -168,7 +175,8 @@ var _ = Describe("Snapshot", func() {
 			// given
 			assignments := map[string]envoy_types.Resource{
 				"backend": &observability_proto.MonitoringAssignment{
-					Name: "/meshes/default/dataplanes/backend",
+					Mesh:    "default",
+					Service: "backend",
 				},
 			}
 			snapshot := NewSnapshot("v1", assignments)

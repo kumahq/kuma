@@ -20,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/mads"
 	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1/service"
-	mads_v1alpha1 "github.com/kumahq/kuma/pkg/mads/v1alpha1/service"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 )
@@ -192,12 +191,6 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	var grpcServices []GrpcService
 	var httpServices []HttpService
-
-	if config.VersionIsEnabled(mads.API_V1_ALPHA1) {
-		log.Info("MADS v1alpha1 is enabled")
-		svc := mads_v1alpha1.NewService(config, rm, log.WithValues("apiVersion", mads.API_V1_ALPHA1))
-		grpcServices = append(grpcServices, svc)
-	}
 
 	if config.VersionIsEnabled(mads.API_V1) {
 		log.Info("MADS v1 is enabled")

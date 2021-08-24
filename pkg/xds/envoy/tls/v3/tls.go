@@ -50,6 +50,7 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, upstreamService string, s
 	if err != nil {
 		return nil, err
 	}
+	commonTlsContext.AlpnProtocols = xds_tls.KumaALPNProtocols
 	return &envoy_tls.UpstreamTlsContext{
 		CommonTlsContext: commonTlsContext,
 		Sni:              sni,

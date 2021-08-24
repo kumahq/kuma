@@ -34,7 +34,7 @@ func validateExternalServiceNetworking(networking *mesh_proto.ExternalService_Ne
 	if networking == nil {
 		err.AddViolation("networking", "should have networking")
 	} else {
-		err.Add(validateExtarnalServiceAddress(path, networking.Address))
+		err.Add(validateExternalServiceAddress(path, networking.Address))
 	}
 
 	if networking.GetTls().GetServerName() != nil && networking.GetTls().GetServerName().GetValue() == "" {
@@ -43,7 +43,7 @@ func validateExternalServiceNetworking(networking *mesh_proto.ExternalService_Ne
 	return err
 }
 
-func validateExtarnalServiceAddress(path validators.PathBuilder, address string) validators.ValidationError {
+func validateExternalServiceAddress(path validators.PathBuilder, address string) validators.ValidationError {
 	var err validators.ValidationError
 	if address == "" {
 		err.AddViolationAt(path.Field("address"), "address can't be empty")

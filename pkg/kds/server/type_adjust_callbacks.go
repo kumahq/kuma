@@ -11,9 +11,9 @@ import (
 // We are setting TypeURL for DiscoveryRequest/DiscoveryResponse for our resource name like "TrafficRoute" / "Mesh" etc.
 // but the actual resource which we are sending is kuma.mesh.v1alpha1.KumaResource
 //
-// The function which is marshalling DiscoveryResponse
+// The function which is marshaling DiscoveryResponse
 // func (r *RawResponse) GetDiscoveryResponse() (*discovery.DiscoveryResponse, error)
-// Ignores the TypeURL from marshalling operation and overrides it with TypeURL of the request.
+// Ignores the TypeURL from marshaling operation and overrides it with TypeURL of the request.
 // If we pass wrong TypeURL in envoy_api.DiscoveryResponse#Resources we won't be able to unmarshall it, therefore we need to adjust the type.
 type typeAdjustCallbacks struct {
 	util_xds_v3.NoopCallbacks

@@ -40,6 +40,10 @@ linters-settings:
       - github.com/go-errors/errors:
           recommendations:
           - github.com/pkg/errors
+  misspell:
+    locale: US
+    ignore-words:
+    - cancelled # US English should be "canceled", but this is in the Retry API, so we can't change it.
 
 issues:
   fix: true

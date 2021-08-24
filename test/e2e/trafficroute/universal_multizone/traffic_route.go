@@ -378,9 +378,10 @@ conf:
 			// If concurrency is low, we only initiate 2 connections to ZoneIngress which is not enough to cover all instances.
 			//
 			// We can adjust concurrency once https://github.com/kumahq/kuma/issues/1920 is fixed
-			// or if we change the behaviour of ZoneIngress
+			// or if we change the behavior of ZoneIngress
 			if runtime.NumCPU() < 4 {
 				Skip("concurrency too low")
+				return
 			}
 
 			Eventually(func() (map[string]int, error) {
