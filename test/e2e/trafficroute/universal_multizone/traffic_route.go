@@ -364,4 +364,55 @@ conf:
 			)
 		})
 	})
+<<<<<<< HEAD
+=======
+
+	Context("locality aware loadbalancing", func() {
+		It("should loadbalance all requests equally by default", func() {
+			// todo(jakubdyszkiewicz) test fails because of low --concurency in CI
+			// there are not enough "client -> zoneingress -> server" connections to have proper loadbalancing
+			// If a client is connected to ZoneIngress, ZoneIngress opens connection to a server.
+			// ZoneIngress is a simple TCP passthrough proxy therefore it cannot spread requests to many instances.
+			// If concurrency is low, we only initiate 2 connections to ZoneIngress which is not enough to cover all instances.
+			//
+			// We can adjust concurrency once https://github.com/kumahq/kuma/issues/1920 is fixed
+			// or if we change the behavior of ZoneIngress
+			if runtime.NumCPU() < 4 {
+				Skip("concurrency too low")
+				return
+			}
+
+			Eventually(func() (map[string]int, error) {
+				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(40))
+			}, "30s", "500ms").Should(
+				And(
+					HaveLen(4),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), Not(BeNil())),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil())),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil())),
+					// todo(jakubdyszkiewicz) uncomment when https://github.com/kumahq/kuma/issues/2563 is fixed
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(10, 1)),
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(10, 1)),
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), ApproximatelyEqual(10, 1)),
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), ApproximatelyEqual(10, 1)),
+				),
+			)
+		})
+
+		It("should keep the request in the zone when locality aware loadbalancing is enabled", func() {
+			// given
+			Expect(YamlUniversal(meshMTLSOn(defaultMesh, "true"))(global)).To(Succeed())
+
+			Eventually(func() (map[string]int, error) {
+				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+			}, "30s", "500ms").Should(
+				And(
+					HaveLen(1),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
+				),
+			)
+		})
+	})
+>>>>>>> 8f1f7ff4 (chore(ci) use US locale for misspelling checks (#2642))
 }

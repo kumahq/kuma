@@ -66,7 +66,15 @@ func fetchZones(rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
 		return nil, errors.Wrap(err, "could not fetch zones")
 	}
 
+<<<<<<< HEAD
 	return &zones, nil
+=======
+	externalServicesList := mesh.ExternalServiceResourceList{}
+	if err := rt.ReadOnlyResourceManager().List(context.Background(), &externalServicesList); err != nil {
+		return 0, 0, errors.Wrap(err, "could not fetch external services")
+	}
+	return internalServices, len(externalServicesList.Items), nil
+>>>>>>> 8f1f7ff4 (chore(ci) use US locale for misspelling checks (#2642))
 }
 
 func (b *reportsBuffer) marshall() (string, error) {

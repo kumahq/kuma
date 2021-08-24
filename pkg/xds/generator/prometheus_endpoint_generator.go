@@ -27,7 +27,7 @@ const OriginPrometheus = "prometheus"
 // When generating such a listener, it's important not to overshadow
 // a port that is already in use by the application or other Envoy listeners.
 // In the latter case we prefer not generate Prometheus endpoint at all
-// rather than introduce undeterministic behaviour.
+// rather than introduce undeterministic behavior.
 type PrometheusEndpointGenerator struct {
 }
 

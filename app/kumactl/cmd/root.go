@@ -28,7 +28,7 @@ import (
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 
-	// import Envoy protobuf definitions so (un)marshalling Envoy protobuf works
+	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works
 	_ "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
