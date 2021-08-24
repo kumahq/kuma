@@ -176,7 +176,8 @@ spec:
 
 		// Deny policy CREATE on zone
 		err := k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)
-		Expect(err.Error()).To(ContainSubstring("should be only applied on global"))
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("should be only created on global"))
 
 		// Accept policy CREATE on global
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_create)
@@ -191,7 +192,13 @@ spec:
 
 		// Deny policy UPDATE on zone
 		err = k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)
-		Expect(err.Error()).To(ContainSubstring("should be only applied on global"))
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("should be only updated on global"))
+
+		// Deny policy DELETE on zone
+		err = k8s.KubectlDeleteFromStringE(c2.GetTesting(),c2.GetKubectlOptions(), policy_create)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("should be only deleted on global"))
 
 		// Accept policy UPDATE on global
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_update)
