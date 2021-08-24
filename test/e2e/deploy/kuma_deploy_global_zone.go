@@ -196,7 +196,7 @@ spec:
 		Expect(err.Error()).To(ContainSubstring("should be only updated on global"))
 
 		// Deny policy DELETE on zone
-		err = k8s.KubectlDeleteFromStringE(c2.GetTesting(),c2.GetKubectlOptions(), policy_create)
+		err = k8s.KubectlDeleteFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_create)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("should be only deleted on global"))
 
