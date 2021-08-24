@@ -157,10 +157,6 @@ func isKumaServiceAccount(userInfo authenticationv1.UserInfo, systemNamespace st
 	return false
 }
 
-func isDefaultMesh(resType core_model.ResourceType, obj k8s_model.KubernetesObject) bool {
-	return resType == core_mesh.MeshType && obj.GetName() == core_model.DefaultMesh && len(obj.GetSpec()) == 0
-}
-
 // validateResourceLocation validates if resources that suppose to be applied on Global are applied on Global and other way around
 func (h *validatingHandler) validateResourceLocation(resType core_model.ResourceType) admission.Response {
 	if err := system.ValidateLocation(resType, h.mode); err != nil {
