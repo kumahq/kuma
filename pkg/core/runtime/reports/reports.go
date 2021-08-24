@@ -80,7 +80,7 @@ func fetchNumOfServices(rt core_runtime.Runtime) (int, int, error) {
 
 	externalServicesList := mesh.ExternalServiceResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(context.Background(), &externalServicesList); err != nil {
-		return 0, 0, errors.Wrap(err, "coult not fetch external services")
+		return 0, 0, errors.Wrap(err, "could not fetch external services")
 	}
 	return internalServices, len(externalServicesList.Items), nil
 }

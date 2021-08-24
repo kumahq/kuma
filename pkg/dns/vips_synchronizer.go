@@ -50,7 +50,7 @@ func (d *vipsSynchronizer) Start(stop <-chan struct{}) error {
 		select {
 		case <-ticker.C:
 			if err := d.synchronize(); err != nil {
-				vipsSynchronizerLog.Error(err, "unable to synchronise")
+				vipsSynchronizerLog.Error(err, "unable to synchronize")
 			}
 		case <-stop:
 			vipsSynchronizerLog.Info("stopping")
