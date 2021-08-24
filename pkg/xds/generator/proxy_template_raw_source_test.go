@@ -193,7 +193,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 					Name:    "raw-name",
 					Version: "raw-version",
 					Resource: `
-                    '@type': type.googleapis.com/envoy.api.v2.Cluster
+                    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
                     connectTimeout: 5s
                     loadAssignment:
                       clusterName: localhost:8080
@@ -207,7 +207,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                     type: STATIC
 `,
 				}},
-				err: "raw.resources[0]{name=\"raw-name\"}.resource: invalid Cluster.Name: value length must be at least 1 bytes",
+				err: "raw.resources[0]{name=\"raw-name\"}.resource: invalid Cluster.Name: value length must be at least 1 runes",
 			}),
 		)
 	})
@@ -293,7 +293,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 					Name:    "raw-name",
 					Version: "raw-version",
 					Resource: `
-          '@type': type.googleapis.com/envoy.api.v2.Listener
+          '@type': type.googleapis.com/envoy.config.listener.v3.Listener
           address:
             socketAddress:
               address: 0.0.0.0
@@ -302,7 +302,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
           - filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                 cluster: pass_through
                 statPrefix: pass_through
           name: catch_all
@@ -313,7 +313,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
           resources:
             - name: raw-name
               resource:
-                '@type': type.googleapis.com/envoy.api.v2.Listener
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
                 address:
                   socketAddress:
                     address: 0.0.0.0
@@ -322,7 +322,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                 - filters:
                   - name: envoy.filters.network.tcp_proxy
                     typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                       cluster: pass_through
                       statPrefix: pass_through
                 name: catch_all
@@ -354,7 +354,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 					Name:    "raw-name",
 					Version: "raw-version",
 					Resource: `
-                    '@type': type.googleapis.com/envoy.api.v2.Cluster
+                    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
                     connectTimeout: 5s
                     loadAssignment:
                       clusterName: localhost:8080
@@ -373,7 +373,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
           resources:
             - name: raw-name
               resource:
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
                 connectTimeout: 5s
                 loadAssignment:
                   clusterName: localhost:8080
@@ -414,7 +414,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 					Version: "raw-version",
 					Resource: `
               {
-                "@type": "type.googleapis.com/envoy.api.v2.Cluster",
+                "@type": "type.googleapis.com/envoy.config.cluster.v3.Cluster",
                 "connectTimeout": "5s",
                 "loadAssignment": {
                   "clusterName": "localhost:8080",
@@ -444,7 +444,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
           resources:
             - name: raw-name
               resource:
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
                 connectTimeout: 5s
                 loadAssignment:
                   clusterName: localhost:8080

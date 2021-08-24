@@ -14,7 +14,7 @@ import (
 var _ config.Config = &BootstrapServerConfig{}
 
 type BootstrapServerConfig struct {
-	// The version of Envoy API (available: "v2", "v3")
+	// The version of Envoy API (available: "v3")
 	APIVersion envoy_common.APIVersion `yaml:"apiVersion" envconfig:"kuma_bootstrap_server_api_version"`
 	// Parameters of bootstrap configuration
 	Params *BootstrapParamsConfig `yaml:"params"`
