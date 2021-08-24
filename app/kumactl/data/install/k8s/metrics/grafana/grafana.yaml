@@ -68,6 +68,9 @@ data:
     logs = /var/log/grafana
     plugins = /var/lib/grafana/plugins
     provisioning = /etc/grafana/provisioning
+    [plugins]
+    # Required until we have grafana sign our plugin.
+    allow_loading_unsigned_plugins = "kumahq-kuma-datasource"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -128,6 +131,11 @@ data:
         version: 1
         # <bool> allow users to edit datasources from the UI.
         editable: true
+      - name: Kuma
+        type: kumahq-kuma-datasource
+        url: {{.KumaCpApiAddress}}
+        jsonData:
+          prometheusDataSourceId: "1"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -269,9 +277,16 @@ spec:
       securityContext:
         fsGroup: 472
         runAsUser: 472
+      initContainers:
+        - name: init-plugins
+          image: alpine
+          command: [ '/bin/sh', '-c', 'wget -O /tmp/kuma.zip https://github.com/kumahq/kuma-grafana-datasource/releases/download/v0.0.3/kumahq-kuma-datasource-0.0.3.zip && unzip /tmp/kuma.zip -d /var/lib/grafana/plugins/ && rm /tmp/kuma.zip']
+          volumeMounts:
+            - name: plugins-volume
+              mountPath: /var/lib/grafana/plugins
       containers:
         - name: grafana
-          image: "grafana/grafana:7.5.8"
+          image: "grafana/grafana:8.1.2"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -285,6 +300,9 @@ spec:
               readOnly: true
             - name: provisioning-dashboards
               mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: plugins-volume
+              mountPath: /var/lib/grafana/plugins
               readOnly: true
           ports:
             - name: service
@@ -323,4 +341,6 @@ spec:
                   name: provisioning-dashboards-{{ $index }}
 {{ end }}
         - name: storage
+          emptyDir: {}
+        - name: plugins-volume
           emptyDir: {}
