@@ -6,12 +6,13 @@ type Dashboard struct {
 }
 
 type MetricsTemplateArgs struct {
-	Namespace         string
-	Mesh              string
-	KumaCpAddress     string
-	WithoutPrometheus bool
-	WithoutGrafana    bool
-	Dashboards        []Dashboard
+	Namespace               string
+	Mesh                    string
+	KumaCpAddress           string
+	KumaCpApiAddress        string
+	WithoutPrometheus       bool
+	WithoutGrafana          bool
+	Dashboards              []Dashboard
 }
 
 type InstallMetricsContext struct {
@@ -21,10 +22,11 @@ type InstallMetricsContext struct {
 func DefaultInstallMetricsContext() InstallMetricsContext {
 	return InstallMetricsContext{
 		TemplateArgs: MetricsTemplateArgs{
-			Namespace:         "kuma-metrics",
-			KumaCpAddress:     "http://kuma-control-plane.kuma-system:5676",
-			WithoutPrometheus: false,
-			WithoutGrafana:    false,
+			Namespace:               "kuma-metrics",
+			KumaCpAddress:           "grpc://kuma-control-plane.kuma-system:5676",
+			KumaCpApiAddress:        "http://kuma-control-plane.kuma-system:5681",
+			WithoutPrometheus:       false,
+			WithoutGrafana:          false,
 		},
 	}
 }
