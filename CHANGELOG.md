@@ -4,6 +4,9 @@
 > Released on 2021/08/25
 
 Changes:
+* chore: update envoy to 1.18.4 to mitigate CVE-2021-32779 [#2667](https://github.com/kumahq/kuma/pull/2667)
+* feat: remove provided ca cert validation [#2663](https://github.com/kumahq/kuma/pull/2663)
+ 👍contributed by Nikita Pande (@nikita15p)
 * feat: Use kuma-sd in kumactl install metrics [#2654](https://github.com/kumahq/kuma/pull/2654)
 * feat: Add new datasource to kumactl install metrics [#2640](https://github.com/kumahq/kuma/pull/2640)
 * fix: remove extra endline in traffic log default template [#2514](https://github.com//kumahq/kuma/pull/2514)
