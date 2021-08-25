@@ -1008,6 +1008,36 @@ jobs:
         paths:
         - docker-images
 
+  images-kumactl:
+    executor: remote-docker
+    parameters:
+      docker_registry:
+        description: "Registry for container images"
+        type: string
+        default: "docker.io/kumahq"
+    steps:
+    - checkout
+    # Mount files from the upstream jobs
+    - attach_workspace:
+        at: build
+    - setup_remote_docker:
+        version: 19.03.12
+    - run:
+        name: Build kumactl's Docker image
+        command: |
+          make docker/build/kumactl \
+            DOCKER_REGISTRY="<< parameters.docker_registry >>"
+    - run:
+        name: Save kumactl's Docker image into TAR archives
+        command: |
+          make docker/save/kumactl \
+            DOCKER_REGISTRY="<< parameters.docker_registry >>"
+    # Persist the specified paths into the workspace for use in downstream jobs
+    - persist_to_workspace:
+        root: build
+        paths:
+        - docker-images-kumactl
+
   example_docker-compose:
     executor: vm
     parameters:
@@ -1085,6 +1115,11 @@ jobs:
         - run:
             name: Load Docker images into Minikube
             command: make load/example/minikube
+    - unless:
+        condition: << parameters.use_local_kuma_images >>
+        steps:
+        - attach_workspace:
+            at: docker-images-kumactl
     - run:
         name: Deploy example setup
         command: make deploy/example/minikube
@@ -1449,6 +1484,14 @@ workflows:
         <<: *release_workflow_filters
         requires:
         - go_cache
+    - build:
+        <<: *release_workflow_filters
+        requires:
+        - go_cache
+    - images-kumactl:
+        <<: *release_workflow_filters
+        requires:
+        - build
     - test:
         <<: *release_workflow_filters
         requires:
@@ -1472,6 +1515,7 @@ workflows:
         <<: *release_workflow_filters
         name: docker-compose
         requires:
+        - images-kumactl
         - release
         # custom parameters
         # docker images for a release build must be downloaded from a public Docker registry
@@ -1480,6 +1524,7 @@ workflows:
         <<: *release_workflow_filters
         name: minikube_v1_16
         requires:
+        - images-kumactl
         - release
         # custom parameters
         kubernetes_version: v1.16.15
@@ -1489,6 +1534,7 @@ workflows:
         <<: *release_workflow_filters
         name: minikube_v1_17
         requires:
+        - images-kumactl
         - release
         # custom parameters
         kubernetes_version: v1.17.17
@@ -1498,7 +1544,8 @@ workflows:
         <<: *release_workflow_filters
         name: minikube_v1_18
         requires:
-          - release
+        - images-kumactl
+        - release
         # custom parameters
         kubernetes_version: v1.18.16
         # docker images for a release build must be downloaded from a public Docker registry
@@ -1507,7 +1554,8 @@ workflows:
         <<: *release_workflow_filters
         name: minikube_v1_19
         requires:
-          - release
+        - images-kumactl
+        - release
         # custom parameters
         kubernetes_version: v1.19.8
         use_local_kuma_images: false
@@ -1515,7 +1563,8 @@ workflows:
         <<: *release_workflow_filters
         name: minikube_v1_20
         requires:
-          - release
+        - images-kumactl
+        - release
         # custom parameters
         kubernetes_version: v1.20.4
         use_local_kuma_images: false
