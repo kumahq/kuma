@@ -2,6 +2,7 @@ package permissive
 
 import (
 	"fmt"
+	"net"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -75,7 +76,7 @@ mtls:
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
 		// check the outside-mesh communication (using direct IP:PORT allows bypassing outbound listeners)
-		addr := fmt.Sprintf("%s:%d", universal.(*UniversalCluster).GetApp("test-server").GetIP(), 80)
+		addr := net.JoinHostPort(universal.(*UniversalCluster).GetApp("test-server").GetIP(), "80")
 		Eventually(func() error {
 			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", addr)
 			return err
@@ -96,7 +97,7 @@ mtls:
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
 		// check the outside-mesh communication (using direct IP:PORT allows bypassing outbound listeners)
-		addr := fmt.Sprintf("%s:%d", universal.(*UniversalCluster).GetApp("test-server").GetIP(), 80)
+		addr := net.JoinHostPort(universal.(*UniversalCluster).GetApp("test-server").GetIP(), "80")
 		Eventually(func() error {
 			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", addr)
 			return err
@@ -135,7 +136,7 @@ mtls:
 		// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
 		host := universal.(*UniversalCluster).GetApp("test-server").GetIP()
 		Eventually(func() error {
-			cmd := []string{"curl", "-v", "-m", "3", "--resolve", fmt.Sprintf("test-server.mesh:80:%s", host), "--fail", "--cacert", "/kuma/server.crt", "https://test-server.mesh:80"}
+			cmd := []string{"curl", "-v", "-m", "3", "--resolve", fmt.Sprintf("test-server.mesh:80:[%s]", host), "--fail", "--cacert", "/kuma/server.crt", "https://test-server.mesh:80"}
 			_, _, err := universal.Exec("", "", "demo-client", cmd...)
 			return err
 		}, "30s", "1s").ShouldNot(HaveOccurred())
