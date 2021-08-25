@@ -156,7 +156,7 @@ var _ = Describe("kubernetes", func() {
 			},
 			tpConfig: &config.TransparentProxyConfig{
 				DryRun:                 false,
-				Verbose:                true,
+				Verbose:                false,
 				RedirectPortOutBound:   "25100",
 				RedirectInBound:        true,
 				RedirectPortInBound:    "25204",
@@ -166,9 +166,9 @@ var _ = Describe("kubernetes", func() {
 				UID:                    "12345",
 				GID:                    "12345",
 				RedirectDNS:            true,
-				RedirectAllDNSTraffic:  false,
+				RedirectAllDNSTraffic:  true,
 				AgentDNSListenerPort:   "25053",
-				DNSUpstreamTargetChain: "",
+				DNSUpstreamTargetChain: "RETURN",
 			},
 		}),
 		Entry("should generate no builtin DNS", testCaseTransparentProxyConfig{
@@ -186,7 +186,7 @@ var _ = Describe("kubernetes", func() {
 			},
 			tpConfig: &config.TransparentProxyConfig{
 				DryRun:                 false,
-				Verbose:                true,
+				Verbose:                false,
 				RedirectPortOutBound:   "25100",
 				RedirectInBound:        true,
 				RedirectPortInBound:    "25204",
@@ -198,7 +198,7 @@ var _ = Describe("kubernetes", func() {
 				RedirectDNS:            false,
 				RedirectAllDNSTraffic:  false,
 				AgentDNSListenerPort:   "0",
-				DNSUpstreamTargetChain: "",
+				DNSUpstreamTargetChain: "RETURN",
 			},
 		}),
 		Entry("should generate for Gateway", testCaseTransparentProxyConfig{
@@ -219,7 +219,7 @@ var _ = Describe("kubernetes", func() {
 			},
 			tpConfig: &config.TransparentProxyConfig{
 				DryRun:                 false,
-				Verbose:                true,
+				Verbose:                false,
 				RedirectPortOutBound:   "25100",
 				RedirectInBound:        false,
 				RedirectPortInBound:    "25204",
@@ -229,9 +229,9 @@ var _ = Describe("kubernetes", func() {
 				UID:                    "12345",
 				GID:                    "12345",
 				RedirectDNS:            true,
-				RedirectAllDNSTraffic:  false,
+				RedirectAllDNSTraffic:  true,
 				AgentDNSListenerPort:   "25053",
-				DNSUpstreamTargetChain: "",
+				DNSUpstreamTargetChain: "RETURN",
 			},
 		}),
 	)

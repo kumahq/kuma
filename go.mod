@@ -8,10 +8,14 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
+	github.com/containernetworking/cni v0.8.1
+	github.com/coreos/etcd v3.3.15+incompatible
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210310174751-14ce79b5761d
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
+	github.com/facebookgo/atomicfile v0.0.0-20151019160806-2de1f203e7d5
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-kit/kit v0.11.0
@@ -37,12 +41,15 @@ require (
 	github.com/prometheus/common v0.29.0
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
 	github.com/sethvargo/go-retry v0.1.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/slok/go-http-metrics v0.9.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.1.3
+	github.com/spf13/viper v1.7.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v0.12.3
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
+	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5

@@ -144,18 +144,19 @@ cni:
   confName: kuma-cni.conf
   # -- CNI log level: one of off,info,debug
   logLevel: info
+  # -- Namespaces to exclude from
+  excludeNamespaces:
+    - kube-system
   # -- Node Selector for the CNI pods
   nodeSelector:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
 
   image:
-    # -- CNI image registry
-    registry: "docker.io"
     # -- CNI image repository
-    repository: "lobkovilya/install-cni"
-    # -- CNI image tag
-    tag: "0.0.9"
+    repository: "kuma-cni"
+    # -- CNI ImagePullPolicy
+    pullPolicy: IfNotPresent
 
 dataPlane:
   image:
