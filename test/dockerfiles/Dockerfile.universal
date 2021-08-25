@@ -10,7 +10,19 @@ RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /k
 RUN apt update \
   && apt dist-upgrade -y \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  tzdata openssh-server curl ncat vim net-tools iptables iproute2 dnsutils tmux strace tcpdump \
+    curl \
+    dnsutils \
+    iproute2 \
+    iptables \
+    ncat \
+    net-tools \
+    openssh-server \
+    rsync \
+    strace \
+    tcpdump \
+    tmux \
+    tzdata \
+    vim \
   && rm -rf /var/lib/apt/lists/*
 
 RUN ssh-keygen -A \
