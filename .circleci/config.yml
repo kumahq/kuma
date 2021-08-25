@@ -1036,7 +1036,7 @@ jobs:
     - persist_to_workspace:
         root: build
         paths:
-        - docker-images-kumactl
+        - docker
 
   example_docker-compose:
     executor: vm
@@ -1119,7 +1119,7 @@ jobs:
         condition: << parameters.use_local_kuma_images >>
         steps:
         - attach_workspace:
-            at: docker-images-kumactl
+            at: docker-images
     - run:
         name: Deploy example setup
         command: make deploy/example/minikube
