@@ -1,4 +1,4 @@
-package mtls_test
+package permissive_test
 
 import (
 	"testing"
@@ -7,9 +7,9 @@ import (
 	"github.com/kumahq/kuma/test/framework"
 )
 
-func TestE2EMTLS(t *testing.T) {
+func TestE2EMTLSPermissive(t *testing.T) {
 	if framework.IsK8sClustersStarted() {
-		test.RunSpecs(t, "MTLS tests")
+		test.RunSpecs(t, "mTLS Permissive Suite")
 	} else {
 		t.SkipNow()
 	}
