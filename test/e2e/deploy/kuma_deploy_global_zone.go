@@ -1,18 +1,12 @@
 package deploy
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"time"
 
-	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
-	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -138,31 +132,10 @@ spec:
 	})
 
 	It("should deploy Zone and Global on 2 clusters", func() {
-		// when check if zone is online
-		clustersStatus := api_server.Zones{}
-		Eventually(func() (bool, error) {
-			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
-			if status != http.StatusOK {
-				return false, errors.Errorf("unable to contact server %s with status %d", global.GetGlobaStatusAPI(), status)
-			}
-			err := json.Unmarshal([]byte(response), &clustersStatus)
-			if err != nil {
-				return false, errors.Errorf("unable to parse response [%s] with error: %v", response, err)
-			}
-			if len(clustersStatus) != 1 {
-				return false, nil
-			}
-			return clustersStatus[0].Active, nil
-		}, time.Minute, DefaultTimeout).Should(BeTrue())
-
-		// then zone is online
-		active := true
-		for _, cluster := range clustersStatus {
-			if !cluster.Active {
-				active = false
-			}
-		}
-		Expect(active).To(BeTrue())
+		// check if zone is online and backend is marked as kubernetes
+		Eventually(func() (string, error) {
+			return c1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+		}, "30s", "1s").Should(And(ContainSubstring("Online"), ContainSubstring("kubernetes")))
 
 		// and dataplanes are synced to global
 		Eventually(func() string {
