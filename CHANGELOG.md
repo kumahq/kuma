@@ -4,6 +4,7 @@
 > Released on 2021/08/25
 
 Changes:
+* feat: add CP config to ZoneInsights [#2661](https://github.com/kumahq/kuma/pull/2661)
 * chore: update envoy to 1.18.4 to mitigate CVE-2021-32779 [#2667](https://github.com/kumahq/kuma/pull/2667)
 * feat: remove provided ca cert validation [#2663](https://github.com/kumahq/kuma/pull/2663)
  👍contributed by Nikita Pande (@nikita15p)
