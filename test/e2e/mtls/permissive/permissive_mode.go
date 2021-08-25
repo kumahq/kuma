@@ -1,9 +1,7 @@
-package mtls
+package permissive
 
 import (
 	"fmt"
-	"net"
-	"regexp"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,7 +10,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func StandaloneUniversal() {
+func PermissiveMode() {
 	var universal Cluster
 	var universalOpts = KumaUniversalDeployOpts
 
@@ -63,25 +61,6 @@ mtls:
 		Expect(TestServerUniversal("test-server", mesh, echoServerToken, WithArgs(args), WithProtocol("tcp"))(universal)).To(Succeed())
 	}
 
-	getServiceEndpoint := func() string {
-		var addr string
-		r := regexp.MustCompile(`::([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):?([0-9]{1,5})?::`)
-		Eventually(func() bool {
-			cmd := []string{"/bin/bash", "-c", "\"curl -s localhost:30001/clusters | grep test-server.*cx_active\""}
-			stdout, _, err := universal.Exec("", "", "demo-client", cmd...)
-			if err != nil {
-				return false
-			}
-			submatch := r.FindStringSubmatch(stdout)
-			if len(submatch) < 3 {
-				return false
-			}
-			addr = fmt.Sprintf("%s:%s", submatch[1], submatch[2])
-			return true
-		}, "30s", "1s").Should(BeTrue())
-		return addr
-	}
-
 	It("should support STRICT mTLS mode", func() {
 		createMeshMTLS("default", "STRICT")
 
@@ -96,7 +75,7 @@ mtls:
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
 		// check the outside-mesh communication (using direct IP:PORT allows bypassing outbound listeners)
-		addr := getServiceEndpoint()
+		addr := fmt.Sprintf("%s:%d", universal.(*UniversalCluster).GetApp("test-server").GetIP(), 80)
 		Eventually(func() error {
 			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", addr)
 			return err
@@ -117,7 +96,7 @@ mtls:
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
 		// check the outside-mesh communication (using direct IP:PORT allows bypassing outbound listeners)
-		addr := getServiceEndpoint()
+		addr := fmt.Sprintf("%s:%d", universal.(*UniversalCluster).GetApp("test-server").GetIP(), 80)
 		Eventually(func() error {
 			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", addr)
 			return err
@@ -154,7 +133,7 @@ mtls:
 
 		// check the outside-mesh communication with mTLS over TLS
 		// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
-		host, _, _ := net.SplitHostPort(getServiceEndpoint())
+		host := universal.(*UniversalCluster).GetApp("test-server").GetIP()
 		Eventually(func() error {
 			cmd := []string{"curl", "-v", "-m", "3", "--resolve", fmt.Sprintf("test-server.mesh:80:%s", host), "--fail", "--cacert", "/kuma/server.crt", "https://test-server.mesh:80"}
 			_, _, err := universal.Exec("", "", "demo-client", cmd...)
