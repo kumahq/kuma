@@ -273,6 +273,10 @@ func (s *UniversalApp) GetPublicPort(port string) string {
 	return s.ports[port]
 }
 
+func (s *UniversalApp) GetIP() string {
+	return s.ip
+}
+
 func (s *UniversalApp) Stop() error {
 	out, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1})
 	if err != nil {
