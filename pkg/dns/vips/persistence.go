@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -61,7 +62,7 @@ func (m *Persistence) Get() (meshed map[string]*VirtualOutboundMeshView, errs er
 		if resource.Spec.Config == "" {
 			continue
 		}
-		v, err := m.unmarshal(resource.Spec.GetConfig())
+		v, err := m.unmarshal(resource.Spec.GetConfig(), mesh)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -71,11 +72,12 @@ func (m *Persistence) Get() (meshed map[string]*VirtualOutboundMeshView, errs er
 	return
 }
 
-func (m *Persistence) unmarshal(config string) (*VirtualOutboundMeshView, error) {
+func (m *Persistence) unmarshal(config string, mesh string) (*VirtualOutboundMeshView, error) {
 	res := map[HostnameEntry]VirtualOutbound{}
 	if err := json.Unmarshal([]byte(config), &res); err == nil {
-		return NewVirtualOutboundView(res), nil
+		return NewVirtualOutboundView(res)
 	}
+	res = map[HostnameEntry]VirtualOutbound{}
 	backCompat := map[HostnameEntry]string{}
 	if err := json.Unmarshal([]byte(config), &backCompat); err != nil {
 		// backwards compatibility
@@ -87,12 +89,37 @@ func (m *Persistence) unmarshal(config string) (*VirtualOutboundMeshView, error)
 			backCompat[NewServiceEntry(service)] = vip
 		}
 	}
+	// When doing backward compatibility we need to find which host belongs to which externalService.
+	externalServices := core_mesh.ExternalServiceResourceList{}
+	if err := m.resourceManager.List(context.Background(), &externalServices, store.ListByMesh(mesh)); err != nil {
+		return nil, err
+	}
+	srvByHost := map[string]*core_mesh.ExternalServiceResource{}
+	for _, s := range externalServices.Items {
+		srvByHost[s.Spec.GetHost()] = s
+	}
 	for entry, vip := range backCompat {
-		res[entry] = VirtualOutbound{
-			Address: vip,
+		switch entry.Type {
+		case Host:
+			externalService := srvByHost[entry.Name]
+			if externalService != nil {
+				res[entry] = VirtualOutbound{
+					Address: vip,
+					Outbounds: []OutboundEntry{
+						{TagSet: map[string]string{mesh_proto.ServiceTag: externalService.Spec.GetService()}, Origin: "legacy-host-upgrade"},
+					},
+				}
+			}
+		case Service:
+			res[entry] = VirtualOutbound{
+				Address: vip,
+				Outbounds: []OutboundEntry{
+					{TagSet: map[string]string{mesh_proto.ServiceTag: entry.Name}, Origin: "legacy-service-upgrade"},
+				},
+			}
 		}
 	}
-	return NewVirtualOutboundView(res), nil
+	return NewVirtualOutboundView(res)
 }
 
 func (m *Persistence) GetByMesh(mesh string) (*VirtualOutboundMeshView, error) {
@@ -101,16 +128,16 @@ func (m *Persistence) GetByMesh(mesh string) (*VirtualOutboundMeshView, error) {
 	err := m.configManager.Get(context.Background(), resource, store.GetByKey(name, ""))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
-			return NewVirtualOutboundView(map[HostnameEntry]VirtualOutbound{}), nil
+			return NewEmptyVirtualOutboundView(), nil
 		}
 		return nil, err
 	}
 
 	if resource.Spec.Config == "" {
-		return NewVirtualOutboundView(map[HostnameEntry]VirtualOutbound{}), nil
+		return NewEmptyVirtualOutboundView(), nil
 	}
 
-	virtualOutboundView, err := m.unmarshal(resource.Spec.GetConfig())
+	virtualOutboundView, err := m.unmarshal(resource.Spec.GetConfig(), mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal")
 	}

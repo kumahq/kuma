@@ -95,7 +95,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 	}
 	for _, mesh := range meshes {
 		if _, ok := byMesh[mesh]; !ok {
-			byMesh[mesh] = vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
+			byMesh[mesh] = vips.NewEmptyVirtualOutboundView()
 		}
 		for _, hostEntry := range byMesh[mesh].HostnameEntries() {
 			vo := byMesh[mesh].Get(hostEntry)
@@ -144,7 +144,7 @@ var ingressOpts = store.ListOptionsFunc(func(options *store.ListOptions) {
 })
 
 func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, mesh string) (*vips.VirtualOutboundMeshView, error) {
-	outboundSet := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
+	outboundSet := vips.NewEmptyVirtualOutboundView()
 	ctx := context.Background()
 
 	virtualOutbounds := core_mesh.VirtualOutboundResourceList{}
