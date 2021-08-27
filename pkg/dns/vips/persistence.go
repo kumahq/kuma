@@ -77,7 +77,6 @@ func (m *Persistence) unmarshal(config string, mesh string) (*VirtualOutboundMes
 	if err := json.Unmarshal([]byte(config), &res); err == nil {
 		return NewVirtualOutboundView(res)
 	}
-	res = map[HostnameEntry]VirtualOutbound{}
 	backCompat := map[HostnameEntry]string{}
 	if err := json.Unmarshal([]byte(config), &backCompat); err != nil {
 		// backwards compatibility
@@ -94,20 +93,23 @@ func (m *Persistence) unmarshal(config string, mesh string) (*VirtualOutboundMes
 	if err := m.resourceManager.List(context.Background(), &externalServices, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
-	srvByHost := map[string]*core_mesh.ExternalServiceResource{}
+	srvByHost := map[string][]*core_mesh.ExternalServiceResource{}
 	for _, s := range externalServices.Items {
-		srvByHost[s.Spec.GetHost()] = s
+		srvByHost[s.Spec.GetHost()] = append(srvByHost[s.Spec.GetHost()], s)
 	}
+	res = map[HostnameEntry]VirtualOutbound{}
 	for entry, vip := range backCompat {
 		switch entry.Type {
 		case Host:
-			externalService := srvByHost[entry.Name]
-			if externalService != nil {
-				res[entry] = VirtualOutbound{
-					Address: vip,
-					Outbounds: []OutboundEntry{
-						{TagSet: map[string]string{mesh_proto.ServiceTag: externalService.Spec.GetService()}, Origin: "legacy-host-upgrade"},
-					},
+			allPorts := map[uint32]bool{}
+			for _, es := range srvByHost[entry.Name] {
+				port := es.Spec.GetPortUInt32()
+				if exists := allPorts[port]; !exists {
+					res[entry] = VirtualOutbound{
+						Address:   vip,
+						Outbounds: append(res[entry].Outbounds, OutboundEntry{Port: port, TagSet: map[string]string{mesh_proto.ServiceTag: es.Spec.GetService()}, Origin: "legacy-host-upgrade"}),
+					}
+					allPorts[port] = true
 				}
 			}
 		case Service:

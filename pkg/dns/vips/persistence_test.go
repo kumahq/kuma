@@ -210,6 +210,14 @@ var _ = Describe("Meshed Persistence", func() {
 					Tags: map[string]string{mesh_proto.ServiceTag: "external-host"},
 				},
 			}, core_store.CreateByKey("my-host", "mesh-2"))
+			_ = rm.Create(context.Background(), &core_mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "host.com:100",
+					},
+					Tags: map[string]string{mesh_proto.ServiceTag: "external-host2"},
+				},
+			}, core_store.CreateByKey("my-host2", "mesh-2"))
 			meshedPersistence = vips.NewPersistence(rm, countingCm)
 		})
 
@@ -265,6 +273,17 @@ var _ = Describe("Meshed Persistence", func() {
 
 			Expect(countingCm.updates).To(HaveLen(1))
 			Expect(countingCm.updates[0].Spec.Config).To(Equal(`{"0:backend":{"address":"240.0.0.1","outbounds":[{"Port":0,"TagSet":{"kuma.io/service":"backend"},"Origin":""}]},"0:frontend":{"address":"240.0.0.3","outbounds":[{"Port":0,"TagSet":{"kuma.io/service":"frontend"},"Origin":""}]},"1:kuma.io":{"address":"240.0.1.4","outbounds":[{"Port":0,"TagSet":{"kuma.io/service":"external-host"},"Origin":""}]}}`))
+		})
+
+		It("should handle multiple external service with same host", func() {
+			out, err := meshedPersistence.GetByMesh("mesh-2")
+			Expect(err).ToNot(HaveOccurred())
+			entry := out.Get(vips.NewHostEntry("host.com"))
+
+			Expect(entry.Outbounds).To(Equal([]vips.OutboundEntry{
+				{Port: 90, TagSet: map[string]string{mesh_proto.ServiceTag: "external-host"}, Origin: "legacy-host-upgrade"},
+				{Port: 100, TagSet: map[string]string{mesh_proto.ServiceTag: "external-host2"}, Origin: "legacy-host-upgrade"},
+			}))
 		})
 	})
 })
