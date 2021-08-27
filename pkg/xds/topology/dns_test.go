@@ -20,7 +20,8 @@ var _ = Describe("VIPOutbounds", func() {
 	}
 	DescribeTable("compute outbounds",
 		func(tc outboundTestCase) {
-			vobView := vips.NewVirtualOutboundView(tc.whenOutbounds)
+			vobView, err := vips.NewVirtualOutboundView(tc.whenOutbounds)
+			Expect(err).ToNot(HaveOccurred())
 
 			vips, outbounds := topology.VIPOutbounds(vobView, "mesh")
 

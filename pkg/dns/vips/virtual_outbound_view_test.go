@@ -15,40 +15,51 @@ var _ = Describe("Virtual outbound", func() {
 		thenChanges          []vips.Change
 		thenVirtualOutbounds map[vips.HostnameEntry]vips.VirtualOutbound
 	}
+	var exampleA = map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{"s": "a"}}}}}
+	var exampleB = map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("bar"): {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{"s": "b"}}}}}
 	DescribeTable("Update",
 		func(tc updateTestCase) {
-			changes, out := vips.NewVirtualOutboundView(tc.given).Update(vips.NewVirtualOutboundView(tc.when))
+			// Given
+			given, err := vips.NewVirtualOutboundView(tc.given)
+			Expect(err).ToNot(HaveOccurred())
+			when, err := vips.NewVirtualOutboundView(tc.when)
+			Expect(err).ToNot(HaveOccurred())
 
+			// When
+			changes, out := given.Update(when)
+
+			// Then
 			Expect(tc.thenChanges).To(Equal(changes))
-			expected := vips.NewVirtualOutboundView(tc.thenVirtualOutbounds)
+			expected, err := vips.NewVirtualOutboundView(tc.thenVirtualOutbounds)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(expected.HostnameEntries()).To(Equal(out.HostnameEntries()))
 			for _, k := range expected.HostnameEntries() {
 				Expect(expected.Get(k)).To(Equal(out.Get(k)))
 			}
 		},
 		Entry("same noop", updateTestCase{
-			given:                map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1"}},
-			when:                 map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1"}},
+			given:                exampleA,
+			when:                 exampleA,
 			thenChanges:          []vips.Change{},
-			thenVirtualOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1"}},
+			thenVirtualOutbounds: exampleA,
 		}),
 		Entry("from empty", updateTestCase{
 			given:                map[vips.HostnameEntry]vips.VirtualOutbound{},
-			when:                 map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1"}},
+			when:                 exampleA,
 			thenChanges:          []vips.Change{{Type: vips.Add, Entry: vips.NewHostEntry("foo")}},
-			thenVirtualOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1"}},
+			thenVirtualOutbounds: exampleA,
 		}),
 		Entry("to empty", updateTestCase{
-			given:                map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1"}},
+			given:                exampleA,
 			when:                 map[vips.HostnameEntry]vips.VirtualOutbound{},
 			thenChanges:          []vips.Change{{Type: vips.Remove, Entry: vips.NewHostEntry("foo")}},
 			thenVirtualOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{},
 		}),
 		Entry("add one/remove one", updateTestCase{
-			given:                map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1"}},
-			when:                 map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("bar"): {Address: "240.0.0.1"}},
+			given:                exampleA,
+			when:                 exampleB,
 			thenChanges:          []vips.Change{{Type: vips.Add, Entry: vips.NewHostEntry("bar")}, {Type: vips.Remove, Entry: vips.NewHostEntry("foo")}},
-			thenVirtualOutbounds: map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("bar"): {Address: "240.0.0.1"}},
+			thenVirtualOutbounds: exampleB,
 		}),
 		Entry("add extra outbound", updateTestCase{
 			given: map[vips.HostnameEntry]vips.VirtualOutbound{vips.NewHostEntry("foo"): {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{Port: 80, TagSet: map[string]string{"foo": "bar"}, Origin: "my-policy"}}}},
