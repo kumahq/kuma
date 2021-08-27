@@ -59,22 +59,22 @@ type GatewayResourceInfo struct {
 	Resources Resources
 }
 
-// GatewayGenerator is responsible for generating xDS resources for a single GatewayHost.
-type GatewayGenerator interface {
-	Generate(xds_context.Context, *GatewayResourceInfo) (*core_xds.ResourceSet, error)
+// GatewayHostGenerator is responsible for generating xDS resources for a single GatewayHost.
+type GatewayHostGenerator interface {
+	GenerateHost(xds_context.Context, *GatewayResourceInfo) (*core_xds.ResourceSet, error)
 	SupportsProtocol(mesh_proto.Gateway_Listener_Protocol) bool
 }
 
 // Generator generates xDS resources for an entire Gateway.
 type Generator struct {
-	Resources  core_manager.ReadOnlyResourceManager
-	Generators []GatewayGenerator
+	ResourceManager core_manager.ReadOnlyResourceManager
+	Generators      []GatewayHostGenerator
 }
 
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	mesh := ctx.Mesh.Resource.Meta.GetName()
-	manager := match.ManagerForMesh(g.Resources, mesh)
-	gateway := match.Gateway(g.Resources, proxy.Dataplane)
+	manager := match.ManagerForMesh(g.ResourceManager, mesh)
+	gateway := match.Gateway(g.ResourceManager, proxy.Dataplane)
 
 	if gateway == nil {
 		log.V(1).Info("no matching gateway for dataplane",
@@ -141,7 +141,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 					continue
 				}
 
-				generated, err := generator.Generate(ctx, &info)
+				generated, err := generator.GenerateHost(ctx, &info)
 				if err != nil {
 					return nil, errors.Wrapf(err, "%T failed to generate resources for dataplane %q",
 						generator, proxy.Id)
@@ -151,6 +151,11 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			}
 
 			info.Resources.RouteConfiguration.Configure(envoy_routes.VirtualHost(info.Resources.VirtualHost))
+
+			// The order of generators matters, because they
+			// can refer to state that is accumulated in the
+			// GatewayResourceInfo. Clear the virtual host so
+			// that we can't accidentally refer to a stale one.
 			info.Resources.VirtualHost = nil
 		}
 
@@ -188,7 +193,7 @@ func MakeGatewayListener(
 
 	// We don't require hostnames to be unique across listeners. As
 	// long as the port and protocol matches it is OK to have multiple
-	// listener entries for the name hostname, since each entry can have
+	// listener entries for the same hostname, since each entry can have
 	// separate tags that will select additional route resources.
 	//
 	// This will become a problem when multiple listeners specify

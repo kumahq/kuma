@@ -25,11 +25,7 @@ func (*VirtualHostGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Prot
 	}
 }
 
-func (*VirtualHostGenerator) Generate(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
-	if info.Resources.VirtualHost != nil {
-		return nil, nil
-	}
-
+func (*VirtualHostGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
 	info.Resources.VirtualHost = envoy_routes.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
 		// TODO(jpeach) use separator from envoy names package.
 		envoy_routes.CommonVirtualHost(strings.Join([]string{info.Listener.ResourceName, info.Host.Hostname}, ":")),

@@ -32,7 +32,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 
 	// TODO(jpeach) As new gateway resources are added, register them here.
 
-	log.Info("added gateway plugin")
+	log.Info("registered gateway plugin")
 	return nil
 }
 
@@ -50,8 +50,10 @@ func NewProxyProfile(manager manager.ReadOnlyResourceManager) generator.Resource
 		generator.DNSGenerator{},
 
 		Generator{
-			Resources: manager,
-			Generators: []GatewayGenerator{
+			ResourceManager: manager,
+			Generators: []GatewayHostGenerator{
+				// The order here matters because generators can
+				// depend on state created by a previous generator.
 				&ListenerGenerator{},
 				&RouteConfigurationGenerator{},
 				&VirtualHostGenerator{},

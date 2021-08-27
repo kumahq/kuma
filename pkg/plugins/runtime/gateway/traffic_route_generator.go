@@ -43,7 +43,7 @@ func (*TrafficRouteGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Pro
 	}
 }
 
-func (*TrafficRouteGenerator) Generate(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
+func (*TrafficRouteGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
 	resources := ResourceAggregator{}
 
 	trafficRoute := merge.TrafficRoute(selectTrafficRoutes(info.Host.Routes)...)
