@@ -3,6 +3,7 @@ package zone
 import (
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -36,6 +37,15 @@ func Setup(rt core_runtime.Runtime) error {
 	}
 	resourceSyncer := sync_store.NewResourceSyncer(kdsZoneLog, rt.ResourceStore())
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
+	cfg := rt.Config()
+	cfgForDisplay, err := config.ConfigForDisplay(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "could not construct config for display")
+	}
+	cfgJson, err := config.ToJson(cfgForDisplay)
+	if err != nil {
+		return errors.Wrap(err, "could not marshall config to json")
+	}
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
 		log := kdsZoneLog.WithValues("peer-id", session.PeerID())
 		log.Info("new session created")
@@ -44,7 +54,7 @@ func Setup(rt core_runtime.Runtime) error {
 				log.Error(err, "StreamKumaResources finished with an error")
 			}
 		}()
-		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone),
+		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone, string(cfgJson)),
 			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
 		)
 		go func() {

@@ -45,7 +45,7 @@ var _ = Describe("Zone Sync", func() {
 	zoneName := "zone-1"
 
 	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) component.Component {
-		return kds_client.NewKDSSink(core.Log, registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(cs, zoneName), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
+		return kds_client.NewKDSSink(core.Log, registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(cs, zoneName, ""), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
 	}
 	start := func(comp component.Component, stop chan struct{}) {
 		go func() {
