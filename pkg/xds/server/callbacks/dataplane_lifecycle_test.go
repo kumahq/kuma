@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -19,7 +19,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
-	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
@@ -33,7 +33,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		store := memory.NewStore()
 		resManager = core_manager.NewResourceManager(store)
 		shutdown = make(chan struct{})
-		callbacks = util_xds_v2.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(NewDataplaneLifecycle(resManager, shutdown)))
+		callbacks = util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(NewDataplaneLifecycle(resManager, shutdown)))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -41,7 +41,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 	It("should create a DP on the first DiscoveryRequest when it is carried with metadata and delete on stream close", func() {
 		// given
-		req := v2.DiscoveryRequest{
+		req := envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.backend-01",
 				Metadata: &structpb.Struct{
@@ -116,7 +116,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		err := resManager.Create(context.Background(), dp, core_store.CreateByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		req := v2.DiscoveryRequest{
+		req := envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.backend-01",
 			},
@@ -139,7 +139,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 	It("should not delete DP when Kuma CP is shutting down", func() {
 		// given
-		req := v2.DiscoveryRequest{
+		req := envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.backend-01",
 				Metadata: &structpb.Struct{
@@ -202,7 +202,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				nodeID := fmt.Sprintf("default.backend-%d", num)
 
 				// given
-				req := v2.DiscoveryRequest{
+				req := envoy_sd.DiscoveryRequest{
 					Node: &envoy_core.Node{
 						Id: nodeID,
 						Metadata: &structpb.Struct{

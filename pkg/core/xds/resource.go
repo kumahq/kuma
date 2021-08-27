@@ -3,9 +3,8 @@ package xds
 import (
 	"sort"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	envoy_resource_v2 "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	envoy_resource_v3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -24,14 +23,14 @@ type Resource struct {
 // ResourceList represents a list of generic xDS resources.
 type ResourceList []*Resource
 
-func (rs ResourceList) ToDeltaDiscoveryResponse() (*envoy.DeltaDiscoveryResponse, error) {
-	resp := &envoy.DeltaDiscoveryResponse{}
+func (rs ResourceList) ToDeltaDiscoveryResponse() (*envoy_sd.DeltaDiscoveryResponse, error) {
+	resp := &envoy_sd.DeltaDiscoveryResponse{}
 	for _, r := range rs {
 		pbany, err := anypb.New(proto.MessageV2(r.Resource))
 		if err != nil {
 			return nil, err
 		}
-		resp.Resources = append(resp.Resources, &envoy.Resource{
+		resp.Resources = append(resp.Resources, &envoy_sd.Resource{
 			Name:     r.Name,
 			Resource: pbany,
 		})
@@ -147,15 +146,10 @@ func (s *ResourceSet) List() ResourceList {
 		return nil
 	}
 	list := ResourceList{}
-	list = append(list, s.ListOf(envoy_resource_v2.EndpointType)...)
 	list = append(list, s.ListOf(envoy_resource_v3.EndpointType)...)
-	list = append(list, s.ListOf(envoy_resource_v2.ClusterType)...)
 	list = append(list, s.ListOf(envoy_resource_v3.ClusterType)...)
-	list = append(list, s.ListOf(envoy_resource_v2.RouteType)...)
 	list = append(list, s.ListOf(envoy_resource_v3.RouteType)...)
-	list = append(list, s.ListOf(envoy_resource_v2.ListenerType)...)
 	list = append(list, s.ListOf(envoy_resource_v3.ListenerType)...)
-	list = append(list, s.ListOf(envoy_resource_v2.SecretType)...)
 	list = append(list, s.ListOf(envoy_resource_v3.SecretType)...)
 	return list
 }
