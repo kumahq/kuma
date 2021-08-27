@@ -29,16 +29,17 @@ message Retry {
 
   // List of selectors to match dataplanes that retry policy should be
   // configured for
-  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector sources = 1
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
 
   // List of selectors to match services that need to be health checked.
   repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1 ];
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
 
   message Conf {
     message BackOff {
       //  +required
-      google.protobuf.Duration base_interval = 1;
+      google.protobuf.Duration base_interval = 1 [ (doc.required) = true ];
       //  +optional
       google.protobuf.Duration max_interval = 2;
     }
@@ -90,5 +91,5 @@ message Retry {
   }
 
   //  +required
-  Conf conf = 3;
+  Conf conf = 3 [ (doc.required) = true ];
 }

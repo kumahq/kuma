@@ -145,6 +145,8 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
+          alpnProtocols:
+          - kuma
           combinedValidationContext:
             defaultValidationContext:
               matchSubjectAltNames:
@@ -185,6 +187,8 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
+          alpnProtocols:
+          - kuma
           combinedValidationContext:
             defaultValidationContext:
               matchSubjectAltNames:
@@ -221,6 +225,8 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
+          alpnProtocols:
+          - kuma
           combinedValidationContext:
             defaultValidationContext:
               matchSubjectAltNames:
@@ -256,6 +262,8 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
+          alpnProtocols:
+          - kuma
           combinedValidationContext:
             defaultValidationContext:
               matchSubjectAltNames:
@@ -291,6 +299,8 @@ resources:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
+          alpnProtocols:
+          - kuma
           combinedValidationContext:
             defaultValidationContext:
               matchSubjectAltNames:
@@ -348,9 +358,8 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
               logFormat:
                 textFormatSource:
-                  inlineString: |+
+                  inlineString: |
                     [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
-
               path: /var/log
           httpFilters:
           - name: envoy.filters.http.router
@@ -395,9 +404,8 @@ resources:
                 grpcService:
                   envoyGrpc:
                     clusterName: access_log_sink
-                logName: |+
+                logName: |
                   logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-
                 transportApiVersion: V3
           cluster: api-tcp
           statPrefix: api-tcp

@@ -3,7 +3,7 @@ package v1alpha1_test
 import (
 	"time"
 
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 

@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
@@ -137,6 +138,9 @@ func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy_sd.DiscoveryR
 			util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesAcknowledged++
 		}
 	}
+	if subscription.Config == "" && req.Node.Metadata != nil && req.Node.Metadata.Fields[kds.MetadataFieldConfig] != nil {
+		subscription.Config = req.Node.Metadata.Fields[kds.MetadataFieldConfig].GetStringValue()
+	}
 
 	c.log.V(1).Info("OnStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)
 	return nil
@@ -182,7 +186,7 @@ func readVersion(metadata *structpb.Struct, version *system_proto.Version) error
 	if metadata == nil {
 		return nil
 	}
-	rawVersion := metadata.Fields["version"].GetStructValue()
+	rawVersion := metadata.Fields[kds.MetadataFieldVersion].GetStructValue()
 	if rawVersion != nil {
 		err := util_proto.ToTyped(rawVersion, version)
 		if err != nil {

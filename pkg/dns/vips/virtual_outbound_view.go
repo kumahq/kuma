@@ -9,15 +9,22 @@ type VirtualOutboundMeshView struct {
 	byHostname map[HostnameEntry]*VirtualOutbound
 }
 
-func NewVirtualOutboundView(all map[HostnameEntry]VirtualOutbound) *VirtualOutboundMeshView {
-	r := VirtualOutboundMeshView{
+func NewEmptyVirtualOutboundView() *VirtualOutboundMeshView {
+	return &VirtualOutboundMeshView{
 		byHostname: map[HostnameEntry]*VirtualOutbound{},
 	}
+}
+
+func NewVirtualOutboundView(all map[HostnameEntry]VirtualOutbound) (*VirtualOutboundMeshView, error) {
+	r := NewEmptyVirtualOutboundView()
 	for k := range all {
 		itm := all[k]
 		r.byHostname[k] = &itm
+		if len(itm.Outbounds) == 0 {
+			return nil, fmt.Errorf("no outbound for hostname: %s", k)
+		}
 	}
-	return &r
+	return r, nil
 }
 
 func (vo *VirtualOutboundMeshView) Get(entry HostnameEntry) *VirtualOutbound {
@@ -69,7 +76,7 @@ func ToVIPMap(voByMesh map[string]*VirtualOutboundMeshView) map[HostnameEntry]st
 // Update merges `new` and `vo` in a new `out` and returns a list of changes.
 func (vo *VirtualOutboundMeshView) Update(new *VirtualOutboundMeshView) (changes []Change, out *VirtualOutboundMeshView) {
 	changes = []Change{}
-	out = NewVirtualOutboundView(map[HostnameEntry]VirtualOutbound{})
+	out = NewEmptyVirtualOutboundView()
 	// Let's find the removed ones (in old but not in new)
 	for entry := range vo.byHostname {
 		if _, ok := new.byHostname[entry]; !ok {

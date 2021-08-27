@@ -11,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -31,14 +32,16 @@ type stream struct {
 	latestACKed    map[string]*envoy_sd.DiscoveryResponse
 	latestReceived map[string]*envoy_sd.DiscoveryResponse
 	clientId       string
+	cpConfig       string
 }
 
-func NewKDSStream(s mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient, clientId string) KDSStream {
+func NewKDSStream(s mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient, clientId string, cpConfig string) KDSStream {
 	return &stream{
 		streamClient:   s,
 		latestACKed:    make(map[string]*envoy_sd.DiscoveryResponse),
 		latestReceived: make(map[string]*envoy_sd.DiscoveryResponse),
 		clientId:       clientId,
+		cpConfig:       cpConfig,
 	}
 }
 
@@ -61,7 +64,8 @@ func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 			Id: s.clientId,
 			Metadata: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
-					"version": {Kind: &structpb.Value_StructValue{StructValue: cpVersion}},
+					kds.MetadataFieldVersion: {Kind: &structpb.Value_StructValue{StructValue: cpVersion}},
+					kds.MetadataFieldConfig:  {Kind: &structpb.Value_StringValue{StringValue: s.cpConfig}},
 				},
 			},
 		},

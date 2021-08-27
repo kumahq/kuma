@@ -15,7 +15,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplaneinsight"
+	externalservice_managers "github.com/kumahq/kuma/pkg/core/managers/apis/external_service"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	ratelimit_managers "github.com/kumahq/kuma/pkg/core/managers/apis/ratelimit"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
@@ -39,6 +41,7 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
@@ -77,6 +80,7 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	if err := initializeDNSResolver(cfg, builder); err != nil {
 		return nil, err
 	}
+	builder.WithMeshValidator(mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()))
 	if err := initializeResourceManager(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -94,6 +98,7 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(builder.ResourceManager(), builder.Config()))
 	builder.WithAPIManager(customization.NewAPIList())
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
+	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 
@@ -285,13 +290,25 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, nil)
 
-	meshValidator := mesh_managers.MeshValidator{
-		CaManagers: builder.CaManagers(),
-		Store:      builder.ResourceStore(),
-	}
 	customizableManager.Customize(
 		mesh.MeshType,
-		mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator),
+		mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.MeshValidator()),
+	)
+
+	rateLimitValidator := ratelimit_managers.RateLimitValidator{
+		Store: builder.ResourceStore(),
+	}
+	customizableManager.Customize(
+		mesh.RateLimitType,
+		ratelimit_managers.NewRateLimitManager(builder.ResourceStore(), rateLimitValidator),
+	)
+
+	externalServiceValidator := externalservice_managers.ExternalServiceValidator{
+		Store: builder.ResourceStore(),
+	}
+	customizableManager.Customize(
+		mesh.ExternalServiceType,
+		externalservice_managers.NewExternalServiceManager(builder.ResourceStore(), externalServiceValidator),
 	)
 
 	customizableManager.Customize(

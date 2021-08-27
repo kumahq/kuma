@@ -49,7 +49,7 @@ func Setup(rt runtime.Runtime) (err error) {
 				log.Error(err, "StreamKumaResources finished with an error")
 			}
 		}()
-		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID())
+		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID(), "") // we only care about Zone CP config. Zone CP should not receive Global CP config.
 		if err := createZoneIfAbsent(session.PeerID(), rt.ResourceManager()); err != nil {
 			log.Error(err, "Global CP could not create a zone")
 			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry

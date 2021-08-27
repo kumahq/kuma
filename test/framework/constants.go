@@ -28,7 +28,6 @@ const (
 	defaultKumactlConfig         = "${HOME}/.kumactl/%s-config"
 	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-%s-config"
 
-	envKUMACTLBIN  = "KUMACTLBIN"
 	envK8SCLUSTERS = "K8SCLUSTERS"
 	envAPIVersion  = "API_VERSION"
 	envIPv6        = "IPV6"

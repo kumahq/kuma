@@ -268,6 +268,32 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: virtualoutbounds.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: VirtualOutbound
+    plural: virtualoutbounds
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: VirtualOutbound is the Schema for the virtualoutbounds API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
@@ -320,32 +346,6 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: zones.kuma.io
-spec:
-  group: kuma.io
-  names:
-    kind: Zone
-    plural: zones
-  scope: Cluster
-  versions:
-    - name: v1alpha1
-      served: true
-      storage: true
-      schema:
-        openAPIV3Schema:
-          description: Zone is the Schema for the zone API
-          properties:
-            mesh:
-              type: string
-            spec:
-              x-kubernetes-preserve-unknown-fields: true
-              type: object
-          type: object
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  creationTimestamp: null
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -364,6 +364,32 @@ spec:
             mesh:
               type: string
             status:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: zones.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: Zone
+    plural: zones
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: Zone is the Schema for the zone API
+          properties:
+            mesh:
+              type: string
+            spec:
               x-kubernetes-preserve-unknown-fields: true
               type: object
           type: object
@@ -629,6 +655,7 @@ rules:
       - timeouts
       - retries
       - circuitbreakers
+      - virtualoutbounds
     verbs:
       - get
       - list
@@ -799,8 +826,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: cb5bc12636ef40fbe4c45626a2cd1901729c246ee2cc3d16147b589b9c4604f3
-        checksum/tls-secrets: 20a4ec8f9844a9b696c8d48e46e76cb178e9d44237bd6f57078a989f2db5f2ca
+        checksum/config: 264a6e71a6f440c37bec8b1aa6d668c99c2ae725ecde4051e51f101dda46037b
+        checksum/tls-secrets: 6d5996b385b4975cf7c78ee85210ae168c84fdf4be25730e3cdfcb124e0236e2
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -985,6 +1012,7 @@ webhooks:
           - trafficpermissions
           - trafficroutes
           - traffictraces
+          - virtualoutbounds
     
       
     sideEffects: None
@@ -1051,6 +1079,7 @@ webhooks:
           - trafficpermissions
           - trafficroutes
           - traffictraces
+          - virtualoutbounds
           - zones
     
       
