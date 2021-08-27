@@ -56,6 +56,16 @@ var _ = Describe("TrafficRoute", func() {
                   destination:
                     kuma.io/service: offers`,
 			),
+			Entry("example with gateway selector", `
+                selectors:
+                - match:
+                    kuma.io/service: web
+                conf:
+                  loadBalancer:
+                    leastRequest: {}
+                  destination:
+                    kuma.io/service: offers`,
+			),
 			Entry("example with http", `
                 sources:
                 - match:
@@ -164,6 +174,29 @@ var _ = Describe("TrafficRoute", func() {
                   message: must have at least one element
                 - field: destinations
                   message: must have at least one element
+                - field: selectors
+                  message: must have at least one element
+                - field: conf
+                  message: cannot be empty
+`,
+			}),
+			Entry("selectors with sources ", testCase{
+				route: `
+                sources:
+                - match: {}
+                destinations:
+                - match: {}
+                selectors:
+                - match: {}
+`,
+				expected: `
+                violations:
+                - field: sources
+                  message: sources and selectors are mutually exclusive
+                - field: destinations
+                  message: destinations and selectors are mutually exclusive
+                - field: selectors
+                  message: selectors are mutually exclusive with sources and destinations
                 - field: conf
                   message: cannot be empty
 `,

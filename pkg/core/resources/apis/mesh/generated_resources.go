@@ -1853,6 +1853,10 @@ func (t *TrafficRouteResource) Destinations() []*mesh_proto.Selector {
 	return t.Spec.GetDestinations()
 }
 
+func (t *TrafficRouteResource) Selectors() []*mesh_proto.Selector {
+	return t.Spec.GetSelectors()
+}
+
 func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 	protoType, ok := spec.(*mesh_proto.TrafficRoute)
 	if !ok {

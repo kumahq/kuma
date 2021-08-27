@@ -9,12 +9,21 @@ func (d *TrafficRouteResource) Validate() error {
 	var err validators.ValidationError
 	err.Add(d.validateSources())
 	err.Add(d.validateDestinations())
+	err.Add(d.validateSelectors())
 	err.Add(d.validateConf())
 	return err.OrNil()
 }
 
 func (d *TrafficRouteResource) validateSources() validators.ValidationError {
-	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorsOpts{
+	if len(d.Spec.GetSelectors()) != 0 {
+		err := validators.ValidationError{}
+		if len(d.Spec.GetSources()) != 0 {
+			err.AddViolationAt(validators.RootedAt("sources"), "sources and selectors are mutually exclusive")
+		}
+		return err
+	}
+
+	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.GetSources(), ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
 			RequireAtLeastOneTag: true,
@@ -24,7 +33,42 @@ func (d *TrafficRouteResource) validateSources() validators.ValidationError {
 }
 
 func (d *TrafficRouteResource) validateDestinations() (err validators.ValidationError) {
-	return ValidateSelectors(validators.RootedAt("destinations"), d.Spec.Destinations, OnlyServiceTagAllowed)
+	if len(d.Spec.GetSelectors()) != 0 {
+		err := validators.ValidationError{}
+		if len(d.Spec.GetDestinations()) != 0 {
+			err.AddViolationAt(validators.RootedAt("destinations"), "destinations and selectors are mutually exclusive")
+		}
+		return err
+	}
+
+	return ValidateSelectors(validators.RootedAt("destinations"), d.Spec.GetDestinations(), OnlyServiceTagAllowed)
+}
+
+func (d *TrafficRouteResource) validateSelectors() validators.ValidationError {
+	err := validators.ValidationError{}
+
+	// The selectors must be empty if gateway support is not enabled.
+	if len(d.Spec.GetSelectors()) != 0 && !allowBuiltinGateways {
+		err.AddViolationAt(validators.RootedAt("selectors"), "unsupported field")
+		return err
+	}
+
+	if len(d.Spec.GetSources()) != 0 || len(d.Spec.GetDestinations()) != 0 {
+		if len(d.Spec.GetSelectors()) != 0 {
+			err.AddViolationAt(validators.RootedAt("selectors"),
+				"selectors are mutually exclusive with sources and destinations")
+		}
+
+		return err
+	}
+
+	return ValidateSelectors(validators.RootedAt("selectors"), d.Spec.GetSelectors(), ValidateSelectorsOpts{
+		RequireAtLeastOneSelector: true,
+		ValidateSelectorOpts: ValidateSelectorOpts{
+			RequireAtLeastOneTag: true,
+			RequireService:       true,
+		},
+	})
 }
 
 func (d *TrafficRouteResource) validateConf() (err validators.ValidationError) {

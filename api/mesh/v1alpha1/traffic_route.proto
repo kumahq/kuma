@@ -25,19 +25,6 @@ message TrafficRoute {
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "traffic-route";
 
-  // List of selectors to match data plane proxies that are sources of traffic.
-  repeated Selector sources = 1
-      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
-
-  // List of selectors to match services that are destinations of traffic.
-  //
-  // Notice the difference between sources and destinations.
-  // While the source of traffic is always a data plane proxy within a mesh,
-  // the destination is a service that could be either within or outside
-  // of a mesh.
-  repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
-
   // Split defines a destination with a weight assigned to it.
   message Split {
 
@@ -227,6 +214,23 @@ message TrafficRoute {
     // When used, "split" is not allowed.
     map<string, string> destination = 4;
   }
+
+  // List of selectors to match data plane proxies that are sources of traffic.
+  repeated Selector sources = 1
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+
+  // List of selectors to match services that are destinations of traffic.
+  //
+  // Notice the difference between sources and destinations.
+  // While the source of traffic is always a data plane proxy within a mesh,
+  // the destination is a service that could be either within or outside
+  // of a mesh.
+  repeated Selector destinations = 2
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
+
+  // List of selectors to match builtin gateway dataplanes. If this field
+  // is given, sources and destinations must be absent (and vice versa).
+  repeated Selector selectors = 4 [ (validate.rules).repeated .min_items = 1 ];
 
   // Configuration for the route.
   Conf conf = 3
