@@ -5,7 +5,7 @@ conf:
     - name: raw-name
       version: raw-version
       resource: |
-        '@type': type.googleapis.com/envoy.api.v2.Cluster
+        '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
         connectTimeout: 5s
         loadAssignment:
           clusterName: localhost:8443
