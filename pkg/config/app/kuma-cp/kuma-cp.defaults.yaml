@@ -68,7 +68,7 @@ store:
 
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
-  # The version of Envoy API (available: "v2", "v3")
+  # The version of Envoy API (available: "v3")
   apiVersion: v3
   # Parameters of bootstrap configuration
   params:
@@ -91,7 +91,6 @@ monitoringAssignmentServer:
   port: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_PORT
   # Which MADS API versions to serve
   apiVersions: # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS
-    - v1alpha1
     - v1
   # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL

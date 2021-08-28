@@ -144,7 +144,6 @@ var _ = Describe("Config WS", func() {
 		  "mode": "standalone",
 		  "monitoringAssignmentServer": {
 			"apiVersions": [
-			  "v1alpha1",
 			  "v1"
 			],
 			"assignmentRefreshInterval": "1s",

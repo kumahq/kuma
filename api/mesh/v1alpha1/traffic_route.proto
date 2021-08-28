@@ -26,7 +26,8 @@ message TrafficRoute {
   option (kuma.mesh.resource).ws.name = "traffic-route";
 
   // List of selectors to match data plane proxies that are sources of traffic.
-  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector sources = 1
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
 
   // List of selectors to match services that are destinations of traffic.
   //
@@ -35,7 +36,7 @@ message TrafficRoute {
   // the destination is a service that could be either within or outside
   // of a mesh.
   repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1 ];
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
 
   // Split defines a destination with a weight assigned to it.
   message Split {
@@ -44,18 +45,21 @@ message TrafficRoute {
     // Weights are not percentages. For example two destinations with
     // weights the same weight "1" will receive both same amount of the traffic.
     // 0 means that the destination will be ignored.
-    google.protobuf.UInt32Value weight = 1;
+    google.protobuf.UInt32Value weight = 1 [ (doc.required) = true ];
 
     // Selector to match individual endpoints that comprise that destination.
     //
     // Notice that an endpoint can be either inside or outside the mesh.
     // In the former case an endpoint corresponds to a data plane proxy,
     // in the latter case an endpoint is an External Service.
-    map<string, string> destination = 2 [ (validate.rules).map = {
-      min_pairs : 1,
-      keys : {string : {min_len : 1}},
-      values : {string : {min_len : 1}}
-    } ];
+    map<string, string> destination = 2 [
+      (validate.rules).map = {
+        min_pairs : 1,
+        keys : {string : {min_len : 1}},
+        values : {string : {min_len : 1}}
+      },
+      (doc.required) = true
+    ];
   };
 
   // LoadBalancer defines the load balancing policy and configuration.
@@ -152,10 +156,10 @@ message TrafficRoute {
       message RegexReplace {
         // Pattern of the regex using RE2 syntax.
         // https://github.com/google/re2/wiki/Syntax
-        string pattern = 1;
+        string pattern = 1 [ (doc.required) = true ];
         // Substitution using regex groups. E.g. use \\1 as a first matched
         // group.
-        string substitution = 2;
+        string substitution = 2 [ (doc.required) = true ];
       }
 
       // Path defines modification of path of the HTTP request.
@@ -183,9 +187,9 @@ message TrafficRoute {
         // Add defines operation of adding new HTTP header.
         message Add {
           // Name of the header.
-          string name = 1;
+          string name = 1 [ (doc.required) = true ];
           // Value of the header.
-          string value = 2;
+          string value = 2 [ (doc.required) = true ];
           // If true, it appends the value if there is already a value.
           // Otherwise, value of existing header will be replaced.
           bool append = 3;
@@ -193,7 +197,7 @@ message TrafficRoute {
         // Remove defines operation of removing an HTTP header.
         message Remove {
           // Name of the header to remove.
-          string name = 1;
+          string name = 1 [ (doc.required) = true ];
         }
         // List of add header operations.
         repeated Add add = 1;
@@ -225,5 +229,6 @@ message TrafficRoute {
   }
 
   // Configuration for the route.
-  Conf conf = 3 [ (validate.rules).message.required = true ];
+  Conf conf = 3
+      [ (validate.rules).message.required = true, (doc.required) = true ];
 }

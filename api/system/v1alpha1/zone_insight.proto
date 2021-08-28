@@ -57,6 +57,9 @@ message KDSSubscription {
   // Generation is an integer number which is periodically increased by the
   // status sink
   uint32 generation = 7;
+
+  // Config of Zone Kuma CP
+  string config = 8;
 }
 
 // KDSSubscriptionStatus defines status of an KDS subscription.

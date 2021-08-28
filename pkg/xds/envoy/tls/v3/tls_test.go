@@ -165,6 +165,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				upstreamService: "backend",
 				expected: `
                 commonTlsContext:
+                  alpnProtocols:
+                  - kuma
                   combinedValidationContext:
                     defaultValidationContext:
                       matchSubjectAltNames:

@@ -201,29 +201,6 @@ bgeEDefxTxoTMgJ1urwl0KX6R9dbv9YWZWJXk2DQj6UwkMEyXpc+kw==
 				input: *keyPair,
 			}
 		}),
-		Entry("certificate with key usage extension `digitalSignature`", func() testCase {
-			// when
-			keyPair, err := NewSelfSignedCert(func() *x509.Certificate {
-				return &x509.Certificate{
-					SerialNumber:          big.NewInt(0),
-					BasicConstraintsValid: true,
-					IsCA:                  true,
-					KeyUsage: x509.KeyUsageCertSign |
-						x509.KeyUsageCRLSign | x509.KeyUsageDigitalSignature,
-				}
-			})
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			return testCase{
-				expectedErr: `
-                violations:
-                - field: cert[0]
-                  message: "key usage extension 'digitalSignature' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)"
-`,
-				input: *keyPair,
-			}
-		}),
 		Entry("certificate with key usage extension `keyAgreement`", func() testCase {
 			// when
 			keyPair, err := NewSelfSignedCert(func() *x509.Certificate {
@@ -243,29 +220,6 @@ bgeEDefxTxoTMgJ1urwl0KX6R9dbv9YWZWJXk2DQj6UwkMEyXpc+kw==
                 violations:
                 - field: cert[0]
                   message: "key usage extension 'keyAgreement' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)"
-`,
-				input: *keyPair,
-			}
-		}),
-		Entry("certificate with key usage extension `keyEncipherment`", func() testCase {
-			// when
-			keyPair, err := NewSelfSignedCert(func() *x509.Certificate {
-				return &x509.Certificate{
-					SerialNumber:          big.NewInt(0),
-					BasicConstraintsValid: true,
-					IsCA:                  true,
-					KeyUsage: x509.KeyUsageCertSign |
-						x509.KeyUsageCRLSign | x509.KeyUsageKeyEncipherment,
-				}
-			})
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			return testCase{
-				expectedErr: `
-                violations:
-                - field: cert[0]
-                  message: "key usage extension 'keyEncipherment' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)"
 `,
 				input: *keyPair,
 			}
@@ -291,11 +245,7 @@ bgeEDefxTxoTMgJ1urwl0KX6R9dbv9YWZWJXk2DQj6UwkMEyXpc+kw==
                 - field: cert[0]
                   message: "key usage extension 'keyCertSign' must be set (see X509-SVID: 4.3. Key Usage)"
                 - field: cert[0]
-                  message: "key usage extension 'digitalSignature' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)"
-                - field: cert[0]
                   message: "key usage extension 'keyAgreement' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)"
-                - field: cert[0]
-                  message: "key usage extension 'keyEncipherment' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)"
 `,
 				input: *keyPair,
 			}

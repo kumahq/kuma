@@ -116,6 +116,8 @@ var _ = Describe("Mesh", func() {
                     type: builtin`,
 				expected: `
                 violations:
+                - field: mtls.backends
+                  message: cannot have more than 1 backends
                 - field: mtls.backends[1].name
                   message: '"backend-1" name is already used for another backend'`,
 			}),

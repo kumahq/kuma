@@ -11,6 +11,7 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -94,7 +95,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 	}
 	for _, mesh := range meshes {
 		if _, ok := byMesh[mesh]; !ok {
-			byMesh[mesh] = vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
+			byMesh[mesh] = vips.NewEmptyVirtualOutboundView()
 		}
 		for _, hostEntry := range byMesh[mesh].HostnameEntries() {
 			vo := byMesh[mesh].Get(hostEntry)
@@ -136,64 +137,85 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 	return errs
 }
 
-func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, mesh string) (*vips.VirtualOutboundMeshView, error) {
-	outboundSet := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
+var ingressOpts = store.ListOptionsFunc(func(options *store.ListOptions) {
+	options.FilterFunc = func(rs model.Resource) bool {
+		return rs.GetSpec().(*mesh_proto.Dataplane).IsIngress()
+	}
+})
 
-	dataplanes := core_mesh.DataplaneResourceList{}
-	if err := rm.List(context.Background(), &dataplanes); err != nil {
+func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, mesh string) (*vips.VirtualOutboundMeshView, error) {
+	outboundSet := vips.NewEmptyVirtualOutboundView()
+	ctx := context.Background()
+
+	virtualOutbounds := core_mesh.VirtualOutboundResourceList{}
+	if err := rm.List(ctx, &virtualOutbounds, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
-
-	filteredDataplanes := &core_mesh.DataplaneResourceList{}
-	for _, d := range dataplanes.Items {
-		if d.GetMeta().GetMesh() == mesh || d.Spec.IsIngress() {
-			_ = filteredDataplanes.AddItem(d)
+	dataplanes := core_mesh.DataplaneResourceList{}
+	if err := rm.List(ctx, &dataplanes, store.ListByMesh(mesh)); err != nil {
+		return nil, err
+	}
+	var errs error
+	for _, dp := range dataplanes.Items {
+		if dp.Spec.IsIngress() {
+			continue
+		}
+		for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
+			errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
+			for _, vob := range Match(virtualOutbounds.Items, inbound.Tags) {
+				addFromVirtualOutbound(outboundSet, vob, inbound.Tags, dp.Descriptor().Name, dp.Meta.GetName())
+			}
 		}
 	}
-	var err error
-	for _, dp := range filteredDataplanes.Items {
-		// backwards compatibility
-		if dp.Spec.IsIngress() {
-			for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
-				if service.Mesh == mesh {
-					err = multierr.Append(err, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
-				}
-			}
-		} else {
-			for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
-				err = multierr.Append(err, addDefault(outboundSet, inbound.GetService(), 0))
+
+	// backwards compatibility with ingress mesh
+	legacyIngresses := core_mesh.DataplaneResourceList{}
+	if err := rm.List(ctx, &legacyIngresses, store.ListByMesh("default"), ingressOpts); err != nil {
+		return nil, err
+	}
+	for _, dp := range legacyIngresses.Items {
+		for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
+			if service.Mesh == mesh {
+				errs = multierr.Append(errs, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
 			}
 		}
 	}
 
 	zoneIngresses := core_mesh.ZoneIngressResourceList{}
-	if err := rm.List(context.Background(), &zoneIngresses); err != nil {
+	if err := rm.List(ctx, &zoneIngresses); err != nil {
 		return nil, err
 	}
 
 	for _, zi := range zoneIngresses.Items {
 		for _, service := range zi.Spec.GetAvailableServices() {
 			if service.Mesh == mesh {
-				err = multierr.Append(err, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
+				errs = multierr.Append(errs, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
+			}
+			for _, vob := range Match(virtualOutbounds.Items, service.Tags) {
+				addFromVirtualOutbound(outboundSet, vob, service.Tags, zi.Descriptor().Name, zi.Meta.GetName())
 			}
 		}
 	}
 
 	externalServices := core_mesh.ExternalServiceResourceList{}
-	if err := rm.List(context.Background(), &externalServices, store.ListByMesh(mesh)); err != nil {
+	if err := rm.List(ctx, &externalServices, store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
 	for _, es := range externalServices.Items {
-		err = multierr.Append(err, addDefault(outboundSet, es.Spec.GetService(), es.Spec.GetPortUInt32()))
-		err = multierr.Append(err, outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
+		tags := map[string]string{mesh_proto.ServiceTag: es.Spec.GetService()}
+		errs = multierr.Append(errs, addDefault(outboundSet, es.Spec.GetService(), es.Spec.GetPortUInt32()))
+		errs = multierr.Append(errs, outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
 			Port:   es.Spec.GetPortUInt32(),
-			TagSet: map[string]string{mesh_proto.ServiceTag: es.Spec.GetService()},
+			TagSet: tags,
 			Origin: vips.OriginHost,
 		}))
+		for _, vob := range Match(virtualOutbounds.Items, tags) {
+			addFromVirtualOutbound(outboundSet, vob, tags, es.Descriptor().Name, es.Meta.GetName())
+		}
 	}
 
-	if err != nil {
-		return nil, err
+	if errs != nil {
+		return nil, errs
 	}
 	return outboundSet, nil
 }
@@ -212,6 +234,30 @@ func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundMeshView)
 		}
 	}
 	return errs
+}
+
+func addFromVirtualOutbound(outboundSet *vips.VirtualOutboundMeshView, vob *core_mesh.VirtualOutboundResource, tags map[string]string, resourceType model.ResourceType, resourceName string) {
+	host, err := vob.EvalHost(tags)
+	l := vipsAllocatorLog.WithValues("mesh", vob.Meta.GetMesh(), "virtualOutboundName", vob.Meta.GetName(), "type", resourceType, "name", resourceName, "tags", tags)
+	if err != nil {
+		l.Info("Failed evaluating host template", "reason", err.Error())
+		return
+	}
+
+	port, err := vob.EvalPort(tags)
+	if err != nil {
+		l.Info("Failed evaluating port template", "reason", err.Error())
+		return
+	}
+
+	err = outboundSet.Add(vips.NewFqdnEntry(host), vips.OutboundEntry{
+		Port:   port,
+		TagSet: vob.FilterTags(tags),
+		Origin: vips.OriginVirtualOutbound(vob.Meta.GetName()),
+	})
+	if err != nil {
+		l.Info("Failed adding generated outbound", "reason", err.Error())
+	}
 }
 
 func addDefault(outboundSet *vips.VirtualOutboundMeshView, service string, port uint32) error {

@@ -43,7 +43,6 @@ var _ = Describe("kumactl install metrics", func() {
 			// given
 			rootCtx := kumactl_cmd.DefaultRootContext()
 			rootCtx.Runtime.NewAPIServerClient = test.GetMockNewAPIServerClient()
-			rootCtx.InstallMetricsContext.TemplateArgs.KumaPrometheusSdVersion = "0.0.1"
 			rootCmd := cmd.NewRootCmd(rootCtx)
 			rootCmd.SetArgs(append([]string{"install", "metrics"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
@@ -68,8 +67,6 @@ var _ = Describe("kumactl install metrics", func() {
 			extraArgs: []string{
 				"--namespace", "kuma",
 				"--mesh", "mesh-1",
-				"--kuma-prometheus-sd-image", "kuma-ci/kuma-prometheus-sd",
-				"--kuma-prometheus-sd-version", "greatest",
 				"--kuma-cp-address", "http://kuma.local:5681",
 			},
 			goldenFile: "install-metrics.overrides.golden.yaml",

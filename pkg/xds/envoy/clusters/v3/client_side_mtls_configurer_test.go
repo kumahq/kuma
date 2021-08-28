@@ -80,6 +80,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
                 commonTlsContext:
+                  alpnProtocols:
+                  - kuma
                   combinedValidationContext:
                     defaultValidationContext:
                       matchSubjectAltNames:
@@ -145,6 +147,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
                   commonTlsContext:
+                    alpnProtocols:
+                    - kuma
                     combinedValidationContext:
                       defaultValidationContext:
                         matchSubjectAltNames:
@@ -168,6 +172,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
                   commonTlsContext:
+                    alpnProtocols:
+                    - kuma
                     combinedValidationContext:
                       defaultValidationContext:
                         matchSubjectAltNames:
@@ -229,6 +235,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
                 commonTlsContext:
+                  alpnProtocols:
+                  - kuma
                   combinedValidationContext:
                     defaultValidationContext:
                       matchSubjectAltNames:

@@ -1,6 +1,6 @@
 package core
 
-import "github.com/go-errors/errors"
+import "github.com/pkg/errors"
 
 type EnvironmentType = string
 

@@ -9,6 +9,11 @@ const (
 	IdentityCertResource = "identity_cert"
 )
 
+// KumaALPNProtocols are set for UpstreamTlsContext to show that mTLS is created by mesh.
+// On the inbound side we have to distinguish Kuma mTLS and application TLS to properly
+// support PERMISSIVE mode
+var KumaALPNProtocols = []string{"kuma"}
+
 func MeshSpiffeIDPrefix(mesh string) string {
 	return fmt.Sprintf("spiffe://%s/", mesh)
 }

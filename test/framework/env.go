@@ -1,7 +1,11 @@
 package framework
 
 import (
+	"fmt"
 	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -115,8 +119,13 @@ func IsIPv6() bool {
 	return envBool(envIPv6)
 }
 
+// GetKumactlBin returns the path to the kumactl program.
 func GetKumactlBin() string {
-	return os.Getenv(envKUMACTLBIN)
+	if path := os.Getenv("KUMACTLBIN"); path != "" {
+		return path
+	}
+
+	return path.Join(BuildArtifactsDir(), "kumactl", "kumactl")
 }
 
 func IsK8sClustersStarted() bool {
@@ -132,4 +141,20 @@ func envIsPresent(env string) bool {
 func envBool(env string) bool {
 	value, found := os.LookupEnv(env)
 	return found && strings.ToLower(value) == "true"
+}
+
+// BuildArtifactsDir returns the path for Kuma build artifacts.
+func BuildArtifactsDir() string {
+	// runtime.Caller returns the absolute path to this file on the
+	// local filesystem. From there, we can walk up to the directory
+	// tree to where we know the build artifacts are.
+	_, file, _, _ := runtime.Caller(0)
+
+	return path.Join(
+		filepath.Dir(file),
+		"..",
+		"..",
+		"build",
+		fmt.Sprintf("artifacts-%s-%s", runtime.GOOS, runtime.GOARCH),
+	)
 }

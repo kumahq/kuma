@@ -65,7 +65,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	}
 
 	secrets, err := secrets.NewSecrets(
-		secrets.NewCaProvider(rt.CaManagers()),
+		rt.CAProvider(),
 		secrets.NewIdentityProvider(rt.CaManagers()),
 		rt.Metrics(),
 	)

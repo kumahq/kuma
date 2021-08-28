@@ -59,10 +59,11 @@ func HttpConnectionManager(statsName string, forwardClientCertDetails bool) Filt
 	})
 }
 
-func FilterChainMatch(transport string, serverNames ...string) FilterChainBuilderOpt {
+func FilterChainMatch(transport string, serverNames, applicationProtocols []string) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.FilterChainMatchConfigurer{
-		ServerNames:       serverNames,
-		TransportProtocol: transport,
+		ServerNames:          serverNames,
+		TransportProtocol:    transport,
+		ApplicationProtocols: applicationProtocols,
 	})
 }
 

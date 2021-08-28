@@ -10,6 +10,7 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -21,6 +22,7 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 // Runtime represents initialized application state.
@@ -55,8 +57,10 @@ type RuntimeContext interface {
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
 	XDSHooks() *xds_hooks.Hooks
+	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
+	MeshValidator() core_managers.MeshValidator
 	ShutdownCh() <-chan struct{}
 }
 
@@ -114,8 +118,10 @@ type runtimeContext struct {
 	erf        events.ListenerFactory
 	apim       api_server.APIInstaller
 	xdsh       *xds_hooks.Hooks
+	cap        secrets.CaProvider
 	dps        *dp_server.DpServer
 	kdsctx     *kds_context.Context
+	mv         core_managers.MeshValidator
 	shutdownCh <-chan struct{}
 }
 
@@ -190,12 +196,20 @@ func (rc *runtimeContext) DpServer() *dp_server.DpServer {
 	return rc.dps
 }
 
+func (rc *runtimeContext) CAProvider() secrets.CaProvider {
+	return rc.cap
+}
+
 func (rc *runtimeContext) XDSHooks() *xds_hooks.Hooks {
 	return rc.xdsh
 }
 
 func (rc *runtimeContext) KDSContext() *kds_context.Context {
 	return rc.kdsctx
+}
+
+func (rc *runtimeContext) MeshValidator() core_managers.MeshValidator {
+	return rc.mv
 }
 
 func (rc *runtimeContext) ShutdownCh() <-chan struct{} {

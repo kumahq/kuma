@@ -104,7 +104,7 @@ func RunSmokeTest(factory ConfigFactory, workdir string) {
 			}, "10s", "10ms").Should(BeTrue())
 
 			// when
-			By("signalling Control Plane to stop")
+			By("signaling Control Plane to stop")
 			close(stopCh)
 
 			// then

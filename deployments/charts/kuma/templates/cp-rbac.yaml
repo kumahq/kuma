@@ -61,6 +61,7 @@ rules:
       - timeouts
       - retries
       - circuitbreakers
+      - virtualoutbounds
     verbs:
       - get
       - list
