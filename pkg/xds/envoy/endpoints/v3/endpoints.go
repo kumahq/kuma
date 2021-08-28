@@ -5,9 +5,11 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	proto_wrappers "google.golang.org/protobuf/types/known/wrapperspb"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/proto"
 	envoy "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
 
@@ -33,6 +35,24 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *envo
 				},
 			}},
 		}},
+	}
+}
+
+func UpgradeClusterTlsUpstream(address string) *envoy_core.TransportSocket {
+	tlsContext := &envoy_tls.UpstreamTlsContext{
+		AllowRenegotiation: true,
+		Sni:                address,
+	}
+
+	pbst, err := proto.MarshalAnyDeterministic(tlsContext)
+	if err != nil {
+		return nil
+	}
+	return &envoy_core.TransportSocket{
+		Name: "envoyxx",
+		ConfigType: &envoy_core.TransportSocket_TypedConfig{
+			TypedConfig: pbst,
+		},
 	}
 }
 
