@@ -11,8 +11,8 @@ import (
 )
 
 // stream callbacks
-
 type adapterCallbacks struct {
+	NoopCallbacks
 	callbacks xds.Callbacks
 }
 
@@ -45,13 +45,14 @@ func (a *adapterCallbacks) OnStreamRequest(streamID int64, request *envoy_sd.Dis
 	return a.callbacks.OnStreamRequest(streamID, &discoveryRequest{request})
 }
 
-func (a *adapterCallbacks) OnStreamResponse(streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
+func (a *adapterCallbacks) OnStreamResponse(ctx context.Context, streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
 	a.callbacks.OnStreamResponse(streamID, &discoveryRequest{request}, &discoveryResponse{response})
 }
 
 // rest callbacks
 
 type adapterRestCallbacks struct {
+	NoopCallbacks
 	callbacks xds.RestCallbacks
 }
 
@@ -81,12 +82,13 @@ func (a *adapterRestCallbacks) OnStreamRequest(streamID int64, request *envoy_sd
 	return nil
 }
 
-func (a *adapterRestCallbacks) OnStreamResponse(streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
+func (a *adapterRestCallbacks) OnStreamResponse(ctx context.Context, streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
 }
 
 // Both rest and stream
 
 type adapterMultiCallbacks struct {
+	NoopCallbacks
 	callbacks xds.MultiCallbacks
 }
 
@@ -117,7 +119,7 @@ func (a *adapterMultiCallbacks) OnStreamRequest(streamID int64, request *envoy_s
 	return a.callbacks.OnStreamRequest(streamID, &discoveryRequest{request})
 }
 
-func (a *adapterMultiCallbacks) OnStreamResponse(streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
+func (a *adapterMultiCallbacks) OnStreamResponse(ctx context.Context, streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
 	a.callbacks.OnStreamResponse(streamID, &discoveryRequest{request}, &discoveryResponse{response})
 }
 

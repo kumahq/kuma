@@ -147,7 +147,7 @@ func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy_sd.DiscoveryR
 }
 
 // OnStreamResponse is called immediately prior to sending a response on a stream.
-func (c *statusTracker) OnStreamResponse(streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
+func (c *statusTracker) OnStreamResponse(_ context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 

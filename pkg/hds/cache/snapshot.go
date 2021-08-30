@@ -15,7 +15,7 @@ func NewSnapshot(version string, hcs *envoy_service_health_v3.HealthCheckSpecifi
 	return &Snapshot{
 		HealthChecks: cache.Resources{
 			Version: version,
-			Items: map[string]envoy_types.ResourceWithTtl{
+			Items: map[string]envoy_types.ResourceWithTTL{
 				"hcs": {Resource: hcs},
 			},
 		},

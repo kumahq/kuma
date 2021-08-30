@@ -22,15 +22,15 @@ type SnapshotBuilder interface {
 }
 
 type builder struct {
-	resources map[string][]envoy_types.ResourceWithTtl
+	resources map[string][]envoy_types.ResourceWithTTL
 }
 
 func (b *builder) With(typ string, resources []envoy_types.Resource) SnapshotBuilder {
-	ttlResources := make([]envoy_types.ResourceWithTtl, len(resources))
+	ttlResources := make([]envoy_types.ResourceWithTTL, len(resources))
 	for i, res := range resources {
-		ttlResources[i] = envoy_types.ResourceWithTtl{
+		ttlResources[i] = envoy_types.ResourceWithTTL{
 			Resource: res,
-			Ttl:      nil,
+			TTL:      nil,
 		}
 	}
 	b.resources[typ] = ttlResources
@@ -49,7 +49,7 @@ func (b *builder) Build(version string) util_xds_v3.Snapshot {
 }
 
 func NewSnapshotBuilder() SnapshotBuilder {
-	return &builder{resources: map[string][]envoy_types.ResourceWithTtl{}}
+	return &builder{resources: map[string][]envoy_types.ResourceWithTTL{}}
 }
 
 // Snapshot is an internally consistent snapshot of xDS resources.
@@ -90,7 +90,7 @@ func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
 	return withoutTtl
 }
 
-func (s *Snapshot) GetResourcesAndTtl(typ string) map[string]envoy_types.ResourceWithTtl {
+func (s *Snapshot) GetResourcesAndTtl(typ string) map[string]envoy_types.ResourceWithTTL {
 	if s == nil {
 		return nil
 	}
@@ -132,8 +132,8 @@ func (s *Snapshot) WithVersion(typ string, version string) util_xds_v3.Snapshot 
 
 // IndexResourcesByName creates a map from the resource name to the resource. Name should be unique
 // across meshes that's why Name is <name>.<mesh>
-func IndexResourcesByName(items []envoy_types.ResourceWithTtl) map[string]envoy_types.ResourceWithTtl {
-	indexed := make(map[string]envoy_types.ResourceWithTtl, len(items))
+func IndexResourcesByName(items []envoy_types.ResourceWithTTL) map[string]envoy_types.ResourceWithTTL {
+	indexed := make(map[string]envoy_types.ResourceWithTTL, len(items))
 	for _, item := range items {
 		key := fmt.Sprintf("%s.%s", item.Resource.(*mesh_proto.KumaResource).GetMeta().GetName(), item.Resource.(*mesh_proto.KumaResource).GetMeta().GetMesh())
 		indexed[key] = item

@@ -1,6 +1,8 @@
 package v3
 
 import (
+	"context"
+
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -74,7 +76,7 @@ func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {
 	return new
 }
 
-func equalSnapshots(old, new map[string]envoy_types.ResourceWithTtl) bool {
+func equalSnapshots(old, new map[string]envoy_types.ResourceWithTTL) bool {
 	if len(new) != len(old) {
 		return false
 	}
@@ -141,7 +143,7 @@ func (s *simpleSnapshotCacher) Get(node *envoy_core.Node) (envoy_cache.Snapshot,
 }
 
 func (s *simpleSnapshotCacher) Cache(node *envoy_core.Node, snapshot envoy_cache.Snapshot) error {
-	return s.store.SetSnapshot(s.hasher.ID(node), snapshot)
+	return s.store.SetSnapshot(context.TODO(), s.hasher.ID(node), snapshot)
 }
 
 func (s *simpleSnapshotCacher) Clear(node *envoy_core.Node) {

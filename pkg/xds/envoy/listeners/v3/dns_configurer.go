@@ -53,10 +53,12 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 	return &envoy_dns.DnsFilterConfig{
 		StatPrefix: "kuma_dns",
 		ClientConfig: &envoy_dns.DnsFilterConfig_ClientContextConfig{
-			// We configure upstream resolver to resolver that always returns that it could not find the domain (NXDOMAIN)
-			// As for this moment there is no setting to disable upstream resolving.
-			UpstreamResolvers: []*envoy_core.Address{
-				{
+			MaxPendingLookups: 256,
+			// We configure upstream resolver to a resolver that always returns that it could
+			// not find the domain (NXDOMAIN). As for this moment there is no setting to disable
+			// upstream resolving.
+			DnsResolutionConfig: &envoy_core.DnsResolutionConfig{
+				Resolvers: []*envoy_core.Address{{
 					Address: &envoy_core.Address_SocketAddress{
 						SocketAddress: &envoy_core.SocketAddress{
 							Address: "127.0.0.1",
@@ -65,9 +67,8 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 							},
 						},
 					},
-				},
+				}},
 			},
-			MaxPendingLookups: 256,
 		},
 		ServerConfig: &envoy_dns.DnsFilterConfig_ServerContextConfig{
 			ConfigSource: &envoy_dns.DnsFilterConfig_ServerContextConfig_InlineDnsTable{

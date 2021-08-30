@@ -6,6 +6,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
@@ -78,8 +79,7 @@ func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {
 func EnableReusePort(enable bool) ListenerBuilderOpt {
 	return AddListenerConfigurer(
 		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			// TODO(jpeach) in Envoy 1.20, this field is deprecated in favor of EnableReusePort.
-			l.ReusePort = enable
+			l.EnableReusePort = util_proto.Bool(enable)
 		}))
 }
 
