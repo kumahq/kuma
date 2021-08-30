@@ -21,6 +21,7 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode, systemNamespace string) k8s_common.AdmissionValidator {
@@ -130,8 +131,8 @@ func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode, op v
 			Allowed: false,
 			Result: &metav1.Status{
 				Status: "Failure",
-				Message: fmt.Sprintf("You are trying to %s a %s on %s CP. In multizone setup, it should be only %sd on %s CP and synced to %s CP.",
-					strings.ToLower(string(op)), resType, cpMode, strings.ToLower(string(op)), otherCpMode, cpMode),
+				Message: fmt.Sprintf("Operation not allowed. %s resources like %s can be updated or deleted only "+
+					"from the %s control plane and not from a %s control plane.", version.Product, resType, strings.ToUpper(otherCpMode), strings.ToUpper(cpMode)),
 				Reason: "Forbidden",
 				Code:   403,
 				Details: &metav1.StatusDetails{

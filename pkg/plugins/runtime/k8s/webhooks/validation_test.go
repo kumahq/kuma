@@ -333,7 +333,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to create a TrafficRoute on zone CP. In multizone setup, it should be only created on global CP and synced to zone CP.",
+						Message: "Operation not allowed. Kuma resources like TrafficRoute can be updated or deleted only from the GLOBAL control plane and not from a ZONE control plane.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -372,7 +372,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to create a Dataplane on global CP. In multizone setup, it should be only created on zone CP and synced to global CP.",
+						Message: "Operation not allowed. Kuma resources like Dataplane can be updated or deleted only from the ZONE control plane and not from a GLOBAL control plane.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -564,7 +564,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to delete a TrafficRoute on zone CP. In multizone setup, it should be only deleted on global CP and synced to zone CP.",
+						Message: "Operation not allowed. Kuma resources like TrafficRoute can be updated or deleted only from the GLOBAL control plane and not from a ZONE control plane.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -626,7 +626,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to update a TrafficRoute on zone CP. In multizone setup, it should be only updated on global CP and synced to zone CP.",
+						Message: "Operation not allowed. Kuma resources like TrafficRoute can be updated or deleted only from the GLOBAL control plane and not from a ZONE control plane.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
