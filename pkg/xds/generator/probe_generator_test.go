@@ -90,5 +90,19 @@ var _ = Describe("ProbeGenerator", func() {
 `,
 			expected: "03.envoy.golden.yaml",
 		}),
+		Entry("http probes with queries", testCase{
+			dataplane: `
+            networking:
+              inbound:
+              - port: 8080
+            probes:
+              port: 9000
+              endpoints:
+              - inboundPort: 8080
+                inboundPath: /healthz/probe?param1=value1&param2=value2
+                path: /8080/healthz/probe?param1=value1&param2=value2
+`,
+			expected: "04.envoy.golden.yaml",
+		}),
 	)
 })

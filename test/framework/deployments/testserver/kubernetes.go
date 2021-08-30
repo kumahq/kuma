@@ -42,7 +42,7 @@ func (k *k8SDeployment) service() *corev1.Service {
 	}
 }
 
-func (k *k8SDeployment) deployment() *appsv1.Deployment {
+func (k *k8SDeployment) deployment(probes bool) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
@@ -60,12 +60,12 @@ func (k *k8SDeployment) deployment() *appsv1.Deployment {
 					MaxUnavailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 0},
 				},
 			},
-			Template: k.podSpec(),
+			Template: k.podSpec(probes),
 		},
 	}
 }
 
-func (k *k8SDeployment) statefulSet() *appsv1.StatefulSet {
+func (k *k8SDeployment) statefulSet(probes bool) *appsv1.StatefulSet {
 	return &appsv1.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "StatefulSet",
@@ -78,12 +78,42 @@ func (k *k8SDeployment) statefulSet() *appsv1.StatefulSet {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"app": k.Name()},
 			},
-			Template: k.podSpec(),
+			Template: k.podSpec(probes),
 		},
 	}
 }
 
-func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
+func (k *k8SDeployment) podSpec(probes bool) corev1.PodTemplateSpec {
+	readiness := &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{Path: "/", Port: intstr.FromInt(80)},
+		},
+		InitialDelaySeconds: 3,
+		PeriodSeconds:       3,
+	}
+	var liveness *corev1.Probe
+	if probes {
+		readiness = &corev1.Probe{
+			Handler: corev1.Handler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path: `/probes?type=readiness`,
+					Port: intstr.FromInt(80),
+				},
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       3,
+		}
+		liveness = &corev1.Probe{
+			Handler: corev1.Handler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path: `/probes?type=liveness`,
+					Port: intstr.FromInt(80),
+				},
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       3,
+		}
+	}
 	return corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      map[string]string{"app": k.Name()},
@@ -94,14 +124,9 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 				{
 					Name:            k.Name(),
 					ImagePullPolicy: "IfNotPresent",
-					ReadinessProbe: &corev1.Probe{
-						Handler: corev1.Handler{
-							HTTPGet: &corev1.HTTPGetAction{Path: "/", Port: intstr.FromInt(80)},
-						},
-						InitialDelaySeconds: 3,
-						PeriodSeconds:       3,
-					},
-					Image: framework.GetUniversalImage(),
+					ReadinessProbe:  readiness,
+					LivenessProbe:   liveness,
+					Image:           framework.GetUniversalImage(),
 					Ports: []corev1.ContainerPort{
 						{ContainerPort: 80},
 					},
@@ -130,9 +155,9 @@ func meta(namespace string, name string) metav1.ObjectMeta {
 func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	var deplYaml framework.InstallFunc
 	if k.opts.WithStatefulSet {
-		deplYaml = framework.YamlK8sObject(k.statefulSet())
+		deplYaml = framework.YamlK8sObject(k.statefulSet(k.opts.WithHTTPProbes))
 	} else {
-		deplYaml = framework.YamlK8sObject(k.deployment())
+		deplYaml = framework.YamlK8sObject(k.deployment(k.opts.WithHTTPProbes))
 	}
 	fn := framework.Combine(
 		framework.YamlK8sObject(k.service()),
