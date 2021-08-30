@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -15,17 +14,6 @@ import (
 )
 
 func VirtualProbes() {
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	var k8sCluster Cluster
 	var optsKubernetes = KumaK8sDeployOpts
 
@@ -36,7 +24,7 @@ metadata:
 		k8sCluster = k8sClusters.GetCluster(Kuma1)
 
 		Expect(Kuma(config_core.Standalone, optsKubernetes...)(k8sCluster)).To(Succeed())
-		Expect(YamlK8s(namespaceWithSidecarInjection(TestNamespace))(k8sCluster)).To(Succeed())
+		Expect(NamespaceWithSidecarInjection(TestNamespace)(k8sCluster)).To(Succeed())
 		Expect(k8sCluster.VerifyKuma()).To(Succeed())
 	})
 
