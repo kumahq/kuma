@@ -15,7 +15,6 @@ import (
 )
 
 func VirtualProbes() {
-
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
