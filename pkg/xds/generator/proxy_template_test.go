@@ -192,6 +192,20 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				proxyTemplateFile: "1-proxy-template.input.yaml",
 				expected:          "1-envoy-config.golden.yaml",
 			}),
+			Entry("should support merging non entire seconds durations", testCase{
+				dataplane: `
+                networking:
+                  transparentProxying:
+                    redirectPortOutbound: 15001
+                    redirectPortInbound: 15006
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 80
+                      servicePort: 8080
+`,
+				proxyTemplateFile: "2-proxy-template.input.yaml",
+				expected:          "2-envoy-config.golden.yaml",
+			}),
 		)
 
 	})
