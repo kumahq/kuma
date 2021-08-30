@@ -594,6 +594,45 @@ func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
 	return nil
 }
 
+func (c *K8sCluster) ShutdownCP() error {
+	err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(KumaNamespace), "patch", "deployment", KumaServiceName, "--patch", `{"spec":{"replicas":0}}`)
+	if err != nil {
+		return err
+	}
+	_, err = retry.DoWithRetryE(c.t,
+		"wait for control-plane to be down",
+		c.defaultRetries,
+		c.defaultTimeout,
+		func() (string, error) {
+			pods := c.controlplane.GetKumaCPPods()
+			if len(pods) == 0 {
+				return "Done", nil
+			}
+			names := []string{}
+			for _, p := range pods {
+				names = append(names, p.Name)
+			}
+			return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
+		},
+	)
+	return err
+}
+
+func (c *K8sCluster) StartCP() error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(KumaNamespace), "patch", "deployment", KumaServiceName, "--patch", fmt.Sprintf(`{"spec":{"replicas":%d}}`, c.controlplane.replicas)); err != nil {
+		return err
+	}
+	if err := c.WaitApp(KumaServiceName, KumaNamespace, c.controlplane.replicas); err != nil {
+		return err
+	}
+
+	if err := c.controlplane.FinalizeAdd(); err != nil {
+		return err
+	}
+
+	return c.VerifyKuma()
+}
+
 func (c *K8sCluster) GetKuma() ControlPlane {
 	return c.controlplane
 }
