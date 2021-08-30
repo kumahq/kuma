@@ -1,6 +1,7 @@
 package proto_test
 
 import (
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"time"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -16,13 +17,30 @@ var _ = Describe("MergeKuma", func() {
 		dest := &envoy_cluster.Cluster{
 			Name:           "old",
 			ConnectTimeout: durationpb.New(time.Second * 10),
+			EdsClusterConfig: &envoy_cluster.Cluster_EdsClusterConfig{
+				ServiceName: "srv",
+				EdsConfig: &envoy_config_core_v3.ConfigSource{
+					InitialFetchTimeout: durationpb.New(time.Millisecond * 100),
+					ResourceApiVersion: envoy_config_core_v3.ApiVersion_V2,
+				},
+			},
 		}
 		src := &envoy_cluster.Cluster{
 			Name:           "new",
 			ConnectTimeout: durationpb.New(time.Millisecond * 500),
+			EdsClusterConfig: &envoy_cluster.Cluster_EdsClusterConfig{
+				EdsConfig: &envoy_config_core_v3.ConfigSource{
+					InitialFetchTimeout: durationpb.New(time.Second),
+					ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
+				},
+			},
 		}
 		util_proto.MergeForKuma(dest, src)
 		Expect(dest.ConnectTimeout.AsDuration()).To(Equal(time.Millisecond * 500))
 		Expect(dest.Name).To(Equal("new"))
+		Expect(dest.EdsClusterConfig.ServiceName).To(Equal("srv"))
+		Expect(dest.EdsClusterConfig.EdsConfig.InitialFetchTimeout.AsDuration()).To(Equal(time.Second))
+		Expect(dest.EdsClusterConfig.EdsConfig.InitialFetchTimeout.AsDuration()).To(Equal(time.Second))
+		Expect(dest.EdsClusterConfig.EdsConfig.ResourceApiVersion).To(Equal(envoy_config_core_v3.ApiVersion_V3))
 	})
 })
