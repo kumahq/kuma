@@ -33,7 +33,7 @@ func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
 func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) {
 	for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
 		if c.clusterMatches(cluster) {
-			util_proto.MergeForKuma(cluster.Resource, clusterMod)
+			util_proto.Merge(cluster.Resource, clusterMod)
 		}
 	}
 }

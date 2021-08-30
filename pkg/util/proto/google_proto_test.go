@@ -34,7 +34,7 @@ var _ = Describe("MergeKuma", func() {
 				},
 			},
 		}
-		util_proto.MergeForKuma(dest, src)
+		util_proto.Merge(dest, src)
 		Expect(dest.ConnectTimeout.AsDuration()).To(Equal(time.Millisecond * 500))
 		Expect(dest.Name).To(Equal("new"))
 		Expect(dest.EdsClusterConfig.ServiceName).To(Equal("srv"))

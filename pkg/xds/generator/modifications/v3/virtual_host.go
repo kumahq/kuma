@@ -74,7 +74,7 @@ func (c *virtualHostModificator) applyHCMModification(hcm *envoy_hcm.HttpConnect
 func (c *virtualHostModificator) patch(routeCfg *envoy_route.RouteConfiguration, vHostPatch *envoy_route.VirtualHost) {
 	for _, vHost := range routeCfg.VirtualHosts {
 		if c.virtualHostMatches(vHost) {
-			util_proto.MergeForKuma(vHost, vHostPatch)
+			util_proto.Merge(vHost, vHostPatch)
 		}
 	}
 }

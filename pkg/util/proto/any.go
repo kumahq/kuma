@@ -61,6 +61,6 @@ func MergeAnys(dst *any.Any, src *any.Any) (*any.Any, error) {
 		return nil, err
 	}
 
-	MergeForKuma(dstMsg, srcMsg)
+	Merge(dstMsg, srcMsg)
 	return MarshalAnyDeterministic(dstMsg)
 }
