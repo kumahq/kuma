@@ -1,10 +1,10 @@
 package proto_test
 
 import (
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"time"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -21,7 +21,6 @@ var _ = Describe("MergeKuma", func() {
 				ServiceName: "srv",
 				EdsConfig: &envoy_config_core_v3.ConfigSource{
 					InitialFetchTimeout: durationpb.New(time.Millisecond * 100),
-					ResourceApiVersion: envoy_config_core_v3.ApiVersion_V2,
 				},
 			},
 		}
@@ -31,7 +30,7 @@ var _ = Describe("MergeKuma", func() {
 			EdsClusterConfig: &envoy_cluster.Cluster_EdsClusterConfig{
 				EdsConfig: &envoy_config_core_v3.ConfigSource{
 					InitialFetchTimeout: durationpb.New(time.Second),
-					ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
+					ResourceApiVersion:  envoy_config_core_v3.ApiVersion_V3,
 				},
 			},
 		}
