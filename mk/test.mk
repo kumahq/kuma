@@ -36,7 +36,7 @@ coverage: ${COVERAGE_PROFILE}
 
 .PHONY: test/kuma
 test/kuma: # Dev: Run tests for the module github.com/kumahq/kuma
-	$(GO_TEST) $(GO_TEST_OPTS) --tags=gateway -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
+	$(GO_TEST) $(GO_TEST_OPTS) -tags=gateway -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
 
 .PHONY: test/api
 test/api: \

@@ -60,8 +60,6 @@ func (chain CallbacksChain) OnFetchRequest(ctx context.Context, req *envoy_sd.Di
 	return nil
 }
 
-// OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
-// request and respond with an error.
 // OnFetchResponse is called immediately prior to sending a response.
 func (chain CallbacksChain) OnFetchResponse(req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
 	for i := len(chain) - 1; i >= 0; i-- {
