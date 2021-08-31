@@ -180,6 +180,8 @@ ingress:
   service:
     # -- Service type of the Ingress
     type: LoadBalancer
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
     # -- Additional annotations to put on the Ingress service
     annotations: { }
     # -- Port on which Ingress is exposed
