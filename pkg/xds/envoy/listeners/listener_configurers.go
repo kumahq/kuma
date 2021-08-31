@@ -79,6 +79,8 @@ func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {
 func EnableReusePort(enable bool) ListenerBuilderOpt {
 	return AddListenerConfigurer(
 		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
+			// https://github.com/kumahq/kuma/issues/2709
+			l.ReusePort = enable //nolint:staticcheck
 			l.EnableReusePort = util_proto.Bool(enable)
 		}))
 }

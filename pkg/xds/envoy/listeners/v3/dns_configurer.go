@@ -69,6 +69,14 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 					},
 				}},
 			},
+
+			// XXX(jpeach) the UpstreamResolvers field is
+			// present in Envoy 1.18, but was replaced (with
+			// the same field number) by DnsResolutionConfig
+			// in Envoy 1.19.
+			//
+			// Is it even possible to have 2 different versions
+			// of the same protobuf?
 		},
 		ServerConfig: &envoy_dns.DnsFilterConfig_ServerContextConfig{
 			ConfigSource: &envoy_dns.DnsFilterConfig_ServerContextConfig_InlineDnsTable{

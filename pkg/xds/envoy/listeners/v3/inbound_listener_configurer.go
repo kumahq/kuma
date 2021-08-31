@@ -18,6 +18,8 @@ type InboundListenerConfigurer struct {
 func (c *InboundListenerConfigurer) Configure(l *envoy_listener.Listener) error {
 	l.Name = c.ListenerName
 	l.EnableReusePort = util_proto.Bool(c.Protocol == core_xds.SocketAddressProtocolUDP)
+	// https: //github.com/kumahq/kuma/issues/2709
+	l.ReusePort = l.EnableReusePort.GetValue() //nolint:staticcheck
 	l.TrafficDirection = envoy_core.TrafficDirection_INBOUND
 	l.Address = &envoy_core.Address{
 		Address: &envoy_core.Address_SocketAddress{

@@ -58,6 +58,7 @@
         }
       ],
       "trafficDirection": "INBOUND",
+      "reusePort": true,
       "enableReusePort": true
     }
   }

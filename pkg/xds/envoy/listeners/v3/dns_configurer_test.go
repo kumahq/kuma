@@ -55,10 +55,11 @@ var _ = Describe("DNSConfigurer", func() {
                 '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3alpha.DnsFilterConfig
                 clientConfig:
                   maxPendingLookups: "256"
-                  upstreamResolvers:
-                  - socketAddress:
-                      address: 127.0.0.1
-                      portValue: 53002
+                  dnsResolutionConfig:
+                    resolvers:
+                    - socketAddress:
+                        address: 127.0.0.1
+                        portValue: 53002
                 serverConfig:
                   inlineDnsTable:
                     knownSuffixes:
@@ -87,6 +88,7 @@ var _ = Describe("DNSConfigurer", func() {
                 statPrefix: kuma_dns
             name: kuma:dns
             reusePort: true
+            enableReusePort: true
             trafficDirection: INBOUND
 `,
 		}),

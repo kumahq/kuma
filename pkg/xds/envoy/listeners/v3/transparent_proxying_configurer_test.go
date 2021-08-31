@@ -56,6 +56,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
                 address: 192.168.0.1
                 portValue: 8080
             bindToPort: false
+            enableReusePort: false
 `,
 		}),
 		Entry("basic listener without transparent proxying", testCase{
@@ -66,6 +67,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: false
             address:
               socketAddress:
                 address: 192.168.0.1

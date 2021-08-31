@@ -46,4 +46,5 @@ resources:
               name: httpbin.mesh
         statPrefix: kuma_dns
     name: kuma:dns
+    reusePort: true
     trafficDirection: INBOUND

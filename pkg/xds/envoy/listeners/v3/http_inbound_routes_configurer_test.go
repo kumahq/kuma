@@ -85,6 +85,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: false
             address:
               socketAddress:
                 address: 192.168.0.1
@@ -146,6 +147,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: false
             address:
               socketAddress:
                 address: 192.168.0.1
@@ -237,6 +239,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            enableReusePort: false
             address:
               socketAddress:
                 address: 192.168.0.1

@@ -30,6 +30,7 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
         socketAddress:
           address: 127.0.0.1
           portValue: 99
+      enableReusePort: false
       filterChains:
       - filters:
         - name: envoy.filters.network.http_connection_manager

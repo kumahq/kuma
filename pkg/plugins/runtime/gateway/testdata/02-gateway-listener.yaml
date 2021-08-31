@@ -58,6 +58,7 @@
         }
       ],
       "trafficDirection": "INBOUND",
+      "reusePort": true,
       "enableReusePort": true
     },
     "edge-gateway:HTTP:9090": {
@@ -118,6 +119,7 @@
         }
       ],
       "trafficDirection": "INBOUND",
+      "reusePort": true,
       "enableReusePort": true
     }
   }
