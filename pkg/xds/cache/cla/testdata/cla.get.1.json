@@ -41,7 +41,8 @@
             "value": 1
           }
         }
-      ]
+      ],
+      "LbConfig": null
     }
   ]
 }
