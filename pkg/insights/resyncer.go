@@ -173,6 +173,27 @@ func (r *resyncer) createOrUpdateServiceInsights() error {
 	return nil
 }
 
+func addDpToInsight(insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status) {
+	if _, ok := insight.Services[svcName]; !ok {
+		insight.Services[svcName] = &mesh_proto.ServiceInsight_Service{
+			Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{},
+		}
+	}
+
+	dataplanes := insight.Services[svcName].Dataplanes
+
+	dataplanes.Total++
+
+	switch status {
+	case core_mesh.Online:
+		dataplanes.Online++
+	case core_mesh.Offline:
+		dataplanes.Offline++
+	case core_mesh.PartiallyDegraded:
+		dataplanes.Offline++
+	}
+}
+
 func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	r.serviceInsightMux.Lock()
 	defer r.serviceInsightMux.Unlock()
@@ -193,30 +214,13 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	for _, dpOverview := range dpOverviews.Items {
 		status, _ := dpOverview.GetStatus()
 
-		for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
-			svcName := inbound.GetService()
-
-			if _, ok := insight.Services[svcName]; !ok {
-				insight.Services[svcName] = &mesh_proto.ServiceInsight_Service{
-					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{},
-				}
-			}
-
-			dataplanes := insight.Services[svcName].Dataplanes
-
-			dataplanes.Total++
-
-			switch status {
-			case core_mesh.Online:
-				dataplanes.Online++
-			case core_mesh.Offline:
-				dataplanes.Offline++
-			case core_mesh.PartiallyDegraded:
-				if inbound.Health != nil && !inbound.Health.Ready {
-					dataplanes.Offline++
-				} else {
-					dataplanes.Online++
-				}
+		// Builtin gateways have inbounds
+		if dpOverview.Spec.Dataplane.IsDelegatedGateway() {
+			svcName := dpOverview.Spec.Dataplane.Networking.GetGateway().GetTags()[mesh_proto.ServiceTag]
+			addDpToInsight(insight, svcName, status)
+		} else {
+			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
+				addDpToInsight(insight, inbound.GetService(), status)
 			}
 		}
 	}
