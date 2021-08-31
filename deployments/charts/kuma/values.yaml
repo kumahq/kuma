@@ -64,8 +64,6 @@ controlPlane:
     name:
     # -- Service type of the Kuma Control Plane
     type: ClusterIP
-    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
-    loadBalancerIP:
     # -- Additional annotations to put on the Kuma Control Plane
     annotations: { }
 

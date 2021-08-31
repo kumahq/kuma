@@ -13,9 +13,6 @@ metadata:
     {{- end }}
 spec:
   type: {{ .Values.controlPlane.service.type }}
-  {{- if .Values.controlPlane.service.loadBalancerIP }}
-  loadBalancerIP: {{ .Values.controlPlane.service.loadBalancerIP }}
-  {{- end }}
   ports:
     - port: 5681
       name: http-api-server
