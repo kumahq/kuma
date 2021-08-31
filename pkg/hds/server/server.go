@@ -130,7 +130,6 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 			}
 			if watchCancellation != nil {
 				watchCancellation()
-				watchCancellation = nil
 			}
 			watchCancellation = s.cache.CreateWatch(
 				&envoy_cache.Request{
@@ -169,7 +168,6 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 			}
 			if watchCancellation != nil {
 				watchCancellation()
-				watchCancellation = nil
 			}
 			watchCancellation = s.cache.CreateWatch(
 				&envoy_cache.Request{

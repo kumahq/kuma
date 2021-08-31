@@ -218,8 +218,8 @@ func superset(names map[string]bool, resources map[string]types.Resource) error 
 	return nil
 }
 
-func (cache *snapshotCache) CreateDeltaWatch(*envoy_cache.DeltaRequest, stream.StreamState, chan envoy_cache.DeltaResponse) (cancel func()) {
-	return func() {}
+func (cache *snapshotCache) CreateDeltaWatch(*envoy_cache.DeltaRequest, stream.StreamState, chan envoy_cache.DeltaResponse) func() {
+	return nil
 }
 
 // CreateWatch returns a watch for an xDS request.
