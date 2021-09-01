@@ -13,7 +13,7 @@ func StartClient(clientStreams []*grpc.MockClientStream, resourceTypes []model.R
 	for i := 0; i < len(clientStreams); i++ {
 		clientID := fmt.Sprintf("client-%d", i)
 		item := clientStreams[i]
-		comp := kds_client.NewKDSSink(core.Log.WithName("kds-"+clientID), resourceTypes, kds_client.NewKDSStream(item, clientID, ""), cb)
+		comp := kds_client.NewKDSSink(core.Log.WithName("kds").WithName(clientID), resourceTypes, kds_client.NewKDSStream(item, clientID, ""), cb)
 		go func() {
 			_ = comp.Start(stopCh)
 			_ = item.CloseSend()
