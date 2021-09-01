@@ -59,7 +59,6 @@ func VirtualProbes() {
 			testserver.WithArgs("--probes"),
 			testserver.WithHTTPProbes(),
 		)(k8sCluster)).To(Succeed())
-		Eventually(testServerReady, "5s", "100ms").Should(BeTrue())
 
 		for i := 0; i < 10; i++ {
 			time.Sleep(1 * time.Second)
