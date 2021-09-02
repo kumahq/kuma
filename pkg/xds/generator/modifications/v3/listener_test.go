@@ -70,7 +70,7 @@ var _ = Describe("Listener modifications", func() {
                      - filters:
                        - name: envoy.filters.network.tcp_proxy
                          typedConfig:
-                           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                            cluster: localhost:8080
                            statPrefix: localhost_8080`,
 			},
@@ -87,7 +87,7 @@ var _ = Describe("Listener modifications", func() {
                 - filters:
                   - name: envoy.filters.network.tcp_proxy
                     typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                       cluster: localhost:8080
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080

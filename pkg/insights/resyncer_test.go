@@ -591,4 +591,96 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(meshInsight.Spec.Dataplanes.PartiallyDegraded).To(Equal(uint32(1)))
 		Expect(meshInsight.Spec.Dataplanes.Offline).To(Equal(uint32(1)))
 	})
+
+	It("should return gateway in services", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpOnline := core_mesh.NewDataplaneResource()
+		dpOnline.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.1",
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: map[string]string{"kuma.io/service": "gateway"},
+				},
+			},
+		}
+		err = rm.Create(context.Background(), dpOnline, store.CreateByKey("dpOnline", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpOnlineI := core_mesh.NewDataplaneInsightResource()
+		dpOnlineI.Spec.Subscriptions = append(dpOnlineI.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamppb.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+		})
+		err = rm.Create(context.Background(), dpOnlineI, store.CreateByKey("dpOnline", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpOffline := core_mesh.NewDataplaneResource()
+		dpOffline.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.1",
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: map[string]string{"kuma.io/service": "gateway"},
+				},
+			},
+		}
+		err = rm.Create(context.Background(), dpOffline, store.CreateByKey("dpOffline", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpOfflineI := core_mesh.NewDataplaneInsightResource()
+		dpOfflineI.Spec.Subscriptions = append(dpOfflineI.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamppb.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+			DisconnectTime: &timestamppb.Timestamp{
+				Seconds: 101,
+			},
+		})
+		err = rm.Create(context.Background(), dpOfflineI, store.CreateByKey("dpOffline", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpNoInsights := core_mesh.NewDataplaneResource()
+		dpNoInsights.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.1",
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: map[string]string{"kuma.io/service": "gateway"},
+				},
+			},
+		}
+		err = rm.Create(context.Background(), dpNoInsights, store.CreateByKey("dpNoInsights", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		nowMtx.Lock()
+		now = now.Add(61 * time.Second)
+		nowMtx.Unlock()
+		tickCh <- now
+
+		// when
+		meshInsight := core_mesh.NewMeshInsightResource()
+		Eventually(func() error {
+			return rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
+		}, "10s", "100ms").Should(BeNil())
+
+		// then
+		Expect(meshInsight.Spec.Dataplanes.Total).To(Equal(uint32(3)))
+		Expect(meshInsight.Spec.Dataplanes.Online).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.Dataplanes.PartiallyDegraded).To(Equal(uint32(0)))
+		Expect(meshInsight.Spec.Dataplanes.Offline).To(Equal(uint32(2)))
+
+		serviceInsight := core_mesh.NewServiceInsightResource()
+		Eventually(func() error {
+			return rm.Get(context.Background(), serviceInsight, store.GetByKey(insights.ServiceInsightName("mesh-1"), "mesh-1"))
+		}, "10s", "100ms").Should(BeNil())
+
+		Expect(serviceInsight.Spec.Services).To(HaveKey("gateway"))
+		Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Total).To(Equal(uint32(3)))
+		Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Online).To(Equal(uint32(1)))
+		Expect(serviceInsight.Spec.Services["gateway"].Dataplanes.Offline).To(Equal(uint32(2)))
+		Expect(serviceInsight.Spec.Services["gateway"].Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
+	})
 })

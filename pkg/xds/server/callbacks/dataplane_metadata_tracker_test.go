@@ -1,27 +1,27 @@
 package callbacks_test
 
 import (
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("Dataplane Metadata Tracker", func() {
 
 	tracker := NewDataplaneMetadataTracker()
-	callbacks := util_xds_v2.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
+	callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 	dpKey := core_model.ResourceKey{
 		Mesh: "default",
 		Name: "example",
 	}
-	req := v2.DiscoveryRequest{
+	req := envoy_sd.DiscoveryRequest{
 		Node: &envoy_core.Node{
 			Id: "default.example",
 			Metadata: &structpb.Struct{
@@ -66,7 +66,7 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamId, &v2.DiscoveryRequest{})
+		err = callbacks.OnStreamRequest(streamId, &envoy_sd.DiscoveryRequest{})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

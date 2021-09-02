@@ -112,12 +112,14 @@ var _ = Describe("VIP Allocator", func() {
 	It("should respect already allocated VIPs in case of IPAM restarts", func() {
 		// setup
 		persistence := vips.NewPersistence(rm, cm)
+		vobv, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+			vips.NewServiceEntry("frontend"): {Address: "240.0.0.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}}}},
+			vips.NewServiceEntry("backend"):  {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}}}},
+		})
+		Expect(err).ToNot(HaveOccurred())
 		// we add VIPs directly to the 'persistence' object
 		// that emulates situation when IPAM is fresh and doesn't aware of allocated VIPs
-		err := persistence.Set("mesh-1", vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
-			vips.NewServiceEntry("frontend"): {Address: "240.0.0.0"},
-			vips.NewServiceEntry("backend"):  {Address: "240.0.0.1"},
-		}))
+		err = persistence.Set("mesh-1", vobv)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
@@ -130,11 +132,12 @@ var _ = Describe("VIP Allocator", func() {
 		vipList, err := persistence.GetByMesh("mesh-1")
 		Expect(err).ToNot(HaveOccurred())
 		// then
-		expected := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
-			vips.NewServiceEntry("backend"):  {Address: "240.0.0.1"},
-			vips.NewServiceEntry("database"): {Address: "240.0.0.2"},
-			vips.NewServiceEntry("frontend"): {Address: "240.0.0.0"},
+		expected, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+			vips.NewServiceEntry("backend"):  {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}}}},
+			vips.NewServiceEntry("database"): {Address: "240.0.0.2", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "database"}}}},
+			vips.NewServiceEntry("frontend"): {Address: "240.0.0.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}}}},
 		})
+		Expect(err).ToNot(HaveOccurred())
 		Expect(vipList.HostnameEntries()).To(Equal(expected.HostnameEntries()))
 		for _, k := range vipList.HostnameEntries() {
 			Expect(vipList.Get(k).Address).To(Equal(expected.Get(k).Address))
@@ -287,7 +290,7 @@ var _ = Describe("BuildVirtualOutboundMeshView", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		expected := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
+		expected := vips.NewEmptyVirtualOutboundView()
 		Expect(expected.Add(vips.NewServiceEntry("backend"), vips.OutboundEntry{Port: 0, TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}, Origin: "service"})).ToNot(HaveOccurred())
 		Expect(expected.Add(vips.NewServiceEntry("database"), vips.OutboundEntry{Port: 0, TagSet: map[string]string{mesh_proto.ServiceTag: "database"}, Origin: "service"})).ToNot(HaveOccurred())
 		Expect(expected.Add(vips.NewServiceEntry("metrics"), vips.OutboundEntry{Port: 0, TagSet: map[string]string{mesh_proto.ServiceTag: "metrics"}, Origin: "service"})).ToNot(HaveOccurred())
@@ -545,7 +548,7 @@ var _ = Describe("AllocateVIPs", func() {
 		// setup
 		gv, err := vips.NewGlobalView("240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
-		serviceSet := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
+		serviceSet := vips.NewEmptyVirtualOutboundView()
 		Expect(serviceSet.Add(vips.NewServiceEntry("backend"), vips.OutboundEntry{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}})).ToNot(HaveOccurred())
 		Expect(serviceSet.Add(vips.NewServiceEntry("frontend"), vips.OutboundEntry{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}})).ToNot(HaveOccurred())
 		// when
@@ -565,7 +568,7 @@ var _ = Describe("AllocateVIPs", func() {
 		Expect(gv.Reserve(vips.NewServiceEntry("frontend"), "240.0.0.1")).ToNot(HaveOccurred())
 		Expect(gv.Reserve(vips.NewServiceEntry("database"), "240.0.0.10")).ToNot(HaveOccurred())
 		Expect(err).ToNot(HaveOccurred())
-		serviceSet := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{})
+		serviceSet := vips.NewEmptyVirtualOutboundView()
 		Expect(serviceSet.Add(vips.NewServiceEntry("backend"), vips.OutboundEntry{Origin: "default", TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}})).ToNot(HaveOccurred())
 		Expect(serviceSet.Add(vips.NewServiceEntry("frontend"), vips.OutboundEntry{Origin: "default", TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}})).ToNot(HaveOccurred())
 		Expect(serviceSet.Add(vips.NewServiceEntry("database"), vips.OutboundEntry{Origin: "default", TagSet: map[string]string{mesh_proto.ServiceTag: "database"}})).ToNot(HaveOccurred())

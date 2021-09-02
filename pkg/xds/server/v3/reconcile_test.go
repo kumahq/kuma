@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	. "github.com/onsi/ginkgo"
@@ -51,28 +54,28 @@ var _ = Describe("Reconcile", func() {
 				envoy_types.Listener: {
 					Items: map[string]envoy_types.ResourceWithTtl{
 						"listener": {
-							Resource: &envoy.Listener{},
+							Resource: &envoy_listener.Listener{},
 						},
 					},
 				},
 				envoy_types.Route: {
 					Items: map[string]envoy_types.ResourceWithTtl{
 						"route": {
-							Resource: &envoy.RouteConfiguration{},
+							Resource: &envoy_route.RouteConfiguration{},
 						},
 					},
 				},
 				envoy_types.Cluster: {
 					Items: map[string]envoy_types.ResourceWithTtl{
 						"cluster": {
-							Resource: &envoy.Cluster{},
+							Resource: &envoy_cluster.Cluster{},
 						},
 					},
 				},
 				envoy_types.Endpoint: {
 					Items: map[string]envoy_types.ResourceWithTtl{
 						"endpoint": {
-							Resource: &envoy.ClusterLoadAssignment{},
+							Resource: &envoy_endpoint.ClusterLoadAssignment{},
 						},
 					},
 				},

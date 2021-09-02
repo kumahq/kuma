@@ -68,7 +68,7 @@ store:
 
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
-  # The version of Envoy API (available: "v2", "v3")
+  # The version of Envoy API (available: "v3")
   apiVersion: v3
   # Parameters of bootstrap configuration
   params:

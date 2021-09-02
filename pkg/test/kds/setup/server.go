@@ -52,7 +52,7 @@ func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string
 		cfg:     kuma_cp.Config{},
 		metrics: metrics,
 	}
-	srv, err := kds_server.New(core.Log, rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, false)
+	srv, err := kds_server.New(core.Log.WithName("kds").WithName(clusterID), rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, false)
 	Expect(err).ToNot(HaveOccurred())
 	stream := test_grpc.MakeMockStream()
 	go func() {

@@ -3,7 +3,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: inbound_passthrough_ipv4
-    connectTimeout: 10s
+    connectTimeout: 0.500s
     lbPolicy: CLUSTER_PROVIDED
     name: inbound:passthrough:ipv4
     type: ORIGINAL_DST
@@ -15,7 +15,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8080
-    connectTimeout: 10s
+    connectTimeout: 0.500s
     loadAssignment:
       clusterName: localhost:8080
       endpoints:
@@ -31,26 +31,10 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: outbound_passthrough_ipv4
-    connectTimeout: 10s
+    connectTimeout: 0.500s
     lbPolicy: CLUSTER_PROVIDED
     name: outbound:passthrough:ipv4
     type: ORIGINAL_DST
-- name: raw-name
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: localhost_8443
-    connectTimeout: 5s
-    loadAssignment:
-      clusterName: localhost:8443
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 8443
-    name: localhost:8443
-    type: STATIC
 - name: inbound:192.168.0.1:80
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
