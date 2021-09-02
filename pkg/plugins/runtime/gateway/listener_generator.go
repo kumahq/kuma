@@ -146,6 +146,23 @@ func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayRes
 		),
 	)
 
+	filters.Configure(
+		envoy_listeners.AddFilterChainConfigurer(&v3.FaultInjectionConfigurer{
+			Hostname: info.Host.Hostname,
+			FaultInjection: &mesh_proto.FaultInjection{
+				Sources: []*mesh_proto.Selector{{
+					Match: map[string]string{
+						mesh_proto.ServiceTag: info.Dataplane.Spec.GetIdentifyingService(),
+					},
+				}},
+				Conf: &mesh_proto.FaultInjection_Conf{
+					Delay: &mesh_proto.FaultInjection_Conf_Delay{
+						Percentage: util_proto.Double(0.5),
+						Value:      util_proto.Duration(time.Second),
+					},
+				},
+			}}))
+
 	// TODO(jpeach) add compressor filter.
 	// TODO(jpeach) add decompressor filter.
 	// TODO(jpeach) add grpc_web filter.

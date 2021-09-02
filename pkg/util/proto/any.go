@@ -1,6 +1,7 @@
 package proto
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -25,6 +26,15 @@ func MarshalAnyDeterministic(pb proto.Message) (*any.Any, error) {
 		return nil, err
 	}
 	return &any.Any{TypeUrl: googleApis + proto.MessageName(pb), Value: buffer.Bytes()}, nil
+}
+
+func MustMarshalAny(p proto.Message) *any.Any {
+	a, err := MarshalAnyDeterministic(p)
+	if err != nil {
+		panic(fmt.Sprintf("failed to marshal %T protobuf: %s", p, err))
+	}
+
+	return a
 }
 
 func UnmarshalAnyTo(src *anypb.Any, dst proto2.Message) error {

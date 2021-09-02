@@ -16,6 +16,7 @@ import (
 
 type FaultInjectionConfigurer struct {
 	FaultInjection *mesh_proto.FaultInjection
+	Hostname       string
 }
 
 func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -42,15 +43,19 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 		return err
 	}
 
+	filter := &envoy_hcm.HttpFilter{
+		Name: "envoy.filters.http.fault",
+		ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+			TypedConfig: pbst,
+		},
+	}
+
+	if f.Hostname != "" {
+		filter = MatchFilterForHostname(f.Hostname, filter)
+	}
+
 	return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-		manager.HttpFilters = append([]*envoy_hcm.HttpFilter{
-			{
-				Name: "envoy.filters.http.fault",
-				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-					TypedConfig: pbst,
-				},
-			},
-		}, manager.HttpFilters...)
+		manager.HttpFilters = append([]*envoy_hcm.HttpFilter{filter}, manager.HttpFilters...)
 		return nil
 	})
 }
