@@ -137,9 +137,27 @@ data:
     - job_name: kubernetes-pods-name
       pipeline_stages:
         - docker: {}
+        - match:
+            selector: '{container="kuma-sidecar"}'
+            stages:
+              - regex:
+                  expression: '([\S]*) stdout ([\S]*) \[(?P<timestamp>[\S]*)\] (?P<mesh>[\S]*)'
+              - labels:
+                  mesh: mesh
+              - timestamp:
+                  format: RFC3339Nano
+                  source: timestamp
       kubernetes_sd_configs:
       - role: pod
       relabel_configs:
+      - action: replace
+        separator: '.'
+        replacement: "$1"
+        source_labels:
+        - __meta_kubernetes_pod_annotation_kuma_io_mesh
+        - __meta_kubernetes_pod_name
+        - __meta_kubernetes_namespace
+        target_label: node_id
       - source_labels:
         - __meta_kubernetes_pod_label_name
         target_label: __service__
@@ -180,9 +198,27 @@ data:
     - job_name: kubernetes-pods-app
       pipeline_stages:
         - docker: {}
+        - match:
+            selector: '{container="kuma-sidecar"}'
+            stages:
+              - regex:
+                  expression: '([\S]*) stdout ([\S]*) \[(?P<timestamp>[\S]*)\] (?P<mesh>[\S]*)'
+              - labels:
+                  mesh: mesh
+              - timestamp:
+                  format: RFC3339Nano
+                  source: timestamp
       kubernetes_sd_configs:
       - role: pod
       relabel_configs:
+      - action: replace
+        separator: '.'
+        replacement: "$1"
+        source_labels:
+        - __meta_kubernetes_pod_annotation_kuma_io_mesh
+        - __meta_kubernetes_pod_name
+        - __meta_kubernetes_namespace
+        target_label: node_id
       - action: drop
         regex: .+
         source_labels:
