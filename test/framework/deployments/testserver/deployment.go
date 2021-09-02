@@ -12,7 +12,6 @@ type DeploymentOpts struct {
 	Mesh            string
 	WithStatefulSet bool
 	Args            []string
-	WithHTTPProbes  bool
 	Replicas        int32
 }
 
@@ -61,12 +60,6 @@ func WithStatefulSet(apply bool) DeploymentOptsFn {
 func WithArgs(args ...string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.Args = args
-	}
-}
-
-func WithHTTPProbes() DeploymentOptsFn {
-	return func(opts *DeploymentOpts) {
-		opts.WithHTTPProbes = true
 	}
 }
 

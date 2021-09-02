@@ -55,10 +55,7 @@ func VirtualProbes() {
 	}
 
 	It("should deploy test-server with probes", func() {
-		Expect(testserver.Install(
-			testserver.WithArgs("--probes"),
-			testserver.WithHTTPProbes(),
-		)(k8sCluster)).To(Succeed())
+		Expect(testserver.Install()(k8sCluster)).To(Succeed())
 
 		for i := 0; i < 10; i++ {
 			time.Sleep(1 * time.Second)
