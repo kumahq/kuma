@@ -22,24 +22,26 @@ func MergeSelectors(tags ...mesh_proto.TagSelector) mesh_proto.TagSelector {
 	return merged
 }
 
-// MeshResourceManager is a ReadOnlyResourceManager bound to a specific mesh.
-type MeshResourceManager struct {
+// MeshedResourceManager is a ReadOnlyResourceManager bound to a specific
+// mesh. All operations performed by this resource manager will implicitly
+// be scoped by the given mesh.
+type MeshedResourceManager struct {
 	mgr  manager.ReadOnlyResourceManager
 	opts []store.ListOptionsFunc
 }
 
-var _ manager.ReadOnlyResourceManager = &MeshResourceManager{}
+var _ manager.ReadOnlyResourceManager = &MeshedResourceManager{}
 
-func (m *MeshResourceManager) Get(ctx context.Context, r model.Resource, opts ...store.GetOptionsFunc) error {
+func (m *MeshedResourceManager) Get(ctx context.Context, r model.Resource, opts ...store.GetOptionsFunc) error {
 	return m.mgr.Get(ctx, r, opts...)
 }
 
-func (m *MeshResourceManager) List(ctx context.Context, r model.ResourceList, opts ...store.ListOptionsFunc) error {
+func (m *MeshedResourceManager) List(ctx context.Context, r model.ResourceList, opts ...store.ListOptionsFunc) error {
 	return m.mgr.List(ctx, r, append(m.opts, opts...)...)
 }
 
-func ManagerForMesh(m manager.ReadOnlyResourceManager, mesh string) *MeshResourceManager {
-	return &MeshResourceManager{
+func ManagerForMesh(m manager.ReadOnlyResourceManager, mesh string) *MeshedResourceManager {
+	return &MeshedResourceManager{
 		mgr:  m,
 		opts: []store.ListOptionsFunc{store.ListByMesh(mesh)},
 	}

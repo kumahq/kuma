@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -9,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -175,10 +177,13 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 // in to a single configuration with a matched set of route resources. The
 // given listeners must have a consistent protocol and port.
 func MakeGatewayListener(
-	manager *match.MeshResourceManager,
+	manager *match.MeshedResourceManager,
 	gateway *core_mesh.GatewayResource,
 	listeners []*mesh_proto.Gateway_Listener,
 ) (GatewayListener, []GatewayHost, error) {
+	hostsByName := map[string]GatewayHost{}
+	resourcesByType := map[model.ResourceType]model.ResourceList{}
+
 	listener := GatewayListener{
 		Port:     listeners[0].GetPort(),
 		Protocol: listeners[0].GetProtocol(),
@@ -189,7 +194,18 @@ func MakeGatewayListener(
 		),
 	}
 
-	hostsByName := map[string]GatewayHost{}
+	for _, t := range []model.ResourceType{core_mesh.TrafficRouteType} {
+		list, err := registry.Global().NewList(t)
+		if err != nil {
+			return listener, nil, err
+		}
+
+		if err := manager.List(context.Background(), list); err != nil {
+			return listener, nil, err
+		}
+
+		resourcesByType[t] = list
+	}
 
 	// We don't require hostnames to be unique across listeners. As
 	// long as the port and protocol matches it is OK to have multiple
@@ -211,7 +227,7 @@ func MakeGatewayListener(
 		switch listener.Protocol {
 		case mesh_proto.Gateway_Listener_HTTP,
 			mesh_proto.Gateway_Listener_HTTPS:
-			routes, err := match.Routes(manager, core_mesh.TrafficRouteType, l.GetTags())
+			routes, err := match.Routes(resourcesByType[core_mesh.TrafficRouteType], l.GetTags())
 			if err != nil {
 				return listener, nil, err
 			}

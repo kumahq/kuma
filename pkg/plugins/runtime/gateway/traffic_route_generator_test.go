@@ -88,7 +88,10 @@ var _ = Describe("Gateway Traffic Route", func() {
 	})
 
 	It("should generate from traffic routes", func() {
-		route := `
+		// given
+		CreateServiceDataplanes("echo-service", 5)
+
+		Expect(StoreInlineFixture(rt, []byte(`
 type: TrafficRoute
 mesh: default
 name: echo-service
@@ -107,20 +110,19 @@ conf:
       kuma.io/service: echo-service
   destination:
     kuma.io/service: echo-service
-`
-		CreateServiceDataplanes("echo-service", 5)
+`))).To(Succeed())
 
-		Expect(StoreInlineFixture(rt, []byte(route))).To(Succeed())
+		// when
 		snap, err := Do()
 		Expect(err).To(Succeed())
 
-		out, err := yaml.Marshal(MakeProtoSnapshot(snap))
-		Expect(err).To(Succeed())
-
-		Expect(out).To(matchers.MatchGoldenYAML(path.Join("testdata", "01-traffic-route.yaml")))
+		// then
+		Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
+			To(matchers.MatchGoldenYAML(path.Join("testdata", "01-traffic-route.yaml")))
 	})
 
 	It("should generate resources from multiple traffic routes", func() {
+		// given
 		CreateServiceDataplanes("echo-service", 2)
 
 		Expect(StoreInlineFixture(rt, []byte(`
@@ -165,18 +167,19 @@ conf:
     kuma.io/service: echo-service
 `))).To(Succeed())
 
+		// when
 		snap, err := Do()
 		Expect(err).To(Succeed())
 
-		out, err := yaml.Marshal(MakeProtoSnapshot(snap))
-		Expect(err).To(Succeed())
-
-		Expect(out).To(matchers.MatchGoldenYAML(path.Join("testdata", "02-traffic-route.yaml")))
+		// then
+		Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
+			To(matchers.MatchGoldenYAML(path.Join("testdata", "02-traffic-route.yaml")))
 	})
 
 	// This test creates multiple versions of the same service and splits them by tags. We want to ensure
 	// that the clusters are unique even though the splits happen across different resources.
 	It("should split clusters across multiple traffic routes", func() {
+		// given
 		CreateServiceDataplanes(
 			"echo-service-one", 1,
 			mesh_proto.ServiceTag, "echo-service",
@@ -269,6 +272,7 @@ conf:
     kuma.io/service: echo-service
 `))).To(Succeed())
 
+		// when
 		snap, err := Do()
 		Expect(err).To(Succeed())
 
@@ -277,13 +281,13 @@ conf:
 		// There are 4 unique service+tags combinations for destinations.
 		Expect(len(resources.Clusters.Resources)).Should(BeNumerically("==", 4))
 
-		out, err := yaml.Marshal(MakeProtoSnapshot(snap))
-		Expect(err).To(Succeed())
-
-		Expect(out).To(matchers.MatchGoldenYAML(path.Join("testdata", "03-traffic-route.yaml")))
+		// then
+		Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
+			To(matchers.MatchGoldenYAML(path.Join("testdata", "03-traffic-route.yaml")))
 	})
 
 	It("should generate multiple virtual hosts", func() {
+		// given
 		CreateServiceDataplanes("echo-service", 2)
 
 		// Update the default gateway to have multiple listeners.
@@ -373,13 +377,12 @@ conf:
     kuma.io/service: echo-service
 `))).To(Succeed())
 
+		// when
 		snap, err := Do()
 		Expect(err).To(Succeed())
 
-		out, err := yaml.Marshal(MakeProtoSnapshot(snap))
-		Expect(err).To(Succeed())
-
-		Expect(out).To(matchers.MatchGoldenYAML(path.Join("testdata", "04-traffic-route.yaml")))
+		// then
+		Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
+			To(matchers.MatchGoldenYAML(path.Join("testdata", "04-traffic-route.yaml")))
 	})
-
 })

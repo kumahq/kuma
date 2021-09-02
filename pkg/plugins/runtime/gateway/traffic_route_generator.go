@@ -51,7 +51,7 @@ func (*TrafficRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 		return nil, nil
 	}
 
-	log.Info("applying merged traffic routes",
+	log.V(1).Info("applying merged traffic routes",
 		"listener-port", info.Listener.Port,
 		"listener-name", info.Listener.ResourceName,
 	)

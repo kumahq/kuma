@@ -17,6 +17,12 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
+// TODO(jpeach) It's a lot to ask operators to tune these defaults,
+// and we probably would never do that. However, it would be convenient
+// to be able to update them for performance testing and benchmarking,
+// so at some point we should consider making these settings available,
+// perhaps on the Gateway or on the Dataplane.
+
 // Buffer defaults.
 const DefaultConnectionBuffer = 32 * 1024
 
@@ -28,8 +34,8 @@ const DefaultInitialStreamWindowSize = 64 * 1024
 const DefaultInitialConnectionWindowSize = 1024 * 1024
 
 // Timeout defaults.
-const DefaultRequestHeadersTimeoutMsec = 500 * time.Millisecond
-const DefaultStreamIdleTimeoutMsec = 5 * time.Second
+const DefaultRequestHeadersTimeout = 500 * time.Millisecond
+const DefaultStreamIdleTimeout = 5 * time.Second
 const DefaultIdleTimeout = 5 * time.Minute
 
 // ListenerGenerator generates Kuma gateway listeners.
@@ -106,8 +112,8 @@ func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayRes
 		envoy_listeners.StripHostPort(),
 		envoy_listeners.AddFilterChainConfigurer(
 			v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
-				hcm.RequestHeadersTimeout = util_proto.Duration(DefaultRequestHeadersTimeoutMsec)
-				hcm.StreamIdleTimeout = util_proto.Duration(DefaultStreamIdleTimeoutMsec)
+				hcm.RequestHeadersTimeout = util_proto.Duration(DefaultRequestHeadersTimeout)
+				hcm.StreamIdleTimeout = util_proto.Duration(DefaultStreamIdleTimeout)
 
 				hcm.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{
 					IdleTimeout:                  util_proto.Duration(DefaultIdleTimeout),
