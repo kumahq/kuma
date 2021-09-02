@@ -44,6 +44,7 @@ spec:
   - args:
     - run
     - --log-level=info
+    - --concurrency=2
     env:
     - name: POD_NAME
       valueFrom:

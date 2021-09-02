@@ -49,6 +49,12 @@ const (
 	// Example value: TEST1=1;TEST2=2
 	KumaSidecarEnvVarsAnnotation = "kuma.io/sidecar-env-vars"
 
+	// KumaSidecarConcurrencyAnnotation is an integer value that explicitly sets the Envoy proxy concurrency
+	// in the Kuma sidecar. Setting this annotation overrides the default injection behavior of deriving the
+	// concurrency from the sidecar container resource limits. A value of 0 tells Envoy to try to use all the
+	// visible CPUs.
+	KumaSidecarConcurrencyAnnotation = "kuma.io/sidecar-proxy-concurrency"
+
 	// KumaMetricsPrometheusPort allows to override `Mesh`-wide default port
 	KumaMetricsPrometheusPort = "prometheus.metrics.kuma.io/port"
 
