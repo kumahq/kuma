@@ -197,21 +197,52 @@ func (i *KumaInjector) namespaceFor(pod *kube_core.Pod) (*kube_core.Namespace, e
 	return ns, nil
 }
 
+func (i *KumaInjector) proxyConcurrencyFor(pod *kube_core.Pod) (int64, error) {
+	count, ok, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaSidecarConcurrencyAnnotation)
+	if ok {
+		return int64(count), err
+	}
+
+	// Note that validation requires the resource limit is not empty.
+	cpuRequest := kube_api.MustParse(i.cfg.SidecarContainer.Resources.Limits.CPU)
+	ncpu := cpuRequest.MilliValue() / 1000
+	if ncpu < 2 {
+		// Only autotune to down to 2 to mitigate the latency
+		// risk if a worker thread blocks.
+		ncpu = 2
+	}
+
+	return ncpu, nil
+}
+
 func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Namespace) (kube_core.Container, error) {
 	mesh := meshName(pod, ns)
 	env, err := i.sidecarEnvVars(mesh, pod.GetAnnotations())
 	if err != nil {
 		return kube_core.Container{}, err
 	}
+
+	cpuCount, err := i.proxyConcurrencyFor(pod)
+	if err != nil {
+		return kube_core.Container{}, err
+	}
+
+	args := []string{
+		"run",
+		"--log-level=info",
+	}
+
+	if cpuCount > 0 {
+		args = append(args,
+			"--concurrency="+strconv.FormatInt(cpuCount, 10))
+	}
+
 	return kube_core.Container{
 		Name:            util.KumaSidecarContainerName,
 		Image:           i.cfg.SidecarContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
-		Args: []string{
-			"run",
-			"--log-level=info",
-		},
-		Env: env,
+		Args:            args,
+		Env:             env,
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.UID,
 			RunAsGroup: &i.cfg.SidecarContainer.GID,

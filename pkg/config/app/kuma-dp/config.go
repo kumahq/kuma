@@ -130,6 +130,8 @@ type DataplaneRuntime struct {
 	BinaryPath string `yaml:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
 	// Dir to store auto-generated Envoy bootstrap config in.
 	ConfigDir string `yaml:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
+	// Concurrency specifies how to generate the Envoy concurrency flag.
+	Concurrency uint32 `yaml:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
 	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
 	TokenPath string `yaml:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
 	// Token is dataplane token's value provided directly, will be stored to a temporary file before applying
