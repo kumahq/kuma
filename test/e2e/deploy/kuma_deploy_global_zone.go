@@ -48,6 +48,8 @@ spec:
 `, namespace, policyname, weight)
 	}
 
+	errRegex := `Operation not allowed\. .* resources like TrafficRoute can be updated or deleted only from the GLOBAL control plane and not from a ZONE control plane\.`
+
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, zone ControlPlane
@@ -149,7 +151,8 @@ spec:
 
 		// Deny policy CREATE on zone
 		err := k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)
-		Expect(err.Error()).To(ContainSubstring("should be only applied on global"))
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(MatchRegexp(errRegex))
 
 		// Accept policy CREATE on global
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_create)
@@ -164,7 +167,13 @@ spec:
 
 		// Deny policy UPDATE on zone
 		err = k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)
-		Expect(err.Error()).To(ContainSubstring("should be only applied on global"))
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(MatchRegexp(errRegex))
+
+		// Deny policy DELETE on zone
+		err = k8s.KubectlDeleteFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_create)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(MatchRegexp(errRegex))
 
 		// Accept policy UPDATE on global
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_update)

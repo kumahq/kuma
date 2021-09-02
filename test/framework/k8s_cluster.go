@@ -595,11 +595,10 @@ func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
 }
 
 func (c *K8sCluster) ShutdownCP() error {
-	err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(KumaNamespace), "patch", "deployment", KumaServiceName, "--patch", `{"spec":{"replicas":0}}`)
-	if err != nil {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", KumaServiceName)); err != nil {
 		return err
 	}
-	_, err = retry.DoWithRetryE(c.t,
+	_, err := retry.DoWithRetryE(c.t,
 		"wait for control-plane to be down",
 		c.defaultRetries,
 		c.defaultTimeout,
@@ -619,7 +618,7 @@ func (c *K8sCluster) ShutdownCP() error {
 }
 
 func (c *K8sCluster) StartCP() error {
-	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(KumaNamespace), "patch", "deployment", KumaServiceName, "--patch", fmt.Sprintf(`{"spec":{"replicas":%d}}`, c.controlplane.replicas)); err != nil {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(KumaNamespace), "scale", fmt.Sprintf("--replicas=%d", c.controlplane.replicas), fmt.Sprintf("deployment/%s", KumaServiceName)); err != nil {
 		return err
 	}
 	if err := c.WaitApp(KumaServiceName, KumaNamespace, c.controlplane.replicas); err != nil {
