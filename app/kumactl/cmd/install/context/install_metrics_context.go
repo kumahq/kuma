@@ -9,6 +9,8 @@ type MetricsTemplateArgs struct {
 	Namespace         string
 	Mesh              string
 	KumaCpAddress     string
+	JaegerAddress     string
+	LokiAddress       string
 	KumaCpApiAddress  string
 	WithoutPrometheus bool
 	WithoutGrafana    bool
@@ -25,6 +27,8 @@ func DefaultInstallMetricsContext() InstallMetricsContext {
 			Namespace:         "kuma-metrics",
 			KumaCpAddress:     "http://kuma-control-plane.kuma-system:5676",
 			KumaCpApiAddress:  "http://kuma-control-plane.kuma-system:5681",
+			JaegerAddress:     "http://jaeger-query.kuma-tracing",
+			LokiAddress:       "http://loki.kuma-logging:3100",
 			WithoutPrometheus: false,
 			WithoutGrafana:    false,
 		},

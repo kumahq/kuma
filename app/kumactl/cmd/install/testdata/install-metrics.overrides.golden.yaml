@@ -175,6 +175,7 @@ data:
     datasources:
       # <string, required> name of the datasource. Required
       - name: Prometheus
+        uid: prometheus
         # <string, required> datasource type. Required
         type: prometheus
         # <string, required> access mode. direct or proxy. Required
@@ -213,10 +214,34 @@ data:
         # <bool> allow users to edit datasources from the UI.
         editable: true
       - name: Kuma
+        uid: kuma
+        editable: true
         type: kumahq-kuma-datasource
         url: http://kuma-control-plane.kuma-system:5681
         jsonData:
           prometheusDataSourceId: "1"
+      - name: Jaeger
+        type: jaeger
+        access: proxy
+        editable: true
+        uid: jaeger
+        url: http://jaeger-query.kuma-tracing
+        jsonData:
+          tracesToLogs:
+            datasourceUid: loki
+            tags: ["node_id"]
+      - name: Loki
+        type: loki
+        access: proxy
+        editable: true
+        uid: loki
+        url: http://loki.kuma-logging:3100
+        jsonData:
+          derivedFields:
+            - datasourceUid: jaeger
+              matcherRegex: '"([0-9a-f]{16})"'
+              name: "traceId"
+              url: '$${__value.raw}'
 ---
 apiVersion: v1
 kind: ConfigMap
