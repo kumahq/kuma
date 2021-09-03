@@ -23,6 +23,7 @@ require (
 	github.com/gruntwork-io/terratest v0.30.15
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/iancoleman/orderedmap v0.2.0
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
 	github.com/kumahq/protoc-gen-kumadoc v0.1.7

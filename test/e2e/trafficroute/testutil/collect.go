@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/kballard/go-shellquote"
+
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/server/types"
 )
@@ -48,11 +50,16 @@ func CollectResponse(cluster framework.Cluster, source, destination string, fn .
 	for _, f := range fn {
 		f(&opts)
 	}
-	cmd := []string{"curl", "-X" + opts.Method}
-	for key, value := range opts.Headers {
-		cmd = append(cmd, fmt.Sprintf("-H'%s: %s'", key, value))
+	cmd := []string{
+		"curl",
+		"--fail",
+		"--request", opts.Method,
+		"--max-time", "3",
 	}
-	cmd = append(cmd, "-m", "3", "--fail", destination)
+	for key, value := range opts.Headers {
+		cmd = append(cmd, "--header", shellquote.Join(fmt.Sprintf("%s: %s", key, value)))
+	}
+	cmd = append(cmd, shellquote.Join(destination))
 	stdout, _, err := cluster.ExecWithRetries("", "", source, cmd...)
 	if err != nil {
 		return types.EchoResponse{}, err
