@@ -5,17 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/kds/util"
-
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/ptypes/any"
-
-	"github.com/kumahq/kuma/pkg/util/proto"
-
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/util"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func Create(ctx context.Context, r model.Resource, opts ...store.CreateOptionsFunc) Executable {
@@ -26,7 +23,7 @@ func Create(ctx context.Context, r model.Resource, opts ...store.CreateOptionsFu
 
 func DiscoveryRequest(node *envoy_core.Node, resourceType model.ResourceType) Executable {
 	return func(tc TestContext) error {
-		tc.ServerStream().RecvCh <- &v2.DiscoveryRequest{
+		tc.ServerStream().RecvCh <- &envoy_sd.DiscoveryRequest{
 			Node:    node,
 			TypeUrl: string(resourceType),
 		}
@@ -36,7 +33,7 @@ func DiscoveryRequest(node *envoy_core.Node, resourceType model.ResourceType) Ex
 
 func ACK(node *envoy_core.Node, resourceType model.ResourceType) Executable {
 	return func(tc TestContext) error {
-		tc.ServerStream().RecvCh <- &v2.DiscoveryRequest{
+		tc.ServerStream().RecvCh <- &envoy_sd.DiscoveryRequest{
 			Node:          node,
 			TypeUrl:       string(resourceType),
 			ResponseNonce: tc.LastResponse(string(resourceType)).Nonce,
@@ -49,7 +46,7 @@ func ACK(node *envoy_core.Node, resourceType model.ResourceType) Executable {
 
 func NACK(node *envoy_core.Node, resourceType model.ResourceType) Executable {
 	return func(tc TestContext) error {
-		tc.ServerStream().RecvCh <- &v2.DiscoveryRequest{
+		tc.ServerStream().RecvCh <- &envoy_sd.DiscoveryRequest{
 			Node:          node,
 			TypeUrl:       string(resourceType),
 			ResponseNonce: tc.LastResponse(string(resourceType)).Nonce,
@@ -97,7 +94,7 @@ func CloseStream() Executable {
 	}
 }
 
-func WaitRequest(timeout time.Duration, testFunc func(rs *v2.DiscoveryRequest)) Executable {
+func WaitRequest(timeout time.Duration, testFunc func(rs *envoy_sd.DiscoveryRequest)) Executable {
 	return func(tc TestContext) error {
 		select {
 		case req := <-tc.ClientStream().SentCh:
@@ -123,7 +120,7 @@ func DiscoveryResponse(rs model.ResourceList, nonce, version string) Executable 
 			}
 			resources = append(resources, pbaby)
 		}
-		tc.ClientStream().RecvCh <- &v2.DiscoveryResponse{
+		tc.ClientStream().RecvCh <- &envoy_sd.DiscoveryResponse{
 			TypeUrl:     string(rs.GetItemType()),
 			Nonce:       nonce,
 			VersionInfo: version,

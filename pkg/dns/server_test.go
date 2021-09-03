@@ -5,15 +5,14 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
 	. "github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
@@ -22,7 +21,6 @@ import (
 var _ = Describe("DNS server", func() {
 
 	Describe("Network Operation", func() {
-		var ip string
 		var port uint32
 		stop := make(chan struct{})
 		done := make(chan struct{})
@@ -57,36 +55,101 @@ var _ = Describe("DNS server", func() {
 			<-done
 		})
 
-		It("should resolve", func() {
-			// given
-			var err error
-			dnsResolver.SetVIPs(vips.List{
-				vips.NewServiceEntry("service"): "240.0.0.1",
-			})
-			ip, err = dnsResolver.ForwardLookupFQDN("service.mesh")
-			Expect(err).ToNot(HaveOccurred())
+		type dnsTestCase struct {
+			givenVips map[vips.HostnameEntry]string
+			whenQuery string
+			whenType  dns.Type
+			// If ip is empty this will be consider as a dns miss
+			thenIp string
+		}
+		DescribeTable("simple point resolve",
+			func(tc dnsTestCase) {
+				// given
+				var err error
+				dnsResolver.SetVIPs(tc.givenVips)
 
-			// when
-			client := new(dns.Client)
-			message := new(dns.Msg)
-			_ = message.SetQuestion("service.mesh.", dns.TypeA)
-			var response *dns.Msg
-			Eventually(func() error {
-				response, _, err = client.Exchange(message, fmt.Sprintf("127.0.0.1:%d", port))
-				return err
-			}).ShouldNot(HaveOccurred())
+				// when
+				client := new(dns.Client)
+				message := new(dns.Msg)
+				q := tc.whenQuery + "."
+				_ = message.SetQuestion(q, uint16(tc.whenType))
+				var response *dns.Msg
+				Eventually(func() error {
+					response, _, err = client.Exchange(message, fmt.Sprintf("127.0.0.1:%d", port))
+					return err
+				}).ShouldNot(HaveOccurred())
 
-			// then
-			Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("service.mesh.\t60\tIN\tA\t%s", ip)))
-
-			// and metrics are published
-			Expect(test_metrics.FindMetric(metrics, "dns_server")).ToNot(BeNil())
-			Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "resolved").Counter.GetValue()).To(Equal(1.0))
-		})
+				// then
+				Expect(test_metrics.FindMetric(metrics, "dns_server")).ToNot(BeNil())
+				if tc.thenIp != "" {
+					Expect(response.Answer).To(HaveLen(1))
+					Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("%s\t60\tIN\tA\t%s", q, tc.thenIp)))
+					// and metrics are published
+					Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "resolved").Counter.GetValue()).To(Equal(1.0))
+				} else {
+					Expect(response.Answer).To(HaveLen(0))
+					// and metrics are published
+					Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "unresolved").Counter.GetValue()).To(Equal(1.0))
+				}
+			},
+			Entry("should resolve", dnsTestCase{
+				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("service"): "240.0.0.1"},
+				whenQuery: "service.mesh",
+				whenType:  dns.Type(dns.TypeA),
+				thenIp:    "240.0.0.1",
+			}),
+			Entry("should not resolve with no vips", dnsTestCase{
+				givenVips: map[vips.HostnameEntry]string{},
+				whenQuery: "service.mesh",
+				whenType:  dns.Type(dns.TypeA),
+				thenIp:    "",
+			}),
+			Entry("should not resolve", dnsTestCase{
+				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("service"): "240.0.0.1"},
+				whenQuery: "not-service.mesh",
+				whenType:  dns.Type(dns.TypeA),
+				thenIp:    "",
+			}),
+			Entry("should resolve services with '.'", dnsTestCase{
+				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("my.service"): "240.0.0.1"},
+				whenQuery: "my.service.mesh",
+				whenType:  dns.Type(dns.TypeA),
+				thenIp:    "240.0.0.1",
+			}),
+			Entry("should resolve converted services with '.'", dnsTestCase{
+				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("my-service_test-namespace_svc_80"): "240.0.0.1"},
+				whenQuery: "my-service.test-namespace.svc.80.mesh",
+				whenType:  dns.Type(dns.TypeA),
+				thenIp:    "240.0.0.1",
+			}),
+			Entry("should resolve fqdn service with .mesh", dnsTestCase{
+				givenVips: map[vips.HostnameEntry]string{vips.NewFqdnEntry("my.service.foo.mesh"): "240.0.0.1"},
+				whenQuery: "my.service.foo.mesh",
+				whenType:  dns.Type(dns.TypeA),
+				thenIp:    "240.0.0.1",
+			}),
+			Entry("should resolve, service entry has priority over fqdn entry", dnsTestCase{
+				givenVips: map[vips.HostnameEntry]string{
+					vips.NewFqdnEntry("my.service.foo.mesh"): "240.0.0.2",
+					vips.NewServiceEntry("my.service.foo"):   "240.0.0.1",
+				},
+				whenQuery: "my.service.foo.mesh",
+				whenType:  dns.Type(dns.TypeA),
+				thenIp:    "240.0.0.1",
+			}),
+			Entry("should resolve, simple fqdn entry", dnsTestCase{
+				givenVips: map[vips.HostnameEntry]string{
+					vips.NewFqdnEntry("service.com.mesh"): "240.0.0.2",
+				},
+				whenQuery: "service.com.mesh",
+				whenType:  dns.Type(dns.TypeA),
+				thenIp:    "240.0.0.2",
+			}),
+		)
 
 		It("should resolve concurrent", func() {
 			// given
-			dnsResolver.SetVIPs(vips.List{
+			dnsResolver.SetVIPs(map[vips.HostnameEntry]string{
 				vips.NewServiceEntry("service"): "240.0.0.1",
 			})
 			ip, err := dnsResolver.ForwardLookupFQDN("service.mesh")
@@ -118,7 +181,7 @@ var _ = Describe("DNS server", func() {
 
 		It("should resolve IPv6 concurrent", func() {
 			// given
-			dnsResolver.SetVIPs(vips.List{
+			dnsResolver.SetVIPs(map[vips.HostnameEntry]string{
 				vips.NewServiceEntry("service"): "fd00::1",
 			})
 			ip, err := dnsResolver.ForwardLookupFQDN("service.mesh")
@@ -146,110 +209,6 @@ var _ = Describe("DNS server", func() {
 			for i := 0; i < 100; i++ {
 				<-resolved
 			}
-		})
-
-		It("should not resolve", func() {
-			// given
-			var err error
-			dnsResolver.SetVIPs(vips.List{
-				vips.NewServiceEntry("service"): "240.0.0.1",
-			})
-			ip, err = dnsResolver.ForwardLookupFQDN("service.mesh")
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			client := new(dns.Client)
-			message := new(dns.Msg)
-			_ = message.SetQuestion("backend.mesh.", dns.TypeA)
-			var response *dns.Msg
-			Eventually(func() error {
-				response, _, err = client.Exchange(message, fmt.Sprintf("127.0.0.1:%d", port))
-				return err
-			}).ShouldNot(HaveOccurred())
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(len(response.Answer)).To(Equal(0))
-
-			// and metrics are published
-			Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "unresolved").Counter.GetValue()).To(Equal(1.0))
-		})
-
-		It("should not resolve when no vips", func() {
-			// given
-			dnsResolver.SetVIPs(vips.List{})
-
-			// when
-			client := new(dns.Client)
-			message := new(dns.Msg)
-			_ = message.SetQuestion("service.mesh.", dns.TypeA)
-			var response *dns.Msg
-			var err error
-			Eventually(func() error {
-				response, _, err = client.Exchange(message, fmt.Sprintf("127.0.0.1:%d", port))
-				return err
-			}).ShouldNot(HaveOccurred())
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(len(response.Answer)).To(Equal(0))
-
-			// and metrics are published
-			Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "unresolved").Counter.GetValue()).To(Equal(1.0))
-		})
-
-		It("should resolve services with '.'", func() {
-			// given
-			var err error
-			dnsResolver.SetVIPs(vips.List{
-				vips.NewServiceEntry("my.service"): "240.0.0.1",
-			})
-			ip, err = dnsResolver.ForwardLookupFQDN("my.service.mesh")
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			client := new(dns.Client)
-			message := new(dns.Msg)
-			_ = message.SetQuestion("my.service.mesh.", dns.TypeA)
-			var response *dns.Msg
-			Eventually(func() error {
-				response, _, err = client.Exchange(message, fmt.Sprintf("127.0.0.1:%d", port))
-				return err
-			}).ShouldNot(HaveOccurred())
-
-			// then
-			Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("my.service.mesh.\t60\tIN\tA\t%s", ip)))
-
-			// and metrics are published
-			Expect(test_metrics.FindMetric(metrics, "dns_server")).ToNot(BeNil())
-			Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "resolved").Counter.GetValue()).To(Equal(1.0))
-		})
-
-		It("should resolve converted services with '.'", func() {
-			// given
-			var err error
-			dnsResolver.SetVIPs(vips.List{
-				vips.NewServiceEntry("my-service_test-namespace_svc_80"): "240.0.0.1",
-			})
-			ip, err = dnsResolver.ForwardLookupFQDN("my-service_test-namespace_svc_80.mesh")
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			client := new(dns.Client)
-			message := new(dns.Msg)
-			_ = message.SetQuestion("my-service.test-namespace.svc.80.mesh.", dns.TypeA)
-			var response *dns.Msg
-			Eventually(func() error {
-				response, _, err = client.Exchange(message, fmt.Sprintf("127.0.0.1:%d", port))
-				return err
-			}).ShouldNot(HaveOccurred())
-
-			// then
-			Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("my-service.test-namespace.svc.80.mesh.\t60\tIN\tA\t%s", ip)))
-
-			// and metrics are published
-			Expect(test_metrics.FindMetric(metrics, "dns_server")).ToNot(BeNil())
-			Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "resolved").Counter.GetValue()).To(Equal(1.0))
 		})
 	})
 

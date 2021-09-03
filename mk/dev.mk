@@ -1,6 +1,5 @@
-GINKGO_VERSION := v1.14.2
-GOIMPORTS_VERSION := v0.1.0
-GOLANGCI_LINT_VERSION := v1.37.1
+GINKGO_VERSION := v1.16.4
+GOLANGCI_LINT_VERSION := v1.41.1
 GOLANG_PROTOBUF_VERSION := v1.5.2
 HELM_DOCS_VERSION := 1.4.0
 KUSTOMIZE_VERSION := v4.1.3
@@ -69,7 +68,6 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/kind dev/install/k3d \
 	dev/install/minikube \
 	dev/install/golangci-lint \
-	dev/install/goimports \
 	dev/install/helm3 \
 	dev/install/helm-docs
 
@@ -128,7 +126,7 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and k
 	@if [ ! -e $(KUBEBUILDER_PATH) ]; then \
 		echo "Installing Kubebuilder $(CI_KUBEBUILDER_VERSION) ..." \
 		&& set -x \
-		&& $(CURL_DOWNLOAD) https://go.kubebuilder.io/dl/$(CI_KUBEBUILDER_VERSION)/$(GOOS)/$(GOARCH) | tar -xz -C /tmp/ \
+		&& $(CURL_DOWNLOAD) https://github.com/kubernetes-sigs/kubebuilder/releases/download/v$(CI_KUBEBUILDER_VERSION)/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH).tar.gz | tar -xz -C /tmp/ \
 		&& mkdir -p $(KUBEBUILDER_DIR) \
 		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH)/* $(KUBEBUILDER_DIR) \
 		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH) \
@@ -210,10 +208,6 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
 
-.PHONY: dev/install/goimports
-dev/install/goimports: ## Bootstrap: Install goimports
-	go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
-
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
 	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | \
@@ -267,7 +261,7 @@ dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 		echo "path_add KUBECONFIG $$c" ; \
 	done >> .envrc
 	@echo 'export KUBECONFIG' >> .envrc
-	@for prog in $(BUILD_RELEASE_BINARIES) ; do \
+	@for prog in $(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES) ; do \
 		echo "PATH_add $(BUILD_ARTIFACTS_DIR)/$$prog" ; \
 	done >> .envrc
 	@direnv allow

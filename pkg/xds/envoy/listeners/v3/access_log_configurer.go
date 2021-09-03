@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/structpb"
-
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	access_loggers_grpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -90,14 +89,14 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 	if err := format.ConfigureHttpLog(httpGrpcAccessLog); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure %T according to the format string: %s", httpGrpcAccessLog, format)
 	}
-	marshalled, err := proto.MarshalAnyDeterministic(httpGrpcAccessLog)
+	marshaled, err := proto.MarshalAnyDeterministic(httpGrpcAccessLog)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshall %T", httpGrpcAccessLog)
 	}
 	return &envoy_accesslog.AccessLog{
 		Name: "envoy.access_loggers.http_grpc",
 		ConfigType: &envoy_accesslog.AccessLog_TypedConfig{
-			TypedConfig: marshalled,
+			TypedConfig: marshaled,
 		},
 	}, nil
 }
@@ -122,14 +121,14 @@ func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (
 		},
 		Path: cfg.Path,
 	}
-	marshalled, err := proto.MarshalAnyDeterministic(fileAccessLog)
+	marshaled, err := proto.MarshalAnyDeterministic(fileAccessLog)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshall %T", fileAccessLog)
 	}
 	return &envoy_accesslog.AccessLog{
 		Name: "envoy.access_loggers.file",
 		ConfigType: &envoy_accesslog.AccessLog_TypedConfig{
-			TypedConfig: marshalled,
+			TypedConfig: marshaled,
 		},
 	}, nil
 }

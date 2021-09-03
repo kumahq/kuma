@@ -6,19 +6,17 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 type DataplaneWatchdogDependencies struct {
-	resManager            manager.ResourceManager
 	dataplaneProxyBuilder *DataplaneProxyBuilder
 	dataplaneReconciler   SnapshotReconciler
 	ingressProxyBuilder   *IngressProxyBuilder
@@ -26,6 +24,7 @@ type DataplaneWatchdogDependencies struct {
 	xdsContextBuilder     *xdsContextBuilder
 	meshCache             *mesh.Cache
 	metadataTracker       DataplaneMetadataTracker
+	secrets               secrets.Secrets
 }
 
 type DataplaneWatchdog struct {
@@ -60,7 +59,7 @@ func (d *DataplaneWatchdog) Sync() error {
 	}
 	// backwards compatibility
 	if d.dpType == mesh_proto.DataplaneProxyType && !d.proxyTypeSettled {
-		dataplane := mesh_core.NewDataplaneResource()
+		dataplane := core_mesh.NewDataplaneResource()
 		if err := d.dataplaneProxyBuilder.CachingResManager.Get(ctx, dataplane, store.GetBy(d.key)); err != nil {
 			return err
 		}
@@ -84,6 +83,7 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
+		d.secrets.Cleanup(d.key)
 		return d.dataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
 		return d.ingressReconciler.Clear(&proxyID)
@@ -99,19 +99,29 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 	if err != nil {
 		return err
 	}
-	if d.lastHash != "" && snapshotHash == d.lastHash {
-		// Kuma policies (including Dataplanes and Mesh) has not change therefore there is no need to regenerate configuration.
+	certInfo := d.secrets.Info(d.key)
+	syncForCert := certInfo != nil && certInfo.ExpiringSoon() // check if we need to regenerate config because identity cert is expiring soon.
+	syncForConfig := snapshotHash != d.lastHash               // check if we need to regenerate config because Kuma policies has changed.
+	if !syncForCert && !syncForConfig {
 		return nil
 	}
-	d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", snapshotHash)
+	if syncForConfig {
+		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", snapshotHash)
+	}
+	if syncForCert {
+		d.log.V(1).Info("certs expiring soon, reconcile")
+	}
 
 	envoyCtx, err := d.xdsContextBuilder.buildMeshedContext(d.key, d.lastHash)
 	if err != nil {
 		return err
 	}
-	proxy, err := d.dataplaneProxyBuilder.build(d.key, &envoyCtx.Mesh)
+	proxy, err := d.dataplaneProxyBuilder.Build(d.key, envoyCtx)
 	if err != nil {
 		return err
+	}
+	if !envoyCtx.Mesh.Resource.MTLSEnabled() {
+		d.secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
 	}
 	if err := d.dataplaneReconciler.Reconcile(*envoyCtx, proxy); err != nil {
 		return err
@@ -122,7 +132,10 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 
 // syncIngress synces state of Ingress Dataplane. Notice that it does not use Mesh Hash yet because Ingress supports many Meshes.
 func (d *DataplaneWatchdog) syncIngress() error {
-	envoyCtx := d.xdsContextBuilder.buildContext(d.key)
+	envoyCtx, err := d.xdsContextBuilder.buildContext(d.key)
+	if err != nil {
+		return err
+	}
 	proxy, err := d.ingressProxyBuilder.build(d.key)
 	if err != nil {
 		return err

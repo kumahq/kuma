@@ -63,22 +63,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.1:443
@@ -222,22 +212,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.1:80
@@ -274,22 +254,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.2:443
@@ -345,22 +315,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.2:80

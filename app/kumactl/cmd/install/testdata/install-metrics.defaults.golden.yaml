@@ -130,6 +130,9 @@ data:
     logs = /var/log/grafana
     plugins = /var/lib/grafana/plugins
     provisioning = /etc/grafana/provisioning
+    [plugins]
+    # Required until we have grafana sign our plugin.
+    allow_loading_unsigned_plugins = "kumahq-kuma-datasource"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -172,6 +175,7 @@ data:
     datasources:
       # <string, required> name of the datasource. Required
       - name: Prometheus
+        uid: prometheus
         # <string, required> datasource type. Required
         type: prometheus
         # <string, required> access mode. direct or proxy. Required
@@ -209,6 +213,35 @@ data:
         version: 1
         # <bool> allow users to edit datasources from the UI.
         editable: true
+      - name: Kuma
+        uid: kuma
+        editable: true
+        type: kumahq-kuma-datasource
+        url: http://kuma-control-plane.kuma-system:5681
+        jsonData:
+          prometheusDataSourceId: "1"
+      - name: Jaeger
+        type: jaeger
+        access: proxy
+        editable: true
+        uid: jaeger
+        url: http://jaeger-query.kuma-tracing
+        jsonData:
+          tracesToLogs:
+            datasourceUid: loki
+            tags: ["node_id"]
+      - name: Loki
+        type: loki
+        access: proxy
+        editable: true
+        uid: loki
+        url: http://loki.kuma-logging:3100
+        jsonData:
+          derivedFields:
+            - datasourceUid: jaeger
+              matcherRegex: '"([0-9a-f]{16})"'
+              name: "traceId"
+              url: '$${__value.raw}'
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -500,9 +533,22 @@ data:
         - k8s_kuma_io_namespace
         regex: "(.*)"
         target_label: namespace
-      file_sd_configs:
-      - files:
-        - /var/run/kuma.io/prometheus-sd/kuma.file_sd.json
+      - source_labels:
+        - __meta_kuma_mesh
+        regex: "(.*)"
+        target_label: mesh
+      - source_labels:
+        - __meta_kuma_dataplane
+        regex: "(.*)"
+        target_label: dataplane
+      - source_labels:
+        - __meta_kuma_service
+        regex: "(.*)"
+        target_label: service
+      - action: labelmap
+        regex: __meta_kuma_label_(.+)
+      kuma_sd_configs:
+      - server: http://kuma-control-plane.kuma-system:5676
     alerting:
       alertmanagers:
       - kubernetes_sd_configs:
@@ -3359,6 +3405,12 @@ data:
             "hide": true,
             "iconColor": "rgba(0, 211, 255, 1)",
             "name": "Annotations & Alerts",
+            "target": {
+              "limit": 100,
+              "matchAny": false,
+              "tags": [],
+              "type": "dashboard"
+            },
             "type": "dashboard"
           }
         ]
@@ -3380,6 +3432,45 @@ data:
             "x": 0,
             "y": 0
           },
+          "id": 30,
+          "panels": [],
+          "title": "Service Map",
+          "type": "row"
+        },
+        {
+          "datasource": "Kuma",
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "id": 32,
+          "interval": "1m",
+          "targets": [
+            {
+              "hide": false,
+              "mesh": "$mesh",
+              "queryType": "mesh-graph",
+              "refId": "A"
+            }
+          ],
+          "title": "Service Map",
+          "type": "nodeGraph"
+        },
+        {
+          "collapsed": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 15
+          },
           "id": 23,
           "panels": [],
           "title": "HTTP",
@@ -3391,19 +3482,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 1
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 25,
@@ -3423,7 +3508,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3489,19 +3574,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 1
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 26,
@@ -3521,7 +3600,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3587,19 +3666,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 1
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 28,
@@ -3619,7 +3692,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3682,11 +3755,15 @@ data:
         {
           "collapsed": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 10
+            "y": 25
           },
           "id": 16,
           "panels": [],
@@ -3702,7 +3779,6 @@ data:
           "description": "Data is only available if HealthCheck policy is applied.",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -3713,7 +3789,7 @@ data:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 11
+            "y": 26
           },
           "hiddenSeries": false,
           "id": 9,
@@ -3733,7 +3809,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3792,11 +3868,15 @@ data:
         {
           "collapsed": false,
           "datasource": null,
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 18
+            "y": 33
           },
           "id": 19,
           "panels": [],
@@ -3810,19 +3890,13 @@ data:
           "dashes": false,
           "datasource": null,
           "description": "Total times that the cluster’s connection circuit breaker overflowed",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 34
           },
           "hiddenSeries": false,
           "id": 21,
@@ -3842,7 +3916,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3924,7 +3998,6 @@ data:
           "description": "Data is only available if HealthCheck policy is applied. Note that passive health checks are executed on healthy instances marked by active health checks.",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -3935,7 +4008,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 34
           },
           "hiddenSeries": false,
           "id": 17,
@@ -3955,7 +4028,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4015,11 +4088,15 @@ data:
         {
           "collapsed": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 42
           },
           "id": 12,
           "panels": [],
@@ -4034,7 +4111,6 @@ data:
           "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -4045,7 +4121,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 43
           },
           "hiddenSeries": false,
           "id": 2,
@@ -4067,7 +4143,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4152,7 +4228,6 @@ data:
           "description": "Note that if Control Plane does not sent FIN segment, Dataplanes can still think that connection is up waiting for new update even that Control Plane is down.",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -4163,7 +4238,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 43
           },
           "hiddenSeries": false,
           "id": 3,
@@ -4185,7 +4260,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4267,7 +4342,6 @@ data:
           "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -4278,7 +4352,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 35
+            "y": 50
           },
           "hiddenSeries": false,
           "id": 5,
@@ -4298,7 +4372,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4367,7 +4441,6 @@ data:
           "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -4378,7 +4451,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 35
+            "y": 50
           },
           "hiddenSeries": false,
           "id": 7,
@@ -4402,7 +4475,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4497,7 +4570,7 @@ data:
         }
       ],
       "refresh": "5s",
-      "schemaVersion": 27,
+      "schemaVersion": 30,
       "style": "dark",
       "tags": [],
       "templating": {
@@ -4528,7 +4601,6 @@ data:
             "skipUrlSync": false,
             "sort": 0,
             "tagValuesQuery": "",
-            "tags": [],
             "tagsQuery": "",
             "type": "query",
             "useTags": false
@@ -11785,7 +11857,7 @@ spec:
       serviceAccountName: prometheus-node-exporter
       containers:
         - name: prometheus-node-exporter
-          image: "prom/node-exporter:v1.1.2"
+          image: "prom/node-exporter:v1.2.2"
           imagePullPolicy: "IfNotPresent"
           args:
             - --path.procfs=/host/proc
@@ -11841,9 +11913,16 @@ spec:
       securityContext:
         fsGroup: 472
         runAsUser: 472
+      initContainers:
+        - name: init-plugins
+          image: alpine
+          command: [ '/bin/sh', '-c', 'wget -O /tmp/kuma.zip https://github.com/kumahq/kuma-grafana-datasource/releases/download/v0.0.3/kumahq-kuma-datasource-0.0.3.zip && unzip /tmp/kuma.zip -d /var/lib/grafana/plugins/ && rm /tmp/kuma.zip']
+          volumeMounts:
+            - name: plugins-volume
+              mountPath: /var/lib/grafana/plugins
       containers:
         - name: grafana
-          image: "grafana/grafana:7.5.8"
+          image: "grafana/grafana:8.1.2"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -11857,6 +11936,9 @@ spec:
               readOnly: true
             - name: provisioning-dashboards
               mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: plugins-volume
+              mountPath: /var/lib/grafana/plugins
               readOnly: true
           ports:
             - name: service
@@ -11908,6 +11990,8 @@ spec:
 
         - name: storage
           emptyDir: {}
+        - name: plugins-volume
+          emptyDir: {}
 ---
 # Source: prometheus/templates/alertmanager-deployment.yaml
 apiVersion: apps/v1
@@ -11933,7 +12017,7 @@ spec:
       serviceAccountName: prometheus-alertmanager
       containers:
         - name: prometheus-alertmanager
-          image: "prom/alertmanager:v0.21.0"
+          image: "prom/alertmanager:v0.22.2"
           imagePullPolicy: "IfNotPresent"
           env:
             - name: POD_IP
@@ -12085,7 +12169,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v2.27.1"
+          image: "prom/prometheus:v2.29.1"
           imagePullPolicy: "IfNotPresent"
           args:
             - --storage.tsdb.retention.time=15d
@@ -12104,19 +12188,6 @@ spec:
             - name: storage-volume
               mountPath: /data
               subPath: ""
-            - mountPath: "/var/run/kuma.io/prometheus-sd"
-              name: kuma-prometheus-sd-volume
-        - name: kuma-prometheus-sd
-          image: docker.io/kumahq/kuma-prometheus-sd:0.0.1
-          imagePullPolicy: IfNotPresent
-          args:
-            - run
-            - --name=kuma-prometheus-sd
-            - --cp-address=grpc://kuma-control-plane.kuma-system:5676
-            - --output-file=/var/run/kuma.io/prometheus-sd/kuma.file_sd.json
-          volumeMounts:
-            - mountPath: "/var/run/kuma.io/prometheus-sd"
-              name: kuma-prometheus-sd-volume
       securityContext:
         fsGroup: 65534
         runAsGroup: 65534
@@ -12129,5 +12200,3 @@ spec:
         - name: storage-volume
           persistentVolumeClaim:
             claimName: prometheus-server
-        - name: kuma-prometheus-sd-volume
-          emptyDir: {}

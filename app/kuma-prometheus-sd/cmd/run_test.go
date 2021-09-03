@@ -3,10 +3,10 @@ package cmd
 import (
 	"time"
 
-	"github.com/kumahq/kuma/pkg/test"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("run", func() {
@@ -48,7 +48,7 @@ var _ = Describe("run", func() {
 		By("waiting for Kuma Prometheus SD to become ready")
 
 		// when
-		By("signalling Kuma Prometheus SD to stop")
+		By("signaling Kuma Prometheus SD to stop")
 		close(stopCh)
 
 		// then

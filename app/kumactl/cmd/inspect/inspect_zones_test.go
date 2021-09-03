@@ -7,29 +7,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/test/matchers"
-
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	system_core "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-
-	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	system_core "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -69,7 +60,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: &wrapperspb.BoolValue{Value: true}},
+					Zone: &system_proto.Zone{Enabled: util_proto.Bool(true)},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -159,6 +150,7 @@ var _ = Describe("kumactl inspect zones", func() {
 										BuildDate: "2019-08-07T11:26:06Z",
 									},
 								},
+								Config: `{"apiServer":{"auth":{"allowFromLocalhost":true,"clientCertsDir":""},"corsAllowedDomains":[".*"],"http":{"enabled":true,"interface":"0.0.0.0","port":15681},"https":{"enabled":false,"interface":"0.0.0.0","port":5682,"tlsCertFile":"/Users/jakob/.kuma/kuma-cp.crt","tlsKeyFile":"/Users/jakob/.kuma/kuma-cp.key"},"readOnly":false},"bootstrapServer":{"apiVersion":"v3","params":{"adminAccessLogPath":"/dev/null","adminAddress":"127.0.0.1","adminPort":0,"xdsConnectTimeout":"1s","xdsHost":"","xdsPort":15678}},"defaults":{"skipMeshCreation":false},"diagnostics":{"debugEndpoints":false,"serverPort":15680},"dnsServer":{"CIDR":"240.0.0.0/4","domain":"mesh","port":15653},"dpServer":{"auth":{"type":"dpToken"},"hds":{"checkDefaults":{"healthyThreshold":1,"interval":"1s","noTrafficInterval":"1s","timeout":"2s","unhealthyThreshold":1},"enabled":true,"interval":"5s","refreshInterval":"10s"},"port":15678,"tlsCertFile":"/Users/jakob/.kuma/kuma-cp.crt","tlsKeyFile":"/Users/jakob/.kuma/kuma-cp.key"},"environment":"universal","general":{"dnsCacheTTL":"10s","tlsCertFile":"/Users/jakob/.kuma/kuma-cp.crt","tlsKeyFile":"/Users/jakob/.kuma/kuma-cp.key","workDir":"/Users/jakob/.kuma"},"guiServer":{"apiServerUrl":""},"metrics":{"dataplane":{"enabled":true,"idleTimeout":"5m0s","subscriptionLimit":2},"mesh":{"maxResyncTimeout":"20s","minResyncTimeout":"1s"},"zone":{"enabled":true,"idleTimeout":"5m0s","subscriptionLimit":10}},"mode":"zone","monitoringAssignmentServer":{"apiVersions":["v1"],"assignmentRefreshInterval":"1s","defaultFetchTimeout":"30s","grpcPort":15676,"port":5676},"multizone":{"global":{"kds":{"grpcPort":5685,"maxMsgSize":10485760,"refreshInterval":"1s","tlsCertFile":"/Users/jakob/.kuma/kuma-cp.crt","tlsKeyFile":"/Users/jakob/.kuma/kuma-cp.key","zoneInsightFlushInterval":"10s"}},"zone":{"globalAddress":"grpcs://localhost:35685","kds":{"maxMsgSize":10485760,"refreshInterval":"1s","rootCaFile":""},"name":"cluster-1"}},"reports":{"enabled":false},"runtime":{"kubernetes":{"admissionServer":{"address":"","certDir":"","port":5443},"controlPlaneServiceName":"kuma-control-plane","injector":{"builtinDNS":{"enabled":true,"port":15053},"caCertFile":"","cniEnabled":false,"exceptions":{"labels":{"openshift.io/build.name":"*","openshift.io/deployer-pod-for.name":"*"}},"initContainer":{"image":"kuma/kuma-init:latest"},"sidecarContainer":{"adminPort":9901,"drainTime":"30s","envVars":{},"gid":5678,"image":"kuma/kuma-dp:latest","livenessProbe":{"failureThreshold":12,"initialDelaySeconds":60,"periodSeconds":5,"timeoutSeconds":3},"readinessProbe":{"failureThreshold":12,"initialDelaySeconds":1,"periodSeconds":5,"successThreshold":1,"timeoutSeconds":3},"redirectPortInbound":15006,"redirectPortInboundV6":15010,"redirectPortOutbound":15001,"resources":{"limits":{"cpu":"1000m","memory":"512Mi"},"requests":{"cpu":"50m","memory":"64Mi"}},"uid":5678},"sidecarTraffic":{"excludeInboundPorts":[],"excludeOutboundPorts":[]},"virtualProbesEnabled":true,"virtualProbesPort":9000},"marshalingCacheExpirationTime":"5m0s"},"universal":{"dataplaneCleanupAge":"72h0m0s"}},"store":{"cache":{"enabled":true,"expirationTime":"1s"},"kubernetes":{"systemNamespace":"kuma-system"},"postgres":{"connectionTimeout":5,"dbName":"kuma","host":"127.0.0.1","maxIdleConnections":0,"maxOpenConnections":0,"maxReconnectInterval":"1m0s","minReconnectInterval":"10s","password":"*****","port":15432,"tls":{"caPath":"","certPath":"","keyPath":"","mode":"disable"},"user":"kuma"},"type":"memory","upsert":{"conflictRetryBaseBackoff":"100ms","conflictRetryMaxTimes":5}},"xdsServer":{"dataplaneConfigurationRefreshInterval":"1s","dataplaneStatusFlushInterval":"10s","nackBackoff":"5s"}}`,
 							},
 						},
 					},
@@ -171,7 +163,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: &wrapperspb.BoolValue{Value: true}},
+					Zone: &system_proto.Zone{Enabled: util_proto.Bool(true)},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -197,7 +189,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: &wrapperspb.BoolValue{Value: false}},
+					Zone: &system_proto.Zone{Enabled: util_proto.Bool(false)},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -222,7 +214,6 @@ var _ = Describe("kumactl inspect zones", func() {
 
 	Describe("InspectZonesCmd", func() {
 
-		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 
@@ -234,15 +225,10 @@ var _ = Describe("kumactl inspect zones", func() {
 				total:     uint32(len(sampleZoneOverview)),
 				overviews: sampleZoneOverview,
 			}
-
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return now },
-					NewZoneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneOverviewClient, error) {
-						return testClient, nil
-					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
-				},
+			rootCtx, err := test_kumactl.MakeRootContext(now, nil)
+			Expect(err).ToNot(HaveOccurred())
+			rootCtx.Runtime.NewZoneOverviewClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneOverviewClient, error) {
+				return testClient, nil
 			}
 
 			rootCmd = cmd.NewRootCmd(rootCtx)

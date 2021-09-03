@@ -5,13 +5,11 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 
 	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/common"
 	v1 "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/v1"
-	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/v1alpha1"
-
-	"github.com/prometheus/prometheus/discovery"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
 type discoverer struct {
@@ -25,8 +23,6 @@ func NewDiscoverer(config common.DiscoveryConfig, log logr.Logger) (discovery.Di
 	switch config.ApiVersion {
 	case common.V1:
 		factory = v1.NewFactory()
-	case common.V1Alpha1:
-		factory = v1alpha1.NewFactory()
 	default:
 		return nil, errors.Errorf("invalid MADS apiVersion %s", config.ApiVersion)
 	}

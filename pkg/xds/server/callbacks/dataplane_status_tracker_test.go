@@ -4,27 +4,22 @@ import (
 	"context"
 	"time"
 
-	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+	status "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-
-	status "google.golang.org/genproto/googleapis/rpc/status"
-
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
@@ -64,10 +59,10 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	})
 
 	BeforeEach(func() {
-		tracker = NewDataplaneStatusTracker(runtimeInfo, func(dataplaneType core_model.ResourceType, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
+		tracker = NewDataplaneStatusTracker(&runtimeInfo, func(dataplaneType core_model.ResourceType, accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 			return DataplaneInsightSinkFunc(func(<-chan struct{}) {})
 		})
-		callbacks = v2.AdaptCallbacks(tracker)
+		callbacks = v3.AdaptCallbacks(tracker)
 		ctx = context.Background()
 	})
 
@@ -149,8 +144,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating initial LDS request")
 		// when
-		discoveryRequest := &envoy.DiscoveryRequest{
-			TypeUrl: "type.googleapis.com/envoy.api.v2.Listener",
+		discoveryRequest := &envoy_sd.DiscoveryRequest{
+			TypeUrl: "type.googleapis.com/envoy.config.listener.v3.Listener",
 		}
 		err = callbacks.OnStreamRequest(streamID, discoveryRequest)
 		// then
@@ -214,7 +209,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating initial xDS request")
 			// when
-			discoveryRequest := &envoy.DiscoveryRequest{
+			discoveryRequest := &envoy_sd.DiscoveryRequest{
 				Node: &envoy_core.Node{
 					Id: "default.example-001",
 					Metadata: &structpb.Struct{
@@ -269,7 +264,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating initial xDS response")
 			// when
-			discoveryResponse := &envoy.DiscoveryResponse{
+			discoveryResponse := &envoy_sd.DiscoveryResponse{
 				TypeUrl: given.TypeUrl,
 				Nonce:   "1",
 			}
@@ -285,7 +280,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating xDS ACK request")
 			// when
-			discoveryRequest = &envoy.DiscoveryRequest{
+			discoveryRequest = &envoy_sd.DiscoveryRequest{
 				TypeUrl:       given.TypeUrl,
 				ResponseNonce: "1",
 			}
@@ -305,7 +300,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating xDS NACK request")
 			// when
-			discoveryRequest = &envoy.DiscoveryRequest{
+			discoveryRequest = &envoy_sd.DiscoveryRequest{
 				TypeUrl:       given.TypeUrl,
 				ResponseNonce: "1",
 				ErrorDetail: &status.Status{
@@ -327,7 +322,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			Expect(util_proto.ToYAML(subscription)).To(MatchYAML(given.ExpectedStatsAfterNACK))
 		},
 		Entry("should properly handle LDS flow", testCase{
-			TypeUrl: "type.googleapis.com/envoy.api.v2.Listener",
+			TypeUrl: "type.googleapis.com/envoy.config.listener.v3.Listener",
 			ExpectedStatsAfterResponse: `
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: test
@@ -405,7 +400,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 `,
 		}),
 		Entry("should properly handle RDS flow", testCase{
-			TypeUrl: "type.googleapis.com/envoy.api.v2.RouteConfiguration",
+			TypeUrl: "type.googleapis.com/envoy.config.route.v3.RouteConfiguration",
 			ExpectedStatsAfterResponse: `
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: test
@@ -483,7 +478,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 `,
 		}),
 		Entry("should properly handle CDS flow", testCase{
-			TypeUrl: "type.googleapis.com/envoy.api.v2.Cluster",
+			TypeUrl: "type.googleapis.com/envoy.config.cluster.v3.Cluster",
 			ExpectedStatsAfterResponse: `
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: test
@@ -561,7 +556,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 `,
 		}),
 		Entry("should properly handle EDS flow", testCase{
-			TypeUrl: "type.googleapis.com/envoy.api.v2.ClusterLoadAssignment",
+			TypeUrl: "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment",
 			ExpectedStatsAfterResponse: `
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: test
@@ -648,8 +643,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		func(given versionTestCase) {
 			// given
 			streamID := int64(1)
-			discoveryRequest := &envoy.DiscoveryRequest{
-				TypeUrl: "type.googleapis.com/envoy.api.v2.Listener",
+			discoveryRequest := &envoy_sd.DiscoveryRequest{
+				TypeUrl: "type.googleapis.com/envoy.config.listener.v3.Listener",
 				Node: &envoy_core.Node{
 					Id: "default.example-001",
 					Metadata: &structpb.Struct{

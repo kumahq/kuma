@@ -4,13 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -84,18 +83,15 @@ func (s *storeCounter) count() error {
 }
 
 func (s *storeCounter) countGlobalScopedResources(resourceCount map[string]uint32) error {
-	for _, resType := range registry.Global().ListTypes() {
-		if meshScoped(resType) {
+	for _, resDesc := range registry.Global().ObjectDescriptors() {
+		if resDesc.Scope == model.ScopeMesh {
 			continue
 		}
-		list, err := registry.Global().NewList(resType)
-		if err != nil {
-			return err
-		}
+		list := resDesc.NewList()
 		if err := s.resManager.List(context.Background(), list); err != nil {
 			return err
 		}
-		resourceCount[string(resType)] += uint32(len(list.GetItems()))
+		resourceCount[string(resDesc.Name)] += uint32(len(list.GetItems()))
 	}
 	return nil
 }
@@ -112,11 +108,4 @@ func (s *storeCounter) countMeshScopedResources(resourceCount map[string]uint32)
 		}
 	}
 	return nil
-}
-
-func meshScoped(t model.ResourceType) bool {
-	if obj, err := registry.Global().NewObject(t); err != nil || obj.Scope() != model.ScopeMesh {
-		return false
-	}
-	return true
 }

@@ -10,7 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplaneinsight"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
@@ -26,10 +26,10 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		}
 		manager := dataplaneinsight.NewDataplaneInsightManager(s, cfg)
 
-		err := s.Create(context.Background(), mesh_core.NewDataplaneResource(), store.CreateByKey("di1", "default"))
+		err := s.Create(context.Background(), core_mesh.NewDataplaneResource(), store.CreateByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		input := mesh_core.NewDataplaneInsightResource()
+		input := core_mesh.NewDataplaneInsightResource()
 		for i := 0; i < 10; i++ {
 			input.Spec.Subscriptions = append(input.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 				Id: fmt.Sprintf("%d", i),
@@ -40,7 +40,7 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		err = manager.Create(context.Background(), input, store.CreateByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		actual := mesh_core.NewDataplaneInsightResource()
+		actual := core_mesh.NewDataplaneInsightResource()
 		err = s.Get(context.Background(), actual, store.GetByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -59,10 +59,10 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		}
 		manager := dataplaneinsight.NewDataplaneInsightManager(s, cfg)
 
-		err := s.Create(context.Background(), mesh_core.NewDataplaneResource(), store.CreateByKey("di1", "default"))
+		err := s.Create(context.Background(), core_mesh.NewDataplaneResource(), store.CreateByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		input := mesh_core.NewDataplaneInsightResource()
+		input := core_mesh.NewDataplaneInsightResource()
 		for i := 0; i < 10; i++ {
 			input.Spec.Subscriptions = append(input.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 				Id: fmt.Sprintf("%d", i),
@@ -73,7 +73,7 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		err = manager.Create(context.Background(), input, store.CreateByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		actual := mesh_core.NewDataplaneInsightResource()
+		actual := core_mesh.NewDataplaneInsightResource()
 		err = s.Get(context.Background(), actual, store.GetByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 

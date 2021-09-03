@@ -3,31 +3,25 @@ package inspect_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
-
 	"github.com/spf13/cobra"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -37,14 +31,14 @@ type testDataplaneOverviewClient struct {
 	receivedGateway bool
 	receivedIngress bool
 	total           uint32
-	overviews       []*mesh_core.DataplaneOverviewResource
+	overviews       []*core_mesh.DataplaneOverviewResource
 }
 
-func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string, gateway bool, ingress bool) (*mesh_core.DataplaneOverviewResourceList, error) {
+func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string, gateway bool, ingress bool) (*core_mesh.DataplaneOverviewResourceList, error) {
 	c.receivedTags = tags
 	c.receivedGateway = gateway
 	c.receivedIngress = ingress
-	return &mesh_core.DataplaneOverviewResourceList{
+	return &core_mesh.DataplaneOverviewResourceList{
 		Items: c.overviews,
 		Pagination: model.Pagination{
 			Total: c.total,
@@ -57,7 +51,7 @@ var _ resources.DataplaneOverviewClient = &testDataplaneOverviewClient{}
 var _ = Describe("kumactl inspect dataplanes", func() {
 
 	var now, t1, t2 time.Time
-	var sampleDataplaneOverview []*mesh_core.DataplaneOverviewResource
+	var sampleDataplaneOverview []*core_mesh.DataplaneOverviewResource
 
 	BeforeEach(func() {
 		now, _ = time.Parse(time.RFC3339, "2019-07-17T18:08:41+00:00")
@@ -65,7 +59,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 		t2, _ = time.Parse(time.RFC3339, "2019-07-17T16:05:36.995+00:00")
 		time.Local = time.UTC
 
-		sampleDataplaneOverview = []*mesh_core.DataplaneOverviewResource{
+		sampleDataplaneOverview = []*core_mesh.DataplaneOverviewResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh:             "default",
@@ -245,6 +239,8 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 								Seconds: 1563306488,
 							},
 							CertificateRegenerations: 10,
+							IssuedBackend:            "ca-1",
+							SupportedBackends:        []string{"ca-1", "ca-2"},
 						},
 					},
 				},
@@ -386,7 +382,6 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 
 	Describe("InspectDataplanesCmd", func() {
 
-		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 
@@ -399,14 +394,10 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				overviews: sampleDataplaneOverview,
 			}
 
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return now },
-					NewDataplaneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.DataplaneOverviewClient, error) {
-						return testClient, nil
-					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
-				},
+			rootCtx, err := test_kumactl.MakeRootContext(now, nil)
+			Expect(err).ToNot(HaveOccurred())
+			rootCtx.Runtime.NewDataplaneOverviewClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer) (resources.DataplaneOverviewClient, error) {
+				return testClient, nil
 			}
 
 			rootCmd = cmd.NewRootCmd(rootCtx)
@@ -438,15 +429,10 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 
 				// when
 				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
 
-				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
 				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(buf.String()).To(given.matcher(expected))
+				Expect(buf.String()).To(matchers.MatchGoldenEqual(filepath.Join("testdata", given.goldenFile)))
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",

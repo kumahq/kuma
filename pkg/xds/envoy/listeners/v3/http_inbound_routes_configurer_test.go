@@ -1,23 +1,19 @@
 package v3_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	"github.com/kumahq/kuma/pkg/core/xds"
-
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 var _ = Describe("HttpInboundRouteConfigurer", func() {
@@ -133,20 +129,14 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Conf: &v1alpha1.RateLimit_Conf{
 					Http: &v1alpha1.RateLimit_Conf_Http{
 						Requests: 100,
-						Interval: &durationpb.Duration{
-							Seconds: 3,
-						},
+						Interval: util_proto.Duration(time.Second * 3),
 						OnRateLimit: &v1alpha1.RateLimit_Conf_Http_OnRateLimit{
-							Status: &wrapperspb.UInt32Value{
-								Value: 404,
-							},
+							Status: util_proto.UInt32(404),
 							Headers: []*v1alpha1.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
 								{
-									Key:   "x-local-rate-limit",
-									Value: "true",
-									Append: &wrapperspb.BoolValue{
-										Value: false,
-									},
+									Key:    "x-local-rate-limit",
+									Value:  "true",
+									Append: util_proto.Bool(false),
 								},
 							},
 						},
@@ -230,20 +220,14 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Conf: &v1alpha1.RateLimit_Conf{
 					Http: &v1alpha1.RateLimit_Conf_Http{
 						Requests: 100,
-						Interval: &durationpb.Duration{
-							Seconds: 3,
-						},
+						Interval: util_proto.Duration(time.Second * 3),
 						OnRateLimit: &v1alpha1.RateLimit_Conf_Http_OnRateLimit{
-							Status: &wrapperspb.UInt32Value{
-								Value: 404,
-							},
+							Status: util_proto.UInt32(404),
 							Headers: []*v1alpha1.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
 								{
-									Key:   "x-local-rate-limit",
-									Value: "true",
-									Append: &wrapperspb.BoolValue{
-										Value: false,
-									},
+									Key:    "x-local-rate-limit",
+									Value:  "true",
+									Append: util_proto.Bool(false),
 								},
 							},
 						},

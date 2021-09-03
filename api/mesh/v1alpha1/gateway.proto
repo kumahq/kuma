@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "mesh/options.proto";
+import "mesh/v1alpha1/selector.proto";
+import "system/v1alpha1/datasource.proto";
+import "validate/validate.proto";
+
+// Gateway is a virtual proxy.
+//
+// Each Gateway is bound to a set of builtin gateway dataplanes.
+// Each builtin dataplane instance can host exactly one Gateway
+// proxy configuration.
+//
+// Gateway aligns with the Kubernetes Gateway API v1alpha2. See that
+// spec for detailed documentation.
+message Gateway {
+
+  option (kuma.mesh.resource).name = "GatewayResource";
+  option (kuma.mesh.resource).type = "Gateway";
+  option (kuma.mesh.resource).package = "mesh";
+
+  option (kuma.mesh.resource).skip_registration = true;
+  option (kuma.mesh.resource).kds.send_to_global = true;
+  option (kuma.mesh.resource).ws.name = "gateway";
+
+  // TLSConfig describes a TLS configuration.
+  message TLS {
+    enum Mode {
+      // NONE is not a valid TLS mode. Ether TERMINATE or PASSTHROUGH must
+      // be explicitly configured.
+      NONE = 0;
+      // The TLS session between the downstream client and the Gateway
+      // is terminated at the Gateway. This mode requires the certificate
+      // field to be set.
+      TERMINATE = 1;
+      // The TLS session is NOT terminated by the Gateway. This implies
+      // that the Gateway can't decipher the TLS stream except for the
+      // ClientHello message of the TLS protocol. The certificate field
+      // is ignored in this mode.
+      PASSTHROUGH = 2;
+    }
+
+    message Options {
+      // TODO(jpeach)
+    }
+
+    // Aligns with GatewayTLSConfig.
+    message Conf {
+      // Mode defines the TLS behavior for the TLS session initiated
+      // by the client.
+      Mode mode = 1;
+
+      // Certificate is a reference to a object that contains a TLS
+      // certificate and private key. This certificate is used to establish
+      // a TLS session for requests that match the hostname of the associated
+      // listener.
+      kuma.system.v1alpha1.DataSource certificate = 2;
+
+      // Options should eventually configure how TLS is configured. This
+      // is where cipher suite and version configuration can be specified,
+      // client certificates enforced, and so on.
+      Options options = 3;
+    }
+  }
+
+  message Listener {
+    enum Protocol {
+      NONE = 0;
+      TCP = 1;
+      UDP = 2;
+      TLS = 3;
+      HTTP = 4;
+      HTTPS = 5;
+    }
+
+    // Hostname specifies the virtual hostname to match for protocol types that
+    // define this concept. When unspecified, "", or `*`, all hostnames are
+    // matched. This field can be omitted for protocols that don't require
+    // hostname based matching.
+    string hostname = 1;
+
+    // Port is the network port. Multiple listeners may use the
+    // same port, subject to the Listener compatibility rules.
+    uint32 port = 2;
+
+    // Protocol specifies the network protocol this listener expects to receive.
+    Protocol protocol = 3;
+
+    // TLS is the TLS configuration for the Listener. This field
+    // is required if the Protocol field is "HTTPS" or "TLS" and
+    // ignored otherwise.
+    TLS.Conf tls = 4;
+
+    // Tags specifies a unique combination of tags that routes can use
+    // to match themselves to this listener.
+    //
+    // When matching routes to listeners, the control plane constructs a
+    // set of matching tags for each listener by forming the union of the
+    // gateway tags and the listener tags. A route will be attached to the
+    // listener if all of the route's tags are preset in the matching tags
+    map<string, string> tags = 5;
+  }
+
+  // Conf defines the desired state of Gateway.
+  //
+  // Aligns with GatewaySpec.
+  message Conf {
+    // Listeners define logical endpoints that are bound on this Gateway's
+    // address(es).
+    repeated Listener listeners = 2
+        [ (validate.rules).repeated .min_items = 1 ];
+
+    // Note that the Kubernetes API Gateway resource defines a  list of
+    // gateway addresses here. In Kuma, however, the Dataplane resources
+    // owns the IP address(es) that it listens on, and those  addresses
+    // will ultimately be where the Gateway is reachable.
+  }
+
+  // Sources is a selector that is used to match builtin gateway
+  // dataplanes that will receive this Gateway configuration.
+  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+
+  // Tags is the set of tags common to all of the gateway's listeners.
+  //
+  // This field must not include a `kuma.io/service` tag (the service is always
+  // defined on the dataplanes).
+  map<string, string> tags = 2 [ (validate.rules).repeated .min_items = 1 ];
+
+  // The desired configuration of the Gateway.
+  Conf conf = 3;
+}

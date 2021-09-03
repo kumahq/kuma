@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -24,11 +24,11 @@ const (
 
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
 func BuildEndpointMap(
-	mesh *mesh_core.MeshResource,
+	mesh *core_mesh.MeshResource,
 	zone string,
-	dataplanes []*mesh_core.DataplaneResource,
-	zoneIngresses []*mesh_core.ZoneIngressResource,
-	externalServices []*mesh_core.ExternalServiceResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	zoneIngresses []*core_mesh.ZoneIngressResource,
+	externalServices []*core_mesh.ExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
 	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses)
@@ -37,10 +37,10 @@ func BuildEndpointMap(
 }
 
 func BuildEdsEndpointMap(
-	mesh *mesh_core.MeshResource,
+	mesh *core_mesh.MeshResource,
 	zone string,
-	dataplanes []*mesh_core.DataplaneResource,
-	zoneIngresses []*mesh_core.ZoneIngressResource,
+	dataplanes []*core_mesh.DataplaneResource,
+	zoneIngresses []*core_mesh.ZoneIngressResource,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, dataplanes, zone, mesh)
@@ -72,7 +72,7 @@ func BuildEdsEndpointMap(
 //    * backend-zone1-2 - weight: 2
 //    * ingress-zone2-1 - weight: 3
 //    * ingress-zone2-2 - weight: 3
-func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core.DataplaneResource, mesh *mesh_core.MeshResource, endpointWeight uint32) {
+func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, endpointWeight uint32) {
 	for _, dataplane := range dataplanes {
 		if dataplane.Spec.IsIngress() {
 			continue
@@ -95,10 +95,10 @@ func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_co
 
 func fillIngressOutbounds(
 	outbound core_xds.EndpointMap,
-	zoneIngresses []*mesh_core.ZoneIngressResource,
-	dataplanes []*mesh_core.DataplaneResource,
+	zoneIngresses []*core_mesh.ZoneIngressResource,
+	dataplanes []*core_mesh.DataplaneResource,
 	zone string,
-	mesh *mesh_core.MeshResource,
+	mesh *core_mesh.MeshResource,
 ) uint32 {
 	ingressInstances := map[string]bool{}
 
@@ -172,7 +172,7 @@ func fillIngressOutbounds(
 	return uint32(len(ingressInstances))
 }
 
-func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServices []*mesh_core.ExternalServiceResource, mesh *mesh_core.MeshResource, loader datasource.Loader) {
+func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServices []*core_mesh.ExternalServiceResource, mesh *core_mesh.MeshResource, loader datasource.Loader) {
 	for _, externalService := range externalServices {
 		service := externalService.Spec.GetService()
 
@@ -185,7 +185,7 @@ func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServic
 	}
 }
 
-func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceResource, mesh *mesh_core.MeshResource, loader datasource.Loader) (*core_xds.Endpoint, error) {
+func buildExternalServiceEndpoint(externalService *core_mesh.ExternalServiceResource, mesh *core_mesh.MeshResource, loader datasource.Loader) (*core_xds.Endpoint, error) {
 	es := &core_xds.ExternalService{
 		TLSEnabled: externalService.Spec.GetNetworking().GetTls().GetEnabled(),
 		CaCert: convertToEnvoy(
@@ -198,6 +198,7 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 			externalService.Spec.GetNetworking().GetTls().GetClientKey(),
 			mesh.GetMeta().GetName(), loader),
 		AllowRenegotiation: externalService.Spec.GetNetworking().GetTls().GetAllowRenegotiation().GetValue(),
+		ServerName:         externalService.Spec.GetNetworking().GetTls().GetServerName().GetValue(),
 	}
 
 	tags := externalService.Spec.GetTags()
@@ -229,7 +230,7 @@ func convertToEnvoy(ds *v1alpha1.DataSource, mesh string, loader datasource.Load
 	return data
 }
 
-func localityFromTags(mesh *mesh_core.MeshResource, priority uint32, tags map[string]string) *core_xds.Locality {
+func localityFromTags(mesh *core_mesh.MeshResource, priority uint32, tags map[string]string) *core_xds.Locality {
 	region, regionPresent := tags[mesh_proto.RegionTag]
 	zone, zonePresent := tags[mesh_proto.ZoneTag]
 	subZone, subZonePresent := tags[mesh_proto.SubZoneTag]

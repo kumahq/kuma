@@ -3,8 +3,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -46,13 +45,13 @@ func (l *ZoneIngressList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.ZoneIngress{}, &ZoneIngress{
+	registry.RegisterObjectType(&mesh_proto.ZoneIngress{}, &ZoneIngress{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "ZoneIngress",
 		},
 	})
-	registry.RegisterListType(&proto.ZoneIngress{}, &ZoneIngressList{
+	registry.RegisterListType(&mesh_proto.ZoneIngress{}, &ZoneIngressList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "ZoneIngressList",

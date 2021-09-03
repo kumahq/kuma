@@ -4,16 +4,11 @@ import (
 	"net"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
-	"github.com/kumahq/kuma/pkg/dp-server/server"
-	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -24,29 +19,33 @@ import (
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/events"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
-var _ core_runtime.RuntimeInfo = TestRuntimeInfo{}
+var _ core_runtime.RuntimeInfo = &TestRuntimeInfo{}
 
 type TestRuntimeInfo struct {
 	InstanceId string
 	ClusterId  string
 }
 
-func (i TestRuntimeInfo) GetInstanceId() string {
+func (i *TestRuntimeInfo) GetInstanceId() string {
 	return i.InstanceId
 }
 
-func (i TestRuntimeInfo) SetClusterId(clusterId string) {
+func (i *TestRuntimeInfo) SetClusterId(clusterId string) {
 	i.ClusterId = clusterId
 }
 
-func (i TestRuntimeInfo) GetClusterId() string {
+func (i *TestRuntimeInfo) GetClusterId() string {
 	return i.ClusterId
 }
 
@@ -65,6 +64,7 @@ func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 
 	builder.WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore()))
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
+	builder.WithMeshValidator(mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()))
 
 	rm := newResourceManager(builder)
 	builder.WithResourceManager(rm).
@@ -79,6 +79,7 @@ func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
+	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)
@@ -101,10 +102,7 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-	validator := mesh_managers.MeshValidator{
-		CaManagers: builder.CaManagers(),
-	}
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), validator)
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.MeshValidator())
 	customManagers[core_mesh.MeshType] = meshManager
 
 	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil)
@@ -116,11 +114,11 @@ type DummyEnvoyAdminClient struct {
 	PostQuitCalled *int
 }
 
-func (d *DummyEnvoyAdminClient) GenerateAPIToken(dp *mesh_core.DataplaneResource) (string, error) {
+func (d *DummyEnvoyAdminClient) GenerateAPIToken(dp *core_mesh.DataplaneResource) (string, error) {
 	return "token", nil
 }
 
-func (d *DummyEnvoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) error {
+func (d *DummyEnvoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) error {
 	if d.PostQuitCalled != nil {
 		*d.PostQuitCalled++
 	}

@@ -4,20 +4,14 @@ import (
 	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/any"
-	"google.golang.org/protobuf/types/known/durationpb"
-
-	"github.com/kumahq/kuma/pkg/util/proto"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
@@ -49,14 +43,12 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 
 func (c RoutesConfigurer) setHeadersModifications(route *envoy_route.Route, modify *mesh_proto.TrafficRoute_Http_Modify) {
 	for _, add := range modify.GetRequestHeaders().GetAdd() {
-		route.RequestHeadersToAdd = append(route.RequestHeadersToAdd, &envoy_core.HeaderValueOption{
-			Header: &envoy_core.HeaderValue{
+		route.RequestHeadersToAdd = append(route.RequestHeadersToAdd, &envoy_config_core_v3.HeaderValueOption{
+			Header: &envoy_config_core_v3.HeaderValue{
 				Key:   add.Name,
 				Value: add.Value,
 			},
-			Append: &wrapperspb.BoolValue{
-				Value: add.Append,
-			},
+			Append: util_proto.Bool(add.Append),
 		})
 	}
 	for _, remove := range modify.GetRequestHeaders().GetRemove() {
@@ -64,14 +56,12 @@ func (c RoutesConfigurer) setHeadersModifications(route *envoy_route.Route, modi
 	}
 
 	for _, add := range modify.GetResponseHeaders().GetAdd() {
-		route.ResponseHeadersToAdd = append(route.ResponseHeadersToAdd, &envoy_core.HeaderValueOption{
-			Header: &envoy_core.HeaderValue{
+		route.ResponseHeadersToAdd = append(route.ResponseHeadersToAdd, &envoy_config_core_v3.HeaderValueOption{
+			Header: &envoy_config_core_v3.HeaderValue{
 				Key:   add.Name,
 				Value: add.Value,
 			},
-			Append: &wrapperspb.BoolValue{
-				Value: add.Append,
-			},
+			Append: util_proto.Bool(add.Append),
 		})
 	}
 	for _, remove := range modify.GetResponseHeaders().GetRemove() {
@@ -170,7 +160,7 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *mesh_proto.TrafficRoute_Http_Modify) *envoy_route.RouteAction {
 	routeAction := &envoy_route.RouteAction{}
 	if len(clusters) != 0 {
-		routeAction.Timeout = durationpb.New(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
+		routeAction.Timeout = util_proto.Duration(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
 	}
 	if len(clusters) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
@@ -182,20 +172,20 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *m
 		for _, cluster := range clusters {
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
 				Name:   cluster.Name(),
-				Weight: &wrapperspb.UInt32Value{Value: cluster.Weight()},
+				Weight: util_proto.UInt32(cluster.Weight()),
 			})
 			totalWeight += cluster.Weight()
 		}
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_WeightedClusters{
 			WeightedClusters: &envoy_route.WeightedCluster{
 				Clusters:    weightedClusters,
-				TotalWeight: &wrapperspb.UInt32Value{Value: totalWeight},
+				TotalWeight: util_proto.UInt32(totalWeight),
 			},
 		}
 	}
 	if c.hasExternal(clusters) {
 		routeAction.HostRewriteSpecifier = &envoy_route.RouteAction_AutoHostRewrite{
-			AutoHostRewrite: &wrapperspb.BoolValue{Value: true},
+			AutoHostRewrite: util_proto.Bool(true),
 		}
 	}
 	c.setModifications(routeAction, modify)
@@ -279,11 +269,9 @@ func (c *RoutesConfigurer) createRateLimit(rlHttp *mesh_proto.RateLimit_Conf_Htt
 		StatPrefix: "rate_limit",
 		Status:     status,
 		TokenBucket: &envoy_type_v3.TokenBucket{
-			MaxTokens: rlHttp.GetRequests(),
-			TokensPerFill: &wrapperspb.UInt32Value{
-				Value: rlHttp.GetRequests(),
-			},
-			FillInterval: rlHttp.GetInterval(),
+			MaxTokens:     rlHttp.GetRequests(),
+			TokensPerFill: util_proto.UInt32(rlHttp.GetRequests()),
+			FillInterval:  rlHttp.GetInterval(),
 		},
 		FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{
@@ -302,5 +290,5 @@ func (c *RoutesConfigurer) createRateLimit(rlHttp *mesh_proto.RateLimit_Conf_Htt
 		ResponseHeadersToAdd: responseHeaders,
 	}
 
-	return proto.MarshalAnyDeterministic(config)
+	return util_proto.MarshalAnyDeterministic(config)
 }

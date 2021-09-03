@@ -20,12 +20,14 @@ message Timeout {
   option (kuma.mesh.resource).name = "TimeoutResource";
   option (kuma.mesh.resource).type = "Timeout";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "timeout";
 
   // List of selectors to match dataplanes that are sources of traffic.
-  repeated Selector sources = 1;
+  repeated Selector sources = 1 [ (doc.required) = true ];
 
   // List of selectors to match services that are destinations of traffic.
-  repeated Selector destinations = 2;
+  repeated Selector destinations = 2 [ (doc.required) = true ];
 
   message Conf {
     // ConnectTimeout defines time to establish connection
@@ -35,7 +37,7 @@ message Timeout {
     message Tcp {
       // IdleTimeout is defined as the period in which there are no bytes sent
       // or received on either the upstream or downstream connection
-      google.protobuf.Duration idle_timeout = 1;
+      google.protobuf.Duration idle_timeout = 1 [ (doc.required) = true ];
     }
     Tcp tcp = 2;
 
@@ -62,5 +64,5 @@ message Timeout {
     }
     Grpc grpc = 4;
   }
-  Conf conf = 3;
+  Conf conf = 3 [ (doc.required) = true ];
 }

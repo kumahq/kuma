@@ -6,13 +6,11 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
@@ -39,10 +37,10 @@ func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
 type ServiceName = string
 
 // RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
-type RouteMap map[mesh_proto.OutboundInterface]*mesh_core.TrafficRouteResource
+type RouteMap map[mesh_proto.OutboundInterface]*core_mesh.TrafficRouteResource
 
 // TimeoutMap holds the most specific TimeoutResource for each OutboundInterface
-type TimeoutMap map[mesh_proto.OutboundInterface]*mesh_core.TimeoutResource
+type TimeoutMap map[mesh_proto.OutboundInterface]*core_mesh.TimeoutResource
 
 // TagSelectorSet is a set of unique TagSelectors.
 type TagSelectorSet []mesh_proto.TagSelector
@@ -58,6 +56,7 @@ type ExternalService struct {
 	ClientCert         []byte
 	ClientKey          []byte
 	AllowRenegotiation bool
+	ServerName         string
 }
 
 type Locality struct {
@@ -87,22 +86,30 @@ type EndpointMap map[ServiceName][]Endpoint
 type LogMap map[ServiceName]*mesh_proto.LoggingBackend
 
 // HealthCheckMap holds the most specific HealthCheck for each reachable service.
-type HealthCheckMap map[ServiceName]*mesh_core.HealthCheckResource
+type HealthCheckMap map[ServiceName]*core_mesh.HealthCheckResource
 
 // CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
-type CircuitBreakerMap map[ServiceName]*mesh_core.CircuitBreakerResource
+type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
 
 // RetryMap holds the most specific Retry for each reachable service.
-type RetryMap map[ServiceName]*mesh_core.RetryResource
+type RetryMap map[ServiceName]*core_mesh.RetryResource
 
 // FaultInjectionMap holds the most specific FaultInjectionResource for each InboundInterface
 type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjection
 
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
-type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResource
+type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
 
-// RateLimitsMap holds all RateLimitResources for each InboundInterface
-type RateLimitsMap map[mesh_proto.InboundInterface][]*mesh_proto.RateLimit
+// InboundRateLimitsMap holds all RateLimitResources for each InboundInterface
+type InboundRateLimitsMap map[mesh_proto.InboundInterface][]*mesh_proto.RateLimit
+
+// OutboundRateLimitsMap holds the RateLimitResource for each OutboundInterface
+type OutboundRateLimitsMap map[mesh_proto.OutboundInterface]*mesh_proto.RateLimit
+
+type RateLimitsMap struct {
+	Inbound  InboundRateLimitsMap
+	Outbound OutboundRateLimitsMap
+}
 
 type CLACache interface {
 	GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error)
@@ -119,20 +126,26 @@ const (
 type Proxy struct {
 	Id          ProxyId
 	APIVersion  envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
-	Dataplane   *mesh_core.DataplaneResource
-	ZoneIngress *mesh_core.ZoneIngressResource
+	Dataplane   *core_mesh.DataplaneResource
+	ZoneIngress *core_mesh.ZoneIngressResource
 	Metadata    *DataplaneMetadata
 	Routing     Routing
 	Policies    MatchedPolicies
 }
 
+type VIPDomains struct {
+	Address string
+	Domains []string
+}
+
 type Routing struct {
 	TrafficRoutes   RouteMap
 	OutboundTargets EndpointMap
+	VipDomains      []VIPDomains
 
 	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
 	// TrafficRouteList is used only for generating configs for Ingress.
-	TrafficRouteList *mesh_core.TrafficRouteResourceList
+	TrafficRouteList *core_mesh.TrafficRouteResourceList
 }
 
 type MatchedPolicies struct {
@@ -141,7 +154,7 @@ type MatchedPolicies struct {
 	HealthChecks       HealthCheckMap
 	CircuitBreakers    CircuitBreakerMap
 	Retries            RetryMap
-	TrafficTrace       *mesh_core.TrafficTraceResource
+	TrafficTrace       *core_mesh.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
 	FaultInjections    FaultInjectionMap
 	Timeouts           TimeoutMap

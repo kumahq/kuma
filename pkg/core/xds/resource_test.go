@@ -1,13 +1,13 @@
 package xds_test
 
 import (
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/core/xds"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 )
 
 var _ = Describe("ResourceSet", func() {
@@ -23,7 +23,7 @@ var _ = Describe("ResourceSet", func() {
 		// given
 		resource := &Resource{
 			Name: "backend",
-			Resource: &envoy.Cluster{
+			Resource: &envoy_cluster.Cluster{
 				Name: "backend",
 			},
 		}
@@ -40,13 +40,13 @@ var _ = Describe("ResourceSet", func() {
 		// given
 		resource1 := &Resource{
 			Name: "backend",
-			Resource: &envoy.Cluster{
+			Resource: &envoy_cluster.Cluster{
 				Name: "backend",
 			},
 		}
 		resource2 := &Resource{
 			Name: "outbound:127.0.0.1:8080",
-			Resource: &envoy.Listener{
+			Resource: &envoy_listener.Listener{
 				Name: "outbound:127.0.0.1:8080",
 			},
 		}
@@ -66,13 +66,13 @@ var _ = Describe("ResourceSet", func() {
 		// given
 		resource1 := &Resource{
 			Name: "backend",
-			Resource: &envoy.Cluster{
+			Resource: &envoy_cluster.Cluster{
 				Name: "backend",
 			},
 		}
 		resource2 := &Resource{
 			Name: "backend",
-			Resource: &envoy.Cluster{
+			Resource: &envoy_cluster.Cluster{
 				Name: "backend",
 			},
 		}
@@ -92,13 +92,13 @@ var _ = Describe("ResourceSet", func() {
 		// given
 		resource1 := &Resource{
 			Name: "backend",
-			Resource: &envoy.Cluster{
+			Resource: &envoy_cluster.Cluster{
 				Name: "backend",
 			},
 		}
 		resource2 := &Resource{
 			Name: "backend",
-			Resource: &envoy.Listener{
+			Resource: &envoy_listener.Listener{
 				Name: "backend",
 			},
 		}
@@ -140,28 +140,28 @@ var _ = Describe("ResourceList", func() {
 				input: ResourceList{
 					{
 						Name: "backend",
-						Resource: &envoy.Cluster{
+						Resource: &envoy_cluster.Cluster{
 							Name: "backend",
 						},
 					},
 					{
 						Name: "backend",
-						Resource: &envoy.Listener{
+						Resource: &envoy_listener.Listener{
 							Name: "backend",
 						},
 					},
 					{
 						Name: "web",
-						Resource: &envoy.Cluster{
+						Resource: &envoy_cluster.Cluster{
 							Name: "web",
 						},
 					},
 				},
 				expected: map[string]ResourcePayload{
-					"backend": &envoy.Listener{
+					"backend": &envoy_listener.Listener{
 						Name: "backend",
 					},
-					"web": &envoy.Cluster{
+					"web": &envoy_cluster.Cluster{
 						Name: "web",
 					},
 				},

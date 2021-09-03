@@ -24,14 +24,16 @@ func UniversalCompatibility() {
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken, WithDPVersion("1.1.6"))(cluster)
+		err = TestServerUniversal("test-server", "default", testServerToken,
+			WithArgs([]string{"echo", "--instance", "universal1"}),
+			WithDPVersion("1.1.6"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithDPVersion("1.1.6"))(cluster)
+		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithDPVersion("1.1.6"), WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -45,7 +47,7 @@ func UniversalCompatibility() {
 
 	It("client should access server", func() {
 		retry.DoWithRetry(cluster.GetTesting(), "check communication between services", DefaultRetries, DefaultTimeout, func() (string, error) {
-			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			return "", err
 		})
 	})

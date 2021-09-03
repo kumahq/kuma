@@ -1,19 +1,8 @@
 package controllers_test
 
 import (
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	"github.com/kumahq/kuma/pkg/test/runtime"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-
-	"github.com/kumahq/kuma/pkg/core"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -21,6 +10,13 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/pkg/test/runtime"
 )
 
 var _ = Describe("PodStatusReconciler", func() {

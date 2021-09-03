@@ -14,17 +14,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/api-server/customization"
-
 	"github.com/emicklei/go-restful"
+	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/authz"
-	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	"github.com/kumahq/kuma/pkg/api-server/customization"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -32,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
@@ -74,7 +72,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, wsManager customization.APIInstaller, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, wsManager customization.APIInstaller, defs []model.ResourceTypeDescriptor, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics, getInstanceId func() string, getClusterId func() string) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 
@@ -104,7 +102,7 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 	addResourcesEndpoints(ws, defs, resManager, cfg)
 	container.Add(ws)
 
-	if err := addIndexWsEndpoints(ws); err != nil {
+	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
 	configWs, err := configWs(cfg)
@@ -145,8 +143,7 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 	return newApiServer, nil
 }
 
-func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, cfg *kuma_cp.Config) {
-	config := cfg.ApiServer
+func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config) {
 	dpOverviewEndpoints := dataplaneOverviewEndpoints{
 		resManager: resManager,
 	}
@@ -166,46 +163,42 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
 	zoneIngressOverviewEndpoints.addListEndpoint(ws)
 
-	serviceInsightEndpoints := serviceInsightEndpoints{
-		resourceEndpoints: resourceEndpoints{
-			mode:                 cfg.Mode,
-			resManager:           resManager,
-			ResourceWsDefinition: definitions.ServiceInsightWsDefinition,
-			adminAuth: authz.AdminAuth{
-				AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost,
-			},
-		},
-	}
-	serviceInsightEndpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
-	serviceInsightEndpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
-	serviceInsightEndpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
-	serviceInsightEndpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
-	serviceInsightEndpoints.addListEndpoint(ws, "/"+definitions.ServiceInsightWsDefinition.Path) // listing all resources in all meshes
-
 	for _, definition := range defs {
-		if config.ReadOnly {
+		defType := definition.Name
+		if cfg.ApiServer.ReadOnly || (defType == mesh.DataplaneType && cfg.Mode == config_core.Global) || (defType != mesh.DataplaneType && cfg.Mode == config_core.Zone) {
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
-			mode:                 cfg.Mode,
-			resManager:           resManager,
-			ResourceWsDefinition: definition,
+			mode:       cfg.Mode,
+			resManager: resManager,
+			descriptor: definition,
 			adminAuth: authz.AdminAuth{
 				AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost,
 			},
 		}
-		switch definition.ResourceFactory().Scope() {
-		case model.ScopeMesh:
-			endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-			endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
-		case model.ScopeGlobal:
-			endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.Path)
-			endpoints.addDeleteEndpoint(ws, "/"+definition.Path)
-			endpoints.addFindEndpoint(ws, "/"+definition.Path)
-			endpoints.addListEndpoint(ws, "/"+definition.Path)
+		switch defType {
+		case mesh.ServiceInsightType:
+			// ServiceInsight is a bit different
+			ep := serviceInsightEndpoints{endpoints}
+			ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			ep.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			ep.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
+		default:
+			switch definition.Scope {
+			case model.ScopeMesh:
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+				endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+				endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+				endpoints.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
+			case model.ScopeGlobal:
+				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.WsPath)
+				endpoints.addDeleteEndpoint(ws, "/"+definition.WsPath)
+				endpoints.addFindEndpoint(ws, "/"+definition.WsPath)
+				endpoints.addListEndpoint(ws, "/"+definition.WsPath)
+			}
 		}
 	}
 }
@@ -345,22 +338,7 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	enableGUI := cfg.Mode != config_core.Zone
-	if cfg.Mode != config_core.Standalone {
-		for i, definition := range definitions.All {
-			switch cfg.Mode {
-			case config_core.Global:
-				if definition.ResourceFactory().GetType() == mesh.DataplaneType {
-					definitions.All[i].ReadOnly = true
-				}
-			case config_core.Zone:
-				if definition.ResourceFactory().GetType() != mesh.DataplaneType {
-					definitions.All[i].ReadOnly = true
-				}
-			}
-		}
-	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), definitions.DefaultCRUDLEndpoints, &cfg, enableGUI, rt.Metrics())
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), registry.Global().ObjectDescriptors(model.HasWsEnabled()), &cfg, cfg.Mode != config_core.Zone, rt.Metrics(), rt.GetInstanceId, rt.GetClusterId)
 	if err != nil {
 		return err
 	}

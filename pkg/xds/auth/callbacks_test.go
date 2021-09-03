@@ -3,9 +3,11 @@ package auth_test
 import (
 	"context"
 
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -13,17 +15,13 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
+	v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/auth"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 type testAuthenticator struct {
@@ -33,7 +31,7 @@ type testAuthenticator struct {
 
 var _ auth.Authenticator = &testAuthenticator{}
 
-func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resource, credential auth.Credential) error {
+func (t *testAuthenticator) Authenticate(_ context.Context, resource core_model.Resource, credential auth.Credential) error {
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource:
 		t.callCounter++
@@ -46,7 +44,7 @@ func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resou
 			return nil
 		}
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.GetType())
+		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 
 	return errors.New("invalid credential")
@@ -97,7 +95,7 @@ var _ = Describe("Auth Callbacks", func() {
 		memStore := memory.NewStore()
 		resManager = core_manager.NewResourceManager(memStore)
 		testAuth = &testAuthenticator{}
-		callbacks = util_xds_v2.AdaptCallbacks(auth.NewCallbacks(resManager, testAuth, auth.DPNotFoundRetry{}))
+		callbacks = v3.AdaptCallbacks(auth.NewCallbacks(resManager, testAuth, auth.DPNotFoundRetry{}))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -119,7 +117,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-01",
 			},
@@ -130,7 +128,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(testAuth.callCounter).To(Equal(1))
 
 		// when send second request that is already authenticated
-		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{})
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{})
 
 		// then auth is called only once
 		Expect(err).ToNot(HaveOccurred())
@@ -153,7 +151,7 @@ var _ = Describe("Auth Callbacks", func() {
 		// when
 		json, err := rest.From.Resource(dpRes).MarshalJSON()
 		Expect(err).ToNot(HaveOccurred())
-		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-01",
 				Metadata: &structpb.Struct{
@@ -184,7 +182,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-01",
 			},
@@ -194,7 +192,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-02",
 			},
@@ -216,7 +214,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-02",
 			},
@@ -238,7 +236,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.web-01",
 			},
@@ -260,7 +258,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: ".ingress",
 				Metadata: &structpb.Struct{
@@ -280,7 +278,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Expect(testAuth.zoneCallCounter).To(Equal(1))
 
 		// when send second request that is already authenticated
-		err = callbacks.OnStreamRequest(streamID, &envoy_api.DiscoveryRequest{})
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{})
 
 		// then auth is called only once
 		Expect(err).ToNot(HaveOccurred())

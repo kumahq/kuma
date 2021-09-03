@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/api-server/authz"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-
 	"github.com/emicklei/go-restful"
 
-	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	"github.com/kumahq/kuma/pkg/api-server/authz"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -34,12 +32,12 @@ const (
 type resourceEndpoints struct {
 	mode       config_core.CpMode
 	resManager manager.ResourceManager
-	definitions.ResourceWsDefinition
-	adminAuth authz.AdminAuth
+	descriptor model.ResourceTypeDescriptor
+	adminAuth  authz.AdminAuth
 }
 
 func (r *resourceEndpoints) auth() restful.FilterFunction {
-	if r.ResourceWsDefinition.Admin {
+	if r.descriptor.AdminOnly {
 		return r.adminAuth.Validate
 	}
 	return authz.NoAuth
@@ -48,8 +46,8 @@ func (r *resourceEndpoints) auth() restful.FilterFunction {
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource).
 		Filter(r.auth()).
-		Doc(fmt.Sprintf("Get a %s", r.Name)).
-		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
+		Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
+		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 		Returns(200, "OK", nil).
 		Returns(404, "Not found", nil))
 }
@@ -58,7 +56,7 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
 
-	resource := r.ResourceFactory()
+	resource := r.descriptor.NewObject()
 	err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName))
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve a resource")
@@ -73,7 +71,7 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix).To(r.listResources).
 		Filter(r.auth()).
-		Doc(fmt.Sprintf("List of %s", r.Name)).
+		Doc(fmt.Sprintf("List of %s", r.descriptor.Name)).
 		Param(ws.PathParameter("size", "size of page").DataType("int")).
 		Param(ws.PathParameter("offset", "offset of page to list").DataType("string")).
 		Returns(200, "OK", nil))
@@ -88,7 +86,7 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 		return
 	}
 
-	list := r.ResourceListFactory()
+	list := r.descriptor.NewList()
 	if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByPage(page.size, page.offset)); err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve resources")
 	} else {
@@ -101,15 +99,15 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 }
 
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
-	if r.ReadOnly {
+	if r.descriptor.ReadOnly {
 		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResourceReadOnly).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
 		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
 			Filter(r.auth()).
-			Doc(fmt.Sprintf("Updates a %s", r.Name)).
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
+			Doc(fmt.Sprintf("Updates a %s", r.descriptor.WsPath)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.descriptor.WsPath)).DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(201, "Created", nil))
 	}
@@ -120,7 +118,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	meshName := r.meshFromRequest(request)
 
 	resourceRes := rest.Resource{
-		Spec: r.ResourceFactory().GetSpec(),
+		Spec: r.descriptor.NewObject().GetSpec(),
 	}
 
 	if err := request.ReadEntity(&resourceRes); err != nil {
@@ -133,7 +131,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		return
 	}
 
-	resource := r.ResourceFactory()
+	resource := r.descriptor.NewObject()
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
 		if store.IsResourceNotFound(err) {
 			r.createResource(request.Request.Context(), name, meshName, resourceRes.Spec, response)
@@ -146,7 +144,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 }
 
 func (r *resourceEndpoints) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
-	res := r.ResourceFactory()
+	res := r.descriptor.NewObject()
 	_ = res.SetSpec(spec)
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(response, err, "Could not create a resource")
@@ -172,15 +170,15 @@ func (r *resourceEndpoints) createOrUpdateResourceReadOnly(request *restful.Requ
 }
 
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
-	if r.ReadOnly {
+	if r.descriptor.ReadOnly {
 		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResourceReadOnly).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
 		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
 			Filter(r.auth()).
-			Doc(fmt.Sprintf("Deletes a %s", r.Name)).
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
+			Doc(fmt.Sprintf("Deletes a %s", r.descriptor.Name)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil))
 	}
 }
@@ -189,7 +187,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
 
-	resource := r.ResourceFactory()
+	resource := r.descriptor.NewObject()
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(response, err, "Could not delete a resource")
 	}
@@ -210,18 +208,18 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if name != resource.Meta.Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
 	}
-	if string(r.ResourceFactory().GetType()) != resource.Meta.Type {
+	if string(r.descriptor.Name) != resource.Meta.Type {
 		err.AddViolation("type", "type from the URL has to be the same as in body")
 	}
-	if r.ResourceFactory().Scope() == model.ScopeMesh && meshName != resource.Meta.Mesh {
+	if r.descriptor.Scope == model.ScopeMesh && meshName != resource.Meta.Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
-	err.AddError("", mesh.ValidateMeta(name, meshName, r.ResourceFactory().Scope()))
+	err.AddError("", mesh.ValidateMeta(name, meshName, r.descriptor.Scope))
 	return err.OrNil()
 }
 
 func (r *resourceEndpoints) meshFromRequest(request *restful.Request) string {
-	if r.ResourceFactory().Scope() == model.ScopeMesh {
+	if r.descriptor.Scope == model.ScopeMesh {
 		return request.PathParameter("mesh")
 	}
 	return ""

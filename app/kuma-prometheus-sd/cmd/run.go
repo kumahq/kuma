@@ -4,19 +4,16 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/common"
-
 	"github.com/pkg/errors"
+	"github.com/prometheus/prometheus/documentation/examples/custom-sd/adapter"
 	"github.com/spf13/cobra"
 
-	"github.com/prometheus/prometheus/documentation/examples/custom-sd/adapter"
-
+	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds"
+	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/common"
+	util_log "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/util/go-kit/log"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_promsd "github.com/kumahq/kuma/pkg/config/app/kuma-prometheus-sd"
 	"github.com/kumahq/kuma/pkg/core"
-
-	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds"
-	util_log "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/util/go-kit/log"
 	util_os "github.com/kumahq/kuma/pkg/util/os"
 )
 

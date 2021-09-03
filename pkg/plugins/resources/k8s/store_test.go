@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	kube_core "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -527,7 +526,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), coreName, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, coreName, mesh)))
 		})
 
 		It("should delete an existing resource", func() {

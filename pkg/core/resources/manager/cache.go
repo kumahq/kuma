@@ -48,7 +48,7 @@ func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Dura
 
 func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
-	cacheKey := fmt.Sprintf("GET:%s:%s", res.GetType(), opts.HashCode())
+	cacheKey := fmt.Sprintf("GET:%s:%s", res.Descriptor().Name, opts.HashCode())
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
 		// There might be a situation when cache just expired and there are many concurrent goroutines here.
@@ -58,19 +58,19 @@ func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store
 		obj, found = c.cache.Get(cacheKey)
 		if !found {
 			// After many goroutines are unlocked one by one, only one should execute this branch, the rest should retrieve object from the cache
-			c.metrics.WithLabelValues("get", string(res.GetType()), "miss").Inc()
+			c.metrics.WithLabelValues("get", string(res.Descriptor().Name), "miss").Inc()
 			if err := c.delegate.Get(ctx, res, fs...); err != nil {
 				mutex.Unlock()
 				return err
 			}
 			c.cache.SetDefault(cacheKey, res)
 		} else {
-			c.metrics.WithLabelValues("get", string(res.GetType()), "hit-wait").Inc()
+			c.metrics.WithLabelValues("get", string(res.Descriptor().Name), "hit-wait").Inc()
 		}
 		mutex.Unlock()
 		c.cleanMutexFor(cacheKey) // We need to cleanup mutexes from the map, otherwise we can see the memory leak.
 	} else {
-		c.metrics.WithLabelValues("get", string(res.GetType()), "hit").Inc()
+		c.metrics.WithLabelValues("get", string(res.Descriptor().Name), "hit").Inc()
 	}
 
 	if found {

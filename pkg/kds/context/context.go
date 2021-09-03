@@ -43,16 +43,17 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 // excludes Dataplanes and Ingresses from 'clusterID' cluster
 func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
 	return func(clusterID string, r model.Resource) bool {
-		if r.GetType() == mesh.ZoneIngressType {
+		resType := r.Descriptor().Name
+		if resType == mesh.ZoneIngressType {
 			return r.(*mesh.ZoneIngressResource).Spec.GetZone() != clusterID
 		}
-		if r.GetType() == system.ConfigType && !configs[r.GetMeta().GetName()] {
+		if resType == system.ConfigType && !configs[r.GetMeta().GetName()] {
 			return false
 		}
-		if r.GetType() == system.GlobalSecretType {
+		if resType == system.GlobalSecretType {
 			return zoneingress.IsSigningKeyResource(model.MetaToResourceKey(r.GetMeta()))
 		}
-		if r.GetType() != mesh.DataplaneType {
+		if resType != mesh.DataplaneType {
 			return true
 		}
 		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
@@ -76,16 +77,17 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 // ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses that belongs to another zones
 func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
 	return func(_ string, r model.Resource) bool {
-		if r.GetType() == mesh.DataplaneType {
+		resType := r.Descriptor().Name
+		if resType == mesh.DataplaneType {
 			return clusterName == util.ZoneTag(r)
 		}
-		if r.GetType() == mesh.DataplaneInsightType {
+		if resType == mesh.DataplaneInsightType {
 			return true
 		}
-		if r.GetType() == mesh.ZoneIngressType && !r.(*mesh.ZoneIngressResource).IsRemoteIngress(clusterName) {
+		if resType == mesh.ZoneIngressType && !r.(*mesh.ZoneIngressResource).IsRemoteIngress(clusterName) {
 			return true
 		}
-		if r.GetType() == mesh.ZoneIngressInsightType {
+		if resType == mesh.ZoneIngressInsightType {
 			return true
 		}
 		return false

@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	util_envoy "github.com/kumahq/kuma/pkg/util/envoy"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -80,6 +80,7 @@ func NewDefaultProxyProfile() ResourceGenerator {
 	return CompositeResourceGenerator{
 		AdminProxyGenerator{},
 		PrometheusEndpointGenerator{},
+		SecretsProxyGenerator{},
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
 		OutboundProxyGenerator{},
@@ -96,7 +97,7 @@ func NewDefaultProxyProfile() ResourceGenerator {
 var DefaultTemplateResolver template.ProxyTemplateResolver = &template.StaticProxyTemplateResolver{
 	Template: &mesh_proto.ProxyTemplate{
 		Conf: &mesh_proto.ProxyTemplate_Conf{
-			Imports: []string{mesh_core.ProfileDefaultProxy},
+			Imports: []string{core_mesh.ProfileDefaultProxy},
 		},
 	},
 }
@@ -104,7 +105,7 @@ var DefaultTemplateResolver template.ProxyTemplateResolver = &template.StaticPro
 var predefinedProfiles = make(map[string]ResourceGenerator)
 
 func init() {
-	RegisterProfile(mesh_core.ProfileDefaultProxy, NewDefaultProxyProfile())
+	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
 	RegisterProfile(IngressProxy, CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
 }
 

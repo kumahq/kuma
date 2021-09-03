@@ -14,7 +14,7 @@ import (
 const googleApis = "type.googleapis.com/"
 
 // When saving Snapshot in SnapshotCache we generate version based on proto.Equal()
-// Therefore we need deterministic way of marshalling Any which is part of the Protobuf on which we execute Equal()
+// Therefore we need deterministic way of marshaling Any which is part of the Protobuf on which we execute Equal()
 //
 // Based on proto.MarshalAny
 func MarshalAnyDeterministic(pb proto.Message) (*any.Any, error) {
@@ -61,6 +61,6 @@ func MergeAnys(dst *any.Any, src *any.Any) (*any.Any, error) {
 		return nil, err
 	}
 
-	proto.Merge(dstMsg, srcMsg)
+	Merge(dstMsg, srcMsg)
 	return MarshalAnyDeterministic(dstMsg)
 }

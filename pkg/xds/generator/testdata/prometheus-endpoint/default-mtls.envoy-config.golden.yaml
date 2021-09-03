@@ -81,22 +81,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: kuma:metrics:prometheus

@@ -1,23 +1,13 @@
 package deploy
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"time"
-
-	api_server "github.com/kumahq/kuma/pkg/api-server"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
-	"github.com/go-errors/errors"
-
-	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -58,6 +48,8 @@ spec:
 `, namespace, policyname, weight)
 	}
 
+	errRegex := `Operation not allowed\. .* resources like TrafficRoute can be updated or deleted only from the GLOBAL control plane and not from a ZONE control plane\.`
+
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, zone ControlPlane
@@ -92,7 +84,6 @@ spec:
 			Install(Kuma(core.Zone, optsZone...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
-			Install(EchoServerK8s("default")).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -143,31 +134,10 @@ spec:
 	})
 
 	It("should deploy Zone and Global on 2 clusters", func() {
-		// when check if zone is online
-		clustersStatus := api_server.Zones{}
-		Eventually(func() (bool, error) {
-			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
-			if status != http.StatusOK {
-				return false, errors.Errorf("unable to contact server %s with status %d", global.GetGlobaStatusAPI(), status)
-			}
-			err := json.Unmarshal([]byte(response), &clustersStatus)
-			if err != nil {
-				return false, errors.Errorf("unable to parse response [%s] with error: %v", response, err)
-			}
-			if len(clustersStatus) != 1 {
-				return false, nil
-			}
-			return clustersStatus[0].Active, nil
-		}, time.Minute, DefaultTimeout).Should(BeTrue())
-
-		// then zone is online
-		active := true
-		for _, cluster := range clustersStatus {
-			if !cluster.Active {
-				active = false
-			}
-		}
-		Expect(active).To(BeTrue())
+		// check if zone is online and backend is marked as kubernetes
+		Eventually(func() (string, error) {
+			return c1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+		}, "30s", "1s").Should(And(ContainSubstring("Online"), ContainSubstring("kubernetes")))
 
 		// and dataplanes are synced to global
 		Eventually(func() string {
@@ -181,7 +151,8 @@ spec:
 
 		// Deny policy CREATE on zone
 		err := k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)
-		Expect(err.Error()).To(ContainSubstring("should be only applied on global"))
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(MatchRegexp(errRegex))
 
 		// Accept policy CREATE on global
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_create)
@@ -196,7 +167,13 @@ spec:
 
 		// Deny policy UPDATE on zone
 		err = k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)
-		Expect(err.Error()).To(ContainSubstring("should be only applied on global"))
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(MatchRegexp(errRegex))
+
+		// Deny policy DELETE on zone
+		err = k8s.KubectlDeleteFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_create)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(MatchRegexp(errRegex))
 
 		// Accept policy UPDATE on global
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_update)

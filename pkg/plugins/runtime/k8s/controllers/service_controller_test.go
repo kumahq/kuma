@@ -3,15 +3,8 @@ package controllers_test
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-
-	"github.com/kumahq/kuma/pkg/core"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -19,6 +12,10 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/kumahq/kuma/pkg/core"
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 var _ = Describe("ServiceReconciler", func() {

@@ -9,8 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
-	util_proto "github.com/kumahq/kuma/api/internal/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {

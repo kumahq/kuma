@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"net"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,7 +14,7 @@ import (
 var _ config.Config = &BootstrapServerConfig{}
 
 type BootstrapServerConfig struct {
-	// The version of Envoy API (available: "v2", "v3")
+	// The version of Envoy API (available: "v3")
 	APIVersion envoy_common.APIVersion `yaml:"apiVersion" envconfig:"kuma_bootstrap_server_api_version"`
 	// Parameters of bootstrap configuration
 	Params *BootstrapParamsConfig `yaml:"params"`
@@ -88,9 +89,9 @@ func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 	return &BootstrapParamsConfig{
 		AdminAddress:       "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
 		AdminPort:          0,           // by default, turn off Admin interface of Envoy
-		AdminAccessLogPath: "/dev/null",
-		XdsHost:            "", // by default it is the same host as the one used by kuma-dp to connect to the control plane
-		XdsPort:            0,  // by default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
+		AdminAccessLogPath: os.DevNull,
+		XdsHost:            "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
+		XdsPort:            0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
 		XdsConnectTimeout:  1 * time.Second,
 	}
 }

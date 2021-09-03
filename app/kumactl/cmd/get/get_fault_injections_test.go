@@ -13,20 +13,16 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("kumactl get fault-injections", func() {
@@ -51,16 +47,16 @@ var _ = Describe("kumactl get fault-injections", func() {
 				},
 				Conf: &v1alpha1.FaultInjection_Conf{
 					Delay: &v1alpha1.FaultInjection_Conf_Delay{
-						Percentage: &wrapperspb.DoubleValue{Value: 50},
-						Value:      &durationpb.Duration{Seconds: 5},
+						Percentage: util_proto.Double(50),
+						Value:      util_proto.Duration(time.Second * 5),
 					},
 					Abort: &v1alpha1.FaultInjection_Conf_Abort{
-						Percentage: &wrapperspb.DoubleValue{Value: 50},
-						HttpStatus: &wrapperspb.UInt32Value{Value: 500},
+						Percentage: util_proto.Double(50),
+						HttpStatus: util_proto.UInt32(500),
 					},
 					ResponseBandwidth: &v1alpha1.FaultInjection_Conf_ResponseBandwidth{
-						Percentage: &wrapperspb.DoubleValue{Value: 50},
-						Limit:      &wrapperspb.StringValue{Value: "50 mbps"},
+						Percentage: util_proto.Double(50),
+						Limit:      util_proto.String("50 mbps"),
 					},
 				},
 			},
@@ -88,16 +84,16 @@ var _ = Describe("kumactl get fault-injections", func() {
 				},
 				Conf: &v1alpha1.FaultInjection_Conf{
 					Delay: &v1alpha1.FaultInjection_Conf_Delay{
-						Percentage: &wrapperspb.DoubleValue{Value: 50},
-						Value:      &durationpb.Duration{Seconds: 5},
+						Percentage: util_proto.Double(50),
+						Value:      util_proto.Duration(time.Second * 5),
 					},
 					Abort: &v1alpha1.FaultInjection_Conf_Abort{
-						Percentage: &wrapperspb.DoubleValue{Value: 50},
-						HttpStatus: &wrapperspb.UInt32Value{Value: 500},
+						Percentage: util_proto.Double(50),
+						HttpStatus: util_proto.UInt32(500),
 					},
 					ResponseBandwidth: &v1alpha1.FaultInjection_Conf_ResponseBandwidth{
-						Percentage: &wrapperspb.DoubleValue{Value: 50},
-						Limit:      &wrapperspb.StringValue{Value: "50 mbps"},
+						Percentage: util_proto.Double(50),
+						Limit:      util_proto.String("50 mbps"),
 					},
 				},
 			},
@@ -110,24 +106,16 @@ var _ = Describe("kumactl get fault-injections", func() {
 
 	Describe("GetFaultInjectionCmd", func() {
 
-		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
 		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
 		BeforeEach(func() {
 			// setup
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return rootTime },
-					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
-				},
-			}
-
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
+
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, mesh.FaultInjectionResourceTypeDescriptor)
+			Expect(err).ToNot(HaveOccurred())
 
 			for _, ds := range faultInjectionResources {
 				err := store.Create(context.Background(), ds, core_store.CreateBy(core_model.MetaToResourceKey(ds.GetMeta())))

@@ -6,26 +6,21 @@ import (
 	"path/filepath"
 	"time"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("kumactl get global-secrets", func() {
@@ -40,9 +35,7 @@ var _ = Describe("kumactl get global-secrets", func() {
 					Name: "sec-1",
 				},
 				Spec: &system_proto.Secret{
-					Data: &wrapperspb.BytesValue{
-						Value: []byte("test"),
-					},
+					Data: util_proto.Bytes([]byte("test")),
 				},
 			},
 			{
@@ -51,9 +44,7 @@ var _ = Describe("kumactl get global-secrets", func() {
 					Name: "sec-2",
 				},
 				Spec: &system_proto.Secret{
-					Data: &wrapperspb.BytesValue{
-						Value: []byte("test2"),
-					},
+					Data: util_proto.Bytes([]byte("test2")),
 				},
 			},
 		}
@@ -61,24 +52,16 @@ var _ = Describe("kumactl get global-secrets", func() {
 
 	Describe("GetGlobalSecretsCmd", func() {
 
-		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
 		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
 		BeforeEach(func() {
 			// setup
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return rootTime },
-					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
-				},
-			}
-
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
+
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, system.GlobalSecretResourceTypeDescriptor)
+			Expect(err).ToNot(HaveOccurred())
 
 			for _, pt := range sampleSecrets {
 				key := core_model.ResourceKey{

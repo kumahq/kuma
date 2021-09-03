@@ -1,25 +1,52 @@
 linters:
   enable:
-    - gocritic
-    - unconvert
     - bodyclose
-    - whitespace
+    - gci
+    - gocritic
+    - gomodguard
+    - govet
+    - importas
     - misspell
+    - unconvert
+    - whitespace
 
 run:
   skip-files:
     - app/kumactl/pkg/k8s/kubectl_proxy.go # excluded to keep as close to original file from K8S repository
-    - pkg/sds/server/sds.go # excluded to keep as close to original file from Envoy repository
     - pkg/xds/server/server.go # excluded to keep as close to original file from Envoy repository
     - pkg/xds/server/server_test.go # excluded to keep as close to original file from Envoy repository
   modules-download-mode: readonly
+  skip-dirs-use-default: false # The default skip omits "builtin" directories, which we have.
+  skip-dirs:
+  - (^|/)vendored($|/)
 
 linters-settings:
   gocritic:
     disabled-checks:
       - singleCaseSwitch
+  gci:
+    local-prefixes: github.com/kumahq/kuma
+  importas:
+    alias:
+    - pkg: github.com/kumahq/kuma/pkg/core/resources/apis/mesh
+      alias: core_mesh
+    - pkg: github.com/kumahq/kuma/api/mesh/v1alpha1
+      alias: mesh_proto
+    - pkg: github.com/kumahq/kuma/pkg/util/proto
+      alias: util_proto
+  gomodguard:
+    blocked:
+      modules:
+      - github.com/go-errors/errors:
+          recommendations:
+          - github.com/pkg/errors
+  misspell:
+    locale: US
+    ignore-words:
+    - cancelled # US English should be "canceled", but this is in the Retry API, so we can't change it.
 
 issues:
+  fix: true
   exclude-rules:
     - linters:
         - staticcheck
@@ -39,3 +66,9 @@ issues:
     - linters:
         - staticcheck
       text: "IsIngress is deprecated: use ZoneIngress" # It's deprecated but Kuma still needs to support it for backwards compatibility.
+    - linters:
+        - gocritic
+      text: "appendAssign: append result not assigned to the same slice" # None of the instances of this in Kuma were bugs.
+    - linters:
+        - staticcheck
+      text: "SA1019: package sigs.k8s.io/controller-runtime/pkg/client/fake is deprecated" # https://github.com/kumahq/kuma/issues/2460

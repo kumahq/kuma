@@ -13,7 +13,6 @@ require (
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210310174751-14ce79b5761d
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-kit/kit v0.11.0
 	github.com/go-logr/logr v0.4.0
@@ -30,7 +29,7 @@ require (
 	github.com/lib/pq v1.10.2
 	github.com/miekg/dns v1.1.42
 	github.com/onsi/ginkgo v1.16.4
-	github.com/onsi/gomega v1.13.0
+	github.com/onsi/gomega v1.16.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0

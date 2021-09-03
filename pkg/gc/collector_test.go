@@ -3,6 +3,7 @@ package gc_test
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -20,8 +21,18 @@ import (
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
+// The problem is SubscriptionFinalizer in the same package uses core.Now
+// variable to set DisconnectTime when finalizes subscription.
+// Test in the current file replaces core.Now for testing purposes. When running
+// the whole suite with `-race` flag it constantly fails with `WARNING: DATA RACE`.
+// In order to avoid that we protect core.Now with mtxNow mutex in the scope
+// of this gc_test package.
+var mtxNow sync.RWMutex
+
 var _ = Describe("Dataplane Collector", func() {
 	var rm manager.ResourceManager
+	now := time.Now()
+	var backupNow func() time.Time
 
 	createDpAndDpInsight := func(name, mesh string) {
 		dp := &core_mesh.DataplaneResource{
@@ -58,25 +69,33 @@ var _ = Describe("Dataplane Collector", func() {
 		rm = manager.NewResourceManager(memory.NewStore())
 		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
+
+		mtxNow.Lock()
+		backupNow = core.Now
+		core.Now = func() time.Time {
+			return now
+		}
+		mtxNow.Unlock()
+	})
+
+	AfterEach(func() {
+		mtxNow.Lock()
+		core.Now = backupNow
+		mtxNow.Unlock()
 	})
 
 	It("should cleanup old dataplanes", func() {
-		core.Now = time.Now
 		// given 5 dataplanes now
 		for i := 0; i < 5; i++ {
 			createDpAndDpInsight(fmt.Sprintf("dp-%d", i), "default")
 		}
-		core.Now = func() time.Time {
-			return time.Now().Add(1 * time.Hour)
-		}
+		now = now.Add(1 * time.Hour)
 		// given 5 dataplanes after an hour
 		for i := 5; i < 10; i++ {
 			createDpAndDpInsight(fmt.Sprintf("dp-%d", i), "default")
 		}
 
-		core.Now = func() time.Time {
-			return time.Now().Add(90 * time.Minute)
-		}
+		now = now.Add(30 * time.Minute)
 		// when dataplane collector is run after 1.5 hours
 		collector := gc.NewCollector(rm, 100*time.Millisecond, 1*time.Hour)
 

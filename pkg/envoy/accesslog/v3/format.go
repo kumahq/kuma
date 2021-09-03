@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	unspecifiedValue = "-" // to replicate Envoy's behaviour
+	unspecifiedValue = "-" // to replicate Envoy's behavior
 )
 
 // AccessLogFormat represents the entire access log format string.
@@ -24,7 +24,7 @@ func (f *AccessLogFormat) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLog
 			return "", err
 		}
 		if value == "" {
-			value = unspecifiedValue // to replicate Envoy's behaviour
+			value = unspecifiedValue // to replicate Envoy's behavior
 		}
 		values[i] = value
 	}
@@ -39,7 +39,7 @@ func (f *AccessLogFormat) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEn
 			return "", err
 		}
 		if value == "" {
-			value = unspecifiedValue // to replicate Envoy's behaviour
+			value = unspecifiedValue // to replicate Envoy's behavior
 		}
 		values[i] = value
 	}

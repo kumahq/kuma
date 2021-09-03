@@ -5,13 +5,12 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -96,7 +95,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	if err := s.client.Update(context.Background(), cm); err != nil {
 		if kube_apierrs.IsConflict(err) {
-			return core_store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
+			return core_store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
 		}
 		return errors.Wrap(err, "failed to update k8s resource")
 	}
@@ -134,7 +133,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	cm := &kube_core.ConfigMap{}
 	if err := s.client.Get(ctx, kube_client.ObjectKey{Namespace: s.namespace, Name: opts.Name}, cm); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return core_store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
+			return core_store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to get k8s Config")
 	}

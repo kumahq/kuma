@@ -11,10 +11,6 @@ fmt/go: ## Dev: Run go fmt
 fmt/proto: ## Dev: Run clang-format on .proto files
 	which $(CLANG_FORMAT_PATH) && find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT_PATH) -i || true
 
-.PHONY: vet
-vet: ## Dev: Run go vet
-	go vet $(GOFLAGS) ./...
-
 .PHONY: tidy
 tidy:
 	@TOP=$(shell pwd) && \
@@ -37,10 +33,6 @@ helm-lint:
 		fi \
 	done
 
-.PHONY: imports
-imports: ## Dev: Runs goimports in order to organize imports
-	goimports -w -local github.com/kumahq/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendored/*'`
-
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
 	$(HELM_DOCS_PATH) -s="file" --chart-search-root=./deployments/charts
@@ -50,6 +42,6 @@ ginkgo/unfocus:
 	$(GOPATH_BIN_DIR)/ginkgo unfocus
 
 .PHONY: check
-check: generate fmt vet docs helm-lint golangci-lint imports tidy helm-docs ginkgo/unfocus ## Dev: Run code checks (go fmt, go vet, ...)
+check: generate fmt docs helm-lint golangci-lint tidy helm-docs ginkgo/unfocus ## Dev: Run code checks (go fmt, go vet, ...)
 	$(MAKE) generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty

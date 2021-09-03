@@ -3,7 +3,7 @@ package verifier
 import (
 	"sync"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	test_grpc "github.com/kumahq/kuma/pkg/test/grpc"
@@ -14,10 +14,10 @@ type TestContext interface {
 	ServerStream() *test_grpc.MockServerStream
 	ClientStream() *test_grpc.MockClientStream
 	Stop() chan struct{}
-	SaveLastResponse(typ string, response *v2.DiscoveryResponse)
-	LastResponse(typeURL string) *v2.DiscoveryResponse
-	SaveLastACKedResponse(typ string, response *v2.DiscoveryResponse)
-	LastACKedResponse(typ string) *v2.DiscoveryResponse
+	SaveLastResponse(typ string, response *envoy_sd.DiscoveryResponse)
+	LastResponse(typeURL string) *envoy_sd.DiscoveryResponse
+	SaveLastACKedResponse(typ string, response *envoy_sd.DiscoveryResponse)
+	LastACKedResponse(typ string) *envoy_sd.DiscoveryResponse
 	WaitGroup() *sync.WaitGroup
 }
 
@@ -27,8 +27,8 @@ type TestContextImpl struct {
 	MockClientStream   *test_grpc.MockClientStream
 	StopCh             chan struct{}
 	Wg                 *sync.WaitGroup
-	Responses          map[string]*v2.DiscoveryResponse
-	LastACKedResponses map[string]*v2.DiscoveryResponse
+	Responses          map[string]*envoy_sd.DiscoveryResponse
+	LastACKedResponses map[string]*envoy_sd.DiscoveryResponse
 }
 
 func (t *TestContextImpl) Store() store.ResourceStore {
@@ -47,19 +47,19 @@ func (t *TestContextImpl) Stop() chan struct{} {
 	return t.StopCh
 }
 
-func (t *TestContextImpl) SaveLastResponse(typ string, response *v2.DiscoveryResponse) {
+func (t *TestContextImpl) SaveLastResponse(typ string, response *envoy_sd.DiscoveryResponse) {
 	t.Responses[typ] = response
 }
 
-func (t *TestContextImpl) LastResponse(typ string) *v2.DiscoveryResponse {
+func (t *TestContextImpl) LastResponse(typ string) *envoy_sd.DiscoveryResponse {
 	return t.Responses[typ]
 }
 
-func (t *TestContextImpl) SaveLastACKedResponse(typ string, response *v2.DiscoveryResponse) {
+func (t *TestContextImpl) SaveLastACKedResponse(typ string, response *envoy_sd.DiscoveryResponse) {
 	t.LastACKedResponses[typ] = response
 }
 
-func (t *TestContextImpl) LastACKedResponse(typ string) *v2.DiscoveryResponse {
+func (t *TestContextImpl) LastACKedResponse(typ string) *envoy_sd.DiscoveryResponse {
 	return t.LastACKedResponses[typ]
 }
 

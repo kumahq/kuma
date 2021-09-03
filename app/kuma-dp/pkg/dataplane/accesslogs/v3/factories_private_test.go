@@ -1,11 +1,10 @@
 package v3
 
 import (
+	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 )
 
 var _ = Describe("defaultHandler", func() {

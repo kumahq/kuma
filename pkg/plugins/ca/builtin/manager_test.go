@@ -6,14 +6,14 @@ import (
 	"encoding/pem"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
@@ -21,10 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/util/proto"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Builtin CA Manager", func() {
@@ -48,7 +45,7 @@ var _ = Describe("Builtin CA Manager", func() {
 
 	Context("Ensure", func() {
 		It("should create a CA", func() {
-			//given
+			// given
 			mesh := "default"
 			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
@@ -86,16 +83,14 @@ var _ = Describe("Builtin CA Manager", func() {
 		})
 
 		It("should create a configured CA", func() {
-			//given
+			// given
 			mesh := "default"
 			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
-				Conf: proto.MustToStruct(&config.BuiltinCertificateAuthorityConfig{
+				Conf: util_proto.MustToStruct(&config.BuiltinCertificateAuthorityConfig{
 					CaCert: &config.BuiltinCertificateAuthorityConfig_CaCert{
-						RSAbits: &wrapperspb.UInt32Value{
-							Value: uint32(2048),
-						},
+						RSAbits:    util_proto.UInt32(uint32(2048)),
 						Expiration: "1m",
 					},
 				}),
@@ -120,7 +115,7 @@ var _ = Describe("Builtin CA Manager", func() {
 
 	Context("GetRootCert", func() {
 		It("should retrieve created certs", func() {
-			//given
+			// given
 			mesh := "default"
 			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
@@ -156,7 +151,7 @@ var _ = Describe("Builtin CA Manager", func() {
 
 	Context("GenerateDataplaneCert", func() {
 		It("should generate dataplane certs", func() {
-			//given
+			// given
 			mesh := "default"
 			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",

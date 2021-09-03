@@ -1,3 +1,5 @@
+// +build !windows
+
 package install
 
 import (
@@ -10,13 +12,12 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
 )
 
 type transparentProxyArgs struct {
@@ -212,7 +213,7 @@ func modifyIpTables(cmd *cobra.Command, args *transparentProxyArgs) error {
 	}
 
 	if !args.DryRun {
-		_, _ = cmd.OutOrStdout().Write([]byte("kumactl is about to apply the iptables rules that will enable transparent proxying on the machine. The SSH connection may drop. If that happens, just reconnect again."))
+		_, _ = cmd.OutOrStdout().Write([]byte("kumactl is about to apply the iptables rules that will enable transparent proxying on the machine. The SSH connection may drop. If that happens, just reconnect again.\n"))
 	}
 	output, err := tp.Setup(&config.TransparentProxyConfig{
 		DryRun:                 args.DryRun,

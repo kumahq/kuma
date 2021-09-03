@@ -3,7 +3,7 @@ package util
 import (
 	"fmt"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -13,7 +13,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func ToCoreResourceList(response *envoy.DiscoveryResponse) (model.ResourceList, error) {
+func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceList, error) {
 	krs := []*mesh_proto.KumaResource{}
 	for _, r := range response.Resources {
 		kr := &mesh_proto.KumaResource{}
@@ -66,7 +66,7 @@ func AddSuffixToNames(rs []model.Resource, suffix string) {
 
 func ZoneTag(r model.Resource) string {
 	dp := r.GetSpec().(*mesh_proto.Dataplane)
-	if dp.IsGateway() {
+	if dp.GetNetworking().GetGateway() != nil {
 		return dp.GetNetworking().GetGateway().GetTags()[mesh_proto.ZoneTag]
 	}
 	return dp.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]

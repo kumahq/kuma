@@ -268,9 +268,22 @@ data:
         - k8s_kuma_io_namespace
         regex: "(.*)"
         target_label: namespace
-      file_sd_configs:
-      - files:
-        - /var/run/kuma.io/prometheus-sd/kuma.file_sd.json
+      - source_labels:
+        - __meta_kuma_mesh
+        regex: "(.*)"
+        target_label: mesh
+      - source_labels:
+        - __meta_kuma_dataplane
+        regex: "(.*)"
+        target_label: dataplane
+      - source_labels:
+        - __meta_kuma_service
+        regex: "(.*)"
+        target_label: service
+      - action: labelmap
+        regex: __meta_kuma_label_(.+)
+      kuma_sd_configs:
+      - server: {{ .KumaCpAddress }}
     alerting:
       alertmanagers:
       - kubernetes_sd_configs:
@@ -433,7 +446,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v2.27.1"
+          image: "prom/prometheus:v2.29.1"
           imagePullPolicy: "IfNotPresent"
           args:
             - --storage.tsdb.retention.time=15d
@@ -452,19 +465,6 @@ spec:
             - name: storage-volume
               mountPath: /data
               subPath: ""
-            - mountPath: "/var/run/kuma.io/prometheus-sd"
-              name: kuma-prometheus-sd-volume
-        - name: kuma-prometheus-sd
-          image: {{ .KumaPrometheusSdImage }}:{{ .KumaPrometheusSdVersion }}
-          imagePullPolicy: IfNotPresent
-          args:
-            - run
-            - --name=kuma-prometheus-sd
-            - --cp-address={{ .KumaCpAddress }}
-            - --output-file=/var/run/kuma.io/prometheus-sd/kuma.file_sd.json
-          volumeMounts:
-            - mountPath: "/var/run/kuma.io/prometheus-sd"
-              name: kuma-prometheus-sd-volume
       securityContext:
         fsGroup: 65534
         runAsGroup: 65534
@@ -477,6 +477,3 @@ spec:
         - name: storage-volume
           persistentVolumeClaim:
             claimName: prometheus-server
-        - name: kuma-prometheus-sd-volume
-          emptyDir: {}
-

@@ -8,19 +8,20 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
-	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	pkg_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-
 	"github.com/pkg/errors"
 
+	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	pkg_log "github.com/kumahq/kuma/pkg/log"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var (
@@ -151,7 +152,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	}
 
 	args := []string{
-		"-c", configFile,
+		"--config-path", configFile,
 		"--drain-time-s",
 		fmt.Sprintf("%d", e.opts.Config.Dataplane.DrainTime/time.Second),
 		// "hot restart" (enabled by default) requires each Envoy instance to have
@@ -163,10 +164,24 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		// and we don't expect users to do "hot restart" manually.
 		// so, let's turn it off to simplify getting started experience.
 		"--disable-hot-restart",
-		"-l ", e.opts.LogLevel.String(),
+		"--log-level", e.opts.LogLevel.String(),
 	}
 	if version != "" { // version is always send by Kuma CP, but we check empty for backwards compatibility reasons (new Kuma DP connects to old Kuma CP)
 		args = append(args, "--bootstrap-version", string(version))
+	}
+
+	// If the concurrency is explicit, use that. On Linux, users
+	// can also implicitly set concurrency using cpusets.
+	if e.opts.Config.DataplaneRuntime.Concurrency > 0 {
+		args = append(args,
+			"--concurrency",
+			strconv.FormatUint(uint64(e.opts.Config.DataplaneRuntime.Concurrency), 10),
+		)
+	} else if runtime.GOOS == "linux" {
+		// The `--cpuset-threads` flag is still present on
+		// non-Linux, but emits a warning that we might as well
+		// avoid.
+		args = append(args, "--cpuset-threads")
 	}
 
 	command := command_utils.BuildCommand(ctx, e.opts.Stdout, e.opts.Stderr, resolvedPath, args...)
@@ -212,9 +227,10 @@ func (e *Envoy) version() (*EnvoyVersion, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("the envoy excutable was found at %s but an error occurred when executing it with arg %s", resolvedPath, arg))
 	}
-	build := strings.Trim(string(output), "\n")
-	build = regexp.MustCompile(`:(.*)`).FindString(build)
-	build = strings.Trim(build, ":")
+	build := strings.ReplaceAll(string(output), "\r\n", "\n")
+	build = strings.Trim(build, "\n")
+	build = regexp.MustCompile(`version:(.*)`).FindString(build)
+	build = strings.Trim(build, "version:")
 	build = strings.Trim(build, " ")
 	version := regexp.MustCompile(`/([0-9.]+)/`).FindString(build)
 	version = strings.Trim(version, "/")

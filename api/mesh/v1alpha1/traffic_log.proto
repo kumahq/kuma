@@ -20,12 +20,14 @@ message TrafficLog {
   option (kuma.mesh.resource).name = "TrafficLogResource";
   option (kuma.mesh.resource).type = "TrafficLog";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "traffic-log";
 
   // List of selectors to match dataplanes that are sources of traffic.
-  repeated Selector sources = 1;
+  repeated Selector sources = 1 [ (doc.required) = true ];
 
   // List of selectors to match services that are destinations of traffic.
-  repeated Selector destinations = 2;
+  repeated Selector destinations = 2 [ (doc.required) = true ];
 
   // Configuration defines settings of the logging.
   message Conf {

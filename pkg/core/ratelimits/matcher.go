@@ -3,15 +3,13 @@ package ratelimits
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
-	"github.com/pkg/errors"
-
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/policy"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -21,19 +19,19 @@ type RateLimitMatcher struct {
 	ResourceManager manager.ReadOnlyResourceManager
 }
 
-func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (core_xds.RateLimitsMap, error) {
-	ratelimits := &mesh_core.RateLimitResourceList{}
+func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (core_xds.RateLimitsMap, error) {
+	ratelimits := &core_mesh.RateLimitResourceList{}
 	if err := m.ResourceManager.List(ctx, ratelimits, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
-		return nil, errors.Wrap(err, "could not retrieve ratelimits")
+		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not retrieve ratelimits")
 	}
 
 	return buildRateLimitMap(dataplane, mesh, splitPoliciesBySourceMatch(ratelimits.Items))
 }
 
 func buildRateLimitMap(
-	dataplane *mesh_core.DataplaneResource,
-	mesh *mesh_core.MeshResource,
-	rateLimits []*mesh_core.RateLimitResource,
+	dataplane *core_mesh.DataplaneResource,
+	mesh *core_mesh.MeshResource,
+	rateLimits []*core_mesh.RateLimitResource,
 ) (core_xds.RateLimitsMap, error) {
 	policies := make([]policy.ConnectionPolicy, len(rateLimits))
 	for i, ratelimit := range rateLimits {
@@ -42,18 +40,31 @@ func buildRateLimitMap(
 
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch additional inbounds")
+		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
 	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies)
 
-	result := core_xds.RateLimitsMap{}
+	result := core_xds.RateLimitsMap{
+		Inbound:  core_xds.InboundRateLimitsMap{},
+		Outbound: core_xds.OutboundRateLimitsMap{},
+	}
 	for inbound, connectionPolicies := range policyMap {
-		result[inbound] = []*mesh_proto.RateLimit{}
 		for _, policy := range connectionPolicies {
-			result[inbound] = append(result[inbound], policy.(*mesh_core.RateLimitResource).Spec)
+			result.Inbound[inbound] = append(result.Inbound[inbound], policy.(*core_mesh.RateLimitResource).Spec)
 		}
 	}
+
+	outboundMap := policy.SelectOutboundConnectionPolicies(dataplane, policies)
+
+	for _, outbound := range dataplane.Spec.GetNetworking().GetOutbound() {
+		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		if policy, exists := outboundMap[serviceName]; exists {
+			oface := dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
+			result.Outbound[oface] = policy.(*core_mesh.RateLimitResource).Spec
+		}
+	}
+
 	return result, nil
 }
 
@@ -75,12 +86,12 @@ func buildRateLimitMap(
 //    - match:
 //        kuma.io/service: 'web-api'
 //        version: '1'
-func splitPoliciesBySourceMatch(rateLimits []*mesh_core.RateLimitResource) []*mesh_core.RateLimitResource {
-	result := []*mesh_core.RateLimitResource{}
+func splitPoliciesBySourceMatch(rateLimits []*core_mesh.RateLimitResource) []*core_mesh.RateLimitResource {
+	result := []*core_mesh.RateLimitResource{}
 
 	for _, rateLimit := range rateLimits {
 		for i := range rateLimit.Sources() {
-			newRateLimit := &mesh_core.RateLimitResource{
+			newRateLimit := &core_mesh.RateLimitResource{
 				Meta: rateLimit.GetMeta(),
 				Spec: proto.Clone(rateLimit.Spec).(*mesh_proto.RateLimit),
 			}

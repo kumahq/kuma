@@ -16,15 +16,12 @@ import (
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
@@ -90,6 +87,13 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 				Log:               r.Log.WithName("zone-ingress-to-configmap-mapper"),
 				SystemNamespace:   r.SystemNamespace,
 				ResourceConverter: r.ResourceConverter,
+			},
+		}).
+		Watches(&kube_source.Kind{Type: &mesh_k8s.VirtualOutbound{}}, &kube_handler.EnqueueRequestsFromMapFunc{
+			ToRequests: &VirtualOutboundToConfigMapsMapper{
+				Client:          mgr.GetClient(),
+				Log:             r.Log.WithName("virtualoutbound-to-configmap-mapper"),
+				SystemNamespace: r.SystemNamespace,
 			},
 		}).
 		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, &kube_handler.EnqueueRequestsFromMapFunc{
@@ -223,6 +227,24 @@ func (m *ExternalServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []ku
 	cause, ok := obj.Object.(*mesh_k8s.ExternalService)
 	if !ok {
 		m.Log.WithValues("externalService", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
+		return nil
+	}
+
+	return []kube_reconile.Request{{
+		NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(cause.Mesh)},
+	}}
+}
+
+type VirtualOutboundToConfigMapsMapper struct {
+	kube_client.Client
+	Log             logr.Logger
+	SystemNamespace string
+}
+
+func (m *VirtualOutboundToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
+	cause, ok := obj.Object.(*mesh_k8s.VirtualOutbound)
+	if !ok {
+		m.Log.WithValues("virtualOutbound", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
 		return nil
 	}
 

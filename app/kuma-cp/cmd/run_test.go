@@ -7,12 +7,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/test"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"sigs.k8s.io/testing_frameworks/integration/addr"
+
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 type ConfigFactory interface {
@@ -105,7 +104,7 @@ func RunSmokeTest(factory ConfigFactory, workdir string) {
 			}, "10s", "10ms").Should(BeTrue())
 
 			// when
-			By("signalling Control Plane to stop")
+			By("signaling Control Plane to stop")
 			close(stopCh)
 
 			// then

@@ -4,30 +4,27 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
-	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-
-	"github.com/kumahq/kuma/pkg/core/secrets/manager"
-
 	"github.com/pkg/errors"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
-	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	externalservice "github.com/kumahq/kuma/pkg/core/managers/apis/external_service"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/ratelimit"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	k8s_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
@@ -146,12 +143,12 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 }
 
 func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	reconciler := &controllers.PodReconciler{
+	reconciler := &k8s_controllers.PodReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-generator"),
 		Scheme:        mgr.GetScheme(),
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
-		PodConverter: controllers.PodConverter{
+		PodConverter: k8s_controllers.PodConverter{
 			ServiceGetter:     mgr.GetClient(),
 			NodeGetter:        mgr.GetClient(),
 			Zone:              rt.Config().Multizone.Zone.Name,
@@ -165,7 +162,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 }
 
 func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	reconciler := &controllers.PodStatusReconciler{
+	reconciler := &k8s_controllers.PodStatusReconciler{
 		Client:            mgr.GetClient(),
 		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-jobs-syncer"),
 		Scheme:            mgr.GetScheme(),
@@ -212,7 +209,7 @@ func addDefaulters(mgr kube_ctrl.Manager, converter k8s_common.Converter) error 
 
 	addDefaulter(mgr, mesh_k8s.GroupVersion.WithKind("Mesh"),
 		func() core_model.Resource {
-			return mesh_core.NewMeshResource()
+			return core_mesh.NewMeshResource()
 		}, converter)
 
 	return nil
@@ -243,12 +240,20 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().Store.Kubernetes.SystemNamespace)
 	composite.AddValidator(handler)
 
-	coreMeshValidator := managers_mesh.MeshValidator{
-		CaManagers: rt.CaManagers(),
-		Store:      rt.ResourceStore(),
-	}
-	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, converter, rt.ResourceManager())
+	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.MeshValidator(), converter, rt.ResourceManager())
 	composite.AddValidator(k8sMeshValidator)
+
+	rateLimitValidator := ratelimit.RateLimitValidator{
+		Store: rt.ResourceStore(),
+	}
+	k8sRateLimitValidator := k8s_webhooks.NewRateLimitValidatorWebhook(rateLimitValidator, converter)
+	composite.AddValidator(k8sRateLimitValidator)
+
+	externalServiceValidator := externalservice.ExternalServiceValidator{
+		Store: rt.ResourceStore(),
+	}
+	k8sExternalServiceValidator := k8s_webhooks.NewExternalServiceValidatorWebhook(externalServiceValidator, converter)
+	composite.AddValidator(k8sExternalServiceValidator)
 
 	coreZoneValidator := zone.Validator{Store: rt.ResourceStore()}
 	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator)

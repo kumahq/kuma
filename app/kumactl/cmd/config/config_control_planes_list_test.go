@@ -6,17 +6,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl config control-planes list", func() {
 
 	It("should display Control Planes from a given configuration file", func() {
 		// setup
-		rootCmd := cmd.DefaultRootCmd()
+		rootCmd := test.DefaultTestingRootCmd()
 		buf := &bytes.Buffer{}
 		rootCmd.SetOut(buf)
 

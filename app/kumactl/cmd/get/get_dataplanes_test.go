@@ -8,33 +8,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
-
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("kumactl get dataplanes", func() {
 
-	var dataplanes []*mesh_core.DataplaneResource
+	var dataplanes []*core_mesh.DataplaneResource
 	BeforeEach(func() {
 		// setup
-		dataplanes = []*mesh_core.DataplaneResource{
+		dataplanes = []*core_mesh.DataplaneResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default",
@@ -90,25 +85,16 @@ var _ = Describe("kumactl get dataplanes", func() {
 
 	Describe("GetDataplanesCmd", func() {
 
-		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
 		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
 		BeforeEach(func() {
 			// setup
-
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return rootTime },
-					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
-				},
-			}
-
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
+
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, core_mesh.DataplaneResourceTypeDescriptor)
+			Expect(err).ToNot(HaveOccurred())
 
 			for _, pt := range dataplanes {
 				key := core_model.ResourceKey{

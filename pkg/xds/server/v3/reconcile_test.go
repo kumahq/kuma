@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	. "github.com/onsi/ginkgo"
@@ -13,7 +16,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_model "github.com/kumahq/kuma/pkg/core/xds"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -51,28 +54,28 @@ var _ = Describe("Reconcile", func() {
 				envoy_types.Listener: {
 					Items: map[string]envoy_types.ResourceWithTtl{
 						"listener": {
-							Resource: &envoy.Listener{},
+							Resource: &envoy_listener.Listener{},
 						},
 					},
 				},
 				envoy_types.Route: {
 					Items: map[string]envoy_types.ResourceWithTtl{
 						"route": {
-							Resource: &envoy.RouteConfiguration{},
+							Resource: &envoy_route.RouteConfiguration{},
 						},
 					},
 				},
 				envoy_types.Cluster: {
 					Items: map[string]envoy_types.ResourceWithTtl{
 						"cluster": {
-							Resource: &envoy.Cluster{},
+							Resource: &envoy_cluster.Cluster{},
 						},
 					},
 				},
 				envoy_types.Endpoint: {
 					Items: map[string]envoy_types.ResourceWithTtl{
 						"endpoint": {
-							Resource: &envoy.ClusterLoadAssignment{},
+							Resource: &envoy_endpoint.ClusterLoadAssignment{},
 						},
 					},
 				},
@@ -102,7 +105,7 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			// given
-			dataplane := &mesh_core.DataplaneResource{
+			dataplane := &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Mesh:    "demo",
 					Name:    "example",

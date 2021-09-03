@@ -7,13 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -72,19 +70,19 @@ func (f FieldOperator) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry
 	case CMD_BYTES_SENT:
 		return f.formatUint(entry.GetConnectionProperties().GetSentBytes())
 	case CMD_PROTOCOL:
-		return "", nil // replicate Envoy's behaviour
+		return "", nil // replicate Envoy's behavior
 	case CMD_RESPONSE_CODE:
-		return "0", nil // replicate Envoy's behaviour
+		return "0", nil // replicate Envoy's behavior
 	case CMD_RESPONSE_CODE_DETAILS:
-		return "", nil // replicate Envoy's behaviour
+		return "", nil // replicate Envoy's behavior
 	case CMD_REQUEST_DURATION:
-		return "", nil // replicate Envoy's behaviour
+		return "", nil // replicate Envoy's behavior
 	case CMD_RESPONSE_DURATION:
-		return "", nil // replicate Envoy's behaviour
+		return "", nil // replicate Envoy's behavior
 	case CMD_RESPONSE_TX_DURATION:
-		return "", nil // replicate Envoy's behaviour
+		return "", nil // replicate Envoy's behavior
 	case CMD_GRPC_STATUS:
-		return "", nil // replace Envoy's behaviour
+		return "", nil // replace Envoy's behavior
 	default:
 		return f.formatAccessLogCommon(entry.GetCommonProperties())
 	}

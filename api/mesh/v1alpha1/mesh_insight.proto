@@ -15,6 +15,8 @@ message MeshInsight {
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).ws.name = "mesh-insight";
+  option (kuma.mesh.resource).ws.read_only = true;
 
   // last_sync is a time of the last synchronization
   google.protobuf.Timestamp last_sync = 1;
@@ -42,4 +44,14 @@ message MeshInsight {
     map<string, DataplaneStat> envoy = 2;
   }
   DpVersions dpVersions = 4;
+
+  message MTLS {
+    // Dataplanes grouped by issued backends.
+    map<string, DataplaneStat> issuedBackends = 1;
+    // Dataplanes grouped by supported backends.
+    map<string, DataplaneStat> supportedBackends = 2;
+  }
+
+  // mTLS statistics
+  MTLS mTLS = 5;
 }

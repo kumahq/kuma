@@ -38,31 +38,6 @@ var _ = Describe("ProxyTemplate", func() {
                   - name: additional
                     version: v1
                     resource: | 
-                      '@type': type.googleapis.com/envoy.api.v2.Cluster
-                      connectTimeout: 5s
-                      loadAssignment:
-                        clusterName: localhost:8443
-                        endpoints:
-                          - lbEndpoints:
-                              - endpoint:
-                                  address:
-                                    socketAddress:
-                                      address: 127.0.0.1
-                                      portValue: 8443
-                      name: localhost:8443
-                      type: STATIC`,
-			),
-			Entry("full example V3", `
-                selectors:
-                - match:
-                    kuma.io/service: backend
-                conf:
-                  imports:
-                  - default-proxy
-                  resources:
-                  - name: additional
-                    version: v1
-                    resource: | 
                       '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
                       connection_pool_per_downstream_connection: true # V3 only setting
                       connectTimeout: 5s
@@ -182,14 +157,14 @@ var _ = Describe("ProxyTemplate", func() {
                       value: |
                         name: envoy.filters.network.tcp_proxy
                         typedConfig:
-                          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                           cluster: backend
                   - networkFilter:
                       operation: addLast
                       value: |
                         name: envoy.filters.network.tcp_proxy
                         typedConfig:
-                          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                           cluster: backend
                   - networkFilter:
                       operation: addBefore
@@ -198,7 +173,7 @@ var _ = Describe("ProxyTemplate", func() {
                       value: |
                         name: envoy.filters.network.tcp_proxy
                         typedConfig:
-                          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                           cluster: backend
                   - networkFilter:
                       operation: addAfter
@@ -208,7 +183,7 @@ var _ = Describe("ProxyTemplate", func() {
                       value: |
                         name: envoy.filters.network.tcp_proxy
                         typedConfig:
-                          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                           cluster: backend
                   - networkFilter:
                       operation: patch
@@ -235,7 +210,7 @@ var _ = Describe("ProxyTemplate", func() {
                       value: |
                         name: envoy.filters.http.router
                         typedConfig:
-                          '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+                          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                           dynamicStats: false
                   - httpFilter:
                       operation: addLast
@@ -265,7 +240,7 @@ var _ = Describe("ProxyTemplate", func() {
                       value: |
                         name: envoy.filters.http.router
                         typedConfig:
-                          '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+                          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                           dynamicStats: false
                   - httpFilter:
                       operation: remove
@@ -441,7 +416,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - name: additional
                     version: v1
                     resource: | 
-                      '@type': type.googleapis.com/envoy.api.v2.Cluster
+                      '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
                       loadAssignment:
                         clusterName: localhost:8443
                         endpoints:
@@ -454,7 +429,7 @@ var _ = Describe("ProxyTemplate", func() {
 				expected: `
                 violations:
                 - field: conf.resources[0].resource
-                  message: 'native Envoy resource is not valid: invalid Cluster.Name: value length must be at least 1 bytes'`,
+                  message: 'native Envoy resource is not valid: invalid Cluster.Name: value length must be at least 1 runes'`,
 			}),
 			Entry("invalid envoy resource", testCase{
 				proxyTemplate: `

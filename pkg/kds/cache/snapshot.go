@@ -4,12 +4,13 @@ import (
 	"fmt"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/kds"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 type ResourceBuilder interface {
@@ -17,7 +18,7 @@ type ResourceBuilder interface {
 
 type SnapshotBuilder interface {
 	With(typ string, resources []envoy_types.Resource) SnapshotBuilder
-	Build(version string) util_xds.Snapshot
+	Build(version string) util_xds_v3.Snapshot
 }
 
 type builder struct {
@@ -36,7 +37,7 @@ func (b *builder) With(typ string, resources []envoy_types.Resource) SnapshotBui
 	return b
 }
 
-func (b *builder) Build(version string) util_xds.Snapshot {
+func (b *builder) Build(version string) util_xds_v3.Snapshot {
 	snapshot := &Snapshot{Resources: map[string]envoy_cache.Resources{}}
 	for _, typ := range snapshot.GetSupportedTypes() {
 		snapshot.Resources[typ] = envoy_cache.NewResources(version, nil)
@@ -56,11 +57,11 @@ type Snapshot struct {
 	Resources map[string]envoy_cache.Resources
 }
 
-var _ util_xds.Snapshot = &Snapshot{}
+var _ util_xds_v3.Snapshot = &Snapshot{}
 
 func (s *Snapshot) GetSupportedTypes() (types []string) {
-	for _, typ := range kds.SupportedTypes {
-		types = append(types, string(typ))
+	for _, def := range registry.Global().ObjectTypes(model.HasKdsEnabled()) {
+		types = append(types, string(def))
 	}
 	return
 }
@@ -109,7 +110,7 @@ func (s *Snapshot) GetVersion(typ string) string {
 	return ""
 }
 
-func (s *Snapshot) WithVersion(typ string, version string) util_xds.Snapshot {
+func (s *Snapshot) WithVersion(typ string, version string) util_xds_v3.Snapshot {
 	if s == nil {
 		return nil
 	}

@@ -1,21 +1,20 @@
 package context
 
-import kuma_version "github.com/kumahq/kuma/pkg/version"
-
 type Dashboard struct {
 	FileName string
 	Content  string
 }
 
 type MetricsTemplateArgs struct {
-	Namespace               string
-	Mesh                    string
-	KumaPrometheusSdImage   string
-	KumaPrometheusSdVersion string
-	KumaCpAddress           string
-	WithoutPrometheus       bool
-	WithoutGrafana          bool
-	Dashboards              []Dashboard
+	Namespace         string
+	Mesh              string
+	KumaCpAddress     string
+	JaegerAddress     string
+	LokiAddress       string
+	KumaCpApiAddress  string
+	WithoutPrometheus bool
+	WithoutGrafana    bool
+	Dashboards        []Dashboard
 }
 
 type InstallMetricsContext struct {
@@ -25,12 +24,13 @@ type InstallMetricsContext struct {
 func DefaultInstallMetricsContext() InstallMetricsContext {
 	return InstallMetricsContext{
 		TemplateArgs: MetricsTemplateArgs{
-			Namespace:               "kuma-metrics",
-			KumaPrometheusSdImage:   "docker.io/kumahq/kuma-prometheus-sd",
-			KumaPrometheusSdVersion: kuma_version.Build.GitTag,
-			KumaCpAddress:           "grpc://kuma-control-plane.kuma-system:5676",
-			WithoutPrometheus:       false,
-			WithoutGrafana:          false,
+			Namespace:         "kuma-metrics",
+			KumaCpAddress:     "http://kuma-control-plane.kuma-system:5676",
+			KumaCpApiAddress:  "http://kuma-control-plane.kuma-system:5681",
+			JaegerAddress:     "http://jaeger-query.kuma-tracing",
+			LokiAddress:       "http://loki.kuma-logging:3100",
+			WithoutPrometheus: false,
+			WithoutGrafana:    false,
 		},
 	}
 }

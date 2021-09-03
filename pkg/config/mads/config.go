@@ -3,13 +3,12 @@ package mads
 import (
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/mads"
-
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/mads"
 )
 
 var log = core.Log.WithName("mads-config")
@@ -18,7 +17,7 @@ func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig
 	return &MonitoringAssignmentServerConfig{
 		Port:                      5676,
 		DefaultFetchTimeout:       30 * time.Second,
-		ApiVersions:               []mads.ApiVersion{mads.API_V1_ALPHA1, mads.API_V1},
+		ApiVersions:               []mads.ApiVersion{mads.API_V1},
 		AssignmentRefreshInterval: 1 * time.Second,
 	}
 }
@@ -62,7 +61,7 @@ func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
 	}
 
 	for _, apiVersion := range c.ApiVersions {
-		if apiVersion != mads.API_V1 && apiVersion != mads.API_V1_ALPHA1 {
+		if apiVersion != mads.API_V1 {
 			errs = multierr.Append(errs, errors.Errorf(".ApiVersions contains invalid version %s", apiVersion))
 		}
 	}

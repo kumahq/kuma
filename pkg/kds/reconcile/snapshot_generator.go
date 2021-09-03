@@ -3,17 +3,15 @@ package reconcile
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
-	"github.com/kumahq/kuma/pkg/kds/util"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/kds/cache"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/pkg/kds/util"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 type ResourceFilter func(clusterID string, r model.Resource) bool
@@ -36,7 +34,7 @@ type snapshotGenerator struct {
 	resourceFilter  ResourceFilter
 }
 
-func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node) (util_xds.Snapshot, error) {
+func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node) (util_xds_v3.Snapshot, error) {
 	builder := cache.NewSnapshotBuilder()
 	for _, typ := range s.resourceTypes {
 		resources, err := s.getResources(ctx, typ, node)

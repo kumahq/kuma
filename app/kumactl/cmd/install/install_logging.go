@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 )
@@ -13,12 +14,8 @@ type loggingTemplateArgs struct {
 	Namespace string
 }
 
-func newInstallLogging() *cobra.Command {
-	args := struct {
-		Namespace string
-	}{
-		Namespace: "kuma-logging",
-	}
+func newInstallLogging(pctx *kumactl_cmd.RootContext) *cobra.Command {
+	args := pctx.InstallLoggingContext.TemplateArgs
 	cmd := &cobra.Command{
 		Use:   "logging",
 		Short: "Install Logging backend in Kubernetes cluster (Loki)",

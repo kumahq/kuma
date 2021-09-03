@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var defaultCircuitBreaker = mesh_proto.CircuitBreaker{
@@ -23,10 +23,10 @@ var defaultCircuitBreaker = mesh_proto.CircuitBreaker{
 	}},
 	Conf: &mesh_proto.CircuitBreaker_Conf{
 		Thresholds: &mesh_proto.CircuitBreaker_Conf_Thresholds{
-			MaxConnections:     &wrapperspb.UInt32Value{Value: 1024},
-			MaxPendingRequests: &wrapperspb.UInt32Value{Value: 1024},
-			MaxRequests:        &wrapperspb.UInt32Value{Value: 1024},
-			MaxRetries:         &wrapperspb.UInt32Value{Value: 3},
+			MaxConnections:     util_proto.UInt32(1024),
+			MaxPendingRequests: util_proto.UInt32(1024),
+			MaxRequests:        util_proto.UInt32(1024),
+			MaxRetries:         util_proto.UInt32(3),
 		},
 	},
 }

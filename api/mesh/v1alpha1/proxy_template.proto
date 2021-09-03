@@ -20,13 +20,14 @@ message ProxyTemplate {
   option (kuma.mesh.resource).name = "ProxyTemplateResource";
   option (kuma.mesh.resource).type = "ProxyTemplate";
   option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "proxytemplate";
 
   // List of Dataplane selectors.
-  // +optional
-  repeated Selector selectors = 1;
+  repeated Selector selectors = 1 [ (doc.required) = true ];
 
   // Configuration for ProxyTemplate
-  Conf conf = 2;
+  Conf conf = 2 [ (doc.required) = true ];
 
   message Conf {
     // List of imported profiles.
@@ -61,7 +62,7 @@ message ProxyTemplate {
       // Only clusters that match will be modified
       Match match = 1;
       // Operation to apply on a cluster (add, remove, patch)
-      string operation = 2;
+      string operation = 2 [ (doc.required) = true ];
       // xDS cluster
       string value = 3;
 
@@ -71,7 +72,7 @@ message ProxyTemplate {
         // transparent, ingress)
         string origin = 1;
         // Name of the cluster to match
-        string name = 2;
+        string name = 2 [ (doc.required) = true ];
       }
     }
 
@@ -80,7 +81,7 @@ message ProxyTemplate {
       // Only listeners that match will be modified
       Match match = 1;
       // Operation to apply on a listener (add, remove, patch)
-      string operation = 2;
+      string operation = 2 [ (doc.required) = true ];
       // xDS listener
       string value = 3;
 
@@ -90,7 +91,7 @@ message ProxyTemplate {
         // transparent, ingress)
         string origin = 1;
         // Name of the listener to match
-        string name = 2;
+        string name = 2 [ (doc.required) = true ];
       }
     }
 
@@ -100,7 +101,7 @@ message ProxyTemplate {
       Match match = 1;
       // Operation to apply on network filter (addFirst, addLast, addBefore,
       // addAfter, remove, patch)
-      string operation = 2;
+      string operation = 2 [ (doc.required) = true ];
       // xDS network filter
       string value = 3;
 
@@ -110,7 +111,7 @@ message ProxyTemplate {
         // transparent, ingress)
         string origin = 1;
         // Name of the network filter
-        string name = 2;
+        string name = 2 [ (doc.required) = true ];
         // Name of the listener that network filter modifications will be
         // applied to
         string listenerName = 3;
@@ -123,7 +124,7 @@ message ProxyTemplate {
       Match match = 1;
       // Operation to apply on network filter (addFirst, addLast, addBefore,
       // addAfter, remove, patch)
-      string operation = 2;
+      string operation = 2 [ (doc.required) = true ];
       // xDS HTTP filter
       string value = 3;
 
@@ -145,7 +146,7 @@ message ProxyTemplate {
       // Only virtual hosts that match will be modified
       Match match = 1;
       // Operation to apply on a virtual hosts (add, remove, patch)
-      string operation = 2;
+      string operation = 2 [ (doc.required) = true ];
       // xDS virtual host
       string value = 3;
 
@@ -155,7 +156,7 @@ message ProxyTemplate {
         // transparent, ingress)
         string origin = 1;
         // Name of the virtual host to match
-        string name = 2;
+        string name = 2 [ (doc.required) = true ];
         // Name of the route configuration
         string routeConfigurationName = 3;
       }
@@ -202,12 +203,12 @@ message ProxyTemplateRawResource {
 
   // The resource's name, to distinguish it from others of the same type of
   // resource.
-  string name = 1;
+  string name = 1 [ (doc.required) = true ];
 
   // The resource level version. It allows xDS to track the state of individual
   // resources.
-  string version = 2;
+  string version = 2 [ (doc.required) = true ];
 
   // xDS resource.
-  string resource = 3;
+  string resource = 3 [ (doc.required) = true ];
 }

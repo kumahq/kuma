@@ -8,26 +8,22 @@ import (
 	"strconv"
 	"strings"
 
-	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
-
 	"github.com/pkg/errors"
-	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
-
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	"github.com/kumahq/kuma/pkg/core"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+
+	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
 )
 
 const (
@@ -176,13 +172,13 @@ func meshName(pod *kube_core.Pod, ns *kube_core.Namespace) string {
 	return core_model.DefaultMesh
 }
 
-func (i *KumaInjector) meshFor(pod *kube_core.Pod, ns *kube_core.Namespace) (*mesh_core.MeshResource, error) {
+func (i *KumaInjector) meshFor(pod *kube_core.Pod, ns *kube_core.Namespace) (*core_mesh.MeshResource, error) {
 	meshName := meshName(pod, ns)
 	mesh := &mesh_k8s.Mesh{}
 	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
 		return nil, err
 	}
-	meshResource := mesh_core.NewMeshResource()
+	meshResource := core_mesh.NewMeshResource()
 	if err := i.converter.ToCoreResource(mesh, meshResource); err != nil {
 		return nil, err
 	}
@@ -201,21 +197,52 @@ func (i *KumaInjector) namespaceFor(pod *kube_core.Pod) (*kube_core.Namespace, e
 	return ns, nil
 }
 
+func (i *KumaInjector) proxyConcurrencyFor(pod *kube_core.Pod) (int64, error) {
+	count, ok, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaSidecarConcurrencyAnnotation)
+	if ok {
+		return int64(count), err
+	}
+
+	// Note that validation requires the resource limit is not empty.
+	cpuRequest := kube_api.MustParse(i.cfg.SidecarContainer.Resources.Limits.CPU)
+	ncpu := cpuRequest.MilliValue() / 1000
+	if ncpu < 2 {
+		// Only autotune to down to 2 to mitigate the latency
+		// risk if a worker thread blocks.
+		ncpu = 2
+	}
+
+	return ncpu, nil
+}
+
 func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Namespace) (kube_core.Container, error) {
 	mesh := meshName(pod, ns)
 	env, err := i.sidecarEnvVars(mesh, pod.GetAnnotations())
 	if err != nil {
 		return kube_core.Container{}, err
 	}
+
+	cpuCount, err := i.proxyConcurrencyFor(pod)
+	if err != nil {
+		return kube_core.Container{}, err
+	}
+
+	args := []string{
+		"run",
+		"--log-level=info",
+	}
+
+	if cpuCount > 0 {
+		args = append(args,
+			"--concurrency="+strconv.FormatInt(cpuCount, 10))
+	}
+
 	return kube_core.Container{
 		Name:            util.KumaSidecarContainerName,
 		Image:           i.cfg.SidecarContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
-		Args: []string{
-			"run",
-			"--log-level=info",
-		},
-		Env: env,
+		Args:            args,
+		Env:             env,
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.UID,
 			RunAsGroup: &i.cfg.SidecarContainer.GID,
@@ -444,7 +471,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	}, nil
 }
 
-func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) (map[string]string, error) {
+func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshResource) (map[string]string, error) {
 	annotations := map[string]string{
 		metadata.KumaMeshAnnotation:                             mesh.GetMeta().GetName(), // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:                  fmt.Sprintf("%t", true),

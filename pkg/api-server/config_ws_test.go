@@ -128,7 +128,8 @@ var _ = Describe("Config WS", func() {
 		  "metrics": {
 			"dataplane": {
 			  "enabled": true,
-			  "subscriptionLimit": 2
+			  "subscriptionLimit": 2,
+			  "idleTimeout": "5m0s"
 			},
 			"mesh": {
 			  "maxResyncTimeout": "20s",
@@ -136,13 +137,13 @@ var _ = Describe("Config WS", func() {
 			},
 			"zone": {
 			  "enabled": true,
-			  "subscriptionLimit": 10
+			  "subscriptionLimit": 10,
+			  "idleTimeout": "5m0s"
 			}
 		  },
 		  "mode": "standalone",
 		  "monitoringAssignmentServer": {
 			"apiVersions": [
-			  "v1alpha1",
 			  "v1"
 			],
 			"assignmentRefreshInterval": "1s",
@@ -249,9 +250,6 @@ var _ = Describe("Config WS", func() {
             "universal": {
               "dataplaneCleanupAge": "72h0m0s"
             }
-          },
-          "sdsServer": {
-            "dataplaneConfigurationRefreshInterval": "1s"
           },
           "dpServer": {
             "port": 5678,

@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -12,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/insights"
@@ -21,9 +24,6 @@ import (
 	store_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Counter", func() {
@@ -77,6 +77,7 @@ var _ = Describe("Counter", func() {
 				defer tickMtx.RUnlock()
 				return tickCh
 			},
+			Registry: registry.Global(),
 		})
 
 		go func() {

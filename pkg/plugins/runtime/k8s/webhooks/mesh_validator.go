@@ -7,13 +7,11 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
 	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
@@ -57,8 +55,8 @@ func (h *MeshValidator) ValidateDelete(ctx context.Context, req admission.Reques
 }
 
 func (h *MeshValidator) ValidateCreate(ctx context.Context, req admission.Request) admission.Response {
-	coreRes := mesh_core.NewMeshResource()
-	k8sRes := &v1alpha1.Mesh{}
+	coreRes := core_mesh.NewMeshResource()
+	k8sRes := &mesh_k8s.Mesh{}
 	if err := h.decoder.Decode(req, k8sRes); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -75,8 +73,8 @@ func (h *MeshValidator) ValidateCreate(ctx context.Context, req admission.Reques
 }
 
 func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Request) admission.Response {
-	coreRes := mesh_core.NewMeshResource()
-	k8sRes := &v1alpha1.Mesh{}
+	coreRes := core_mesh.NewMeshResource()
+	k8sRes := &mesh_k8s.Mesh{}
 	if err := h.decoder.DecodeRaw(req.Object, k8sRes); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -84,8 +82,8 @@ func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Reques
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	oldCoreRes := mesh_core.NewMeshResource()
-	oldK8sRes := &v1alpha1.Mesh{}
+	oldCoreRes := core_mesh.NewMeshResource()
+	oldK8sRes := &mesh_k8s.Mesh{}
 	if err := h.decoder.DecodeRaw(req.OldObject, oldK8sRes); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}

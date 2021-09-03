@@ -13,6 +13,8 @@ import (
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
+var AllowedMTLSBackends = 1
+
 func (m *MeshResource) Validate() error {
 	var verr validators.ValidationError
 	verr.AddError("mtls", validateMtls(m.Spec.Mtls))
@@ -27,6 +29,10 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	if mtls == nil {
 		return verr
 	}
+	if len(mtls.GetBackends()) > AllowedMTLSBackends {
+		verr.AddViolationAt(validators.RootedAt("backends"), fmt.Sprintf("cannot have more than %d backends", AllowedMTLSBackends))
+	}
+
 	usedNames := map[string]bool{}
 	for i, backend := range mtls.GetBackends() {
 		if usedNames[backend.Name] {
@@ -165,10 +171,7 @@ func validateDatadog(cfgStr *structpb.Struct) validators.ValidationError {
 		verr.AddViolation("address", "cannot be empty")
 	}
 
-	if cfg.Port > 0xFFFF || cfg.Port < 1 {
-		verr.AddViolation("port", "must be in the range 1 to 65535")
-	}
-
+	verr.Add(ValidatePort(validators.RootedAt("port"), cfg.GetPort()))
 	return verr
 }
 

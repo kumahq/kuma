@@ -15,6 +15,9 @@ message DataplaneInsight {
   option (kuma.mesh.resource).type = "DataplaneInsight";
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).kds.send_to_global = true;
+  option (kuma.mesh.resource).ws.name = "dataplane-insight";
+  option (kuma.mesh.resource).ws.read_only = true;
 
   // List of ADS subscriptions created by a given Dataplane.
   repeated DiscoverySubscription subscriptions = 1;
@@ -33,6 +36,12 @@ message DataplaneInsight {
 
     // Number of certificate regenerations for a Dataplane.
     uint32 certificate_regenerations = 3;
+
+    // Backend that was used to generate current certificate
+    string issuedBackend = 4;
+
+    // Supported backends (CA).
+    repeated string supportedBackends = 5;
   }
 }
 
@@ -66,6 +75,10 @@ message DiscoverySubscription {
 
   // Version of Envoy and Kuma dataplane
   Version version = 6;
+
+  // Generation is an integer number which is periodically increased by the
+  // status sink
+  uint32 generation = 7;
 }
 
 // DiscoverySubscriptionStatus defines status of an ADS subscription.

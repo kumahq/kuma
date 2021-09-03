@@ -41,19 +41,21 @@ type deployOptions struct {
 	runPostgresMigration bool
 
 	// app specific
-	namespace      string
-	appname        string
-	name           string
-	appYaml        string
-	appArgs        []string
-	token          string
-	transparent    bool
-	builtindns     *bool // true by default
-	protocol       string
-	serviceName    string
-	serviceVersion string
-	mesh           string
-	dpVersion      string
+	namespace       string
+	appname         string
+	name            string
+	appYaml         string
+	appArgs         []string
+	token           string
+	transparent     bool
+	builtindns      *bool // true by default
+	protocol        string
+	serviceName     string
+	serviceVersion  string
+	serviceInstance string
+	mesh            string
+	dpVersion       string
+	kumactlFlow     bool
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -69,6 +71,14 @@ func WithPostgres(envVars map[string]string) DeployOptionsFunc {
 		for key, value := range envVars {
 			o.env[key] = value
 		}
+	}
+}
+
+// WithKumactlFlow allows to create Dataplane resource before the actual data plane proxy start.
+// If proxy is disconnected, resource won't be deleted from the storage and will be displayed as Offline.
+func WithKumactlFlow() DeployOptionsFunc {
+	return func(options *deployOptions) {
+		options.kumactlFlow = true
 	}
 }
 
@@ -105,6 +115,12 @@ func WithServiceName(name string) DeployOptionsFunc {
 func WithServiceVersion(version string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.serviceVersion = version
+	}
+}
+
+func WithServiceInstance(instance string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.serviceInstance = instance
 	}
 }
 

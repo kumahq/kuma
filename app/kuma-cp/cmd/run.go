@@ -24,7 +24,6 @@ import (
 	kds_zone "github.com/kumahq/kuma/pkg/kds/zone"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
 	metrics "github.com/kumahq/kuma/pkg/metrics/components"
-	sds_server "github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/util/os"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds"
@@ -103,16 +102,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DNS")
 					return err
 				}
-				if err := gc.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up GC")
-					return err
-				}
 				if err := xds.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up XDS")
-					return err
-				}
-				if err := sds_server.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up SDS")
 					return err
 				}
 				if err := hds.Setup(rt); err != nil {
@@ -144,16 +135,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DNS")
 					return err
 				}
-				if err := gc.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up GC")
-					return err
-				}
 				if err := xds.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up XDS")
-					return err
-				}
-				if err := sds_server.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up SDS")
 					return err
 				}
 				if err := hds.Setup(rt); err != nil {
@@ -193,6 +176,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			if err := metrics.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Metrics")
+				return err
+			}
+			if err := gc.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up GC")
 				return err
 			}
 
