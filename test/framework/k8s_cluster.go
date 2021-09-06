@@ -594,6 +594,49 @@ func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
 	return nil
 }
 
+// StopControlPlane scales the replicas of a control plane to 0 and wait for it to complete. Useful for testing restarts in combination with RestartControlPlane.
+func (c *K8sCluster) StopControlPlane() error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", KumaServiceName)); err != nil {
+		return err
+	}
+	_, err := retry.DoWithRetryE(c.t,
+		"wait for control-plane to be down",
+		c.defaultRetries,
+		c.defaultTimeout,
+		func() (string, error) {
+			pods := c.controlplane.GetKumaCPPods()
+			if len(pods) == 0 {
+				return "Done", nil
+			}
+			names := []string{}
+			for _, p := range pods {
+				names = append(names, p.Name)
+			}
+			return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
+		},
+	)
+	return err
+}
+
+// RestartControlPlane scales the replicas of a control plane back to `c.controlplane.replicas` and waits for it to be running. Useful for testing restarts in combination with StopControlPlane.
+func (c *K8sCluster) RestartControlPlane() error {
+	if c.controlplane.replicas == 0 {
+		return errors.New("replica count is 0, can't restart the control-plane")
+	}
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(KumaNamespace), "scale", fmt.Sprintf("--replicas=%d", c.controlplane.replicas), fmt.Sprintf("deployment/%s", KumaServiceName)); err != nil {
+		return err
+	}
+	if err := c.WaitApp(KumaServiceName, KumaNamespace, c.controlplane.replicas); err != nil {
+		return err
+	}
+
+	if err := c.controlplane.FinalizeAdd(); err != nil {
+		return err
+	}
+
+	return c.VerifyKuma()
+}
+
 func (c *K8sCluster) GetKuma() ControlPlane {
 	return c.controlplane
 }
