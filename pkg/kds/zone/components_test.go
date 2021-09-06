@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
@@ -44,13 +43,8 @@ var _ = Describe("Zone Sync", func() {
 
 	zoneName := "zone-1"
 
-	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) component.Component {
+	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) kds_client.KdsSink {
 		return kds_client.NewKDSSink(core.Log.WithName("kds-sink"), registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(cs, zoneName, ""), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
-	}
-	start := func(comp component.Component, stop chan struct{}) {
-		go func() {
-			_ = comp.Start(stop)
-		}()
 	}
 	ingressFunc := func(zone string) *mesh_proto.Dataplane {
 		return &mesh_proto.Dataplane{
@@ -94,7 +88,9 @@ var _ = Describe("Zone Sync", func() {
 		zoneStore = memory.NewStore()
 		zoneSyncer = sync_store.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore)
 
-		start(newPolicySink(zoneName, zoneSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}), stop)
+		go func() {
+			_ = newPolicySink(zoneName, zoneSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}).Start()
+		}()
 		closeFunc = func() {
 			close(stop)
 		}

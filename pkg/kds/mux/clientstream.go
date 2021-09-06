@@ -2,7 +2,6 @@ package mux
 
 import (
 	"context"
-	"io"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/grpc/metadata"
@@ -11,35 +10,21 @@ import (
 )
 
 type kdsClientStream struct {
-	MultiplexStream
-	responses chan *envoy_sd.DiscoveryResponse
-}
-
-func (k *kdsClientStream) put(response *envoy_sd.DiscoveryResponse) {
-	k.responses <- response
+	ctx          context.Context
+	bufferStream *bufferStream
 }
 
 func (k *kdsClientStream) Send(request *envoy_sd.DiscoveryRequest) error {
-	var msg *mesh_proto.Message
-
-	kdsVersion := KDSVersion(k.Context())
-	switch kdsVersion {
-	case KDSVersionV2:
-		msg = &mesh_proto.Message{Value: &mesh_proto.Message_LegacyRequest{LegacyRequest: DiscoveryRequestV2(request)}}
-	case KDSVersionV3:
-		msg = &mesh_proto.Message{Value: &mesh_proto.Message_Request{Request: request}}
-	default:
-		return UnsupportedKDSVersion(kdsVersion)
-	}
-
-	return k.MultiplexStream.Send(msg)
+	err := k.bufferStream.Send(&mesh_proto.Message{Value: &mesh_proto.Message_Request{Request: request}})
+	return err
 }
 
 func (k *kdsClientStream) Recv() (*envoy_sd.DiscoveryResponse, error) {
-	if r, ok := <-k.responses; ok {
-		return r, nil
+	res, err := k.bufferStream.Recv()
+	if err != nil {
+		return nil, err
 	}
-	return nil, io.EOF
+	return res.GetResponse(), nil
 }
 
 func (k *kdsClientStream) Header() (metadata.MD, error) {
@@ -55,7 +40,7 @@ func (k *kdsClientStream) CloseSend() error {
 }
 
 func (k *kdsClientStream) Context() context.Context {
-	return k.MultiplexStream.Context()
+	return k.ctx
 }
 
 func (k *kdsClientStream) SendMsg(m interface{}) error {
