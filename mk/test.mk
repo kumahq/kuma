@@ -71,7 +71,7 @@ ${COVERAGE_INTEGRATION_PROFILE}:
 
 .PHONY: test/release
 test/release: # Dev: Run release tests
-	$(GO_TEST) $(GO_TEST_OPTS) --tags=release ./test/release/...
+	$(GO_TEST) $(GO_TEST_OPTS) -tags=release ./test/release/...
 
 .PHONY: integration
 integration: ${COVERAGE_INTEGRATION_PROFILE} ## Dev: Run integration tests

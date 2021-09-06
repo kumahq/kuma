@@ -16,7 +16,7 @@ var _ = Describe("Compatibility", func() {
 	DescribeTable("should return the supported versions",
 		func(given testCase) {
 			// when
-			dpCompatibility, err := version.CompatibilityMatrix.DP(given.dpVersion)
+			dpCompatibility, err := version.CompatibilityMatrix.DataplaneConstraints(given.dpVersion)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -67,4 +67,40 @@ var _ = Describe("Compatibility", func() {
 			expectedEnvoyConstraint: "~1.18.4",
 		}),
 	)
+
+	It("should return error when there is no compatibility information for given version", func() {
+		// when
+		_, err := version.CompatibilityMatrix.DataplaneConstraints("100.0.0")
+
+		// then
+		Expect(err).To(MatchError("no constraints for version: 100.0.0 found"))
+	})
+
+	It("should return error when version is invalid", func() {
+		// when
+		_, err := version.CompatibilityMatrix.DataplaneConstraints("!@#")
+
+		// then
+		Expect(err).To(MatchError(`could not build a constraint !@#: Invalid Semantic Version`))
+	})
+
+	It("should throw an error when there are multiple matching constraints", func() {
+		// given
+		compatibility := version.Compatibility{
+			KumaDP: map[string]version.DataplaneCompatibility{
+				"1.0.0": {
+					Envoy: "1.16.0",
+				},
+				"~1.0.0": {
+					Envoy: "1.16.0",
+				},
+			},
+		}
+
+		// when
+		_, err := compatibility.DataplaneConstraints("1.0.0")
+
+		// then
+		Expect(err).To(MatchError("more than one constraint for version 1.0.0: 1.16.0, 1.16.0"))
+	})
 })

@@ -7,16 +7,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-type KumaDPCompatibility struct {
+type DataplaneCompatibility struct {
 	Envoy string `json:"envoy"`
 }
 
 type Compatibility struct {
-	KumaDP map[string]KumaDPCompatibility `json:"kumaDp"`
+	KumaDP map[string]DataplaneCompatibility `json:"kumaDp"`
 }
 
 var CompatibilityMatrix = Compatibility{
-	KumaDP: map[string]KumaDPCompatibility{
+	KumaDP: map[string]DataplaneCompatibility{
 		"1.0.0": {
 			Envoy: "1.16.0",
 		},
@@ -56,13 +56,17 @@ var CompatibilityMatrix = Compatibility{
 	},
 }
 
-func (c Compatibility) DP(version string) (*KumaDPCompatibility, error) {
+// DataplaneConstraints returns which Envoy should be used with given version of Kuma.
+// This information is later used in the GUI as a warning.
+// Kuma ships with given Envoy version, but user can use their own Envoy version (especially on Universal)
+// therefore we need to inform them that they are not using compatible version.
+func (c Compatibility) DataplaneConstraints(version string) (*DataplaneCompatibility, error) {
 	v, err := semver.NewVersion(version)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not build a constraint %s", version)
 	}
 
-	var matchedCompat []KumaDPCompatibility
+	var matchedCompat []DataplaneCompatibility
 	for constraintRaw, dpCompat := range c.KumaDP {
 		constraint, err := semver.NewConstraint(constraintRaw)
 		if err != nil {
@@ -83,9 +87,9 @@ func (c Compatibility) DP(version string) (*KumaDPCompatibility, error) {
 			matched = append(matched, c.Envoy)
 		}
 		return nil, errors.Errorf(
-			"more than one constraint for version: %s\n%s",
+			"more than one constraint for version %s: %s",
 			version,
-			strings.Join(matched, "\n"),
+			strings.Join(matched, ", "),
 		)
 	}
 	return &matchedCompat[0], nil

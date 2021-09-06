@@ -14,10 +14,10 @@ var _ = Describe("Compatibility", func() {
 		currentVersion := version.Build.Version
 
 		// when
-		dpComptibility, err := version.CompatibilityMatrix.DP(currentVersion)
+		dpComptibility, err := version.CompatibilityMatrix.DataplaneConstraints(currentVersion)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(dpComptibility).ToNot(BeNil())
+		Expect(dpComptibility).ToNot(BeNil(), "Update version.CompatibilityMatrix so there is information about current compatible Envoy for this Kuma release.")
 	})
 })
