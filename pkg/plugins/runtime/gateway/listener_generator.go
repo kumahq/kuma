@@ -1,20 +1,13 @@
 package gateway
 
 import (
-	"context"
-	"fmt"
 	"time"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/policy"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -22,188 +15,146 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
+// TODO(jpeach) It's a lot to ask operators to tune these defaults,
+// and we probably would never do that. However, it would be convenient
+// to be able to update them for performance testing and benchmarking,
+// so at some point we should consider making these settings available,
+// perhaps on the Gateway or on the Dataplane.
+
+// Buffer defaults.
 const DefaultConnectionBuffer = 32 * 1024
-const DefaultRequestHeadersTimeoutMsec = 500 * time.Millisecond
-const DefaultStreamIdleTimeoutMsec = 5 * time.Second
+
+// Concurrency defaults.
 const DefaultConcurrentStreams = 100
+
+// Window size defaults.
 const DefaultInitialStreamWindowSize = 64 * 1024
 const DefaultInitialConnectionWindowSize = 1024 * 1024
+
+// Timeout defaults.
+const DefaultRequestHeadersTimeout = 500 * time.Millisecond
+const DefaultStreamIdleTimeout = 5 * time.Second
 const DefaultIdleTimeout = 5 * time.Minute
 
-type gatewayPolicyAdaptor struct {
-	*core_mesh.GatewayResource
-}
-
-func (g gatewayPolicyAdaptor) Selectors() []*mesh_proto.Selector {
-	return g.Sources()
-}
-
-func findMatchingGateway(m manager.ReadOnlyResourceManager, dp *core_mesh.DataplaneResource) *core_mesh.GatewayResource {
-	gatewayList := &core_mesh.GatewayResourceList{}
-
-	if err := m.List(context.Background(), gatewayList, store.ListByMesh(dp.Meta.GetMesh())); err != nil {
-		return nil
-	}
-
-	candidates := make([]policy.DataplanePolicy, len(gatewayList.Items))
-	for i, gw := range gatewayList.Items {
-		candidates[i] = gatewayPolicyAdaptor{gw}
-	}
-
-	if p := policy.SelectDataplanePolicy(dp, candidates); p != nil {
-		return p.(gatewayPolicyAdaptor).GatewayResource
-	}
-
-	return nil
-}
-
-var _ policy.DataplanePolicy = gatewayPolicyAdaptor{}
-
 // ListenerGenerator generates Kuma gateway listeners.
-type ListenerGenerator struct {
-	Resources manager.ReadOnlyResourceManager
+type ListenerGenerator struct{}
+
+func (*ListenerGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Protocol) bool {
+	switch p {
+	case mesh_proto.Gateway_Listener_UDP,
+		mesh_proto.Gateway_Listener_TCP,
+		mesh_proto.Gateway_Listener_TLS,
+		mesh_proto.Gateway_Listener_HTTP,
+		mesh_proto.Gateway_Listener_HTTPS:
+		return true
+	default:
+		return false
+	}
 }
 
-var _ generator.ResourceGenerator = ListenerGenerator{}
-
-func (l ListenerGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	gw := findMatchingGateway(l.Resources, proxy.Dataplane)
-	if gw == nil {
-		log.V(1).Info("no matching gateway for dataplane",
-			"name", proxy.Dataplane.Meta.GetName(),
-			"mesh", proxy.Dataplane.Meta.GetMesh(),
-		)
-
+func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
+	// TODO(jpeach) what we really need to do here is build the
+	// listener once, then generate a HTTP filter chain for each
+	// host on the same HTTPConnectionManager. Each HTTP filter
+	// chain should be wrapped in a matcher that selects it for
+	// only the host's domain name. This will give us consistent
+	// per-host HTTP filter chains for both HTTP and HTTPS
+	// listeners.
+	//
+	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/matching/matching_api
+	if info.Resources.Listener != nil {
 		return nil, nil
 	}
 
-	log.V(1).Info(fmt.Sprintf("matched gateway %q to dataplane %q",
-		gw.Meta.GetName(), proxy.Dataplane.Meta.GetName()))
+	// A Gateway is a single service across all listeners.
+	service := info.Dataplane.Spec.GetIdentifyingService()
 
-	// Multiple listener specifications can have the same port. If
-	// they are compatible, then we can collapse those specifications
-	// down to a single listener.
-	collapsed := map[uint32][]*mesh_proto.Gateway_Listener{}
-	for _, ep := range gw.Spec.GetConf().GetListeners() {
-		collapsed[ep.GetPort()] = append(collapsed[ep.GetPort()], ep)
+	port := info.Listener.Port
+	protocol := info.Listener.Protocol
+	address := info.Dataplane.Spec.GetNetworking().Address
+
+	log.V(1).Info("generating listener",
+		"address", address,
+		"port", port,
+		"protocol", protocol,
+	)
+
+	switch protocol {
+	case mesh_proto.Gateway_Listener_UDP,
+		mesh_proto.Gateway_Listener_TCP,
+		mesh_proto.Gateway_Listener_TLS,
+		mesh_proto.Gateway_Listener_HTTPS:
+		return nil, errors.Errorf("unsupported protocol %q", protocol)
 	}
 
-	// A Gateway is a single service across all listeners.
-	service := proxy.Dataplane.Spec.GetIdentifyingService()
+	filters := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion)
 
-	resources := core_xds.NewResourceSet()
-
-	// Generate a listener resource for each port.
-	for port, listeners := range collapsed {
-		protocol := listeners[0].GetProtocol()
-		address := proxy.Dataplane.Spec.GetNetworking().Address
-
-		log.V(1).Info("generating listener",
-			"address", address,
-			"port", port,
-			"protocol", protocol,
-		)
-
-		// TODO(jpeach) verify that the listeners are compatible.
-		// TODO(jpeach) hoist the compatibility check and use it in Gateway validation.
-
-		// This check forces all listeners on the port to have
-		// the same protocol, which is unnecessarily strict. We
-		// cal allow TLS and HTTPS on the same port, for example.
-		for i := range listeners {
-			if listeners[i].GetProtocol() != listeners[0].GetProtocol() {
-				return nil, errors.Errorf("cannot collapse listener protocols %s and %s",
-					listeners[i].GetProtocol(), listeners[0].GetProtocol(),
-				)
-			}
-		}
-
-		switch protocol {
-		case mesh_proto.Gateway_Listener_UDP:
-			fallthrough
-		case mesh_proto.Gateway_Listener_TCP:
-			fallthrough
-		case mesh_proto.Gateway_Listener_TLS:
-			fallthrough
-		case mesh_proto.Gateway_Listener_HTTPS:
-			return nil, errors.Errorf("unsupported protocol %q", protocol)
-		}
-
-		filters := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
-
-		// For HTTP protocols, add the connection manager and
-		// (for now), send all traffic to the default route,
-		// just to keep the xDS snapshot consistent.
-		switch protocol {
-		case mesh_proto.Gateway_Listener_HTTP:
-			filters.Configure(
-				envoy_listeners.HttpConnectionManager(service, false),
-				envoy_listeners.HttpDynamicRoute(DefaultRouteName),
-			)
-		case mesh_proto.Gateway_Listener_HTTPS:
-			filters.Configure(
-				envoy_listeners.HttpConnectionManager(service, true),
-				envoy_listeners.HttpDynamicRoute(DefaultRouteName),
-			)
-		}
-
-		// Add edge proxy recommendations.
+	switch protocol {
+	case mesh_proto.Gateway_Listener_HTTP,
+		mesh_proto.Gateway_Listener_HTTPS:
 		filters.Configure(
-			envoy_listeners.AddFilterChainConfigurer(
-				v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
-					hcm.ServerName = "Kuma Gateway"
-
-					hcm.NormalizePath = wrapperspb.Bool(true)
-					hcm.MergeSlashes = true
-
-					// TODO(jpeach) set path_with_escaped_slashes_action when we upgrade to Envoy v1.19.
-
-					hcm.RequestHeadersTimeout = util_proto.Duration(DefaultRequestHeadersTimeoutMsec)
-					hcm.StreamIdleTimeout = util_proto.Duration(DefaultStreamIdleTimeoutMsec)
-
-					hcm.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{
-						IdleTimeout:                  util_proto.Duration(DefaultIdleTimeout),
-						HeadersWithUnderscoresAction: envoy_config_core_v3.HttpProtocolOptions_REJECT_REQUEST,
-					}
-
-					hcm.Http2ProtocolOptions = &envoy_config_core_v3.Http2ProtocolOptions{
-						MaxConcurrentStreams:        wrapperspb.UInt32(DefaultConcurrentStreams),
-						InitialStreamWindowSize:     wrapperspb.UInt32(DefaultInitialStreamWindowSize),
-						InitialConnectionWindowSize: wrapperspb.UInt32(DefaultInitialConnectionWindowSize),
-						AllowConnect:                true,
-					}
-				}),
-			),
+			// Note that even for HTTPS cases, we don't enable client certificate
+			// forwarding. This is because this particular configurer will enable
+			// forwarding for the client certificate URI, which is OK for SPIFFE-
+			// oriented mesh use cases, but unlikely to be appropriate for a
+			// general-purpose gateway.
+			envoy_listeners.HttpConnectionManager(service, false),
+			envoy_listeners.ServerHeader("Kuma Gateway"),
+			envoy_listeners.HttpDynamicRoute(info.Listener.ResourceName),
 		)
+	}
 
-		// Tracing and logging have to be configured after the HttpConnectionManager is enabled.
-		filters.Configure(
-			envoy_listeners.Tracing(proxy.Policies.TracingBackend, service),
-			// XXX Logging policy doesn't work at all. The logging backend is selected by
-			// matching against outbound service names, and gateway dataplanes don't have
-			// any of those.
-			envoy_listeners.HttpAccessLog(
-				proxy.Dataplane.Meta.GetMesh(),
-				envoy.TrafficDirectionInbound,
-				service, // Source service is the gateway service.
-				"*",     // Destination service could be anywhere, depending on the routes.
-				proxy.Policies.Logs[service],
-				proxy,
-			),
-		)
+	// Add edge proxy recommendations.
+	filters.Configure(
+		envoy_listeners.EnablePathNormalization(),
+		envoy_listeners.StripHostPort(),
+		envoy_listeners.AddFilterChainConfigurer(
+			v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+				hcm.RequestHeadersTimeout = util_proto.Duration(DefaultRequestHeadersTimeout)
+				hcm.StreamIdleTimeout = util_proto.Duration(DefaultStreamIdleTimeout)
 
-		// TODO(jpeach) add compressor filter.
-		// TODO(jpeach) add decompressor filter.
-		// TODO(jpeach) add grpc_web filter.
-		// TODO(jpeach) add grpc_stats filter.
+				hcm.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{
+					IdleTimeout:                  util_proto.Duration(DefaultIdleTimeout),
+					HeadersWithUnderscoresAction: envoy_config_core_v3.HttpProtocolOptions_REJECT_REQUEST,
+				}
 
-		listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion)
-		listener.Configure(
+				hcm.Http2ProtocolOptions = &envoy_config_core_v3.Http2ProtocolOptions{
+					MaxConcurrentStreams:        util_proto.UInt32(DefaultConcurrentStreams),
+					InitialStreamWindowSize:     util_proto.UInt32(DefaultInitialStreamWindowSize),
+					InitialConnectionWindowSize: util_proto.UInt32(DefaultInitialConnectionWindowSize),
+					AllowConnect:                true,
+				}
+			}),
+		),
+	)
+
+	// Tracing and logging have to be configured after the HttpConnectionManager is enabled.
+	filters.Configure(
+		envoy_listeners.Tracing(info.Proxy.Policies.TracingBackend, service),
+		// TODO(jpeach) Logging policy doesn't work at all. The logging backend is
+		// selected by matching against outbound service names, and gateway dataplanes
+		// don't have any of those.
+		envoy_listeners.HttpAccessLog(
+			ctx.Mesh.Resource.Meta.GetName(),
+			envoy.TrafficDirectionInbound,
+			service, // Source service is the gateway service.
+			"*",     // Destination service could be anywhere, depending on the routes.
+			info.Proxy.Policies.Logs[service],
+			info.Proxy,
+		),
+	)
+
+	// TODO(jpeach) add compressor filter.
+	// TODO(jpeach) add decompressor filter.
+	// TODO(jpeach) add grpc_web filter.
+	// TODO(jpeach) add grpc_stats filter.
+
+	info.Resources.Listener = envoy_listeners.NewListenerBuilder(info.Proxy.APIVersion).
+		Configure(
 			envoy_listeners.InboundListener(
-				envoy_names.GetGatewayListenerName(gw.Meta.GetName(), protocol.String(), port),
+				envoy_names.GetGatewayListenerName(info.Gateway.Meta.GetName(), protocol.String(), port),
 				address, port, core_xds.SocketAddressProtocolTCP),
 			// Limit default buffering for edge connections.
 			envoy_listeners.ConnectionBufferLimit(DefaultConnectionBuffer),
@@ -213,31 +164,22 @@ func (l ListenerGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy
 			envoy_listeners.TLSInspector(),
 		)
 
-		// TODO(jpeach) if proxy protocol is enabled, add the listener filter.
+	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
 
-		// Now, for each of the collapsed listeners on this port, configure the
-		for range listeners {
-			switch protocol {
-			case mesh_proto.Gateway_Listener_HTTPS:
-				// TODO(jpeach) add a SNI listener to match the hostname
-				// and apply the right set of dynamic HTTP routes.
-			case mesh_proto.Gateway_Listener_TLS:
-				// TODO(jpeach) add a SNI listener to match the hostname
-				// and apply the right set of dynamic TCP or TLS routes.
-			}
-		}
-
-		listener.Configure(
-			envoy_listeners.FilterChain(filters),
-		)
-
-		resourceSet, err := BuildResourceSet(listener)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate listener for port %d", port)
-		}
-
-		resources.AddSet(resourceSet)
+	// Now, for each of the virtual hosts this port, configure the
+	// TLS transport sockets and matching.
+	switch protocol {
+	case mesh_proto.Gateway_Listener_HTTPS:
+		// TODO(jpeach) add a SNI listener to match the hostname
+		// and apply the right set of dynamic HTTP routes.
+	case mesh_proto.Gateway_Listener_TLS:
+		// TODO(jpeach) add a SNI listener to match the hostname
+		// and apply the right set of dynamic TCP or TLS routes.
 	}
 
-	return resources, nil
+	info.Resources.Listener.Configure(
+		envoy_listeners.FilterChain(filters),
+	)
+
+	return nil, nil
 }

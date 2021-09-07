@@ -1,0 +1,13 @@
+type: Gateway
+mesh: default
+name: edge-gateway
+sources:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - hostname: echo.example.com
+    port: 8080
+    protocol: HTTP
+    tags:
+      port: http/8080

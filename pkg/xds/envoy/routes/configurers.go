@@ -46,6 +46,15 @@ func Redirect(matchPath, newPath string, allowGetOnly bool, port uint32) Virtual
 	})
 }
 
+// RequireTLS specifies that this virtual host must only accept TLS connections.
+func RequireTLS() VirtualHostBuilderOpt {
+	return AddVirtualHostConfigurer(
+		v3.VirtualHostMustConfigureFunc(func(vh *envoy_route.VirtualHost) {
+			vh.RequireTls = envoy_route.VirtualHost_ALL
+		}),
+	)
+}
+
 // ResetTagsHeader adds x-kuma-tags header to the RequestHeadersToRemove list. x-kuma-tags header is planned to be used
 // internally, so we don't want to expose it to the destination application.
 func ResetTagsHeader() RouteConfigurationBuilderOpt {

@@ -1,6 +1,8 @@
 package gateway
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -20,6 +22,10 @@ func BuildResourceSet(b ResourceBuilder) (*xds.ResourceSet, error) {
 		return nil, err
 	}
 
+	if resource.GetName() == "" {
+		return nil, errors.Errorf("anonymous resource %T", resource)
+	}
+
 	set := xds.NewResourceSet()
 	set.Add(&xds.Resource{
 		Name:     resource.GetName(),
@@ -28,4 +34,25 @@ func BuildResourceSet(b ResourceBuilder) (*xds.ResourceSet, error) {
 	})
 
 	return set, nil
+}
+
+// ResourceAggregator is a convenience wrapper over ResourceSet that
+// simplifies code that accumulates resources from xDS generators.
+type ResourceAggregator struct{ *xds.ResourceSet }
+
+func (r *ResourceAggregator) Get() *xds.ResourceSet {
+	return r.ResourceSet
+}
+
+func (r *ResourceAggregator) Add(set *xds.ResourceSet, err error) error {
+	if err != nil {
+		return err
+	}
+
+	if r.ResourceSet == nil {
+		r.ResourceSet = xds.NewResourceSet()
+	}
+
+	r.ResourceSet.AddSet(set)
+	return nil
 }
