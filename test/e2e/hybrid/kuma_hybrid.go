@@ -104,7 +104,7 @@ metadata:
 			Install(Kuma(core.Zone, optsZone2...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(testserver.Install(testserver.WithMesh(nonDefaultMesh))).
+			Install(testserver.Install(testserver.WithMesh(nonDefaultMesh), testserver.WithServiceAccount("sa-test"))).
 			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
