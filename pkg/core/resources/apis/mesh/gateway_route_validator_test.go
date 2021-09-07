@@ -165,7 +165,7 @@ conf:
         destination:
           phoney: target-2
 `),
-		ErrorCase("rile with missing match", validators.Violation{
+		ErrorCase("rule with missing match", validators.Violation{
 			Field:   "conf.http.rules[0].matches[0]",
 			Message: "cannot be empty",
 		}, `
