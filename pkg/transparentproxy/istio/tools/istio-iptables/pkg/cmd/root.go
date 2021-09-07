@@ -200,6 +200,7 @@ func handleError(err error) {
 
 func handleErrorWithCode(err error, code int) {
 	fmt.Printf("%v\n", err)
+	panic(fmt.Sprintf("%v\n", err))
 	os.Exit(code)
 }
 
@@ -417,6 +418,8 @@ func init() {
 	rootCmd.Flags().Bool(constants.RedirectAllDNSTraffic, false, "Enable capture of all dns traffic by istio-agent ")
 
 	rootCmd.Flags().String(constants.AgentDNSListenerPort, constants.IstioAgentDNSListenerPort, "set listen port for DNS agent")
+
+	rootCmd.Flags().String(constants.DNSUpstreamTargetChain, constants.RETURN, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
 }
 
 func GetCommand() *cobra.Command {
