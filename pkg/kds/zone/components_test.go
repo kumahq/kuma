@@ -100,6 +100,10 @@ var _ = Describe("Zone Sync", func() {
 		}
 	})
 
+	AfterEach(func() {
+		closeFunc()
+	})
+
 	It("should sync policies from global store to the local", func() {
 		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -116,8 +120,6 @@ var _ = Describe("Zone Sync", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
-
-		closeFunc()
 	})
 
 	It("should sync ingresses", func() {
@@ -139,7 +141,6 @@ var _ = Describe("Zone Sync", func() {
 		actual := mesh.DataplaneResourceList{}
 		err = zoneStore.List(context.Background(), &actual)
 		Expect(err).ToNot(HaveOccurred())
-		closeFunc()
 	})
 
 	It("should have up to date list of consumed types", func() {
@@ -207,6 +208,5 @@ var _ = Describe("Zone Sync", func() {
 			"kuma-cluster-id",
 		}
 		Expect(actualNames).To(ConsistOf(expectedNames))
-		closeFunc()
 	})
 })
