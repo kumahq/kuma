@@ -96,7 +96,20 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					ImagePullPolicy: "IfNotPresent",
 					ReadinessProbe: &corev1.Probe{
 						Handler: corev1.Handler{
-							HTTPGet: &corev1.HTTPGetAction{Path: "/", Port: intstr.FromInt(80)},
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: `/probes?type=readiness`,
+								Port: intstr.FromInt(80),
+							},
+						},
+						InitialDelaySeconds: 3,
+						PeriodSeconds:       3,
+					},
+					LivenessProbe: &corev1.Probe{
+						Handler: corev1.Handler{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: `/probes?type=liveness`,
+								Port: intstr.FromInt(80),
+							},
 						},
 						InitialDelaySeconds: 3,
 						PeriodSeconds:       3,
@@ -106,7 +119,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 						{ContainerPort: 80},
 					},
 					Command: []string{"test-server"},
-					Args:    append([]string{"echo", "--port", "80"}, k.opts.Args...),
+					Args:    append([]string{"echo", "--port", "80", "--probes"}, k.opts.Args...),
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
 							"cpu":    resource.MustParse("500m"),
