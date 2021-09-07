@@ -18,6 +18,7 @@ func newEchoHTTPCmd() *cobra.Command {
 		tls      bool
 		crtFile  string
 		keyFile  string
+		probes   bool
 	}{}
 	cmd := &cobra.Command{
 		Use:   "echo",
@@ -47,6 +48,35 @@ func newEchoHTTPCmd() *cobra.Command {
 					panic(err)
 				}
 			})
+			if args.probes {
+				http.HandleFunc("/probes", func(writer http.ResponseWriter, request *http.Request) {
+					switch request.URL.Query().Get("type") {
+					case "readiness":
+						writer.WriteHeader(http.StatusOK)
+						if _, err := writer.Write([]byte("I'm ready!")); err != nil {
+							panic(err)
+						}
+					case "liveness":
+						writer.WriteHeader(http.StatusOK)
+						if _, err := writer.Write([]byte("I'm alive!")); err != nil {
+							panic(err)
+						}
+					case "":
+						writer.WriteHeader(http.StatusBadRequest)
+						if _, err := writer.Write([]byte("no probe's type provided")); err != nil {
+							panic(err)
+						}
+					default:
+						writer.WriteHeader(http.StatusBadRequest)
+						if _, err := writer.Write([]byte(fmt.Sprintf("unknown probe type: %s", request.URL.Query().Get("type")))); err != nil {
+							panic(err)
+						}
+					}
+					if _, err := writer.Write([]byte("\n")); err != nil {
+						panic(err)
+					}
+				})
+			}
 			if args.tls {
 				return http.ListenAndServeTLS(fmt.Sprintf(":%d", args.port), args.crtFile, args.keyFile, nil)
 			}
@@ -62,5 +92,6 @@ func newEchoHTTPCmd() *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&args.tls, "tls", false, "run the server with TLS enabled")
 	cmd.PersistentFlags().StringVar(&args.crtFile, "crt", "./test/server/certs/server.crt", "path to the server's TLS cert")
 	cmd.PersistentFlags().StringVar(&args.keyFile, "key", "./test/server/certs/server.key", "path to the server's TLS key")
+	cmd.PersistentFlags().BoolVar(&args.probes, "probes", false, "generate readiness and liveness endpoints")
 	return cmd
 }
