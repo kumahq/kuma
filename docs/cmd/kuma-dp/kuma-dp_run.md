@@ -17,6 +17,7 @@ kuma-dp run [flags]
       --binary-path string                        Binary path of Envoy executable (default "envoy")
       --bootstrap-version string                  Bootstrap version (and API version) of xDS config. If empty, default version defined in Kuma CP will be used. (ex. '2', '3')
       --ca-cert-file string                       Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used
+      --concurrency uint32                        Number of Envoy worker threads
       --config-dir string                         Directory in which Envoy config will be generated
       --cp-address string                         URL of the Control Plane Dataplane Server. Example: https://localhost:5678 (default "https://localhost:5678")
       --dataplane string                          Dataplane template to apply (YAML or JSON)
