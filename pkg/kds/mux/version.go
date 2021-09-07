@@ -11,9 +11,11 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-var KDSVersionHeaderKey = "kds-version"
-var KDSVersionV2 = "v2"
-var KDSVersionV3 = "v3"
+const (
+	KDSVersionHeaderKey = "kds-version"
+	KDSVersionV2        = "v2"
+	KDSVersionV3        = "v3"
+)
 
 func KDSVersion(ctx context.Context) string {
 	md, found := metadata.FromIncomingContext(ctx)

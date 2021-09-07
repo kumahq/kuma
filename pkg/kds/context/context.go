@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
@@ -19,10 +18,9 @@ import (
 var log = core.Log.WithName("kds")
 
 type Context struct {
-	ZoneClientCtx         context.Context
-	GlobalServerCallbacks []mux.Callbacks
-	GlobalProvidedFilter  reconcile.ResourceFilter
-	ZoneProvidedFilter    reconcile.ResourceFilter
+	ZoneClientCtx        context.Context
+	GlobalProvidedFilter reconcile.ResourceFilter
+	ZoneProvidedFilter   reconcile.ResourceFilter
 	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
 	Configs map[string]bool
 }

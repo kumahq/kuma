@@ -2,9 +2,9 @@ package grpc
 
 import (
 	"context"
+	"io"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
 
@@ -30,7 +30,7 @@ func (stream *MockServerStream) Send(resp *envoy_sd.DiscoveryResponse) error {
 func (stream *MockServerStream) Recv() (*envoy_sd.DiscoveryRequest, error) {
 	req, more := <-stream.RecvCh
 	if !more {
-		return nil, errors.New("empty")
+		return nil, io.EOF
 	}
 	return req, nil
 }
