@@ -4,6 +4,7 @@ dynamicResources:
     grpcServices:
     - envoyGrpc:
         clusterName: ads_cluster
+    setNodeOnFirstMessageOnly: true
     transportApiVersion: V3
   cdsConfig:
     ads: {}
