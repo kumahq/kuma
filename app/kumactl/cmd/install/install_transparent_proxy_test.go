@@ -53,8 +53,7 @@ var _ = Describe("kumactl install tracing", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			Expect(r.Find(stdout.Bytes())).ToNot(BeEmpty(), fmt.Sprintf("%v\n-----%v\n", stdout.String(), stderr.String()))
-
+			Expect(r.Find(stdout.Bytes())).ToNot(BeEmpty(), fmt.Sprintf("%q\n-----\n%q\n", stdout.String(), stderr.String()))
 		},
 		Entry("should generate defaults with username", testCase{
 			extraArgs: []string{
