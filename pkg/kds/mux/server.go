@@ -27,6 +27,10 @@ var (
 	muxServerLog = core.Log.WithName("kds-mux-server")
 )
 
+type Filter interface {
+	InterceptSession(session Session) error
+}
+
 type Callbacks interface {
 	OnSessionStarted(session Session) error
 }
@@ -39,6 +43,7 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 type server struct {
 	config    multizone.KdsServerConfig
 	callbacks Callbacks
+	filters   []Filter
 	metrics   core_metrics.Metrics
 }
 
@@ -46,9 +51,10 @@ var (
 	_ component.Component = &server{}
 )
 
-func NewServer(callbacks Callbacks, config multizone.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
+func NewServer(callbacks Callbacks, filters []Filter, config multizone.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
 	return &server{
 		callbacks: callbacks,
+		filters:   filters,
 		config:    config,
 		metrics:   metrics,
 	}
@@ -122,6 +128,12 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 	log := muxServerLog.WithValues("client-id", clientID)
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
 	session := NewSession(clientID, stream)
+	for _, filter := range s.filters {
+		if err := filter.InterceptSession(session); err != nil {
+			log.Error(err, "closing KDS stream following a callback error")
+			return err
+		}
+	}
 	if err := s.callbacks.OnSessionStarted(session); err != nil {
 		log.Error(err, "closing KDS stream following a callback error")
 		return err
