@@ -15,7 +15,7 @@ func StartClient(clientStreams []*grpc.MockClientStream, resourceTypes []model.R
 		item := clientStreams[i]
 		comp := kds_client.NewKDSSink(core.Log.WithName("kds").WithName(clientID), resourceTypes, kds_client.NewKDSStream(item, clientID, ""), cb)
 		go func() {
-			_ = comp.Start(stopCh)
+			_ = comp.Receive()
 			_ = item.CloseSend()
 		}()
 	}

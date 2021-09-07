@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
@@ -44,13 +43,8 @@ var _ = Describe("Zone Sync", func() {
 
 	zoneName := "zone-1"
 
-	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) component.Component {
+	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) kds_client.KDSSink {
 		return kds_client.NewKDSSink(core.Log.WithName("kds-sink"), registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(cs, zoneName, ""), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
-	}
-	start := func(comp component.Component, stop chan struct{}) {
-		go func() {
-			_ = comp.Start(stop)
-		}()
 	}
 	ingressFunc := func(zone string) *mesh_proto.Dataplane {
 		return &mesh_proto.Dataplane{
@@ -83,9 +77,9 @@ var _ = Describe("Zone Sync", func() {
 	BeforeEach(func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
-		wg.Add(1)
 
 		kdsCtx := kds_context.DefaultContext(manager.NewResourceManager(globalStore), "global")
+		wg.Add(1)
 		serverStream := setup.StartServer(globalStore, wg, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter)
 
 		stop := make(chan struct{})
@@ -94,10 +88,20 @@ var _ = Describe("Zone Sync", func() {
 		zoneStore = memory.NewStore()
 		zoneSyncer = sync_store.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore)
 
-		start(newPolicySink(zoneName, zoneSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}), stop)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = newPolicySink(zoneName, zoneSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}).Receive()
+		}()
 		closeFunc = func() {
+			Expect(clientStream.CloseSend()).To(Succeed())
 			close(stop)
+			wg.Wait()
 		}
+	})
+
+	AfterEach(func() {
+		closeFunc()
 	})
 
 	It("should sync policies from global store to the local", func() {
@@ -116,8 +120,6 @@ var _ = Describe("Zone Sync", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
-
-		closeFunc()
 	})
 
 	It("should sync ingresses", func() {
@@ -139,7 +141,6 @@ var _ = Describe("Zone Sync", func() {
 		actual := mesh.DataplaneResourceList{}
 		err = zoneStore.List(context.Background(), &actual)
 		Expect(err).ToNot(HaveOccurred())
-		closeFunc()
 	})
 
 	It("should have up to date list of consumed types", func() {
@@ -207,6 +208,5 @@ var _ = Describe("Zone Sync", func() {
 			"kuma-cluster-id",
 		}
 		Expect(actualNames).To(ConsistOf(expectedNames))
-		closeFunc()
 	})
 })
