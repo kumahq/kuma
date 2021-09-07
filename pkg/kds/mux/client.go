@@ -80,17 +80,17 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		"client-id", c.clientID,
 		KDSVersionHeaderKey, KDSVersionV3,
 	))
+	defer cancel()
+
 	log := muxClientLog.WithValues("client-id", c.clientID)
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
 	stream, err := muxClient.StreamMessage(withKDSCtx)
 	if err != nil {
-		cancel()
 		return err
 	}
 	session := NewSession("global", stream)
 	if err := c.callbacks.OnSessionStarted(session); err != nil {
 		log.Error(err, "closing KDS stream after callback error")
-		cancel()
 		return err
 	}
 	select {
@@ -99,19 +99,18 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		if err := stream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
 		}
-		cancel()
+		cancel() // In this case we cancel the context early
 		err = <-session.Error()
 	case err = <-session.Error():
 		log.Error(err, "KDS stream failed prematurely, will restart in background")
 		if err := stream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
 		}
-		cancel()
 	}
 	return err
 }
 
-func (s *client) NeedLeaderElection() bool {
+func (c *client) NeedLeaderElection() bool {
 	return true
 }
 

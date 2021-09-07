@@ -48,7 +48,7 @@ func Setup(rt runtime.Runtime) (err error) {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
 				log.Error(err, "StreamKumaResources finished with an error")
 			} else {
-				log.Info("StreamKumaResources finished gracefully")
+				log.V(1).Info("StreamKumaResources finished gracefully")
 			}
 		}()
 		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID(), "") // we only care about Zone CP config. Zone CP should not receive Global CP config.
@@ -58,10 +58,10 @@ func Setup(rt runtime.Runtime) (err error) {
 		}
 		sink := client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)), kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
 		go func() {
-			if err := sink.Start(); err != nil {
+			if err := sink.Receive(); err != nil {
 				log.Error(err, "KDSSink finished with an error")
 			} else {
-				log.Info("KDSSink finished gracefully")
+				log.V(1).Info("KDSSink finished gracefully")
 			}
 		}()
 		return nil

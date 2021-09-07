@@ -43,7 +43,7 @@ var _ = Describe("Zone Sync", func() {
 
 	zoneName := "zone-1"
 
-	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) kds_client.KdsSink {
+	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) kds_client.KDSSink {
 		return kds_client.NewKDSSink(core.Log.WithName("kds-sink"), registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(cs, zoneName, ""), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
 	}
 	ingressFunc := func(zone string) *mesh_proto.Dataplane {
@@ -77,9 +77,9 @@ var _ = Describe("Zone Sync", func() {
 	BeforeEach(func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
-		wg.Add(1)
 
 		kdsCtx := kds_context.DefaultContext(manager.NewResourceManager(globalStore), "global")
+		wg.Add(1)
 		serverStream := setup.StartServer(globalStore, wg, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter)
 
 		stop := make(chan struct{})
@@ -88,11 +88,15 @@ var _ = Describe("Zone Sync", func() {
 		zoneStore = memory.NewStore()
 		zoneSyncer = sync_store.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore)
 
+		wg.Add(1)
 		go func() {
-			_ = newPolicySink(zoneName, zoneSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}).Start()
+			defer wg.Done()
+			_ = newPolicySink(zoneName, zoneSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}).Receive()
 		}()
 		closeFunc = func() {
+			Expect(clientStream.CloseSend()).To(Succeed())
 			close(stop)
+			wg.Wait()
 		}
 	})
 

@@ -13,8 +13,8 @@ type Callbacks struct {
 	OnResourcesReceived func(clusterID string, rs model.ResourceList) error
 }
 
-type KdsSink interface {
-	Start() error
+type KDSSink interface {
+	Receive() error
 }
 
 type kdsSink struct {
@@ -24,7 +24,7 @@ type kdsSink struct {
 	kdsStream     KDSStream
 }
 
-func NewKDSSink(log logr.Logger, rt []model.ResourceType, kdsStream KDSStream, cb *Callbacks) KdsSink {
+func NewKDSSink(log logr.Logger, rt []model.ResourceType, kdsStream KDSStream, cb *Callbacks) KDSSink {
 	return &kdsSink{
 		log:           log,
 		resourceTypes: rt,
@@ -33,7 +33,7 @@ func NewKDSSink(log logr.Logger, rt []model.ResourceType, kdsStream KDSStream, c
 	}
 }
 
-func (s *kdsSink) Start() error {
+func (s *kdsSink) Receive() error {
 	for _, typ := range s.resourceTypes {
 		s.log.V(1).Info("sending DiscoveryRequest", "type", typ)
 		if err := s.kdsStream.DiscoveryRequest(typ); err != nil {

@@ -50,6 +50,10 @@ func NewSession(peerID string, stream MultiplexStream) Session {
 	return s
 }
 
+// handleRecv polls to receive messages from the KDSStream (the actual grpc bidi-stream).
+// Depending on the message it dispatches to either the server receive buffer or the client receive buffer.
+// It also closes both streams when an error on the recv side happens.
+// We can rely on an error on recv to end the session because we're sure an error on recv will always happen, it might be io.EOF if we're just done.
 func (s *session) handleRecv(stream MultiplexStream) {
 	for {
 		msg, err := stream.Recv()
@@ -60,45 +64,48 @@ func (s *session) handleRecv(stream MultiplexStream) {
 			s.err <- err
 			return
 		}
+		// We can safely not care about locking as we're only closing the channel from this goroutine.
 		switch v := msg.Value.(type) {
 		case *mesh_proto.Message_LegacyRequest:
 			msg = &mesh_proto.Message{Value: &mesh_proto.Message_Request{Request: DiscoveryRequestV3(v.LegacyRequest)}}
-			s.serverStream.bufferStream.put(msg)
+			s.serverStream.bufferStream.recvBuffer <- msg
 		case *mesh_proto.Message_Request:
-			s.serverStream.bufferStream.put(msg)
+			s.serverStream.bufferStream.recvBuffer <- msg
 		case *mesh_proto.Message_LegacyResponse:
 			msg = &mesh_proto.Message{Value: &mesh_proto.Message_Response{Response: DiscoveryResponseV3(v.LegacyResponse)}}
-			s.clientStream.bufferStream.put(msg)
+			s.clientStream.bufferStream.recvBuffer <- msg
 		case *mesh_proto.Message_Response:
-			s.clientStream.bufferStream.put(msg)
+			s.clientStream.bufferStream.recvBuffer <- msg
 		}
 	}
 }
 
+// handleSend polls either sendBuffer and call send on the KDSStream (the actual grpc bidi-stream).
+// This call is stopped whenever either of the sendBuffer are closed (in practice they are always closed together anyway).
 func (s *session) handleSend(stream MultiplexStream) {
 	kdsVersion := KDSVersion(stream.Context())
 	for {
 		select {
-		case itm, more := <-s.serverStream.bufferStream.sendBuffer:
+		case item, more := <-s.serverStream.bufferStream.sendBuffer:
 			if !more {
 				return
 			}
-			r := itm.msg
-			if kdsVersion == KDSVersionV2 && r != nil {
+			r := item.msg
+			if kdsVersion == KDSVersionV2 {
 				r = &mesh_proto.Message{Value: &mesh_proto.Message_LegacyResponse{LegacyResponse: DiscoveryResponseV2(r.GetResponse())}}
 			}
 			err := stream.Send(r)
-			itm.errChan <- err
-		case itm, more := <-s.clientStream.bufferStream.sendBuffer:
+			item.errChan <- err
+		case item, more := <-s.clientStream.bufferStream.sendBuffer:
 			if !more {
 				return
 			}
-			r := itm.msg
-			if kdsVersion == KDSVersionV2 && r != nil {
+			r := item.msg
+			if kdsVersion == KDSVersionV2 {
 				r = &mesh_proto.Message{Value: &mesh_proto.Message_LegacyRequest{LegacyRequest: DiscoveryRequestV2(r.GetRequest())}}
 			}
 			err := stream.Send(r)
-			itm.errChan <- err
+			item.errChan <- err
 		}
 	}
 }
@@ -128,7 +135,8 @@ type bufferStream struct {
 	sendBuffer chan sendItem
 	recvBuffer chan *mesh_proto.Message
 
-	lock   sync.Mutex // Protects the write side of the buffer, not the read
+	// Protects the send-buffer against writing on a closed channel, this is needed as we don't control in which goroutine `Send` will be called.
+	lock   sync.Mutex
 	closed bool
 }
 
@@ -137,10 +145,6 @@ func newBufferStream() *bufferStream {
 		sendBuffer: make(chan sendItem, 1),
 		recvBuffer: make(chan *mesh_proto.Message, 1),
 	}
-}
-
-func (k *bufferStream) put(message *mesh_proto.Message) {
-	k.recvBuffer <- message
 }
 
 func (k *bufferStream) Send(message *mesh_proto.Message) error {
@@ -158,13 +162,6 @@ func (k *bufferStream) Send(message *mesh_proto.Message) error {
 }
 
 func (k *bufferStream) Recv() (*mesh_proto.Message, error) {
-	k.lock.Lock()
-	if k.closed {
-		k.lock.Unlock()
-		return nil, io.EOF
-	}
-
-	k.lock.Unlock()
 	r, more := <-k.recvBuffer
 	if !more {
 		return nil, io.EOF

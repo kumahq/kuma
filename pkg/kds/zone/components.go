@@ -58,7 +58,7 @@ func Setup(rt core_runtime.Runtime) error {
 			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
 		)
 		go func() {
-			if err := sink.Start(); err != nil {
+			if err := sink.Receive(); err != nil {
 				log.Error(err, "KDSSink finished with an error")
 			}
 		}()
