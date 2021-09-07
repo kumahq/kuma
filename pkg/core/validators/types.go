@@ -14,6 +14,11 @@ type Violation struct {
 	Message string `json:"message"`
 }
 
+// OK returns and empty validation error (i.e. success).
+func OK() ValidationError {
+	return ValidationError{}
+}
+
 func (v *ValidationError) Error() string {
 	msg := ""
 	for _, violation := range v.Violations {
@@ -94,6 +99,18 @@ func (v *ValidationError) Transform(transformFunc func(Violation) Violation) *Va
 		result.Violations[i] = transformFunc(v.Violations[i])
 	}
 	return &result
+}
+
+func MakeUnimplementedFieldErr(path PathBuilder) ValidationError {
+	var err ValidationError
+	err.AddViolationAt(path, "field is not implemented")
+	return err
+}
+
+func MakeRequiredFieldErr(path PathBuilder) ValidationError {
+	var err ValidationError
+	err.AddViolationAt(path, "cannot be empty")
+	return err
 }
 
 func IsValidationError(err error) bool {

@@ -17,7 +17,8 @@ var IgnoredTypes = map[model.ResourceType]bool{
 	system.GlobalSecretType:     true,
 	system.ConfigType:           true,
 	mesh.ZoneIngressInsightType: true, // uses DataplaneInsight under the hood
-	mesh.GatewayType:            true, // Gateway is only in Universal.
+	mesh.GatewayType:            true, // Gateway is only in Universal ATM.
+	mesh.GatewayRouteType:       true, // GatewayRoute is only in Universal ATM.
 }
 
 var _ = Describe("Consistent Kind Types", func() {
