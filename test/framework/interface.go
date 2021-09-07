@@ -56,6 +56,7 @@ type deployOptions struct {
 	mesh            string
 	dpVersion       string
 	kumactlFlow     bool
+	concurrency     int
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -268,6 +269,12 @@ func WithTransparentProxy(transparent bool) DeployOptionsFunc {
 func WithBuiltinDNS(builtindns bool) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.builtindns = &builtindns
+	}
+}
+
+func WithConcurrency(concurrency int) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.concurrency = concurrency
 	}
 }
 
