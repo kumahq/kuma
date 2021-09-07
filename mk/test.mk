@@ -69,6 +69,10 @@ test/kumactl: test/kuma ## Dev: Run `kumactl` tests only
 ${COVERAGE_INTEGRATION_PROFILE}:
 	mkdir -p "$(shell dirname "$(COVERAGE_INTEGRATION_PROFILE)")"
 
+.PHONY: test/release
+test/release: # Dev: Run release tests
+	$(GO_TEST) $(GO_TEST_OPTS) -tags=release ./test/release/...
+
 .PHONY: integration
 integration: ${COVERAGE_INTEGRATION_PROFILE} ## Dev: Run integration tests
 	tools/test/run-integration-tests.sh '$(GO_TEST) -tags=integration,gateway -race -covermode=atomic -count=1 -coverpkg=./... -coverprofile=$(COVERAGE_INTEGRATION_PROFILE) $(PKG_LIST)'
