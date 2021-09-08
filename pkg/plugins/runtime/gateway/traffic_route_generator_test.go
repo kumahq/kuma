@@ -295,7 +295,7 @@ conf:
 type: Gateway
 mesh: default
 name: edge-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:

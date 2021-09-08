@@ -120,9 +120,9 @@ message Gateway {
     // will ultimately be where the Gateway is reachable.
   }
 
-  // Sources is a selector that is used to match builtin gateway
-  // dataplanes that will receive this Gateway configuration.
-  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+  // Selectors is a list of selectors that are used to match builtin
+  // gateway dataplanes that will receive this Gateway configuration.
+  repeated Selector selectors = 1 [ (validate.rules).repeated .min_items = 1 ];
 
   // Tags is the set of tags common to all of the gateway's listeners.
   //

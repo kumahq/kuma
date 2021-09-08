@@ -10,8 +10,8 @@ func (g *GatewayResource) Validate() error {
 	var err validators.ValidationError
 
 	err.Add(ValidateSelectors(
-		validators.RootedAt("sources"),
-		g.Spec.GetSources(),
+		validators.RootedAt("selectors"),
+		g.Spec.GetSelectors(),
 		ValidateSelectorsOpts{
 			RequireAtLeastOneSelector: true,
 			ValidateSelectorOpts: ValidateSelectorOpts{

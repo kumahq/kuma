@@ -28,7 +28,7 @@ var _ = Describe("Gateway", func() {
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
   - match:
       kuma.io/service: gateway
 tags:
@@ -45,15 +45,15 @@ conf:
 
 	DescribeErrorCases(
 		GatewayGenerator(NewGatewayResource),
-		ErrorCase("doesn't have any source selector",
+		ErrorCase("doesn't have any selectors",
 			validators.Violation{
-				Field:   `sources`,
+				Field:   `selectors`,
 				Message: `must have at least one element`,
 			}, `
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
 tags:
   product: edge
 conf:
@@ -72,7 +72,7 @@ conf:
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
   - match:
       kuma.io/service: gateway
 tags:
@@ -94,7 +94,7 @@ conf:
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
   - match:
       kuma.io/service: gateway
 tags:
@@ -110,7 +110,7 @@ conf:
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
   - match:
       kuma.io/service: gateway
 tags:
@@ -130,7 +130,7 @@ conf:
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
   - match:
       kuma.io/service: gateway
 tags:
@@ -150,7 +150,7 @@ conf:
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
   - match:
       kuma.io/service: gateway
 tags:
@@ -173,7 +173,7 @@ conf:
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
   - match:
       kuma.io/service: gateway
 tags:
@@ -198,7 +198,7 @@ conf:
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
   - match:
       kuma.io/service: gateway
 tags:
@@ -221,7 +221,7 @@ conf:
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
   - match:
       kuma.io/service: gateway
 tags:
@@ -243,7 +243,7 @@ conf:
 type: Gateway
 name: gateway
 mesh: default
-sources:
+selectors:
   - match:
       kuma.io/service: gateway
 tags:
