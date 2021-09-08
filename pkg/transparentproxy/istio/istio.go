@@ -10,8 +10,6 @@ import (
 
 	uninstall "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-clean-iptables/pkg/cmd"
 	install "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/cmd"
-
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
 type IstioTransparentProxy struct {
@@ -25,7 +23,7 @@ func NewIstioTransparentProxy() *IstioTransparentProxy {
 	return &IstioTransparentProxy{}
 }
 
-func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (string, error) {
+func (tp *IstioTransparentProxy) Setup(cfg *TransparentProxyConfig) (string, error) {
 	viper.Set(constants.EnvoyPort, cfg.RedirectPortOutBound)
 	viper.Set(constants.InboundCapturePort, cfg.RedirectPortInBound)
 	viper.Set(constants.InboundCapturePortV6, cfg.RedirectPortInBoundV6)
