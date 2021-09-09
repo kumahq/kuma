@@ -76,7 +76,7 @@ type Generator struct {
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	mesh := ctx.Mesh.Resource.Meta.GetName()
 	manager := match.ManagerForMesh(g.ResourceManager, mesh)
-	gateway := match.Gateway(g.ResourceManager, proxy.Dataplane)
+	gateway := match.Gateway(manager, proxy.Dataplane)
 
 	if gateway == nil {
 		log.V(1).Info("no matching gateway for dataplane",
@@ -194,7 +194,7 @@ func MakeGatewayListener(
 		),
 	}
 
-	for _, t := range []model.ResourceType{core_mesh.TrafficRouteType} {
+	for _, t := range []model.ResourceType{core_mesh.TrafficRouteType, core_mesh.GatewayRouteType} {
 		list, err := registry.Global().NewList(t)
 		if err != nil {
 			return listener, nil, err
@@ -227,12 +227,10 @@ func MakeGatewayListener(
 		switch listener.Protocol {
 		case mesh_proto.Gateway_Listener_HTTP,
 			mesh_proto.Gateway_Listener_HTTPS:
-			routes, err := match.Routes(resourcesByType[core_mesh.TrafficRouteType], l.GetTags())
-			if err != nil {
-				return listener, nil, err
-			}
-
-			host.Routes = append(host.Routes, routes...)
+			host.Routes = append(host.Routes,
+				match.Routes(resourcesByType[core_mesh.TrafficRouteType], l.GetTags())...)
+			host.Routes = append(host.Routes,
+				match.Routes(resourcesByType[core_mesh.GatewayRouteType], l.GetTags())...)
 		default:
 			// TODO(jpeach) match other route types that are appropriate to the protocol.
 		}

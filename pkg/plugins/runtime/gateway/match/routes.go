@@ -2,18 +2,9 @@ package match
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/policy"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
-
-// XXX(jpeach) When we move to GatewayRoute, all this should be replaced
-// by the equivalent of `policy.SelectDataplanePolicy` because GatewayRoute
-// resources match Dataplanes using the `selectors` field.
-
-// MatchableBySource is an interface that detects all mesh resources
-// that have a `sources` selector.
-type MatchableBySource interface {
-	Sources() []*mesh_proto.Selector
-}
 
 // matches succeeds if any of the given selectors matches the listener tags.
 func matches(listener mesh_proto.TagSelector, selectors []*mesh_proto.Selector) bool {
@@ -29,19 +20,23 @@ func matches(listener mesh_proto.TagSelector, selectors []*mesh_proto.Selector) 
 
 // Routes finds all the route resources of the given type that
 // have a `Sources` selector that matches the given listener tags.
-func Routes(routes model.ResourceList, listener mesh_proto.TagSelector) ([]model.Resource, error) {
+func Routes(routes model.ResourceList, listener mesh_proto.TagSelector) []model.Resource {
 	var matched []model.Resource
 
 	for _, i := range routes.GetItems() {
-		matchable, ok := i.(MatchableBySource)
-		if !ok {
-			return nil, nil
+		if c, ok := i.(policy.ConnectionPolicy); ok {
+			if matches(listener, c.Sources()) {
+				matched = append(matched, i)
+			}
+			continue
 		}
-
-		if matches(listener, matchable.Sources()) {
-			matched = append(matched, i)
+		if c, ok := i.(policy.DataplanePolicy); ok {
+			if matches(listener, c.Selectors()) {
+				matched = append(matched, i)
+			}
+			continue
 		}
 	}
 
-	return matched, nil
+	return matched
 }
