@@ -636,8 +636,8 @@ func (t *GatewayResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *GatewayResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (t *GatewayResource) Selectors() []*mesh_proto.Selector {
+	return t.Spec.GetSelectors()
 }
 
 func (t *GatewayResource) SetSpec(spec model.ResourceSpec) error {
