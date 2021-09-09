@@ -78,7 +78,7 @@ var _ = Describe("Gateway Listener", func() {
 type: Gateway
 mesh: default
 name: edge-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
@@ -93,7 +93,7 @@ conf:
 type: Gateway
 mesh: default
 name: edge-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
@@ -112,7 +112,7 @@ conf:
 type: Gateway
 mesh: tracing
 name: tracing-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
@@ -127,7 +127,7 @@ conf:
 type: Gateway
 mesh: logging
 name: logging-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
@@ -151,7 +151,7 @@ conf:
 type: Gateway
 mesh: default
 name: edge-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
@@ -172,7 +172,7 @@ conf:
 type: Gateway
 mesh: default
 name: edge-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
