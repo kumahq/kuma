@@ -95,7 +95,7 @@ type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
 type RetryMap map[ServiceName]*core_mesh.RetryResource
 
 // FaultInjectionMap holds the most specific FaultInjectionResource for each InboundInterface
-type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjection
+type FaultInjectionMap map[mesh_proto.InboundInterface][]*mesh_proto.FaultInjection
 
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource

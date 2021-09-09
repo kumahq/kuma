@@ -15,42 +15,48 @@ import (
 )
 
 type FaultInjectionConfigurer struct {
-	FaultInjection *mesh_proto.FaultInjection
+	FaultInjections []*mesh_proto.FaultInjection
 }
 
 func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	if f.FaultInjection == nil {
+	var httpFilters []*envoy_hcm.HttpFilter
+
+	// Iterate over FaultInjections and generate the relevant HTTP filters.
+	// We do assume that the FaultInjections resource is sorted, so the most
+	// specific source matches come first.
+	for _, fi := range f.FaultInjections {
+		config := &envoy_http_fault.HTTPFault{
+			Delay: convertDelay(fi.Conf.GetDelay()),
+			Abort: convertAbort(fi.Conf.GetAbort()),
+			Headers: []*envoy_route.HeaderMatcher{
+				createHeaders(fi.SourceTags()),
+			},
+		}
+
+		rrl, err := convertResponseRateLimit(fi.Conf.GetResponseBandwidth())
+		if err != nil {
+			return err
+		}
+		config.ResponseRateLimit = rrl
+
+		pbst, err := proto.MarshalAnyDeterministic(config)
+		if err != nil {
+			return err
+		}
+		httpFilters = append(httpFilters, &envoy_hcm.HttpFilter{
+			Name: "envoy.filters.http.fault",
+			ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+				TypedConfig: pbst,
+			},
+		})
+	}
+
+	if len(httpFilters) == 0 {
 		return nil
 	}
 
-	config := &envoy_http_fault.HTTPFault{
-		Delay: convertDelay(f.FaultInjection.Conf.GetDelay()),
-		Abort: convertAbort(f.FaultInjection.Conf.GetAbort()),
-		Headers: []*envoy_route.HeaderMatcher{
-			createHeaders(f.FaultInjection.SourceTags()),
-		},
-	}
-
-	rrl, err := convertResponseRateLimit(f.FaultInjection.Conf.GetResponseBandwidth())
-	if err != nil {
-		return err
-	}
-	config.ResponseRateLimit = rrl
-
-	pbst, err := proto.MarshalAnyDeterministic(config)
-	if err != nil {
-		return err
-	}
-
 	return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-		manager.HttpFilters = append([]*envoy_hcm.HttpFilter{
-			{
-				Name: "envoy.filters.http.fault",
-				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-					TypedConfig: pbst,
-				},
-			},
-		}, manager.HttpFilters...)
+		manager.HttpFilters = append(httpFilters, manager.HttpFilters...)
 		return nil
 	})
 }
