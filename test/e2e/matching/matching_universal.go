@@ -46,6 +46,11 @@ func Universal() {
 		).To(Succeed())
 	})
 
+	E2EAfterEach(func() {
+		Expect(universal.DeleteKuma(optsUniversal...)).To(Succeed())
+		Expect(universal.DismissCluster()).To(Succeed())
+	})
+
 	It("should both fault injections with the same destination proxy", func() {
 		Expect(YamlUniversal(`
 type: FaultInjection
