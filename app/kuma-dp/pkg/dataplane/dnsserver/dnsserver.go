@@ -31,9 +31,10 @@ type Opts struct {
 	Quit   chan struct{}
 }
 
+// Codes from: https://github.com/miekg/dns/blob/master/msg.go#L138
 const DefaultCoreFileTemplate = `.:{{ .CoreDNSPort }} {
     forward . 127.0.0.1:{{ .EnvoyDNSPort }}
-    alternate NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
+    alternate NOTIMP,FORMERR,NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
     prometheus localhost:{{ .PrometheusPort }}
     errors
 }

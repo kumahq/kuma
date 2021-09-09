@@ -121,7 +121,7 @@ var _ = Describe("DNS Server", func() {
 			// and
 			Expect(string(actual)).To(Equal(`.:16001 {
     forward . 127.0.0.1:16002
-    alternate NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
+    alternate NOTIMP,FORMERR,NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
     prometheus localhost:16003
     errors
 }
