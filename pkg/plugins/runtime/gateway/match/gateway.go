@@ -6,14 +6,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 // Gateway selects the matching GatewayResource (if any) for the given DataplaneResorce.
 func Gateway(m manager.ReadOnlyResourceManager, dp *core_mesh.DataplaneResource) *core_mesh.GatewayResource {
 	gatewayList := &core_mesh.GatewayResourceList{}
 
-	if err := m.List(context.Background(), gatewayList, store.ListByMesh(dp.Meta.GetMesh())); err != nil {
+	if err := m.List(context.Background(), gatewayList); err != nil {
 		return nil
 	}
 
