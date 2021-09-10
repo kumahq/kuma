@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/pkg/errors"
 
@@ -13,11 +14,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
+
+const WildcardHostname = "*"
 
 type GatewayHost struct {
 	Hostname string
@@ -127,6 +131,14 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			return nil, err
 		}
 
+		hosts = RedistributeWildcardRoutes(hosts)
+
+		// Sort by reverse hostname, so that fully qualified hostnames sort
+		// before wildcard domains, and "*" is last.
+		sort.Slice(hosts, func(i, j int) bool {
+			return hosts[i].Hostname > hosts[j].Hostname
+		})
+
 		info := GatewayResourceInfo{
 			Proxy:     proxy,
 			Dataplane: proxy.Dataplane,
@@ -137,6 +149,10 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		// Make a pass over the generators for each virtual host.
 		for _, host := range hosts {
 			info.Host = host
+
+			// Ensure that generators don't get duplicate routes,
+			// which could happen after redistributing wildcards.
+			info.Host.Routes = merge.UniqueResources(info.Host.Routes)
 
 			for _, generator := range g.Generators {
 				if !generator.SupportsProtocol(listener.Protocol) {
@@ -218,7 +234,7 @@ func MakeGatewayListener(
 		// An empty hostname is the same as "*", i.e. matches all hosts.
 		hostname := l.GetHostname()
 		if hostname == "" {
-			hostname = "*"
+			hostname = WildcardHostname
 		}
 
 		host := hostsByName[hostname]
@@ -248,4 +264,69 @@ func MakeGatewayListener(
 	}
 
 	return listener, hosts, nil
+}
+
+// RedistributeWildcardRoutes takes the routes from the wildcard host
+// and redistributes them to hosts with matching names, creating new
+// hosts if necessary.
+//
+// This process is necessary because:
+//
+// 1. We might have a listener with hostname A and some routes, but also
+//    a wildcard listener with routes for hostname A. We want all the routes
+//    for hostname A in the same virtual host.
+// 2. Routes with hostnames that are attached to a wildcard listener
+//    should implicitly create virtual hosts so that we can generate a
+//    consistent config. For example, if a wildcard listener has a route for
+//    hostname A and a route for hostname B, that doesn't mean that the routes
+//    are for hostnames A or B. We still want the routes to match the hostname
+//    that they were specified with.
+func RedistributeWildcardRoutes(
+	hosts []GatewayHost,
+) []GatewayHost {
+	hostsByName := map[string]GatewayHost{}
+
+	for _, h := range hosts {
+		hostsByName[h.Hostname] = h
+	}
+
+	wild, ok := hostsByName[WildcardHostname]
+	if !ok {
+		return hosts
+	}
+
+	wildcardRoutes := wild.Routes
+	wild.Routes = nil // We are rebuilding this.
+	for _, r := range wildcardRoutes {
+		gw, ok := r.(*core_mesh.GatewayRouteResource)
+		if !ok {
+			continue
+		}
+
+		names := gw.Spec.GetConf().GetHttp().GetHostnames()
+
+		// No hostnames on this route, it stays as a wildcard route.
+		if len(names) == 0 {
+			wild.Routes = append(wild.Routes, r)
+			continue
+		}
+
+		for _, n := range names {
+			// Note that if we already have a virtualhost for this
+			// name, and add the route to it, it might be a duplicate.
+			host := hostsByName[n]
+			host.Hostname = n
+			host.Routes = append(host.Routes, r)
+			hostsByName[n] = host
+		}
+	}
+
+	hostsByName[WildcardHostname] = wild
+
+	var flattened []GatewayHost
+	for _, host := range hostsByName {
+		flattened = append(flattened, host)
+	}
+
+	return flattened
 }

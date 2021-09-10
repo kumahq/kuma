@@ -1,7 +1,6 @@
 package gateway_test
 
 import (
-	"fmt"
 	"path"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -10,10 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
@@ -21,7 +17,7 @@ import (
 
 var _ = Describe("Gateway Traffic Route", func() {
 	var rt runtime.Runtime
-	var addressCount int
+	var dataplanes *DataplaneGenerator
 
 	Do := func() (cache.Snapshot, error) {
 		serverCtx := xds_server.NewXdsContext()
@@ -41,43 +37,8 @@ var _ = Describe("Gateway Traffic Route", func() {
 		return serverCtx.Cache().GetSnapshot(proxy.Id.String())
 	}
 
-	CreateServiceDataplanes := func(serviceName string, count int, tags ...string) {
-		for i := 0; i < count; i++ {
-			dp := mesh.NewDataplaneResource()
-			dp.SetMeta(&rest.ResourceMeta{
-				Type:             string(dp.Descriptor().Name),
-				Mesh:             "default",
-				Name:             fmt.Sprintf("%s-%d", serviceName, i),
-				CreationTime:     core.Now(),
-				ModificationTime: core.Now(),
-			})
-			dp.Spec.Networking = &mesh_proto.Dataplane_Networking{
-				Address: fmt.Sprintf("192.168.1.%d", addressCount+1),
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					&mesh_proto.Dataplane_Networking_Inbound{
-						Port:        20011,
-						ServicePort: 10011,
-						Tags: map[string]string{
-							mesh_proto.ServiceTag:  serviceName,
-							mesh_proto.ProtocolTag: "http",
-						},
-					}},
-			}
-
-			// Attach tag pairs. It's OK to panic if caller didn't pass even pairs.
-			for i := 0; i < len(tags); i = i + 2 {
-				dp.Spec.GetNetworking().GetInbound()[0].Tags[tags[i]] = tags[i+1]
-			}
-
-			Expect(StoreFixture(rt, dp)).To(Succeed())
-			addressCount++
-		}
-	}
-
 	BeforeEach(func() {
 		var err error
-
-		addressCount = 0
 
 		rt, err = BuildRuntime()
 		Expect(err).To(Succeed(), "build runtime instance")
@@ -85,11 +46,13 @@ var _ = Describe("Gateway Traffic Route", func() {
 		Expect(StoreNamedFixture(rt, "mesh-default.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "dataplane-default.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "gateway-default.yaml")).To(Succeed())
+
+		dataplanes = &DataplaneGenerator{Manager: rt.ResourceManager()}
 	})
 
 	It("should generate from traffic routes", func() {
 		// given
-		CreateServiceDataplanes("echo-service", 5)
+		dataplanes.GenerateN(5, "echo-service")
 
 		Expect(StoreInlineFixture(rt, []byte(`
 type: TrafficRoute
@@ -123,7 +86,7 @@ conf:
 
 	It("should generate resources from multiple traffic routes", func() {
 		// given
-		CreateServiceDataplanes("echo-service", 2)
+		dataplanes.GenerateN(2, "echo-service")
 
 		Expect(StoreInlineFixture(rt, []byte(`
 type: TrafficRoute
@@ -180,26 +143,26 @@ conf:
 	// that the clusters are unique even though the splits happen across different resources.
 	It("should split clusters across multiple traffic routes", func() {
 		// given
-		CreateServiceDataplanes(
-			"echo-service-one", 1,
+		dataplanes.Generate(
+			"echo-service-one",
 			mesh_proto.ServiceTag, "echo-service",
 			"version", "1",
 		)
 
-		CreateServiceDataplanes(
-			"echo-service-two", 1,
+		dataplanes.Generate(
+			"echo-service-two",
 			mesh_proto.ServiceTag, "echo-service",
 			"version", "2",
 		)
 
-		CreateServiceDataplanes(
-			"rumored-echo-service-one", 1,
+		dataplanes.Generate(
+			"rumored-echo-service-one",
 			mesh_proto.ServiceTag, "echo-service",
 			"rumored-version", "1",
 		)
 
-		CreateServiceDataplanes(
-			"rumored-echo-service-two", 1,
+		dataplanes.Generate(
+			"rumored-echo-service-two",
 			mesh_proto.ServiceTag, "echo-service",
 			"rumored-version", "2",
 		)
@@ -288,7 +251,7 @@ conf:
 
 	It("should generate multiple virtual hosts", func() {
 		// given
-		CreateServiceDataplanes("echo-service", 2)
+		dataplanes.GenerateN(2, "echo-service")
 
 		// Update the default gateway to have multiple listeners.
 		Expect(StoreInlineFixture(rt, []byte(`

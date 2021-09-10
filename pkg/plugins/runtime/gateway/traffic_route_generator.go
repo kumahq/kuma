@@ -51,6 +51,14 @@ func (*TrafficRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 		return nil, nil
 	}
 
+	// TrafficRoute doesn't support wildcard hosts because there's
+	// no way to populate a virtualhost domain name from the route.
+	// We don't error here, because if we did, the default traffic
+	// route would always cause the error.
+	if info.Host.Hostname == WildcardHostname {
+		return nil, nil
+	}
+
 	log.V(1).Info("applying merged traffic routes",
 		"listener-port", info.Listener.Port,
 		"listener-name", info.Listener.ResourceName,
