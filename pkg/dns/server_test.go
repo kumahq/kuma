@@ -83,7 +83,10 @@ var _ = Describe("DNS server", func() {
 				Expect(test_metrics.FindMetric(metrics, "dns_server")).ToNot(BeNil())
 				if tc.thenIp != "" {
 					Expect(response.Answer).To(HaveLen(1))
-					Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("%s\t60\tIN\tA\t%s", q, tc.thenIp)))
+					Expect(response.Answer[0].String()).To(Or(
+						Equal(fmt.Sprintf("%s\t60\tIN\tA\t%s", q, tc.thenIp)),
+						Equal(fmt.Sprintf("%s\t60\tIN\tAAAA\t%s", q, tc.thenIp)),
+					))
 					// and metrics are published
 					Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "resolved").Counter.GetValue()).To(Equal(1.0))
 				} else {
@@ -92,11 +95,23 @@ var _ = Describe("DNS server", func() {
 					Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "unresolved").Counter.GetValue()).To(Equal(1.0))
 				}
 			},
-			Entry("should resolve", dnsTestCase{
+			Entry("A should resolve", dnsTestCase{
 				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("service"): "240.0.0.1"},
 				whenQuery: "service.mesh",
 				whenType:  dns.Type(dns.TypeA),
 				thenIp:    "240.0.0.1",
+			}),
+			Entry("AAAA with v4 should add prefix", dnsTestCase{
+				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("service"): "240.0.0.1"},
+				whenQuery: "service.mesh",
+				whenType:  dns.Type(dns.TypeAAAA),
+				thenIp:    "240.0.0.1",
+			}),
+			Entry("AAAA with v6 should succeed", dnsTestCase{
+				givenVips: map[vips.HostnameEntry]string{vips.NewServiceEntry("service"): "2001:db8::ff00:42:8329"},
+				whenQuery: "service.mesh",
+				whenType:  dns.Type(dns.TypeAAAA),
+				thenIp:    "2001:db8::ff00:42:8329",
 			}),
 			Entry("should not resolve with no vips", dnsTestCase{
 				givenVips: map[vips.HostnameEntry]string{},
