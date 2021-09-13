@@ -66,7 +66,7 @@ func (h *SimpleDNSServer) parseQuery(m *dns.Msg) {
 	for _, q := range m.Question {
 		switch q.Qtype {
 		case dns.TypeA, dns.TypeAAAA:
-			serverLog.Info("received a query", "name", q.Name, "type", q.Qtype)
+			serverLog.V(1).Info("received a query", "name", q.Name, "type", q.Qtype)
 			ip, err := h.lookup(q.Name)
 			if err != nil {
 				serverLog.V(1).Info("unable to resolve", "name", q.Name, "error", err.Error())
