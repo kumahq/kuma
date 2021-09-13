@@ -15,6 +15,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -57,12 +58,13 @@ type GatewayListener struct {
 }
 
 type GatewayResourceInfo struct {
-	Proxy     *core_xds.Proxy
-	Dataplane *core_mesh.DataplaneResource
-	Gateway   *core_mesh.GatewayResource
-	Listener  GatewayListener
-	Host      GatewayHost
-	Resources Resources
+	Proxy      *core_xds.Proxy
+	Dataplane  *core_mesh.DataplaneResource
+	Gateway    *core_mesh.GatewayResource
+	Listener   GatewayListener
+	Host       GatewayHost
+	Resources  Resources
+	RouteTable route.Table
 }
 
 // GatewayHostGenerator is responsible for generating xDS resources for a single GatewayHost.
@@ -148,6 +150,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 		// Make a pass over the generators for each virtual host.
 		for _, host := range hosts {
+			info.RouteTable = route.Table{}
 			info.Host = host
 
 			// Ensure that generators don't get duplicate routes,

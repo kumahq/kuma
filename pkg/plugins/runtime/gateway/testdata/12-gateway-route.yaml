@@ -62,7 +62,38 @@ Routes:
             weightedClusters:
               totalWeight: 0
         - match:
-            path: /service/echo
+            headers:
+            - exactMatch: GET
+              name: :method
+            - exactMatch: gibberish
+              name: Language
+            path: /lang/json
+          route:
+            weightedClusters:
+              clusters:
+              - name: echo-service
+                weight: 1
+              totalWeight: 1
+        - match:
+            headers:
+            - exactMatch: PUT
+              name: :method
+            - exactMatch: application/json
+              name: Content-Type
+            path: /app/json
+          route:
+            weightedClusters:
+              clusters:
+              - name: echo-service
+                weight: 1
+              totalWeight: 1
+        - match:
+            headers:
+            - exactMatch: GET
+              name: :method
+            - exactMatch: gibberish
+              name: Language
+            prefix: /lang/json/
           route:
             weightedClusters:
               clusters:

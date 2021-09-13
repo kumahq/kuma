@@ -104,12 +104,10 @@ func validateGatewayRouteHTTPRule(
 	path validators.PathBuilder,
 	conf *mesh_proto.GatewayRoute_HttpRoute_Rule,
 ) validators.ValidationError {
+	var hasRedirect bool
+
 	if len(conf.GetMatches()) < 1 {
 		return validators.MakeRequiredFieldErr(path.Field("matches"))
-	}
-
-	if len(conf.GetBackends()) < 1 {
-		return validators.MakeRequiredFieldErr(path.Field("backends"))
 	}
 
 	var err validators.ValidationError
@@ -119,7 +117,31 @@ func validateGatewayRouteHTTPRule(
 	}
 
 	for i, f := range conf.GetFilters() {
+		if f.GetRedirect() != nil {
+			hasRedirect = true
+		}
+
 		err.Add(validateGatewayRouteHTTPFilter(path.Field("filters").Index(i), f))
+	}
+
+	// It doesn't make sense to redirect and also mirror or rewrite request headers.
+	if hasRedirect && len(conf.GetFilters()) != 1 {
+		err.AddViolationAt(path.Field("filters"), "redirects cannot be used with other filters")
+
+		// Return since the redirect filter error makes the backend length check ambiguous.
+		return err
+	}
+
+	switch len(conf.GetBackends()) {
+	case 0:
+		// Redirection doesn't forward, so there must not be any backend.
+		if !hasRedirect {
+			err.AddViolationAt(path.Field("backends"), "cannot be empty")
+		}
+	default:
+		if hasRedirect {
+			err.AddViolationAt(path.Field("backends"), "must be empty when using redirect filters")
+		}
 	}
 
 	for i, b := range conf.GetBackends() {
