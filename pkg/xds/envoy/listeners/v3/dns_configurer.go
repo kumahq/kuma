@@ -14,7 +14,7 @@ import (
 )
 
 type DNSConfigurer struct {
-	VIPs         map[string]string
+	VIPs         map[string][]string
 	EmptyDNSPort uint32
 }
 
@@ -41,7 +41,7 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 			Endpoint: &envoy_data_dns.DnsTable_DnsEndpoint{
 				EndpointConfig: &envoy_data_dns.DnsTable_DnsEndpoint_AddressList{
 					AddressList: &envoy_data_dns.DnsTable_AddressList{
-						Address: []string{ips},
+						Address: ips,
 					},
 				},
 			},
