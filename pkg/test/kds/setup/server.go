@@ -56,9 +56,9 @@ func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string
 	Expect(err).ToNot(HaveOccurred())
 	stream := test_grpc.MakeMockStream()
 	go func() {
+		defer wg.Done()
 		err := srv.StreamKumaResources(stream)
 		Expect(err).ToNot(HaveOccurred())
-		wg.Done()
 	}()
 	return stream
 }

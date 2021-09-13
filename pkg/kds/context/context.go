@@ -19,10 +19,10 @@ import (
 var log = core.Log.WithName("kds")
 
 type Context struct {
-	ZoneClientCtx         context.Context
-	GlobalServerCallbacks []mux.Callbacks
-	GlobalProvidedFilter  reconcile.ResourceFilter
-	ZoneProvidedFilter    reconcile.ResourceFilter
+	ZoneClientCtx        context.Context
+	GlobalProvidedFilter reconcile.ResourceFilter
+	ZoneProvidedFilter   reconcile.ResourceFilter
+	GlobalServerFilters  []mux.Filter
 	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
 	Configs map[string]bool
 }

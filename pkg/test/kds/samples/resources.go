@@ -289,7 +289,7 @@ var (
 		}},
 	}
 	Gateway = &mesh_proto.Gateway{
-		Sources: []*mesh_proto.Selector{{
+		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{
 				"kuma.io/service": "gateway",
 			},

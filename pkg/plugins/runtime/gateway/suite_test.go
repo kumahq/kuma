@@ -6,6 +6,7 @@ import (
 	"path"
 	"testing"
 
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -27,8 +29,10 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 
@@ -46,6 +50,15 @@ func (p ProtoMessage) MarshalJSON() ([]byte, error) {
 
 type ProtoResource struct {
 	Resources map[string]ProtoMessage
+}
+
+type ProtoSnapshot struct {
+	Clusters  ProtoResource
+	Endpoints ProtoResource
+	Listeners ProtoResource
+	Routes    ProtoResource
+	Runtimes  ProtoResource
+	Secrets   ProtoResource
 }
 
 // MakeProtoResource wraps Go Control Plane resources in a map that
@@ -66,13 +79,24 @@ func MakeProtoResource(resources cache_v3.Resources) ProtoResource {
 	return result
 }
 
+func MakeProtoSnapshot(snap cache_v3.Snapshot) ProtoSnapshot {
+	return ProtoSnapshot{
+		Clusters:  MakeProtoResource(snap.Resources[envoy_types.Cluster]),
+		Endpoints: MakeProtoResource(snap.Resources[envoy_types.Endpoint]),
+		Listeners: MakeProtoResource(snap.Resources[envoy_types.Listener]),
+		Routes:    MakeProtoResource(snap.Resources[envoy_types.Route]),
+		Runtimes:  MakeProtoResource(snap.Resources[envoy_types.Runtime]),
+		Secrets:   MakeProtoResource(snap.Resources[envoy_types.Secret]),
+	}
+}
+
 type mockMetadataTracker struct{}
 
 func (m mockMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.DataplaneMetadata {
 	return nil
 }
 
-func MakeDataplaneProxy(rt runtime.Runtime, key core_model.ResourceKey) *core_xds.Proxy {
+func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_context.Context, *core_xds.Proxy) {
 	b := sync.DataplaneProxyBuilder{
 		CachingResManager:    rt.ReadOnlyResourceManager(),
 		NonCachingResManager: rt.ResourceManager(),
@@ -100,22 +124,39 @@ func MakeDataplaneProxy(rt runtime.Runtime, key core_model.ResourceKey) *core_xd
 		To(Succeed())
 
 	dataplanes := core_mesh.DataplaneResourceList{}
-	Expect(rt.ResourceManager().List(context.TODO(), &dataplanes, store.ListByMesh(key.Mesh))).To(Succeed())
+	Expect(rt.ResourceManager().List(context.TODO(), &dataplanes, store.ListByMesh(key.Mesh))).
+		To(Succeed())
 
-	proxy, err := b.Build(key, &xds_context.Context{
-		ControlPlane: &xds_context.ControlPlaneContext{
-			AdminProxyKeyPair: nil,
-			CLACache:          nil,
-		},
+	cache, err := cla.NewCache(
+		rt.ReadOnlyResourceManager(),
+		rt.Config().Multizone.Zone.Name,
+		rt.Config().Store.Cache.ExpirationTime,
+		rt.LookupIP(), rt.Metrics())
+	Expect(err).To(Succeed())
+
+	secrets, err := secrets.NewSecrets(
+		secrets.NewCaProvider(rt.CaManagers()),
+		secrets.NewIdentityProvider(rt.CaManagers()),
+		rt.Metrics(),
+	)
+	Expect(err).To(Succeed())
+
+	control, err := xds_context.BuildControlPlaneContext(rt.Config(), cache, secrets)
+	Expect(err).To(Succeed())
+
+	ctx := xds_context.Context{
+		ControlPlane: control,
 		Mesh: xds_context.MeshContext{
 			Resource:   mesh,
 			Dataplanes: &dataplanes,
 		},
 		EnvoyAdminClient: nil,
-	})
+	}
+
+	proxy, err := b.Build(key, &ctx)
 	Expect(err).To(Succeed())
 
-	return proxy
+	return &ctx, proxy
 }
 
 // FetchNamedFixture retrieves the named resource from the runtime
@@ -148,23 +189,31 @@ func StoreNamedFixture(rt runtime.Runtime, name string) error {
 	return StoreInlineFixture(rt, bytes)
 }
 
-// StoreInlineFixture stores the given YAML object in the runtime resource manager.
+// StoreInlineFixture stores or updates the given YAML object in the
+// runtime resource manager.
 func StoreInlineFixture(rt runtime.Runtime, object []byte) error {
 	r, err := rest.UnmarshallToCore(object)
 	if err != nil {
 		return err
 	}
 
-	var opts []store.CreateOptionsFunc
+	return StoreFixture(rt, r)
+}
 
-	switch r.Descriptor().Scope {
-	case core_model.ScopeGlobal:
-		opts = append(opts, store.CreateByKey(r.GetMeta().GetName(), ""))
-	case core_model.ScopeMesh:
-		opts = append(opts, store.CreateByKey(r.GetMeta().GetName(), r.GetMeta().GetMesh()))
+// StoreFixture stores or updates the given resource in the runtime
+// resource manager.
+func StoreFixture(rt runtime.Runtime, r core_model.Resource) error {
+	key := core_model.MetaToResourceKey(r.GetMeta())
+	current, err := registry.Global().NewObject(r.Descriptor().Name)
+	if err != nil {
+		return err
 	}
 
-	return rt.ResourceManager().Create(context.TODO(), r, opts...)
+	return manager.Upsert(rt.ResourceManager(), key, current,
+		func(resource core_model.Resource) error {
+			return resource.SetSpec(r.GetSpec())
+		},
+	)
 }
 
 // BuildRuntime returns a fabricated test Runtime instance with which
