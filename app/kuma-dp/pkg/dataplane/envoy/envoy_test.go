@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -116,10 +117,17 @@ var _ = Describe("Envoy", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(strings.TrimSpace(buf.String())).To(Equal(
-				fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off --bootstrap-version 2 --cpuset-threads",
-					expectedConfigFile)),
-			)
+			if runtime.GOOS == "linux" {
+				Expect(strings.TrimSpace(buf.String())).To(Equal(
+					fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off --bootstrap-version 2 --cpuset-threads",
+						expectedConfigFile)),
+				)
+			} else {
+				Expect(strings.TrimSpace(buf.String())).To(Equal(
+					fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off --bootstrap-version 2",
+						expectedConfigFile)),
+				)
+			}
 
 			By("verifying the contents Envoy config file")
 			// when

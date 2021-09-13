@@ -121,7 +121,10 @@ var _ = Describe("DNS Server", func() {
 			// and
 			Expect(string(actual)).To(Equal(`.:16001 {
     forward . 127.0.0.1:16002
-    alternate NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
+    # We want all requests to be sent to the Envoy DNS Filter, unsuccessful responses should be forwarded to the original DNS server.
+    # For example: requests other than A, AAAA and SRV will return NOTIMP when hitting the envoy filter and should be sent to the original DNS server.
+    # Codes from: https://github.com/miekg/dns/blob/master/msg.go#L138
+    alternate NOTIMP,FORMERR,NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
     prometheus localhost:16003
     errors
 }
