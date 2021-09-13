@@ -58,9 +58,9 @@ func WithStatefulSet(apply bool) DeploymentOptsFn {
 	}
 }
 
-func WithServiceAccount(sa string) DeploymentOptsFn {
+func WithServiceAccount(serviceAccountName string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
-		opts.ServiceAccount = sa
+		opts.ServiceAccount = serviceAccountName
 	}
 }
 

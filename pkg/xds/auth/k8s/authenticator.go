@@ -46,7 +46,7 @@ func (k *kubeAuthenticator) authDataplane(ctx context.Context, dataplane *core_m
 	}
 	serviceAccountName, err := k.podServiceAccountName(ctx, proxyName, proxyNamespace)
 	if err != nil {
-		return errors.Wrap(err, "could not retrieve Pods Service Account to verify identity of a dataplane proxy")
+		return err
 	}
 	if err := k.verifyToken(ctx, credential, proxyNamespace, serviceAccountName); err != nil {
 		return errors.Wrap(err, "authentication failed")
@@ -71,15 +71,15 @@ func (k *kubeAuthenticator) verifyToken(ctx context.Context, credential auth.Cre
 		return errors.Errorf("username inside TokenReview response has unexpected format: %q", tokenReview.Status.User.Username)
 	}
 	if !(userInfo[0] == "system" && userInfo[1] == "serviceaccount") {
-		return errors.Errorf("token must belong to a k8s system account, got %q", tokenReview.Status.User.Username)
+		return errors.Errorf("user %q is not a service account", tokenReview.Status.User.Username)
 	}
 	namespace := userInfo[2]
 	if namespace != proxyNamespace {
-		return errors.Errorf("token belongs to a namespace (%q) different from proxyId (%q)", namespace, proxyNamespace)
+		return errors.Errorf("token belongs to a namespace %q different from proxyId %q", namespace, proxyNamespace)
 	}
 	name := userInfo[3]
 	if name != serviceAccountName {
-		return errors.Errorf("service account name of the pod (%q) is different than token that was provided (%q)", serviceAccountName, name)
+		return errors.Errorf("service account name of the pod %q is different than token that was provided %q", serviceAccountName, name)
 	}
 	return nil
 }
@@ -91,7 +91,7 @@ func (k *kubeAuthenticator) authZoneIngress(ctx context.Context, zoneIngress *co
 	}
 	serviceAccountName, err := k.podServiceAccountName(ctx, proxyName, proxyNamespace)
 	if err != nil {
-		return errors.Wrap(err, "could not retrieve Pods Service Account to verify identity of a dataplane proxy")
+		return err
 	}
 	if err := k.verifyToken(ctx, credential, proxyNamespace, serviceAccountName); err != nil {
 		return errors.Wrap(err, "authentication failed")
@@ -99,13 +99,13 @@ func (k *kubeAuthenticator) authZoneIngress(ctx context.Context, zoneIngress *co
 	return nil
 }
 
-func (k *kubeAuthenticator) podServiceAccountName(ctx context.Context, name, namespace string) (string, error) {
+func (k *kubeAuthenticator) podServiceAccountName(ctx context.Context, podName, podNamespace string) (string, error) {
 	pod := &kube_core.Pod{}
 	if err := k.client.Get(ctx, types.NamespacedName{
-		Namespace: namespace,
-		Name:      name,
+		Namespace: podNamespace,
+		Name:      podName,
 	}, pod); err != nil {
-		return "", errors.Wrap(err, "could not retrieve Pod to verify identity of a dataplane proxy")
+		return "", errors.Wrapf(err, "could not retrieve Pod %s/%s to verify identity of a dataplane proxy", podNamespace, podName)
 	}
 	if pod.Spec.ServiceAccountName != "" {
 		return pod.Spec.ServiceAccountName, nil
