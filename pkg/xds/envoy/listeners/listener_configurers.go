@@ -61,7 +61,7 @@ func FilterChain(builder *FilterChainBuilder) ListenerBuilderOpt {
 	)
 }
 
-func DNS(vips map[string]string, emptyDnsPort uint32) ListenerBuilderOpt {
+func DNS(vips map[string][]string, emptyDnsPort uint32) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.DNSConfigurer{
 		VIPs:         vips,
 		EmptyDNSPort: emptyDnsPort,
