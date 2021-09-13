@@ -31,5 +31,5 @@ spec:
       protocol: UDP
   {{- end }}
   selector:
-    app: kuma-control-plane
+    app: {{ include "kuma.name" . }}-control-plane
   {{- include "kuma.selectorLabels" . | nindent 4 }}
