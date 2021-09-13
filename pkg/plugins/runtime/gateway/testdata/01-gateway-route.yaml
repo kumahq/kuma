@@ -55,12 +55,39 @@ Routes:
       - domains:
         - foo.example.com
         name: edge-gateway:HTTP:8080:foo.example.com
+        routes:
+        - match:
+            path: /
+          route:
+            weightedClusters:
+              clusters:
+              - name: echo-service
+                weight: 1
+              totalWeight: 1
       - domains:
         - bar.example.com
         name: edge-gateway:HTTP:8080:bar.example.com
+        routes:
+        - match:
+            path: /
+          route:
+            weightedClusters:
+              clusters:
+              - name: echo-service
+                weight: 1
+              totalWeight: 1
       - domains:
         - '*.example.com'
         name: edge-gateway:HTTP:8080:*.example.com
+        routes:
+        - match:
+            path: /
+          route:
+            weightedClusters:
+              clusters:
+              - name: echo-service
+                weight: 1
+              totalWeight: 1
       - domains:
         - '*'
         name: edge-gateway:HTTP:8080:*

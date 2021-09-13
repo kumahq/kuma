@@ -62,7 +62,9 @@ Routes:
             weightedClusters:
               totalWeight: 0
         - match:
-            path: /service/echo
+            safeRegex:
+              googleRe2: {}
+              regex: ^/api/v[0-9]+$
           route:
             weightedClusters:
               clusters:
