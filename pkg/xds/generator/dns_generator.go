@@ -2,6 +2,7 @@ package generator
 
 import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -24,10 +25,14 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 		return nil, nil // DNS only makes sense when transparent proxy is used
 	}
 
-	vips := map[string]string{}
+	vips := map[string][]string{}
 	for _, dnsOutbound := range proxy.Routing.VipDomains {
 		for _, domain := range dnsOutbound.Domains {
-			vips[domain] = dnsOutbound.Address
+			vips[domain] = []string{dnsOutbound.Address}
+			v6 := util_net.ToV6(dnsOutbound.Address)
+			if v6 != dnsOutbound.Address { // It's already a v6
+				vips[domain] = append(vips[domain], v6)
+			}
 		}
 	}
 

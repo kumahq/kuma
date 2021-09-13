@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
 const dnsTTL = "60"
@@ -65,17 +66,20 @@ func (h *SimpleDNSServer) parseQuery(m *dns.Msg) {
 	for _, q := range m.Question {
 		switch q.Qtype {
 		case dns.TypeA, dns.TypeAAAA:
-			serverLog.V(1).Info("received a query for " + q.Name)
+			serverLog.V(1).Info("received a query", "name", q.Name, "type", q.Qtype)
 			ip, err := h.lookup(q.Name)
 			if err != nil {
-				serverLog.V(1).Info("unable to resolve", "Name", q.Name, "error", err.Error())
+				serverLog.V(1).Info("unable to resolve", "name", q.Name, "error", err.Error())
 				h.resolutionMetric.WithLabelValues("unresolved").Inc()
 				return
 			}
 			h.resolutionMetric.WithLabelValues("resolved").Inc()
 
 			recordType := "A"
-			if govalidator.IsIPv6(ip) {
+			if q.Qtype == dns.TypeAAAA {
+				recordType = "AAAA"
+				ip = util_net.ToV6(ip)
+			} else if govalidator.IsIPv6(ip) {
 				recordType = "AAAA"
 			}
 
