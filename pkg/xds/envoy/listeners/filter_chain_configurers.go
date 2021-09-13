@@ -100,7 +100,7 @@ func TcpProxyWithMetadata(statsName string, clusters ...envoy_common.Cluster) Fi
 	})
 }
 
-func FaultInjection(faultInjections []*mesh_proto.FaultInjection) FilterChainBuilderOpt {
+func FaultInjection(faultInjections ...*mesh_proto.FaultInjection) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.FaultInjectionConfigurer{
 		FaultInjections: faultInjections,
 	})

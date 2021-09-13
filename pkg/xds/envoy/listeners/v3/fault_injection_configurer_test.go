@@ -23,7 +23,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 			// when
 			filterChain, err := NewFilterChainBuilder(envoy.APIV3).
 				Configure(HttpConnectionManager("stats", false)).
-				Configure(FaultInjection(given.input)).
+				Configure(FaultInjection(given.input...)).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
