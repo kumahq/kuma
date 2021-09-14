@@ -10,6 +10,9 @@ metadata:
     {{- end }}
 spec:
   type: {{ .Values.controlPlane.globalZoneSyncService.type }}
+  {{- if .Values.controlPlane.globalZoneSyncService.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.controlPlane.globalZoneSyncService.loadBalancerIP }}
+  {{- end }}
   ports:
     - port: {{ .Values.controlPlane.globalZoneSyncService.port }}
   {{- if eq .Values.controlPlane.globalZoneSyncService.type "NodePort" }}
