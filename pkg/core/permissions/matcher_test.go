@@ -24,7 +24,7 @@ var _ = Describe("Match", func() {
 		dataplane *core_mesh.DataplaneResource
 		mesh      *core_mesh.MeshResource
 		policies  []*core_mesh.TrafficPermissionResource
-		expected  map[mesh_proto.InboundInterface]string
+		expected  map[mesh_proto.InboundInterface][]string
 	}
 
 	DescribeTable("should find best matched policy",
@@ -43,8 +43,12 @@ var _ = Describe("Match", func() {
 			bestMatched, err := matcher.Match(context.Background(), given.dataplane, given.mesh)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bestMatched).To(HaveLen(len(given.expected)))
-			for iface, policy := range bestMatched {
-				Expect(given.expected[iface]).To(Equal(policy.GetMeta().GetName()))
+			for iface, policies := range bestMatched {
+				var names []string
+				for _, p := range policies {
+					names = append(names, p.GetMeta().GetName())
+				}
+				Expect(given.expected[iface]).To(ConsistOf(names))
 			}
 		},
 		Entry("2 inbounds dataplane with additional service, 2 policies", testCase{
@@ -173,9 +177,12 @@ var _ = Describe("Match", func() {
 					},
 				},
 			},
-			expected: map[mesh_proto.InboundInterface]string{
-				mesh_proto.InboundInterface{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 8081, DataplanePort: 8080}: "more-specific-kong-to-web",
-				mesh_proto.InboundInterface{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 1234, DataplanePort: 1234}: "metrics",
+			expected: map[mesh_proto.InboundInterface][]string{
+				mesh_proto.InboundInterface{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 8081, DataplanePort: 8080}: {
+					"more-specific-kong-to-web",
+					"less-specific-kong-to-web",
+				},
+				mesh_proto.InboundInterface{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 1234, DataplanePort: 1234}: {"metrics"},
 			},
 		}),
 	)

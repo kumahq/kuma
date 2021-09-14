@@ -97,8 +97,8 @@ type RetryMap map[ServiceName]*core_mesh.RetryResource
 // FaultInjectionMap holds all matched FaultInjectionResources for each InboundInterface
 type FaultInjectionMap map[mesh_proto.InboundInterface][]*mesh_proto.FaultInjection
 
-// TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
-type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
+// TrafficPermissionMap holds all matched TrafficPermissionResources for each InboundInterface
+type TrafficPermissionMap map[mesh_proto.InboundInterface][]*core_mesh.TrafficPermissionResource
 
 // InboundRateLimitsMap holds all RateLimitResources for each InboundInterface
 type InboundRateLimitsMap map[mesh_proto.InboundInterface][]*mesh_proto.RateLimit

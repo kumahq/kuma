@@ -73,7 +73,7 @@ func SourceMatcher(address string) FilterChainBuilderOpt {
 	})
 }
 
-func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.TrafficPermissionResource) FilterChainBuilderOpt {
+func NetworkRBAC(statsName string, rbacEnabled bool, permission ...*core_mesh.TrafficPermissionResource) FilterChainBuilderOpt {
 	if !rbacEnabled {
 		return FilterChainBuilderOptFunc(nil)
 	}

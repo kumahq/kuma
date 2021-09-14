@@ -16,7 +16,7 @@ import (
 
 type NetworkRBACConfigurer struct {
 	StatsName  string
-	Permission *core_mesh.TrafficPermissionResource
+	Permission []*core_mesh.TrafficPermissionResource
 }
 
 func (c *NetworkRBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -30,7 +30,7 @@ func (c *NetworkRBACConfigurer) Configure(filterChain *envoy_listener.FilterChai
 	return nil
 }
 
-func createRbacFilter(statsName string, permission *core_mesh.TrafficPermissionResource) (*envoy_listener.Filter, error) {
+func createRbacFilter(statsName string, permission []*core_mesh.TrafficPermissionResource) (*envoy_listener.Filter, error) {
 	rbacRule := createRbacRule(statsName, permission)
 	rbacMarshalled, err := proto.MarshalAnyDeterministic(rbacRule)
 	if err != nil {
@@ -44,12 +44,14 @@ func createRbacFilter(statsName string, permission *core_mesh.TrafficPermissionR
 	}, nil
 }
 
-func createRbacRule(statsName string, permission *core_mesh.TrafficPermissionResource) *rbac.RBAC {
+func createRbacRule(statsName string, permission []*core_mesh.TrafficPermissionResource) *rbac.RBAC {
 	policies := make(map[string]*rbac_config.Policy)
 	// We only create policy if Traffic Permission is selected. Otherwise we still need to build RBAC filter
 	// to restrict all the traffic coming to the dataplane.
-	if permission != nil {
-		policies[permission.GetMeta().GetName()] = createPolicy(permission)
+	for _, p := range permission {
+		if p != nil {
+			policies[p.GetMeta().GetName()] = createPolicy(p)
+		}
 	}
 
 	return &rbac.RBAC{

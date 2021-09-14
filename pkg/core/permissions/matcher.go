@@ -41,11 +41,13 @@ func BuildTrafficPermissionMap(
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
-	policyMap := policy.SelectInboundConnectionPolicies(dataplane, inbounds, policies)
+	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies)
 
 	result := core_xds.TrafficPermissionMap{}
-	for inbound, connectionPolicy := range policyMap {
-		result[inbound] = connectionPolicy.(*core_mesh.TrafficPermissionResource)
+	for inbound, connectionPolicies := range policyMap {
+		for _, connectionPolicy := range connectionPolicies {
+			result[inbound] = append(result[inbound], connectionPolicy.(*core_mesh.TrafficPermissionResource))
+		}
 	}
 	return result, nil
 }

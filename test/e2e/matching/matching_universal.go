@@ -100,4 +100,53 @@ conf:
 			return strings.Contains(stdout, "HTTP/1.1 402 Payment Required")
 		}, "10s", "100ms").Should(BeTrue())
 	})
+
+	It("should apply both traffic permissions with the same destination proxy", func() {
+		Expect(YamlUniversal(`
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin`)(universal)).To(Succeed())
+
+		Expect(YamlUniversal(`
+type: TrafficPermission
+name: allow-all-traffic
+mesh: default
+sources:
+  - match:
+      kuma.io/service: demo-client-1
+destinations:
+  - match:
+      kuma.io/service: test-server`)(universal)).To(Succeed())
+
+		Expect(YamlUniversal(`
+type: TrafficPermission
+name: allow-all-traffic
+mesh: default
+sources:
+  - match:
+      kuma.io/service: demo-client-2
+destinations:
+  - match:
+      kuma.io/service: test-server`)(universal)).To(Succeed())
+
+		Eventually(func() bool {
+			stdout, _, err := universal.Exec("", "", "demo-client-1", "curl", "-v", "test-server.mesh")
+			if err != nil {
+				return false
+			}
+			return strings.Contains(stdout, "HTTP/1.1 200 OK")
+		}, "10s", "100ms").Should(BeTrue())
+
+		Eventually(func() bool {
+			stdout, _, err := universal.Exec("", "", "demo-client-2", "curl", "-v", "test-server.mesh")
+			if err != nil {
+				return false
+			}
+			return strings.Contains(stdout, "HTTP/1.1 200 OK")
+		}, "10s", "100ms").Should(BeTrue())
+	})
 }

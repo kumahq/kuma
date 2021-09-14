@@ -85,7 +85,7 @@ var _ = Describe("Reconcile", func() {
 							DataplanePort:         80,
 							WorkloadIP:            "127.0.0.1",
 							WorkloadPort:          8080,
-						}: &core_mesh.TrafficPermissionResource{
+						}: []*core_mesh.TrafficPermissionResource{{
 							Meta: &test_model.ResourceMeta{
 								Name: "tp-1",
 								Mesh: "default",
@@ -109,7 +109,7 @@ var _ = Describe("Reconcile", func() {
 								},
 							},
 						},
-					},
+						}},
 				},
 				Metadata: &model.DataplaneMetadata{},
 			}
