@@ -6,6 +6,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -47,13 +48,35 @@ var _ = Describe("Gateway Gateway Route", func() {
 		Expect(StoreNamedFixture(rt, "gateway-default.yaml")).To(Succeed())
 
 		dataplanes = &DataplaneGenerator{Manager: rt.ResourceManager()}
+
+		// TODO(jpeach) dataplane resources won't be used in the
+		// tests until the GatewayRoute generator starts generating
+		// endpoints.
+		dataplanes.Generate("echo-service")
 	})
 
-	It("should expand route hostnames into virtual hosts", func() {
-		dataplanes.Generate("echo-service") // TODO(jpeach) not used yet
+	DescribeTable("generate matching resources",
+		func(goldenFileName string, fixtureResources ...string) {
+			// given
+			for _, resource := range fixtureResources {
+				Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+			}
 
-		// Given the default gateway has a wildcard listener.
-		Expect(StoreInlineFixture(rt, []byte(`
+			// when
+			snap, err := Do()
+			Expect(err).To(Succeed())
+
+			// then
+			Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
+				To(matchers.MatchGoldenYAML(path.Join("testdata", goldenFileName)))
+
+		},
+		// When we have a route with multiple hostnames that is
+		// attached to a listener with no hostname (i.e. a wildcard),
+		// we ought to generate distinct Envoy virtualhost entries
+		// for each hostname
+		Entry("should expand route hostnames into virtual hosts",
+			"01-gateway-route.yaml", `
 type: Gateway
 mesh: default
 name: edge-gateway
@@ -66,13 +89,7 @@ conf:
     protocol: HTTP
     tags:
       port: http/8080
-`))).To(Succeed())
-
-		// When we have a route with multiple hostnames that is
-		// attached to a listener with no hostname (i.e. a wildcard),
-		// we ought to generate distinct Envoy virtualhost entries
-		// for each hostname
-		Expect(StoreInlineFixture(rt, []byte(`
+`, `
 type: GatewayRoute
 mesh: default
 name: echo-service
@@ -93,22 +110,14 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
-`))).To(Succeed())
+`,
+		),
 
-		// when
-		snap, err := Do()
-		Expect(err).To(Succeed())
-
-		// then
-		Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
-			To(matchers.MatchGoldenYAML(path.Join("testdata", "01-gateway-route.yaml")))
-	})
-
-	It("should create a wildcard virtual host", func() {
-		dataplanes.Generate("echo-service") // TODO(jpeach) not used yet
-
-		// Given the default gateway has a wildcard listener.
-		Expect(StoreInlineFixture(rt, []byte(`
+		// Attaching a wildcard route (i.e. configured without
+		// any hostnames) to a wildcard Gateway listener should
+		// generate a wildcard virtual host.
+		Entry("should create a wildcard virtual host",
+			"02-gateway-route.yaml", `
 type: Gateway
 mesh: default
 name: edge-gateway
@@ -121,10 +130,7 @@ conf:
     protocol: HTTP
     tags:
       port: http/8080
-`))).To(Succeed())
-
-		// Given a route with no hostnames.
-		Expect(StoreInlineFixture(rt, []byte(`
+`, `
 type: GatewayRoute
 mesh: default
 name: echo-service
@@ -141,10 +147,7 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
-`))).To(Succeed())
-
-		// Given a route with hostnames.
-		Expect(StoreInlineFixture(rt, []byte(`
+`, `
 type: GatewayRoute
 mesh: default
 name: echo-service-extra
@@ -163,22 +166,18 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
-`))).To(Succeed())
+`,
+		),
 
-		// when
-		snap, err := Do()
-		Expect(err).To(Succeed())
-
-		// then
-		Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
-			To(matchers.MatchGoldenYAML(path.Join("testdata", "02-gateway-route.yaml")))
-	})
-
-	It("should match route hostnames on the listener", func() {
-		dataplanes.Generate("echo-service") // TODO(jpeach) not used yet
-
-		// Given a route with matching hostnames.
-		Expect(StoreInlineFixture(rt, []byte(`
+		// Given a route with matching hostnames and a route with
+		// non-matching hostnames, only the route with matching
+		// hostnames should be configured on the Gateway.
+		//
+		// TODO(jpeach) This test won't test anything until we
+		// implement route generation, because neither of the two
+		// GatewayRoute fixtures generate anything at all
+		Entry("should match route hostnames on the listener",
+			"03-gateway-route.yaml", `
 type: GatewayRoute
 mesh: default
 name: echo-service
@@ -197,10 +196,7 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
-`))).To(Succeed())
-
-		// Given a route with non-matching hostnames.
-		Expect(StoreInlineFixture(rt, []byte(`
+`, `
 type: GatewayRoute
 mesh: default
 name: echo-service-2
@@ -219,19 +215,8 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
-`))).To(Succeed())
-
-		// TODO(jpeach) This test won't test anything until we
-		// implement route generation, because neither of the two
-		// GatewayRoute fixtures generate anything at all
-
-		// when
-		snap, err := Do()
-		Expect(err).To(Succeed())
-
-		// then
-		Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
-			To(matchers.MatchGoldenYAML(path.Join("testdata", "03-gateway-route.yaml")))
-	})
+`,
+		),
+	)
 
 })

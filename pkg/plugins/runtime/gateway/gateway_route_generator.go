@@ -9,7 +9,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-func selectGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.GatewayRouteResource) bool) []*core_mesh.GatewayRouteResource {
+func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.GatewayRouteResource) bool) []*core_mesh.GatewayRouteResource {
 	routes := make([]*core_mesh.GatewayRouteResource, 0, len(in))
 
 	for _, r := range in {
@@ -28,17 +28,11 @@ type GatewayRouteGenerator struct {
 }
 
 func (*GatewayRouteGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Protocol) bool {
-	switch p {
-	case mesh_proto.Gateway_Listener_HTTP,
-		mesh_proto.Gateway_Listener_HTTPS:
-		return true
-	default:
-		return false
-	}
+	return p == mesh_proto.Gateway_Listener_HTTP || p == mesh_proto.Gateway_Listener_HTTPS
 }
 
 func (*GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
-	gatewayRoutes := selectGatewayRoutes(info.Host.Routes, func(route *core_mesh.GatewayRouteResource) bool {
+	gatewayRoutes := filterGatewayRoutes(info.Host.Routes, func(route *core_mesh.GatewayRouteResource) bool {
 		// Wildcard virtual host accepts all routes.
 		if info.Host.Hostname == WildcardHostname {
 			return true
