@@ -176,17 +176,17 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, token string, builtindns bool) error {
+func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, token string, builtindns bool, concurrency int) error {
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, false)
+	app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, false, concurrency)
 	return app.dpApp.Start()
 }
 
 func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, name, "", ip, dpyaml, builtindns, true)
+	app.CreateDP(token, cpAddress, name, "", ip, dpyaml, builtindns, true, 0)
 	return app.dpApp.Start()
 }
 
@@ -245,7 +245,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		dataplaneResource = opts.appYaml
 	}
 
-	err = c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns)
+	err = c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns, opts.concurrency)
 	if err != nil {
 		return err
 	}

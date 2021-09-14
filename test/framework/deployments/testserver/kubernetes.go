@@ -42,6 +42,19 @@ func (k *k8SDeployment) service() *corev1.Service {
 	}
 }
 
+func (k *k8SDeployment) serviceAccount() *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceAccount",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      k.opts.ServiceAccount,
+			Namespace: k.opts.Namespace,
+		},
+	}
+}
+
 func (k *k8SDeployment) deployment() *appsv1.Deployment {
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -90,13 +103,27 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 			Annotations: map[string]string{"kuma.io/mesh": k.opts.Mesh},
 		},
 		Spec: corev1.PodSpec{
+			ServiceAccountName: k.opts.ServiceAccount,
 			Containers: []corev1.Container{
 				{
 					Name:            k.Name(),
 					ImagePullPolicy: "IfNotPresent",
 					ReadinessProbe: &corev1.Probe{
 						Handler: corev1.Handler{
-							HTTPGet: &corev1.HTTPGetAction{Path: "/", Port: intstr.FromInt(80)},
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: `/probes?type=readiness`,
+								Port: intstr.FromInt(80),
+							},
+						},
+						InitialDelaySeconds: 3,
+						PeriodSeconds:       3,
+					},
+					LivenessProbe: &corev1.Probe{
+						Handler: corev1.Handler{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path: `/probes?type=liveness`,
+								Port: intstr.FromInt(80),
+							},
 						},
 						InitialDelaySeconds: 3,
 						PeriodSeconds:       3,
@@ -106,7 +133,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 						{ContainerPort: 80},
 					},
 					Command: []string{"test-server"},
-					Args:    append([]string{"echo", "--port", "80"}, k.opts.Args...),
+					Args:    append([]string{"echo", "--port", "80", "--probes"}, k.opts.Args...),
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
 							"cpu":    resource.MustParse("500m"),
@@ -128,20 +155,22 @@ func meta(namespace string, name string) metav1.ObjectMeta {
 }
 
 func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
-	var deplYaml framework.InstallFunc
-	if k.opts.WithStatefulSet {
-		deplYaml = framework.YamlK8sObject(k.statefulSet())
-	} else {
-		deplYaml = framework.YamlK8sObject(k.deployment())
+	var funcs []framework.InstallFunc
+	if k.opts.ServiceAccount != "" {
+		funcs = append(funcs, framework.YamlK8sObject(k.serviceAccount()))
 	}
-	fn := framework.Combine(
+	if k.opts.WithStatefulSet {
+		funcs = append(funcs, framework.YamlK8sObject(k.statefulSet()))
+	} else {
+		funcs = append(funcs, framework.YamlK8sObject(k.deployment()))
+	}
+	funcs = append(funcs,
 		framework.YamlK8sObject(k.service()),
-		deplYaml,
 		framework.WaitService(k.opts.Namespace, k.Name()),
 		framework.WaitNumPods(1, k.Name()),
 		framework.WaitPodsAvailable(k.opts.Namespace, k.Name()),
 	)
-	return fn(cluster)
+	return framework.Combine(funcs...)(cluster)
 }
 
 func (k *k8SDeployment) Delete(cluster framework.Cluster) error {

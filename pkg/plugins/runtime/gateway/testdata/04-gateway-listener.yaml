@@ -1,64 +1,41 @@
-{
-  "Resources": {
-    "logging-gateway:HTTP:8080": {
-      "name": "logging-gateway:HTTP:8080",
-      "address": {
-        "socketAddress": {
-          "address": "192.168.1.1",
-          "portValue": 8080
-        }
-      },
-      "filterChains": [
-        {
-          "filters": [
-            {
-              "name": "envoy.filters.network.http_connection_manager",
-              "typedConfig": {
-                "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-                "statPrefix": "gateway-default",
-                "rds": {
-                  "configSource": {
-                    "ads": {},
-                    "resourceApiVersion": "V3"
-                  },
-                  "routeConfigName": "default-route"
-                },
-                "httpFilters": [
-                  {
-                    "name": "envoy.filters.http.router"
-                  }
-                ],
-                "commonHttpProtocolOptions": {
-                  "idleTimeout": "300s",
-                  "headersWithUnderscoresAction": "REJECT_REQUEST"
-                },
-                "http2ProtocolOptions": {
-                  "maxConcurrentStreams": 100,
-                  "initialStreamWindowSize": 65536,
-                  "initialConnectionWindowSize": 1048576,
-                  "allowConnect": true
-                },
-                "serverName": "Kuma Gateway",
-                "streamIdleTimeout": "5s",
-                "requestHeadersTimeout": "0.500s",
-                "normalizePath": true,
-                "mergeSlashes": true
-              }
-            }
-          ]
-        }
-      ],
-      "perConnectionBufferLimitBytes": 32768,
-      "listenerFilters": [
-        {
-          "name": "envoy.filters.listener.tls_inspector",
-          "typedConfig": {
-            "@type": "type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector"
-          }
-        }
-      ],
-      "trafficDirection": "INBOUND",
-      "reusePort": true
-    }
-  }
-}
+Resources:
+  logging-gateway:HTTP:8080:
+    address:
+      socketAddress:
+        address: 192.168.1.1
+        portValue: 8080
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            headersWithUnderscoresAction: REJECT_REQUEST
+            idleTimeout: 300s
+          http2ProtocolOptions:
+            allowConnect: true
+            initialConnectionWindowSize: 1048576
+            initialStreamWindowSize: 65536
+            maxConcurrentStreams: 100
+          httpFilters:
+          - name: envoy.filters.http.router
+          mergeSlashes: true
+          normalizePath: true
+          rds:
+            configSource:
+              ads: {}
+              resourceApiVersion: V3
+            routeConfigName: logging-gateway:HTTP:8080
+          requestHeadersTimeout: 0.500s
+          serverName: Kuma Gateway
+          statPrefix: gateway-default
+          streamIdleTimeout: 5s
+          stripAnyHostPort: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: logging-gateway:HTTP:8080
+    perConnectionBufferLimitBytes: 32768
+    reusePort: true
+    trafficDirection: INBOUND

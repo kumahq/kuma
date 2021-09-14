@@ -13,6 +13,7 @@ dynamicResources:
       initialMetadata:
       - key: authorization
         value: token
+    setNodeOnFirstMessageOnly: true
     transportApiVersion: V3
   cdsConfig:
     ads: {}

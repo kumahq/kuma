@@ -58,7 +58,7 @@ func Setup(rt core_runtime.Runtime) error {
 			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
 		)
 		go func() {
-			if err := sink.Start(session.Done()); err != nil {
+			if err := sink.Receive(); err != nil {
 				log.Error(err, "KDSSink finished with an error")
 			}
 		}()
@@ -72,7 +72,7 @@ func Setup(rt core_runtime.Runtime) error {
 		rt.Metrics(),
 		rt.KDSContext().ZoneClientCtx,
 	)
-	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("mux-client"), muxClient))
+	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("kds-mux-client"), muxClient))
 }
 
 func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory) *kds_client.Callbacks {

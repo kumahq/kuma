@@ -11,6 +11,7 @@ type DeploymentOpts struct {
 	Namespace       string
 	Mesh            string
 	WithStatefulSet bool
+	ServiceAccount  string
 	Args            []string
 	Replicas        int32
 }
@@ -54,6 +55,12 @@ func WithReplicas(n int32) DeploymentOptsFn {
 func WithStatefulSet(apply bool) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.WithStatefulSet = apply
+	}
+}
+
+func WithServiceAccount(serviceAccountName string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.ServiceAccount = serviceAccountName
 	}
 }
 

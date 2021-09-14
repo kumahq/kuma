@@ -370,7 +370,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	return nil
 }
 
-func (s *UniversalApp) CreateDP(token, cpAddress, name, mesh, ip, dpyaml string, builtindns, ingress bool) {
+func (s *UniversalApp) CreateDP(token, cpAddress, name, mesh, ip, dpyaml string, builtindns, ingress bool, concurrency int) {
 	// create the token file on the app container
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + name}).Run()
 	if err != nil {
@@ -399,6 +399,10 @@ func (s *UniversalApp) CreateDP(token, cpAddress, name, mesh, ip, dpyaml string,
 		args = append(args,
 			"--name="+name,
 			"--mesh="+mesh)
+	}
+
+	if concurrency > 0 {
+		args = append(args, "--concurrency", strconv.Itoa(concurrency))
 	}
 
 	if builtindns {

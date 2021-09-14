@@ -145,7 +145,7 @@ var _ = Describe("run", func() {
 			// and
 			actualArgs := strings.Split(string(cmdline), "\n")
 			Expect(actualArgs[0]).To(Equal("--version"))
-			Expect(actualArgs[1]).To(Equal("-c"))
+			Expect(actualArgs[1]).To(Equal("--config-path"))
 			actualConfigFile := actualArgs[2]
 			Expect(actualConfigFile).To(BeARegularFile())
 

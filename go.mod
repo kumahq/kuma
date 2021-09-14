@@ -34,12 +34,12 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/client_model v0.2.0
-	github.com/prometheus/common v0.29.0
+	github.com/prometheus/common v0.30.0
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
 	github.com/sethvargo/go-retry v0.1.0
 	github.com/slok/go-http-metrics v0.9.0
 	github.com/soheilhy/cmux v0.1.5
-	github.com/spf13/cobra v1.1.3
+	github.com/spf13/cobra v1.2.1
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v0.12.3
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
@@ -67,3 +67,18 @@ replace (
 	github.com/kumahq/kuma/pkg/transparentproxy/istio => ./pkg/transparentproxy/istio
 	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
 )
+
+// The following replacement refers to the kuma-release-1.3 branch.
+//
+// There are a few Go module traps to be aware of when dealing with
+// this replacement:
+//
+//	https://github.com/golang/go/issues/32955
+//	https://github.com/golang/go/issues/45413
+//
+// To force Go tooling to update the Git hash of the branch you need to
+// work around the module caching system by doing this:
+//
+//	$ go mod edit -replace github.com/envoyproxy/go-control-plane=github.com/kumahq/go-control-plane@kuma-release-1.3
+//	$ GOPRIVATE=github.com/kumahq/go-control-plane go mod tidy
+replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.9.9-0.20210914001841-ec3541a22836

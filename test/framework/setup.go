@@ -144,13 +144,51 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 			return err
 		}
 		for _, p := range pods {
-			err := k8s.WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), DefaultRetries, DefaultTimeout)
+			err := WaitUntilPodReadyE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), DefaultRetries, DefaultTimeout)
 			if err != nil {
 				return err
 			}
 		}
 		return nil
 	}
+}
+
+// WaitUntilPodReadyE waits until all of the containers within the pod are ready, retrying the check for the specified amount of times, sleeping
+// for the provided duration between each try.
+func WaitUntilPodReadyE(t testing.TestingT, options *k8s.KubectlOptions, podName string, retries int, sleepBetweenRetries time.Duration) error {
+	statusMsg := fmt.Sprintf("Wait for pod %s to be provisioned.", podName)
+	message, err := retry.DoWithRetryE(
+		t,
+		statusMsg,
+		retries,
+		sleepBetweenRetries,
+		func() (string, error) {
+			pod, err := k8s.GetPodE(t, options, podName)
+			if err != nil {
+				return "", err
+			}
+			if !IsPodReady(pod) {
+				return "", k8s.NewPodNotAvailableError(pod)
+			}
+			return "Pod is now available", nil
+		},
+	)
+	if err != nil {
+		logger.Default.Logf(t, "Timeout waiting for Pod to be provisioned: %s", err)
+		return err
+	}
+	logger.Default.Logf(t, message)
+	return nil
+}
+
+// IsPodReady returns true if the all of the containers within the pod are ready and started
+func IsPodReady(pod *corev1.Pod) bool {
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if !containerStatus.Ready {
+			return false
+		}
+	}
+	return pod.Status.Phase == corev1.PodRunning
 }
 
 func WaitUntilPodCompleteE(t testing.TestingT, options *k8s.KubectlOptions, podName string, retries int, sleepBetweenRetries time.Duration) error {
@@ -225,30 +263,6 @@ func WaitPodsNotAvailable(namespace, app string) InstallFunc {
 			)
 		}
 		return nil
-	}
-}
-
-func IngressUniversalOldType(mesh, token string) InstallFunc {
-	return func(cluster Cluster) error {
-		uniCluster := cluster.(*UniversalCluster)
-		isipv6 := IsIPv6()
-		verbose := false
-		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, isipv6, verbose, []string{})
-		if err != nil {
-			return err
-		}
-
-		app.CreateMainApp([]string{}, []string{})
-
-		err = app.mainApp.Start()
-		if err != nil {
-			return err
-		}
-		uniCluster.apps[AppIngress] = app
-
-		publicAddress := uniCluster.apps[AppIngress].ip
-		dpyaml := fmt.Sprintf(IngressDataplaneOldType, mesh, publicAddress, kdsPort, kdsPort)
-		return uniCluster.CreateDP(app, "ingress", mesh, app.ip, dpyaml, token, false)
 	}
 }
 
