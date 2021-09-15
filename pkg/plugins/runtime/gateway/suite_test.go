@@ -2,17 +2,21 @@ package gateway_test
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"path"
 	"testing"
 
+	"github.com/Nordix/simple-ipam/pkg/ipam"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	"github.com/kumahq/kuma/pkg/core/permissions"
@@ -197,19 +201,19 @@ func StoreInlineFixture(rt runtime.Runtime, object []byte) error {
 		return err
 	}
 
-	return StoreFixture(rt, r)
+	return StoreFixture(rt.ResourceManager(), r)
 }
 
 // StoreFixture stores or updates the given resource in the runtime
 // resource manager.
-func StoreFixture(rt runtime.Runtime, r core_model.Resource) error {
+func StoreFixture(mgr manager.ResourceManager, r core_model.Resource) error {
 	key := core_model.MetaToResourceKey(r.GetMeta())
 	current, err := registry.Global().NewObject(r.Descriptor().Name)
 	if err != nil {
 		return err
 	}
 
-	return manager.Upsert(rt.ResourceManager(), key, current,
+	return manager.Upsert(mgr, key, current,
 		func(resource core_model.Resource) error {
 			return resource.SetSpec(r.GetSpec())
 		},
@@ -234,6 +238,87 @@ func BuildRuntime() (runtime.Runtime, error) {
 	}
 
 	return rt, nil
+}
+
+// DataplaneGenerator generates Dataplane resources and stores them in the resource manager.
+type DataplaneGenerator struct {
+	Mesh      string
+	Addresser *ipam.IPAM
+	Manager   manager.ResourceManager
+}
+
+// Generate creates a single Dataplane resource.
+func (d *DataplaneGenerator) Generate(
+	serviceName string,
+	tags ...string,
+) {
+	d.generate(serviceName+"-0", serviceName, tags...)
+}
+
+// GenerateN creates a multiple Dataplane resources.
+func (d *DataplaneGenerator) GenerateN(
+	count int,
+	serviceName string,
+	tags ...string,
+) {
+	for i := 0; i < count; i++ {
+		d.generate(fmt.Sprintf("%s-%d", serviceName, i), serviceName, tags...)
+	}
+}
+
+func (d *DataplaneGenerator) init() {
+	if d.Mesh == "" {
+		d.Mesh = "default"
+	}
+
+	if d.Addresser == nil {
+		i, err := ipam.New("192.168.1.0/24")
+		Expect(err).To(Succeed(), "IPAM initializer failed")
+
+		d.Addresser = i
+		d.Addresser.ReserveFirstAndLast()
+	}
+}
+
+func (d *DataplaneGenerator) generate(
+	resourceName string,
+	serviceName string,
+	tags ...string,
+) {
+	d.init()
+
+	// Tags have to come in pairs.
+	Expect(len(tags) % 2).To(BeZero())
+
+	addr, err := d.Addresser.Allocate()
+	Expect(err).To(Succeed())
+
+	dp := core_mesh.NewDataplaneResource()
+	dp.SetMeta(&rest.ResourceMeta{
+		Type:             string(dp.Descriptor().Name),
+		Mesh:             "default",
+		Name:             resourceName,
+		CreationTime:     core.Now(),
+		ModificationTime: core.Now(),
+	})
+	dp.Spec.Networking = &mesh_proto.Dataplane_Networking{
+		Address: addr.String(),
+		Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+			&mesh_proto.Dataplane_Networking_Inbound{
+				Port:        20011,
+				ServicePort: 10011,
+				Tags: map[string]string{
+					mesh_proto.ServiceTag:  serviceName,
+					mesh_proto.ProtocolTag: "http",
+				},
+			}},
+	}
+
+	for i := 0; i < len(tags); i += 2 {
+		dp.Spec.GetNetworking().GetInbound()[0].Tags[tags[i]] = tags[i+1]
+	}
+
+	Expect(StoreFixture(d.Manager, dp)).To(Succeed())
 }
 
 var _ = BeforeSuite(func() {
