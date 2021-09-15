@@ -18,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-func selectTrafficRoutes(in []model.Resource) []*core_mesh.TrafficRouteResource {
+func filterTrafficRoutes(in []model.Resource) []*core_mesh.TrafficRouteResource {
 	routes := make([]*core_mesh.TrafficRouteResource, 0, len(in))
 
 	for _, r := range in {
@@ -46,8 +46,16 @@ func (*TrafficRouteGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Pro
 func (*TrafficRouteGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
 	resources := ResourceAggregator{}
 
-	trafficRoute := merge.TrafficRoute(selectTrafficRoutes(info.Host.Routes)...)
+	trafficRoute := merge.TrafficRoute(filterTrafficRoutes(info.Host.Routes)...)
 	if trafficRoute == nil {
+		return nil, nil
+	}
+
+	// TrafficRoute doesn't support wildcard hosts because there's
+	// no way to populate a virtualhost domain name from the route.
+	// We don't error here, because if we did, the default traffic
+	// route would always cause the error.
+	if info.Host.Hostname == WildcardHostname {
 		return nil, nil
 	}
 
