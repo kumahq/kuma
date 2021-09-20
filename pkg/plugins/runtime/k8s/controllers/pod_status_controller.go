@@ -114,12 +114,6 @@ func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 }
 
 func (r *PodStatusReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	for _, addToScheme := range []func(*kube_runtime.Scheme) error{kube_core.AddToScheme, mesh_k8s.AddToScheme} {
-		if err := addToScheme(mgr.GetScheme()); err != nil {
-			return err
-		}
-	}
-
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Pod{}, builder.WithPredicates(podStatusEvents)).
 		Complete(r)

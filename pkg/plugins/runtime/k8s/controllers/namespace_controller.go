@@ -17,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	k8scnicncfio "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
 	network_v1 "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
@@ -123,15 +122,6 @@ func (r *NamespaceReconciler) deleteNetworkAttachmentDefinition(log logr.Logger,
 }
 
 func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
-	}
-	if err := k8scnicncfio.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.GroupVersion)
-	}
-	if err := apiextensionsv1.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", apiextensionsv1.SchemeGroupVersion)
-	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Namespace{}, builder.WithPredicates(namespaceEvents)).
 		Complete(r)

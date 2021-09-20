@@ -60,11 +60,6 @@ func (r *ConfigMapReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 }
 
 func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	for _, addToScheme := range []func(*kube_runtime.Scheme) error{kube_core.AddToScheme, mesh_k8s.AddToScheme} {
-		if err := addToScheme(mgr.GetScheme()); err != nil {
-			return err
-		}
-	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.ConfigMap{}).
 		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, &kube_handler.EnqueueRequestsFromMapFunc{

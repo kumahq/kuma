@@ -266,11 +266,6 @@ func (r *PodReconciler) createOrUpdateIngress(pod *kube_core.Pod, services []*ku
 }
 
 func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	for _, addToScheme := range []func(*kube_runtime.Scheme) error{kube_core.AddToScheme, mesh_k8s.AddToScheme} {
-		if err := addToScheme(mgr.GetScheme()); err != nil {
-			return err
-		}
-	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Pod{}).
 		// on Service update reconcile affected Pods (all Pods in the same namespace)
