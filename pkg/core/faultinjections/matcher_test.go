@@ -86,7 +86,11 @@ var _ = Describe("Match", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(len(bestMatched)).To(Equal(len(given.expected)))
 			for key := range bestMatched {
-				Expect(bestMatched[key]).To(MatchProto(given.expected[key]))
+				elements := []interface{}{}
+				for _, expected := range given.expected[key] {
+					elements = append(elements, MatchProto(expected))
+				}
+				Expect(bestMatched[key]).To(ConsistOf(elements...))
 			}
 		},
 		Entry("1 inbound dataplane, 2 policies", testCase{
@@ -123,14 +127,16 @@ var _ = Describe("Match", func() {
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8080,
-				}: policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"service":          "*",
-							"kuma.io/protocol": "http",
+				}: {
+					policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"service":          "*",
+								"kuma.io/protocol": "http",
+							},
 						},
-					},
-				}).Spec,
+					}).Spec,
+				},
 			}}),
 		Entry("should apply policy only to the first inbound", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
@@ -167,14 +173,96 @@ var _ = Describe("Match", func() {
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8081,
-				}: policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+				}: {
+					policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"service":          "web-api",
+								"kuma.io/protocol": "http",
+							},
+						},
+					}).Spec,
+				},
+			},
+		}),
+		Entry("should select all policies matched for the inbound", testCase{
+			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
+				{
+					ServicePort: 8080,
+					Tags: map[string]string{
+						"service":          "web",
+						"version":          "0.1",
+						"region":           "eu",
+						"kuma.io/protocol": "http",
+					},
+				},
+			}),
+			policies: []*mesh.FaultInjectionResource{
+				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":          "web-api",
+							"service":          "*",
 							"kuma.io/protocol": "http",
 						},
 					},
-				}).Spec,
+				}),
+				policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service":          "web",
+							"kuma.io/protocol": "http",
+						},
+					},
+				}),
+				policyWithDestinationsFunc("fi3", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"version":          "0.1",
+							"region":           "eu",
+							"kuma.io/protocol": "http",
+						},
+					},
+				}),
+				policyWithDestinationsFunc("fi4", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"region":           "us",
+							"kuma.io/protocol": "http",
+						},
+					},
+				}),
+			},
+			expected: core_xds.FaultInjectionMap{
+				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
+					WorkloadPort: 8080,
+				}: {
+					policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"service":          "*",
+								"kuma.io/protocol": "http",
+							},
+						},
+					}).Spec,
+					policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"service":          "web",
+								"kuma.io/protocol": "http",
+							},
+						},
+					}).Spec,
+					policyWithDestinationsFunc("fi3", time.Unix(1, 0), []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"version":          "0.1",
+								"region":           "eu",
+								"kuma.io/protocol": "http",
+							},
+						},
+					}).Spec,
+				},
 			},
 		}),
 	)
