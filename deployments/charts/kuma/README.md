@@ -29,8 +29,9 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.service.name | string | `nil` | Optionally override of the Kuma Control Plane Service's name |
 | controlPlane.service.type | string | `"ClusterIP"` | Service type of the Kuma Control Plane |
 | controlPlane.service.annotations | object | `{}` | Additional annotations to put on the Kuma Control Plane |
-| controlPlane.globalZoneSyncService | object | `{"annotations":{},"port":5685,"type":"LoadBalancer"}` | URL of Global Kuma CP |
+| controlPlane.globalZoneSyncService | object | `{"annotations":{},"loadBalancerIP":null,"port":5685,"type":"LoadBalancer"}` | URL of Global Kuma CP |
 | controlPlane.globalZoneSyncService.type | string | `"LoadBalancer"` | Service type of the Global-zone sync |
+| controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
 | controlPlane.globalZoneSyncService.annotations | object | `{}` | Additional annotations to put on the Global Zone Sync Service |
 | controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether or not to skip creating the default Mesh |
@@ -64,6 +65,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | ingress.replicas | int | `1` | Number of replicas of the Ingress |
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
+| ingress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
 | ingress.annotations | object | `{}` | Additional deployment annotation |
