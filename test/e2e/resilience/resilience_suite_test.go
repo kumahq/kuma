@@ -20,6 +20,6 @@ func TestE2EResilience(t *testing.T) {
 
 var _ = Describe("Test Leader Election with Postgres", resilience.LeaderElectionPostgres)
 var _ = Describe("Test Multizone Resilience for Universal", resilience.ResilienceMultizoneUniversal)
-var _ = Describe("Test Multizone Resilience for K8s", resilience.ResilienceMultizoneK8s)
+var _ = XDescribe("Test Multizone Resilience for K8s", resilience.ResilienceMultizoneK8s)
 var _ = Describe("Test Multizone Resilience for Universal with Postgres", resilience.ResilienceMultizoneUniversalPostgres)
 var _ = Describe("Test Standalone Resilience for Universal with Postgres", resilience.ResilienceStandaloneUniversal)
