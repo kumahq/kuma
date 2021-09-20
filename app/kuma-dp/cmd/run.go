@@ -14,9 +14,9 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -31,7 +31,7 @@ var runLog = dataplaneLog.WithName("run")
 // PreRunE loads the Kuma DP config
 // PostRunE actually runs all the components with loaded config
 // To extend Kuma DP, plug your code in RunE. Use RootContext.Config and add components to RootContext.ComponentManager
-func newRunCmd(rootCtx *RootContext) *cobra.Command {
+func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cfg := rootCtx.Config
 	var tmpDir string
 	var adminPort uint32
@@ -151,7 +151,15 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				}()
 			}
 
-			shouldQuit := setupQuitChannel()
+			quit := make(chan struct{})
+			ctx := opts.SetupSignalHandler()
+			go func() {
+				<-ctx.Done()
+				runLog.Info("Kuma DP caught an exit signal")
+				if quit != nil {
+					close(quit)
+				}
+			}()
 			components := []component.Component{
 				accesslogs.NewAccessLogServer(cfg.Dataplane),
 			}
@@ -163,7 +171,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
 				Stdout:          cmd.OutOrStdout(),
 				Stderr:          cmd.OutOrStderr(),
-				Quit:            shouldQuit,
+				Quit:            quit,
 				LogLevel:        rootCtx.LogLevel,
 			}
 
@@ -175,7 +183,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 					Config: *cfg,
 					Stdout: cmd.OutOrStdout(),
 					Stderr: cmd.OutOrStderr(),
-					Quit:   shouldQuit,
+					Quit:   quit,
 				}
 
 				dnsServer, err := dnsserver.New(dnsOpts)
@@ -201,7 +209,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
-			if err := rootCtx.ComponentManager.Start(shouldQuit); err != nil {
+			if err := rootCtx.ComponentManager.Start(ctx.Done()); err != nil {
 				runLog.Error(err, "error while running Kuma DP")
 				return err
 			}
@@ -241,18 +249,4 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	return ioutil.WriteFile(filename, data, perm)
-}
-
-func setupQuitChannel() chan struct{} {
-	quit := make(chan struct{})
-	quitOnSignal := core.SetupSignalHandler()
-	go func() {
-		<-quitOnSignal
-		runLog.Info("Kuma DP caught an exit signal")
-		if quit != nil {
-			close(quit)
-		}
-	}()
-
-	return quit
 }
