@@ -69,7 +69,7 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().IntVar(&args.maxAge, "log-max-age", 30, "maximum number of days to retain old log files based on the timestamp encoded in their filename")
 
 	// sub-commands
-	cmd.AddCommand(newRunCmd())
+	cmd.AddCommand(newRunCmdWithOpts(kuma_cmd.DefaultRunCmdOpts))
 	cmd.AddCommand(newMigrateCmd())
 	cmd.AddCommand(version.NewVersionCmd())
 
