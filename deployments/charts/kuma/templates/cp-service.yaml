@@ -29,7 +29,7 @@ spec:
     - port: 5653
       name: dns-server
       protocol: UDP
-  {{- end }}
+    {{- end }}
   selector:
     app: {{ include "kuma.name" . }}-control-plane
   {{- include "kuma.selectorLabels" . | nindent 4 }}
