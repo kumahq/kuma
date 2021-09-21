@@ -36,6 +36,8 @@ linters-settings:
       alias: util_proto
     - pkg: github.com/kumahq/kuma/pkg/cmd
       alias: kuma_cmd
+    - pkg: github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s
+      alias: bootstrap_k8s
   gomodguard:
     blocked:
       modules:
