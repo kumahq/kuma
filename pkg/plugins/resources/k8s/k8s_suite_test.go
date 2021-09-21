@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 
 	// +kubebuilder:scaffold:imports
@@ -41,7 +41,7 @@ import (
 
 var k8sClient client.Client
 var testEnv *envtest.Environment
-var k8sClientScheme = runtime.NewScheme()
+var k8sClientScheme *runtime.Scheme
 
 func TestKubernetes(t *testing.T) {
 	test.RunSpecs(t, "Kubernetes Resources Suite")
@@ -60,14 +60,10 @@ var _ = BeforeSuite(test.Within(time.Minute, func() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	err = sample_v1alpha1.AddToScheme(k8sClientScheme)
-	Expect(err).NotTo(HaveOccurred())
+	k8sClientScheme, err = k8s.NewScheme()
+	Expect(err).ToNot(HaveOccurred())
 
-	err = mesh_k8s.AddToScheme(k8sClientScheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = kube_core.AddToScheme(k8sClientScheme)
-	Expect(err).NotTo(HaveOccurred())
+	Expect(sample_v1alpha1.AddToScheme(k8sClientScheme)).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 

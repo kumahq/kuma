@@ -8,10 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	kube_core "k8s.io/api/core/v1"
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 )
 
@@ -20,11 +19,10 @@ var _ = Describe("ServiceValidator", func() {
 	var decoder *kube_admission.Decoder
 
 	BeforeEach(func() {
-		scheme := kube_runtime.NewScheme()
+		scheme, err := k8s.NewScheme()
 		// expect
-		Expect(kube_core.AddToScheme(scheme)).To(Succeed())
+		Expect(err).ToNot(HaveOccurred())
 
-		var err error
 		// when
 		decoder, err = kube_admission.NewDecoder(scheme)
 		// then

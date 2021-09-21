@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -58,12 +57,6 @@ func (r *MeshDefaultsReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Res
 }
 
 func (r *MeshDefaultsReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
-	}
-	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", mesh_k8s.GroupVersion)
-	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&mesh_k8s.Mesh{}, builder.WithPredicates(onlyCreate)).
 		Complete(r)

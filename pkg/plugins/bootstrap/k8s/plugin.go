@@ -38,7 +38,10 @@ func init() {
 }
 
 func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
-	scheme := kube_runtime.NewScheme()
+	scheme, err := NewScheme()
+	if err != nil {
+		return err
+	}
 	config := kube_ctrl.GetConfigOrDie()
 	mgr, err := kube_ctrl.NewManager(
 		config,
@@ -90,10 +93,6 @@ func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runt
 	})
 	if err != nil {
 		return nil, err
-	}
-	// Add kube core scheme first, otherwise cache won't start
-	if err := kube_core.AddToScheme(scheme); err != nil {
-		return nil, errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
 	}
 
 	// We are listing secrets by our custom "type", therefore we need to add index by this field into cache
