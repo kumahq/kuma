@@ -26,7 +26,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
 	github.com/kumahq/protoc-gen-kumadoc v0.1.7
-	github.com/lib/pq v1.10.2
+	github.com/lib/pq v1.10.3
 	github.com/miekg/dns v1.1.43
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.16.0
