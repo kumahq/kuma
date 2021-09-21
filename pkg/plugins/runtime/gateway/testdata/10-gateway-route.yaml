@@ -1,7 +1,55 @@
 Clusters:
-  Resources: {}
+  Resources:
+    exact-header-match:
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: exact-header-match
+      type: EDS
+    regex-header-match:
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: regex-header-match
+      type: EDS
 Endpoints:
-  Resources: {}
+  Resources:
+    exact-header-match:
+      clusterName: exact-header-match
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.10
+                portValue: 20010
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    regex-header-match:
+      clusterName: regex-header-match
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.14
+                portValue: 20014
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
 Listeners:
   Resources:
     edge-gateway:HTTP:8080:
