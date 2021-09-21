@@ -63,8 +63,7 @@ var _ = BeforeSuite(test.Within(time.Minute, func() {
 	k8sClientScheme, err = k8s.NewScheme()
 	Expect(err).ToNot(HaveOccurred())
 
-	err = sample_v1alpha1.AddToScheme(k8sClientScheme)
-	Expect(err).NotTo(HaveOccurred())
+	Expect(sample_v1alpha1.AddToScheme(k8sClientScheme)).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 
