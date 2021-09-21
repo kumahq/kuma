@@ -180,7 +180,6 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		cancel()
-		cancel()
 		// when
 		callbacks.OnStreamClosed(streamId)
 

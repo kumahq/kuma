@@ -10,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds"
 	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/common"
 	util_log "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/util/go-kit/log"
-	"github.com/kumahq/kuma/pkg/cmd"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_promsd "github.com/kumahq/kuma/pkg/config/app/kuma-prometheus-sd"
 	util_os "github.com/kumahq/kuma/pkg/util/os"
@@ -20,7 +20,7 @@ var (
 	runLog = prometheusSdLog.WithName("run")
 )
 
-func newRunCmdWithOpts(opts cmd.RunCmdOpts) *cobra.Command {
+func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 	cfg := kuma_promsd.DefaultConfig()
 	cmd := &cobra.Command{
 		Use:   "run",

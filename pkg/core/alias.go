@@ -24,7 +24,7 @@ var (
 	SetupSignalHandler = func() context.Context {
 		ctx, cancel := context.WithCancel(context.Background())
 		c := make(chan os.Signal, 2)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
 			s := <-c
 			Log.Info("Received signal, stopping instance", "signal", s.String())

@@ -8,7 +8,7 @@ import (
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/clusterid"
-	"github.com/kumahq/kuma/pkg/cmd"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -39,7 +39,7 @@ const gracefullyShutdownDuration = 3 * time.Second
 // reasonably have enough descriptors to accept all its clients.
 const minOpenFileLimit = 4096
 
-func newRunCmdWithOpts(opts cmd.RunCmdOpts) *cobra.Command {
+func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 	args := struct {
 		configPath string
 	}{}

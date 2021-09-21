@@ -61,6 +61,7 @@ type RuntimeContext interface {
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
 	MeshValidator() core_managers.MeshValidator
+	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
 }
 
