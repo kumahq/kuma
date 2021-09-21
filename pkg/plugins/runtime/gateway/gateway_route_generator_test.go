@@ -49,10 +49,27 @@ var _ = Describe("Gateway Gateway Route", func() {
 
 		dataplanes = &DataplaneGenerator{Manager: rt.ResourceManager()}
 
-		// TODO(jpeach) dataplane resources won't be used in the
-		// tests until the GatewayRoute generator starts generating
-		// endpoints.
 		dataplanes.Generate("echo-service")
+		dataplanes.Generate("echo-mirror")
+		dataplanes.Generate("exact-header-match")
+		dataplanes.Generate("regex-header-match")
+
+		// Add dataplane resources for all the services used in the test suite.
+		for _, service := range []string{
+			"echo-exact",
+			"echo-mirror",
+			"echo-prefix",
+			"echo-regex",
+			"echo-service",
+			"exact-header-match",
+			"exact-query-match",
+			"exact-service",
+			"prefix-service",
+			"regex-header-match",
+			"regex-query-match",
+		} {
+			dataplanes.Generate(service)
+		}
 	})
 
 	DescribeTable("generate matching resources",

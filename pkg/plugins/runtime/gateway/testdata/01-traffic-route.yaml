@@ -25,7 +25,7 @@ Endpoints:
             address:
               socketAddress:
                 address: 192.168.1.1
-                portValue: 20011
+                portValue: 20001
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
@@ -37,7 +37,7 @@ Endpoints:
             address:
               socketAddress:
                 address: 192.168.1.2
-                portValue: 20011
+                portValue: 20002
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
@@ -49,7 +49,7 @@ Endpoints:
             address:
               socketAddress:
                 address: 192.168.1.3
-                portValue: 20011
+                portValue: 20003
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
@@ -61,7 +61,7 @@ Endpoints:
             address:
               socketAddress:
                 address: 192.168.1.4
-                portValue: 20011
+                portValue: 20004
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
@@ -73,7 +73,7 @@ Endpoints:
             address:
               socketAddress:
                 address: 192.168.1.5
-                portValue: 20011
+                portValue: 20005
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
