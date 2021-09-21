@@ -61,7 +61,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 		return err
 	}
 
-	secretClient, err := secretClient(b.Config().Store.Kubernetes.SystemNamespace, config, scheme, mgr.GetRESTMapper(), b.ShutdownCh())
+	secretClient, err := secretClient(b.AppCtx(), b.Config().Store.Kubernetes.SystemNamespace, config, scheme, mgr.GetRESTMapper())
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 // If we try to use regular cached client for Secrets then we will see following error: E1126 10:42:52.097662       1 reflector.go:178] pkg/mod/k8s.io/client-go@v0.18.9/tools/cache/reflector.go:125: Failed to list *v1.Secret: secrets is forbidden: User "system:serviceaccount:kuma-system:kuma-control-plane" cannot list resource "secrets" in API group "" at the cluster scope
 // We cannot specify this Namespace parameter for the main cache in ControllerManager because it affect all the resources, therefore we need separate client with cache for Secrets.
 // The alternative was to use non-cached client, but it had performance problems.
-func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runtime.Scheme, restMapper meta.RESTMapper, closeCh <-chan struct{}) (kube_client.Client, error) {
+func secretClient(appCtx context.Context, systemNamespace string, config *rest.Config, scheme *kube_runtime.Scheme, restMapper meta.RESTMapper) (kube_client.Client, error) {
 	resyncPeriod := 10 * time.Hour // default resyncPeriod in Kubernetes
 	kubeCache, err := kuma_kube_cache.New(config, cache.Options{
 		Scheme:    scheme,
@@ -107,13 +107,13 @@ func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runt
 	// According to ControllerManager code, cache needs to start before all the Runnables (our Components)
 	// So we need separate go routine to start a cache and then wait for cache
 	go func() {
-		if err := kubeCache.Start(closeCh); err != nil {
+		if err := kubeCache.Start(appCtx.Done()); err != nil {
 			// According to implementations, there is no case when error is returned. It just for the Runnable contract.
 			log.Error(err, "could not start the secret k8s cache")
 		}
 	}()
 
-	if ok := kubeCache.WaitForCacheSync(closeCh); !ok {
+	if ok := kubeCache.WaitForCacheSync(appCtx.Done()); !ok {
 		// ControllerManager ignores case when WaitForCacheSync returns false.
 		// It might be a better idea to return an error and stop the Control Plane altogether, but sticking to return error for now.
 		core.Log.Error(errors.New("could not sync secret cache"), "failed to wait for cache")
