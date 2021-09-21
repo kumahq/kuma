@@ -10,43 +10,34 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 
-	kumav1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	"github.com/kumahq/kuma/pkg/tls"
 )
 
 type InstallFunc func(cluster Cluster) error
 
-var K8sScheme = runtime.NewScheme()
+var Serializer *k8sjson.Serializer
 
 func init() {
-	err := corev1.AddToScheme(K8sScheme)
+	K8sScheme, err := bootstrap_k8s.NewScheme()
 	if err != nil {
 		panic(err)
 	}
-	err = appsv1.AddToScheme(K8sScheme)
-	if err != nil {
-		panic(err)
-	}
-	err = kumav1alpha1.AddToScheme(K8sScheme)
-	if err != nil {
-		panic(err)
-	}
-}
 
-var Serializer = k8sjson.NewSerializerWithOptions(
-	k8sjson.DefaultMetaFactory, K8sScheme, K8sScheme,
-	k8sjson.SerializerOptions{
-		Yaml:   true,
-		Pretty: true,
-		Strict: true,
-	},
-)
+	Serializer = k8sjson.NewSerializerWithOptions(
+		k8sjson.DefaultMetaFactory, K8sScheme, K8sScheme,
+		k8sjson.SerializerOptions{
+			Yaml:   true,
+			Pretty: true,
+			Strict: true,
+		},
+	)
+}
 
 func YamlK8sObject(obj runtime.Object) InstallFunc {
 	return func(cluster Cluster) error {
