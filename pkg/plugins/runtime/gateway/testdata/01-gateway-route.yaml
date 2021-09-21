@@ -1,7 +1,31 @@
 Clusters:
-  Resources: {}
+  Resources:
+    echo-service:
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service
+      type: EDS
 Endpoints:
-  Resources: {}
+  Resources:
+    echo-service:
+      clusterName: echo-service
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.9
+                portValue: 20009
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
 Listeners:
   Resources:
     edge-gateway:HTTP:8080:

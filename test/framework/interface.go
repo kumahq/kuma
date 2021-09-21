@@ -57,9 +57,28 @@ type deployOptions struct {
 	dpVersion       string
 	kumactlFlow     bool
 	concurrency     int
+	omitDataplane   bool
+	verbose         *bool
 }
 
 type DeployOptionsFunc func(*deployOptions)
+
+// WithoutDataplane suppresses the automatic configuration of kuma-dp
+// in the application container. This is useful when the test requires a
+// container that is not bound to the mesh.
+func WithoutDataplane() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.omitDataplane = true
+	}
+}
+
+// WithVerbose enables verbose mode on the deployment.
+func WithVerbose() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		enabled := true
+		o.verbose = &enabled
+	}
+}
 
 func WithPostgres(envVars map[string]string) DeployOptionsFunc {
 	return func(o *deployOptions) {
@@ -340,6 +359,6 @@ type ControlPlane interface {
 	GetMetrics() (string, error)
 	GetKDSServerAddress() string
 	GetGlobaStatusAPI() string
-	GenerateDpToken(mesh, appname string) (string, error)
+	GenerateDpToken(mesh, serviceName string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)
 }
