@@ -151,13 +151,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				}()
 			}
 
-			quit := make(chan struct{})
+			shouldQuit := make(chan struct{})
 			ctx := opts.SetupSignalHandler()
 			go func() {
 				<-ctx.Done()
 				runLog.Info("Kuma DP caught an exit signal")
-				if quit != nil {
-					close(quit)
+				if shouldQuit != nil {
+					close(shouldQuit)
 				}
 			}()
 			components := []component.Component{
@@ -171,7 +171,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
 				Stdout:          cmd.OutOrStdout(),
 				Stderr:          cmd.OutOrStderr(),
-				Quit:            quit,
+				Quit:            shouldQuit,
 				LogLevel:        rootCtx.LogLevel,
 			}
 
@@ -183,7 +183,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					Config: *cfg,
 					Stdout: cmd.OutOrStdout(),
 					Stderr: cmd.OutOrStderr(),
-					Quit:   quit,
+					Quit:   shouldQuit,
 				}
 
 				dnsServer, err := dnsserver.New(dnsOpts)
@@ -209,7 +209,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
-			if err := rootCtx.ComponentManager.Start(ctx.Done()); err != nil {
+			if err := rootCtx.ComponentManager.Start(shouldQuit); err != nil {
 				runLog.Error(err, "error while running Kuma DP")
 				return err
 			}
