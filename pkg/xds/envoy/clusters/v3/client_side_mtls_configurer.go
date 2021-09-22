@@ -14,9 +14,9 @@ import (
 )
 
 type ClientSideMTLSConfigurer struct {
-	Ctx           xds_context.Context
-	ClientService string
-	Tags          []envoy.Tags
+	Ctx             xds_context.Context
+	UpstreamService string
+	Tags            []envoy.Tags
 }
 
 var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
@@ -61,7 +61,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 }
 
 func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_core.TransportSocket, error) {
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.Ctx, c.ClientService, sni)
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.Ctx, c.UpstreamService, sni)
 	if err != nil {
 		return nil, err
 	}
