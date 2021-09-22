@@ -22,12 +22,12 @@ func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBui
 	})
 }
 
-func ClientSideMTLS(ctx xds_context.Context, clientService string, tags []envoy.Tags) ClusterBuilderOpt {
+func ClientSideMTLS(ctx xds_context.Context, upstreamService string, tags []envoy.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
-			Ctx:           ctx,
-			ClientService: clientService,
-			Tags:          tags,
+			Ctx:             ctx,
+			UpstreamService: upstreamService,
+			Tags:            tags,
 		})
 	})
 }
@@ -36,9 +36,9 @@ func ClientSideMTLS(ctx xds_context.Context, clientService string, tags []envoy.
 func UnknownDestinationClientSideMTLS(ctx xds_context.Context) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
-			Ctx:           ctx,
-			ClientService: "*",
-			Tags:          nil,
+			Ctx:             ctx,
+			UpstreamService: "*",
+			Tags:            nil,
 		})
 	})
 }
