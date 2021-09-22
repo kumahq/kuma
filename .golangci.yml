@@ -34,13 +34,10 @@ linters-settings:
       alias: mesh_proto
     - pkg: github.com/kumahq/kuma/pkg/util/proto
       alias: util_proto
-<<<<<<< HEAD
-=======
     - pkg: github.com/kumahq/kuma/pkg/cmd
       alias: kuma_cmd
     - pkg: github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s
       alias: bootstrap_k8s
->>>>>>> 09949cff (chore(*) migrate from closed channel to context for app lifetime (#2804))
   gomodguard:
     blocked:
       modules:
