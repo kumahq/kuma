@@ -15,7 +15,7 @@ func Setup(rt runtime.Runtime) error {
 		MinResyncTimeout:   rt.Config().Metrics.Mesh.MinResyncTimeout,
 		MaxResyncTimeout:   rt.Config().Metrics.Mesh.MaxResyncTimeout,
 		RateLimiterFactory: func() *rate.Limiter {
-			return rate.NewLimiter(rate.Every(rt.Config().Metrics.Mesh.MinResyncTimeout), 50)
+			return rate.NewLimiter(rate.Every(rt.Config().Metrics.Mesh.MinResyncTimeout), 0)
 		},
 		Registry: registry.Global(),
 	})
