@@ -451,7 +451,7 @@ networking:
 			WithName(name),
 			WithMesh(mesh),
 			WithAppname("test-server"),
-			WithTransparentProxy(true), // test server is always ment to use with transparent proxy
+			WithTransparentProxy(true), // test server is always meant to be used with transparent proxy
 			WithToken(token),
 			WithArgs(args),
 			WithYaml(appYaml),

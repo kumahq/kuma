@@ -7,6 +7,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
+const Enabled = true
+
 // NOTE: this is non-deterministic in testing. Some tests will import
 // the plugin and trigger registration and some won't. This means that
 // whether the Gateway types are registered in tests depends on which

@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -55,4 +56,12 @@ func (r *ResourceAggregator) Add(set *xds.ResourceSet, err error) error {
 
 	r.ResourceSet.AddSet(set)
 	return nil
+}
+
+func NewResource(name string, resource proto.Message) *xds.Resource {
+	return &xds.Resource{
+		Name:     name,
+		Origin:   OriginGateway,
+		Resource: resource,
+	}
 }
