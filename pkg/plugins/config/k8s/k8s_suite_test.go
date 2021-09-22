@@ -6,17 +6,17 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	"github.com/kumahq/kuma/pkg/test"
 )
 
 var k8sClient client.Client
 var testEnv *envtest.Environment
-var k8sClientScheme = runtime.NewScheme()
+var k8sClientScheme *runtime.Scheme
 
 func TestKubernetes(t *testing.T) {
 	test.RunSpecs(t, "Kubernetes Config Suite")
@@ -30,7 +30,7 @@ var _ = BeforeSuite(test.Within(time.Minute, func() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	err = kube_core.AddToScheme(k8sClientScheme)
+	k8sClientScheme, err = k8s.NewScheme()
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
