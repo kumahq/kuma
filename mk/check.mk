@@ -14,11 +14,8 @@ fmt/proto: ## Dev: Run clang-format on .proto files
 .PHONY: tidy
 tidy:
 	@TOP=$(shell pwd) && \
-	for m in . ./api/ ; do \
-		cd $$m ; \
-		rm go.sum ; \
-		go mod tidy ; \
-		cd $$TOP; \
+	for m in $$(find . -name go.mod) ; do \
+		( cd $$(dirname $$m) && go mod tidy ) ; \
 	done
 
 .PHONY: golangci-lint
