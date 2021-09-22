@@ -66,10 +66,6 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 				return err
 			}
 
-			if err := root.CheckServerVersionCompatibility(); err != nil {
-				cmd.PrintErrln(err)
-			}
-
 			return nil
 		},
 	}
