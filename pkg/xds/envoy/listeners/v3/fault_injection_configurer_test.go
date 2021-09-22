@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("FaultInjectionConfigurer", func() {
 	type testCase struct {
-		input    *mesh_proto.FaultInjection
+		input    []*mesh_proto.FaultInjection
 		expected string
 	}
 	DescribeTable("should generate proper Envoy config",
@@ -23,7 +23,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 			// when
 			filterChain, err := NewFilterChainBuilder(envoy.APIV3).
 				Configure(HttpConnectionManager("stats", false)).
-				Configure(FaultInjection(given.input)).
+				Configure(FaultInjection(given.input...)).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -34,7 +34,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic input", testCase{
-			input: &mesh_proto.FaultInjection{
+			input: []*mesh_proto.FaultInjection{{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
@@ -49,7 +49,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 						Value:      util_proto.Duration(time.Second * 5),
 					},
 				},
-			},
+			}},
 
 			expected: `
             filters:
@@ -73,7 +73,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                 statPrefix: stats`,
 		}),
 		Entry("2 policy selectors", testCase{
-			input: &mesh_proto.FaultInjection{
+			input: []*mesh_proto.FaultInjection{{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
@@ -94,8 +94,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 						Value:      util_proto.Duration(time.Second * 5),
 					},
 				},
-			},
-
+			}},
 			expected: `
             filters:
             - name: envoy.filters.network.http_connection_manager
@@ -116,6 +115,103 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                         regex: '(.*&tag1=[^&]*value1m1[,&].*&tag2=[^&]*value2m1[,&].*|.*&tag1=[^&]*value1m2[,&].*&tag2=[^&]*value2m2[,&].*)'
                 - name: envoy.filters.http.router
                 statPrefix: stats`,
+		}),
+		Entry("should preserve the order of passed policies", testCase{
+			input: []*mesh_proto.FaultInjection{
+				{
+					Sources: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"tag1": "value1",
+								"tag2": "value2",
+								"tag3": "value3",
+							},
+						},
+					},
+					Conf: &mesh_proto.FaultInjection_Conf{
+						Delay: &mesh_proto.FaultInjection_Conf_Delay{
+							Percentage: util_proto.Double(100),
+							Value:      util_proto.Duration(time.Second * 15),
+						},
+					},
+				},
+				{
+					Sources: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"tag1": "value1",
+								"tag2": "value2",
+							},
+						},
+					},
+					Conf: &mesh_proto.FaultInjection_Conf{
+						Delay: &mesh_proto.FaultInjection_Conf_Delay{
+							Percentage: util_proto.Double(100),
+							Value:      util_proto.Duration(time.Second * 10),
+						},
+					},
+				},
+				{
+					Sources: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"tag1": "*",
+								"tag2": "*",
+							},
+						},
+					},
+					Conf: &mesh_proto.FaultInjection_Conf{
+						Delay: &mesh_proto.FaultInjection_Conf_Delay{
+							Percentage: util_proto.Double(100),
+							Value:      util_proto.Duration(time.Second * 5),
+						},
+					},
+				},
+			},
+			expected: `
+            filters:
+             - name: envoy.filters.network.http_connection_manager
+               typedConfig:
+                 '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                 httpFilters:
+                 - name: envoy.filters.http.fault
+                   typedConfig:
+                     '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+                     delay:
+                       fixedDelay: 15s
+                       percentage:
+                         numerator: 100
+                     headers:
+                     - name: x-kuma-tags
+                       safeRegexMatch:
+                         googleRe2: {}
+                         regex: .*&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*&tag3=[^&]*value3[,&].*
+                 - name: envoy.filters.http.fault
+                   typedConfig:
+                     '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+                     delay:
+                       fixedDelay: 10s
+                       percentage:
+                         numerator: 100
+                     headers:
+                     - name: x-kuma-tags
+                       safeRegexMatch:
+                         googleRe2: {}
+                         regex: .*&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*
+                 - name: envoy.filters.http.fault
+                   typedConfig:
+                     '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+                     delay:
+                       fixedDelay: 5s
+                       percentage:
+                         numerator: 100
+                     headers:
+                     - name: x-kuma-tags
+                       safeRegexMatch:
+                         googleRe2: {}
+                         regex: .*&tag1=.*&tag2=.*
+                 - name: envoy.filters.http.router
+                 statPrefix: stats`,
 		}),
 	)
 })

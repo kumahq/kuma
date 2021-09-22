@@ -112,7 +112,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 							DataplanePort:         80,
 							WorkloadIP:            "127.0.0.1",
 							WorkloadPort:          8080,
-						}: &mesh_proto.FaultInjection{
+						}: []*mesh_proto.FaultInjection{{
 							Sources: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
@@ -133,7 +133,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 									Value:      util_proto.Duration(time.Second * 5),
 								},
 							},
-						},
+						}},
 					},
 					RateLimits: model.RateLimitsMap{
 						Inbound: model.InboundRateLimitsMap{

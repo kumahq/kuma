@@ -36,11 +36,13 @@ func BuildFaultInjectionMap(dataplane *core_mesh.DataplaneResource, mesh *core_m
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
-	policyMap := policy.SelectInboundConnectionPolicies(dataplane, inbounds, policies)
+	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies)
 
 	result := core_xds.FaultInjectionMap{}
-	for inbound, connectionPolicy := range policyMap {
-		result[inbound] = connectionPolicy.(*core_mesh.FaultInjectionResource).Spec
+	for inbound, connectionPolicies := range policyMap {
+		for _, connectionPolicy := range connectionPolicies {
+			result[inbound] = append(result[inbound], connectionPolicy.(*core_mesh.FaultInjectionResource).Spec)
+		}
 	}
 	return result, nil
 }
