@@ -14,8 +14,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
-	github.com/go-kit/kit v0.11.0 // indirect
-	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr v0.4.0
 	github.com/go-logr/zapr v0.1.1
 	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/golang/protobuf v1.5.2
@@ -47,7 +46,7 @@ require (
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
-	golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40
+	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.40.0
@@ -57,7 +56,7 @@ require (
 	helm.sh/helm/v3 v3.3.4
 	k8s.io/api v0.18.14
 	k8s.io/apiextensions-apiserver v0.18.14
-	k8s.io/apimachinery v0.18.14
+	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.18.14
 	k8s.io/utils v0.0.0-20210709001253-0e1f9d693477
 	sigs.k8s.io/controller-runtime v0.6.4
