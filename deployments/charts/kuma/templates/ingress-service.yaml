@@ -19,6 +19,9 @@ spec:
     - port: {{ .Values.ingress.service.port }}
       protocol: TCP
       targetPort: 10001
+    {{- if and (eq .Values.ingress.service.type "NodePort")  .Values.ingress.service.nodePort }}
+      nodePort: {{ .Values.ingress.service.nodePort }}
+    {{- end }}
   selector:
     app: kuma-ingress
   {{- include "kuma.selectorLabels" . | nindent 4 }}
