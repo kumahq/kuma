@@ -14,7 +14,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
-	github.com/go-kit/kit v0.11.0
+	github.com/go-kit/kit v0.11.0 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.1
 	github.com/golang-migrate/migrate/v4 v4.14.1
