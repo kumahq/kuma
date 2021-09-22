@@ -14,7 +14,7 @@ import (
 	"github.com/emicklei/go-restful"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/go-logr/logr/testing"
+	"github.com/go-logr/logr"
 	"github.com/golang/protobuf/jsonpb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -58,7 +58,7 @@ var _ = Describe("MADS http service", func() {
 		cfg.AssignmentRefreshInterval = refreshInterval
 		cfg.DefaultFetchTimeout = defaultFetchTimeout
 
-		svc := service.NewService(cfg, resManager, testing.NullLogger{})
+		svc := service.NewService(cfg, resManager, logr.DiscardLogger{})
 
 		ws := new(restful.WebService)
 		svc.RegisterRoutes(ws)

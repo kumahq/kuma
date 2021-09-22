@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
@@ -44,7 +44,7 @@ var _ = Describe("ServiceValidator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// setup
-			admissionReview := admissionv1beta1.AdmissionReview{}
+			admissionReview := admissionv1.AdmissionReview{}
 			// when
 			err = yaml.Unmarshal([]byte(given.request), &admissionReview)
 			// then

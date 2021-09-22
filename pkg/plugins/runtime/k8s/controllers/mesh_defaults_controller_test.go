@@ -30,7 +30,7 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	BeforeEach(func() {
-		kubeClient = kube_client_fake.NewFakeClientWithScheme(k8sClientScheme)
+		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).Build()
 		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter())
 		Expect(err).ToNot(HaveOccurred())
 		secretStore, err := secrets_k8s.NewStore(kubeClient, kubeClient, "default")
@@ -66,7 +66,7 @@ var _ = Describe("MeshDefaultsReconciler", func() {
 	}
 
 	reconcile := func() {
-		_, err := reconciler.Reconcile(kube_ctrl.Request{
+		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
 			NamespacedName: kube_types.NamespacedName{
 				Name: "default",
 			},

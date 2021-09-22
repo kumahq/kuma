@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -38,7 +38,7 @@ var _ = Describe("Validation", func() {
 		mode        core.CpMode
 		resp        kube_admission.Response
 		username    string
-		operation   admissionv1beta1.Operation
+		operation   admissionv1.Operation
 	}
 	DescribeTable("Validation",
 		func(given testCase) {
@@ -51,7 +51,7 @@ var _ = Describe("Validation", func() {
 			obj, err := k8s_registry.Global().NewObject(given.objTemplate)
 			Expect(err).ToNot(HaveOccurred())
 			req := kube_admission.Request{
-				AdmissionRequest: admissionv1beta1.AdmissionRequest{
+				AdmissionRequest: admissionv1.AdmissionRequest{
 					UID: kube_types.UID("12345"),
 					Object: kube_runtime.RawExtension{
 						Raw: []byte(given.obj),
@@ -115,7 +115,7 @@ var _ = Describe("Validation", func() {
               }
             }`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: true,
 					Result: &kube_meta.Status{
@@ -123,7 +123,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should pass validation for synced policy from Global to Zone", testCase{
 			mode:        core.Zone,
@@ -169,7 +169,7 @@ var _ = Describe("Validation", func() {
               }
             }`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: true,
 					Result: &kube_meta.Status{
@@ -177,7 +177,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should pass validation for synced policy from Zone to Global", testCase{
 			mode:        core.Zone,
@@ -211,7 +211,7 @@ var _ = Describe("Validation", func() {
               }
             }`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: true,
 					Result: &kube_meta.Status{
@@ -219,7 +219,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should pass validation for not synced Dataplane in Zone", testCase{
 			mode:        core.Zone,
@@ -250,7 +250,7 @@ var _ = Describe("Validation", func() {
               }
             }`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: true,
 					Result: &kube_meta.Status{
@@ -258,7 +258,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation due to invalid spec", testCase{
 			mode:        core.Global,
@@ -278,7 +278,7 @@ var _ = Describe("Validation", func() {
 			}
 			`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: false,
 					Result: &kube_meta.Status{
@@ -310,7 +310,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation due to applying policy manually on Zone CP", testCase{
 			mode:        core.Zone,
@@ -328,7 +328,7 @@ var _ = Describe("Validation", func() {
 			}
 			`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: false,
 					Result: &kube_meta.Status{
@@ -348,7 +348,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation due to applying Dataplane manually on Global CP", testCase{
 			mode:        core.Global,
@@ -367,7 +367,7 @@ var _ = Describe("Validation", func() {
 			}
 			`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: false,
 					Result: &kube_meta.Status{
@@ -387,7 +387,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should pass validation due to applying Zone on Global CP", testCase{
 			mode:        core.Global,
@@ -410,7 +410,7 @@ var _ = Describe("Validation", func() {
 			}
 			`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: true,
 					Result: &kube_meta.Status{
@@ -418,7 +418,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation due to applying Zone on Zone CP", testCase{
 			mode:        core.Zone,
@@ -441,7 +441,7 @@ var _ = Describe("Validation", func() {
 			}
 			`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: false,
 					Result: &kube_meta.Status{
@@ -452,7 +452,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation due to applying Zone on Standalone CP", testCase{
 			mode:        core.Standalone,
@@ -475,7 +475,7 @@ var _ = Describe("Validation", func() {
 			}
 			`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: false,
 					Result: &kube_meta.Status{
@@ -486,7 +486,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation on missing mesh object", testCase{
 			mode:        core.Zone,
@@ -531,7 +531,7 @@ var _ = Describe("Validation", func() {
               }
             }`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: false,
 					Result: &kube_meta.Status{
@@ -553,13 +553,13 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Create,
+			operation: admissionv1.Create,
 		}),
 		Entry("should fail validation on DELETE in Zone CP", testCase{
 			mode:        core.Zone,
 			objTemplate: &mesh_proto.TrafficRoute{},
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: false,
 					Result: &kube_meta.Status{
@@ -579,7 +579,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Delete,
+			operation: admissionv1.Delete,
 		}),
 		Entry("should fail validation on UPDATE in Zone CP", testCase{
 			mode:        core.Zone,
@@ -621,7 +621,7 @@ var _ = Describe("Validation", func() {
               }
             }`,
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: false,
 					Result: &kube_meta.Status{
@@ -641,13 +641,13 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Update,
+			operation: admissionv1.Update,
 		}),
 		Entry("should pass validation on DELETE in Global CP", testCase{
 			mode:        core.Global,
 			objTemplate: &mesh_proto.TrafficRoute{},
 			resp: kube_admission.Response{
-				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+				AdmissionResponse: admissionv1.AdmissionResponse{
 					UID:     "12345",
 					Allowed: true,
 					Result: &kube_meta.Status{
@@ -655,7 +655,7 @@ var _ = Describe("Validation", func() {
 					},
 				},
 			},
-			operation: admissionv1beta1.Delete,
+			operation: admissionv1.Delete,
 		}),
 	)
 })

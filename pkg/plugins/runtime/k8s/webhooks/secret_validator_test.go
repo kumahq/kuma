@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -67,7 +67,7 @@ var _ = Describe("ServiceValidator", func() {
 				Client:    k8sClient,
 				Validator: &testSecretValidator{},
 			}
-			admissionReview := admissionv1beta1.AdmissionReview{}
+			admissionReview := admissionv1.AdmissionReview{}
 			err := yaml.Unmarshal([]byte(given.request), &admissionReview)
 			Expect(err).ToNot(HaveOccurred())
 

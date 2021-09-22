@@ -26,8 +26,7 @@ var _ = Describe("NamespaceReconciler", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	BeforeEach(func() {
-		kubeClient = kube_client_fake.NewFakeClientWithScheme(
-			k8sClientScheme,
+		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
 			&kube_core.Namespace{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Name:      "non-system-ns-with-sidecar-injection",
@@ -43,7 +42,7 @@ var _ = Describe("NamespaceReconciler", func() {
 					Namespace: "non-system-ns-without-sidecar-injection",
 				},
 			},
-		)
+		).Build()
 
 		reconciler = &controllers.NamespaceReconciler{
 			Client:     kubeClient,
@@ -71,7 +70,7 @@ var _ = Describe("NamespaceReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -115,7 +114,7 @@ var _ = Describe("NamespaceReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -138,7 +137,7 @@ var _ = Describe("NamespaceReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -161,7 +160,7 @@ var _ = Describe("NamespaceReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

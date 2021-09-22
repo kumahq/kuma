@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"k8s.io/api/admission/v1beta1"
+	"k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
@@ -37,11 +37,11 @@ func (h *MeshValidator) InjectDecoder(d *admission.Decoder) error {
 
 func (h *MeshValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	switch req.Operation {
-	case v1beta1.Delete:
+	case v1.Delete:
 		return h.ValidateDelete(ctx, req)
-	case v1beta1.Create:
+	case v1.Create:
 		return h.ValidateCreate(ctx, req)
-	case v1beta1.Update:
+	case v1.Update:
 		return h.ValidateUpdate(ctx, req)
 	}
 	return admission.Allowed("")

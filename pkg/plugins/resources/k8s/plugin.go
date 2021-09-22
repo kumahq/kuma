@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	k8s_runtime "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	k8s_events "github.com/kumahq/kuma/pkg/plugins/resources/k8s/events"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 var _ core_plugins.ResourceStorePlugin = &plugin{}
@@ -23,9 +22,6 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.
 	mgr, ok := k8s_runtime.FromManagerContext(pc.Extensions())
 	if !ok {
 		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
-	}
-	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
-		return nil, errors.Wrap(err, "could not add to scheme")
 	}
 	converter, ok := k8s_runtime.FromResourceConverterContext(pc.Extensions())
 	if !ok {

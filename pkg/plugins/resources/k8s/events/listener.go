@@ -149,7 +149,7 @@ func (k *listener) createListerWatcher(gvk schema.GroupVersionKind) (cache.Liste
 	if err != nil {
 		return nil, err
 	}
-	client, err := apiutil.RESTClientForGVK(gvk, k.mgr.GetConfig(), serializer.NewCodecFactory(k.mgr.GetScheme()))
+	client, err := apiutil.RESTClientForGVK(gvk, false, k.mgr.GetConfig(), serializer.NewCodecFactory(k.mgr.GetScheme()))
 	if err != nil {
 		return nil, err
 	}

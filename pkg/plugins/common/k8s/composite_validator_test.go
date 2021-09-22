@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -82,7 +82,7 @@ var _ = Describe("Composite Validator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		req := kube_admission.Request{
-			AdmissionRequest: admissionv1beta1.AdmissionRequest{
+			AdmissionRequest: admissionv1.AdmissionRequest{
 				UID: kube_types.UID("12345"),
 				Object: kube_runtime.RawExtension{
 					Raw: []byte(yaml),
@@ -120,7 +120,7 @@ var _ = Describe("Composite Validator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		req := kube_admission.Request{
-			AdmissionRequest: admissionv1beta1.AdmissionRequest{
+			AdmissionRequest: admissionv1.AdmissionRequest{
 				UID: kube_types.UID("12345"),
 				Object: kube_runtime.RawExtension{
 					Raw: []byte(yaml),

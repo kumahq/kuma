@@ -203,10 +203,6 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 }
 
 func addDefaulters(mgr kube_ctrl.Manager, converter k8s_common.Converter) error {
-	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", mesh_k8s.GroupVersion)
-	}
-
 	addDefaulter(mgr, mesh_k8s.GroupVersion.WithKind("Mesh"),
 		func() core_model.Resource {
 			return core_mesh.NewMeshResource()

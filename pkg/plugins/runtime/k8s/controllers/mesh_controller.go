@@ -31,8 +31,7 @@ type MeshReconciler struct {
 	ResourceManager manager.ResourceManager
 }
 
-func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	ctx := context.Background()
+func (r *MeshReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	log := r.Log.WithValues("mesh", req.NamespacedName)
 
 	// Fetch the Mesh instance

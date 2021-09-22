@@ -49,33 +49,33 @@ func NewInformersMap(config *rest.Config,
 	namespace string,
 ) *InformersMap {
 	return &InformersMap{
-		structured:   newStructuredInformersMap(config, scheme, mapper, resync, namespace),
-		unstructured: newUnstructuredInformersMap(config, scheme, mapper, resync, namespace),
+		structured:   newSpecificInformersMap(config, scheme, mapper, resync, namespace, createStructuredListWatch),
+		unstructured: newSpecificInformersMap(config, scheme, mapper, resync, namespace, createUnstructuredListWatch),
 
 		Scheme: scheme,
 	}
 }
 
 // Start calls Run on each of the informers and sets started to true.  Blocks on the stop channel.
-func (m *InformersMap) Start(stop <-chan struct{}) error {
-	go m.structured.Start(stop)
-	go m.unstructured.Start(stop)
-	<-stop
+func (m *InformersMap) Start(ctx context.Context) error {
+	go m.structured.Start(ctx.Done())
+	go m.unstructured.Start(ctx.Done())
+	<-ctx.Done()
 	return nil
 }
 
 // WaitForCacheSync waits until all the caches have been started and synced.
-func (m *InformersMap) WaitForCacheSync(stop <-chan struct{}) bool {
+func (m *InformersMap) WaitForCacheSync(ctx context.Context) bool {
 	syncedFuncs := append([]cache.InformerSynced(nil), m.structured.HasSyncedFuncs()...)
 	syncedFuncs = append(syncedFuncs, m.unstructured.HasSyncedFuncs()...)
 
-	if !m.structured.waitForStarted(stop) {
+	if !m.structured.waitForStarted(ctx.Done()) {
 		return false
 	}
-	if !m.unstructured.waitForStarted(stop) {
+	if !m.unstructured.waitForStarted(ctx.Done()) {
 		return false
 	}
-	return cache.WaitForCacheSync(stop, syncedFuncs...)
+	return cache.WaitForCacheSync(ctx.Done(), syncedFuncs...)
 }
 
 // Get will create a new Informer and add it to the map of InformersMap if none exists.  Returns
@@ -90,14 +90,4 @@ func (m *InformersMap) Get(ctx context.Context, gvk schema.GroupVersionKind, obj
 	}
 
 	return m.structured.Get(ctx, gvk, obj)
-}
-
-// newStructuredInformersMap creates a new InformersMap for structured objects.
-func newStructuredInformersMap(config *rest.Config, scheme *runtime.Scheme, mapper meta.RESTMapper, resync time.Duration, namespace string) *specificInformersMap {
-	return newSpecificInformersMap(config, scheme, mapper, resync, namespace, createStructuredListWatch)
-}
-
-// newUnstructuredInformersMap creates a new InformersMap for unstructured objects.
-func newUnstructuredInformersMap(config *rest.Config, scheme *runtime.Scheme, mapper meta.RESTMapper, resync time.Duration, namespace string) *specificInformersMap {
-	return newSpecificInformersMap(config, scheme, mapper, resync, namespace, createUnstructuredListWatch)
 }
