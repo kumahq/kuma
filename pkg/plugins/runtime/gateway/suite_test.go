@@ -223,7 +223,7 @@ func StoreFixture(mgr manager.ResourceManager, r core_model.Resource) error {
 // BuildRuntime returns a fabricated test Runtime instance with which
 // the gateway plugin is registered.
 func BuildRuntime() (runtime.Runtime, error) {
-	builder, err := test_runtime.BuilderFor(kuma_cp.DefaultConfig())
+	builder, err := test_runtime.BuilderFor(context.Background(), kuma_cp.DefaultConfig())
 	if err != nil {
 		return nil, err
 	}

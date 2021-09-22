@@ -31,7 +31,7 @@ type DataplaneLifecycle struct {
 
 	sync.RWMutex         // protects createdDpByCallbacks
 	createdDpByCallbacks map[model.ResourceKey]mesh_proto.ProxyType
-	shutdownCh           <-chan struct{}
+	appCtx               context.Context
 }
 
 func (d *DataplaneLifecycle) OnProxyConnected(streamID core_xds.StreamID, dpKey model.ResourceKey, _ context.Context, md core_xds.DataplaneMetadata) error {
@@ -73,7 +73,7 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(streamID core_xds.StreamID, dpK
 	// must not delete Dataplane resource, data plane proxy will be reconnected to another
 	// instance of Kuma CP.
 	select {
-	case <-d.shutdownCh:
+	case <-d.appCtx.Done():
 		lifecycleLog.Info("graceful shutdown, don't delete Dataplane resource")
 		return
 	default:
@@ -106,11 +106,11 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(streamID core_xds.StreamID, dpK
 
 var _ DataplaneCallbacks = &DataplaneLifecycle{}
 
-func NewDataplaneLifecycle(resManager manager.ResourceManager, shutdownCh <-chan struct{}) *DataplaneLifecycle {
+func NewDataplaneLifecycle(appCtx context.Context, resManager manager.ResourceManager) *DataplaneLifecycle {
 	return &DataplaneLifecycle{
 		resManager:           resManager,
 		createdDpByCallbacks: map[model.ResourceKey]mesh_proto.ProxyType{},
-		shutdownCh:           shutdownCh,
+		appCtx:               appCtx,
 	}
 }
 

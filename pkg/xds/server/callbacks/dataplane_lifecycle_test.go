@@ -27,13 +27,14 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 	var resManager core_manager.ResourceManager
 	var callbacks envoy_server.Callbacks
-	var shutdown chan struct{}
+	var cancel func()
+	var ctx context.Context
 
 	BeforeEach(func() {
 		store := memory.NewStore()
 		resManager = core_manager.NewResourceManager(store)
-		shutdown = make(chan struct{})
-		callbacks = util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(NewDataplaneLifecycle(resManager, shutdown)))
+		ctx, cancel = context.WithCancel(context.Background())
+		callbacks = util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(NewDataplaneLifecycle(ctx, resManager)))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -46,7 +47,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				Id: "default.backend-01",
 				Metadata: &structpb.Struct{
 					Fields: map[string]*structpb.Value{
-						"dataplane.resource": &structpb.Value{
+						"dataplane.resource": {
 							Kind: &structpb.Value_StringValue{
 								StringValue: `
                                 {
@@ -144,7 +145,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				Id: "default.backend-01",
 				Metadata: &structpb.Struct{
 					Fields: map[string]*structpb.Value{
-						"dataplane.resource": &structpb.Value{
+						"dataplane.resource": {
 							Kind: &structpb.Value_StringValue{
 								StringValue: `
                                 {
@@ -178,7 +179,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		err := callbacks.OnStreamRequest(streamId, &req)
 		Expect(err).ToNot(HaveOccurred())
 
-		close(shutdown)
+		cancel()
 		// when
 		callbacks.OnStreamClosed(streamId)
 
@@ -207,7 +208,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 						Id: nodeID,
 						Metadata: &structpb.Struct{
 							Fields: map[string]*structpb.Value{
-								"dataplane.resource": &structpb.Value{
+								"dataplane.resource": {
 									Kind: &structpb.Value_StringValue{
 										StringValue: fmt.Sprintf(`
                                 {

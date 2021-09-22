@@ -10,7 +10,7 @@ import (
 var _ = Describe("root", func() {
 	It("should be possible to run `kuma-prometheus-sd` without a sub-command", func() {
 		// given
-		cmd := NewRootCmd()
+		cmd := DefaultRootCmd()
 		cmd.SetArgs([]string{})
 		// when
 		err := cmd.Execute()

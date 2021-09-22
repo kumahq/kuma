@@ -1,39 +1,33 @@
 package cmd
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("run", func() {
 
-	var backupSetupSignalHandler func() <-chan struct{}
+	var cancel func()
+	var ctx context.Context
+	opts := kuma_cmd.RunCmdOpts{
+		SetupSignalHandler: func() context.Context {
+			return ctx
+		},
+	}
 
 	BeforeEach(func() {
-		backupSetupSignalHandler = setupSignalHandler
-	})
-
-	AfterEach(func() {
-		setupSignalHandler = backupSetupSignalHandler
-	})
-
-	var stopCh chan struct{}
-
-	BeforeEach(func() {
-		stopCh = make(chan struct{})
-
-		setupSignalHandler = func() <-chan struct{} {
-			return stopCh
-		}
+		ctx, cancel = context.WithCancel(context.Background())
 	})
 
 	XIt("should be possible to run `kuma-prometheus-sd run`", test.Within(15*time.Second, func() {
 		// given
-		cmd := NewRootCmd()
+		cmd := NewRootCmd(opts)
 		cmd.SetArgs([]string{"run"})
 
 		// when
@@ -49,7 +43,7 @@ var _ = Describe("run", func() {
 
 		// when
 		By("signaling Kuma Prometheus SD to stop")
-		close(stopCh)
+		cancel()
 
 		// then
 		err := <-errCh

@@ -61,7 +61,8 @@ type RuntimeContext interface {
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
 	MeshValidator() core_managers.MeshValidator
-	ShutdownCh() <-chan struct{}
+	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
+	AppContext() context.Context
 }
 
 var _ Runtime = &runtime{}
@@ -100,29 +101,29 @@ func (i *runtimeInfo) GetClusterId() string {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg        kuma_cp.Config
-	rm         core_manager.ResourceManager
-	rs         core_store.ResourceStore
-	ss         store.SecretStore
-	cs         core_store.ResourceStore
-	rom        core_manager.ReadOnlyResourceManager
-	cam        ca.Managers
-	dsl        datasource.Loader
-	ext        context.Context
-	dns        resolver.DNSResolver
-	configm    config_manager.ConfigManager
-	leadInfo   component.LeaderInfo
-	lif        lookup.LookupIPFunc
-	eac        admin.EnvoyAdminClient
-	metrics    metrics.Metrics
-	erf        events.ListenerFactory
-	apim       api_server.APIInstaller
-	xdsh       *xds_hooks.Hooks
-	cap        secrets.CaProvider
-	dps        *dp_server.DpServer
-	kdsctx     *kds_context.Context
-	mv         core_managers.MeshValidator
-	shutdownCh <-chan struct{}
+	cfg      kuma_cp.Config
+	rm       core_manager.ResourceManager
+	rs       core_store.ResourceStore
+	ss       store.SecretStore
+	cs       core_store.ResourceStore
+	rom      core_manager.ReadOnlyResourceManager
+	cam      ca.Managers
+	dsl      datasource.Loader
+	ext      context.Context
+	dns      resolver.DNSResolver
+	configm  config_manager.ConfigManager
+	leadInfo component.LeaderInfo
+	lif      lookup.LookupIPFunc
+	eac      admin.EnvoyAdminClient
+	metrics  metrics.Metrics
+	erf      events.ListenerFactory
+	apim     api_server.APIInstaller
+	xdsh     *xds_hooks.Hooks
+	cap      secrets.CaProvider
+	dps      *dp_server.DpServer
+	kdsctx   *kds_context.Context
+	mv       core_managers.MeshValidator
+	appCtx   context.Context
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -212,6 +213,6 @@ func (rc *runtimeContext) MeshValidator() core_managers.MeshValidator {
 	return rc.mv
 }
 
-func (rc *runtimeContext) ShutdownCh() <-chan struct{} {
-	return rc.shutdownCh
+func (rc *runtimeContext) AppContext() context.Context {
+	return rc.appCtx
 }

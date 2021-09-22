@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/testing_frameworks/integration/addr"
 
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/test"
 )
 
@@ -32,14 +34,20 @@ func (f ConfigFactoryFunc) GenerateConfig() string {
 
 func RunSmokeTest(factory ConfigFactory, workdir string) {
 	Describe("run", func() {
-		var stopCh chan struct{}
 		var errCh chan error
 		var configFile *os.File
 
 		var diagnosticsPort int
+		var ctx context.Context
+		var cancel func()
+		var opts = kuma_cmd.RunCmdOpts{
+			SetupSignalHandler: func() context.Context {
+				return ctx
+			},
+		}
 
 		JustBeforeEach(func() {
-			stopCh = make(chan struct{})
+			ctx, cancel = context.WithCancel(context.Background())
 			errCh = make(chan error)
 
 			freePort, _, err := addr.Suggest()
@@ -67,11 +75,7 @@ func RunSmokeTest(factory ConfigFactory, workdir string) {
 			config := fmt.Sprintf(factory.GenerateConfig(), diagnosticsPort)
 			_, err := configFile.WriteString(config)
 			Expect(err).ToNot(HaveOccurred())
-			cmd := newRunCmdWithOpts(runCmdOpts{
-				SetupSignalHandler: func() <-chan struct{} {
-					return stopCh
-				},
-			})
+			cmd := newRunCmdWithOpts(opts)
 			cmd.SetArgs([]string{"--config-file=" + configFile.Name()})
 
 			// when
@@ -105,7 +109,7 @@ func RunSmokeTest(factory ConfigFactory, workdir string) {
 
 			// when
 			By("signaling Control Plane to stop")
-			close(stopCh)
+			cancel()
 
 			// then
 			err = <-errCh

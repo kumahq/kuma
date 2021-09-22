@@ -18,7 +18,7 @@ var (
 )
 
 // NewRootCmd represents the base command when called without any subcommands.
-func NewRootCmd(rootCtx *RootContext) *cobra.Command {
+func NewRootCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	args := struct {
 		logLevel   string
 		outputPath string
@@ -67,14 +67,14 @@ func NewRootCmd(rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().IntVar(&args.maxAge, "log-max-age", 30, "maximum number of days to retain old log files based on the timestamp encoded in their filename")
 
 	// sub-commands
-	cmd.AddCommand(newRunCmd(rootCtx))
+	cmd.AddCommand(newRunCmd(opts, rootCtx))
 	cmd.AddCommand(version.NewVersionCmd())
 
 	return cmd
 }
 
 func DefaultRootCmd() *cobra.Command {
-	return NewRootCmd(DefaultRootContext())
+	return NewRootCmd(kuma_cmd.DefaultRunCmdOpts, DefaultRootContext())
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

@@ -1,6 +1,8 @@
 package clusterid_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -22,7 +24,7 @@ var _ = Describe("Cluster ID", func() {
 	It("should create and set cluster ID", func() {
 		// given runtime with cluster ID components
 		cfg := kuma_cp.DefaultConfig()
-		builder, err := runtime.BuilderFor(cfg)
+		builder, err := runtime.BuilderFor(context.Background(), cfg)
 		Expect(err).ToNot(HaveOccurred())
 		runtime, err := builder.Build()
 		Expect(err).ToNot(HaveOccurred())

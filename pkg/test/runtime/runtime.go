@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"net"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
@@ -49,9 +50,8 @@ func (i *TestRuntimeInfo) GetClusterId() string {
 	return i.ClusterId
 }
 
-func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
-	stopCh := make(chan struct{})
-	builder, err := core_runtime.BuilderFor(cfg, stopCh)
+func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {
+	builder, err := core_runtime.BuilderFor(appCtx, cfg)
 	if err != nil {
 		return nil, err
 	}

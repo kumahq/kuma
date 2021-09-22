@@ -8,10 +8,10 @@ import (
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/clusterid"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
@@ -39,17 +39,7 @@ const gracefullyShutdownDuration = 3 * time.Second
 // reasonably have enough descriptors to accept all its clients.
 const minOpenFileLimit = 4096
 
-func newRunCmd() *cobra.Command {
-	return newRunCmdWithOpts(runCmdOpts{
-		SetupSignalHandler: core.SetupSignalHandler,
-	})
-}
-
-type runCmdOpts struct {
-	SetupSignalHandler func() (stopCh <-chan struct{})
-}
-
-func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
+func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 	args := struct {
 		configPath string
 	}{}
@@ -64,8 +54,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "could not load the configuration")
 				return err
 			}
-			closeCh := opts.SetupSignalHandler()
-			rt, err := bootstrap.Bootstrap(cfg, closeCh)
+			ctx := opts.SetupSignalHandler()
+			rt, err := bootstrap.Bootstrap(ctx, cfg)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
@@ -184,7 +174,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
-			if err := rt.Start(closeCh); err != nil {
+			if err := rt.Start(ctx.Done()); err != nil {
 				runLog.Error(err, "problem running Control Plane")
 				return err
 			}

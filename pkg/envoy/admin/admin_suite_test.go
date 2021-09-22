@@ -32,7 +32,7 @@ var _ = BeforeSuite(func() {
 
 	// setup the runtime
 	cfg := kuma_cp.DefaultConfig()
-	builder, err := runtime.BuilderFor(cfg)
+	builder, err := runtime.BuilderFor(context.Background(), cfg)
 	Expect(err).ToNot(HaveOccurred())
 	runtime, err := builder.Build()
 	Expect(err).ToNot(HaveOccurred())

@@ -84,11 +84,11 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		if pod.Namespace != r.SystemNamespace {
 			return kube_ctrl.Result{}, errors.Errorf("Ingress can only be deployed in system namespace %q", r.SystemNamespace)
 		}
-		services, err := r.findMatchingServices(pod)
+		services, err := r.findMatchingServices(ctx, pod)
 		if err != nil {
 			return kube_ctrl.Result{}, err
 		}
-		err = r.createOrUpdateIngress(pod, services)
+		err = r.createOrUpdateIngress(ctx, pod, services)
 		if err != nil {
 			return kube_ctrl.Result{}, err
 		}
@@ -112,12 +112,12 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, nil
 	}
 
-	services, err := r.findMatchingServices(pod)
+	services, err := r.findMatchingServices(ctx, pod)
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
-	others, err := r.findOtherDataplanes(pod)
+	others, err := r.findOtherDataplanes(ctx, pod)
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
@@ -148,9 +148,7 @@ func (r *PodReconciler) deleteOldTypeIngressIfExists(ctx context.Context, req ku
 	return nil
 }
 
-func (r *PodReconciler) findMatchingServices(pod *kube_core.Pod) ([]*kube_core.Service, error) {
-	ctx := context.Background()
-
+func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core.Pod) ([]*kube_core.Service, error) {
 	// List Services in the same Namespace
 	allServices := &kube_core.ServiceList{}
 	if err := r.List(ctx, allServices, kube_client.InNamespace(pod.Namespace)); err != nil {
@@ -165,9 +163,7 @@ func (r *PodReconciler) findMatchingServices(pod *kube_core.Pod) ([]*kube_core.S
 	return matchingServices, nil
 }
 
-func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dataplane, error) {
-	ctx := context.Background()
-
+func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.Pod) ([]*mesh_k8s.Dataplane, error) {
 	// List all Dataplanes
 	allDataplanes := &mesh_k8s.DataplaneList{}
 	if err := r.List(ctx, allDataplanes); err != nil {
@@ -231,9 +227,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	return nil
 }
 
-func (r *PodReconciler) createOrUpdateIngress(pod *kube_core.Pod, services []*kube_core.Service) error {
-	ctx := context.Background()
-
+func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) error {
 	ingress := &mesh_k8s.ZoneIngress{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,

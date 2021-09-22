@@ -71,7 +71,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 			return errors.Wrap(err, "failed to set owner reference for object")
 		}
 	}
-	if err := s.client.Create(context.Background(), cm); err != nil {
+	if err := s.client.Create(ctx, cm); err != nil {
 		return err
 	}
 	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
@@ -93,7 +93,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 			configMapKey: configRes.Spec.Config,
 		},
 	}
-	if err := s.client.Update(context.Background(), cm); err != nil {
+	if err := s.client.Update(ctx, cm); err != nil {
 		if kube_apierrs.IsConflict(err) {
 			return core_store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
 		}
@@ -122,7 +122,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 			configMapKey: configRes.Spec.Config,
 		},
 	}
-	return s.client.Delete(context.Background(), cm)
+	return s.client.Delete(ctx, cm)
 }
 func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...core_store.GetOptionsFunc) error {
 	configRes, ok := r.(*config_model.ConfigResource)
