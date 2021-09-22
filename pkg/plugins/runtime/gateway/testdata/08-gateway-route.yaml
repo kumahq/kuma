@@ -62,11 +62,19 @@ Routes:
             weightedClusters:
               totalWeight: 0
         - match:
-            path: /service/echo
+            path: /api
           route:
             weightedClusters:
               clusters:
-              - name: echo-service
+              - name: exact-service
+                weight: 1
+              totalWeight: 1
+        - match:
+            prefix: /api/
+          route:
+            weightedClusters:
+              clusters:
+              - name: prefix-service
                 weight: 1
               totalWeight: 1
 Runtimes:

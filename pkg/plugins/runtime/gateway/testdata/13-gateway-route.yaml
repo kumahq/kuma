@@ -62,11 +62,37 @@ Routes:
             weightedClusters:
               totalWeight: 0
         - match:
-            path: /service/echo
+            path: /match/bar
           route:
             weightedClusters:
               clusters:
-              - name: echo-service
+              - name: echo-exact
+                weight: 1
+              totalWeight: 1
+        - match:
+            path: /match/baz
+          route:
+            weightedClusters:
+              clusters:
+              - name: echo-prefix
+                weight: 1
+              totalWeight: 1
+        - match:
+            prefix: /match/baz/
+          route:
+            weightedClusters:
+              clusters:
+              - name: echo-prefix
+                weight: 1
+              totalWeight: 1
+        - match:
+            safeRegex:
+              googleRe2: {}
+              regex: /match/foo
+          route:
+            weightedClusters:
+              clusters:
+              - name: echo-regex
                 weight: 1
               totalWeight: 1
 Runtimes:
