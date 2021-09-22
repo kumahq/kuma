@@ -118,6 +118,9 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 		if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
 			r.deleteRateLimiter(resourceChanged.Key.Name)
 		}
+		if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
+			continue
+		}
 		if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType {
 			if err := r.createOrUpdateServiceInsight(resourceChanged.Key.Mesh); err != nil {
 				log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
@@ -127,11 +130,8 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 			continue
 		}
 		if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
-			// 'Update' events doesn't affect MeshInsight expect for DataplaneInsight,
+			// 'Update' events doesn't affect MeshInsight except for DataplaneInsight,
 			// because that's how we find online/offline Dataplane's status
-			continue
-		}
-		if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
 			continue
 		}
 		if err := r.createOrUpdateMeshInsight(resourceChanged.Key.Mesh); err != nil {
