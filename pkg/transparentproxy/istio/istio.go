@@ -3,6 +3,7 @@ package istio
 import (
 	"os"
 
+	"github.com/kumahq/kuma/pkg/transparentproxy/istio/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -23,7 +24,7 @@ func NewIstioTransparentProxy() *IstioTransparentProxy {
 	return &IstioTransparentProxy{}
 }
 
-func (tp *IstioTransparentProxy) Setup(cfg *TransparentProxyConfig) (string, error) {
+func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (string, error) {
 	viper.Set(constants.EnvoyPort, cfg.RedirectPortOutBound)
 	viper.Set(constants.InboundCapturePort, cfg.RedirectPortInBound)
 	viper.Set(constants.InboundCapturePortV6, cfg.RedirectPortInBoundV6)
