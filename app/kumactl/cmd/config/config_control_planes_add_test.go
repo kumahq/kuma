@@ -150,7 +150,8 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// then
 			Expect(err).To(MatchError(`provided address is not valid Kuma Control Plane API Server`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: provided address is not valid Kuma Control Plane API Server
+			Expect(outbuf.String()).To(Equal(`WARNING: Unable to confirm the server supports this kumactl version
+Error: provided address is not valid Kuma Control Plane API Server
 `))
 		})
 	})
@@ -217,6 +218,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 				configFile: "config-control-planes-add.01.initial.yaml",
 				goldenFile: "config-control-planes-add.01.golden.yaml",
 				expectedOut: `
+WARNING: Unable to confirm the server supports this kumactl version
 added Control Plane "example"
 switched active Control Plane to "example"
 `,

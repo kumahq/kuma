@@ -33,8 +33,7 @@ import (
 )
 
 var (
-	kumactlLog       = core.Log.WithName("kumactl")
-	kumaBuildVersion *types.IndexResponse
+	kumactlLog = core.Log.WithName("kumactl")
 )
 
 // newRootCmd represents the base command when called without any subcommands.
@@ -73,6 +72,8 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			if err := root.LoadConfig(); err != nil {
 				return err
 			}
+
+			var kumaBuildVersion *types.IndexResponse
 
 			client, err := root.CurrentApiClient()
 			if err != nil {
