@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"github.com/pkg/errors"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client_scheme "k8s.io/client-go/kubernetes/scheme"
 
@@ -20,6 +21,9 @@ func NewScheme() (*kube_runtime.Scheme, error) {
 	}
 	if err := k8scnicncfio.AddToScheme(s); err != nil {
 		return nil, errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.GroupVersion)
+	}
+	if err := apiextensionsv1.AddToScheme(s); err != nil {
+		return nil, errors.Wrapf(err, "could not add %q to scheme", apiextensionsv1.SchemeGroupVersion)
 	}
 	return s, nil
 }
