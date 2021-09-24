@@ -57,6 +57,10 @@ Apply a resource from external URL
 $ kumactl apply -f https://example.com/resource.yaml
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := pctx.CheckServerVersionCompatibility(); err != nil {
+				cmd.PrintErrln(err)
+			}
+
 			var b []byte
 			var err error
 
