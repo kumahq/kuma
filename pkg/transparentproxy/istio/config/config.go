@@ -1,4 +1,4 @@
-package istio
+package config
 
 type TransparentProxyConfig struct {
 	DryRun                 bool
