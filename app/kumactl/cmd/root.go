@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -18,7 +17,6 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	kumactl_config "github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_errors "github.com/kumahq/kuma/app/kumactl/pkg/errors"
-	"github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/cmd/version"
 	"github.com/kumahq/kuma/pkg/core"
@@ -26,15 +24,9 @@ import (
 
 	// Register gateway resources.
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
 
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works
 	_ "github.com/kumahq/kuma/pkg/xds/envoy"
-)
-
-var (
-	kumactlLog       = core.Log.WithName("kumactl")
-	kumaBuildVersion *types.IndexResponse
 )
 
 // newRootCmd represents the base command when called without any subcommands.
@@ -74,21 +66,6 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 				return err
 			}
 
-			client, err := root.CurrentApiClient()
-			if err != nil {
-				kumactlLog.Error(err, "Unable to get index client")
-			} else {
-				kumaBuildVersion, err = client.GetVersion(context.Background())
-				if err != nil {
-					kumactlLog.Error(err, "Unable to retrieve server version")
-				}
-			}
-
-			if kumaBuildVersion == nil {
-				cmd.PrintErr("WARNING: Unable to confirm the server supports this kumactl version\n")
-			} else if kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product {
-				cmd.PrintErr("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version + "\n")
-			}
 			return nil
 		},
 	}
