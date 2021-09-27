@@ -59,6 +59,7 @@ func NewProxyProfile(manager manager.ReadOnlyResourceManager) generator.Resource
 				&VirtualHostGenerator{},
 				&TrafficRouteGenerator{},
 				&GatewayRouteGenerator{},
+				&RouteTableGenerator{},
 			},
 		},
 	}

@@ -23,6 +23,7 @@ func (g GatewayRouteGenerator) New() model.Resource {
 
 var _ = Describe("GatewayRoute", func() {
 	DescribeValidCases(GatewayRouteGenerator(NewGatewayRouteResource),
+
 		Entry("HTTP route", `
 type: GatewayRoute
 name: route
@@ -53,19 +54,18 @@ conf:
           value: kong
       filters:
       - request_header:
-        set:
-        - name: x-foo
-          value: foo
-        add:
-        - name: x-added
-          value: added
-        remove:
-        - x-deleted
-      - redirect:
-         scheme: http
-         hostname: foo.example.com
-         port: 80
-         status_code: 307
+          set:
+          - name: x-foo
+            value: foo
+          - name: x-foo
+            value: foo
+          add:
+          - name: x-added
+            value: added
+          - name: x-added
+            value: added
+          remove:
+          - x-deleted
       - mirror:
          percentage: 1.12
          backend:
@@ -78,6 +78,41 @@ conf:
       - weight: 5
         destination:
           kuma.io/service: target-2
+`),
+		Entry("HTTP redirect", `
+type: GatewayRoute
+name: route
+mesh: default
+selectors:
+- match:
+    kuma.io/service: gateway
+conf:
+  http:
+    hostnames:
+    - foo.example.com
+    rules:
+    - matches:
+      - method: GET
+        path:
+          match: EXACT
+          value: /
+        headers:
+        - match: EXACT
+          name: x-foo
+          value: "my great foo"
+        - match: REGEX
+          name: x-count
+          value: "[0-9]+"
+        query_parameters:
+        - match: EXACT
+          name: customer
+          value: kong
+      filters:
+      - redirect:
+         scheme: http
+         hostname: foo.example.com
+         port: 80
+         status_code: 307
 `),
 	)
 
@@ -496,10 +531,6 @@ conf:
       - redirect:
           hostname: example.com
           status_code: 301
-      backends:
-      - weight: 5
-        destination:
-          kuma.io/service: target-2
 `),
 		ErrorCase("redirect filter with empty hostname", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].redirect.hostname",
@@ -521,10 +552,6 @@ conf:
       - redirect:
           scheme: https
           status_code: 301
-      backends:
-      - weight: 5
-        destination:
-          kuma.io/service: target-2
 `),
 		ErrorCase("redirect filter with invalid port", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].redirect.port",
@@ -548,10 +575,6 @@ conf:
           hostname: example.com
           port: 128555
           status_code: 301
-      backends:
-      - weight: 5
-        destination:
-          kuma.io/service: target-2
 `),
 		ErrorCase("redirect filter with invalid status", validators.Violation{
 			Field:   "conf.http.rules[0].filters[0].redirect.status_code",
@@ -574,10 +597,59 @@ conf:
           scheme: https
           hostname: example.com
           status_code: 500
+`),
+		ErrorCase("redirect filter with backend routes", validators.Violation{
+			Field:   "conf.http.rules[0].backends",
+			Message: "must be empty when using redirect filters",
+		}, `
+type: GatewayRoute
+name: route
+mesh: default
+selectors:
+- match:
+    kuma.io/service: gateway
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          value: /
+      filters:
+      - redirect:
+          scheme: https
+          hostname: example.com
+          status_code: 300
       backends:
       - weight: 5
         destination:
           kuma.io/service: target-2
+`),
+		ErrorCase("redirect prevents other filters", validators.Violation{
+			Field:   "conf.http.rules[0].filters",
+			Message: "redirects cannot be used with other filters",
+		}, `
+type: GatewayRoute
+name: route
+mesh: default
+selectors:
+- match:
+    kuma.io/service: gateway
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          value: /
+      filters:
+      - redirect:
+          scheme: https
+          hostname: example.com
+          status_code: 300
+      - mirror:
+        backends:
+        - weight: 5
+          destination:
+            kuma.io/service: target-2
 `),
 	)
 })

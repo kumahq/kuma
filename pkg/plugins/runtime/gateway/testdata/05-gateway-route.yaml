@@ -62,13 +62,12 @@ Routes:
             weightedClusters:
               totalWeight: 0
         - match:
-            path: /service/echo
-          route:
-            weightedClusters:
-              clusters:
-              - name: echo-service
-                weight: 1
-              totalWeight: 1
+            path: /
+          redirect:
+            hostRedirect: example.com
+            responseCode: FOUND
+            schemeRedirect: https
+            stripQuery: true
 Runtimes:
   Resources: {}
 Secrets:
