@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -11,9 +10,9 @@ import (
 	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds"
 	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/common"
 	util_log "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/util/go-kit/log"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_promsd "github.com/kumahq/kuma/pkg/config/app/kuma-prometheus-sd"
-	"github.com/kumahq/kuma/pkg/core"
 	util_os "github.com/kumahq/kuma/pkg/util/os"
 )
 
@@ -21,12 +20,7 @@ var (
 	runLog = prometheusSdLog.WithName("run")
 )
 
-var (
-	// overridable by unit tests
-	setupSignalHandler = core.SetupSignalHandler
-)
-
-func newRunCmd() *cobra.Command {
+func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 	cfg := kuma_promsd.DefaultConfig()
 	cmd := &cobra.Command{
 		Use:   "run",
@@ -50,8 +44,7 @@ func newRunCmd() *cobra.Command {
 				return errors.Wrapf(err, "unable to write to directory %q", outputDir)
 			}
 
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := opts.SetupSignalHandler()
 
 			discoverer, err := xds.NewDiscoverer(
 				common.DiscoveryConfig{
@@ -68,7 +61,7 @@ func newRunCmd() *cobra.Command {
 			discovery := adapter.NewAdapter(ctx, cfg.Prometheus.OutputFile, "xds_sd", discoverer, util_log.NewLogger(runLog.WithName("xds_sd"), "adapter"))
 			discovery.Run()
 
-			<-setupSignalHandler()
+			<-ctx.Done()
 			return nil
 		},
 	}

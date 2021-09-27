@@ -56,34 +56,34 @@ var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg        kuma_cp.Config
-	cm         component.Manager
-	rs         core_store.ResourceStore
-	ss         store.SecretStore
-	cs         core_store.ResourceStore
-	rm         core_manager.CustomizableResourceManager
-	rom        core_manager.ReadOnlyResourceManager
-	cam        core_ca.Managers
-	dsl        datasource.Loader
-	ext        context.Context
-	dns        resolver.DNSResolver
-	configm    config_manager.ConfigManager
-	leadInfo   component.LeaderInfo
-	lif        lookup.LookupIPFunc
-	eac        admin.EnvoyAdminClient
-	metrics    metrics.Metrics
-	erf        events.ListenerFactory
-	apim       api_server.APIManager
-	xdsh       *xds_hooks.Hooks
-	cap        secrets.CaProvider
-	dps        *dp_server.DpServer
-	kdsctx     *kds_context.Context
-	mv         core_managers.MeshValidator
-	shutdownCh <-chan struct{}
+	cfg      kuma_cp.Config
+	cm       component.Manager
+	rs       core_store.ResourceStore
+	ss       store.SecretStore
+	cs       core_store.ResourceStore
+	rm       core_manager.CustomizableResourceManager
+	rom      core_manager.ReadOnlyResourceManager
+	cam      core_ca.Managers
+	dsl      datasource.Loader
+	ext      context.Context
+	dns      resolver.DNSResolver
+	configm  config_manager.ConfigManager
+	leadInfo component.LeaderInfo
+	lif      lookup.LookupIPFunc
+	eac      admin.EnvoyAdminClient
+	metrics  metrics.Metrics
+	erf      events.ListenerFactory
+	apim     api_server.APIManager
+	xdsh     *xds_hooks.Hooks
+	cap      secrets.CaProvider
+	dps      *dp_server.DpServer
+	kdsctx   *kds_context.Context
+	mv       core_managers.MeshValidator
+	appCtx   context.Context
 	*runtimeInfo
 }
 
-func BuilderFor(cfg kuma_cp.Config, closeCh <-chan struct{}) (*Builder, error) {
+func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get hostname")
@@ -96,7 +96,7 @@ func BuilderFor(cfg kuma_cp.Config, closeCh <-chan struct{}) (*Builder, error) {
 		runtimeInfo: &runtimeInfo{
 			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
 		},
-		shutdownCh: closeCh,
+		appCtx: appCtx,
 	}, nil
 }
 
@@ -278,28 +278,28 @@ func (b *Builder) Build() (Runtime, error) {
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
-			cfg:        b.cfg,
-			rm:         b.rm,
-			rom:        b.rom,
-			rs:         b.rs,
-			ss:         b.ss,
-			cam:        b.cam,
-			dsl:        b.dsl,
-			ext:        b.ext,
-			dns:        b.dns,
-			configm:    b.configm,
-			leadInfo:   b.leadInfo,
-			lif:        b.lif,
-			eac:        b.eac,
-			metrics:    b.metrics,
-			erf:        b.erf,
-			apim:       b.apim,
-			xdsh:       b.xdsh,
-			cap:        b.cap,
-			dps:        b.dps,
-			kdsctx:     b.kdsctx,
-			mv:         b.mv,
-			shutdownCh: b.shutdownCh,
+			cfg:      b.cfg,
+			rm:       b.rm,
+			rom:      b.rom,
+			rs:       b.rs,
+			ss:       b.ss,
+			cam:      b.cam,
+			dsl:      b.dsl,
+			ext:      b.ext,
+			dns:      b.dns,
+			configm:  b.configm,
+			leadInfo: b.leadInfo,
+			lif:      b.lif,
+			eac:      b.eac,
+			metrics:  b.metrics,
+			erf:      b.erf,
+			apim:     b.apim,
+			xdsh:     b.xdsh,
+			cap:      b.cap,
+			dps:      b.dps,
+			kdsctx:   b.kdsctx,
+			mv:       b.mv,
+			appCtx:   b.appCtx,
 		},
 		Manager: b.cm,
 	}, nil
@@ -371,6 +371,6 @@ func (b *Builder) KDSContext() *kds_context.Context {
 func (b *Builder) MeshValidator() core_managers.MeshValidator {
 	return b.mv
 }
-func (b *Builder) ShutdownCh() <-chan struct{} {
-	return b.shutdownCh
+func (b *Builder) AppCtx() context.Context {
+	return b.appCtx
 }
