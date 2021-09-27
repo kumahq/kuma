@@ -62,8 +62,33 @@ Routes:
             weightedClusters:
               totalWeight: 0
         - match:
-            path: /service/echo
+            path: /
+          requestHeadersToAdd:
+          - append: false
+            header:
+              key: Set-Header-One
+              value: one
+          - append: false
+            header:
+              key: Set-Header-Two
+              value: two
+          - append: true
+            header:
+              key: Append-Forwarded
+              value: "yes"
+          - append: true
+            header:
+              key: Append-Forwarded
+              value: please
+          requestHeadersToRemove:
+          - delete-another
           route:
+            requestMirrorPolicies:
+            - cluster: echo-mirror-303ee71109a987aa
+              runtimeFraction:
+                defaultValue:
+                  denominator: TEN_THOUSAND
+                  numerator: 10
             weightedClusters:
               clusters:
               - name: echo-service

@@ -62,8 +62,12 @@ Routes:
             weightedClusters:
               totalWeight: 0
         - match:
-            path: /service/echo
+            headers:
+            - exactMatch: PUT
+              name: :method
+            path: /app/json
           route:
+            hostRewriteLiteral: newhost.example.com
             weightedClusters:
               clusters:
               - name: echo-service

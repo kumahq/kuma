@@ -62,11 +62,39 @@ Routes:
             weightedClusters:
               totalWeight: 0
         - match:
-            path: /service/echo
+            headers:
+            - name: Content-Type
+              safeRegexMatch:
+                googleRe2: {}
+                regex: application/.*
+            - name: Language
+              safeRegexMatch:
+                googleRe2: {}
+                regex: .*sh
           route:
             weightedClusters:
               clusters:
-              - name: echo-service
+              - name: regex-header-match
+                weight: 1
+              totalWeight: 1
+        - match:
+            headers:
+            - exactMatch: application/json
+              name: Content-Type
+          route:
+            weightedClusters:
+              clusters:
+              - name: exact-header-match
+                weight: 1
+              totalWeight: 1
+        - match:
+            headers:
+            - exactMatch: gibberish
+              name: Language
+          route:
+            weightedClusters:
+              clusters:
+              - name: exact-header-match
                 weight: 1
               totalWeight: 1
 Runtimes:
