@@ -127,8 +127,9 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.HTTPS.Port).To(Equal(uint32(15682)))
 			Expect(cfg.ApiServer.HTTPS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.ApiServer.HTTPS.TlsKeyFile).To(Equal("/key"))
-			Expect(cfg.ApiServer.Auth.AllowFromLocalhost).To(Equal(false))
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
+			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(Equal(false))
+			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
 			// nolint: staticcheck
@@ -238,6 +239,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.NoTrafficInterval).To(Equal(7 * time.Second))
 			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
+
+			Expect(cfg.RBAC.Type).To(Equal("custom-rbac"))
+			Expect(cfg.RBAC.Static.AdminUsers).To(Equal([]string{"admin1", "admin2"}))
+			Expect(cfg.RBAC.Static.AdminGroups).To(Equal([]string{"group1", "group2"}))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -291,7 +296,9 @@ apiServer:
     tlsKeyFile: "/key" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
   auth:
     clientCertsDir: "/certs" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-    allowFromLocalhost: false # ENV: KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST
+  authn:
+    type: custom-authn
+    localhostIsAdmin: false
   readOnly: true
   corsAllowedDomains:
     - https://kuma
@@ -430,6 +437,11 @@ dpServer:
       noTrafficInterval: 7s
       healthyThreshold: 8
       unhealthyThreshold: 9
+rbac:
+  type: custom-rbac
+  static:
+    adminUsers: ["admin1", "admin2"]
+    adminGroups: ["group1", "group2"]
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -472,7 +484,8 @@ dpServer:
 				"KUMA_API_SERVER_HTTPS_TLS_CERT_FILE":                                                      "/cert",
 				"KUMA_API_SERVER_HTTPS_TLS_KEY_FILE":                                                       "/key",
 				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
-				"KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST":                                                "false",
+				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
+				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                                              "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",
@@ -564,6 +577,9 @@ dpServer:
 				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
+				"KUMA_RBAC_TYPE":                "custom-rbac",
+				"KUMA_RBAC_STATIC_ADMIN_USERS":  "admin1,admin2",
+				"KUMA_RBAC_STATIC_ADMIN_GROUPS": "group1,group2",
 			},
 			yamlFileConfig: "",
 		}),

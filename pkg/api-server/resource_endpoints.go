@@ -7,7 +7,6 @@ import (
 
 	"github.com/emicklei/go-restful"
 
-	"github.com/kumahq/kuma/pkg/api-server/authz"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -33,19 +32,10 @@ type resourceEndpoints struct {
 	mode       config_core.CpMode
 	resManager manager.ResourceManager
 	descriptor model.ResourceTypeDescriptor
-	adminAuth  authz.AdminAuth
-}
-
-func (r *resourceEndpoints) auth() restful.FilterFunction {
-	if r.descriptor.AdminOnly {
-		return r.adminAuth.Validate
-	}
-	return authz.NoAuth
 }
 
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource).
-		Filter(r.auth()).
 		Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 		Returns(200, "OK", nil).
@@ -70,7 +60,6 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 
 func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix).To(r.listResources).
-		Filter(r.auth()).
 		Doc(fmt.Sprintf("List of %s", r.descriptor.Name)).
 		Param(ws.PathParameter("size", "size of page").DataType("int")).
 		Param(ws.PathParameter("offset", "offset of page to list").DataType("string")).
@@ -105,7 +94,6 @@ func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pa
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
 		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
-			Filter(r.auth()).
 			Doc(fmt.Sprintf("Updates a %s", r.descriptor.WsPath)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.descriptor.WsPath)).DataType("string")).
 			Returns(200, "OK", nil).
@@ -176,7 +164,6 @@ func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
 		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
-			Filter(r.auth()).
 			Doc(fmt.Sprintf("Deletes a %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil))

@@ -12,9 +12,12 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
 )
 
@@ -38,8 +41,6 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		config.Auth.ClientCertsDir = filepath.Join("..", "..", "..", "test", "certs", "client")
 	}
 
-	resources := manager.NewResourceManager(store)
-
 	getInstanceId := func() string { return "instance-id" }
 	getClusterId := func() string { return "cluster-id" }
 
@@ -48,7 +49,20 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	}
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, wsManager, registry.Global().ObjectDescriptors(core_model.HasWsEnabled()), &cfg, enableGUI, metrics, getInstanceId, getClusterId)
+	roleAssignments := user.NewStaticRoleAssignments(cfg.RBAC.Static)
+	resources := rbac.NewRBACResourceManager(manager.NewResourceManager(store), rbac.NewAdminResourceAccess(roleAssignments))
+	apiServer, err := api_server.NewApiServer(
+		resources,
+		wsManager,
+		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
+		&cfg,
+		enableGUI,
+		metrics,
+		getInstanceId,
+		getClusterId,
+		certs.ClientCertAuthenticator,
+		roleAssignments,
+	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

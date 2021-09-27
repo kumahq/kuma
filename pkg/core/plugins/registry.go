@@ -13,6 +13,7 @@ const (
 	configStorePlugin   pluginType = "config-store"
 	runtimePlugin       pluginType = "runtime"
 	caPlugin            pluginType = "ca"
+	authnAPIServer      pluginType = "authn-api-server"
 )
 
 type PluginName string
@@ -34,6 +35,7 @@ type Registry interface {
 	ConfigStore(name PluginName) (ConfigStorePlugin, error)
 	RuntimePlugins() map[PluginName]RuntimePlugin
 	CaPlugins() map[PluginName]CaPlugin
+	AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin
 }
 
 type RegistryMutator interface {
@@ -47,24 +49,26 @@ type MutableRegistry interface {
 
 func NewRegistry() MutableRegistry {
 	return &registry{
-		bootstrap:     make(map[PluginName]BootstrapPlugin),
-		resourceStore: make(map[PluginName]ResourceStorePlugin),
-		secretStore:   make(map[PluginName]SecretStorePlugin),
-		configStore:   make(map[PluginName]ConfigStorePlugin),
-		runtime:       make(map[PluginName]RuntimePlugin),
-		ca:            make(map[PluginName]CaPlugin),
+		bootstrap:      make(map[PluginName]BootstrapPlugin),
+		resourceStore:  make(map[PluginName]ResourceStorePlugin),
+		secretStore:    make(map[PluginName]SecretStorePlugin),
+		configStore:    make(map[PluginName]ConfigStorePlugin),
+		runtime:        make(map[PluginName]RuntimePlugin),
+		ca:             make(map[PluginName]CaPlugin),
+		authnAPIServer: make(map[PluginName]AuthnAPIServerPlugin),
 	}
 }
 
 var _ MutableRegistry = &registry{}
 
 type registry struct {
-	bootstrap     map[PluginName]BootstrapPlugin
-	resourceStore map[PluginName]ResourceStorePlugin
-	secretStore   map[PluginName]SecretStorePlugin
-	configStore   map[PluginName]ConfigStorePlugin
-	runtime       map[PluginName]RuntimePlugin
-	ca            map[PluginName]CaPlugin
+	bootstrap      map[PluginName]BootstrapPlugin
+	resourceStore  map[PluginName]ResourceStorePlugin
+	secretStore    map[PluginName]SecretStorePlugin
+	configStore    map[PluginName]ConfigStorePlugin
+	runtime        map[PluginName]RuntimePlugin
+	ca             map[PluginName]CaPlugin
+	authnAPIServer map[PluginName]AuthnAPIServerPlugin
 }
 
 func (r *registry) ResourceStore(name PluginName) (ResourceStorePlugin, error) {
@@ -103,6 +107,10 @@ func (r *registry) BootstrapPlugins() map[PluginName]BootstrapPlugin {
 	return r.bootstrap
 }
 
+func (r *registry) AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin {
+	return r.authnAPIServer
+}
+
 func (r *registry) Register(name PluginName, plugin Plugin) error {
 	if bp, ok := plugin.(BootstrapPlugin); ok {
 		if old, exists := r.bootstrap[name]; exists {
@@ -139,6 +147,12 @@ func (r *registry) Register(name PluginName, plugin Plugin) error {
 			return pluginAlreadyRegisteredError(caPlugin, name, old, cp)
 		}
 		r.ca[name] = cp
+	}
+	if authn, ok := plugin.(AuthnAPIServerPlugin); ok {
+		if old, exists := r.authnAPIServer[name]; exists {
+			return pluginAlreadyRegisteredError(authnAPIServer, name, old, authn)
+		}
+		r.authnAPIServer[name] = authn
 	}
 	return nil
 }
