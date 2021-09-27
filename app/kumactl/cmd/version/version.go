@@ -30,7 +30,7 @@ func NewCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				cmd.Println(fmt.Sprintf("Git Commit: %s", buildInfo.GitCommit))
 				cmd.Println(fmt.Sprintf("Build Date: %s", buildInfo.BuildDate))
 			} else {
-				cmd.Printf("%s: %s\n", kuma_version.Product, buildInfo.Version)
+				cmd.Printf("Client: %s %s\n", kuma_version.Product, buildInfo.Version)
 			}
 
 			var kumaCPInfo *types.IndexResponse
@@ -41,7 +41,7 @@ func NewCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			}
 
 			if kumaCPInfo != nil {
-				cmd.Printf("kuma-cp: %s\n", kumaCPInfo.Version)
+				cmd.Printf("Server: %s %s\n", kumaCPInfo.Tagline, kumaCPInfo.Version)
 			} else {
 				cmd.PrintErrf("Unable to connect to control plane: %v\n", err)
 			}
