@@ -15,7 +15,7 @@ jobs:
       with:
         go-version: 1.17
 
-    - run: go get github.com/golang-jwt/jwt/v4
+    - run: go mod tidy
     - name: Commit changes
       uses: EndBug/add-and-commit@v7
       with:
