@@ -62,8 +62,14 @@ Routes:
             weightedClusters:
               totalWeight: 0
         - match:
-            path: /service/echo
+            path: /
           route:
+            requestMirrorPolicies:
+            - cluster: echo-mirror-303ee71109a987aa
+              runtimeFraction:
+                defaultValue:
+                  denominator: TEN_THOUSAND
+                  numerator: 10
             weightedClusters:
               clusters:
               - name: echo-service

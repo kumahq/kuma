@@ -3,7 +3,7 @@ package gateway
 import (
 	"time"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/pkg/errors"
 
@@ -115,12 +115,12 @@ func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayRes
 				hcm.RequestHeadersTimeout = util_proto.Duration(DefaultRequestHeadersTimeout)
 				hcm.StreamIdleTimeout = util_proto.Duration(DefaultStreamIdleTimeout)
 
-				hcm.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{
+				hcm.CommonHttpProtocolOptions = &envoy_config_core.HttpProtocolOptions{
 					IdleTimeout:                  util_proto.Duration(DefaultIdleTimeout),
-					HeadersWithUnderscoresAction: envoy_config_core_v3.HttpProtocolOptions_REJECT_REQUEST,
+					HeadersWithUnderscoresAction: envoy_config_core.HttpProtocolOptions_REJECT_REQUEST,
 				}
 
-				hcm.Http2ProtocolOptions = &envoy_config_core_v3.Http2ProtocolOptions{
+				hcm.Http2ProtocolOptions = &envoy_config_core.Http2ProtocolOptions{
 					MaxConcurrentStreams:        util_proto.UInt32(DefaultConcurrentStreams),
 					InitialStreamWindowSize:     util_proto.UInt32(DefaultInitialStreamWindowSize),
 					InitialConnectionWindowSize: util_proto.UInt32(DefaultInitialConnectionWindowSize),

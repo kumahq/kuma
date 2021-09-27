@@ -272,12 +272,16 @@ message GatewayRoute {
 
       // Filters are request processing steps that are applied to
       // matched requests.
+      //
+      // If the redirect filter is specified, it must be the only
+      // filter given.
       repeated Filter filters = 2;
 
       // Backends is the set of services to which the gateway will
-      // forward requests.
-      repeated Backend backends = 3
-          [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
+      // forward requests. If a redirect filter is specified, no
+      // backends are allowed. Otherwise, at least one backend
+      // must be given.
+      repeated Backend backends = 3 [ (doc.required) = false ];
     };
 
     // Hostnames lists the server names for which this route is valid. The
