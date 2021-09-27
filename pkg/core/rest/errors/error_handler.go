@@ -35,7 +35,9 @@ func HandleError(response *restful.Response, err error, title string) {
 	case issuer.IsSigningKeyNotFoundErr(err):
 		handleSigningKeyNotFound(err, response)
 	case errors.Is(err, &rbac.AccessDeniedError{}):
-		handleAccessDenied(err.(*rbac.AccessDeniedError), response)
+		var rbacErr *rbac.AccessDeniedError
+		errors.As(err, &rbacErr)
+		handleAccessDenied(rbacErr, response)
 	default:
 		handleUnknownError(err, title, response)
 	}
