@@ -106,6 +106,7 @@
       "targets": [
         {
           "expr": "sum(envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
+          "instant": true,
           "interval": "",
           "legendFormat": "",
           "refId": "A"
