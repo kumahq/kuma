@@ -32,7 +32,7 @@ var _ = Describe("DataplaneToMeshMapper", func() {
 							{
 								Instances: 2,
 								Mesh:      "mesh-1",
-								Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+								Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2"},
 							},
 							{
 								Instances: 3,
