@@ -60,9 +60,7 @@ type ExternalService struct {
 }
 
 type Locality struct {
-	Region   string
 	Zone     string
-	SubZone  string
 	Priority uint32
 }
 
@@ -196,7 +194,7 @@ func (e Endpoint) LocalityString() string {
 	if e.Locality == nil {
 		return ""
 	}
-	return e.Locality.Region + "/" + e.Locality.Zone + "/" + e.Locality.SubZone
+	return e.Locality.Zone
 }
 
 func (e Endpoint) HasLocality() bool {
