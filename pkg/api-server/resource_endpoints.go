@@ -13,8 +13,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -29,9 +31,10 @@ const (
 )
 
 type resourceEndpoints struct {
-	mode       config_core.CpMode
-	resManager manager.ResourceManager
-	descriptor model.ResourceTypeDescriptor
+	mode           config_core.CpMode
+	resManager     manager.ResourceManager
+	descriptor     model.ResourceTypeDescriptor
+	resourceAccess rbac.ResourceAccess
 }
 
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -45,6 +48,15 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 func (r *resourceEndpoints) findResource(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
+
+	if err := r.resourceAccess.ValidateGet(
+		model.ResourceKey{Mesh: meshName, Name: name},
+		r.descriptor,
+		user.UserFromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
 
 	resource := r.descriptor.NewObject()
 	err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName))
@@ -68,6 +80,14 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 
 func (r *resourceEndpoints) listResources(request *restful.Request, response *restful.Response) {
 	meshName := r.meshFromRequest(request)
+
+	if err := r.resourceAccess.ValidateList(
+		r.descriptor,
+		user.UserFromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
 
 	page, err := pagination(request)
 	if err != nil {
@@ -132,6 +152,16 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 }
 
 func (r *resourceEndpoints) createResource(ctx context.Context, name string, meshName string, spec model.ResourceSpec, response *restful.Response) {
+	if err := r.resourceAccess.ValidateCreate(
+		model.ResourceKey{Mesh: meshName, Name: name},
+		spec,
+		r.descriptor,
+		user.UserFromCtx(ctx),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
+
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(spec)
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName)); err != nil {
@@ -142,6 +172,16 @@ func (r *resourceEndpoints) createResource(ctx context.Context, name string, mes
 }
 
 func (r *resourceEndpoints) updateResource(ctx context.Context, res model.Resource, restRes rest.Resource, response *restful.Response) {
+	if err := r.resourceAccess.ValidateUpdate(
+		model.ResourceKey{Mesh: res.GetMeta().GetMesh(), Name: res.GetMeta().GetName()},
+		res.GetSpec(),
+		r.descriptor,
+		user.UserFromCtx(ctx),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
+
 	_ = res.SetSpec(restRes.Spec)
 	if err := r.resManager.Update(ctx, res); err != nil {
 		rest_errors.HandleError(response, err, "Could not update a resource")
@@ -173,8 +213,23 @@ func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix
 func (r *resourceEndpoints) deleteResource(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
-
 	resource := r.descriptor.NewObject()
+
+	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
+		rest_errors.HandleError(response, err, "Could not delete a resource")
+		return
+	}
+
+	if err := r.resourceAccess.ValidateDelete(
+		model.ResourceKey{Mesh: meshName, Name: name},
+		resource.GetSpec(),
+		resource.Descriptor(),
+		user.UserFromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
+
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(response, err, "Could not delete a resource")
 	}

@@ -119,25 +119,21 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		config.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 	}
 
-	defs := append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor)
 	cfg := kuma_cp.DefaultConfig()
 	roleAssignments := user.NewStaticRoleAssignments(cfg.RBAC.Static)
-	resources := rbac.NewRBACResourceManager(manager.NewResourceManager(store), rbac.NewAdminResourceAccess(roleAssignments))
-	wsManager := customization.NewAPIList()
 	cfg.ApiServer = config
-	getInstanceId := func() string { return "instance-id" }
-	getClusterId := func() string { return "cluster-id" }
 	apiServer, err := api_server.NewApiServer(
-		resources,
-		wsManager,
-		defs,
+		manager.NewResourceManager(store),
+		customization.NewAPIList(),
+		append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor),
 		&cfg,
 		enableGUI,
 		metrics,
-		getInstanceId,
-		getClusterId,
+		func() string { return "instance-id" },
+		func() string { return "cluster-id" },
 		certs.ClientCertAuthenticator,
 		roleAssignments,
+		rbac.NewAdminResourceAccess(roleAssignments),
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

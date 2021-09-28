@@ -85,6 +85,7 @@ func NewApiServer(
 	getInstanceId func() string, getClusterId func() string,
 	authenticator authn.Authenticator,
 	roleAssignments user.RoleAssignments,
+	resourceAccess rbac.ResourceAccess,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -118,7 +119,7 @@ func NewApiServer(
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, cfg)
+	addResourcesEndpoints(ws, defs, resManager, cfg, resourceAccess)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId); err != nil {
@@ -162,22 +163,25 @@ func NewApiServer(
 	return newApiServer, nil
 }
 
-func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config) {
+func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config, resourceAccess rbac.ResourceAccess) {
 	dpOverviewEndpoints := dataplaneOverviewEndpoints{
-		resManager: resManager,
+		resManager:     resManager,
+		resourceAccess: resourceAccess,
 	}
 	dpOverviewEndpoints.addListEndpoint(ws, "/meshes/{mesh}")
 	dpOverviewEndpoints.addFindEndpoint(ws, "/meshes/{mesh}")
 	dpOverviewEndpoints.addListEndpoint(ws, "") // listing all resources in all meshes
 
 	zoneOverviewEndpoints := zoneOverviewEndpoints{
-		resManager: resManager,
+		resManager:     resManager,
+		resourceAccess: resourceAccess,
 	}
 	zoneOverviewEndpoints.addFindEndpoint(ws)
 	zoneOverviewEndpoints.addListEndpoint(ws)
 
 	zoneIngressOverviewEndpoints := zoneIngressOverviewEndpoints{
-		resManager: resManager,
+		resManager:     resManager,
+		resourceAccess: resourceAccess,
 	}
 	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
 	zoneIngressOverviewEndpoints.addListEndpoint(ws)
@@ -188,9 +192,10 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
-			mode:       cfg.Mode,
-			resManager: resManager,
-			descriptor: definition,
+			mode:           cfg.Mode,
+			resManager:     resManager,
+			descriptor:     definition,
+			resourceAccess: resourceAccess,
 		}
 		switch defType {
 		case mesh.ServiceInsightType:
@@ -358,7 +363,7 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
 	apiServer, err := NewApiServer(
-		rbac.NewRBACResourceManager(rt.ResourceManager(), rt.ResourceAccess()),
+		rt.ResourceManager(),
 		rt.APIInstaller(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
@@ -368,6 +373,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.GetClusterId,
 		rt.APIServerAuthenticator(),
 		rt.RoleAssignments(),
+		rt.ResourceAccess(),
 	)
 	if err != nil {
 		return err
