@@ -9,6 +9,8 @@ import (
 
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/cmd/version"
+	"github.com/kumahq/kuma/pkg/config"
+	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
@@ -69,6 +71,12 @@ func NewRootCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	// sub-commands
 	cmd.AddCommand(newRunCmd(opts, rootCtx))
 	cmd.AddCommand(version.NewVersionCmd())
+	cmd.AddCommand(config.NewConfigCmd(config.DefaultConfigLoaderFunc(
+		func() config.Config {
+			c := kuma_dp.DefaultConfig()
+			return &c
+		})),
+	)
 
 	return cmd
 }

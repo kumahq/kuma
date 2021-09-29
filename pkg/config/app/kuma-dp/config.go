@@ -17,8 +17,12 @@ func DefaultConfig() Config {
 		ControlPlane: ControlPlane{
 			URL: "https://localhost:5678",
 			Retry: CpRetry{
-				Backoff:     3 * time.Second,
-				MaxDuration: 5 * time.Minute, // this value can be fairy long since what will happen when there there is a connection error is that the Dataplane will be restarted (by process manager like systemd/K8S etc.) and will try to connect again.
+				Backoff: 3 * time.Second,
+				// This value can be fairly long since what will happen when
+				// there is a connection error is that the Dataplane will be
+				// restarted (by process manager like systemd/K8S etc.) and will
+				// try to connect again.
+				MaxDuration: 5 * time.Minute,
 			},
 		},
 		Dataplane: Dataplane{

@@ -700,6 +700,34 @@ _kumactl_config_control-planes()
     noun_aliases=()
 }
 
+_kumactl_config_default()
+{
+    last_command="kumactl_config_default"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--no-config")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_config_view()
 {
     last_command="kumactl_config_view"
@@ -736,6 +764,7 @@ _kumactl_config()
 
     commands=()
     commands+=("control-planes")
+    commands+=("default")
     commands+=("view")
 
     flags=()

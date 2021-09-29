@@ -11,8 +11,8 @@ import (
 func newConfigViewCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	return &cobra.Command{
 		Use:   "view",
-		Short: "Show kumactl config",
-		Long:  `Show kumactl config.`,
+		Short: "print the current configuration file",
+		Long:  "Print the current configuration file.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := pctx.Config()
 			contents, err := util_proto.ToYAML(cfg)

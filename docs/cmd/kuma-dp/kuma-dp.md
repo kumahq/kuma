@@ -19,6 +19,7 @@ Dataplane manager for Envoy-based Service Mesh.
 
 ### SEE ALSO
 
+* [kuma-dp config](kuma-dp_config.md)	 - show configuration information
 * [kuma-dp run](kuma-dp_run.md)	 - Launch Dataplane (Envoy)
 * [kuma-dp version](kuma-dp_version.md)	 - Print version
 

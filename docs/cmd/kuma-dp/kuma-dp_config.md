@@ -1,15 +1,20 @@
-## kuma-cp
+## kuma-dp config
 
-Universal Control Plane for Envoy-based Service Mesh
+show configuration information
 
 ### Synopsis
 
-Universal Control Plane for Envoy-based Service Mesh.
+Show configuration information.
 
 ### Options
 
 ```
-  -h, --help                         help for kuma-cp
+  -h, --help   help for config
+```
+
+### Options inherited from parent commands
+
+```
       --log-level string             log level: one of off|info|debug (default "info")
       --log-max-age int              maximum number of days to retain old log files based on the timestamp encoded in their filename (default 30)
       --log-max-retained-files int   maximum number of the old log files to retain (default 1000)
@@ -19,8 +24,7 @@ Universal Control Plane for Envoy-based Service Mesh.
 
 ### SEE ALSO
 
-* [kuma-cp config](kuma-cp_config.md)	 - show configuration information
-* [kuma-cp migrate](kuma-cp_migrate.md)	 - Migrate database to which Control Plane is connected
-* [kuma-cp run](kuma-cp_run.md)	 - Launch Control Plane
-* [kuma-cp version](kuma-cp_version.md)	 - Print version
+* [kuma-dp](kuma-dp.md)	 - Dataplane manager for Envoy-based Service Mesh
+* [kuma-dp config default](kuma-dp_config_default.md)	 - print the default configuration file
+* [kuma-dp config view](kuma-dp_config_view.md)	 - print the current configuration file
 

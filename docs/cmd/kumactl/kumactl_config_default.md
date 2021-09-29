@@ -1,19 +1,19 @@
-## kumactl config view
+## kumactl config default
 
-print the current configuration file
+print the default configuration file
 
 ### Synopsis
 
-Print the current configuration file.
+Print the default configuration file.
 
 ```
-kumactl config view [flags]
+kumactl config default [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for view
+  -h, --help   help for default
 ```
 
 ### Options inherited from parent commands
