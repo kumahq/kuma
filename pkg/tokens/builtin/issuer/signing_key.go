@@ -43,14 +43,22 @@ func SigningKeyResourceKey(prefix, meshName string) model.ResourceKey {
 	}
 }
 
+func NewSigningKey() ([]byte, error) {
+	key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate rsa key")
+	}
+	return x509.MarshalPKCS1PrivateKey(key), nil
+}
+
 func CreateSigningKey() (*system.SecretResource, error) {
 	res := system.NewSecretResource()
-	key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
+	key, err := NewSigningKey()
 	if err != nil {
 		return res, errors.Wrap(err, "failed to generate rsa key")
 	}
 	res.Spec = &system_proto.Secret{
-		Data: util_proto.Bytes(x509.MarshalPKCS1PrivateKey(key)),
+		Data: util_proto.Bytes(key),
 	}
 	return res, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	generate_context "github.com/kumahq/kuma/app/kumactl/cmd/generate/context"
 	"github.com/pkg/errors"
 
 	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
@@ -53,6 +54,7 @@ type RootContext struct {
 	Runtime                             RootRuntime
 	GetContext                          get_context.GetContext
 	ListContext                         get_context.ListContext
+	GenerateContext                     generate_context.GenerateContext
 	InspectContext                      inspect_context.InspectContext
 	InstallCpContext                    install_context.InstallCpContext
 	InstallMetricsContext               install_context.InstallMetricsContext
@@ -88,6 +90,7 @@ func DefaultRootContext() *RootContext {
 		InstallGatewayKongEnterpriseContext: install_context.DefaultInstallGatewayKongEnterpriseContext(),
 		InstallTracingContext:               install_context.DefaultInstallTracingContext(),
 		InstallLoggingContext:               install_context.DefaultInstallLoggingContext(),
+		GenerateContext:                     generate_context.DefaultGenerateContext(),
 	}
 }
 
