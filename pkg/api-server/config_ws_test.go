@@ -52,8 +52,11 @@ var _ = Describe("Config WS", func() {
 		{
 		  "apiServer": {
 			"auth": {
-			  "allowFromLocalhost": true,
 			  "clientCertsDir": "../../test/certs/client"
+			},
+			"authn": {
+			  "localhostIsAdmin": true,
+			  "type": "clientCerts"
 			},
 			"corsAllowedDomains": [
 			  ".*"
@@ -311,6 +314,13 @@ var _ = Describe("Config WS", func() {
           "diagnostics": {
             "serverPort": 5680,
             "debugEndpoints": false
+          },
+          "rbac": {
+            "type": "static",
+            "static": {
+              "adminUsers": ["admin"],
+              "adminGroups": ["admin"]
+            }
           }
         }
 		`, port, cfg.HTTPS.Port)

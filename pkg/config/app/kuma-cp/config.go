@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
+	"github.com/kumahq/kuma/pkg/config/rbac"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 )
@@ -140,6 +141,8 @@ type Config struct {
 	Diagnostics *diagnostics.DiagnosticsConfig `yaml:"diagnostics,omitempty"`
 	// Dataplane Server configuration
 	DpServer *dp_server.DpServerConfig `yaml:"dpServer"`
+	// Role-Based Access Control configuration
+	RBAC rbac.RBACConfig `yaml:"rbac"`
 }
 
 func (c *Config) Sanitize() {
@@ -196,6 +199,7 @@ func DefaultConfig() Config {
 		Multizone:   multizone.DefaultMultizoneConfig(),
 		Diagnostics: diagnostics.DefaultDiagnosticsConfig(),
 		DpServer:    dp_server.DefaultDpServerConfig(),
+		RBAC:        rbac.DefaultRBACConfig(),
 	}
 }
 

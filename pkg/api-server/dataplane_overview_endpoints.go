@@ -12,13 +12,16 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 type dataplaneOverviewEndpoints struct {
-	resManager manager.ResourceManager
+	resManager     manager.ResourceManager
+	resourceAccess rbac.ResourceAccess
 }
 
 func (r *dataplaneOverviewEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -43,6 +46,15 @@ func (r *dataplaneOverviewEndpoints) addListEndpoint(ws *restful.WebService, pat
 func (r *dataplaneOverviewEndpoints) inspectDataplane(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 	meshName := request.PathParameter("mesh")
+
+	if err := r.resourceAccess.ValidateGet(
+		core_model.ResourceKey{Mesh: meshName, Name: name},
+		mesh.NewDataplaneOverviewResource().Descriptor(),
+		user.FromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
 
 	overview, err := r.fetchOverview(request.Request.Context(), name, meshName)
 	if err != nil {
@@ -79,6 +91,15 @@ func (r *dataplaneOverviewEndpoints) fetchOverview(ctx context.Context, name str
 
 func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request, response *restful.Response) {
 	meshName := request.PathParameter("mesh")
+
+	if err := r.resourceAccess.ValidateList(
+		mesh.NewDataplaneOverviewResource().Descriptor(),
+		user.FromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
+
 	page, err := pagination(request)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")

@@ -132,8 +132,12 @@ apiServer:
   auth:
     # Directory of authorized client certificates (only validate in HTTPS)
     clientCertsDir: "" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-    # Allow requests that are originating from localhost
-    allowFromLocalhost: true # ENV: KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST
+  # Api Server Authentication configuration
+  authn:
+    # Type of authentication mechanism (available values: "clientCerts")
+    type: clientCerts
+    # Localhost is authenticated as a user admin of group admin
+    localhostIsAdmin: true
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
@@ -382,3 +386,14 @@ dpServer:
       healthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD
       # UnhealthyThreshold is a number of unhealthy health checks required before a host is marked unhealthy
       unhealthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD
+
+# Role-Based Access Control configuration
+rbac:
+  # Type of RBAC strategy (available values: "static")
+  type: static
+  # Configuration of static RBAC strategy
+  static:
+    # List of users that will be assigned an admin role
+    adminUsers: ["admin"]
+    # List of groups that will be assigned an admin role
+    adminGroups: ["admin"]

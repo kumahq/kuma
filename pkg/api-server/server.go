@@ -20,15 +20,18 @@ import (
 	"github.com/slok/go-http-metrics/middleware"
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
+	"github.com/kumahq/kuma/pkg/api-server/authn"
 	"github.com/kumahq/kuma/pkg/api-server/authz"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -72,9 +75,22 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, wsManager customization.APIInstaller, defs []model.ResourceTypeDescriptor, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics, getInstanceId func() string, getClusterId func() string) (*ApiServer, error) {
+func NewApiServer(
+	resManager manager.ResourceManager,
+	wsManager customization.APIInstaller,
+	defs []model.ResourceTypeDescriptor,
+	cfg *kuma_cp.Config,
+	enableGUI bool,
+	metrics metrics.Metrics,
+	getInstanceId func() string, getClusterId func() string,
+	authenticator authn.Authenticator,
+	roleAssignments rbac.RoleAssignments,
+	resourceAccess resources_rbac.ResourceAccess,
+) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
+
+	adminFilter := authz.AdminFilter(roleAssignments)
 
 	promMiddleware := middleware.New(middleware.Config{
 		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
@@ -83,6 +99,10 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 		}),
 	})
 	container.Filter(util_prometheus.MetricsHandler("", promMiddleware))
+	if cfg.ApiServer.Authn.LocalhostIsAdmin {
+		container.Filter(authn.LocalhostAuthenticator)
+	}
+	container.Filter(authenticator)
 
 	cors := restful.CrossOriginResourceSharing{
 		ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},
@@ -99,7 +119,7 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, cfg)
+	addResourcesEndpoints(ws, defs, resManager, cfg, resourceAccess)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId); err != nil {
@@ -123,7 +143,7 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 		config: *serverConfig,
 	}
 
-	dpWs, err := dataplaneTokenWs(resManager, cfg)
+	dpWs, err := dataplaneTokenWs(resManager, adminFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -143,22 +163,25 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 	return newApiServer, nil
 }
 
-func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config) {
+func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config, resourceAccess resources_rbac.ResourceAccess) {
 	dpOverviewEndpoints := dataplaneOverviewEndpoints{
-		resManager: resManager,
+		resManager:     resManager,
+		resourceAccess: resourceAccess,
 	}
 	dpOverviewEndpoints.addListEndpoint(ws, "/meshes/{mesh}")
 	dpOverviewEndpoints.addFindEndpoint(ws, "/meshes/{mesh}")
 	dpOverviewEndpoints.addListEndpoint(ws, "") // listing all resources in all meshes
 
 	zoneOverviewEndpoints := zoneOverviewEndpoints{
-		resManager: resManager,
+		resManager:     resManager,
+		resourceAccess: resourceAccess,
 	}
 	zoneOverviewEndpoints.addFindEndpoint(ws)
 	zoneOverviewEndpoints.addListEndpoint(ws)
 
 	zoneIngressOverviewEndpoints := zoneIngressOverviewEndpoints{
-		resManager: resManager,
+		resManager:     resManager,
+		resourceAccess: resourceAccess,
 	}
 	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
 	zoneIngressOverviewEndpoints.addListEndpoint(ws)
@@ -169,12 +192,10 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 			definition.ReadOnly = true
 		}
 		endpoints := resourceEndpoints{
-			mode:       cfg.Mode,
-			resManager: resManager,
-			descriptor: definition,
-			adminAuth: authz.AdminAuth{
-				AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost,
-			},
+			mode:           cfg.Mode,
+			resManager:     resManager,
+			descriptor:     definition,
+			resourceAccess: resourceAccess,
 		}
 		switch defType {
 		case mesh.ServiceInsightType:
@@ -203,7 +224,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 }
 
-func dataplaneTokenWs(resManager manager.ResourceManager, cfg *kuma_cp.Config) (*restful.WebService, error) {
+func dataplaneTokenWs(resManager manager.ResourceManager, adminFilter restful.FilterFunction) (*restful.WebService, error) {
 	dpIssuer, err := builtin.NewDataplaneTokenIssuer(resManager)
 	if err != nil {
 		return nil, err
@@ -212,8 +233,7 @@ func dataplaneTokenWs(resManager manager.ResourceManager, cfg *kuma_cp.Config) (
 	if err != nil {
 		return nil, err
 	}
-	adminAuth := authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost}
-	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer).Filter(adminAuth.Validate), nil
+	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer).Filter(adminFilter), nil
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {
@@ -264,9 +284,13 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 }
 
 func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
-	tlsConfig, err := configureMTLS(a.config.Auth.ClientCertsDir)
-	if err != nil {
-		errChan <- err
+	var tlsConfig *tls.Config
+	if a.config.Authn.Type == "clientCerts" {
+		tlsC, err := configureMTLS(a.config.Auth.ClientCertsDir)
+		if err != nil {
+			errChan <- err
+		}
+		tlsConfig = tlsC
 	}
 
 	server := &http.Server{
@@ -338,7 +362,19 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), registry.Global().ObjectDescriptors(model.HasWsEnabled()), &cfg, cfg.Mode != config_core.Zone, rt.Metrics(), rt.GetInstanceId, rt.GetClusterId)
+	apiServer, err := NewApiServer(
+		rt.ResourceManager(),
+		rt.APIInstaller(),
+		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
+		&cfg,
+		cfg.Mode != config_core.Zone,
+		rt.Metrics(),
+		rt.GetInstanceId,
+		rt.GetClusterId,
+		rt.APIServerAuthenticator(),
+		rt.RoleAssignments(),
+		rt.ResourceAccess(),
+	)
 	if err != nil {
 		return err
 	}

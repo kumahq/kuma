@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/ca"
@@ -11,7 +12,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/rbac"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -61,6 +64,9 @@ type RuntimeContext interface {
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
 	MeshValidator() core_managers.MeshValidator
+	APIServerAuthenticator() authn.Authenticator
+	ResourceAccess() resources_rbac.ResourceAccess
+	RoleAssignments() rbac.RoleAssignments
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
 }
@@ -123,6 +129,9 @@ type runtimeContext struct {
 	dps      *dp_server.DpServer
 	kdsctx   *kds_context.Context
 	mv       core_managers.MeshValidator
+	au       authn.Authenticator
+	ra       resources_rbac.ResourceAccess
+	ras      rbac.RoleAssignments
 	appCtx   context.Context
 }
 
@@ -211,6 +220,18 @@ func (rc *runtimeContext) KDSContext() *kds_context.Context {
 
 func (rc *runtimeContext) MeshValidator() core_managers.MeshValidator {
 	return rc.mv
+}
+
+func (rc *runtimeContext) APIServerAuthenticator() authn.Authenticator {
+	return rc.au
+}
+
+func (rc *runtimeContext) ResourceAccess() resources_rbac.ResourceAccess {
+	return rc.ra
+}
+
+func (rc *runtimeContext) RoleAssignments() rbac.RoleAssignments {
+	return rc.ras
 }
 
 func (rc *runtimeContext) AppContext() context.Context {

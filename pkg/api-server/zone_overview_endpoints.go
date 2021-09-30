@@ -10,12 +10,15 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 type zoneOverviewEndpoints struct {
-	resManager manager.ResourceManager
+	resManager     manager.ResourceManager
+	resourceAccess rbac.ResourceAccess
 }
 
 func (r *zoneOverviewEndpoints) addFindEndpoint(ws *restful.WebService) {
@@ -34,6 +37,15 @@ func (r *zoneOverviewEndpoints) addListEndpoint(ws *restful.WebService) {
 
 func (r *zoneOverviewEndpoints) inspectZone(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
+
+	if err := r.resourceAccess.ValidateGet(
+		model.ResourceKey{Name: name},
+		system.NewZoneResource().Descriptor(),
+		user.FromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
 
 	overview, err := r.fetchOverview(request.Request.Context(), name)
 	if err != nil {
@@ -69,6 +81,14 @@ func (r *zoneOverviewEndpoints) fetchOverview(ctx context.Context, name string) 
 }
 
 func (r *zoneOverviewEndpoints) inspectZones(request *restful.Request, response *restful.Response) {
+	if err := r.resourceAccess.ValidateList(
+		system.NewZoneResource().Descriptor(),
+		user.FromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
+
 	page, err := pagination(request)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
