@@ -888,6 +888,7 @@ jobs:
         description: use IPv6
         type: boolean
         default: false
+    parallelism: 8
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
