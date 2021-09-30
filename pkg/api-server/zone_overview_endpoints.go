@@ -41,7 +41,7 @@ func (r *zoneOverviewEndpoints) inspectZone(request *restful.Request, response *
 	if err := r.resourceAccess.ValidateGet(
 		model.ResourceKey{Name: name},
 		system.NewZoneResource().Descriptor(),
-		user.UserFromCtx(request.Request.Context()),
+		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return
@@ -83,7 +83,7 @@ func (r *zoneOverviewEndpoints) fetchOverview(ctx context.Context, name string) 
 func (r *zoneOverviewEndpoints) inspectZones(request *restful.Request, response *restful.Response) {
 	if err := r.resourceAccess.ValidateList(
 		system.NewZoneResource().Descriptor(),
-		user.UserFromCtx(request.Request.Context()),
+		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return

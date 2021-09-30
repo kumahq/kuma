@@ -4,11 +4,11 @@ import "context"
 
 type userCtx struct{}
 
-func UserCtx(ctx context.Context, user User) context.Context {
+func Ctx(ctx context.Context, user User) context.Context {
 	return context.WithValue(ctx, userCtx{}, &user)
 }
 
-func UserFromCtx(ctx context.Context) *User {
+func FromCtx(ctx context.Context) *User {
 	if value, ok := ctx.Value(userCtx{}).(*User); ok {
 		return value
 	}

@@ -50,7 +50,7 @@ func (r *dataplaneOverviewEndpoints) inspectDataplane(request *restful.Request, 
 	if err := r.resourceAccess.ValidateGet(
 		core_model.ResourceKey{Mesh: meshName, Name: name},
 		mesh.NewDataplaneOverviewResource().Descriptor(),
-		user.UserFromCtx(request.Request.Context()),
+		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return
@@ -94,7 +94,7 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 
 	if err := r.resourceAccess.ValidateList(
 		mesh.NewDataplaneOverviewResource().Descriptor(),
-		user.UserFromCtx(request.Request.Context()),
+		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return

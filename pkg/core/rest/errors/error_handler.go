@@ -37,7 +37,15 @@ func HandleError(response *restful.Response, err error, title string) {
 	case errors.Is(err, &rbac.AccessDeniedError{}):
 		var rbacErr *rbac.AccessDeniedError
 		errors.As(err, &rbacErr)
-		handleAccessDenied(rbacErr, response)
+		handleRbacAccessDenied(rbacErr, response)
+	case errors.Is(err, &Unauthenticated{}):
+		var unauthenticated *Unauthenticated
+		errors.As(err, &err)
+		handleUnauthenticated(unauthenticated, title, response)
+	case errors.Is(err, &AccessDenied{}):
+		var accessDenied *AccessDenied
+		errors.As(err, &err)
+		handleAccessDenied(accessDenied, title, response)
 	default:
 		handleUnknownError(err, title, response)
 	}
@@ -146,10 +154,26 @@ func handleSigningKeyNotFound(err error, response *restful.Response) {
 	writeError(response, 404, kumaErr)
 }
 
-func handleAccessDenied(err *rbac.AccessDeniedError, response *restful.Response) {
+func handleRbacAccessDenied(err *rbac.AccessDeniedError, response *restful.Response) {
 	kumaErr := types.Error{
 		Title:   "Access Denied",
 		Details: err.Reason,
+	}
+	writeError(response, 403, kumaErr)
+}
+
+func handleUnauthenticated(err *Unauthenticated, title string, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: err.Error(),
+	}
+	writeError(response, 401, kumaErr)
+}
+
+func handleAccessDenied(err *AccessDenied, title string, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: err.Error(),
 	}
 	writeError(response, 403, kumaErr)
 }

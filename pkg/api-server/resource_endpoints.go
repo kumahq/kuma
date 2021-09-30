@@ -52,7 +52,7 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 	if err := r.resourceAccess.ValidateGet(
 		model.ResourceKey{Mesh: meshName, Name: name},
 		r.descriptor,
-		user.UserFromCtx(request.Request.Context()),
+		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return
@@ -83,7 +83,7 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 
 	if err := r.resourceAccess.ValidateList(
 		r.descriptor,
-		user.UserFromCtx(request.Request.Context()),
+		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return
@@ -156,7 +156,7 @@ func (r *resourceEndpoints) createResource(ctx context.Context, name string, mes
 		model.ResourceKey{Mesh: meshName, Name: name},
 		spec,
 		r.descriptor,
-		user.UserFromCtx(ctx),
+		user.FromCtx(ctx),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return
@@ -176,7 +176,7 @@ func (r *resourceEndpoints) updateResource(ctx context.Context, res model.Resour
 		model.ResourceKey{Mesh: res.GetMeta().GetMesh(), Name: res.GetMeta().GetName()},
 		res.GetSpec(),
 		r.descriptor,
-		user.UserFromCtx(ctx),
+		user.FromCtx(ctx),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return
@@ -224,7 +224,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 		model.ResourceKey{Mesh: meshName, Name: name},
 		resource.GetSpec(),
 		resource.Descriptor(),
-		user.UserFromCtx(request.Request.Context()),
+		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return

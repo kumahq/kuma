@@ -1,12 +1,13 @@
-package rbac
+package rbac_test
 
 import (
+	rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config/rbac"
+	config_rbac "github.com/kumahq/kuma/pkg/config/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -14,7 +15,7 @@ import (
 )
 
 var _ = Describe("Admin Resource Access", func() {
-	resourceAccess := NewAdminResourceAccess(user.NewStaticRoleAssignments(rbac.RBACStaticConfig{
+	resourceAccess := rbac.NewAdminResourceAccess(user.NewStaticRoleAssignments(config_rbac.RBACStaticConfig{
 		AdminUsers: []string{"admin"},
 	}))
 

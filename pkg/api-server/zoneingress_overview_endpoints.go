@@ -41,7 +41,7 @@ func (r *zoneIngressOverviewEndpoints) inspectZoneIngress(request *restful.Reque
 	if err := r.resourceAccess.ValidateGet(
 		model.ResourceKey{Name: name},
 		mesh.NewZoneIngressOverviewResource().Descriptor(),
-		user.UserFromCtx(request.Request.Context()),
+		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return
@@ -83,7 +83,7 @@ func (r *zoneIngressOverviewEndpoints) fetchOverview(ctx context.Context, name s
 func (r *zoneIngressOverviewEndpoints) inspectZoneIngresses(request *restful.Request, response *restful.Response) {
 	if err := r.resourceAccess.ValidateList(
 		mesh.NewZoneIngressOverviewResource().Descriptor(),
-		user.UserFromCtx(request.Request.Context()),
+		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		rest_errors.HandleError(response, err, "Access Denied")
 		return

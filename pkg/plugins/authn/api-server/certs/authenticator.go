@@ -7,11 +7,11 @@ import (
 )
 
 func ClientCertAuthenticator(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
-	if user.UserFromCtx(request.Request.Context()) == nil && // do not overwrite existing user
+	if user.FromCtx(request.Request.Context()) == nil && // do not overwrite existing user
 		request.Request.TLS != nil &&
 		request.Request.TLS.HandshakeComplete &&
 		len(request.Request.TLS.PeerCertificates) > 0 {
-		request.Request = request.Request.WithContext(user.UserCtx(request.Request.Context(), user.Admin))
+		request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), user.Admin))
 	}
 	chain.ProcessFilter(request, response)
 }
