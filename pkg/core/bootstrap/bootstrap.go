@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 
-	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
@@ -23,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"

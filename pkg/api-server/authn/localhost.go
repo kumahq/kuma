@@ -4,9 +4,9 @@ import (
 	"net"
 
 	"github.com/emicklei/go-restful"
-	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
+	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
 )
 

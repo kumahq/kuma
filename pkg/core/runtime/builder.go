@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
@@ -17,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/rbac"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -85,9 +85,9 @@ type Builder struct {
 	dps      *dp_server.DpServer
 	kdsctx   *kds_context.Context
 	mv       core_managers.MeshValidator
-	au  authn.Authenticator
-	ra  resources_rbac.ResourceAccess
-	ras rbac.RoleAssignments
+	au       authn.Authenticator
+	ra       resources_rbac.ResourceAccess
+	ras      rbac.RoleAssignments
 	appCtx   context.Context
 	*runtimeInfo
 }

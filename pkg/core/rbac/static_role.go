@@ -31,5 +31,5 @@ func (s *staticRoleAssignments) Role(user user.User) Role {
 	if s.adminUsers[user.Name] || s.adminGroups[user.Group] {
 		return AdminRole
 	}
-	return UserRole
+	return MemberRole
 }

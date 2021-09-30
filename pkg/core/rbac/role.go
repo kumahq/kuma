@@ -5,14 +5,14 @@ import "github.com/kumahq/kuma/pkg/core/user"
 type Role int
 
 const (
-	UserRole Role = iota
+	MemberRole Role = iota
 	AdminRole
 )
 
 func (r Role) String() string {
 	switch r {
-	case UserRole:
-		return "User"
+	case MemberRole:
+		return "Member"
 	case AdminRole:
 		return "Admin"
 	default:

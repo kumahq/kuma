@@ -2,14 +2,11 @@ package authz
 
 import (
 	"github.com/emicklei/go-restful"
+
 	"github.com/kumahq/kuma/pkg/core/rbac"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
-
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/user"
 )
-
-var log = core.Log.WithName("api-server").WithName("autz")
 
 func AdminFilter(roleAssignments rbac.RoleAssignments) restful.FilterFunction {
 	return func(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
