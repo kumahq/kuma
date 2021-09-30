@@ -888,7 +888,6 @@ jobs:
         description: use IPv6
         type: boolean
         default: false
-    parallelism: 4
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
@@ -942,7 +941,7 @@ jobs:
                 name: "Run IPv6 E2E tests"
                 command: |
                   export PATH=$HOME/go/bin:$PATH
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export IPV6=true
                   export KUMA_DEFAULT_RETRIES=60
@@ -958,7 +957,7 @@ jobs:
                 name: "Run IPv4 E2E tests"
                 command: |
                   export PATH=$HOME/go/bin:$PATH
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
                   make test/e2e
