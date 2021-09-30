@@ -97,7 +97,7 @@ commands:
             echo "Nothing to do for forked PRs, so marking this step successful"
             circleci step halt
           fi
-  install_golang_release:
+  install_build_tools:
     description: "Install an upstream Go release to $HOME/go"
     parameters:
       os:
@@ -111,8 +111,22 @@ commands:
         default: *go_version
     steps:
     - run:
+        # `unzip` is necessary to install `protoc`
+        # `gcc`   is necessary to run `go test -race`
+        # `git`   is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
+        name: "Install basic tools"
         command: |
-          # see https://golang.org/doc/install#tarball
+          if [ -r /etc/os-release ]; then source /etc/os-release; fi
+          case "$ID" in
+          ubuntu)
+            sudo apt update
+            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc
+            ;;
+          esac
+    - run:
+        name: "Install Go"
+        # See https://golang.org/doc/install#tarball
+        command: |
           curl --progress-bar --fail --location https://dl.google.com/go/go<<parameters.version>>.<<parameters.os>>-<<parameters.arch>>.tar.gz | tar -xz -C $HOME
           echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
 
@@ -258,7 +272,7 @@ jobs:
         # prefer the exact match
         - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
 
-    - install_golang_release
+    - install_build_tools
 
     - run:
         name: "Download Go modules"
@@ -492,7 +506,7 @@ jobs:
         # prefer the exact match
         - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
 
-    - install_golang_release
+    - install_build_tools
 
     - run:
         name: "Download Go modules"
@@ -619,15 +633,8 @@ jobs:
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
     steps:
-    - run:
-        name: "Install prerequisites"
-        # make sure to deploy `git` befor checking out the code, otherwise Circle uses its own version, which behaves differently
-        # `unzip` is necessary to install `protoc`
-        # `gcc`   is necessary to run `go test -race`
-        command: |
-          apt update && apt install -y curl git make unzip gcc
+    - install_build_tools
     - checkout
-    - install_golang_release
     - run:
         name: "Install all development tools"
         command: |
@@ -671,7 +678,7 @@ jobs:
       GOPATH: /Users/distiller/.go-kuma-go
     steps:
     - checkout
-    - install_golang_release:
+    - install_build_tools:
         os: darwin
     - run:
         name: "Install all development tools"
@@ -809,12 +816,8 @@ jobs:
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
+    - install_build_tools
     - checkout
-    - run:
-        name: "Install build tools"
-        command: |
-          apt update && apt install -y curl git make
-    - install_golang_release
     - restore_cache:
         keys:
         # prefer the exact match
@@ -873,12 +876,8 @@ jobs:
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
+      - install_build_tools
       - checkout
-      - run:
-          name: "Install build tools"
-          command: |
-            apt update && apt install -y curl git make
-      - install_golang_release
       - restore_cache:
           keys:
             # prefer the exact match
@@ -1143,12 +1142,8 @@ jobs:
   release:
     executor: vm
     steps:
+    - install_build_tools
     - checkout
-    - run:
-        name: "Install build tools"
-        command: |
-          apt update && apt install -y curl git make
-    - install_golang_release
     - run:
         name: "Download Go modules"
         command: go mod download
