@@ -1,6 +1,9 @@
-package user
+package rbac
 
-import "github.com/kumahq/kuma/pkg/config/rbac"
+import (
+	"github.com/kumahq/kuma/pkg/config/rbac"
+	"github.com/kumahq/kuma/pkg/core/user"
+)
 
 type staticRoleAssignments struct {
 	adminUsers  map[string]bool
@@ -24,7 +27,7 @@ func NewStaticRoleAssignments(cfg rbac.RBACStaticConfig) RoleAssignments {
 	return &s
 }
 
-func (s *staticRoleAssignments) Role(user User) Role {
+func (s *staticRoleAssignments) Role(user user.User) Role {
 	if s.adminUsers[user.Name] || s.adminGroups[user.Group] {
 		return AdminRole
 	}

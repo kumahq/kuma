@@ -3,15 +3,16 @@ package rbac
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 type adminResourceAccess struct {
-	roleAssignments user.RoleAssignments
+	roleAssignments rbac.RoleAssignments
 }
 
-func NewAdminResourceAccess(roleAssignments user.RoleAssignments) ResourceAccess {
+func NewAdminResourceAccess(roleAssignments rbac.RoleAssignments) ResourceAccess {
 	return &adminResourceAccess{
 		roleAssignments: roleAssignments,
 	}
@@ -49,7 +50,7 @@ func (r *adminResourceAccess) validateAdminAccess(u *user.User, descriptor model
 		}
 	}
 	role := r.roleAssignments.Role(*u)
-	if role != user.AdminRole {
+	if role != rbac.AdminRole {
 		return &AccessDeniedError{
 			Reason: fmt.Sprintf("user %q of role %q cannot access the resource of type %q", u.String(), role.String(), descriptor.Name),
 		}

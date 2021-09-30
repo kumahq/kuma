@@ -1,4 +1,6 @@
-package user
+package rbac
+
+import "github.com/kumahq/kuma/pkg/core/user"
 
 type Role int
 
@@ -19,5 +21,5 @@ func (r Role) String() string {
 }
 
 type RoleAssignments interface {
-	Role(user User) Role
+	Role(user user.User) Role
 }

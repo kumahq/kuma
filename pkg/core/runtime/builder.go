@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
@@ -17,11 +18,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/rbac"
+	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
@@ -54,8 +54,8 @@ type BuilderContext interface {
 	MeshValidator() core_managers.MeshValidator
 	KDSContext() *kds_context.Context
 	APIServerAuthenticator() authn.Authenticator
-	ResourceAccess() rbac.ResourceAccess
-	RoleAssignments() user.RoleAssignments
+	ResourceAccess() resources_rbac.ResourceAccess
+	RoleAssignments() rbac.RoleAssignments
 }
 
 var _ BuilderContext = &Builder{}
@@ -85,9 +85,9 @@ type Builder struct {
 	dps      *dp_server.DpServer
 	kdsctx   *kds_context.Context
 	mv       core_managers.MeshValidator
-	au       authn.Authenticator
-	ra       rbac.ResourceAccess
-	ras      user.RoleAssignments
+	au  authn.Authenticator
+	ra  resources_rbac.ResourceAccess
+	ras rbac.RoleAssignments
 	appCtx   context.Context
 	*runtimeInfo
 }
@@ -234,12 +234,12 @@ func (b *Builder) WithAPIServerAuthenticator(au authn.Authenticator) *Builder {
 	return b
 }
 
-func (b *Builder) WithResourceAccess(ra rbac.ResourceAccess) *Builder {
+func (b *Builder) WithResourceAccess(ra resources_rbac.ResourceAccess) *Builder {
 	b.ra = ra
 	return b
 }
 
-func (b *Builder) WithRoleAssignments(ras user.RoleAssignments) *Builder {
+func (b *Builder) WithRoleAssignments(ras rbac.RoleAssignments) *Builder {
 	b.ras = ras
 	return b
 }
@@ -410,10 +410,10 @@ func (b *Builder) MeshValidator() core_managers.MeshValidator {
 func (b *Builder) APIServerAuthenticator() authn.Authenticator {
 	return b.au
 }
-func (b *Builder) ResourceAccess() rbac.ResourceAccess {
+func (b *Builder) ResourceAccess() resources_rbac.ResourceAccess {
 	return b.ra
 }
-func (b *Builder) RoleAssignments() user.RoleAssignments {
+func (b *Builder) RoleAssignments() rbac.RoleAssignments {
 	return b.ras
 }
 func (b *Builder) AppCtx() context.Context {

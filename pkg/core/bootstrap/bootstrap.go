@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 
+	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
@@ -26,7 +27,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/rbac"
+	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -34,7 +35,6 @@ import (
 	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
@@ -104,8 +104,8 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 
-	builder.WithRoleAssignments(user.NewStaticRoleAssignments(cfg.RBAC.Static))
-	builder.WithResourceAccess(rbac.NewAdminResourceAccess(builder.RoleAssignments()))
+	builder.WithRoleAssignments(rbac.NewStaticRoleAssignments(cfg.RBAC.Static))
+	builder.WithResourceAccess(resources_rbac.NewAdminResourceAccess(builder.RoleAssignments()))
 
 	if err := initializeAPIServerAuthenticator(builder); err != nil {
 		return nil, err

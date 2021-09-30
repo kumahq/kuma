@@ -1,7 +1,8 @@
 package rbac_test
 
 import (
-	rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
+	"github.com/kumahq/kuma/pkg/core/rbac"
+	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -15,7 +16,7 @@ import (
 )
 
 var _ = Describe("Admin Resource Access", func() {
-	resourceAccess := rbac.NewAdminResourceAccess(user.NewStaticRoleAssignments(config_rbac.RBACStaticConfig{
+	resourceAccess := resources_rbac.NewAdminResourceAccess(rbac.NewStaticRoleAssignments(config_rbac.RBACStaticConfig{
 		AdminUsers: []string{"admin"},
 	}))
 

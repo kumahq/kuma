@@ -12,12 +12,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/rbac"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/rbac"
+	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
@@ -65,8 +65,8 @@ type RuntimeContext interface {
 	KDSContext() *kds_context.Context
 	MeshValidator() core_managers.MeshValidator
 	APIServerAuthenticator() authn.Authenticator
-	ResourceAccess() rbac.ResourceAccess
-	RoleAssignments() user.RoleAssignments
+	ResourceAccess() resources_rbac.ResourceAccess
+	RoleAssignments() rbac.RoleAssignments
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
 }
@@ -130,8 +130,8 @@ type runtimeContext struct {
 	kdsctx   *kds_context.Context
 	mv       core_managers.MeshValidator
 	au       authn.Authenticator
-	ra       rbac.ResourceAccess
-	ras      user.RoleAssignments
+	ra       resources_rbac.ResourceAccess
+	ras      rbac.RoleAssignments
 	appCtx   context.Context
 }
 
@@ -226,11 +226,11 @@ func (rc *runtimeContext) APIServerAuthenticator() authn.Authenticator {
 	return rc.au
 }
 
-func (rc *runtimeContext) ResourceAccess() rbac.ResourceAccess {
+func (rc *runtimeContext) ResourceAccess() resources_rbac.ResourceAccess {
 	return rc.ra
 }
 
-func (rc *runtimeContext) RoleAssignments() user.RoleAssignments {
+func (rc *runtimeContext) RoleAssignments() rbac.RoleAssignments {
 	return rc.ras
 }
 

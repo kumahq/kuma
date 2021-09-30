@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
+	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/pkg/errors"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
@@ -30,10 +31,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/rbac"
+	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
@@ -84,8 +84,8 @@ func NewApiServer(
 	metrics metrics.Metrics,
 	getInstanceId func() string, getClusterId func() string,
 	authenticator authn.Authenticator,
-	roleAssignments user.RoleAssignments,
-	resourceAccess rbac.ResourceAccess,
+	roleAssignments rbac.RoleAssignments,
+	resourceAccess resources_rbac.ResourceAccess,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -163,7 +163,7 @@ func NewApiServer(
 	return newApiServer, nil
 }
 
-func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config, resourceAccess rbac.ResourceAccess) {
+func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config, resourceAccess resources_rbac.ResourceAccess) {
 	dpOverviewEndpoints := dataplaneOverviewEndpoints{
 		resManager:     resManager,
 		resourceAccess: resourceAccess,
