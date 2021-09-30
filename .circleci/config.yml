@@ -100,13 +100,13 @@ commands:
   install_build_tools:
     description: "Install an upstream Go release to $HOME/go"
     parameters:
-      os:
+      go_os:
         type: string
         default: linux
-      arch:
+      go_arch:
         type: string
         default: amd64
-      version:
+      go_version:
         type: string
         default: *go_version
     steps:
@@ -127,7 +127,7 @@ commands:
         name: "Install Go"
         # See https://golang.org/doc/install#tarball
         command: |
-          curl --progress-bar --fail --location https://dl.google.com/go/go<<parameters.version>>.<<parameters.os>>-<<parameters.arch>>.tar.gz | tar -xz -C $HOME
+          curl --progress-bar --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
           echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
 
 executors:
@@ -679,7 +679,7 @@ jobs:
     steps:
     - checkout
     - install_build_tools:
-        os: darwin
+        go_os: darwin
     - run:
         name: "Install all development tools"
         command: |
