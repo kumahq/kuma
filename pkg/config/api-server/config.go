@@ -118,7 +118,7 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			ClientCertsDir: "",
 		},
 		Authn: ApiServerAuthn{
-			Type:             "tokens",
+			Type:             "clientCerts",
 			LocalhostIsAdmin: true,
 		},
 	}
