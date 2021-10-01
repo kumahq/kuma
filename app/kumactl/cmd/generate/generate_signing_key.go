@@ -3,9 +3,10 @@ package generate
 import (
 	"encoding/base64"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 )
 
 func NewGenerateSigningKeyCmd(ctx *cmd.RootContext) *cobra.Command {

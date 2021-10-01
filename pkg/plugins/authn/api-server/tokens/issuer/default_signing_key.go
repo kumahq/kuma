@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
+
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
 var log = core.Log.WithName("plugins").WithName("authn").WithName("api-server").WithName("tokens")

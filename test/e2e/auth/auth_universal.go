@@ -1,10 +1,11 @@
 package auth
 
 import (
-	"github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 func AuthUniversal() {
@@ -34,6 +35,7 @@ func AuthUniversal() {
 	It("should generate user for group admin and log in", func() {
 		// given
 		token, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token", "--name", "new-admin", "--group", "admin")
+		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
 		err = cluster.GetKumactlOptions().KumactlConfigControlPlanesAdd(
@@ -52,6 +54,7 @@ func AuthUniversal() {
 	It("should generate user for group member and log in", func() {
 		// given
 		token, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token", "--name", "team-a-member", "--group", "team-a")
+		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
 		err = cluster.GetKumactlOptions().KumactlConfigControlPlanesAdd(

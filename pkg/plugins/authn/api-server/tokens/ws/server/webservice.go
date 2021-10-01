@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	"github.com/kumahq/kuma/pkg/core/user"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws"
 )
 
 var log = core.Log.WithName("user-token-ws")
@@ -56,7 +56,7 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 		dur, err := time.ParseDuration(idReq.ValidFor)
 		if err != nil {
 			verr := validators.ValidationError{}
-			verr.AddViolation("validFor", "is invalid: " + err.Error())
+			verr.AddViolation("validFor", "is invalid: "+err.Error())
 			errors.HandleError(response, verr.OrNil(), "Invalid request")
 			return
 		}

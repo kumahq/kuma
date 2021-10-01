@@ -182,7 +182,7 @@ func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token stri
 				"--overwrite",
 				"--name", name,
 				"--address", address,
-				"--headers", "authorization=Bearer " + token) // todo change to native args once they are introduced
+				"--headers", "authorization=Bearer "+token) // todo change to native args once they are introduced
 
 			if err != nil {
 				return "Unable to register Kuma CP. Try again.", err

@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
+
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
-	"github.com/pkg/errors"
 )
 
 type UserTokenClient interface {
@@ -31,8 +32,8 @@ type httpUserTokenClient struct {
 
 func (h *httpUserTokenClient) Generate(name, group string, validFor time.Duration) (string, error) {
 	tokenReq := &ws.UserTokenRequest{
-		Name:  name,
-		Group: group,
+		Name:     name,
+		Group:    group,
 		ValidFor: validFor.String(),
 	}
 	reqBytes, err := json.Marshal(tokenReq)
@@ -64,4 +65,3 @@ func (h *httpUserTokenClient) Generate(name, group string, validFor time.Duratio
 	}
 	return string(body), nil
 }
-

@@ -8,13 +8,14 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/pkg/errors"
+
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -137,4 +138,3 @@ func (a GlobalSecretsByName) Less(i, j int) bool {
 	jSerialNumber, _ := signingKeySerialNumber(a[j].Meta.GetName())
 	return iSerialNumber > jSerialNumber
 }
-

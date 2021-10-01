@@ -1,0 +1,43 @@
+## kumactl generate user-token
+
+Generate User Token
+
+### Synopsis
+
+Generate User Token that is used to prove User identity.
+
+```
+kumactl generate user-token [flags]
+```
+
+### Examples
+
+```
+
+Generate token
+$ kumactl generate user-token --name john.doe@acme.org --group users 
+
+```
+
+### Options
+
+```
+      --group string         group of the user
+  -h, --help                 help for user-token
+      --name string          name of the user
+      --valid-for duration   how long the token will be valid (for example "24h"). If 0, then token has no expiration time
+```
+
+### Options inherited from parent commands
+
+```
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
+```
+
+### SEE ALSO
+
+* [kumactl generate](kumactl_generate.md)	 - Generate resources, tokens, etc
+

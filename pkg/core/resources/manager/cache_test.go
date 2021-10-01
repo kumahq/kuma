@@ -124,7 +124,7 @@ var _ = Describe("Cached Resource Manager", func() {
 
 	It("should not cache Get() not found", func() {
 		// when fetched resources multiple times
-		fetch := func()  {
+		fetch := func() {
 			_ = cachedManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("non-existing", "default"))
 		}
 

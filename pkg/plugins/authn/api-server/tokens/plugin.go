@@ -21,7 +21,6 @@ func init() {
 	plugins.Register(PluginName, &plugin{})
 }
 
-
 func (c plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenticator, error) {
 	return UserTokenAuthenticator(tokenIssuer(context.ResourceManager())), nil
 }

@@ -3,10 +3,11 @@ package generate_test
 import (
 	"bytes"
 
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 )
 
 var _ = Describe("Generate Signing Key", func() {

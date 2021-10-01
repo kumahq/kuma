@@ -3,9 +3,10 @@ package issuer_test
 import (
 	"testing"
 
-	"github.com/kumahq/kuma/pkg/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestIssuer(t *testing.T) {

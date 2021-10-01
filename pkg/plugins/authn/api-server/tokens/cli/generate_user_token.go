@@ -3,11 +3,12 @@ package cli
 import (
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/client"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 )
 
 var NewHTTPUserTokenClient = client.NewHTTPUserTokenClient

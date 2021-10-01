@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	generate_context "github.com/kumahq/kuma/app/kumactl/cmd/generate/context"
 	"github.com/pkg/errors"
 
+	generate_context "github.com/kumahq/kuma/app/kumactl/cmd/generate/context"
 	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
 	inspect_context "github.com/kumahq/kuma/app/kumactl/cmd/inspect/context"
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"

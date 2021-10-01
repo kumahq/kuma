@@ -4,8 +4,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"time"
 
 	"github.com/emicklei/go-restful"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
@@ -15,8 +19,6 @@ import (
 	server2 "github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Auth Tokens WS", func() {
@@ -26,8 +28,9 @@ var _ = Describe("Auth Tokens WS", func() {
 
 	BeforeEach(func() {
 		store := memory.NewStore()
-		signingKeyManager := issuer2.NewSigningKeyManager(secret_manager.NewGlobalSecretManager(secret_store.NewSecretStore(store), cipher.None()))
-		issuer = issuer2.NewUserTokenIssuer(signingKeyManager)
+		manager := secret_manager.NewGlobalSecretManager(secret_store.NewSecretStore(store), cipher.None())
+		signingKeyManager := issuer2.NewSigningKeyManager(manager)
+		issuer = issuer2.NewUserTokenIssuer(signingKeyManager, issuer2.NewTokenRevocations(manager))
 
 		Expect(signingKeyManager.CreateDefaultSigningKey()).To(Succeed())
 		ws := server2.NewWebService(issuer)
@@ -42,14 +45,14 @@ var _ = Describe("Auth Tokens WS", func() {
 
 		// wait for the server
 		Eventually(func() error {
-			_, err := client.Generate("john.doe@acme.org", "team-a")
+			_, err := client.Generate("john.doe@acme.org", "team-a", 0)
 			return err
 		}).ShouldNot(HaveOccurred())
 	})
 
 	It("should generate token", func() {
 		// when
-		token, err := client.Generate("john.doe@acme.org", "team-a")
+		token, err := client.Generate("john.doe@acme.org", "team-a", 1*time.Hour)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -61,7 +64,7 @@ var _ = Describe("Auth Tokens WS", func() {
 
 	It("should throw an error when zone is not passed", func() {
 		// when
-		_, err := client.Generate("", "")
+		_, err := client.Generate("", "", 1*time.Hour)
 
 		// then
 		Expect(err).To(Equal(&error_types.Error{
