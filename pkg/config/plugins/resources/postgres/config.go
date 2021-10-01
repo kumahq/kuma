@@ -129,7 +129,8 @@ func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 		Password:             "kuma",
 		DbName:               "kuma",
 		ConnectionTimeout:    5,
-		MaxOpenConnections:   0, // number of open connections is unlimited
+		MaxOpenConnections:   50, // 0 for unlimited
+		MaxIdleConnections:   50, // 0 for unlimited
 		TLS:                  DefaultTLSPostgresStoreConfig(),
 		MinReconnectInterval: 10 * time.Second,
 		MaxReconnectInterval: 60 * time.Second,
