@@ -826,6 +826,34 @@ _kumactl_generate_dataplane-token()
     noun_aliases=()
 }
 
+_kumactl_generate_signing-key()
+{
+    last_command="kumactl_generate_signing-key"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--no-config")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_generate_tls-certificate()
 {
     last_command="kumactl_generate_tls-certificate"
@@ -871,6 +899,47 @@ _kumactl_generate_tls-certificate()
     noun_aliases=()
 }
 
+_kumactl_generate_user-token()
+{
+    last_command="kumactl_generate_user-token"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--group=")
+    two_word_flags+=("--group")
+    local_nonpersistent_flags+=("--group")
+    local_nonpersistent_flags+=("--group=")
+    flags+=("--name=")
+    two_word_flags+=("--name")
+    local_nonpersistent_flags+=("--name")
+    local_nonpersistent_flags+=("--name=")
+    flags+=("--valid-for=")
+    two_word_flags+=("--valid-for")
+    local_nonpersistent_flags+=("--valid-for")
+    local_nonpersistent_flags+=("--valid-for=")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--no-config")
+
+    must_have_one_flag=()
+    must_have_one_flag+=("--name=")
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_generate_zone-ingress-token()
 {
     last_command="kumactl_generate_zone-ingress-token"
@@ -911,7 +980,9 @@ _kumactl_generate()
 
     commands=()
     commands+=("dataplane-token")
+    commands+=("signing-key")
     commands+=("tls-certificate")
+    commands+=("user-token")
     commands+=("zone-ingress-token")
 
     flags=()
