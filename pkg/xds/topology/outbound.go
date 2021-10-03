@@ -231,17 +231,15 @@ func convertToEnvoy(ds *v1alpha1.DataSource, mesh string, loader datasource.Load
 }
 
 func localityFromTags(mesh *core_mesh.MeshResource, priority uint32, tags map[string]string) *core_xds.Locality {
-	region, regionPresent := tags[mesh_proto.RegionTag]
 	zone, zonePresent := tags[mesh_proto.ZoneTag]
-	subZone, subZonePresent := tags[mesh_proto.SubZoneTag]
 
-	if !regionPresent && !zonePresent && !subZonePresent {
+	if !zonePresent {
 		// this means that we are running in standalone since in multi-zone Kuma always adds Zone tag automatically
 		return nil
 	}
 
 	if !mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
-		// we want to set the Locality even when localityAwareLoadbalancing is enabled
+		// we want to set the Locality even when localityAwareLoadBalancing is enabled
 		// If we set the locality we have an extra visibility about this in /clusters etc.
 		// Kuma's LocalityAwareLoadBalancing feature is based only on Priority therefore when it's disabled we need to set Priority to local
 		//
@@ -251,9 +249,7 @@ func localityFromTags(mesh *core_mesh.MeshResource, priority uint32, tags map[st
 	}
 
 	return &core_xds.Locality{
-		Region:   region,
 		Zone:     zone,
-		SubZone:  subZone,
 		Priority: priority,
 	}
 }

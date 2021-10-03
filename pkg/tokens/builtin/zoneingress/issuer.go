@@ -21,7 +21,7 @@ type TokenIssuer interface {
 
 type claims struct {
 	Zone string
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 type SigningKeyAccessor func() ([]byte, error)
@@ -54,8 +54,8 @@ func (j *jwtTokenIssuer) Generate(identity Identity) (Token, error) {
 	}
 
 	c := claims{
-		Zone:           identity.Zone,
-		StandardClaims: jwt.StandardClaims{},
+		Zone:             identity.Zone,
+		RegisteredClaims: jwt.RegisteredClaims{},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)

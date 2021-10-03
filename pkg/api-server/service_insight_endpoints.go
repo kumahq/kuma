@@ -22,7 +22,6 @@ type serviceInsightEndpoints struct {
 
 func (s *serviceInsightEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix+"/{service}").To(s.findResource).
-		Filter(s.auth()).
 		Doc(fmt.Sprintf("Get a %s", s.descriptor.WsPath)).
 		Param(ws.PathParameter("service", fmt.Sprintf("Name of a %s", s.descriptor.Name)).DataType("string")).
 		Returns(200, "OK", nil).
@@ -55,7 +54,6 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 
 func (s *serviceInsightEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix).To(s.listResources).
-		Filter(s.auth()).
 		Doc(fmt.Sprintf("List of %s", s.descriptor.Name)).
 		Param(ws.PathParameter("size", "size of page").DataType("int")).
 		Param(ws.PathParameter("offset", "offset of page to list").DataType("string")).

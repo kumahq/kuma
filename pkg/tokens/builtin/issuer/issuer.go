@@ -29,7 +29,7 @@ type claims struct {
 	Mesh string
 	Tags map[string][]string
 	Type string
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 type SigningKeyAccessor func(meshName string) ([]byte, error)
@@ -67,11 +67,11 @@ func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (Token, error) {
 	}
 
 	c := claims{
-		Name:           identity.Name,
-		Mesh:           identity.Mesh,
-		Tags:           tags,
-		Type:           string(identity.Type),
-		StandardClaims: jwt.StandardClaims{},
+		Name:             identity.Name,
+		Mesh:             identity.Mesh,
+		Tags:             tags,
+		Type:             string(identity.Type),
+		RegisteredClaims: jwt.RegisteredClaims{},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
