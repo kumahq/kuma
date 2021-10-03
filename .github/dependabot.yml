@@ -1,6 +1,14 @@
 version: 2
 updates:
   - package-ecosystem: "gomod"
+    open-pull-requests-limit: 10
+    directory: "pkg/transparentproxy/istio"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+  - package-ecosystem: "gomod"
+    open-pull-requests-limit: 10
     directory: "/"
     schedule:
       interval: "weekly"
