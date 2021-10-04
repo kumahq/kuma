@@ -1,4 +1,5 @@
-FROM alpine:3.14
+FROM frolvlad/alpine-glibc:alpine-3.14_glibc-2.33
+
 COPY --from=envoyproxy/envoy-alpine:v1.18.4 /usr/local/bin/envoy /usr/local/bin
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
