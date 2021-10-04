@@ -304,7 +304,7 @@ func (d *DataplaneGenerator) generate(
 	dp.Spec.Networking = &mesh_proto.Dataplane_Networking{
 		Address: addr.String(),
 		Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-			&mesh_proto.Dataplane_Networking_Inbound{
+			{
 				Port:        20011,
 				ServicePort: 10011,
 				Tags: map[string]string{

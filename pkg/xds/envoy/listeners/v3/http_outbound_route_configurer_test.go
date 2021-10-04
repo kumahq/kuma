@@ -131,17 +131,17 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 							},
 						},
 						Headers: map[string]*mesh_proto.TrafficRoute_Http_Match_StringMatcher{
-							"x-custom-header-a": &mesh_proto.TrafficRoute_Http_Match_StringMatcher{
+							"x-custom-header-a": {
 								MatcherType: &mesh_proto.TrafficRoute_Http_Match_StringMatcher_Prefix{
 									Prefix: "prefix",
 								},
 							},
-							"x-custom-header-b": &mesh_proto.TrafficRoute_Http_Match_StringMatcher{
+							"x-custom-header-b": {
 								MatcherType: &mesh_proto.TrafficRoute_Http_Match_StringMatcher_Exact{
 									Exact: "exact",
 								},
 							},
-							"x-custom-header-c": &mesh_proto.TrafficRoute_Http_Match_StringMatcher{
+							"x-custom-header-c": {
 								MatcherType: &mesh_proto.TrafficRoute_Http_Match_StringMatcher_Regex{
 									Regex: "^regex$",
 								},
