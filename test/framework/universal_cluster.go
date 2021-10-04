@@ -197,6 +197,10 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	transparent := opts.transparent
 	args := opts.appArgs
 
+	if opts.verbose == nil {
+		opts.verbose = &c.verbose
+	}
+
 	if opts.mesh == "" {
 		opts.mesh = "default"
 	}
@@ -206,48 +210,57 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
 
-	fmt.Printf("IPV6 is %v\n", opts.isipv6)
-	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, c.verbose, caps)
+	Logf("IPV6 is %v\n", opts.isipv6)
+
+	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, *opts.verbose, caps)
 	if err != nil {
 		return err
 	}
 
-	if opts.kumactlFlow {
-		dataplaneResource := template.Render(opts.appYaml, map[string]string{
-			"name":    opts.name,
-			"address": app.ip,
-		})
-		err := c.GetKumactlOptions().KumactlApplyFromString(string(dataplaneResource))
-		if err != nil {
+	// We need to record the app before running any other options,
+	// since those options might fail. If they do, we have a running
+	// container that isn't fully configured, and we need it to be
+	// recorded so that DismissCluster can clean it up.
+	Logf("Started universal app %q in container %q", opts.name, app.container)
+	c.apps[opts.name] = app
+
+	if !opts.omitDataplane {
+		if opts.kumactlFlow {
+			dataplaneResource := template.Render(opts.appYaml, map[string]string{
+				"name":    opts.name,
+				"address": app.ip,
+			})
+			err := c.GetKumactlOptions().KumactlApplyFromString(string(dataplaneResource))
+			if err != nil {
+				return err
+			}
+		}
+
+		if opts.dpVersion != "" {
+			// override needs to be before setting up transparent proxy.
+			// Otherwise, we won't be able to fetch specific Kuma DP version.
+			if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
+				return err
+			}
+		}
+
+		builtindns := opts.builtindns == nil || *opts.builtindns
+		if transparent {
+			app.setupTransparent(c.apps[AppModeCP].ip, builtindns)
+		}
+
+		ip := app.ip
+
+		var dataplaneResource string
+		if opts.kumactlFlow {
+			dataplaneResource = ""
+		} else {
+			dataplaneResource = opts.appYaml
+		}
+
+		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns, opts.concurrency); err != nil {
 			return err
 		}
-	}
-
-	if opts.dpVersion != "" {
-		// override needs to be before setting up transparent proxy.
-		// Otherwise, we won't be able to fetch specific Kuma DP version.
-		if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
-			return err
-		}
-	}
-
-	builtindns := opts.builtindns == nil || *opts.builtindns
-	if transparent {
-		app.setupTransparent(c.apps[AppModeCP].ip, builtindns)
-	}
-
-	ip := app.ip
-
-	var dataplaneResource string
-	if opts.kumactlFlow {
-		dataplaneResource = ""
-	} else {
-		dataplaneResource = opts.appYaml
-	}
-
-	err = c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns, opts.concurrency)
-	if err != nil {
-		return err
 	}
 
 	if !opts.proxyOnly {
@@ -257,8 +270,6 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 			return err
 		}
 	}
-
-	c.apps[opts.name] = app
 
 	return nil
 }
