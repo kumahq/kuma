@@ -59,7 +59,7 @@ var _ = Describe("TrafficRoute", func() {
 				Spec: &mesh_proto.TrafficRoute{
 					Conf: &mesh_proto.TrafficRoute_Conf{
 						Split: []*mesh_proto.TrafficRoute_Split{
-							&mesh_proto.TrafficRoute_Split{
+							{
 								Weight: util_proto.UInt32(1),
 								Destination: map[string]string{
 									mesh_proto.ServiceTag: "bar-service",
