@@ -15,6 +15,7 @@ func AuthUniversal() {
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 		deployOptsFuncs = KumaUniversalDeployOpts
+		deployOptsFuncs = append(deployOptsFuncs, WithEnv("KUMA_API_SERVER_AUTHN_TYPE", "tokens"))
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
