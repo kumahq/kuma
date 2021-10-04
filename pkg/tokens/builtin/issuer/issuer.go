@@ -1,7 +1,7 @@
 package issuer
 
 import (
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -29,7 +29,7 @@ type claims struct {
 	Mesh string
 	Tags map[string][]string
 	Type string
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 type SigningKeyAccessor func(meshName string) ([]byte, error)
@@ -67,11 +67,11 @@ func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (Token, error) {
 	}
 
 	c := claims{
-		Name:           identity.Name,
-		Mesh:           identity.Mesh,
-		Tags:           tags,
-		Type:           string(identity.Type),
-		StandardClaims: jwt.StandardClaims{},
+		Name:             identity.Name,
+		Mesh:             identity.Mesh,
+		Tags:             tags,
+		Type:             string(identity.Type),
+		RegisteredClaims: jwt.RegisteredClaims{},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
