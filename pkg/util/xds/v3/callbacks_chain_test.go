@@ -73,7 +73,7 @@ var _ = Describe("CallbacksChain", func() {
 
 			// then
 			Expect(calls).To(Equal([]methodCall{
-				methodCall{"1st", "OnStreamOpen()", []interface{}{ctx, streamID, typ}},
+				{"1st", "OnStreamOpen()", []interface{}{ctx, streamID, typ}},
 			}))
 			// and
 			Expect(err).To(MatchError("1st: OnStreamOpen()"))
