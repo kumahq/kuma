@@ -174,8 +174,8 @@ var _ = Describe("Match", func() {
 				},
 			},
 			expected: map[mesh_proto.InboundInterface]string{
-				mesh_proto.InboundInterface{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 8081, DataplanePort: 8080}: "more-specific-kong-to-web",
-				mesh_proto.InboundInterface{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 1234, DataplanePort: 1234}: "metrics",
+				{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 8081, DataplanePort: 8080}: "more-specific-kong-to-web",
+				{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 1234, DataplanePort: 1234}: "metrics",
 			},
 		}),
 	)
