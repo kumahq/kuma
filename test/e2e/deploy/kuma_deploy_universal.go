@@ -155,4 +155,58 @@ name: %s
 				return "should retry", errors.Errorf("should retry")
 			})
 	})
+
+	It("should access only local service if zone is disabled", func() {
+		// given zone 'kuma-4' enabled
+		// then we should receive responses from both test-server instances
+		responses := map[string]bool{}
+		Eventually(func() bool {
+			stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
+			if err != nil {
+				return false
+			}
+			if strings.Contains(stdout, "universal1") {
+				responses["universal1"] = true
+			}
+			if strings.Contains(stdout, "universal2") {
+				responses["universal2"] = true
+			}
+			return len(responses) == 2
+		}, "30s", "10ms").Should(BeTrue())
+
+		// when disable zone 'kuma-4'
+		Expect(YamlUniversal(`
+name: kuma-4
+type: Zone
+enabled: false
+`)(global)).To(Succeed())
+
+		// then 'kuma-4.ingress' is deleted from zone 'kuma-3'
+		Eventually(func() bool {
+			output, err := zone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
+			if err != nil {
+				return false
+			}
+			return !strings.Contains(output, "kuma-4.ingress")
+		}, "30s", "10ms").Should(BeTrue())
+
+		// and then responses only from the local service instance
+		consecutive := 0
+		Eventually(func() bool {
+			stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
+			if err != nil {
+				consecutive = 0
+				return false
+			}
+			if strings.Contains(stdout, "universal1") {
+				consecutive++
+			}
+			if strings.Contains(stdout, "universal2") {
+				consecutive = 0
+			}
+			return consecutive == 20
+		}, "30s", "10ms").Should(BeTrue())
+	})
 }
