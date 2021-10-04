@@ -18,9 +18,7 @@ const (
 	ServiceUnknown = "unknown"
 
 	// Locality related tags
-	RegionTag  = "kuma.io/region"
-	ZoneTag    = "kuma.io/zone"
-	SubZoneTag = "kuma.io/sub-zone"
+	ZoneTag = "kuma.io/zone"
 
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.

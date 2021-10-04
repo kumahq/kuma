@@ -116,9 +116,7 @@ func (l LocalityLbEndpointsMap) Get(ep core_xds.Endpoint) *envoy_endpoint.Locali
 		priority := uint32(0)
 		if ep.HasLocality() {
 			locality = &envoy_core.Locality{
-				Region:  ep.Locality.Region,
-				Zone:    ep.Locality.Zone,
-				SubZone: ep.Locality.SubZone,
+				Zone: ep.Locality.Zone,
 			}
 			priority = ep.Locality.Priority
 		}
