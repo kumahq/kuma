@@ -131,9 +131,12 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 
 	c.apps[AppModeCP] = app
 
-	token, err := c.generateAdminToken()
-	if err != nil {
-		return err
+	var token string
+	if opts.env["KUMA_API_SERVER_AUTHN_TYPE"] == "tokens" {
+		token, err = c.generateAdminToken()
+		if err != nil {
+			return err
+		}
 	}
 
 	kumacpURL := "http://localhost:" + app.ports["5681"]
