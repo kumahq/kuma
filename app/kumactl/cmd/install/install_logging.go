@@ -19,7 +19,7 @@ func newInstallLogging(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logging",
 		Short: "Install Logging backend in Kubernetes cluster (Loki)",
-		Long:  `Install Logging backend in Kubernetes cluster (Loki) in a 'kuma-logging' namespace`,
+		Long:  `Install Logging backend in Kubernetes cluster (Loki) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			templateArgs := loggingTemplateArgs{
 				Namespace: args.Namespace,

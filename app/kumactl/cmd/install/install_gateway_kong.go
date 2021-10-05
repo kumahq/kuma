@@ -15,7 +15,7 @@ func newInstallGatewayKongCmd(ctx *install_context.InstallGatewayKongContext) *c
 	cmd := &cobra.Command{
 		Use:   "kong",
 		Short: "Install Kong ingress gateway on Kubernetes",
-		Long:  "Install Kong ingress gateway on Kubernetes in a 'kuma-gateway' namespace.",
+		Long:  "Install Kong ingress gateway on Kubernetes in its own namespace.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			templateFiles, err := data.ReadFiles(kumactl_data.InstallGatewayKongFS())
 			if err != nil {
