@@ -5,12 +5,12 @@ import (
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
-	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
