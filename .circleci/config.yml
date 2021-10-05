@@ -119,6 +119,11 @@ commands:
           if [ -r /etc/os-release ]; then source /etc/os-release; fi
           case "$ID" in
           ubuntu)
+            if ! command -v sudo 2>&1 >/dev/null; then
+              apt update
+              apt install -y sudo
+            fi
+
             sudo apt update
             sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc
             ;;
