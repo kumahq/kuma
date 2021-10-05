@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -13,6 +14,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -28,6 +30,19 @@ func (*RouteTableGenerator) SupportsProtocol(mesh_proto.Gateway_Listener_Protoco
 // GenerateHost generates xDS resources for the current route table.
 func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
 	resources := ResourceAggregator{}
+
+	vh := envoy_routes.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
+		// TODO(jpeach) use separator from envoy names package.
+		envoy_routes.CommonVirtualHost(strings.Join([]string{info.Listener.ResourceName, info.Host.Hostname}, ":")),
+		envoy_routes.DomainNames(info.Host.Hostname),
+	)
+
+	// Ensure that we get TLS on HTTPS protocol listeners.
+	if info.Listener.Protocol == mesh_proto.Gateway_Listener_HTTPS {
+		vh.Configure(envoy_routes.RequireTLS())
+	}
+
+	// TODO(jpeach) apply additional virtual host configuration.
 
 	// Sort routing table entries so the most specific match comes first.
 	sort.Sort(route.Sorter(info.RouteTable.Entries))
@@ -86,7 +101,7 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 			routeBuilder.Configure(route.RouteMirror(m.Percentage, m.Forward))
 		}
 
-		info.Resources.VirtualHost.Configure(route.VirtualHostRoute(&routeBuilder))
+		vh.Configure(route.VirtualHostRoute(&routeBuilder))
 	}
 
 	destinations, err := makeRouteDestinations(&info.RouteTable)
@@ -102,8 +117,7 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 		return nil, err
 	}
 
-	// TODO(jpeach) Once we drop TrafficRoute, generate resources
-	// for info.Resources.VirtualHost here instead of in generator.go
+	info.Resources.RouteConfiguration.Configure(envoy_routes.VirtualHost(vh))
 
 	return resources.Get(), nil
 }

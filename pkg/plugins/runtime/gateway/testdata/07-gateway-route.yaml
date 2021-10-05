@@ -81,11 +81,6 @@ Routes:
         name: edge-gateway:HTTP:8080:echo.example.com
         routes:
         - match:
-            prefix: /
-          route:
-            weightedClusters:
-              totalWeight: 0
-        - match:
             path: /api
           route:
             weightedClusters:
