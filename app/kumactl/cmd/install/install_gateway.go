@@ -10,7 +10,7 @@ func newInstallGatewayCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gateway",
 		Short: "Install ingress gateway on Kubernetes",
-		Long:  "Install ingress gateway on Kubernetes in a 'kuma-gateway' namespace.",
+		Long:  "Install ingress gateway on Kubernetes in its own namespace.",
 	}
 	// sub-commands
 	cmd.AddCommand(newInstallGatewayKongCmd(&pctx.InstallGatewayKongContext))

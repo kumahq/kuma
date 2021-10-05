@@ -4,7 +4,7 @@ Install Kuma demo on Kubernetes
 
 ### Synopsis
 
-Install Kuma demo on Kubernetes in a 'kuma-demo' namespace.
+Install Kuma demo on Kubernetes in its own namespace.
 
 ```
 kumactl install demo [flags]

@@ -18,7 +18,7 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "metrics",
 		Short: "Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)",
-		Long:  `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in a kuma-metrics namespace`,
+		Long:  `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			args.Mesh = pctx.Args.Mesh
 

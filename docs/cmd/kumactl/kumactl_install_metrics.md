@@ -4,7 +4,7 @@ Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
 
 ### Synopsis
 
-Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in a kuma-metrics namespace
+Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in its own namespace.
 
 ```
 kumactl install metrics [flags]

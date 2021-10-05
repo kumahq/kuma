@@ -4,7 +4,7 @@ Install Kuma Control Plane on Kubernetes
 
 ### Synopsis
 
-Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.
+Install Kuma Control Plane on Kubernetes in its own namespace.
 This command requires that the KUBECONFIG environment is set
 
 ```
