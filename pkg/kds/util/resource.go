@@ -65,11 +65,17 @@ func AddSuffixToNames(rs []model.Resource, suffix string) {
 }
 
 func ZoneTag(r model.Resource) string {
-	dp := r.GetSpec().(*mesh_proto.Dataplane)
-	if dp.GetNetworking().GetGateway() != nil {
-		return dp.GetNetworking().GetGateway().GetTags()[mesh_proto.ZoneTag]
+	switch res := r.GetSpec().(type) {
+	case *mesh_proto.Dataplane:
+		if res.GetNetworking().GetGateway() != nil {
+			return res.GetNetworking().GetGateway().GetTags()[mesh_proto.ZoneTag]
+		}
+		return res.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]
+	case *mesh_proto.ZoneIngress:
+		return res.GetZone()
+	default:
+		return ""
 	}
-	return dp.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]
 }
 
 func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource) (model.ResourceList, error) {
