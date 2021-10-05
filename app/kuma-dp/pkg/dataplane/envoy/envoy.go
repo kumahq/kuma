@@ -186,9 +186,9 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 
 	command := command_utils.BuildCommand(ctx, e.opts.Stdout, e.opts.Stderr, resolvedPath, args...)
 
-	runLog.Info("starting Envoy", "args", args)
+	runLog.Info("starting Envoy", "path", resolvedPath, "arguments", args)
 	if err := command.Start(); err != nil {
-		runLog.Error(err, "the envoy executable was found at "+resolvedPath+" but an error occurred when executing it")
+		runLog.Error(err, "envoy executable failed", "path", resolvedPath, "arguments", args)
 		return err
 	}
 	done := make(chan error, 1)
@@ -225,7 +225,7 @@ func (e *Envoy) version() (*EnvoyVersion, error) {
 	command := exec.Command(resolvedPath, arg)
 	output, err := command.Output()
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("the envoy excutable was found at %s but an error occurred when executing it with arg %s", resolvedPath, arg))
+		return nil, errors.Wrapf(err, "failed to execute %s with arguments %q", resolvedPath, arg)
 	}
 	build := strings.ReplaceAll(string(output), "\r\n", "\n")
 	build = strings.Trim(build, "\n")
