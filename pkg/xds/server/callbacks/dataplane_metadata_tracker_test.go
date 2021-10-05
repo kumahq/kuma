@@ -26,7 +26,7 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 			Id: "default.example",
 			Metadata: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
-					"dataplane.token": &structpb.Value{
+					"dataplane.token": {
 						Kind: &structpb.Value_StringValue{
 							StringValue: "token",
 						},

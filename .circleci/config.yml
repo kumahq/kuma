@@ -27,20 +27,6 @@ parameters:
     default: true
     type: boolean
 
-commands:
-  early_return_for_forked_pull_requests:
-    description: >-
-      If this build is from a fork, stop executing the current job and return success.
-      This is useful to avoid steps that will fail due to missing credentials.
-    steps:
-    - run:
-        name: "Early return if this build is from a forked PR"
-        command: |
-          if [ -n "${CIRCLE_PR_NUMBER}" ]; then
-            echo "Nothing to do for forked PRs, so marking this step successful"
-            circleci step halt
-          fi
-
 reusable:
 
   constants:
@@ -96,6 +82,53 @@ reusable:
            - master
            - /^release-.*/
            - gh-pages
+
+# See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
+commands:
+  early_return_for_forked_pull_requests:
+    description: >-
+      If this build is from a fork, stop executing the current job and return success.
+      This is useful to avoid steps that will fail due to missing credentials.
+    steps:
+    - run:
+        name: "Early return if this build is from a forked PR"
+        command: |
+          if [ -n "${CIRCLE_PR_NUMBER}" ]; then
+            echo "Nothing to do for forked PRs, so marking this step successful"
+            circleci step halt
+          fi
+  install_build_tools:
+    description: "Install an upstream Go release to $HOME/go"
+    parameters:
+      go_os:
+        type: string
+        default: linux
+      go_arch:
+        type: string
+        default: amd64
+      go_version:
+        type: string
+        default: *go_version
+    steps:
+    - run:
+        # `unzip` is necessary to install `protoc`
+        # `gcc`   is necessary to run `go test -race`
+        # `git`   is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
+        name: "Install basic tools"
+        command: |
+          if [ -r /etc/os-release ]; then source /etc/os-release; fi
+          case "$ID" in
+          ubuntu)
+            sudo apt update
+            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc
+            ;;
+          esac
+    - run:
+        name: "Install Go"
+        # See https://golang.org/doc/install#tarball
+        command: |
+          curl --progress-bar --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
+          echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
 
 executors:
   golang:
@@ -170,7 +203,6 @@ jobs:
         name: "Setup Environment"
         command: |
           echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
-          echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
           echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
           echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
           echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
@@ -240,17 +272,11 @@ jobs:
         # prefer the exact match
         - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
 
-    - run:
-        name: "Install Go"
-        command: |
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
+    - install_build_tools
 
     - run:
         name: "Download Go modules"
         command: |
-          export PATH="$HOME/go/bin:$PATH"
-
           go mod download
 
     # since execution of go commands might change contents of "go.sum",
@@ -263,8 +289,6 @@ jobs:
     - run:
         name: "Install all development tools"
         command: |
-          export PATH="$HOME/go/bin:$PATH"
-
           make dev/tools
 
     - run:
@@ -279,7 +303,6 @@ jobs:
     - run:
         name: "Run E2E tests"
         command: |
-          export PATH="$HOME/go/bin:$PATH"
           export KUMA_UNIVERSAL_IMAGE="${ECR_REGISTRY}/kuma-universal:${TAG}";
           export E2E_PKG_LIST="./test/e2e/helm/...";
           export API_VERSION="<< parameters.api_version >>"
@@ -396,7 +419,6 @@ jobs:
         name: "Setup Environment"
         command: |
           echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
-          echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
           echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
           echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
           echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
@@ -484,17 +506,11 @@ jobs:
         # prefer the exact match
         - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
 
-    - run:
-        name: "Install Go"
-        command: |
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
+    - install_build_tools
 
     - run:
         name: "Download Go modules"
         command: |
-          export PATH="$HOME/go/bin:$PATH"
-
           go mod download
 
     # since execution of go commands might change contents of "go.sum",
@@ -507,8 +523,6 @@ jobs:
     - run:
         name: "Install all development tools"
         command: |
-          export PATH="$HOME/go/bin:$PATH"
-
           make dev/tools
 
     - run:
@@ -523,7 +537,6 @@ jobs:
     - run:
         name: "Run E2E tests"
         command: |
-          export PATH="$HOME/go/bin:$PATH"
           export KUMA_UNIVERSAL_IMAGE="${AZURE_ACR_REGISTRY_FULLNAME}/kuma-universal:${TAG}";
           export E2E_PKG_LIST="./test/e2e/helm/...";
           export API_VERSION="<< parameters.api_version >>"
@@ -620,55 +633,19 @@ jobs:
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
     steps:
-    - run:
-        name: "Install prerequisites"
-        # make sure to deploy `git` befor checking out the code, otherwise Circle uses its own version, which behaves differently
-        # `unzip` is necessary to install `protoc`
-        # `gcc`   is necessary to run `go test -race`
-        command: |
-          apt update && apt install -y curl git make unzip gcc
+    - install_build_tools
     - checkout
-    - run:
-        name: "Install Go"
-        command: |
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
     - run:
         name: "Install all development tools"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make dev/tools
-    # - run:
-    #     name: "Install check tools (clang-format, ...)"
-    #     command: |
-    #       apt update && apt install -y wget
-
-    #       # see https://apt.llvm.org/
-
-    #       cat  >>/etc/apt/sources.list \<<EOF
-
-    #       deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
-    #       deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
-
-    #       EOF
-
-    #       wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
-
-    #       apt update && apt install -y clang-format-11
-#    - run:
-#        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-#        command: |
-#          export PATH=$HOME/go/bin:$PATH
-#          make check BUILD_INFO_VERSION=latest
     - run:
         name: "Build all binaries"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make build
     - run:
         name: "Run unit tests"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           GO_TEST_OPTS='-p 2' make test
 
   dev_mac:
@@ -679,31 +656,24 @@ jobs:
       GOPATH: /Users/distiller/.go-kuma-go
     steps:
     - checkout
-    - run:
-        name: "Install Go"
-        command: |
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.darwin-amd64.tar.gz | tar -xz -C $HOME
+    - install_build_tools:
+        go_os: darwin
     - run:
         name: "Install all development tools"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make dev/tools
     # Do NOT install `clang-format` on Mac since it takes unreasonable amount of time
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make check BUILD_INFO_VERSION=latest
     - run:
         name: "Build all binaries"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make build
     - run:
         name: "Run unit tests"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           GO_TEST_OPTS='-p 2' make test
 
   go_cache:
@@ -824,13 +794,8 @@ jobs:
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
+    - install_build_tools
     - checkout
-    - run:
-        name: "Install Go"
-        command: |
-          apt update && apt install -y curl git make
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
     - restore_cache:
         keys:
         # prefer the exact match
@@ -838,7 +803,6 @@ jobs:
     - run:
         name: "Download Go modules"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           go mod download
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
@@ -848,17 +812,16 @@ jobs:
     - run:
         name: "Install all development tools"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make dev/tools
     - run:
         name: "Run integration tests"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
           make << parameters.target >>
     - run:
         # Ref https://docs.codecov.com/docs/about-the-codecov-bash-uploader
         name: "Push coverage to Codecov"
+        when: always
         command: |
           set -o errexit
           curl --fail --location --silent --output codecov https://codecov.io/bash
@@ -888,17 +851,12 @@ jobs:
         description: use IPv6
         type: boolean
         default: false
-    parallelism: 4
+    parallelism: 8
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
+      - install_build_tools
       - checkout
-      - run:
-          name: "Install Go"
-          command: |
-            apt update && apt install -y curl git make
-            # see https://golang.org/doc/install#tarball
-            curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
       - restore_cache:
           keys:
             # prefer the exact match
@@ -906,7 +864,6 @@ jobs:
       - run:
           name: "Download Go modules"
           command: |
-            export PATH=$HOME/go/bin:$PATH
             go mod download
       # since execution of go commands might change contents of "go.sum", we have to save cache immediately
       - save_cache:
@@ -916,12 +873,10 @@ jobs:
       - run:
           name: "Install all development tools"
           command: |
-            export PATH=$HOME/go/bin:$PATH
             make dev/tools
       - run:
           name: "Setup Helm"
           command: |
-            export PATH=$HOME/go/bin:$PATH
             helm repo add kuma https://kumahq.github.io/charts
       - when:
           condition: << parameters.ipv6 >>
@@ -941,8 +896,7 @@ jobs:
             - run:
                 name: "Run IPv6 E2E tests"
                 command: |
-                  export PATH=$HOME/go/bin:$PATH
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export IPV6=true
                   export KUMA_DEFAULT_RETRIES=60
@@ -957,8 +911,7 @@ jobs:
             - run:
                 name: "Run IPv4 E2E tests"
                 command: |
-                  export PATH=$HOME/go/bin:$PATH
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
                   make test/e2e
@@ -1168,35 +1121,26 @@ jobs:
   release:
     executor: vm
     steps:
+    - install_build_tools
     - checkout
-    - run:
-        name: "Install Go"
-        command: |
-          apt update && apt install -y curl git make
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
     - run:
         name: "Download Go modules"
         command: go mod download
     - run:
         name: Build Packages
         command: |
-          export PATH=$HOME/go/bin:$PATH
           ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
     - run:
         name: Push Packages
         command: |
-          export PATH=$HOME/go/bin:$PATH
           ./tools/releases/distros.sh --release --version $CIRCLE_TAG
     - run:
         name: Build Docker
         command: |
-          export PATH=$HOME/go/bin:$PATH
           ./tools/releases/docker.sh --build --version $CIRCLE_TAG
     - run:
         name: Push Docker
         command: |
-          export PATH=$HOME/go/bin:$PATH
           ./tools/releases/docker.sh --push --version $CIRCLE_TAG
 
   helm-release:

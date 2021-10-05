@@ -245,6 +245,7 @@ type DataplaneGenerator struct {
 	Mesh      string
 	Addresser *ipam.IPAM
 	Manager   manager.ResourceManager
+	NextPort  uint32
 }
 
 // Generate creates a single Dataplane resource.
@@ -278,6 +279,10 @@ func (d *DataplaneGenerator) init() {
 		d.Addresser = i
 		d.Addresser.ReserveFirstAndLast()
 	}
+
+	if d.NextPort == 0 {
+		d.NextPort = 20000
+	}
 }
 
 func (d *DataplaneGenerator) generate(
@@ -293,6 +298,8 @@ func (d *DataplaneGenerator) generate(
 	addr, err := d.Addresser.Allocate()
 	Expect(err).To(Succeed())
 
+	d.NextPort++
+
 	dp := core_mesh.NewDataplaneResource()
 	dp.SetMeta(&rest.ResourceMeta{
 		Type:             string(dp.Descriptor().Name),
@@ -304,9 +311,9 @@ func (d *DataplaneGenerator) generate(
 	dp.Spec.Networking = &mesh_proto.Dataplane_Networking{
 		Address: addr.String(),
 		Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-			&mesh_proto.Dataplane_Networking_Inbound{
-				Port:        20011,
-				ServicePort: 10011,
+			{
+				Port:        d.NextPort,
+				ServicePort: d.NextPort,
 				Tags: map[string]string{
 					mesh_proto.ServiceTag:  serviceName,
 					mesh_proto.ProtocolTag: "http",

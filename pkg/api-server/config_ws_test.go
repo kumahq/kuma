@@ -288,6 +288,8 @@ var _ = Describe("Config WS", func() {
               "port": 15432,
               "maxReconnectInterval": "1m0s",
               "minReconnectInterval": "10s",
+              "maxIdleConnections": 50,
+              "maxOpenConnections": 50,
               "tls": {
                 "certPath": "",
                 "keyPath": "",

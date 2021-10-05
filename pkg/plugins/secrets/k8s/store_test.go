@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -11,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -72,7 +72,7 @@ var _ = Describe("KubernetesStore", func() {
 	}
 
 	BeforeEach(func() {
-		ns = string(uuid.NewUUID())
+		ns = uuid.New().String()
 
 		err := k8sClient.Create(context.Background(), &kube_core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{Name: ns},

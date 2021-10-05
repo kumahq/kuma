@@ -1,7 +1,55 @@
 Clusters:
-  Resources: {}
+  Resources:
+    exact-service:
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: exact-service
+      type: EDS
+    prefix-service:
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: prefix-service
+      type: EDS
 Endpoints:
-  Resources: {}
+  Resources:
+    exact-service:
+      clusterName: exact-service
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.12
+                portValue: 20012
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    prefix-service:
+      clusterName: prefix-service
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.13
+                portValue: 20013
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
 Listeners:
   Resources:
     edge-gateway:HTTP:8080:

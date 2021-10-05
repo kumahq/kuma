@@ -66,7 +66,7 @@ func main() {
 	format := GetenvOr("FORMAT", "markdown")
 
 	apps := map[string]command{
-		path.Join(prefix, "kuma-cp"): command{
+		path.Join(prefix, "kuma-cp"): {
 			command: kuma_cp.DefaultRootCmd(),
 			header: &doc.GenManHeader{
 				Title:   "KUMA-CP",
@@ -75,7 +75,7 @@ func main() {
 				Manual:  version.Product,
 			},
 		},
-		path.Join(prefix, "kuma-dp"): command{
+		path.Join(prefix, "kuma-dp"): {
 			command: kuma_dp.DefaultRootCmd(),
 			header: &doc.GenManHeader{
 				Title:   "KUMA-DP",
@@ -84,7 +84,7 @@ func main() {
 				Manual:  version.Product,
 			},
 		},
-		path.Join(prefix, "kuma-prometheus-sd"): command{
+		path.Join(prefix, "kuma-prometheus-sd"): {
 			command: kuma_prometheus_sd.DefaultRootCmd(),
 			header: &doc.GenManHeader{
 				Title:   "KUMA-PROMETHEUS-SD",
@@ -93,7 +93,7 @@ func main() {
 				Manual:  version.Product,
 			},
 		},
-		path.Join(prefix, "kumactl"): command{
+		path.Join(prefix, "kumactl"): {
 			command: kumactl.DefaultRootCmd(),
 			header: &doc.GenManHeader{
 				Title:   "KUMACTL",

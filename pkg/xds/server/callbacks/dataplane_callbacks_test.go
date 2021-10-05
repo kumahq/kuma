@@ -47,7 +47,7 @@ var _ = Describe("Dataplane Callbacks", func() {
 			Id: "default.example",
 			Metadata: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
-					"dataplane.token": &structpb.Value{
+					"dataplane.token": {
 						Kind: &structpb.Value_StringValue{
 							StringValue: "token",
 						},
