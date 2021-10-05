@@ -21,7 +21,7 @@ func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Com
 	cmd := &cobra.Command{
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
-		Long: `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.
+		Long: `Install Kuma Control Plane on Kubernetes in its own namespace.
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateArgs(args); err != nil {

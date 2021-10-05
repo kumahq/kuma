@@ -4,7 +4,7 @@ Install Kong ingress gateway on Kubernetes
 
 ### Synopsis
 
-Install Kong ingress gateway on Kubernetes in a 'kuma-gateway' namespace.
+Install Kong ingress gateway on Kubernetes in its own namespace.
 
 ```
 kumactl install gateway kong-enterprise [flags]

@@ -4,7 +4,7 @@ Install Logging backend in Kubernetes cluster (Loki)
 
 ### Synopsis
 
-Install Logging backend in Kubernetes cluster (Loki) in a 'kuma-logging' namespace
+Install Logging backend in Kubernetes cluster (Loki) in its own namespace.
 
 ```
 kumactl install logging [flags]
