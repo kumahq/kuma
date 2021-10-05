@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
+	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -159,21 +160,15 @@ name: %s
 	It("should access only local service if zone is disabled", func() {
 		// given zone 'kuma-4' enabled
 		// then we should receive responses from both test-server instances
-		responses := map[string]bool{}
-		Eventually(func() bool {
-			stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-			if err != nil {
-				return false
-			}
-			if strings.Contains(stdout, "universal1") {
-				responses["universal1"] = true
-			}
-			if strings.Contains(stdout, "universal2") {
-				responses["universal2"] = true
-			}
-			return len(responses) == 2
-		}, "30s", "10ms").Should(BeTrue())
+		Eventually(func() (map[string]int, error) {
+			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(2),
+				HaveKey(Equal(`universal1`)),
+				HaveKey(Equal(`universal2`)),
+			),
+		)
 
 		// when disable zone 'kuma-4'
 		Expect(YamlUniversal(`
@@ -192,21 +187,13 @@ enabled: false
 		}, "30s", "10ms").Should(BeTrue())
 
 		// and then responses only from the local service instance
-		consecutive := 0
-		Eventually(func() bool {
-			stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-			if err != nil {
-				consecutive = 0
-				return false
-			}
-			if strings.Contains(stdout, "universal1") {
-				consecutive++
-			}
-			if strings.Contains(stdout, "universal2") {
-				consecutive = 0
-			}
-			return consecutive == 20
-		}, "30s", "10ms").Should(BeTrue())
+		Eventually(func() (map[string]int, error) {
+			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(1),
+				HaveKey(Equal(`universal1`)),
+			),
+		)
 	})
 }
