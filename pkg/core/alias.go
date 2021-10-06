@@ -38,5 +38,5 @@ var (
 )
 
 func NewUUID() string {
-	return uuid.New().String()
+	return uuid.NewString()
 }
