@@ -1,21 +1,59 @@
 Clusters:
   Resources:
     exact-header-match:
-      connectTimeout: 10s
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: exact-header-match
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
     regex-header-match:
-      connectTimeout: 10s
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: regex-header-match
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
 Endpoints:
   Resources:
     exact-header-match:
@@ -25,8 +63,8 @@ Endpoints:
         - endpoint:
             address:
               socketAddress:
-                address: 192.168.1.10
-                portValue: 20010
+                address: 192.168.1.7
+                portValue: 20007
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
@@ -41,8 +79,8 @@ Endpoints:
         - endpoint:
             address:
               socketAddress:
-                address: 192.168.1.14
-                portValue: 20014
+                address: 192.168.1.11
+                portValue: 20011
           loadBalancingWeight: 1
           metadata:
             filterMetadata:

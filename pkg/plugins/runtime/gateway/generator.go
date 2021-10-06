@@ -17,23 +17,42 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
 const WildcardHostname = "*"
 
+// RoutePolicyTypes specifies the resource types the gateway will bind
+// for routes.
+var RoutePolicyTypes = []model.ResourceType{
+	core_mesh.GatewayRouteType,
+}
+
+// ConnectionPolicyTypes specifies the resource types the gateway will
+// bind for connection policies.
+var ConnectionPolicyTypes = []model.ResourceType{
+	core_mesh.CircuitBreakerType,
+	core_mesh.FaultInjectionType,
+	core_mesh.HealthCheckType,
+	core_mesh.RateLimitType,
+	core_mesh.RetryType,
+	core_mesh.TimeoutType,
+}
+
 type GatewayHost struct {
 	Hostname string
 	Routes   []model.Resource
+	Policies map[model.ResourceType][]match.RankedPolicy
+
 	// TODO(jpeach) Track TLS state for this host.
 }
 
 // Resources tracks partially-built xDS resources that can be updated
 // by multiple gateway generators.
 type Resources struct {
-	Listener           *listeners.ListenerBuilder
+	Listener           *envoy_listeners.ListenerBuilder
 	RouteConfiguration *envoy_routes.RouteConfigurationBuilder
 }
 
@@ -170,6 +189,19 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 	return resources.Get(), nil
 }
 
+func listResources(mgr core_manager.ReadOnlyResourceManager, t model.ResourceType) (model.ResourceList, error) {
+	list, err := registry.Global().NewList(t)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := mgr.List(context.Background(), list); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
 // MakeGatewayListener converts a collapsed set of listener configurations
 // in to a single configuration with a matched set of route resources. The
 // given listeners must have a consistent protocol and port.
@@ -191,26 +223,26 @@ func MakeGatewayListener(
 		),
 	}
 
-	for _, t := range []model.ResourceType{core_mesh.GatewayRouteType} {
-		list, err := registry.Global().NewList(t)
+	for _, t := range RoutePolicyTypes {
+		list, err := listResources(manager, t)
 		if err != nil {
-			return listener, nil, err
-		}
-
-		if err := manager.List(context.Background(), list); err != nil {
 			return listener, nil, err
 		}
 
 		resourcesByType[t] = list
 	}
 
-	// We don't require hostnames to be unique across listeners. As
-	// long as the port and protocol matches it is OK to have multiple
-	// listener entries for the same hostname, since each entry can have
-	// separate tags that will select additional route resources.
-	//
-	// This will become a problem when multiple listeners specify
-	// TLS certificates, so at that point, we might walk all this back.
+	for _, t := range ConnectionPolicyTypes {
+		list, err := listResources(manager, t)
+		if err != nil {
+			return listener, nil, err
+		}
+
+		resourcesByType[t] = list
+	}
+
+	// Hostnames must be unique to a listener to remove ambiguity
+	// in policy selection and TLS configuration.
 	for _, l := range listeners {
 		// An empty hostname is the same as "*", i.e. matches all hosts.
 		hostname := l.GetHostname()
@@ -218,8 +250,14 @@ func MakeGatewayListener(
 			hostname = WildcardHostname
 		}
 
-		host := hostsByName[hostname]
-		host.Hostname = hostname
+		if _, ok := hostsByName[hostname]; ok {
+			return listener, nil, errors.Errorf("duplicate hostname %q", hostname)
+		}
+
+		host := GatewayHost{
+			Hostname: hostname,
+			Policies: map[model.ResourceType][]match.RankedPolicy{},
+		}
 
 		switch listener.Protocol {
 		case mesh_proto.Gateway_Listener_HTTP,
@@ -230,9 +268,12 @@ func MakeGatewayListener(
 			// TODO(jpeach) match other route types that are appropriate to the protocol.
 		}
 
-		// TODO(jpeach) bind the listener tags to each route so
-		// that generators can use the appropriate set of tags to
-		// match route policies.
+		for _, t := range ConnectionPolicyTypes {
+			matches := match.ConnectionPoliciesBySource(
+				l.GetTags(),
+				match.ToConnectionPolicies(resourcesByType[t]))
+			host.Policies[t] = matches
+		}
 
 		hostsByName[hostname] = host
 	}

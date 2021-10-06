@@ -1,13 +1,32 @@
 Clusters:
   Resources:
     echo-service:
-      connectTimeout: 10s
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
       name: echo-service
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
 Endpoints:
   Resources:
     echo-service:
@@ -17,8 +36,8 @@ Endpoints:
         - endpoint:
             address:
               socketAddress:
-                address: 192.168.1.9
-                portValue: 20009
+                address: 192.168.1.6
+                portValue: 20006
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
