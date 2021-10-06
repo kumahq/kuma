@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -133,7 +135,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 
 	var token string
 	if opts.env["KUMA_API_SERVER_AUTHN_TYPE"] == "tokens" {
-		token, err = c.generateAdminToken()
+		token, err = c.retrieveAdminToken()
 		if err != nil {
 			return err
 		}
@@ -146,21 +148,27 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	return nil
 }
 
-func (c *UniversalCluster) generateAdminToken() (string, error) {
+func (c *UniversalCluster) retrieveAdminToken() (string, error) {
 	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
 		sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
 			"--fail", "--show-error",
-			"-XPOST",
-			"-H", "'content-type: application/json'",
-			"--data", `'{"name": "admin", "group": "admin", "validFor": "24h"}'`,
-			"http://localhost:5681/tokens/user"})
+			"http://localhost:5681/global-secrets/admin-user-token"})
 		if err := sshApp.Run(); err != nil {
 			return "", err
 		}
 		if sshApp.Err() != "" {
 			return "", errors.New(sshApp.Err())
 		}
-		return sshApp.Out(), nil
+		var secret map[string]string
+		if err := json.Unmarshal([]byte(sshApp.Out()), &secret); err != nil {
+			return "", err
+		}
+		data := secret["data"]
+		token, err := base64.StdEncoding.DecodeString(data)
+		if err != nil {
+			return "", err
+		}
+		return string(token), nil
 	})
 }
 

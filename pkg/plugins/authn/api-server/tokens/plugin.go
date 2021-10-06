@@ -33,7 +33,13 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 	if err := context.ComponentManager().Add(issuer.NewDefaultSigningKeyComponent(issuer.NewSigningKeyManager(context.ResourceManager()))); err != nil {
 		return err
 	}
-	webService := server.NewWebService(tokenIssuer(context.ResourceManager()))
+	issuer := tokenIssuer(context.ResourceManager())
+	if context.Config().ApiServer.Authn.Tokens.BootstrapAdminToken {
+		if err := context.ComponentManager().Add(NewAdminTokenBootstrap(issuer, context.ResourceManager(), context.Config())); err != nil {
+			return err
+		}
+	}
+	webService := server.NewWebService(issuer)
 	webService.Filter(authz.AdminFilter(context.RoleAssignments()))
 	context.APIManager().Add(webService)
 	return nil

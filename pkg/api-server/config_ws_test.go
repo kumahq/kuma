@@ -56,7 +56,10 @@ var _ = Describe("Config WS", func() {
 			},
 			"authn": {
 			  "localhostIsAdmin": true,
-			  "type": "clientCerts"
+			  "type": "clientCerts",
+			  "tokens": {
+			    "bootstrapAdminToken": true
+			  }
 			},
 			"corsAllowedDomains": [
 			  ".*"
