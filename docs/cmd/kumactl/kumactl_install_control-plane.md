@@ -49,6 +49,7 @@ kumactl install control-plane [flags]
       --tls-kds-global-server-secret string         Secret that contains tls.crt, key.crt for protecting cross cluster communication
       --tls-kds-zone-client-secret string           Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
       --use-node-port                               use NodePort instead of LoadBalancer
+      --version string                              version of Kuma Control Plane components
       --without-kubernetes-connection               install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades
       --zone string                                 set the Kuma zone name
 ```
