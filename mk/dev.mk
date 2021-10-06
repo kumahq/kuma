@@ -185,7 +185,7 @@ dev/install/k3d: ## Bootstrap: Install K3D (K3s in Docker)
 		&& set -x \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& $(CURL_DOWNLOAD) https://raw.githubusercontent.com/rancher/k3d/main/install.sh | \
-		        TAG=$(CI_K3D_VERSION) USE_SUDO="false" K3D_INSTALL_DIR="$(CI_TOOLS_DIR)" bash \
+		        PATH=$(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH):/root/bin TAG=$(CI_K3D_VERSION) USE_SUDO="false" K3D_INSTALL_DIR="$(CI_TOOLS_DIR)" bash \
 		&& set +x \
 		&& echo "K3d $(CI_K3D_VERSION) has been installed at $(K3D_PATH)" ; fi
 
