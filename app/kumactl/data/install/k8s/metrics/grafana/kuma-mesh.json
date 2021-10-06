@@ -121,7 +121,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m]))) by (kuma_io_service)",
+          "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\"}[1m]))) by (kuma_io_service)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{ kuma_io_service }}",
@@ -213,7 +213,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])) by (kuma_io_service)",
+          "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\"}[1m])) by (kuma_io_service)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{ kuma_io_service }}",
@@ -305,7 +305,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\", envoy_cluster_name=~\"localhost_.*\", envoy_response_code_class=~\"4|5\"}[1m])) by (kuma_io_service,envoy_response_code_class)",
+          "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\", envoy_response_code_class=~\"4|5\"}[1m])) by (kuma_io_service,envoy_response_code_class)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{ kuma_io_service}} {{ envoy_response_code_class }}xx",
@@ -422,7 +422,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "((sum(rate(envoy_cluster_health_check_success{mesh=\"$mesh\"}[1m])) / sum(rate(envoy_cluster_health_check_attempt{mesh=\"$mesh\"}[1m]))))",
+          "expr": "((sum(rate(envoy_cluster_health_check_success{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m])) / sum(rate(envoy_cluster_health_check_attempt{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))))",
           "legendFormat": "Success rate",
           "refId": "A"
         }
@@ -529,20 +529,20 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "interval": "",
           "legendFormat": "Connection overflow",
           "refId": "A"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Pending request overflow",
           "refId": "B"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "hide": false,
           "interval": "",
           "legendFormat": "Retry overflow",
@@ -641,7 +641,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{mesh=\"$mesh\"})",
+          "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}) / sum(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
           "interval": "",
           "legendFormat": "Healthy destinations",
           "refId": "A"
@@ -767,13 +767,13 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "count(envoy_server_live{mesh=\"$mesh\"}) - sum(envoy_server_live{mesh=\"$mesh\"})",
+          "expr": "count(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}) - sum(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
           "hide": false,
           "legendFormat": "Off",
           "refId": "B"
         },
         {
-          "expr": "sum(envoy_server_live{mesh=\"$mesh\"})",
+          "expr": "sum(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
           "hide": false,
           "legendFormat": "Live",
           "refId": "A"
@@ -884,12 +884,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "count(envoy_server_live{mesh=\"$mesh\"}) - sum(envoy_control_plane_connected_state{mesh=\"$mesh\"})",
+          "expr": "count(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}) - sum(envoy_control_plane_connected_state{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
           "legendFormat": "Disconnected",
           "refId": "B"
         },
         {
-          "expr": "sum(envoy_control_plane_connected_state{mesh=\"$mesh\"})",
+          "expr": "sum(envoy_control_plane_connected_state{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
           "legendFormat": "Connected",
           "refId": "A"
         }
@@ -985,12 +985,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "legendFormat": "Sent",
           "refId": "A"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "legendFormat": "Received",
           "refId": "B"
         }
@@ -1088,44 +1088,44 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "hide": true,
           "legendFormat": "Connection destroyed by the client",
           "refId": "A"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "legendFormat": "Connection timeout",
           "refId": "B"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "hide": true,
           "legendFormat": "Connection destroyed by local Envoy",
           "refId": "C"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "legendFormat": "Pending failure ejection",
           "refId": "D"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "legendFormat": "Pending overflow",
           "refId": "E"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "legendFormat": "Request timeout",
           "refId": "F"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "legendFormat": "Response reset",
           "refId": "G"
         },
         {
-          "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{mesh=\"$mesh\"}[1m]))",
+          "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
           "legendFormat": "Request reset",
           "refId": "H"
         }
@@ -1204,6 +1204,29 @@
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allFormat": "wildcard",
+        "allValue": null,
+        "current": {},
+        "datasource": "Prometheus",
+        "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Zone",
+        "multi": true,
+        "name": "zone",
+        "options": [],
+        "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
         "tagsQuery": "",
         "type": "query",
         "useTags": false
