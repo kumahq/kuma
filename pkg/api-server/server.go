@@ -329,16 +329,18 @@ func configureMTLS(certsDir string) (*tls.Config, error) {
 				continue
 			}
 			if !strings.HasSuffix(file.Name(), ".pem") && !strings.HasSuffix(file.Name(), ".crt") {
-				log.Info("skipping file, all the client certificates has to have .pem or .crt extension", "file", file.Name())
+				log.Info("skipping file without .pem or .crt extension", "file", file.Name())
 				continue
 			}
 			log.Info("adding client certificate", "file", file.Name())
 			path := filepath.Join(certsDir, file.Name())
 			caCert, err := ioutil.ReadFile(path)
 			if err != nil {
-				return nil, errors.Wrapf(err, "could not read certificate %s", path)
+				return nil, errors.Wrapf(err, "could not read certificate %q", path)
 			}
-			clientCertPool.AppendCertsFromPEM(caCert)
+			if !clientCertPool.AppendCertsFromPEM(caCert) {
+				return nil, errors.Errorf("failed to load PEM client certificate from %q", path)
+			}
 		}
 		tlsConfig.ClientCAs = clientCertPool
 	}
