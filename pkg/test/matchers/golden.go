@@ -55,6 +55,9 @@ func (g *GoldenYAMLMatcher) Match(actual interface{}) (success bool, err error) 
 		return false, err
 	}
 	if golden.UpdateGoldenFiles() {
+		if actualContent[len(actualContent)-1] != '\n' {
+			actualContent += "\n"
+		}
 		err := ioutil.WriteFile(g.GoldenFilePath, []byte(actualContent), 0644)
 		if err != nil {
 			return false, errors.Wrap(err, "could not update golden file")
