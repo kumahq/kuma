@@ -1,5 +1,56 @@
 # CHANGELOG
 
+## [1.3.1]
+> Released on 2021/10/06
+
+Changes:
+
+* fix: disable zone [#2884](https://github.com//kumahq/kuma/pull/2884)
+* fix: limit number of postgres connection by default [#2866](https://github.com//kumahq/kuma/pull/2866)
+* feat: add zone selector to Kuma Service to Service dashboard [#2876](https://github.com//kumahq/kuma/pull/2876)
+* feat: add zone selector to Kuma Service dashboard [#2865](https://github.com//kumahq/kuma/pull/2865)
+* feat: add zone selector to Kuma Dataplane dashboard [#2864](https://github.com//kumahq/kuma/pull/2864)
+* fix: fix duplicates in dataplane list in Kuma Services dashboard [#2845](https://github.com//kumahq/kuma/pull/2845)
+* chore: migrate install resources from rbac API v1beta1 to v1 [#2875](https://github.com//kumahq/kuma/pull/2875)
+* fix: fault injection matching [#2757](https://github.com//kumahq/kuma/pull/2757)
+* fix: delete kuma.io/region and kuma.io/sub-zone [#2824](https://github.com//kumahq/kuma/pull/2824)
+* feat: print control plane version with version cmd [#2834](https://github.com//kumahq/kuma/pull/2834)
+* fix: Only warn about version compatibility where it makes sense [#2828](https://github.com//kumahq/kuma/pull/2828)
+* perf: remove insight update rate limit burst [#2825](https://github.com//kumahq/kuma/pull/2825)
+* perf: apply ratelimit to service insights [#2815](https://github.com//kumahq/kuma/pull/2815)
+* feat: adds support for specifying specific IP for cloud provider load balancers for ingress service [#2779](https://github.com//kumahq/kuma/pull/2779)
+  👍contributed by @jamesdbloom
+* fix: send tool output to stdout [#2787](https://github.com//kumahq/kuma/pull/2787)
+* fix: switch to a Kuma fork of go-control-plane [#2771](https://github.com//kumahq/kuma/pull/2771)
+* chore: parametrize label on the deployment [#2765](https://github.com//kumahq/kuma/pull/2765)
+* perf: set Node only on first DiscoveryRequest [#2741](https://github.com//kumahq/kuma/pull/2741)
+* feat: verify ServiceAccountToken bound to a Pod [#2745](https://github.com//kumahq/kuma/pull/2745)
+* feat: internal dns should resolve AAAA records [#2760](https://github.com//kumahq/kuma/pull/2760)
+* fix: Add FORMERR and NOTIMP in alternate default coredns conf [#2756](https://github.com//kumahq/kuma/pull/2756)
+* fix: virtual probes with query [#2706](https://github.com//kumahq/kuma/pull/2706)
+* fix: Avoid calling `Send()` from different goroutines [#2573](https://github.com//kumahq/kuma/pull/2573)
+* feat: automatically set proxy concurrency [#2691](https://github.com//kumahq/kuma/pull/2691)
+* feat: Improve builtin grafana setup to have traces and logs linked [#2716](https://github.com//kumahq/kuma/pull/2716)
+* fix: Show gateway services in service-insights [#2711](https://github.com//kumahq/kuma/pull/2711)
+* fix: Correct bad merging of duration [#2700](https://github.com//kumahq/kuma/pull/2700)
+* fix: Ensure outbounds are set when migrating from old to new [#2698](https://github.com//kumahq/kuma/pull/2698)
+* fix: get rid of regex for parsing IPs [#2681](https://github.com//kumahq/kuma/pull/2681)
+* feat: add CP config to ZoneInsights [#2661](https://github.com//kumahq/kuma/pull/2661)
+* feat: generate GatewayRoute clusters [#2819](https://github.com//kumahq/kuma/pull/2819)
+* feat: add GatewayRoute route generation [#2782](https://github.com//kumahq/kuma/pull/2782)
+* feat: match gateway routes [#2758](https://github.com//kumahq/kuma/pull/2758)
+* feat: initial gateway TrafficRoute support [#2547](https://github.com//kumahq/kuma/pull/2547)
+* feat: add a GatewayRoute resource [#2591](https://github.com//kumahq/kuma/pull/2591)
+* chore: update base image for kuma-dp [#2881](https://github.com//kumahq/kuma/pull/2881)
+* chore: change Go JWT version to fix  security vunerability [#2844](https://github.com//kumahq/kuma/pull/2844)
+* chore: bump go.uber.org/zap from 1.17.0 to 1.19.1 [#2768](https://github.com//kumahq/kuma/pull/2768)
+* chore: bump google.golang.org/grpc from 1.38.0 to 1.40.0 [#2737](https://github.com//kumahq/kuma/pull/2737)
+* chore: bump github.com/miekg/dns from 1.1.42 to 1.1.43 [#2769](https://github.com//kumahq/kuma/pull/2769)
+* chore: upgrade github.com/spf13/cobra [#2732](https://github.com//kumahq/kuma/pull/2732)
+* chore: bump alpine in /tools/releases/dockerfiles [#2705](https://github.com//kumahq/kuma/pull/2705)
+* chore: bump github.com/onsi/gomega from 1.13.0 to 1.16.0 [#2657](https://github.com//kumahq/kuma/pull/2657)
+* chore: update envoy to 1.18.4 [#2667](https://github.com//kumahq/kuma/pull/2667)
+
 ## [1.3.0]
 > Released on 2021/08/25
 
