@@ -647,6 +647,50 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
+			Entry("external services with Zones and Locality", testCase{
+				dataplanes: []*core_mesh.DataplaneResource{},
+				externalServices: []*core_mesh.ExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: &mesh_proto.ExternalService{
+							Networking: &mesh_proto.ExternalService_Networking{
+								Address: "zone1.httpbin.org:80",
+							},
+							Tags: map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-1"},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: &mesh_proto.ExternalService{
+							Networking: &mesh_proto.ExternalService_Networking{
+								Address: "zone2.httpbin.org:80",
+							},
+							Tags: map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-2"},
+						},
+					},
+				},
+				mesh: defaultMeshWithLocality,
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{
+							Target:          "zone1.httpbin.org",
+							Port:            80,
+							Tags:            map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-1"},
+							Weight:          1,
+							Locality:        &core_xds.Locality{Zone: "zone-1", Priority: 0},
+							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
+						},
+						{
+							Target:          "zone2.httpbin.org",
+							Port:            80,
+							Tags:            map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-2"},
+							Weight:          1,
+							Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 1},
+							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
+						},
+					},
+				},
+			}),
 			Entry("unhealthy dataplane", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
