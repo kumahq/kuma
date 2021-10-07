@@ -39,12 +39,12 @@ BUILD_TEST_BINARIES := test-server
 # gateway plugin. Experimental means "for experiments", NOT "for production".
 BUILD_WITH_EXPERIMENTAL_GATEWAY ?= N
 
-# Build_Go_Application is a build command for the Kuma Go applications.
-ifeq ($(BUILD_WITH_EXPERIMENTAL_GATEWAY),N)
-Build_Go_Application = $(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@) ./app/$(notdir $@)
-else
-Build_Go_Application = $(GO_BUILD) -tags gateway -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@) ./app/$(notdir $@)
+ifneq ($(BUILD_WITH_EXPERIMENTAL_GATEWAY),N)
+GO_BUILD += -tags gateway
 endif
+
+# Build_Go_Application is a build command for the Kuma Go applications.
+Build_Go_Application = $(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@)
 
 .PHONY: build
 build: build/release build/test
@@ -69,15 +69,15 @@ build/test/linux-amd64:
 
 .PHONY: build/kuma-cp
 build/kuma-cp: ## Dev: Build `Control Plane` binary
-	$(Build_Go_Application)
+	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kuma-dp
 build/kuma-dp: ## Dev: Build `kuma-dp` binary
-	$(Build_Go_Application)
+	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kumactl
 build/kumactl: ## Dev: Build `kumactl` binary
-	$(Build_Go_Application)
+	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/coredns
 build/coredns:
@@ -92,11 +92,11 @@ build/coredns:
 
 .PHONY: build/kuma-prometheus-sd
 build/kuma-prometheus-sd: ## Dev: Build `kuma-prometheus-sd` binary
-	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-prometheus-sd/kuma-prometheus-sd ./app/kuma-prometheus-sd
+	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/test-server
 build/test-server: ## Dev: Build `test-server` binary
-	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/test-server/test-server ./test/server
+	$(Build_Go_Application) ./test/server
 
 .PHONY: build/kuma-cp/linux-amd64
 build/kuma-cp/linux-amd64:
