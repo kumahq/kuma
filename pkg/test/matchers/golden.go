@@ -50,11 +50,14 @@ type GoldenYAMLMatcher struct {
 var _ types.GomegaMatcher = &GoldenYAMLMatcher{}
 
 func (g *GoldenYAMLMatcher) Match(actual interface{}) (success bool, err error) {
-	actualContent, err := g.actualBytes(actual)
+	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return false, err
 	}
 	if golden.UpdateGoldenFiles() {
+		if actualContent[len(actualContent)-1] != '\n' {
+			actualContent += "\n"
+		}
 		err := ioutil.WriteFile(g.GoldenFilePath, []byte(actualContent), 0644)
 		if err != nil {
 			return false, errors.Wrap(err, "could not update golden file")
@@ -74,7 +77,7 @@ func (g *GoldenYAMLMatcher) Match(actual interface{}) (success bool, err error) 
 }
 
 func (g *GoldenYAMLMatcher) FailureMessage(actual interface{}) (message string) {
-	actualContent, err := g.actualBytes(actual)
+	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return err.Error()
 	}
@@ -82,14 +85,14 @@ func (g *GoldenYAMLMatcher) FailureMessage(actual interface{}) (message string) 
 }
 
 func (g *GoldenYAMLMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	actualContent, err := g.actualBytes(actual)
+	actualContent, err := g.actualString(actual)
 	if err != nil {
 		return err.Error()
 	}
 	return g.Matcher.NegatedFailureMessage(actualContent)
 }
 
-func (g *GoldenYAMLMatcher) actualBytes(actual interface{}) (string, error) {
+func (g *GoldenYAMLMatcher) actualString(actual interface{}) (string, error) {
 	switch actual := actual.(type) {
 	case []byte:
 		return string(actual), nil
