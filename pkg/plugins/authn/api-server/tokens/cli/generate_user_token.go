@@ -27,7 +27,7 @@ func NewGenerateUserTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Long:  `Generate User Token that is used to prove User identity.`,
 		Example: `
 Generate token
-$ kumactl generate user-token --name john.doe@acme.org --group users 
+$ kumactl generate user-token --name john.doe@example.com --group users 
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cp, err := pctx.CurrentControlPlane()

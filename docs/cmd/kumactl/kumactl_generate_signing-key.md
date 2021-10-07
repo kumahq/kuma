@@ -1,10 +1,10 @@
 ## kumactl generate signing-key
 
-Generate Signing Key
+Generate signing keys
 
 ### Synopsis
 
-Generate Signing Key that is used as a private key for signing tokens.
+Generate a private key for signing tokens.
 
 ```
 kumactl generate signing-key [flags]

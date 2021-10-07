@@ -24,7 +24,7 @@ const (
 	DefaultSerialNumber = 1
 )
 
-var SigningKeyNotFound = errors.New("there is no Signing Key in the Control Plane.")
+var SigningKeyNotFound = errors.New("there is no Signing Key in the Control Plane")
 
 func SigningKeyResourceKey(serialNumber int) model.ResourceKey {
 	return model.ResourceKey{

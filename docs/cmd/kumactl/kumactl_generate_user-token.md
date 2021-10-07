@@ -15,7 +15,7 @@ kumactl generate user-token [flags]
 ```
 
 Generate token
-$ kumactl generate user-token --name john.doe@acme.org --group users 
+$ kumactl generate user-token --name john.doe@example.com --group users 
 
 ```
 

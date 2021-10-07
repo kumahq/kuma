@@ -55,7 +55,7 @@ func (h *httpUserTokenClient) Generate(name, group string, validFor time.Duratio
 		return "", errors.Wrap(err, "could not read a body of the request")
 	}
 	if resp.StatusCode != 200 {
-		kumaErr := error_types.Error{}
+		var kumaErr error_types.Error
 		if err := json.Unmarshal(body, &kumaErr); err == nil {
 			if kumaErr.Title != "" && kumaErr.Details != "" {
 				return "", &kumaErr

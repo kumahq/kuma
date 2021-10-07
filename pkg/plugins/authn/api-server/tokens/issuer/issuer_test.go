@@ -84,7 +84,7 @@ var _ = Describe("User token issuer", func() {
 
 		// then old tokens are no longer valid
 		_, _, err = issuer.Validate(token1)
-		Expect(err).To(MatchError("could not get Signing Key with serial number 1. Signing Key most likely has been rotated, regenerate the token: there is no Signing Key in the Control Plane."))
+		Expect(err).To(MatchError("could not get Signing Key with serial number 1. Signing Key most likely has been rotated, regenerate the token: there is no Signing Key in the Control Plane"))
 
 		// and new token is valid because new signing key is present
 		_, _, err = issuer.Validate(token2)

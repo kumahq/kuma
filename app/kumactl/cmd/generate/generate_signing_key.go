@@ -12,8 +12,8 @@ import (
 func NewGenerateSigningKeyCmd(ctx *cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "signing-key",
-		Short: "Generate Signing Key",
-		Long:  `Generate Signing Key that is used as a private key for signing tokens.`,
+		Short: "Generate signing keys",
+		Long:  `Generate a private key for signing tokens.`,
 		Example: `
 Generate a new Signing Key to rotate tokens (for example user-token) on Universal.
 $ echo "
@@ -39,7 +39,6 @@ type: system.kuma.io/global-secret
 			if err != nil {
 				return errors.Wrap(err, "could not generate signing key")
 			}
-			base64.StdEncoding.EncodeToString(key)
 			_, err = cmd.OutOrStdout().Write([]byte(base64.StdEncoding.EncodeToString(key)))
 			return err
 		},
