@@ -15,7 +15,7 @@ import (
 )
 
 type UserTokenClient interface {
-	Generate(name, group string, validFor time.Duration) (string, error)
+	Generate(name string, groups []string, validFor time.Duration) (string, error)
 }
 
 var _ UserTokenClient = &httpUserTokenClient{}
@@ -30,10 +30,10 @@ type httpUserTokenClient struct {
 	client util_http.Client
 }
 
-func (h *httpUserTokenClient) Generate(name, group string, validFor time.Duration) (string, error) {
+func (h *httpUserTokenClient) Generate(name string, groups []string, validFor time.Duration) (string, error) {
 	tokenReq := &ws.UserTokenRequest{
 		Name:     name,
-		Group:    group,
+		Groups:   groups,
 		ValidFor: validFor.String(),
 	}
 	reqBytes, err := json.Marshal(tokenReq)

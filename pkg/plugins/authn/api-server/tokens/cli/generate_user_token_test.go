@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"bytes"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -17,8 +18,8 @@ import (
 type fakeUserTokenClient struct {
 }
 
-func (f *fakeUserTokenClient) Generate(name, group string, validFor time.Duration) (string, error) {
-	return "token-" + name + "-" + group + "-" + validFor.String(), nil
+func (f *fakeUserTokenClient) Generate(name string, groups []string, validFor time.Duration) (string, error) {
+	return "token-" + name + "-" + strings.Join(groups, ",") + "-" + validFor.String(), nil
 }
 
 var _ client.UserTokenClient = &fakeUserTokenClient{}
@@ -38,6 +39,7 @@ var _ = Describe("Generate User Token", func() {
 		rootCmd.SetArgs([]string{"generate", "user-token",
 			"--name", "john",
 			"--group", "team-a",
+			"--group", "team-b",
 			"--valid-for", "30s",
 		})
 
@@ -46,7 +48,7 @@ var _ = Describe("Generate User Token", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(buf.String()).To(Equal("token-john-team-a-30s"))
+		Expect(buf.String()).To(Equal("token-john-team-a,team-b-30s"))
 	})
 
 	It("should throw an error when name is not specified", func() {

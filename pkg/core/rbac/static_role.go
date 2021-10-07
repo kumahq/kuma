@@ -28,8 +28,13 @@ func NewStaticRoleAssignments(cfg rbac.RBACStaticConfig) RoleAssignments {
 }
 
 func (s *staticRoleAssignments) Role(user user.User) Role {
-	if s.adminUsers[user.Name] || s.adminGroups[user.Group] {
+	if s.adminUsers[user.Name] {
 		return AdminRole
+	}
+	for _, group := range user.Groups {
+		if s.adminGroups[group] {
+			return AdminRole
+		}
 	}
 	return MemberRole
 }

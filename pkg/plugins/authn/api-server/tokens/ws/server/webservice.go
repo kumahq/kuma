@@ -64,8 +64,8 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 	}
 
 	token, err := d.issuer.Generate(user.User{
-		Name:  idReq.Name,
-		Group: idReq.Group,
+		Name:   idReq.Name,
+		Groups: idReq.Groups,
 	}, validFor)
 	if err != nil {
 		errors.HandleError(response, err, "Could not issue a token")

@@ -45,26 +45,26 @@ var _ = Describe("Auth Tokens WS", func() {
 
 		// wait for the server
 		Eventually(func() error {
-			_, err := client.Generate("john.doe@acme.org", "team-a", 0)
+			_, err := client.Generate("john.doe@acme.org", []string{"team-a"}, 0)
 			return err
 		}).ShouldNot(HaveOccurred())
 	})
 
 	It("should generate token", func() {
 		// when
-		token, err := client.Generate("john.doe@acme.org", "team-a", 1*time.Hour)
+		token, err := client.Generate("john.doe@acme.org", []string{"team-a"}, 1*time.Hour)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		u, _, err := issuer.Validate(token)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(u.Name).To(Equal("john.doe@acme.org"))
-		Expect(u.Group).To(Equal("team-a"))
+		Expect(u.Groups).To(Equal([]string{"team-a"}))
 	})
 
 	It("should throw an error when zone is not passed", func() {
 		// when
-		_, err := client.Generate("", "", 1*time.Hour)
+		_, err := client.Generate("", nil, 1*time.Hour)
 
 		// then
 		Expect(err).To(Equal(&error_types.Error{

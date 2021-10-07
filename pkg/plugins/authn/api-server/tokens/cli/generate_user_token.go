@@ -15,7 +15,7 @@ var NewHTTPUserTokenClient = client.NewHTTPUserTokenClient
 
 type generateUserTokenCmd struct {
 	name     string
-	group    string
+	groups   []string
 	validFor time.Duration
 }
 
@@ -40,7 +40,7 @@ $ kumactl generate user-token --name john.doe@example.com --group users
 			}
 
 			tokenClient := NewHTTPUserTokenClient(apiClient)
-			token, err := tokenClient.Generate(args.name, args.group, args.validFor)
+			token, err := tokenClient.Generate(args.name, args.groups, args.validFor)
 			if err != nil {
 				return errors.Wrap(err, "failed to generate a user token")
 			}
@@ -50,7 +50,7 @@ $ kumactl generate user-token --name john.doe@example.com --group users
 	}
 	cmd.Flags().StringVar(&args.name, "name", "", "name of the user")
 	_ = cmd.MarkFlagRequired("name")
-	cmd.Flags().StringVar(&args.group, "group", "", "group of the user")
+	cmd.Flags().StringSliceVar(&args.groups, "group", nil, "group of the user")
 	cmd.Flags().DurationVar(&args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h"). If 0, then token has no expiration time`)
 	return cmd
 }

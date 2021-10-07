@@ -1,7 +1,7 @@
 package ws
 
 type UserTokenRequest struct {
-	Name     string `json:"name"`
-	Group    string `json:"group"`
-	ValidFor string `json:"validFor"`
+	Name     string   `json:"name"`
+	Groups   []string `json:"groups"`
+	ValidFor string   `json:"validFor"`
 }

@@ -22,7 +22,7 @@ $ kumactl generate user-token --name john.doe@example.com --group users
 ### Options
 
 ```
-      --group string         group of the user
+      --group strings        group of the user
   -h, --help                 help for user-token
       --name string          name of the user
       --valid-for duration   how long the token will be valid (for example "24h"). If 0, then token has no expiration time

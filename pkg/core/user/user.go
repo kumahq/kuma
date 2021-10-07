@@ -1,17 +1,19 @@
 package user
 
+import "strings"
+
 type User struct {
-	Name  string
-	Group string
+	Name   string
+	Groups []string
 }
 
 func (u User) String() string {
-	return u.Name + "/" + u.Group
+	return u.Name + "/" + strings.Join(u.Groups, ",")
 }
 
 // Admin is a static user that can be used when authn mechanism does not authenticate to specific user,
 // but authenticate to admin without giving credential (ex. authenticate as localhost, authenticate via legacy client certs).
 var Admin = User{
-	Name:  "admin",
-	Group: "admin",
+	Name:   "admin",
+	Groups: []string{"admin"},
 }

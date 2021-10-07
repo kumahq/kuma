@@ -52,8 +52,8 @@ var _ = Describe("User token issuer", func() {
 	It("should support rotation", func() {
 		// given
 		id := user.User{
-			Name:  "john.doe@acme.org",
-			Group: "users",
+			Name:   "john.doe@acme.org",
+			Groups: []string{"users"},
 		}
 
 		// when
@@ -94,8 +94,8 @@ var _ = Describe("User token issuer", func() {
 	It("should validate out expired tokens", func() {
 		// given
 		id := user.User{
-			Name:  "john.doe@acme.org",
-			Group: "users",
+			Name:   "john.doe@acme.org",
+			Groups: []string{"users"},
 		}
 		token, err := issuer.Generate(id, 60*time.Second)
 		Expect(err).ToNot(HaveOccurred())
@@ -111,8 +111,8 @@ var _ = Describe("User token issuer", func() {
 	It("should revoke token", func() {
 		// given valid token
 		id := user.User{
-			Name:  "john.doe@acme.org",
-			Group: "users",
+			Name:   "john.doe@acme.org",
+			Groups: []string{"users"},
 		}
 
 		token, err := issuer.Generate(id, 60*time.Second)
