@@ -32,7 +32,7 @@ func BuildEndpointMap(
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
 	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses)
-	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader)
+	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
 	return outbound
 }
 
@@ -172,11 +172,11 @@ func fillIngressOutbounds(
 	return uint32(len(ingressInstances))
 }
 
-func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServices []*core_mesh.ExternalServiceResource, mesh *core_mesh.MeshResource, loader datasource.Loader) {
+func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServices []*core_mesh.ExternalServiceResource, mesh *core_mesh.MeshResource, loader datasource.Loader, zone string) {
 	for _, externalService := range externalServices {
 		service := externalService.Spec.GetService()
 
-		externalServiceEndpoint, err := buildExternalServiceEndpoint(externalService, mesh, loader)
+		externalServiceEndpoint, err := buildExternalServiceEndpoint(externalService, mesh, loader, zone)
 		if err != nil {
 			core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
 			continue
@@ -185,7 +185,7 @@ func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServic
 	}
 }
 
-func buildExternalServiceEndpoint(externalService *core_mesh.ExternalServiceResource, mesh *core_mesh.MeshResource, loader datasource.Loader) (*core_xds.Endpoint, error) {
+func buildExternalServiceEndpoint(externalService *core_mesh.ExternalServiceResource, mesh *core_mesh.MeshResource, loader datasource.Loader, zone string) (*core_xds.Endpoint, error) {
 	es := &core_xds.ExternalService{
 		TLSEnabled: externalService.Spec.GetNetworking().GetTls().GetEnabled(),
 		CaCert: convertToEnvoy(
@@ -206,13 +206,18 @@ func buildExternalServiceEndpoint(externalService *core_mesh.ExternalServiceReso
 		tags = envoy.Tags(tags).WithTags(mesh_proto.ExternalServiceTag, externalService.Meta.GetName())
 	}
 
+	var priority uint32 = priorityRemote
+	if esZone, ok := externalService.Spec.GetTags()[mesh_proto.ZoneTag]; ok && esZone == zone {
+		priority = priorityLocal
+	}
+
 	return &core_xds.Endpoint{
 		Target:          externalService.Spec.GetHost(),
 		Port:            externalService.Spec.GetPortUInt32(),
 		Tags:            tags,
 		Weight:          1,
 		ExternalService: es,
-		Locality:        localityFromTags(mesh, priorityRemote, tags),
+		Locality:        localityFromTags(mesh, priority, tags),
 	}, nil
 }
 
@@ -239,7 +244,7 @@ func localityFromTags(mesh *core_mesh.MeshResource, priority uint32, tags map[st
 	}
 
 	if !mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
-		// we want to set the Locality even when localityAwareLoadBalancing is enabled
+		// we want to set the Locality even when localityAwareLoadBalancing is not enabled
 		// If we set the locality we have an extra visibility about this in /clusters etc.
 		// Kuma's LocalityAwareLoadBalancing feature is based only on Priority therefore when it's disabled we need to set Priority to local
 		//
