@@ -120,7 +120,6 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 	DescribeTable("should properly handle xDS flow",
 		func(given testCase) {
-			Expect(given.TypeStats).To(BeElementOf([]string{"Cds", "Eds", "Lds", "Rds"}), "Test doesn't support this discovery type")
 			// given
 			streamID := int64(1)
 			version := mesh_proto.Version{
