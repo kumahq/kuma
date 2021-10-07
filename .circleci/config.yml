@@ -133,7 +133,7 @@ commands:
         # See https://golang.org/doc/install#tarball
         command: |
           curl --progress-bar --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
-          echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
+          echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
 
 executors:
   golang:
@@ -207,8 +207,8 @@ jobs:
     - run:
         name: "Setup Environment"
         command: |
-          echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
-          echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
+          echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
+          echo 'export PATH=$HOME/bin:$PATH' >> $BASH_ENV
           echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
           echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
           echo "export CLUSTER_2=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-2" >> $BASH_ENV
@@ -423,8 +423,8 @@ jobs:
     - run:
         name: "Setup Environment"
         command: |
-          echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
-          echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
+          echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
+          echo 'export PATH=$HOME/bin:$PATH' >> $BASH_ENV
           echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
           echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
           echo "export CLUSTER_2=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-2" >> $BASH_ENV
