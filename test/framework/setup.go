@@ -10,7 +10,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -144,46 +143,20 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 	}
 }
 
-// WaitUntilPodReadyE waits until all of the containers within the pod are ready, retrying the check for the specified amount of times, sleeping
+// WaitUntilPodReadyE waits until all the containers within the pod are ready, retrying the check for the specified amount of times, sleeping
 // for the provided duration between each try.
 func WaitUntilPodReadyE(t testing.TestingT, options *k8s.KubectlOptions, podName string, retries int, sleepBetweenRetries time.Duration) error {
-	statusMsg := fmt.Sprintf("Wait for pod %s to be provisioned.", podName)
-	message, err := retry.DoWithRetryE(
-		t,
-		statusMsg,
-		retries,
-		sleepBetweenRetries,
-		func() (string, error) {
-			pod, err := k8s.GetPodE(t, options, podName)
-			if err != nil {
-				return "", err
-			}
-			if !IsPodReady(pod) {
-				return "", k8s.NewPodNotAvailableError(pod)
-			}
-			return "Pod is now available", nil
-		},
-	)
-	if err != nil {
-		logger.Default.Logf(t, "Timeout waiting for Pod to be provisioned: %s", err)
+	logger.Default.Logf(t, "Waiting for pod %s to be available", podName)
+	if err := k8s.WaitUntilPodAvailableE(t, options, podName, retries, sleepBetweenRetries); err != nil {
+		logger.Default.Logf(t, "Timed out waiting for Pod %s: %s", podName, err)
 		return err
 	}
-	logger.Default.Logf(t, message)
+	logger.Default.Logf(t, "Pod %s is available", podName)
 	return nil
 }
 
-// IsPodReady returns true if the all of the containers within the pod are ready and started
-func IsPodReady(pod *corev1.Pod) bool {
-	for _, containerStatus := range pod.Status.ContainerStatuses {
-		if !containerStatus.Ready {
-			return false
-		}
-	}
-	return pod.Status.Phase == corev1.PodRunning
-}
-
 func WaitUntilPodCompleteE(t testing.TestingT, options *k8s.KubectlOptions, podName string, retries int, sleepBetweenRetries time.Duration) error {
-	statusMsg := fmt.Sprintf("Wait for pod %s to be provisioned.", podName)
+	statusMsg := fmt.Sprintf("Waiting for pod %s to complete", podName)
 	message, err := retry.DoWithRetryE(
 		t,
 		statusMsg,
@@ -203,7 +176,7 @@ func WaitUntilPodCompleteE(t testing.TestingT, options *k8s.KubectlOptions, podN
 		},
 	)
 	if err != nil {
-		logger.Default.Logf(t, "Timedout waiting for Pod to be completed: %s", err)
+		logger.Default.Logf(t, "Timed out waiting for Pod to be completed: %s", err)
 		return err
 	}
 	logger.Default.Logf(t, message)
