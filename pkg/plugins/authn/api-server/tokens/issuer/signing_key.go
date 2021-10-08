@@ -24,7 +24,7 @@ const (
 	DefaultSerialNumber = 1
 )
 
-var SigningKeyNotFound = errors.New("there is no Signing Key in the Control Plane")
+var SigningKeyNotFound = errors.New("there is no signing key in the Control Plane")
 
 func SigningKeyResourceKey(serialNumber int) model.ResourceKey {
 	return model.ResourceKey{
@@ -87,7 +87,7 @@ func (s *signingKeyManager) GetLatestSigningKey() ([]byte, int, error) {
 		return nil, 0, SigningKeyNotFound
 	}
 
-	sort.Stable(GlobalSecretsByName(signingKeys))
+	sort.Stable(GlobalSecretsBySerial(signingKeys))
 
 	serialNumber, err := signingKeySerialNumber(signingKeys[0].Meta.GetName())
 	if err != nil {
@@ -102,16 +102,16 @@ func (s *signingKeyManager) CreateDefaultSigningKey() error {
 }
 
 func (s *signingKeyManager) CreateSigningKey(serialNumber int) error {
-	secret := system.NewGlobalSecretResource()
 	key, err := issuer.NewSigningKey()
+	if err != nil {
+		return errors.Wrap(err, "could not construct signing key")
+	}
+
+	secret := system.NewGlobalSecretResource()
 	secret.Spec = &system_proto.Secret{
 		Data: &wrappers.BytesValue{
 			Value: key,
 		},
-	}
-
-	if err != nil {
-		return errors.Wrap(err, "could not construct signing key")
 	}
 	if err := s.manager.Create(context.Background(), secret, store.CreateBy(SigningKeyResourceKey(serialNumber))); err != nil {
 		return errors.Wrap(err, "could not create signing key")
@@ -128,11 +128,11 @@ func signingKeySerialNumber(secretName string) (int, error) {
 	return serialNumber, nil
 }
 
-type GlobalSecretsByName []*system.GlobalSecretResource
+type GlobalSecretsBySerial []*system.GlobalSecretResource
 
-func (a GlobalSecretsByName) Len() int      { return len(a) }
-func (a GlobalSecretsByName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a GlobalSecretsByName) Less(i, j int) bool {
+func (a GlobalSecretsBySerial) Len() int      { return len(a) }
+func (a GlobalSecretsBySerial) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a GlobalSecretsBySerial) Less(i, j int) bool {
 	// ignore errors and assume serial number is 0 when secret has wrong format
 	iSerialNumber, _ := signingKeySerialNumber(a[i].Meta.GetName())
 	jSerialNumber, _ := signingKeySerialNumber(a[j].Meta.GetName())

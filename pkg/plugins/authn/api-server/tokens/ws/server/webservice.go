@@ -31,7 +31,7 @@ func (d *userTokenWebService) createWs() *restful.WebService {
 	webservice := new(restful.WebService).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
-	webservice.Path("/user-tokens").
+	webservice.Path("/tokens/user").
 		Route(webservice.POST("").To(d.handleIdentityRequest))
 	return webservice
 }

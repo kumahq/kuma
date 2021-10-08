@@ -52,7 +52,7 @@ var _ = Describe("User token issuer", func() {
 	It("should support rotation", func() {
 		// given
 		id := user.User{
-			Name:   "john.doe@acme.org",
+			Name:   "john.doe@example.com",
 			Groups: []string{"users"},
 		}
 
@@ -61,7 +61,7 @@ var _ = Describe("User token issuer", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		_, _, err = issuer.Validate(token1)
+		_, err = issuer.Validate(token1)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when new signing key with higher serial number is created
@@ -73,9 +73,9 @@ var _ = Describe("User token issuer", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then all tokens are valid because 2 signing keys are present in the system
-		_, _, err = issuer.Validate(token1)
+		_, err = issuer.Validate(token1)
 		Expect(err).ToNot(HaveOccurred())
-		_, _, err = issuer.Validate(token2)
+		_, err = issuer.Validate(token2)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when first signing key is deleted
@@ -83,18 +83,18 @@ var _ = Describe("User token issuer", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then old tokens are no longer valid
-		_, _, err = issuer.Validate(token1)
-		Expect(err).To(MatchError("could not get Signing Key with serial number 1. Signing Key most likely has been rotated, regenerate the token: there is no Signing Key in the Control Plane"))
+		_, err = issuer.Validate(token1)
+		Expect(err).To(MatchError("could not parse token: could not get signing key with serial number 1. The signing key most likely has been rotated, regenerate the token: there is no signing key in the Control Plane"))
 
 		// and new token is valid because new signing key is present
-		_, _, err = issuer.Validate(token2)
+		_, err = issuer.Validate(token2)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should validate out expired tokens", func() {
 		// given
 		id := user.User{
-			Name:   "john.doe@acme.org",
+			Name:   "john.doe@example.com",
 			Groups: []string{"users"},
 		}
 		token, err := issuer.Generate(id, 60*time.Second)
@@ -102,7 +102,7 @@ var _ = Describe("User token issuer", func() {
 
 		// when
 		now = now.Add(60*time.Second + 1*time.Second)
-		_, _, err = issuer.Validate(token)
+		_, err = issuer.Validate(token)
 
 		// then
 		Expect(err.Error()).To(ContainSubstring("could not parse token: token is expired"))
@@ -111,13 +111,13 @@ var _ = Describe("User token issuer", func() {
 	It("should revoke token", func() {
 		// given valid token
 		id := user.User{
-			Name:   "john.doe@acme.org",
+			Name:   "john.doe@example.com",
 			Groups: []string{"users"},
 		}
 
 		token, err := issuer.Generate(id, 60*time.Second)
 		Expect(err).ToNot(HaveOccurred())
-		_, _, err = issuer.Validate(token)
+		_, err = issuer.Validate(token)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when id of the token is added to revocation list
@@ -136,7 +136,7 @@ var _ = Describe("User token issuer", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		_, _, err = issuer.Validate(token)
+		_, err = issuer.Validate(token)
 		Expect(err).To(MatchError("token is revoked"))
 	})
 })

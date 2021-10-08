@@ -34,7 +34,7 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 		if err := doWithRetry(ctx, d.createDefaultSigningKeyIfNotExist); err != nil {
 			// Retry this operation since on Kubernetes, secrets are validated.
 			// This code can execute before the control plane is ready therefore hooks can fail.
-			errChan <- errors.Wrap(err, "could not create the default User Token's Signing Key")
+			errChan <- errors.Wrap(err, "could not create the default user token's signing key")
 		}
 	}()
 	select {
@@ -48,18 +48,18 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 func (d *defaultSigningKeyComponent) createDefaultSigningKeyIfNotExist() error {
 	_, _, err := d.signingKeyManager.GetLatestSigningKey()
 	if err == nil {
-		log.V(1).Info("User Token's Signing Key already exists. Skip creating.")
+		log.V(1).Info("user token's signing key already exists. Skip creating.")
 		return nil
 	}
 	if err != SigningKeyNotFound {
 		return err
 	}
-	log.Info("trying to create User Token's Signing Key")
+	log.Info("trying to create user token's signing key")
 	if err := d.signingKeyManager.CreateDefaultSigningKey(); err != nil {
-		log.V(1).Info("could not create User Token's Signing Key", "err", err)
+		log.V(1).Info("could not create user token's signing key", "err", err)
 		return err
 	}
-	log.Info("default User Token's Signing Key created")
+	log.Info("default user token's signing key created")
 	return nil
 }
 

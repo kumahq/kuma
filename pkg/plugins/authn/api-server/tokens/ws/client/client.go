@@ -40,7 +40,7 @@ func (h *httpUserTokenClient) Generate(name string, groups []string, validFor ti
 	if err != nil {
 		return "", errors.Wrap(err, "could not marshal token request to json")
 	}
-	req, err := http.NewRequest("POST", "/user-tokens", bytes.NewReader(reqBytes))
+	req, err := http.NewRequest("POST", "/tokens/user", bytes.NewReader(reqBytes))
 	if err != nil {
 		return "", errors.Wrap(err, "could not construct the request")
 	}

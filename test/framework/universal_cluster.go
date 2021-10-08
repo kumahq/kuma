@@ -139,8 +139,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		}
 	}
 
-	kumacpURL := "http://localhost:" + app.ports["5681"]
-	err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL, token)
+	err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetKuma().GetAPIServerAddress(), token)
 	if err != nil {
 		return err
 	}

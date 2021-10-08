@@ -20,7 +20,7 @@ func UserTokenAuthenticator(issuer issuer.UserTokenIssuer) authn.Authenticator {
 			authnHeader != "" &&
 			strings.HasPrefix(authnHeader, bearerPrefix) {
 			token := strings.TrimPrefix(authnHeader, bearerPrefix)
-			u, _, err := issuer.Validate(token)
+			u, err := issuer.Validate(token)
 			if err != nil {
 				rest_errors.HandleError(response, &rest_errors.Unauthenticated{}, "invalid authentication data: "+err.Error())
 				return

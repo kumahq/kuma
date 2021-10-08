@@ -69,6 +69,6 @@ func AuthUniversal() {
 		kumactl, err := NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(kumactl.RunKumactl("get", "dataplanes")).To(Succeed())
-		Expect(kumactl.RunKumactl("get", "secrets")).To(HaveOccurred())
+		Expect(kumactl.RunKumactl("get", "secrets")).ToNot(Succeed())
 	})
 }

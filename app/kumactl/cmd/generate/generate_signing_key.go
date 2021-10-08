@@ -15,14 +15,14 @@ func NewGenerateSigningKeyCmd(ctx *cmd.RootContext) *cobra.Command {
 		Short: "Generate signing keys",
 		Long:  `Generate a private key for signing tokens.`,
 		Example: `
-Generate a new Signing Key to rotate tokens (for example user-token) on Universal.
+Generate a new signing key to rotate tokens (for example user-token) on Universal.
 $ echo "
 type: GlobalSecret
 name: user-token-signing-key-0002
 data: {{ key }}
 " | kumactl apply --var key=$(kumactl generate signing-key) -f -
 
-Generate a new Signing Key to rotate tokens (for example user-token) on Kubernetes.
+Generate a new signing key to rotate tokens (for example user-token) on Kubernetes.
 $ TOKEN="$(kumactl generate signing-key)" && echo "
 apiVersion: v1
 data:
