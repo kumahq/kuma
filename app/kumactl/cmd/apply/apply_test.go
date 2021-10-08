@@ -29,6 +29,7 @@ import (
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	test_store "github.com/kumahq/kuma/pkg/test/store"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 	"github.com/kumahq/kuma/pkg/util/test"
 )
 
@@ -41,8 +42,11 @@ var _ = Describe("kumactl apply", func() {
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
 				Registry: registry.Global(),
-				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-					return store, nil
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+					return nil, nil
+				},
+				NewResourceStore: func(util_http.Client) core_store.ResourceStore {
+					return store
 				},
 				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
@@ -327,7 +331,7 @@ var _ = Describe("kumactl apply", func() {
 
 	It("should return kuma api server error", func() {
 		// setup
-		rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
+		rootCtx.Runtime.NewResourceStore = func(util_http.Client) core_store.ResourceStore {
 			kumaErr := &types.Error{
 				Title:   "Could not process resource",
 				Details: "Resource is not valid",
@@ -345,7 +349,7 @@ var _ = Describe("kumactl apply", func() {
 			store := test_store.FailingStore{
 				Err: kumaErr,
 			}
-			return &store, nil
+			return &store
 		}
 
 		// given

@@ -1,4 +1,4 @@
-package cli
+package generate
 
 import (
 	"time"
@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/client"
 )
@@ -27,19 +26,15 @@ func NewGenerateUserTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Long:  `Generate User Token that is used to prove User identity.`,
 		Example: `
 Generate token
-$ kumactl generate user-token --name john.doe@example.com --group users 
+$ kumactl generate user-token --name john.doe@example.com --group users --valid-for 24h
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cp, err := pctx.CurrentControlPlane()
-			if err != nil {
-				return err
-			}
-			apiClient, err := kumactl_client.ApiServerClient(cp.Coordinates.ApiServer)
+			client, err := pctx.BaseAPIServerClient()
 			if err != nil {
 				return err
 			}
 
-			tokenClient := NewHTTPUserTokenClient(apiClient)
+			tokenClient := NewHTTPUserTokenClient(client)
 			token, err := tokenClient.Generate(args.name, args.groups, args.validFor)
 			if err != nil {
 				return errors.Wrap(err, "failed to generate a user token")

@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
+	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
@@ -45,10 +46,11 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 
 	It("should return a token", func() {
 		// given
-		client, err := tokens.NewZoneIngressTokenClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
+		baseClient, err := kumactl_client.ApiServerClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
 		})
 		Expect(err).ToNot(HaveOccurred())
+		client := tokens.NewZoneIngressTokenClient(baseClient)
 
 		// wait for server
 		Eventually(func() error {
@@ -75,9 +77,11 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 			_, err := writer.Write([]byte("Internal Server Error"))
 			Expect(err).ToNot(HaveOccurred())
 		})
-		client, err := tokens.NewZoneIngressTokenClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
+		baseClient, err := kumactl_client.ApiServerClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
 		})
+		Expect(err).ToNot(HaveOccurred())
+		client := tokens.NewZoneIngressTokenClient(baseClient)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

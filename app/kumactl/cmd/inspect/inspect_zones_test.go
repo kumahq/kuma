@@ -16,12 +16,12 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	system_core "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -227,8 +227,8 @@ var _ = Describe("kumactl inspect zones", func() {
 			}
 			rootCtx, err := test_kumactl.MakeRootContext(now, nil)
 			Expect(err).ToNot(HaveOccurred())
-			rootCtx.Runtime.NewZoneOverviewClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer) (resources.ZoneOverviewClient, error) {
-				return testClient, nil
+			rootCtx.Runtime.NewZoneOverviewClient = func(util_http.Client) resources.ZoneOverviewClient {
+				return testClient
 			}
 
 			rootCmd = cmd.NewRootCmd(rootCtx)

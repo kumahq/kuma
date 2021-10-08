@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 	util_test "github.com/kumahq/kuma/pkg/util/test"
 )
 
@@ -22,8 +23,11 @@ func MakeRootContext(now time.Time, resourceStore store.ResourceStore, res ...mo
 		Runtime: kumactl_cmd.RootRuntime{
 			Registry: reg,
 			Now:      func() time.Time { return now },
-			NewResourceStore: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (store.ResourceStore, error) {
-				return resourceStore, nil
+			NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+				return nil, nil
+			},
+			NewResourceStore: func(util_http.Client) store.ResourceStore {
+				return resourceStore
 			},
 			NewAPIServerClient: util_test.GetMockNewAPIServerClient(),
 		},

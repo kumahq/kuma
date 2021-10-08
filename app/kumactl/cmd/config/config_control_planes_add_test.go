@@ -85,6 +85,19 @@ var _ = Describe("kumactl config control-planes add", func() {
 `))
 		})
 
+		It("should not allow invalid auth-type", func() {
+			// given
+			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
+				"config", "control-planes", "add",
+				"--address", "http://localhost:1234",
+				"--auth-type", "unknown",
+				"--name", "example"})
+			// when
+			err := rootCmd.Execute()
+			// then
+			Expect(err).To(MatchError(`authentication plugin of type "unknown" is not found`))
+		})
+
 		It("should fail to add a new Control Plane with duplicate name", func() {
 			// setup
 			server, port := setupCpIndexServer()

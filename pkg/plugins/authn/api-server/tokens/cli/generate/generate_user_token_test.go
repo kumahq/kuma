@@ -1,4 +1,4 @@
-package cli_test
+package generate_test
 
 import (
 	"bytes"
@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	cmd2 "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/cli"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/cli/generate"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/client"
 	"github.com/kumahq/kuma/pkg/util/http"
 )
@@ -28,8 +28,8 @@ var _ = Describe("Generate User Token", func() {
 
 	It("should generate control plane token", func() {
 		// setup
-		rootCmd := cmd.NewRootCmd(cmd2.DefaultRootContext())
-		cli.NewHTTPUserTokenClient = func(client http.Client) client.UserTokenClient {
+		rootCmd := cmd.NewRootCmd(kumactl_cmd.DefaultRootContext())
+		generate.NewHTTPUserTokenClient = func(client http.Client) client.UserTokenClient {
 			return &fakeUserTokenClient{}
 		}
 		buf := &bytes.Buffer{}
@@ -53,8 +53,8 @@ var _ = Describe("Generate User Token", func() {
 
 	It("should throw an error when name is not specified", func() {
 		// setup
-		rootCmd := cmd.NewRootCmd(cmd2.DefaultRootContext())
-		cli.NewHTTPUserTokenClient = func(client http.Client) client.UserTokenClient {
+		rootCmd := cmd.NewRootCmd(kumactl_cmd.DefaultRootContext())
+		generate.NewHTTPUserTokenClient = func(client http.Client) client.UserTokenClient {
 			return &fakeUserTokenClient{}
 		}
 		buf := &bytes.Buffer{}
