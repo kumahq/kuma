@@ -149,7 +149,7 @@ resources:
         - endpoint:
             address:
               pipe:
-                path: /tmp/kuma-mh-backend-01-demo.sock
+                path: /var/folders/zs/fnjkm6q94g16j4h_yh49kzrr0000gn/T//kuma-mh-backend-01-demo.sock
     name: kuma:metrics:hijacker
     type: STATIC
 - name: localhost:8080
