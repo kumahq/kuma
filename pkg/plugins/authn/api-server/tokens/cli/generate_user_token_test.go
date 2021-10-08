@@ -67,6 +67,6 @@ var _ = Describe("Generate User Token", func() {
 		err := rootCmd.Execute()
 
 		// then
-		Expect(err).To(MatchError(`required flag(s) "name" not set`))
+		Expect(err).To(MatchError(`required flag(s) "name", "valid-for" not set`))
 	})
 })

@@ -936,6 +936,7 @@ _kumactl_generate_user-token()
 
     must_have_one_flag=()
     must_have_one_flag+=("--name=")
+    must_have_one_flag+=("--valid-for=")
     must_have_one_noun=()
     noun_aliases=()
 }
