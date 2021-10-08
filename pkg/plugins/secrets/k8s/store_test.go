@@ -10,10 +10,10 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -71,7 +71,7 @@ var _ = Describe("KubernetesStore", func() {
 	}
 
 	BeforeEach(func() {
-		ns = string(uuid.NewUUID())
+		ns = core.NewUUID()
 
 		err := k8sClient.Create(context.Background(), &kube_core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{Name: ns},

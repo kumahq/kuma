@@ -111,7 +111,7 @@ var _ = Describe("Auth test", func() {
 		body, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
-		Expect(string(body)).To(Equal("Access Denied. To access this endpoint you need to do it either from the same machine or by configuring HTTPS on API Server and providing valid certificates"))
+		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user did not authenticate"}`))
 	})
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
@@ -124,7 +124,7 @@ var _ = Describe("Auth test", func() {
 		body, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
-		Expect(string(body)).To(Equal("Access Denied. To access this endpoint you need to do it either from the same machine or by configuring HTTPS on API Server and providing valid certificates"))
+		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user did not authenticate"}`))
 	})
 })
 

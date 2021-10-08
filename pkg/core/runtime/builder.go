@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
@@ -15,7 +16,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/rbac"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -50,6 +53,9 @@ type BuilderContext interface {
 	DpServer() *dp_server.DpServer
 	MeshValidator() core_managers.MeshValidator
 	KDSContext() *kds_context.Context
+	APIServerAuthenticator() authn.Authenticator
+	ResourceAccess() resources_rbac.ResourceAccess
+	RoleAssignments() rbac.RoleAssignments
 }
 
 var _ BuilderContext = &Builder{}
@@ -79,6 +85,9 @@ type Builder struct {
 	dps      *dp_server.DpServer
 	kdsctx   *kds_context.Context
 	mv       core_managers.MeshValidator
+	au       authn.Authenticator
+	ra       resources_rbac.ResourceAccess
+	ras      rbac.RoleAssignments
 	appCtx   context.Context
 	*runtimeInfo
 }
@@ -220,6 +229,21 @@ func (b *Builder) WithKDSContext(kdsctx *kds_context.Context) *Builder {
 	return b
 }
 
+func (b *Builder) WithAPIServerAuthenticator(au authn.Authenticator) *Builder {
+	b.au = au
+	return b
+}
+
+func (b *Builder) WithResourceAccess(ra resources_rbac.ResourceAccess) *Builder {
+	b.ra = ra
+	return b
+}
+
+func (b *Builder) WithRoleAssignments(ras rbac.RoleAssignments) *Builder {
+	b.ras = ras
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -275,6 +299,15 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.mv == nil {
 		return nil, errors.Errorf("MeshValidator has not been configured")
 	}
+	if b.au == nil {
+		return nil, errors.Errorf("API Server Authenticator has not been configured")
+	}
+	if b.ra == nil {
+		return nil, errors.Errorf("ResourceAccess has not been configured")
+	}
+	if b.ras == nil {
+		return nil, errors.Errorf("RoleAssignment has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -299,6 +332,9 @@ func (b *Builder) Build() (Runtime, error) {
 			dps:      b.dps,
 			kdsctx:   b.kdsctx,
 			mv:       b.mv,
+			au:       b.au,
+			ra:       b.ra,
+			ras:      b.ras,
 			appCtx:   b.appCtx,
 		},
 		Manager: b.cm,
@@ -370,6 +406,15 @@ func (b *Builder) KDSContext() *kds_context.Context {
 }
 func (b *Builder) MeshValidator() core_managers.MeshValidator {
 	return b.mv
+}
+func (b *Builder) APIServerAuthenticator() authn.Authenticator {
+	return b.au
+}
+func (b *Builder) ResourceAccess() resources_rbac.ResourceAccess {
+	return b.ra
+}
+func (b *Builder) RoleAssignments() rbac.RoleAssignments {
+	return b.ras
 }
 func (b *Builder) AppCtx() context.Context {
 	return b.appCtx

@@ -28,7 +28,7 @@ var _ = Describe("DataplaneToMeshMapper", func() {
 						"publicAddress": "192.168.0.100",
 						"publicPort":    12345,
 						"availableServices": []map[string]interface{}{
-							{"instances": 2, "mesh": "mesh-1", "tags": map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"}},
+							{"instances": 2, "mesh": "mesh-1", "tags": map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2"}},
 							{"instances": 3, "mesh": "mesh-1", "tags": map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"}},
 							{"instances": 3, "mesh": "mesh-1", "tags": map[string]string{mesh_proto.ServiceTag: "backend", "version": "v3"}},
 							{"instances": 3, "mesh": "mesh-2", "tags": map[string]string{mesh_proto.ServiceTag: "db", "version": "v3"}},

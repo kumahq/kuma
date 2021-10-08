@@ -56,9 +56,8 @@ func NewProxyProfile(manager manager.ReadOnlyResourceManager) generator.Resource
 				// depend on state created by a previous generator.
 				&ListenerGenerator{},
 				&RouteConfigurationGenerator{},
-				&VirtualHostGenerator{},
-				&TrafficRouteGenerator{},
 				&GatewayRouteGenerator{},
+				&RouteTableGenerator{},
 			},
 		},
 	}

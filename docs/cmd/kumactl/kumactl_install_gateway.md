@@ -4,7 +4,7 @@ Install ingress gateway on Kubernetes
 
 ### Synopsis
 
-Install ingress gateway on Kubernetes in a 'kuma-gateway' namespace.
+Install ingress gateway on Kubernetes in its own namespace.
 
 ### Options
 

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo"
@@ -25,6 +26,24 @@ func CpCompatibilityMultizoneKubernetes() {
 	var zoneCluster Cluster
 	var zoneDeployOptsFuncs = KumaZoneK8sDeployOpts
 	var zoneReleaseName string
+
+	// Ensure that the upstream Kuma help repository is configured
+	// and refreshed. This is needed for helm to be able to pull the
+	// OldChart version of the Kuma helm chart.
+	BeforeSuite(func() {
+		t := NewTestingT()
+		opts := helm.Options{}
+
+		// Adding the same repo multiple times is idempotent. The
+		// `--force-update` flag prevents heml emitting an error
+		// in this case.
+		_, err := helm.RunHelmCommandAndGetOutputE(t, &opts,
+			"repo", "add", "--force-update", "kuma", "https://kumahq.github.io/charts")
+		Expect(err).To(Succeed())
+
+		_, err = helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")
+		Expect(err).To(Succeed())
+	})
 
 	BeforeEach(func() {
 		// Global CP

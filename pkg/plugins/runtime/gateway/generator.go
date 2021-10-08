@@ -15,6 +15,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -34,20 +35,6 @@ type GatewayHost struct {
 type Resources struct {
 	Listener           *listeners.ListenerBuilder
 	RouteConfiguration *envoy_routes.RouteConfigurationBuilder
-	VirtualHost        *envoy_routes.VirtualHostBuilder
-
-	discriminator int
-}
-
-// Discriminator returns a unique ID that can be used to disambiguate
-// resources that would otherwise have conflicting names.
-//
-// TODO(jpeach) Whether a global discriminator makes sense probably
-// depends on whether we end up processing resources in deterministic
-// orders.
-func (r *Resources) Discriminator() int {
-	r.discriminator++
-	return r.discriminator
 }
 
 type GatewayListener struct {
@@ -57,12 +44,13 @@ type GatewayListener struct {
 }
 
 type GatewayResourceInfo struct {
-	Proxy     *core_xds.Proxy
-	Dataplane *core_mesh.DataplaneResource
-	Gateway   *core_mesh.GatewayResource
-	Listener  GatewayListener
-	Host      GatewayHost
-	Resources Resources
+	Proxy      *core_xds.Proxy
+	Dataplane  *core_mesh.DataplaneResource
+	Gateway    *core_mesh.GatewayResource
+	Listener   GatewayListener
+	Host       GatewayHost
+	Resources  Resources
+	RouteTable route.Table
 }
 
 // GatewayHostGenerator is responsible for generating xDS resources for a single GatewayHost.
@@ -148,6 +136,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 		// Make a pass over the generators for each virtual host.
 		for _, host := range hosts {
+			info.RouteTable = route.Table{}
 			info.Host = host
 
 			// Ensure that generators don't get duplicate routes,
@@ -167,14 +156,6 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 				resources.AddSet(generated)
 			}
-
-			info.Resources.RouteConfiguration.Configure(envoy_routes.VirtualHost(info.Resources.VirtualHost))
-
-			// The order of generators matters, because they
-			// can refer to state that is accumulated in the
-			// GatewayResourceInfo. Clear the virtual host so
-			// that we can't accidentally refer to a stale one.
-			info.Resources.VirtualHost = nil
 		}
 
 		if err := resources.Add(BuildResourceSet(info.Resources.Listener)); err != nil {
@@ -210,7 +191,7 @@ func MakeGatewayListener(
 		),
 	}
 
-	for _, t := range []model.ResourceType{core_mesh.TrafficRouteType, core_mesh.GatewayRouteType} {
+	for _, t := range []model.ResourceType{core_mesh.GatewayRouteType} {
 		list, err := registry.Global().NewList(t)
 		if err != nil {
 			return listener, nil, err
@@ -243,8 +224,6 @@ func MakeGatewayListener(
 		switch listener.Protocol {
 		case mesh_proto.Gateway_Listener_HTTP,
 			mesh_proto.Gateway_Listener_HTTPS:
-			host.Routes = append(host.Routes,
-				match.Routes(resourcesByType[core_mesh.TrafficRouteType], l.GetTags())...)
 			host.Routes = append(host.Routes,
 				match.Routes(resourcesByType[core_mesh.GatewayRouteType], l.GetTags())...)
 		default:

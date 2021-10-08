@@ -65,14 +65,14 @@ var _ = Describe("ExternalService Manager", func() {
 			ratelimit := core_mesh.RateLimitResource{
 				Spec: &mesh_proto.RateLimit{
 					Sources: []*mesh_proto.Selector{
-						&mesh_proto.Selector{
+						{
 							Match: map[string]string{
 								"kuma.io/service": "service1",
 							},
 						},
 					},
 					Destinations: []*mesh_proto.Selector{
-						&mesh_proto.Selector{
+						{
 							Match: map[string]string{
 								"kuma.io/service": "service2",
 							},
@@ -122,14 +122,14 @@ var _ = Describe("ExternalService Manager", func() {
 			ratelimit := core_mesh.RateLimitResource{
 				Spec: &mesh_proto.RateLimit{
 					Sources: []*mesh_proto.Selector{
-						&mesh_proto.Selector{
+						{
 							Match: map[string]string{
 								"kuma.io/service": "service1",
 							},
 						},
 					},
 					Destinations: []*mesh_proto.Selector{
-						&mesh_proto.Selector{
+						{
 							Match: map[string]string{
 								"kuma.io/service": "*",
 							},
@@ -179,14 +179,14 @@ var _ = Describe("ExternalService Manager", func() {
 			ratelimit := core_mesh.RateLimitResource{
 				Spec: &mesh_proto.RateLimit{
 					Sources: []*mesh_proto.Selector{
-						&mesh_proto.Selector{
+						{
 							Match: map[string]string{
 								"kuma.io/service": "service1",
 							},
 						},
 					},
 					Destinations: []*mesh_proto.Selector{
-						&mesh_proto.Selector{
+						{
 							Match: map[string]string{
 								"kuma.io/service": "service2",
 								"version":         "v1",
@@ -247,14 +247,14 @@ var _ = Describe("ExternalService Manager", func() {
 			ratelimit := core_mesh.RateLimitResource{
 				Spec: &mesh_proto.RateLimit{
 					Sources: []*mesh_proto.Selector{
-						&mesh_proto.Selector{
+						{
 							Match: map[string]string{
 								"kuma.io/service": "service1",
 							},
 						},
 					},
 					Destinations: []*mesh_proto.Selector{
-						&mesh_proto.Selector{
+						{
 							Match: map[string]string{
 								"kuma.io/service": "service2",
 							},
@@ -307,14 +307,14 @@ var _ = Describe("ExternalService Manager", func() {
 			ratelimit := core_mesh.RateLimitResource{
 				Spec: &mesh_proto.RateLimit{
 					Sources: []*mesh_proto.Selector{
-						&mesh_proto.Selector{
+						{
 							Match: map[string]string{
 								"kuma.io/service": "service1",
 							},
 						},
 					},
 					Destinations: []*mesh_proto.Selector{
-						&mesh_proto.Selector{
+						{
 							Match: map[string]string{
 								"kuma.io/service": "service3",
 								"version":         "v1",

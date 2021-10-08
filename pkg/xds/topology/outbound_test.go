@@ -70,12 +70,12 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.RegionTag: "eu"},
+								Tags:        map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ZoneTag: "eu"},
 								Port:        8080,
 								ServicePort: 18080,
 							},
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "frontend", mesh_proto.RegionTag: "eu"},
+								Tags:        map[string]string{mesh_proto.ServiceTag: "frontend", mesh_proto.ZoneTag: "eu"},
 								Port:        7070,
 								ServicePort: 17070,
 							},
@@ -123,7 +123,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}
-			elasticEU := &core_mesh.DataplaneResource{ // dataplane that must be ingored (due to `kuma.io/region: eu`)
+			elasticEU := &core_mesh.DataplaneResource{ // dataplane that must be ingored (due to `kuma.io/zone: eu`)
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "elastic-eu",
@@ -133,7 +133,7 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.5",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.RegionTag: "eu"},
+								Tags:        map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.ZoneTag: "eu"},
 								Port:        9200,
 								ServicePort: 49200,
 							},
@@ -151,7 +151,7 @@ var _ = Describe("TrafficRoute", func() {
 						Address: "192.168.0.6",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.RegionTag: "us"},
+								Tags:        map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.ZoneTag: "us"},
 								Port:        9200,
 								ServicePort: 59200,
 							},
@@ -193,19 +193,19 @@ var _ = Describe("TrafficRoute", func() {
 					Port:   9200,
 					Tags: map[string]string{
 						mesh_proto.ServiceTag: "elastic",
-						mesh_proto.RegionTag:  "eu",
+						mesh_proto.ZoneTag:    "eu",
 					},
 					Locality: &core_xds.Locality{
-						Region: "eu",
+						Zone: "eu",
 					},
 					Weight: 1,
 				},
 				{
 					Target: "192.168.0.6",
 					Port:   9200,
-					Tags:   map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.RegionTag: "us"},
+					Tags:   map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.ZoneTag: "us"},
 					Locality: &core_xds.Locality{
-						Region: "us",
+						Zone: "us",
 					},
 					Weight: 1,
 				},
@@ -216,10 +216,10 @@ var _ = Describe("TrafficRoute", func() {
 					Port:   7070,
 					Tags: map[string]string{
 						mesh_proto.ServiceTag: "frontend",
-						mesh_proto.RegionTag:  "eu",
+						mesh_proto.ZoneTag:    "eu",
 					},
 					Locality: &core_xds.Locality{
-						Region: "eu",
+						Zone: "eu",
 					},
 					Weight: 1,
 				},
@@ -230,10 +230,10 @@ var _ = Describe("TrafficRoute", func() {
 					Port:   8080,
 					Tags: map[string]string{
 						mesh_proto.ServiceTag: "backend",
-						mesh_proto.RegionTag:  "eu",
+						mesh_proto.ZoneTag:    "eu",
 					},
 					Locality: &core_xds.Locality{
-						Region: "eu",
+						Zone: "eu",
 					},
 					Weight: 1,
 				},
@@ -294,7 +294,7 @@ var _ = Describe("TrafficRoute", func() {
 										{
 											Instances: 2,
 											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 										},
 										{
 											Instances: 3,
@@ -323,7 +323,7 @@ var _ = Describe("TrafficRoute", func() {
 										{
 											Instances: 2,
 											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 										},
 										{
 											Instances: 3,
@@ -352,7 +352,7 @@ var _ = Describe("TrafficRoute", func() {
 										{
 											Instances: 2,
 											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 										},
 										{
 											Instances: 3,
@@ -371,9 +371,9 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.100",
 							Port:   12345,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 							Locality: &core_xds.Locality{
-								Region: "eu",
+								Zone: "eu",
 							},
 							Weight: 2,
 						},
@@ -386,9 +386,9 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.101",
 							Port:   12345,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 							Locality: &core_xds.Locality{
-								Region: "eu",
+								Zone: "eu",
 							},
 							Weight: 2,
 						},
@@ -441,7 +441,7 @@ var _ = Describe("TrafficRoute", func() {
 										{
 											Instances: 2,
 											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 										},
 										{
 											Instances: 3,
@@ -460,9 +460,9 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target: "192.168.0.100",
 							Port:   12345,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 							Locality: &core_xds.Locality{
-								Region: "eu",
+								Zone: "eu",
 							},
 							Weight: 2,
 						},
@@ -507,7 +507,7 @@ var _ = Describe("TrafficRoute", func() {
 										{
 											Instances: 2,
 											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 										},
 										{
 											Instances: 3,
@@ -629,7 +629,7 @@ var _ = Describe("TrafficRoute", func() {
 									Enabled: true,
 								},
 							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.RegionTag: "us", mesh_proto.ZoneTag: "west"},
+							Tags: map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "us"},
 						},
 					},
 				},
@@ -639,10 +639,54 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target:          "httpbin.org",
 							Port:            80,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.RegionTag: "us", mesh_proto.ZoneTag: "west", mesh_proto.ExternalServiceTag: ""},
+							Tags:            map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "us", mesh_proto.ExternalServiceTag: ""},
 							Weight:          1,
-							Locality:        &core_xds.Locality{Region: "us", Zone: "west", Priority: 1},
+							Locality:        &core_xds.Locality{Zone: "us", Priority: 1},
 							ExternalService: &core_xds.ExternalService{TLSEnabled: true},
+						},
+					},
+				},
+			}),
+			Entry("external services with Zones and Locality", testCase{
+				dataplanes: []*core_mesh.DataplaneResource{},
+				externalServices: []*core_mesh.ExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: &mesh_proto.ExternalService{
+							Networking: &mesh_proto.ExternalService_Networking{
+								Address: "zone1.httpbin.org:80",
+							},
+							Tags: map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-1"},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: &mesh_proto.ExternalService{
+							Networking: &mesh_proto.ExternalService_Networking{
+								Address: "zone2.httpbin.org:80",
+							},
+							Tags: map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-2"},
+						},
+					},
+				},
+				mesh: defaultMeshWithLocality,
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{
+							Target:          "zone1.httpbin.org",
+							Port:            80,
+							Tags:            map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-1"},
+							Weight:          1,
+							Locality:        &core_xds.Locality{Zone: "zone-1", Priority: 0},
+							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
+						},
+						{
+							Target:          "zone2.httpbin.org",
+							Port:            80,
+							Tags:            map[string]string{mesh_proto.ServiceTag: "redis", mesh_proto.ZoneTag: "zone-2"},
+							Weight:          1,
+							Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 1},
+							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
 						},
 					},
 				},

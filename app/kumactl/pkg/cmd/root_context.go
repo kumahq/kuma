@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -11,11 +12,14 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
+	"github.com/kumahq/kuma/pkg/api-server/types"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	util_files "github.com/kumahq/kuma/pkg/util/files"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 type RootArgs struct {
@@ -206,4 +210,30 @@ func (rc *RootContext) CurrentApiClient() (kumactl_resources.ApiServerClient, er
 		return nil, err
 	}
 	return rc.Runtime.NewAPIServerClient(controlPlane.Coordinates.ApiServer)
+}
+
+func (rc *RootContext) CheckServerVersionCompatibility() error {
+	kumactlLog := core.Log.WithName("kumactl")
+
+	var kumaBuildVersion *types.IndexResponse
+
+	client, err := rc.CurrentApiClient()
+	if err != nil {
+		kumactlLog.Error(err, "Unable to get index client")
+	} else {
+		kumaBuildVersion, err = client.GetVersion(context.Background())
+		if err != nil {
+			kumactlLog.Error(err, "Unable to retrieve server version")
+		}
+	}
+
+	if kumaBuildVersion == nil {
+		return errors.New("WARNING: Unable to confirm the server supports this kumactl version")
+	}
+
+	if kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product {
+		return errors.New("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version)
+	}
+
+	return nil
 }
