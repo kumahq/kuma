@@ -44,23 +44,25 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 		return
 	}
 
+	verr := validators.ValidationError{}
 	if idReq.Name == "" {
-		verr := validators.ValidationError{}
 		verr.AddViolation("name", "cannot be empty")
-		errors.HandleError(response, verr.OrNil(), "Invalid request")
-		return
 	}
 
 	var validFor time.Duration
-	if idReq.ValidFor != "" {
+	if idReq.ValidFor == "" {
+		verr.AddViolation("name", "cannot be empty")
+	} else {
 		dur, err := time.ParseDuration(idReq.ValidFor)
 		if err != nil {
-			verr := validators.ValidationError{}
 			verr.AddViolation("validFor", "is invalid: "+err.Error())
-			errors.HandleError(response, verr.OrNil(), "Invalid request")
-			return
 		}
 		validFor = dur
+	}
+
+	if verr.HasViolations() {
+		errors.HandleError(response, verr.OrNil(), "Invalid request")
+		return
 	}
 
 	token, err := d.issuer.Generate(user.User{

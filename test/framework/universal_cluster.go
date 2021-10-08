@@ -152,8 +152,8 @@ func (c *UniversalCluster) generateAdminToken() (string, error) {
 			"--fail", "--show-error",
 			"-XPOST",
 			"-H", "'content-type: application/json'",
-			"--data", `'{"name": "admin", "group": "admin"}'`,
-			"http://localhost:5681/user-tokens"})
+			"--data", `'{"name": "admin", "group": "admin", "validFor": "24h"}'`,
+			"http://localhost:5681/tokens/user"})
 		if err := sshApp.Run(); err != nil {
 			return "", err
 		}

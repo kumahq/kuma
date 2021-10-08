@@ -57,7 +57,7 @@ var _ = Describe("User token issuer", func() {
 		}
 
 		// when
-		token1, err := issuer.Generate(id, 0)
+		token1, err := issuer.Generate(id, time.Second*60)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -69,7 +69,7 @@ var _ = Describe("User token issuer", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and a new token is generated
-		token2, err := issuer.Generate(id, 0)
+		token2, err := issuer.Generate(id, time.Second*60)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then all tokens are valid because 2 signing keys are present in the system

@@ -35,7 +35,11 @@ func AuthUniversal() {
 
 	It("should generate user for group admin and log in", func() {
 		// given
-		token, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token", "--name", "new-admin", "--group", "admin")
+		token, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
+			"--name", "new-admin",
+			"--group", "admin",
+			"--valid-for", "24h",
+		)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
@@ -54,7 +58,11 @@ func AuthUniversal() {
 
 	It("should generate user for group member and log in", func() {
 		// given
-		token, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token", "--name", "team-a-member", "--group", "team-a")
+		token, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
+			"--name", "team-a-member",
+			"--group", "team-a",
+			"--valid-for", "24h",
+		)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token

@@ -51,6 +51,7 @@ $ kumactl generate user-token --name john.doe@example.com --group users
 	cmd.Flags().StringVar(&args.name, "name", "", "name of the user")
 	_ = cmd.MarkFlagRequired("name")
 	cmd.Flags().StringSliceVar(&args.groups, "group", nil, "group of the user")
-	cmd.Flags().DurationVar(&args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h"). If 0, then token has no expiration time`)
+	cmd.Flags().DurationVar(&args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
+	_ = cmd.MarkFlagRequired("valid-for")
 	return cmd
 }
