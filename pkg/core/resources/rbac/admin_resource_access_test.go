@@ -51,7 +51,7 @@ var _ = Describe("Admin Resource Access", func() {
 			model.ResourceKey{Name: "xyz"},
 			&system_proto.Secret{},
 			system.NewSecretResource().Descriptor(),
-			&user.User{Name: "john doe", Group: "users"},
+			&user.User{Name: "john doe", Groups: []string{"users"}},
 		)
 
 		// then
@@ -90,7 +90,7 @@ var _ = Describe("Admin Resource Access", func() {
 			model.ResourceKey{Name: "xyz"},
 			&system_proto.Secret{},
 			system.NewSecretResource().Descriptor(),
-			&user.User{Name: "john doe", Group: "users"},
+			&user.User{Name: "john doe", Groups: []string{"users"}},
 		)
 
 		// then
@@ -114,7 +114,7 @@ var _ = Describe("Admin Resource Access", func() {
 		err := resourceAccess.ValidateGet(
 			model.ResourceKey{Name: "xyz"},
 			system.NewSecretResource().Descriptor(),
-			&user.User{Name: "john doe", Group: "users"},
+			&user.User{Name: "john doe", Groups: []string{"users"}},
 		)
 
 		// then
@@ -136,7 +136,7 @@ var _ = Describe("Admin Resource Access", func() {
 		// when
 		err := resourceAccess.ValidateList(
 			system.NewSecretResource().Descriptor(),
-			&user.User{Name: "john doe", Group: "users"},
+			&user.User{Name: "john doe", Groups: []string{"users"}},
 		)
 
 		// then

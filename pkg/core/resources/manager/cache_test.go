@@ -122,6 +122,26 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(hits + hitWaits).To(Equal(100.0))
 	})
 
+	It("should not cache Get() not found", func() {
+		// when fetched resources multiple times
+		fetch := func() {
+			_ = cachedManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("non-existing", "default"))
+		}
+
+		var wg sync.WaitGroup
+		for i := 0; i < 100; i++ {
+			wg.Add(1)
+			go func() {
+				fetch()
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		// then real manager should be called every time
+		Expect(countingManager.getQueries).To(Equal(100))
+	})
+
 	It("should cache List() queries", func() {
 		// when fetched resources multiple times
 		fetch := func() core_mesh.DataplaneResourceList {

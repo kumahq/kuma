@@ -187,10 +187,8 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 	if err := c.PortForwardKumaCP(); err != nil {
 		return err
 	}
-
-	kumacpURL := "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)
-
-	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
+	// token is not important since we are accessing it from localhost anyways so we are admin
+	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), "")
 }
 
 func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
@@ -241,6 +239,10 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 	pod := c.GetKumaCPPods()[0]
 	return "grpcs://" + net.JoinHostPort(
 		pod.Status.HostIP, strconv.FormatUint(uint64(kdsPort), 10))
+}
+
+func (c *K8sControlPlane) GetAPIServerAddress() string {
+	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)
 }
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {

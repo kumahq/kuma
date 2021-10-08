@@ -174,14 +174,15 @@ func (o *KumactlOptions) KumactlInstallTracing() (string, error) {
 	return o.RunKumactlAndGetOutput("install", "tracing")
 }
 
-func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) error {
+func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address, token string) error {
 	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			err := o.RunKumactl(
 				"config", "control-planes", "add",
 				"--overwrite",
 				"--name", name,
-				"--address", address)
+				"--address", address,
+				"--headers", "authorization=Bearer "+token) // todo change to native args once they are introduced
 
 			if err != nil {
 				return "Unable to register Kuma CP. Try again.", err

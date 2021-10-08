@@ -359,6 +359,7 @@ type ControlPlane interface {
 	GetMetrics() (string, error)
 	GetKDSServerAddress() string
 	GetGlobaStatusAPI() string
+	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)
 }

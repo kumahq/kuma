@@ -52,6 +52,10 @@ func (c *UniversalControlPlane) GetGlobaStatusAPI() string {
 	panic("not implemented")
 }
 
+func (c *UniversalControlPlane) GetAPIServerAddress() string {
+	return "http://localhost:" + c.cluster.apps[AppModeCP].ports["5681"]
+}
+
 func (c *UniversalControlPlane) GetMetrics() (string, error) {
 	return retry.DoWithRetryE(c.t, "fetching CP metrics", DefaultRetries, DefaultTimeout, func() (string, error) {
 		sshApp := NewSshApp(c.verbose, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
