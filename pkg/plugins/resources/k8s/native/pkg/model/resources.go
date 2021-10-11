@@ -3,6 +3,7 @@ package model
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Scope string
@@ -13,8 +14,7 @@ const (
 )
 
 type KubernetesObject interface {
-	runtime.Object
-	metav1.Object
+	client.Object
 
 	GetObjectMeta() *metav1.ObjectMeta
 	SetObjectMeta(*metav1.ObjectMeta)
@@ -26,7 +26,8 @@ type KubernetesObject interface {
 }
 
 type KubernetesList interface {
-	runtime.Object
+	client.ObjectList
+
 	GetItems() []KubernetesObject
 	GetContinue() string
 }

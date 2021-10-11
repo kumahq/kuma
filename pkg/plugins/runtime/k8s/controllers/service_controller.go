@@ -26,9 +26,8 @@ type ServiceReconciler struct {
 
 // Reconcile is in charge of injecting "ingress.kubernetes.io/service-upstream" annotation to the Services
 // that are in Kuma enabled namespaces
-func (r *ServiceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
+func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	log := r.Log.WithValues("service", req.NamespacedName)
-	ctx := context.Background()
 
 	svc := &kube_core.Service{}
 	if err := r.Get(ctx, req.NamespacedName, svc); err != nil {

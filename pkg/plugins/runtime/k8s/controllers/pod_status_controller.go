@@ -35,8 +35,7 @@ type PodStatusReconciler struct {
 	EnvoyAdminClient  admin.EnvoyAdminClient
 }
 
-func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	ctx := context.Background()
+func (r *PodStatusReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	log := r.Log.WithValues("pod-status", req.NamespacedName)
 
 	// Fetch the Pod instance

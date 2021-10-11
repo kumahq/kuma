@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"k8s.io/api/admission/v1beta1"
+	"k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
@@ -28,7 +28,7 @@ func (z *ZoneValidator) InjectDecoder(_ *admission.Decoder) error {
 
 func (z *ZoneValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	switch req.Operation {
-	case v1beta1.Delete:
+	case v1.Delete:
 		return z.ValidateDelete(ctx, req)
 	}
 	return admission.Allowed("")

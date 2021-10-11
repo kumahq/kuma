@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -74,7 +74,7 @@ var _ = Describe("Defaulter", func() {
 		func(given testCase) {
 			// given
 			req := kube_admission.Request{
-				AdmissionRequest: admissionv1beta1.AdmissionRequest{
+				AdmissionRequest: admissionv1.AdmissionRequest{
 					UID: kube_types.UID("12345"),
 					Object: kube_runtime.RawExtension{
 						Raw: []byte(given.inputObject),
@@ -89,10 +89,11 @@ var _ = Describe("Defaulter", func() {
 			Expect(resp.UID).To(Equal(kube_types.UID("12345")))
 			Expect(resp.Result.Message).To(Equal(""))
 			Expect(resp.Allowed).To(Equal(true))
-			Expect(*resp.PatchType).To(Equal(admissionv1beta1.PatchTypeJSONPatch))
 			if given.expectedPatch != "" {
+				Expect(*resp.PatchType).To(Equal(admissionv1.PatchTypeJSONPatch))
 				Expect(string(resp.Patch)).To(MatchJSON(given.expectedPatch))
 			} else {
+				Expect(resp.PatchType).To(BeNil())
 				Expect(string(resp.Patch)).To(BeZero())
 			}
 		},
