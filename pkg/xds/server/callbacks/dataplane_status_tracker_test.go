@@ -190,7 +190,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				TypeUrl: given.TypeUrl,
 				Nonce:   "1",
 			}
-			callbacks.OnStreamResponse(streamID, discoveryRequest, discoveryResponse)
+			callbacks.OnStreamResponse(context.TODO(), streamID, discoveryRequest, discoveryResponse)
 			// and
 			key, subscription = accessor.GetStatus()
 			// then

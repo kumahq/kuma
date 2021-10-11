@@ -1,8 +1,8 @@
 package v3
 
 import (
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_kafka "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/kafka_broker/v2alpha1"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"

@@ -146,7 +146,6 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
-	//_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/decompressor/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamo/v3"

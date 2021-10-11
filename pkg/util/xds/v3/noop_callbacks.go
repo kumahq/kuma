@@ -43,7 +43,6 @@ func (c *NoopCallbacks) OnStreamDeltaRequest(i int64, request *envoy_sd.DeltaDis
 }
 
 func (c *NoopCallbacks) OnStreamDeltaResponse(i int64, request *envoy_sd.DeltaDiscoveryRequest, response *envoy_sd.DeltaDiscoveryResponse) {
-	return
 }
 
 var _ envoy_xds.Callbacks = &NoopCallbacks{}

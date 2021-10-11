@@ -78,8 +78,7 @@ func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {
 func EnableReusePort(enable bool) ListenerBuilderOpt {
 	return AddListenerConfigurer(
 		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			// TODO(jpeach) in Envoy 1.20, this field is deprecated in favor of EnableReusePort.
-			l.ReusePort = enable
+			l.EnableReusePort = wrapperspb.Bool(enable)
 		}))
 }
 
