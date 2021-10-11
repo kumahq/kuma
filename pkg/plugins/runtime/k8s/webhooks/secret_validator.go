@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -24,17 +24,17 @@ const (
 
 type SecretValidator struct {
 	Decoder   *admission.Decoder
-	Client    kube_client.Client
+	Client    kube_client.Reader
 	Validator secret_manager.SecretValidator
 }
 
 func (v *SecretValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	switch req.Operation {
-	case admissionv1beta1.Delete:
+	case admissionv1.Delete:
 		return v.handleDelete(ctx, req)
-	case admissionv1beta1.Create:
+	case admissionv1.Create:
 		fallthrough
-	case admissionv1beta1.Update:
+	case admissionv1.Update:
 		return v.handleUpdate(ctx, req)
 	}
 	return admission.Allowed("")

@@ -15,7 +15,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var OldChart = "0.6.3"
+var OldChart = "0.7.0"
 var UpstreamImageRegistry = "kumahq"
 
 func CpCompatibilityMultizoneKubernetes() {

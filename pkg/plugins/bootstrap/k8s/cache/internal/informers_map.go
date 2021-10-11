@@ -234,7 +234,7 @@ func createStructuredListWatch(gvk schema.GroupVersionKind, ip *specificInformer
 		return nil, err
 	}
 
-	client, err := apiutil.RESTClientForGVK(gvk, ip.config, ip.codecs)
+	client, err := apiutil.RESTClientForGVK(gvk, false, ip.config, ip.codecs)
 	if err != nil {
 		return nil, err
 	}
