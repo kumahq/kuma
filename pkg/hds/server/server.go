@@ -33,17 +33,6 @@ type server struct {
 	cache       cache.Cache
 }
 
-type watches struct {
-	healthChecks       chan cache.Response
-	healthChecksCancel func()
-}
-
-func (values *watches) Cancel() {
-	if values.healthChecksCancel != nil {
-		values.healthChecksCancel()
-	}
-}
-
 func New(ctx context.Context, config cache.Cache, callbacks hds_callbacks.Callbacks) envoy_service_health.HealthDiscoveryServiceServer {
 	return &server{
 		ctx:       ctx,
@@ -84,9 +73,11 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 	streamID := atomic.AddInt64(&s.streamCount, 1)
 	lastVersion := ""
 
-	var values watches
+	var watchCancellation func()
 	defer func() {
-		values.Cancel()
+		if watchCancellation != nil {
+			watchCancellation()
+		}
 		if s.callbacks != nil {
 			s.callbacks.OnStreamClosed(streamID)
 		}
@@ -122,27 +113,28 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 		}
 	}
 
+	responseChan := make(chan cache.Response, 1)
 	var node = &envoy_core.Node{}
 	for {
 		select {
 		case <-s.ctx.Done():
 			return nil
-		case resp, more := <-values.healthChecks:
+		case resp, more := <-responseChan:
 			if !more {
 				return status.Error(codes.Unavailable, "healthChecks watch failed")
 			}
 			if err := send(resp); err != nil {
 				return err
 			}
-			if values.healthChecksCancel != nil {
-				values.healthChecksCancel()
+			if watchCancellation != nil {
+				watchCancellation()
 			}
-			values.healthChecks, values.healthChecksCancel = s.cache.CreateWatch(&cache.Request{
+			watchCancellation = s.cache.CreateWatch(&cache.Request{
 				Node:          node,
 				TypeUrl:       envoy_cache.HealthCheckSpecifierType,
 				ResourceNames: []string{"hcs"},
 				VersionInfo:   lastVersion,
-			})
+			}, responseChan)
 		case reqOrResp, more := <-reqOrRespCh:
 			if !more {
 				return nil
@@ -169,15 +161,15 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 					}
 				}
 			}
-			if values.healthChecksCancel != nil {
-				values.healthChecksCancel()
+			if watchCancellation != nil {
+				watchCancellation()
 			}
-			values.healthChecks, values.healthChecksCancel = s.cache.CreateWatch(&cache.Request{
+			watchCancellation = s.cache.CreateWatch(&cache.Request{
 				Node:          node,
 				TypeUrl:       envoy_cache.HealthCheckSpecifierType,
 				ResourceNames: []string{"hcs"},
 				VersionInfo:   lastVersion,
-			})
+			}, responseChan)
 		}
 	}
 }
