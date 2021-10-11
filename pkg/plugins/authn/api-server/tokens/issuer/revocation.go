@@ -37,7 +37,8 @@ func (s *secretsTokenRevocations) IsRevoked(id string) (bool, error) {
 		}
 		return false, err
 	}
-	ids := strings.Split(string(secret.Spec.GetData().GetValue()), ",")
+	rawIds := strings.TrimSuffix(string(secret.Spec.GetData().GetValue()), "\n")
+	ids := strings.Split(rawIds, ",")
 	for _, revokedId := range ids {
 		if revokedId == id {
 			return true, nil
