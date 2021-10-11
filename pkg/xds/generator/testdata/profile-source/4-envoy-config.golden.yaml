@@ -149,7 +149,7 @@ resources:
         - endpoint:
             address:
               pipe:
-                path: /tmp/kuma-mh-backend-01-demo.sock
+                path: /var/folders/wh/hc9z74vn6yn10zldy6qf3bn40000gn/T//kuma-mh-backend-01-demo.sock
     name: kuma:metrics:hijacker
     type: STATIC
 - name: localhost:8080
@@ -184,6 +184,7 @@ resources:
         address: 192.168.0.1
         portValue: 80
     bindToPort: false
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -243,6 +244,7 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15006
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy
@@ -260,6 +262,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 9902
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -327,6 +330,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 1234
+    enableReusePort: false
     filterChains:
     - filterChainMatch:
         sourcePrefixRanges:

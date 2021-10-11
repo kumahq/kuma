@@ -11,7 +11,7 @@ resources:
         - endpoint:
             address:
               pipe:
-                path: /tmp/kuma-mh-backend-01-demo.sock
+                path: /var/folders/wh/hc9z74vn6yn10zldy6qf3bn40000gn/T//kuma-mh-backend-01-demo.sock
     name: kuma:metrics:hijacker
     type: STATIC
 - name: kuma:metrics:prometheus
@@ -21,6 +21,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 1234
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager

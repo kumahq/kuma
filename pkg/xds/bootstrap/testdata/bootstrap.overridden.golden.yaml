@@ -64,7 +64,7 @@ staticResources:
         - endpoint:
             address:
               pipe:
-                path: /tmp/kuma-al-dp-1.default-default.sock
+                path: /var/folders/wh/hc9z74vn6yn10zldy6qf3bn40000gn/T//kuma-al-dp-1.default-default.sock
     name: access_log_sink
     type: STATIC
     upstreamConnectionOptions:

@@ -50,7 +50,7 @@ staticResources:
         - endpoint:
             address:
               pipe:
-                path: /tmp/kuma-al-name.namespace-mesh.sock
+                path: /var/folders/wh/hc9z74vn6yn10zldy6qf3bn40000gn/T//kuma-al-name.namespace-mesh.sock
     name: access_log_sink
     type: STATIC
     upstreamConnectionOptions:

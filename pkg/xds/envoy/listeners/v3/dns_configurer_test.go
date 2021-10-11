@@ -49,10 +49,11 @@ var _ = Describe("DNSConfigurer", func() {
                 address: 192.168.0.1
                 portValue: 1234
                 protocol: UDP
+            enableReusePort: true
             listenerFilters:
             - name: envoy.filters.udp.dns_filter
               typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3alpha.DnsFilterConfig
+                '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3.DnsFilterConfig
                 clientConfig:
                   maxPendingLookups: "256"
                   upstreamResolvers:
@@ -87,7 +88,6 @@ var _ = Describe("DNSConfigurer", func() {
                       name: something.mesh
                 statPrefix: kuma_dns
             name: kuma:dns
-            reusePort: true
             trafficDirection: INBOUND
 `,
 		}),
