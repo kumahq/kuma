@@ -8,6 +8,7 @@ import (
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
+	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
@@ -21,6 +22,8 @@ type controlPlaneAddArgs struct {
 	caCertFile     string
 	skipVerify     bool
 	headers        map[string]string
+	authType       string
+	authConf       map[string]string
 }
 
 func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -30,7 +33,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 		Short: "Add a Control Plane",
 		Long:  `Add a Control Plane.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := validateArgs(args); err != nil {
+			if err := validateArgs(args, pctx.Runtime.AuthnPlugins); err != nil {
 				return err
 			}
 
@@ -42,6 +45,8 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 						CaCertFile:     args.caCertFile,
 						ClientCertFile: args.clientCertFile,
 						ClientKeyFile:  args.clientKeyFile,
+						AuthType:       args.authType,
+						AuthConf:       args.authConf,
 					},
 				},
 			}
@@ -87,10 +92,12 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	cmd.Flags().StringVar(&args.caCertFile, "ca-cert-file", "", "path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)")
 	cmd.Flags().BoolVar(&args.skipVerify, "skip-verify", false, "skip CA verification")
 	cmd.Flags().StringToStringVar(&args.headers, "headers", args.headers, "add these headers while communicating to control plane, format key=value")
+	cmd.Flags().StringVar(&args.authType, "auth-type", args.authType, `authentication type (for example: "tokens")`)
+	cmd.Flags().StringToStringVar(&args.authConf, "auth-conf", args.authConf, "authentication configuration for defined authentication type format key=value")
 	return cmd
 }
 
-func validateArgs(args controlPlaneAddArgs) error {
+func validateArgs(args controlPlaneAddArgs, plugins map[string]plugins.AuthnPlugin) error {
 	url, err := net_url.ParseRequestURI(args.apiServerURL)
 	if err != nil {
 		return errors.Wrap(err, "API Server URL is invalid")
@@ -102,6 +109,16 @@ func validateArgs(args controlPlaneAddArgs) error {
 	}
 	if (args.clientKeyFile != "" && args.clientCertFile == "") || (args.clientKeyFile == "" && args.clientCertFile != "") {
 		return errors.New("Both --client-cert-file and --client-key-file needs to be specified")
+	}
+
+	if args.authType != "" {
+		plugin, ok := plugins[args.authType]
+		if !ok {
+			return errors.Errorf("authentication plugin of type %q is not found", args.authType)
+		}
+		if err := plugin.Validate(args.authConf); err != nil {
+			return errors.Wrap(err, "--auth-conf is not valid")
+		}
 	}
 	return nil
 }

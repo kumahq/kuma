@@ -7,28 +7,22 @@ import (
 
 	"github.com/pkg/errors"
 
-	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/pkg/api-server/types"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	kuma_http "github.com/kumahq/kuma/pkg/util/http"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 type ApiServerClient interface {
 	GetVersion(ctx context.Context) (*types.IndexResponse, error)
 }
 
-func NewAPIServerClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (ApiServerClient, error) {
-	client, err := kumactl_client.ApiServerClient(coordinates)
-	if err != nil {
-		return nil, err
-	}
+func NewAPIServerClient(client util_http.Client) ApiServerClient {
 	return &httpApiServerClient{
 		Client: client,
-	}, nil
+	}
 }
 
 type httpApiServerClient struct {
-	Client kuma_http.Client
+	Client util_http.Client
 }
 
 func (d *httpApiServerClient) GetVersion(ctx context.Context) (*types.IndexResponse, error) {

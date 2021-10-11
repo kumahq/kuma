@@ -6,29 +6,23 @@ import (
 
 	"github.com/pkg/errors"
 
-	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
-	kuma_http "github.com/kumahq/kuma/pkg/util/http"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 type ZoneIngressOverviewClient interface {
 	List(ctx context.Context) (*mesh.ZoneIngressOverviewResourceList, error)
 }
 
-func NewZoneIngressOverviewClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (ZoneIngressOverviewClient, error) {
-	client, err := kumactl_client.ApiServerClient(coordinates)
-	if err != nil {
-		return nil, err
-	}
+func NewZoneIngressOverviewClient(client util_http.Client) ZoneIngressOverviewClient {
 	return &httpZoneIngressOverviewClient{
 		Client: client,
-	}, nil
+	}
 }
 
 type httpZoneIngressOverviewClient struct {
-	Client kuma_http.Client
+	Client util_http.Client
 }
 
 func (d *httpZoneIngressOverviewClient) List(ctx context.Context) (*mesh.ZoneIngressOverviewResourceList, error) {

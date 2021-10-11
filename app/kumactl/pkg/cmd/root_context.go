@@ -10,7 +10,9 @@ import (
 	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
 	inspect_context "github.com/kumahq/kuma/app/kumactl/cmd/inspect/context"
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
+	"github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
+	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	"github.com/kumahq/kuma/pkg/api-server/types"
@@ -19,7 +21,9 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/cli"
 	util_files "github.com/kumahq/kuma/pkg/util/files"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -31,14 +35,16 @@ type RootArgs struct {
 type RootRuntime struct {
 	Config                       config_proto.Configuration
 	Now                          func() time.Time
-	NewResourceStore             func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
-	NewDataplaneOverviewClient   func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
-	NewZoneIngressOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ZoneIngressOverviewClient, error)
-	NewZoneOverviewClient        func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ZoneOverviewClient, error)
-	NewServiceOverviewClient     func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ServiceOverviewClient, error)
-	NewDataplaneTokenClient      func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error)
-	NewZoneIngressTokenClient    func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.ZoneIngressTokenClient, error)
-	NewAPIServerClient           func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
+	AuthnPlugins                 map[string]plugins.AuthnPlugin
+	NewBaseAPIServerClient       func(*config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error)
+	NewResourceStore             func(util_http.Client) core_store.ResourceStore
+	NewDataplaneOverviewClient   func(util_http.Client) kumactl_resources.DataplaneOverviewClient
+	NewZoneIngressOverviewClient func(util_http.Client) kumactl_resources.ZoneIngressOverviewClient
+	NewZoneOverviewClient        func(util_http.Client) kumactl_resources.ZoneOverviewClient
+	NewServiceOverviewClient     func(util_http.Client) kumactl_resources.ServiceOverviewClient
+	NewDataplaneTokenClient      func(util_http.Client) tokens.DataplaneTokenClient
+	NewZoneIngressTokenClient    func(util_http.Client) tokens.ZoneIngressTokenClient
+	NewAPIServerClient           func(util_http.Client) kumactl_resources.ApiServerClient
 	Registry                     registry.TypeRegistry
 }
 
@@ -69,10 +75,14 @@ type RootContext struct {
 func DefaultRootContext() *RootContext {
 	return &RootContext{
 		Runtime: RootRuntime{
-			Now:      time.Now,
-			Registry: registry.Global(),
-			NewResourceStore: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-				return kumactl_resources.NewResourceStore(server, registry.Global().ObjectDescriptors())
+			Now:                    time.Now,
+			Registry:               registry.Global(),
+			NewBaseAPIServerClient: client.ApiServerClient,
+			AuthnPlugins: map[string]plugins.AuthnPlugin{
+				cli.AuthType: &cli.TokenAuthnPlugin{},
+			},
+			NewResourceStore: func(client util_http.Client) core_store.ResourceStore {
+				return kumactl_resources.NewResourceStore(client, registry.Global().ObjectDescriptors())
 			},
 			NewDataplaneOverviewClient:   kumactl_resources.NewDataplaneOverviewClient,
 			NewZoneIngressOverviewClient: kumactl_resources.NewZoneIngressOverviewClient,
@@ -140,64 +150,84 @@ func (rc *RootContext) Now() time.Time {
 	return rc.Runtime.Now()
 }
 
-func (rc *RootContext) CurrentResourceStore() (core_store.ResourceStore, error) {
+func (rc *RootContext) BaseAPIServerClient() (util_http.Client, error) {
 	controlPlane, err := rc.CurrentControlPlane()
 	if err != nil {
 		return nil, err
 	}
-	rs, err := rc.Runtime.NewResourceStore(controlPlane.Coordinates.ApiServer)
+	client, err := rc.Runtime.NewBaseAPIServerClient(controlPlane.Coordinates.ApiServer)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create a client for Control Plane %q", controlPlane.Name)
 	}
-	return rs, nil
+
+	if controlPlane.Coordinates.ApiServer.AuthType != "" {
+		plugin, ok := rc.Runtime.AuthnPlugins[controlPlane.Coordinates.ApiServer.AuthType]
+		if !ok {
+			return nil, errors.Errorf("authentication plugin of type %q not found", controlPlane.Coordinates.ApiServer.AuthType)
+		}
+		client, err = plugin.DecorateClient(client, controlPlane.Coordinates.ApiServer.AuthConf)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to decorate client with authentication type %q", controlPlane.Coordinates.ApiServer.AuthType)
+		}
+	}
+
+	return client, nil
+}
+
+func (rc *RootContext) CurrentResourceStore() (core_store.ResourceStore, error) {
+	client, err := rc.BaseAPIServerClient()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewResourceStore(client), nil
 }
 
 func (rc *RootContext) CurrentDataplaneOverviewClient() (kumactl_resources.DataplaneOverviewClient, error) {
-	controlPlane, err := rc.CurrentControlPlane()
+	client, err := rc.BaseAPIServerClient()
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewDataplaneOverviewClient(controlPlane.Coordinates.ApiServer)
+	return rc.Runtime.NewDataplaneOverviewClient(client), nil
 }
 
 func (rc *RootContext) CurrentZoneOverviewClient() (kumactl_resources.ZoneOverviewClient, error) {
-	controlPlane, err := rc.CurrentControlPlane()
+	client, err := rc.BaseAPIServerClient()
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewZoneOverviewClient(controlPlane.Coordinates.ApiServer)
+	return rc.Runtime.NewZoneOverviewClient(client), nil
 }
 
 func (rc *RootContext) CurrentZoneIngressOverviewClient() (kumactl_resources.ZoneIngressOverviewClient, error) {
-	controlPlane, err := rc.CurrentControlPlane()
+	client, err := rc.BaseAPIServerClient()
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewZoneIngressOverviewClient(controlPlane.Coordinates.ApiServer)
+	return rc.Runtime.NewZoneIngressOverviewClient(client), nil
 }
 
 func (rc *RootContext) CurrentServiceOverviewClient() (kumactl_resources.ServiceOverviewClient, error) {
-	controlPlane, err := rc.CurrentControlPlane()
+	client, err := rc.BaseAPIServerClient()
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewServiceOverviewClient(controlPlane.Coordinates.ApiServer)
+	return rc.Runtime.NewServiceOverviewClient(client), nil
 }
 
 func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {
-	controlPlane, err := rc.CurrentControlPlane()
+	client, err := rc.BaseAPIServerClient()
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewDataplaneTokenClient(controlPlane.Coordinates.ApiServer)
+	return rc.Runtime.NewDataplaneTokenClient(client), nil
 }
 
 func (rc *RootContext) CurrentZoneIngressTokenClient() (tokens.ZoneIngressTokenClient, error) {
-	controlPlane, err := rc.CurrentControlPlane()
+	client, err := rc.BaseAPIServerClient()
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewZoneIngressTokenClient(controlPlane.Coordinates.ApiServer)
+	return rc.Runtime.NewZoneIngressTokenClient(client), nil
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {
@@ -208,11 +238,11 @@ func (rc *RootContext) IsFirstTimeUsage() bool {
 }
 
 func (rc *RootContext) CurrentApiClient() (kumactl_resources.ApiServerClient, error) {
-	controlPlane, err := rc.CurrentControlPlane()
+	client, err := rc.BaseAPIServerClient()
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewAPIServerClient(controlPlane.Coordinates.ApiServer)
+	return rc.Runtime.NewAPIServerClient(client), nil
 }
 
 func (rc *RootContext) CheckServerVersionCompatibility() error {

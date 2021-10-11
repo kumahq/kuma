@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/cli"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/cli/generate"
 )
 
 func NewGenerateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -27,6 +27,6 @@ func NewGenerateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	generateCmd.AddCommand(NewGenerateZoneIngressTokenCmd(pctx))
 	generateCmd.AddCommand(NewGenerateCertificateCmd(pctx))
 	generateCmd.AddCommand(NewGenerateSigningKeyCmd(pctx))
-	generateCmd.AddCommand(cli.NewGenerateUserTokenCmd(pctx))
+	generateCmd.AddCommand(generate.NewGenerateUserTokenCmd(pctx))
 	return generateCmd
 }

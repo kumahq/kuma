@@ -8,29 +8,23 @@ import (
 
 	"github.com/pkg/errors"
 
-	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
-	kuma_http "github.com/kumahq/kuma/pkg/util/http"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 type DataplaneOverviewClient interface {
 	List(ctx context.Context, meshName string, tags map[string]string, gateway bool, ingress bool) (*mesh.DataplaneOverviewResourceList, error)
 }
 
-func NewDataplaneOverviewClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (DataplaneOverviewClient, error) {
-	client, err := kumactl_client.ApiServerClient(coordinates)
-	if err != nil {
-		return nil, err
-	}
+func NewDataplaneOverviewClient(client util_http.Client) DataplaneOverviewClient {
 	return &httpDataplaneOverviewClient{
 		Client: client,
-	}, nil
+	}
 }
 
 type httpDataplaneOverviewClient struct {
-	Client kuma_http.Client
+	Client util_http.Client
 }
 
 func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string, tags map[string]string, gateway bool, ingress bool) (*mesh.DataplaneOverviewResourceList, error) {

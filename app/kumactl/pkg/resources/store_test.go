@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/app/kumactl/pkg/client"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -26,15 +27,11 @@ var _ = Describe("Store", func() {
 				// when
 				cp := &config_proto.ControlPlane{}
 				err := util_proto.FromYAML([]byte(config), cp)
+				Expect(err).ToNot(HaveOccurred())
+				_, err = client.ApiServerClient(cp.Coordinates.ApiServer)
+
 				// then
 				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				store, err := NewResourceStore(cp.Coordinates.ApiServer, nil)
-				// then
-				Expect(store).ToNot(BeNil())
-				// and
-				Expect(err).To(BeNil())
 			})
 		})
 
@@ -50,11 +47,11 @@ var _ = Describe("Store", func() {
 						},
 					},
 				}
+
 				// when
-				store, err := NewResourceStore(cp.Coordinates.ApiServer, nil)
+				_, err := client.ApiServerClient(cp.Coordinates.ApiServer)
+
 				// then
-				Expect(store).To(BeNil())
-				// and
 				Expect(err.Error()).To(ContainSubstring("Failed to parse API Server URL"))
 			})
 		})

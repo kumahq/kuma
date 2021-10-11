@@ -12,12 +12,12 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 	"github.com/kumahq/kuma/pkg/util/test"
 )
 
@@ -32,8 +32,8 @@ var _ = Describe("kumactl delete ", func() {
 			// setup
 			rootCtx = kumactl_cmd.DefaultRootContext()
 			rootCtx.Runtime.NewAPIServerClient = test.GetMockNewAPIServerClient()
-			rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-				return store, nil
+			rootCtx.Runtime.NewResourceStore = func(util_http.Client) core_store.ResourceStore {
+				return store
 			}
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 

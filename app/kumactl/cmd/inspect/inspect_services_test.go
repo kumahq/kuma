@@ -17,11 +17,11 @@ import (
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 type testServiceOverviewClient struct {
@@ -82,11 +82,11 @@ var _ = Describe("kumactl inspect services", func() {
 	BeforeEach(func() {
 		rootCtx, err := test_kumactl.MakeRootContext(rootTime, nil)
 		Expect(err).ToNot(HaveOccurred())
-		rootCtx.Runtime.NewServiceOverviewClient = func(server *config_proto.ControlPlaneCoordinates_ApiServer) (resources.ServiceOverviewClient, error) {
+		rootCtx.Runtime.NewServiceOverviewClient = func(util_http.Client) resources.ServiceOverviewClient {
 			return &testServiceOverviewClient{
 				total:     uint32(len(serviceOverviewResources)),
 				overviews: serviceOverviewResources,
-			}, nil
+			}
 		}
 
 		rootCmd = cmd.NewRootCmd(rootCtx)

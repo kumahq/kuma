@@ -7,10 +7,10 @@ import (
 	"net/http"
 
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	kuma_http "github.com/kumahq/kuma/pkg/util/http"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
-func doRequest(client kuma_http.Client, ctx context.Context, req *http.Request) (int, []byte, error) {
+func doRequest(client util_http.Client, ctx context.Context, req *http.Request) (int, []byte, error) {
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return 0, nil, err

@@ -21,6 +21,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -46,11 +47,14 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 			Runtime: kumactl_cmd.RootRuntime{
 				Registry: registry.Global(),
 				Now:      func() time.Time { return rootTime },
-				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-					return store, nil
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+					return nil, nil
 				},
-				NewAPIServerClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ApiServerClient, error) {
-					return testClient, nil
+				NewResourceStore: func(util_http.Client) core_store.ResourceStore {
+					return store
+				},
+				NewAPIServerClient: func(util_http.Client) resources.ApiServerClient {
+					return testClient
 				},
 			},
 		}
