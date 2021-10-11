@@ -160,7 +160,9 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *mesh_proto.TrafficRoute_Http_Modify) *envoy_route.RouteAction {
 	routeAction := &envoy_route.RouteAction{}
 	if len(clusters) != 0 {
-		routeAction.Timeout = util_proto.Duration(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
+		if timeout := clusters[0].Timeout(); timeout != nil {
+			routeAction.Timeout = timeout.Spec.GetConf().GetHttp().GetRequestTimeout()
+		}
 	}
 	if len(clusters) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
