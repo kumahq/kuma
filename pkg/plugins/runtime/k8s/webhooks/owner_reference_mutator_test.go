@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -35,7 +35,7 @@ var _ = Describe("OwnerReferenceMutator", func() {
 
 	createRequest := func(obj model.KubernetesObject, raw []byte) kube_admission.Request {
 		return kube_admission.Request{
-			AdmissionRequest: admissionv1beta1.AdmissionRequest{
+			AdmissionRequest: admissionv1.AdmissionRequest{
 				UID: "12345",
 				Object: kube_runtime.RawExtension{
 					Raw: raw,

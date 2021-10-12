@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	utilpointer "k8s.io/utils/pointer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -676,7 +675,7 @@ func newFakeServiceReader(services []*kube_core.Service) (fakeServiceReader, err
 
 var _ kube_client.Reader = fakeServiceReader{}
 
-func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_runtime.Object) error {
+func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
 	data, ok := r[fmt.Sprintf("%s/%s", key.Namespace, key.Name)]
 	if !ok {
 		return errors.New("not found")
@@ -684,17 +683,17 @@ func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, o
 	return yaml.Unmarshal([]byte(data), obj)
 }
 
-func (f fakeServiceReader) List(ctx context.Context, list kube_runtime.Object, opts ...kube_client.ListOption) error {
+func (f fakeServiceReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
 	return errors.New("not implemented")
 }
 
 type fakeNodeReader string
 
-func (r fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_runtime.Object) error {
+func (r fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
 	return errors.New("not implemented")
 }
 
-func (f fakeNodeReader) List(ctx context.Context, list kube_runtime.Object, opts ...kube_client.ListOption) error {
+func (f fakeNodeReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
 	node := kube_core.Node{}
 	err := yaml.Unmarshal([]byte(f), &node)
 	if err != nil {

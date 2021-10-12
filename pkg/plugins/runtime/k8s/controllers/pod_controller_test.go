@@ -15,7 +15,6 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -23,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/config/manager"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -35,8 +35,7 @@ var _ = Describe("PodReconciler", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	BeforeEach(func() {
-		kubeClient = kube_client_fake.NewFakeClientWithScheme(
-			k8sClientScheme,
+		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
@@ -183,7 +182,7 @@ var _ = Describe("PodReconciler", func() {
 						"app": "sample",
 					},
 				},
-			})
+			}).Build()
 
 		reconciler = &PodReconciler{
 			Client:            kubeClient,
@@ -203,7 +202,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -225,7 +224,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -248,7 +247,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		_, err := reconciler.Reconcile(req)
+		_, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).To(HaveOccurred())
@@ -262,7 +261,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		_, err := reconciler.Reconcile(req)
+		_, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -275,7 +274,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -298,7 +297,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -321,7 +320,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -393,7 +392,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -500,9 +499,8 @@ var _ = Describe("PodReconciler", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		mapper := &ExternalServiceToPodsMapper{
-			Client: kubeClient,
-		}
+		l := log.NewLogger(log.InfoLevel)
+		mapper := ExternalServiceToPodsMapper(l, kubeClient)
 		es := &mesh_k8s.ExternalService{
 			Mesh: "mesh-1",
 			ObjectMeta: kube_meta.ObjectMeta{
@@ -518,7 +516,7 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 		}
-		requests := mapper.Map(handler.MapObject{Object: es})
+		requests := mapper(es)
 		requestsStr := []string{}
 		for _, r := range requests {
 			requestsStr = append(requestsStr, r.Name)
@@ -553,7 +551,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		_, err = reconciler.Reconcile(req)
+		_, err = reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

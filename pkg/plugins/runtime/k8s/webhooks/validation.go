@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"k8s.io/api/admission/v1beta1"
+	"k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -56,7 +56,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 	}
 
 	switch req.Operation {
-	case v1beta1.Delete:
+	case v1.Delete:
 		return admission.Allowed("")
 	default:
 		if resp := h.validateResourceLocation(resType); !resp.Allowed {
@@ -103,7 +103,7 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 }
 
 // Note that this func does not validate ConfigMap and Secret since this webhook does not support those
-func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, userInfo authenticationv1.UserInfo, op v1beta1.Operation) admission.Response {
+func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, userInfo authenticationv1.UserInfo, op v1.Operation) admission.Response {
 	if isKumaServiceAccount(userInfo, h.systemNamespace) {
 		// Assume this means sync from another zone. Not security; protecting user from self.
 		return admission.Allowed("")
@@ -119,7 +119,7 @@ func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, 
 	return admission.Allowed("")
 }
 
-func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode, op v1beta1.Operation) admission.Response {
+func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode, op v1.Operation) admission.Response {
 	otherCpMode := ""
 	if cpMode == core.Zone {
 		otherCpMode = core.Global
@@ -127,7 +127,7 @@ func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode, op v
 		otherCpMode = core.Zone
 	}
 	return admission.Response{
-		AdmissionResponse: v1beta1.AdmissionResponse{
+		AdmissionResponse: v1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{
 				Status: "Failure",
@@ -162,7 +162,7 @@ func isKumaServiceAccount(userInfo authenticationv1.UserInfo, systemNamespace st
 func (h *validatingHandler) validateResourceLocation(resType core_model.ResourceType) admission.Response {
 	if err := system.ValidateLocation(resType, h.mode); err != nil {
 		return admission.Response{
-			AdmissionResponse: v1beta1.AdmissionResponse{
+			AdmissionResponse: v1.AdmissionResponse{
 				Allowed: false,
 				Result: &metav1.Status{
 					Status:  "Failure",
@@ -194,7 +194,7 @@ func convertValidationErrorOf(kumaErr validators.ValidationError, obj kube_runti
 		Kind: obj.GetObjectKind().GroupVersionKind().Kind,
 	}
 	resp := admission.Response{
-		AdmissionResponse: v1beta1.AdmissionResponse{
+		AdmissionResponse: v1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{
 				Status:  "Failure",
