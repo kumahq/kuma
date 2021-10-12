@@ -79,3 +79,6 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: package sigs.k8s.io/controller-runtime/pkg/client/fake is deprecated" # https://github.com/kumahq/kuma/issues/2460
+    - linters:
+        - staticcheck
+      text: "SA1019: l.ReusePort is deprecated"

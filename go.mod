@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
-	github.com/cncf/xds/go v0.0.0-20211001041855-01bcc9b48dfe // indirect
+	github.com/cncf/xds/go v0.0.0-20211001041855-01bcc9b48dfe
 	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.10-0.20211007073556-ab721e93c590
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
