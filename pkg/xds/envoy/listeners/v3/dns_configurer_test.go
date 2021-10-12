@@ -1,6 +1,7 @@
 package v3_test
 
 import (
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -25,7 +26,7 @@ var _ = Describe("DNSConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV3).
 				Configure(InboundListener(names.GetDNSListenerName(), "192.168.0.1", 1234, xds.SocketAddressProtocolUDP)).
-				Configure(DNS(given.vips, given.emptyDnsPort)).
+				Configure(DNS(given.vips, given.emptyDnsPort, &mesh_proto.EnvoyVersion{Version: "1.20.0"})).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
