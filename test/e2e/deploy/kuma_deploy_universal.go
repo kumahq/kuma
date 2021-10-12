@@ -157,7 +157,7 @@ name: %s
 			})
 	})
 
-	FIt("should access only local service if zone is disabled", func() {
+	It("should access only local service if zone is disabled", func() {
 		// given zone 'kuma-4' enabled
 		// then we should receive responses from both test-server instances
 		Eventually(func() (map[string]int, error) {
