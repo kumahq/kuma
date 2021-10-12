@@ -20,7 +20,8 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.37.12
+	github.com/gruntwork-io/terratest v0.38.1
+	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
@@ -46,7 +47,7 @@ require (
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
-	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 	google.golang.org/genproto v0.0.0-20210726143408-b02e89920bf0
