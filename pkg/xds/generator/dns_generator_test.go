@@ -65,6 +65,7 @@ var _ = Describe("DNSGenerator", func() {
 				Metadata: &model.DataplaneMetadata{
 					DNSPort:      53001,
 					EmptyDNSPort: 53002,
+					Version:      &mesh_proto.Version{Envoy: &mesh_proto.EnvoyVersion{Version: "1.20.0"}},
 				},
 			}
 

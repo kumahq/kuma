@@ -48,7 +48,6 @@ var _ = Describe("InboundListenerConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            enableReusePort: false
 `,
 		}),
 		Entry("basic UDP listener", testCase{
@@ -59,12 +58,12 @@ var _ = Describe("InboundListenerConfigurer", func() {
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
+            reusePort: true
             address:
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
                 protocol: UDP
-            enableReusePort: true
 `,
 		}),
 	)

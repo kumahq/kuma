@@ -68,7 +68,6 @@ resources:
       socketAddress:
         address: 10.0.0.1
         portValue: 10001
-    enableReusePort: false
     filterChains:
     - filterChainMatch:
         serverNames:

@@ -129,7 +129,7 @@ test/e2e/debug: build/kumactl images test/e2e/k8s/start
 # test/e2e/debug-universal is the same target as 'test/e2e/debug' but builds only 'kuma-universal' image
 # and doesn't start Kind clusters
 .PHONY: test/e2e/debug-universal
-test/e2e/debug-universal: build/kumactl images/test
+test/e2e/debug-universal: build/kumactl #images/test
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 	API_VERSION="$(API_VERSION)" \

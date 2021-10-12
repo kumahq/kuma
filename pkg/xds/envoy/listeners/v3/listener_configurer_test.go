@@ -49,11 +49,11 @@ var _ = Describe("Miscellaneous Listener configurers", func() {
 		}),
 		Entry("reuse port enabled", testCase{
 			opt:      EnableReusePort(true),
-			expected: "enableReusePort: true",
+			expected: "reusePort: true",
 		}),
 		Entry("reuse port disabled", testCase{
 			opt:      EnableReusePort(false),
-			expected: "enableReusePort: false",
+			expected: "{}",
 		}),
 		Entry("enable freebind", testCase{
 			opt:      EnableFreebind(true),
