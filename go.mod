@@ -20,7 +20,12 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.2.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
+<<<<<<< HEAD
 	github.com/gruntwork-io/terratest v0.30.15
+=======
+	github.com/gruntwork-io/terratest v0.38.1
+	github.com/hashicorp/golang-lru v0.5.3 // indirect
+>>>>>>> 96d05642 (chore(deps): bump github.com/gruntwork-io/terratest (#2942))
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
@@ -46,10 +51,17 @@ require (
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
+<<<<<<< HEAD
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
 	golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
+=======
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2
+	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
+	google.golang.org/genproto v0.0.0-20210726143408-b02e89920bf0
+>>>>>>> 96d05642 (chore(deps): bump github.com/gruntwork-io/terratest (#2942))
 	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
