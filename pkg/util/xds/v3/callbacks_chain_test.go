@@ -130,8 +130,8 @@ var _ = Describe("CallbacksChain", func() {
 
 			// then
 			Expect(calls).To(Equal([]methodCall{
-				{"2nd", "OnStreamResponse()", []interface{}{streamID, req, resp}},
-				{"1st", "OnStreamResponse()", []interface{}{streamID, req, resp}},
+				{"2nd", "OnStreamResponse()", []interface{}{ctx, streamID, req, resp}},
+				{"1st", "OnStreamResponse()", []interface{}{ctx, streamID, req, resp}},
 			}))
 		})
 	})
