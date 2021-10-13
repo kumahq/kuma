@@ -48,6 +48,8 @@ type K8sCluster struct {
 	defaultRetries      int
 }
 
+var _ Cluster = &K8sCluster{}
+
 func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, error) {
 	cluster := &K8sCluster{
 		t:                   t,
@@ -263,7 +265,7 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 
 // deployKumaViaKubectl uses kubectl to install kuma
 // using the resources from the `kumactl install control-plane` command
-func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) error {
+func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *kumaDeploymentOptions) error {
 	yaml, err := c.yamlForKumaViaKubectl(mode, opts)
 	if err != nil {
 		return err
@@ -274,7 +276,7 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 		yaml)
 }
 
-func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (string, error) {
+func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *kumaDeploymentOptions) (string, error) {
 	argsMap := map[string]string{
 		"--namespace":               KumaNamespace,
 		"--control-plane-registry":  KumaImageRegistry,
@@ -324,10 +326,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		argsMap["--env-var"] = fmt.Sprintf("KUMA_DNS_SERVER_CIDR=%s", cidrIPv6)
 	}
 
-	for opt, value := range opts.ctlOpts {
-		argsMap[opt] = value
-	}
-
 	var args []string
 	for k, v := range argsMap {
 		args = append(args, k, v)
@@ -340,7 +338,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 	return c.controlplane.InstallCP(args...)
 }
 
-func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) map[string]string {
+func genValues(mode string, opts *kumaDeploymentOptions, kumactlOpts *KumactlOptions) map[string]string {
 	values := map[string]string{
 		"controlPlane.mode":                      mode,
 		"global.image.tag":                       kuma_version.Build.Version,
@@ -423,7 +421,7 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 
 type helmFn func(testing.TestingT, *helm.Options, string, string) error
 
-func (c *K8sCluster) processViaHelm(mode string, opts *deployOptions, fn helmFn) error {
+func (c *K8sCluster) processViaHelm(mode string, opts *kumaDeploymentOptions, fn helmFn) error {
 	// run from test/e2e
 	helmChart, err := filepath.Abs(HelmChartPath)
 	if err != nil {
@@ -469,22 +467,26 @@ func (c *K8sCluster) processViaHelm(mode string, opts *deployOptions, fn helmFn)
 
 // deployKumaViaHelm uses Helm to install kuma
 // using the kuma helm chart
-func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
+func (c *K8sCluster) deployKumaViaHelm(mode string, opts *kumaDeploymentOptions) error {
 	return c.processViaHelm(mode, opts, helm.InstallE)
 }
 
 // upgradeKumaViaHelm uses Helm to upgrade kuma
 // using the kuma helm chart
-func (c *K8sCluster) upgradeKumaViaHelm(mode string, opts *deployOptions) error {
+func (c *K8sCluster) upgradeKumaViaHelm(mode string, opts *kumaDeploymentOptions) error {
 	return c.processViaHelm(mode, opts, helm.UpgradeE)
 }
 
-func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
-	opts := newDeployOpt(fs...)
+func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
+	var opts kumaDeploymentOptions
+
+	opts.apply(opt...)
+
 	replicas := 1
 	if opts.cpReplicas != 0 {
 		replicas = opts.cpReplicas
 	}
+
 	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.loPort, c.hiPort, c.verbose, replicas)
 
 	switch mode {
@@ -497,9 +499,9 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	var err error
 	switch opts.installationMode {
 	case KumactlInstallationMode:
-		err = c.deployKumaViaKubectl(mode, opts)
+		err = c.deployKumaViaKubectl(mode, &opts)
 	case HelmInstallationMode:
-		err = c.deployKumaViaHelm(mode, opts)
+		err = c.deployKumaViaHelm(mode, &opts)
 	default:
 		return errors.Errorf("invalid installation mode: %s", opts.installationMode)
 	}
@@ -542,12 +544,14 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	return nil
 }
 
-func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
+func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error {
+	var opts kumaDeploymentOptions
+
 	if c.controlplane == nil {
 		return errors.New("To upgrade Kuma has to be installed first")
 	}
 
-	opts := newDeployOpt(fs...)
+	opts.apply(opt...)
 	if opts.cpReplicas != 0 {
 		c.controlplane.replicas = opts.cpReplicas
 	}
@@ -559,7 +563,7 @@ func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
 		}
 	}
 
-	if err := c.upgradeKumaViaHelm(mode, opts); err != nil {
+	if err := c.upgradeKumaViaHelm(mode, &opts); err != nil {
 		return err
 	}
 
@@ -681,7 +685,7 @@ func (c *K8sCluster) deleteCRDs() (errs error) {
 	return errs
 }
 
-func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
+func (c *K8sCluster) deleteKumaViaHelm(opts *kumaDeploymentOptions) (errs error) {
 	if opts.helmReleaseName == "" {
 		return errors.New("must supply a helm release name for cleanup")
 	}
@@ -707,7 +711,7 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
 	return errs
 }
 
-func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
+func (c *K8sCluster) deleteKumaViaKumactl(opts *kumaDeploymentOptions) error {
 	yaml, err := c.yamlForKumaViaKubectl(c.controlplane.mode, opts)
 	if err != nil {
 		return err
@@ -722,17 +726,19 @@ func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
 	return nil
 }
 
-func (c *K8sCluster) DeleteKuma(fs ...DeployOptionsFunc) error {
-	c.CleanupPortForwards()
+func (c *K8sCluster) DeleteKuma(opt ...KumaDeploymentOption) error {
+	var opts kumaDeploymentOptions
 
-	opts := newDeployOpt(fs...)
+	opts.apply(opt...)
+
+	c.CleanupPortForwards()
 
 	var err error
 	switch opts.installationMode {
 	case HelmInstallationMode:
-		err = c.deleteKumaViaHelm(opts)
+		err = c.deleteKumaViaHelm(&opts)
 	case KumactlInstallationMode:
-		err = c.deleteKumaViaKumactl(opts)
+		err = c.deleteKumaViaKumactl(&opts)
 	}
 
 	return err
@@ -776,8 +782,11 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *K8sCluster) DeployApp(fs ...DeployOptionsFunc) error {
-	opts := newDeployOpt(fs...)
+func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {
+	var opts appDeploymentOptions
+
+	opts.apply(opt...)
+
 	namespace := opts.namespace
 	appname := opts.appname
 
