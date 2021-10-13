@@ -21,8 +21,8 @@ message GatewayRoute {
   option (kuma.mesh.resource).name = "GatewayRouteResource";
   option (kuma.mesh.resource).type = "GatewayRoute";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).skip_registration = true;
 
+  option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).ws.name = "gateway-route";
 
   // Backend selects a target for HTTP request forwarding.
