@@ -907,6 +907,7 @@ jobs:
                   export KUMA_DEFAULT_RETRIES=60
                   export KUMA_DEFAULT_TIMEOUT="6s"
                   export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
+                  export BUILD_WITH_EXPERIMENTAL_GATEWAY=Y
                   make test/e2e
             - store_test_results:
                 path: /tmp/xunit
@@ -919,6 +920,7 @@ jobs:
                   export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
+                  export BUILD_WITH_EXPERIMENTAL_GATEWAY=Y
                   make test/e2e
             - store_test_results:
                 path: /tmp/xunit

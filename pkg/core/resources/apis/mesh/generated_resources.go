@@ -697,7 +697,6 @@ var GatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:       false,
 	AdminOnly:      false,
 	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromZoneToGlobal,
 	WsPath:         "gateways",
 	KumactlArg:     "gateway",
 	KumactlListArg: "gateways",
