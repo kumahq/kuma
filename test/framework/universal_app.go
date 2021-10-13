@@ -246,7 +246,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 			return "Success", nil
 		})
 
-	fmt.Printf("Node IP %s\n", app.ip)
+	Logf("Node IP %s", app.ip)
 
 	return app, nil
 }
@@ -509,12 +509,12 @@ func NewSshApp(verbose bool, port string, env []string, args []string) *SshApp {
 }
 
 func (s *SshApp) Run() error {
-	fmt.Printf("Running %v\n", s.cmd)
+	Logf("Running %v", s.cmd)
 	return s.cmd.Run()
 }
 
 func (s *SshApp) Start() error {
-	fmt.Printf("Starting %v\n", s.cmd)
+	Logf("Starting %v", s.cmd)
 	return s.cmd.Start()
 }
 
