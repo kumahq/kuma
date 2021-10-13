@@ -1,12 +1,13 @@
 package kubernetes
 
 import (
-	"strings"
+	"fmt"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -34,32 +35,33 @@ func VirtualProbes() {
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})
 
-	testServerReady := func() bool {
-		output, err := k8s.RunKubectlAndGetOutputE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(TestNamespace), "get", "pods")
+	PollPodsReady := func(name string, namespace string) error {
+		pods, err := k8s.ListPodsE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(namespace),
+			metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", name)})
 		if err != nil {
-			return false
+			return err
 		}
-		lines := strings.Split(output, "\n")
-		if len(lines) != 2 {
-			return false
+		for _, p := range pods {
+			err := WaitUntilPodReadyE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(namespace), p.GetName(), 0, 0)
+			if err != nil {
+				return err
+			}
 		}
-		// 0:NAME 1:READY 2:STATUS 3:RESTARTS 4:AGE
-		words := strings.Fields(lines[1])
-		if len(words) != 5 {
-			return false
-		}
-		if words[1] == "2/2" && words[2] == "Running" && words[3] == "0" {
-			return true
-		}
-		return false
+		return nil
 	}
 
 	It("should deploy test-server with probes", func() {
 		Expect(testserver.Install()(k8sCluster)).To(Succeed())
 
+		// The testserver install func also does this, but we
+		// repeat is here to make the deployment test criteria
+		// clearer and to make the test robust to framework changes.
+		opts := testserver.DefaultDeploymentOpts()
+
+		// Sample pod readiness to ensure they stay ready to at least 10sec.
 		for i := 0; i < 10; i++ {
-			time.Sleep(1 * time.Second)
-			Expect(testServerReady()).To(BeTrue())
+			time.Sleep(time.Second)
+			Expect(PollPodsReady(opts.Namespace, opts.Name)).To(Succeed())
 		}
 	})
 }
