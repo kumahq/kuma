@@ -13,7 +13,6 @@ import (
 
 func HealthCheckPanicThreshold() {
 	var universalCluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
 
 	healthCheck := `
 type: HealthCheck
@@ -51,10 +50,9 @@ networking:
 
 	BeforeEach(func() {
 		universalCluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
 			Install(YamlUniversal(healthCheck)).
 			Setup(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -85,7 +83,7 @@ networking:
 		if ShouldSkipCleanup() {
 			return
 		}
-		Expect(universalCluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(universalCluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
 		Expect(universalCluster.DismissCluster()).To(Succeed())
 	})
 

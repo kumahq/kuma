@@ -11,14 +11,12 @@ import (
 
 func MTLSUniversal() {
 	var universalCluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
 
 	E2EBeforeSuite(func() {
 		universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
-		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(config_core.Standalone, KumaUniversalDeployOpts...)).
 			Setup(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = universalCluster.VerifyKuma()
@@ -53,7 +51,7 @@ name: default`
 	})
 
 	E2EAfterSuite(func() {
-		Expect(universalCluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(universalCluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
 		Expect(universalCluster.DismissCluster()).To(Succeed())
 	})
 
