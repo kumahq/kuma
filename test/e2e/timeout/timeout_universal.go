@@ -13,7 +13,6 @@ import (
 
 func TimeoutPolicyOnUniversal() {
 	var universalCluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
 
 	faultInjection := `
 type: FaultInjection
@@ -50,10 +49,9 @@ conf:
 
 	BeforeEach(func() {
 		universalCluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
 			Install(YamlUniversal(faultInjection)).
 			Setup(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -76,7 +74,7 @@ conf:
 		if ShouldSkipCleanup() {
 			return
 		}
-		Expect(universalCluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(universalCluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
 		Expect(universalCluster.DismissCluster()).To(Succeed())
 	})
 

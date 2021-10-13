@@ -12,7 +12,6 @@ import (
 
 func VirtualOutboundOnUniversal() {
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -22,10 +21,9 @@ func VirtualOutboundOnUniversal() {
 
 		// Global
 		cluster = clusters.GetCluster(Kuma3)
-		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -53,7 +51,7 @@ func VirtualOutboundOnUniversal() {
 		if ShouldSkipCleanup() {
 			return
 		}
-		err := cluster.DeleteKuma(deployOptsFuncs...)
+		err := cluster.DeleteKuma(KumaUniversalDeployOpts...)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = cluster.DismissCluster()

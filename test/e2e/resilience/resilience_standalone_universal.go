@@ -24,7 +24,7 @@ func ResilienceStandaloneUniversal() {
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
 
-		optsUniversal = []DeployOptionsFunc{
+		optsUniversal = []KumaDeploymentOption{
 			WithPostgres(postgres.From(universal, Kuma1).GetEnvVars()),
 			WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
 		}

@@ -39,14 +39,12 @@ conf:
 	}
 
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Verbose)
-		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(config_core.Standalone, KumaUniversalDeployOpts...)).
 			Install(YamlUniversal(healthCheck("health", "200"))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -69,7 +67,7 @@ conf:
 		if ShouldSkipCleanup() {
 			return
 		}
-		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(cluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
