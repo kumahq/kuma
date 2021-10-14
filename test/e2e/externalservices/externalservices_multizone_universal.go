@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
@@ -24,6 +25,8 @@ mtls:
 networking:
   outbound:
     passthrough: true
+routing:
+  localityAwareLoadBalancing: %s
 `
 
 	externalService := `
@@ -57,9 +60,12 @@ networking:
 		// External Service non-Kuma Cluster
 		external = clusters.GetCluster(Kuma3)
 
+		// todo(lobkovilya): use test-server as an external service
 		err = NewClusterSetup().
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
+			Install(externalservice.Install("es-for-kuma-4", externalservice.ExternalServiceCommand(80, "{\\\"instance\\\":\\\"kuma-4\\\"}"))).
+			Install(externalservice.Install("es-for-kuma-5", externalservice.ExternalServiceCommand(80, "{\\\"instance\\\":\\\"kuma-5\\\"}"))).
 			Setup(external)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -70,7 +76,7 @@ networking:
 		global = clusters.GetCluster(Kuma6)
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
-			Install(YamlUniversal(meshDefaulMtlsOn)).
+			Install(YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "false"))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -110,28 +116,17 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
+	E2EAfterEach(func() {
+		Expect(external.DismissCluster()).To(Succeed())
 
-		err := external.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zone1.DeleteKuma(optsZone1...)).To(Succeed())
+		Expect(zone1.DismissCluster()).To(Succeed())
 
-		err = zone1.DeleteKuma(optsZone1...)
-		Expect(err).ToNot(HaveOccurred())
-		err = zone1.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zone2.DeleteKuma(optsZone2...)).To(Succeed())
+		Expect(zone2.DismissCluster()).To(Succeed())
 
-		err = zone2.DeleteKuma(optsZone2...)
-		Expect(err).ToNot(HaveOccurred())
-		err = zone2.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = global.DeleteKuma(optsGlobal...)
-		Expect(err).ToNot(HaveOccurred())
-		err = global.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+		Expect(global.DeleteKuma(optsGlobal...)).To(Succeed())
+		Expect(global.DismissCluster()).To(Succeed())
 	})
 
 	It("should route to external-service", func() {
@@ -204,5 +199,47 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("HTTPS"))
+	})
+
+	It("should respect external-service's zone tag in locality-aware lb mode", func() {
+		externalServiceWithZone := func(zone, address string) string {
+			return fmt.Sprintf(`
+type: ExternalService
+mesh: default
+name: es-for-%s
+tags:
+  kuma.io/service: es-for-zones
+  kuma.io/protocol: http
+  kuma.io/zone: %s
+networking:
+  address: %s
+`, zone, zone, address)
+		}
+
+		// given 2 external services with different zone tag
+		Expect(YamlUniversal(externalServiceWithZone("kuma-4", "kuma-3_externalservice-es-for-kuma-4:80"))(global)).To(Succeed())
+		Expect(YamlUniversal(externalServiceWithZone("kuma-5", "kuma-3_externalservice-es-for-kuma-5:80"))(global)).To(Succeed())
+		// then
+		Eventually(func() (map[string]int, error) {
+			return CollectResponsesByInstance(zone1, "demo-client", "es-for-zones.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(2),
+				HaveKey(Equal("kuma-4")),
+				HaveKey(Equal("kuma-5")),
+			),
+		)
+
+		// when locality-aware lb is enabled
+		Expect(YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "true"))(global)).To(Succeed())
+		// then
+		Eventually(func() (map[string]int, error) {
+			return CollectResponsesByInstance(zone1, "demo-client", "es-for-zones.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(1),
+				HaveKey(Equal("kuma-4")),
+			),
+		)
 	})
 }
