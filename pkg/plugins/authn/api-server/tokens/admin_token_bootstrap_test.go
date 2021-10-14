@@ -24,17 +24,20 @@ var _ = Describe("Admin Token Bootstrap", func() {
 		component := tokens.NewAdminTokenBootstrap(tokenIssuer, resManager, kuma_cp.DefaultConfig())
 		err := signingKeyManager.CreateDefaultSigningKey()
 		Expect(err).ToNot(HaveOccurred())
+		stopCh := make(chan struct{})
 
 		// when
-		_ = component.Start(nil) // it does not ever return error ever
+		go component.Start(stopCh) // it does not ever return error ever
 
 		// then token is created
-		globalSecret := system.NewGlobalSecretResource()
-		err = resManager.Get(context.Background(), globalSecret, core_store.GetBy(tokens.AdminTokenKey))
-		Expect(err).ToNot(HaveOccurred())
-		user, err := tokenIssuer.Validate(string(globalSecret.Spec.Data.Value))
-		Expect(err).ToNot(HaveOccurred())
-		Expect(user.Name).To(Equal("admin"))
-		Expect(user.Groups).To(Equal([]string{"admin"}))
+		Eventually(func(g Gomega) {
+			globalSecret := system.NewGlobalSecretResource()
+			err = resManager.Get(context.Background(), globalSecret, core_store.GetBy(tokens.AdminTokenKey))
+			g.Expect(err).ToNot(HaveOccurred())
+			user, err := tokenIssuer.Validate(string(globalSecret.Spec.Data.Value))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(user.Name).To(Equal("admin"))
+			g.Expect(user.Groups).To(Equal([]string{"admin"}))
+		}).Should(Succeed())
 	})
 })

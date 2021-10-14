@@ -41,27 +41,32 @@ func NewAdminTokenBootstrap(issuer issuer.UserTokenIssuer, resManager manager.Re
 	}
 }
 
-func (a *adminTokenBootstrap) Start(<-chan struct{}) error {
-	if err := a.generateTokenIfNotExist(); err != nil {
-		// just log, do not exist control plane
-		log.Error(err, "could not generate Admin User Token")
-	} else {
-		msg := "bootstrap of Admin User Token is enabled. "
-		if a.cpCfg.Environment == config_core.KubernetesEnvironment {
-			msg += fmt.Sprintf("To extract credentials execute 'kubectl get secret %s -n %s --template={{.data.value}} | base64 -d'. ", AdminTokenKey.Name, a.cpCfg.Store.Kubernetes.SystemNamespace)
+func (a *adminTokenBootstrap) Start(stop <-chan struct{}) error {
+	ctx, cancelFn := context.WithCancel(context.Background())
+	go func() {
+		if err := a.generateTokenIfNotExist(ctx); err != nil {
+			// just log, do not exist control plane
+			log.Error(err, "could not generate Admin User Token")
 		} else {
-			msg += fmt.Sprintf(`To extract admin credentials execute 'curl http://localhost:%d/global-secrets/%s | jq -r .data | base64 -d'. `, a.cpCfg.ApiServer.HTTP.Port, AdminTokenKey.Name)
+			msg := "bootstrap of Admin User Token is enabled. "
+			if a.cpCfg.Environment == config_core.KubernetesEnvironment {
+				msg += fmt.Sprintf("To extract credentials execute 'kubectl get secret %s -n %s --template={{.data.value}} | base64 -d'. ", AdminTokenKey.Name, a.cpCfg.Store.Kubernetes.SystemNamespace)
+			} else {
+				msg += fmt.Sprintf("To extract admin credentials execute 'curl http://localhost:%d/global-secrets/%s | jq -r .data | base64 -d'. ", a.cpCfg.ApiServer.HTTP.Port, AdminTokenKey.Name)
+			}
+			msg += "You configure kumactl with them 'kumactl config control-planes add --auth-type=tokens --auth-conf token=YOUR_TOKEN'." +
+				" To disable bootstrap of Admin User Token set KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN to false."
+			log.Info(msg)
 		}
-		msg += "You configure kumactl with them 'kumactl config control-planes add --auth-type=tokens --auth-conf token=YOUR_TOKEN'." +
-			" To disable bootstrap of Admin User Token set KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN to false."
-		log.Info(msg)
-	}
+	}()
+	<-stop
+	cancelFn()
 	return nil
 }
 
-func (a *adminTokenBootstrap) generateTokenIfNotExist() error {
+func (a *adminTokenBootstrap) generateTokenIfNotExist(ctx context.Context) error {
 	secret := system.NewGlobalSecretResource()
-	err := a.resManager.Get(context.Background(), secret, core_store.GetBy(AdminTokenKey))
+	err := a.resManager.Get(ctx, secret, core_store.GetBy(AdminTokenKey))
 	if err == nil {
 		return nil // already exists
 	}
@@ -70,7 +75,7 @@ func (a *adminTokenBootstrap) generateTokenIfNotExist() error {
 	}
 
 	log.Info("Admin User Token not found. Generating.")
-	token, err := a.generateAdminToken()
+	token, err := a.generateAdminToken(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not generate admin token")
 	}
@@ -79,18 +84,18 @@ func (a *adminTokenBootstrap) generateTokenIfNotExist() error {
 	secret.Spec.Data = &wrapperspb.BytesValue{
 		Value: []byte(token),
 	}
-	if err := a.resManager.Create(context.Background(), secret, core_store.CreateBy(AdminTokenKey)); err != nil {
+	if err := a.resManager.Create(ctx, secret, core_store.CreateBy(AdminTokenKey)); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (a *adminTokenBootstrap) generateAdminToken() (string, error) {
+func (a *adminTokenBootstrap) generateAdminToken(ctx context.Context) (string, error) {
 	// we need retries because signing key may not be available yet
 	backoff, _ := retry.NewConstant(1 * time.Second)
 	backoff = retry.WithMaxDuration(10*time.Minute, backoff)
 	var token string
-	err := retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
 		t, err := a.issuer.Generate(user.Admin, 24*365*10*time.Hour)
 		if err != nil {
 			return retry.RetryableError(err)
