@@ -27,7 +27,9 @@ var _ = Describe("Admin Token Bootstrap", func() {
 		stopCh := make(chan struct{})
 
 		// when
-		go component.Start(stopCh) // it does not ever return error ever
+		go func() {
+			_ = component.Start(stopCh) // it never returns an error
+		}()
 
 		// then token is created
 		Eventually(func(g Gomega) {
