@@ -265,10 +265,7 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *me
 		return nil, nil
 	}
 
-	var timeoutConf *mesh_proto.Timeout_Conf
-	if timeout := proxy.Policies.Timeouts[oface]; timeout != nil {
-		timeoutConf = timeout.Spec.GetConf()
-	}
+	timeoutConf := proxy.Policies.Timeouts[oface]
 
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of caches.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.

@@ -61,7 +61,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: es-_0_
-                  timeout: 0s
           statPrefix: es
     name: outbound:127.0.0.1:18081
     trafficDirection: OUTBOUND

@@ -113,11 +113,11 @@ func LB(lb *mesh_proto.TrafficRoute_LoadBalancer) ClusterBuilderOpt {
 	})
 }
 
-func Timeout(protocol core_mesh.Protocol, conf *mesh_proto.Timeout_Conf) ClusterBuilderOpt {
+func Timeout(protocol core_mesh.Protocol, timeout *core_mesh.TimeoutResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.TimeoutConfigurer{
 			Protocol: protocol,
-			Conf:     conf,
+			Timeout:  timeout,
 		})
 	})
 }
