@@ -25,6 +25,7 @@ var _ = Describe("Admin Token Bootstrap", func() {
 		err := signingKeyManager.CreateDefaultSigningKey()
 		Expect(err).ToNot(HaveOccurred())
 		stopCh := make(chan struct{})
+		defer close(stopCh)
 
 		// when
 		go func() {
