@@ -87,7 +87,7 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 		}
 	}
 
-	// The kubernetes Ingress and Gateway APIs define prefix matching
+	// The Kubernetes Ingress and Gateway APIs define prefix matching
 	// to match in terms of path components, so we follow suit here.
 	// Envoy path prefix matching is byte-wise, so we need to do some
 	// transformations. Unless there is already an exact match for the
