@@ -8,6 +8,13 @@ Clusters:
           resourceApiVersion: V3
       name: echo-service
       type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
 Endpoints:
   Resources:
     echo-service:
@@ -17,8 +24,8 @@ Endpoints:
         - endpoint:
             address:
               socketAddress:
-                address: 192.168.1.9
-                portValue: 20009
+                address: 192.168.1.6
+                portValue: 20006
           loadBalancingWeight: 1
           metadata:
             filterMetadata:

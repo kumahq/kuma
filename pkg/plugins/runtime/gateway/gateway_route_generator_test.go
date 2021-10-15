@@ -49,13 +49,9 @@ var _ = Describe("Gateway Gateway Route", func() {
 
 		dataplanes = &DataplaneGenerator{Manager: rt.ResourceManager()}
 
-		dataplanes.Generate("echo-service")
-		dataplanes.Generate("echo-mirror")
-		dataplanes.Generate("exact-header-match")
-		dataplanes.Generate("regex-header-match")
-
 		// Add dataplane resources for all the services used in the test suite.
 		for _, service := range []string{
+			"api-service",
 			"echo-exact",
 			"echo-mirror",
 			"echo-prefix",
@@ -566,6 +562,248 @@ conf:
           kuma.io/service: echo-service
 `,
 		),
-	)
 
+		Entry("match timeout policy",
+			"15-gateway-route.yaml", `
+type: GatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      filters:
+      - mirror:
+          percentage: 1
+          backend:
+            destination:
+              kuma.io/service: echo-mirror
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+    - matches:
+      - path:
+          match: PREFIX
+          value: /api
+      backends:
+      - destination:
+          kuma.io/service: api-service
+`, `
+type: Timeout
+mesh: default
+name: echo-service
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: echo-service
+conf:
+  connect_timeout: 10s
+  http:
+    request_timeout: 10s
+    idle_timeout: 10s
+`, `
+type: Timeout
+mesh: default
+name: api-service
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: api-service
+conf:
+  connect_timeout: 20s
+  http:
+    request_timeout: 20s
+    idle_timeout: 20s
+`, `
+type: Timeout
+mesh: default
+name: echo-mirror
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: echo-mirror
+conf:
+  connect_timeout: 300s
+  http:
+    request_timeout: 30s
+    idle_timeout: 30s
+`,
+		),
+
+		Entry("match circuit breaker policy",
+			"16-gateway-route.yaml", `
+type: GatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      filters:
+      - mirror:
+          percentage: 1
+          backend:
+            destination:
+              kuma.io/service: echo-mirror
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+    - matches:
+      - path:
+          match: PREFIX
+          value: /api
+      backends:
+      - destination:
+          kuma.io/service: api-service
+`, `
+type: CircuitBreaker
+mesh: default
+name: echo-service
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: echo-service
+conf:
+  baseEjectionTime: 10s
+  thresholds:
+    maxRetries: 10
+  detectors:
+    localErrors:
+      consecutive: 10
+`, `
+type: CircuitBreaker
+mesh: default
+name: api-service
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: api-service
+conf:
+  baseEjectionTime: 20s
+  thresholds:
+    maxRetries: 20
+  detectors:
+    localErrors:
+      consecutive: 20
+`, `
+type: CircuitBreaker
+mesh: default
+name: echo-mirror
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: echo-mirror
+conf:
+  baseEjectionTime: 30s
+  thresholds:
+    maxRetries: 20
+  detectors:
+    localErrors:
+      consecutive: 30
+`,
+		),
+
+		Entry("match health check policy",
+			"17-gateway-route.yaml", `
+type: GatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      filters:
+      - mirror:
+          percentage: 1
+          backend:
+            destination:
+              kuma.io/service: echo-mirror
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+    - matches:
+      - path:
+          match: PREFIX
+          value: /api
+      backends:
+      - destination:
+          kuma.io/service: api-service
+`, `
+type: HealthCheck
+mesh: default
+name: echo-service
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: echo-service
+conf:
+  interval: 10s
+  timeout: 10s
+  healthyThreshold: 1
+  unhealthyThreshold: 1
+`, `
+type: HealthCheck
+mesh: default
+name: api-service
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: api-service
+conf:
+  interval: 20s
+  timeout: 20s
+  healthyThreshold: 2
+  unhealthyThreshold: 2
+`, `
+type: HealthCheck
+mesh: default
+name: echo-mirror
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: echo-mirror
+conf:
+  interval: 30s
+  timeout: 30s
+  healthyThreshold: 3
+  unhealthyThreshold: 3
+`,
+		),
+	)
 })
