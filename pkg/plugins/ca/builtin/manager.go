@@ -32,14 +32,16 @@ func NewBuiltinCaManager(secretManager manager.ResourceManager) core_ca.Manager 
 
 var _ core_ca.Manager = &builtinCaManager{}
 
-func (b *builtinCaManager) Ensure(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
-	_, err := b.getCa(ctx, mesh, backend.Name)
-	if core_store.IsResourceNotFound(err) {
-		if err := b.create(ctx, mesh, backend); err != nil {
-			return errors.Wrapf(err, "failed to create CA for mesh %q and backend %q", mesh, backend.Name)
+func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh string, backends []*mesh_proto.CertificateAuthorityBackend) error {
+	for _, backend := range backends {
+		_, err := b.getCa(ctx, mesh, backend.Name)
+		if core_store.IsResourceNotFound(err) {
+			if err := b.create(ctx, mesh, backend); err != nil {
+				return errors.Wrapf(err, "failed to create CA for mesh %q and backend %q", mesh, backend.Name)
+			}
+		} else {
+			return err
 		}
-	} else {
-		return err
 	}
 	return nil
 }
