@@ -15,7 +15,7 @@ type KeyPair = tls.KeyPair
 type Manager interface {
 	// ValidateBackend validates that backend configuration is correct
 	ValidateBackend(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error
-	// EnsureBackends ensures that CA of given name is available
+	// EnsureBackends ensures the given CA backends managed by this manager are available
 	EnsureBackends(ctx context.Context, mesh string, backends []*mesh_proto.CertificateAuthorityBackend) error
 	// UsedSecrets returns a list of secrets that are used by the manager
 	UsedSecrets(mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]string, error)
