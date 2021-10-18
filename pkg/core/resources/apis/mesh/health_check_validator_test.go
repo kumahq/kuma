@@ -177,6 +177,31 @@ var _ = Describe("HealthCheck", func() {
                   message: has to be defined and cannot be empty
 `,
 			}),
+			Entry("http and tcp configuration", testCase{
+				healthCheck: `
+                sources:
+                - match:
+                    kuma.io/service: web
+                    region: eu
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  interval: 3s
+                  timeout: 10s
+                  unhealthyThreshold: 3
+                  healthyThreshold: 1
+                  http: {}
+                  tcp: {}
+`,
+				expected: `
+                violations:
+                - field: conf.http.path
+                  message: has to be defined and cannot be empty
+                - field: conf
+                  message: http and tcp cannot be defined at the same time
+`,
+			}),
 		)
 	})
 })
