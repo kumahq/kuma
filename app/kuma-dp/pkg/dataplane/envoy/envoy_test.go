@@ -18,7 +18,6 @@ import (
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("Envoy", func() {
@@ -90,9 +89,9 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, error) {
 				return []byte(`node:
-  id: example`), types.BootstrapV2, nil
+  id: example`), nil
 			}
 			expectedConfigFile := filepath.Join(configDir, "bootstrap.yaml")
 
@@ -119,12 +118,12 @@ var _ = Describe("Envoy", func() {
 			// and
 			if runtime.GOOS == "linux" {
 				Expect(strings.TrimSpace(buf.String())).To(Equal(
-					fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off --bootstrap-version 2 --cpuset-threads",
+					fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off --cpuset-threads",
 						expectedConfigFile)),
 				)
 			} else {
 				Expect(strings.TrimSpace(buf.String())).To(Equal(
-					fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off --bootstrap-version 2",
+					fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off",
 						expectedConfigFile)),
 				)
 			}
@@ -154,9 +153,9 @@ var _ = Describe("Envoy", func() {
 				},
 			}
 
-			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, error) {
 				return []byte(`node:
-  id: example`), types.BootstrapV2, nil
+  id: example`), nil
 			}
 
 			expectedConfigFile := filepath.Join(configDir, "bootstrap.yaml")
@@ -183,7 +182,7 @@ var _ = Describe("Envoy", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(strings.TrimSpace(buf.String())).To(Equal(
-				fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off --bootstrap-version 2 --concurrency 9",
+				fmt.Sprintf("--config-path %s --drain-time-s 15 --disable-hot-restart --log-level off --concurrency 9",
 					expectedConfigFile)),
 			)
 		}))
@@ -196,8 +195,8 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, types.BootstrapVersion, error) {
-				return nil, "", nil
+			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, error) {
+				return nil, nil
 			}
 
 			By("starting a mock dataplane")
@@ -235,8 +234,8 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, types.BootstrapVersion, error) {
-				return nil, "", nil
+			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, error) {
+				return nil, nil
 			}
 
 			By("starting a mock dataplane")

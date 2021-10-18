@@ -3,7 +3,6 @@ package types
 type BootstrapVersion string
 
 const (
-	BootstrapV2 BootstrapVersion = "2"
 	BootstrapV3 BootstrapVersion = "3"
 )
 
@@ -24,10 +23,8 @@ type BootstrapRequest struct {
 	// CaCert is a PEM-encoded CA cert that DP uses to verify CP
 	CaCert          string            `json:"caCert"`
 	DynamicMetadata map[string]string `json:"dynamicMetadata"`
-	// BootstrapVersion is an optional version to override the control plane's default setting
-	BootstrapVersion BootstrapVersion `json:"bootstrapVersion"`
-	DNSPort          uint32           `json:"dnsPort,omitempty"`
-	EmptyDNSPort     uint32           `json:"emptyDnsPort,omitempty"`
+	DNSPort         uint32            `json:"dnsPort,omitempty"`
+	EmptyDNSPort    uint32            `json:"emptyDnsPort,omitempty"`
 }
 
 type Version struct {
