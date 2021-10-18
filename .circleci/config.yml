@@ -3,7 +3,7 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 orbs:
   aws-cli: circleci/aws-cli@1.4.0
   aws-ecr: circleci/aws-ecr@6.15.3
-  aws-eks: circleci/aws-eks@1.0.3
+  aws-eks: circleci/aws-eks@1.1.0
   kubernetes: circleci/kubernetes@0.11.2
   slack: circleci/slack@4.1
   azure-cli: circleci/azure-cli@1.1.0
@@ -414,7 +414,7 @@ jobs:
         description: |
           Version of Kubernetes to use for creating the cluster, such as "1.11.8" or "1.12.6".
         type: string
-        default: "1.18.17"
+        default: "1.22.2"
     steps:
     - early_return_for_forked_pull_requests
 
