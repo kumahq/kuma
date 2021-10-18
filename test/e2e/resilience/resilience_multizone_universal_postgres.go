@@ -13,7 +13,7 @@ import (
 
 func ResilienceMultizoneUniversalPostgres() {
 	var global, zoneUniversal Cluster
-	var optsGlobal, optsZone1 []DeployOptionsFunc
+	var optsGlobal, optsZone1 []KumaDeploymentOption
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -23,14 +23,14 @@ func ResilienceMultizoneUniversalPostgres() {
 
 		// Global
 		global = clusters.GetCluster(Kuma1)
-		optsGlobal = []DeployOptionsFunc{}
+		optsGlobal = []KumaDeploymentOption{}
 
 		err = NewClusterSetup().
 			Install(postgres.Install(Kuma1)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 
-		optsGlobal = []DeployOptionsFunc{
+		optsGlobal = []KumaDeploymentOption{
 			WithPostgres(postgres.From(global, Kuma1).GetEnvVars()),
 			WithEnv("KUMA_METRICS_ZONE_IDLE_TIMEOUT", "10s"),
 		}
@@ -52,7 +52,7 @@ func ResilienceMultizoneUniversalPostgres() {
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
 
-		optsZone1 = []DeployOptionsFunc{
+		optsZone1 = []KumaDeploymentOption{
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithPostgres(postgres.From(zoneUniversal, Kuma2).GetEnvVars()),
 			WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),

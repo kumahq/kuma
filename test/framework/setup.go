@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	"github.com/kumahq/kuma/pkg/tls"
 )
@@ -84,11 +85,10 @@ func YamlPathK8s(path string) InstallFunc {
 	}
 }
 
-func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
+func Kuma(mode core.CpMode, opt ...KumaDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		fs = append(fs, WithIPv6(IsIPv6()))
-		err := cluster.DeployKuma(mode, fs...)
-		return err
+		opt = append(opt, WithIPv6(IsIPv6()))
+		return cluster.DeployKuma(mode, opt...)
 	}
 }
 
@@ -351,9 +351,10 @@ spec:
 	)
 }
 
-func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
+func DemoClientUniversal(name, mesh, token string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		opts := newDeployOpt(fs...)
+		var opts appDeploymentOptions
+		opts.apply(opt...)
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := ""
 		if opts.transparent {
@@ -365,14 +366,23 @@ func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 				appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, "80", "8080")
 			}
 		}
-		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
-		return cluster.DeployApp(fs...)
+
+		opt = append(opt,
+			WithName(name),
+			WithMesh(mesh),
+			WithAppname(AppModeDemoClient),
+			WithToken(token),
+			WithArgs(args),
+			WithYaml(appYaml),
+			WithIPv6(IsIPv6()))
+		return cluster.DeployApp(opt...)
 	}
 }
 
-func TestServerUniversal(name, mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
+func TestServerUniversal(name, mesh, token string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		opts := newDeployOpt(fs...)
+		var opts appDeploymentOptions
+		opts.apply(opt...)
 		if len(opts.protocol) == 0 {
 			opts.protocol = "http"
 		}
@@ -420,7 +430,7 @@ networking:
     redirectPortOutbound: %s
 `, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 
-		fs = append(fs,
+		opt = append(opt,
 			WithName(name),
 			WithMesh(mesh),
 			WithAppname("test-server"),
@@ -429,7 +439,7 @@ networking:
 			WithArgs(args),
 			WithYaml(appYaml),
 			WithIPv6(IsIPv6()))
-		return cluster.DeployApp(fs...)
+		return cluster.DeployApp(opt...)
 	}
 }
 

@@ -11,7 +11,7 @@ import (
 
 func LeaderElectionPostgres() {
 	var standalone1, standalone2 Cluster
-	var standalone1Opts, standalone2Opts []DeployOptionsFunc
+	var standalone1Opts, standalone2Opts []KumaDeploymentOption
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(

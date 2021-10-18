@@ -14,7 +14,7 @@ import (
 
 func UniversalTransparentProxyDeployment() {
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs []KumaDeploymentOption
 
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
