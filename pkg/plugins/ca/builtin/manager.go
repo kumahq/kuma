@@ -35,12 +35,12 @@ var _ core_ca.Manager = &builtinCaManager{}
 func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh string, backends []*mesh_proto.CertificateAuthorityBackend) error {
 	for _, backend := range backends {
 		_, err := b.getCa(ctx, mesh, backend.Name)
-		if core_store.IsResourceNotFound(err) {
-			if err := b.create(ctx, mesh, backend); err != nil {
-				return errors.Wrapf(err, "failed to create CA for mesh %q and backend %q", mesh, backend.Name)
-			}
-		} else {
+		if !core_store.IsResourceNotFound(err) {
 			return err
+		}
+
+		if err := b.create(ctx, mesh, backend); err != nil {
+			return errors.Wrapf(err, "failed to create CA for mesh %q and backend %q", mesh, backend.Name)
 		}
 	}
 	return nil
