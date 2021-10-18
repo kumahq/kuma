@@ -3,6 +3,7 @@ package gateway
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"path"
 	"strings"
@@ -173,9 +174,9 @@ conf:
 		Expect(gateways).To(ContainElement("edge-gateway"))
 
 		Eventually(func(g Gomega) {
+			host := net.JoinHostPort(cluster.GetApp("gateway-proxy").GetIP(), "8080")
 			p := path.Join("test", url.PathEscape(GinkgoT().Name()))
-			target := fmt.Sprintf("http://%s:8080/%s",
-				cluster.GetApp("gateway-proxy").GetIP(), p)
+			target := fmt.Sprintf("http://%s/%s", host, p)
 
 			response, err := testutil.CollectResponse(
 				cluster, "gateway-client", target,

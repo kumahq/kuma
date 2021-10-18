@@ -47,6 +47,7 @@ type kumaDeploymentOptions struct {
 
 func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	// Set defaults.
+	k.isipv6 = IsIPv6()
 	k.installationMode = KumactlInstallationMode
 	k.env = map[string]string{}
 
@@ -97,6 +98,7 @@ type appDeploymentOptions struct {
 
 func (d *appDeploymentOptions) apply(opts ...AppDeploymentOption) {
 	// Set defaults.
+	d.isipv6 = IsIPv6()
 
 	// Apply options.
 	for _, o := range opts {
