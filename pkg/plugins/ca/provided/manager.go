@@ -79,7 +79,7 @@ func (p *providedCaManager) getCa(ctx context.Context, mesh string, backend *mes
 	return pair, nil
 }
 
-func (p *providedCaManager) Ensure(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
+func (p *providedCaManager) EnsureBackends(ctx context.Context, mesh string, backend []*mesh_proto.CertificateAuthorityBackend) error {
 	return nil // Cert and Key are created by user and pointed in the configuration which is validated first
 }
 
