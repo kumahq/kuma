@@ -30,7 +30,6 @@ func (b *BootstrapServerConfig) Validate() error {
 
 func DefaultBootstrapServerConfig() *BootstrapServerConfig {
 	return &BootstrapServerConfig{
-		//APIVersion: envoy_common.APIV3,
 		Params: DefaultBootstrapParamsConfig(),
 	}
 }
