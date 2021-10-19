@@ -112,6 +112,9 @@ func (d *HealthCheckResource) validateConf() (err validators.ValidationError) {
 	if d.Spec.Conf.GetHttp() != nil {
 		err.Add(d.validateConfHttp(path.Field("http")))
 	}
+	if d.Spec.Conf.GetTcp() != nil && d.Spec.Conf.GetHttp() != nil {
+		err.AddViolationAt(path, "http and tcp cannot be defined at the same time")
+	}
 	return
 }
 
