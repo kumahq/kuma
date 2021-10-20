@@ -118,7 +118,8 @@ var _ = Describe("Remote Bootstrap", func() {
 					  "caCert": "",
 					  "dynamicMetadata": {
 					    "test": "value"
-					  }
+					  },
+                      "bootstrapVersion": "3"
 					}`,
 				}
 			}()),
@@ -161,7 +162,8 @@ var _ = Describe("Remote Bootstrap", func() {
                         }
                       },
                       "caCert": "",
-					  "dynamicMetadata": null
+                      "dynamicMetadata": null,
+                      "bootstrapVersion": "3"
                     }`,
 				}
 			}()),
@@ -202,7 +204,8 @@ var _ = Describe("Remote Bootstrap", func() {
                         }
                       },
                       "caCert": "",
-					  "dynamicMetadata": null
+					  "dynamicMetadata": null,
+                      "bootstrapVersion": "3"
                     }`,
 				}
 			}()),
