@@ -14,13 +14,18 @@ import (
 // CustomTablePrinters are used to define different ways to print entities in table format.
 var CustomTablePrinters = map[model.ResourceType]TablePrinter{
 	mesh.DataplaneType: RowPrinter{
-		Headers: []string{"MESH", "NAME", "TAGS", "AGE"},
+		Headers: []string{"MESH", "NAME", "TAGS", "ADDRESS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			dataplane := item.(*mesh.DataplaneResource)
+			address := dataplane.Spec.GetNetworking().GetAdvertisedAddress()
+			if address == "" {
+				address = dataplane.Spec.GetNetworking().GetAddress()
+			}
 			return []string{
-				dataplane.Meta.GetMesh(),                                        // MESH
-				dataplane.Meta.GetName(),                                        // NAME,
-				dataplane.Spec.TagSet().String(),                                // TAGS
+				dataplane.Meta.GetMesh(),         // MESH
+				dataplane.Meta.GetName(),         // NAME,
+				dataplane.Spec.TagSet().String(), // TAGS
+				address,                          // ADDRESS
 				table.TimeSince(dataplane.Meta.GetModificationTime(), rootTime), // AGE
 			}
 		},
