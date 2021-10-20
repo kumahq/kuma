@@ -219,7 +219,7 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 			addDpToInsight(insight, svc, status)
 		}
 
-		for _, inbound := range networking.Inbound {
+		for _, inbound := range networking.GetInbound() {
 			addDpToInsight(insight, inbound.GetService(), status)
 		}
 	}
