@@ -216,10 +216,8 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 		dataplane := dpOverview.Spec.GetDataplane()
 		networking := dataplane.GetNetworking()
 
-		if dataplane.IsDelegatedGateway() || dataplane.IsBuiltinGateway() {
-			svcName := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]
-			addDpToInsight(insight, svcName, status)
-			continue
+		if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
+			addDpToInsight(insight, svc, status)
 		}
 
 		for _, inbound := range networking.Inbound {
@@ -343,10 +341,8 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		dataplane := dpOverview.Spec.GetDataplane()
 		networking := dataplane.GetNetworking()
 
-		if dataplane.IsDelegatedGateway() || dataplane.IsBuiltinGateway() {
-			svcName := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]
-			internalServices[svcName] = struct{}{}
-			continue
+		if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
+			internalServices[svc] = struct{}{}
 		}
 
 		for _, inbound := range networking.GetInbound() {
