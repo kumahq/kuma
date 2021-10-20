@@ -213,8 +213,7 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 
 	for _, dpOverview := range dpOverviews.Items {
 		status, _ := dpOverview.GetStatus()
-		dataplane := dpOverview.Spec.GetDataplane()
-		networking := dataplane.GetNetworking()
+		networking := dpOverview.Spec.GetDataplane().GetNetworking()
 
 		if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
 			addDpToInsight(insight, svc, status)
@@ -338,8 +337,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
 		updateMTLS(dpInsight.GetMTLS(), status, insight.MTLS)
 
-		dataplane := dpOverview.Spec.GetDataplane()
-		networking := dataplane.GetNetworking()
+		networking := dpOverview.Spec.GetDataplane().GetNetworking()
 
 		if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
 			internalServices[svc] = struct{}{}
