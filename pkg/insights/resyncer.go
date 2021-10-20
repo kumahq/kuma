@@ -213,15 +213,17 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 
 	for _, dpOverview := range dpOverviews.Items {
 		status, _ := dpOverview.GetStatus()
+		dataplane := dpOverview.Spec.GetDataplane()
+		networking := dataplane.GetNetworking()
 
-		// Builtin gateways have inbounds
-		if dpOverview.Spec.Dataplane.IsDelegatedGateway() {
-			svcName := dpOverview.Spec.Dataplane.Networking.GetGateway().GetTags()[mesh_proto.ServiceTag]
+		if dataplane.IsDelegatedGateway() || dataplane.IsBuiltinGateway() {
+			svcName := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]
 			addDpToInsight(insight, svcName, status)
-		} else {
-			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
-				addDpToInsight(insight, inbound.GetService(), status)
-			}
+			continue
+		}
+
+		for _, inbound := range networking.Inbound {
+			addDpToInsight(insight, inbound.GetService(), status)
 		}
 	}
 
@@ -338,14 +340,17 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
 		updateMTLS(dpInsight.GetMTLS(), status, insight.MTLS)
 
-		// Builtin gateways have inbounds
-		if dpOverview.Spec.Dataplane.IsDelegatedGateway() {
-			svcName := dpOverview.Spec.Dataplane.Networking.GetGateway().GetTags()[mesh_proto.ServiceTag]
+		dataplane := dpOverview.Spec.GetDataplane()
+		networking := dataplane.GetNetworking()
+
+		if dataplane.IsDelegatedGateway() || dataplane.IsBuiltinGateway() {
+			svcName := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]
 			internalServices[svcName] = struct{}{}
-		} else {
-			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
-				internalServices[inbound.GetService()] = struct{}{}
-			}
+			continue
+		}
+
+		for _, inbound := range networking.GetInbound() {
+			internalServices[inbound.GetService()] = struct{}{}
 		}
 	}
 
