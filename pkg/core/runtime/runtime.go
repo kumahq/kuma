@@ -12,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/rbac"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -24,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	rbac2 "github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -65,10 +65,14 @@ type RuntimeContext interface {
 	KDSContext() *kds_context.Context
 	MeshValidator() core_managers.MeshValidator
 	APIServerAuthenticator() authn.Authenticator
-	ResourceAccess() resources_rbac.ResourceAccess
-	RoleAssignments() rbac.RoleAssignments
+	RBAC() RBAC
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
+}
+
+type RBAC struct {
+	ResourceAccess               resources_rbac.ResourceAccess
+	GenerateDataplaneTokenAccess rbac2.GenerateDataplaneTokenAccess
 }
 
 var _ Runtime = &runtime{}
@@ -131,7 +135,7 @@ type runtimeContext struct {
 	mv       core_managers.MeshValidator
 	au       authn.Authenticator
 	ra       resources_rbac.ResourceAccess
-	ras      rbac.RoleAssignments
+	rbac     RBAC
 	appCtx   context.Context
 }
 
@@ -230,8 +234,8 @@ func (rc *runtimeContext) ResourceAccess() resources_rbac.ResourceAccess {
 	return rc.ra
 }
 
-func (rc *runtimeContext) RoleAssignments() rbac.RoleAssignments {
-	return rc.ras
+func (rc *runtimeContext) RBAC() RBAC {
+	return rc.rbac
 }
 
 func (rc *runtimeContext) AppContext() context.Context {
