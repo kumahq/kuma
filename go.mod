@@ -70,3 +70,18 @@ replace (
 	github.com/kumahq/kuma/pkg/transparentproxy/istio => ./pkg/transparentproxy/istio
 	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
 )
+
+// The following replacement refers to the kuma-release-1.3 branch.
+//
+// There are a few Go module traps to be aware of when dealing with
+// this replacement:
+//
+//	https://github.com/golang/go/issues/32955
+//	https://github.com/golang/go/issues/45413
+//
+// To force Go tooling to update the Git hash of the branch you need to
+// work around the module caching system by doing this:
+//
+//	$ go mod edit -replace github.com/envoyproxy/go-control-plane=github.com/kumahq/go-control-plane@kuma-release-1.3
+//	$ GOPRIVATE=github.com/kumahq/go-control-plane go mod tidy
+replace github.com/envoyproxy/go-control-plane => github.com/lobkovilya/go-control-plane v0.9.10-0.20211021133126-e90404e67b74
