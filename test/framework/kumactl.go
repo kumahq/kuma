@@ -14,6 +14,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 type KumactlOptions struct {
@@ -45,44 +47,44 @@ func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*Kumact
 	}, nil
 }
 
-func (o *KumactlOptions) RunKumactl(args ...string) error {
-	out, err := o.RunKumactlAndGetOutput(args...)
+func (k *KumactlOptions) RunKumactl(args ...string) error {
+	out, err := k.RunKumactlAndGetOutput(args...)
 	if err != nil {
 		return errors.Wrapf(err, out)
 	}
 	return nil
 }
 
-func (o *KumactlOptions) RunKumactlAndGetOutput(args ...string) (string, error) {
-	return o.RunKumactlAndGetOutputV(o.Verbose, args...)
+func (k *KumactlOptions) RunKumactlAndGetOutput(args ...string) (string, error) {
+	return k.RunKumactlAndGetOutputV(k.Verbose, args...)
 }
 
-func (o *KumactlOptions) RunKumactlAndGetOutputV(verbose bool, args ...string) (string, error) {
+func (k *KumactlOptions) RunKumactlAndGetOutputV(verbose bool, args ...string) (string, error) {
 	cmdArgs := []string{}
-	if o.ConfigPath != "" {
-		cmdArgs = append(cmdArgs, "--config-file", o.ConfigPath)
+	if k.ConfigPath != "" {
+		cmdArgs = append(cmdArgs, "--config-file", k.ConfigPath)
 	}
 
 	cmdArgs = append(cmdArgs, args...)
 	command := shell.Command{
-		Command: o.Kumactl,
+		Command: k.Kumactl,
 		Args:    cmdArgs,
-		Env:     o.Env,
+		Env:     k.Env,
 	}
 
 	if !verbose {
 		command.Logger = logger.Discard
 	}
 
-	return shell.RunCommandAndGetStdOutE(o.t, command)
+	return shell.RunCommandAndGetStdOutE(k.t, command)
 }
 
-func (o *KumactlOptions) KumactlDelete(kumatype, name, mesh string) error {
-	return o.RunKumactl("delete", kumatype, name, "--mesh", mesh)
+func (k *KumactlOptions) KumactlDelete(kumatype, name, mesh string) error {
+	return k.RunKumactl("delete", kumatype, name, "--mesh", mesh)
 }
 
-func (o *KumactlOptions) KumactlList(kumatype, mesh string) ([]string, error) {
-	out, err := o.RunKumactlAndGetOutput("get", kumatype, "--mesh", mesh, "-o", "json")
+func (k *KumactlOptions) KumactlList(kumatype, mesh string) ([]string, error) {
+	out, err := k.RunKumactlAndGetOutput("get", kumatype, "--mesh", mesh, "-o", "json")
 	if err != nil {
 		return nil, err
 	}
@@ -106,19 +108,19 @@ func (o *KumactlOptions) KumactlList(kumatype, mesh string) ([]string, error) {
 	return items, nil
 }
 
-func (o *KumactlOptions) KumactlApply(configPath string) error {
-	return o.RunKumactl("apply", "-f", configPath)
+func (k *KumactlOptions) KumactlApply(configPath string) error {
+	return k.RunKumactl("apply", "-f", configPath)
 }
 
-func (o *KumactlOptions) KumactlApplyFromString(configData string) error {
-	tmpfile, err := storeConfigToTempFile(o.t.Name(), configData)
+func (k *KumactlOptions) KumactlApplyFromString(configData string) error {
+	tmpfile, err := storeConfigToTempFile(k.t.Name(), configData)
 	if err != nil {
 		return err
 	}
 
 	defer os.Remove(tmpfile)
 
-	return o.KumactlApply(tmpfile)
+	return k.KumactlApply(tmpfile)
 }
 
 func storeConfigToTempFile(name string, configData string) (string, error) {
@@ -135,7 +137,7 @@ func storeConfigToTempFile(name string, configData string) (string, error) {
 	return tmpfile.Name(), err
 }
 
-func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, error) {
+func (k *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, error) {
 	cmd := []string{
 		"install", "control-plane",
 	}
@@ -143,7 +145,7 @@ func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 	cmd = append(cmd, "--mode", mode)
 	switch mode {
 	case core.Zone:
-		cmd = append(cmd, "--zone", o.CPName)
+		cmd = append(cmd, "--zone", k.CPName)
 		fallthrough
 	case core.Global:
 		if !UseLoadBalancer() {
@@ -153,31 +155,31 @@ func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 
 	cmd = append(cmd, args...)
 
-	return o.RunKumactlAndGetOutputV(
+	return k.RunKumactlAndGetOutputV(
 		false, // silence the log output of Install
 		cmd...)
 }
 
-func (o *KumactlOptions) KumactlInstallDNS(args ...string) (string, error) {
+func (k *KumactlOptions) KumactlInstallDNS(args ...string) (string, error) {
 	args = append([]string{"install", "dns"}, args...)
 
-	return o.RunKumactlAndGetOutputV(
+	return k.RunKumactlAndGetOutputV(
 		false, // silence the log output of Install
 		args...)
 }
 
-func (o *KumactlOptions) KumactlInstallMetrics() (string, error) {
-	return o.RunKumactlAndGetOutput("install", "metrics")
+func (k *KumactlOptions) KumactlInstallMetrics() (string, error) {
+	return k.RunKumactlAndGetOutput("install", "metrics")
 }
 
-func (o *KumactlOptions) KumactlInstallTracing() (string, error) {
-	return o.RunKumactlAndGetOutput("install", "tracing")
+func (k *KumactlOptions) KumactlInstallTracing() (string, error) {
+	return k.RunKumactlAndGetOutput("install", "tracing")
 }
 
-func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) error {
-	_, err := retry.DoWithRetryE(o.t, "kumactl config control-planes add", DefaultRetries, DefaultTimeout,
+func (k *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) error {
+	_, err := retry.DoWithRetryE(k.t, "kumactl config control-planes add", DefaultRetries, DefaultTimeout,
 		func() (string, error) {
-			err := o.RunKumactl(
+			err := k.RunKumactl(
 				"config", "control-planes", "add",
 				"--overwrite",
 				"--name", name,
@@ -191,4 +193,29 @@ func (o *KumactlOptions) KumactlConfigControlPlanesAdd(name, address string) err
 		})
 
 	return err
+}
+
+// KumactlUpdateObject fetches an object and updates it after the update function is applied to it.
+func (k *KumactlOptions) KumactlUpdateObject(
+	typeName string,
+	objectName string,
+	update func(core_model.Resource) core_model.Resource,
+) error {
+	out, err := k.RunKumactlAndGetOutput("get", typeName, objectName, "-o", "yaml")
+	if err != nil {
+		return errors.Wrapf(err, "failed to get %q object %q", typeName, objectName)
+	}
+
+	resource, err := rest.UnmarshallToCore([]byte(out))
+	if err != nil {
+		return errors.Wrapf(err, "failed to unmarshal %q object %q", typeName, objectName)
+	}
+
+	updated := rest.NewFromModel(update(resource))
+	json, err := updated.MarshalJSON()
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal JSON for %q object %q", typeName, objectName)
+	}
+
+	return k.KumactlApplyFromString(string(json))
 }
