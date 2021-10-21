@@ -82,6 +82,6 @@ replace (
 // To force Go tooling to update the Git hash of the branch you need to
 // work around the module caching system by doing this:
 //
-//	$ go mod edit -replace github.com/envoyproxy/go-control-plane=github.com/kumahq/go-control-plane@kuma-release-1.3
+//	$ go mod edit -replace github.com/envoyproxy/go-control-plane=github.com/kumahq/go-control-plane@main
 //	$ GOPRIVATE=github.com/kumahq/go-control-plane go mod tidy
-replace github.com/envoyproxy/go-control-plane => github.com/lobkovilya/go-control-plane v0.9.10-0.20211021133126-e90404e67b74
+replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.9.10-0.20211021141404-a7501892aabb
