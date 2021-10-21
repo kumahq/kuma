@@ -7,7 +7,6 @@ controlPlane:
   caCertFile: ""
 dataplane:
   drainTime: 30s
-  bootstrapVersion: ""
   proxyType: dataplane
 dataplaneRuntime:
   binaryPath: envoy

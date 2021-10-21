@@ -12,7 +12,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	. "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("BootstrappServerConfig", func() {
@@ -76,7 +75,6 @@ var _ = Describe("BootstrappServerConfig", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(cfg.APIVersion).To(Equal(envoy.APIV3))
 			Expect(cfg.Params.AdminAddress).To(Equal("192.168.0.1"))
 			Expect(cfg.Params.AdminPort).To(Equal(uint32(4321)))
 			Expect(cfg.Params.AdminAccessLogPath).To(Equal("/var/log"))
