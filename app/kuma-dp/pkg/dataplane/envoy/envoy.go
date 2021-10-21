@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	pkg_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var (
@@ -29,15 +28,14 @@ var (
 )
 
 type BootstrapParams struct {
-	Dataplane        *rest.Resource
-	BootstrapVersion types.BootstrapVersion
-	DNSPort          uint32
-	EmptyDNSPort     uint32
-	EnvoyVersion     EnvoyVersion
-	DynamicMetadata  map[string]string
+	Dataplane       *rest.Resource
+	DNSPort         uint32
+	EmptyDNSPort    uint32
+	EnvoyVersion    EnvoyVersion
+	DynamicMetadata map[string]string
 }
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error)
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error)
 
 type Opts struct {
 	Config          kuma_dp.Config
@@ -125,13 +123,12 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	}
 	runLog.Info("fetched Envoy version", "version", envoyVersion)
 	runLog.Info("generating bootstrap configuration")
-	bootstrapConfig, version, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
-		Dataplane:        e.opts.Dataplane,
-		BootstrapVersion: types.BootstrapVersion(e.opts.Config.Dataplane.BootstrapVersion),
-		DNSPort:          e.opts.DNSPort,
-		EmptyDNSPort:     e.opts.EmptyDNSPort,
-		EnvoyVersion:     *envoyVersion,
-		DynamicMetadata:  e.opts.DynamicMetadata,
+	bootstrapConfig, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
+		Dataplane:       e.opts.Dataplane,
+		DNSPort:         e.opts.DNSPort,
+		EmptyDNSPort:    e.opts.EmptyDNSPort,
+		EnvoyVersion:    *envoyVersion,
+		DynamicMetadata: e.opts.DynamicMetadata,
 	})
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
@@ -165,9 +162,6 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		// so, let's turn it off to simplify getting started experience.
 		"--disable-hot-restart",
 		"--log-level", e.opts.LogLevel.String(),
-	}
-	if version != "" { // version is always send by Kuma CP, but we check empty for backwards compatibility reasons (new Kuma DP connects to old Kuma CP)
-		args = append(args, "--bootstrap-version", string(version))
 	}
 
 	// If the concurrency is explicit, use that. On Linux, users

@@ -36,7 +36,7 @@ import (
 )
 
 type BootstrapGenerator interface {
-	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, types.BootstrapVersion, error)
+	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error)
 }
 
 func NewDefaultBootstrapGenerator(
@@ -72,9 +72,9 @@ type bootstrapGenerator struct {
 	hdsEnabled    bool
 }
 
-func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, types.BootstrapVersion, error) {
+func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
 	if err := b.validateRequest(request); err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	proxyType := mesh_proto.ProxyType(request.ProxyType)
@@ -87,33 +87,31 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 		zoneIngress, err := b.zoneIngressFor(ctx, request, proxyId)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		adminPort, err := b.adminPortForIngress(request, zoneIngress)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		return b.generateFor(*proxyId, request, "ingress", adminPort)
 	case mesh_proto.DataplaneProxyType:
 		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		service := dataplane.Spec.GetIdentifyingService()
 		adminPort, err := b.adminPortForDataplane(request, dataplane)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		return b.generateFor(*proxyId, request, service, adminPort)
 	default:
-		return nil, "", errors.Errorf("unknown proxy type %v", proxyType)
+		return nil, errors.Errorf("unknown proxy type %v", proxyType)
 	}
 }
 
 var DpTokenRequired = errors.New("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
-
-var InvalidBootstrapVersion = errors.New(`Invalid BootstrapVersion. Available values are: "3"`)
 
 var NotCA = errors.New("A data plane proxy is trying to verify the control plane using the certificate which is not a certificate authority (basic constraint 'CA' is set to 'false').\n" +
 	"Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE")
@@ -141,11 +139,6 @@ func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) err
 		if !b.hostsAndIps[request.Host] {
 			return SANMismatchErr(request.Host, b.hostsAndIps.slice())
 		}
-	}
-	if b.bootstrapVersion(request.BootstrapVersion) == types.BootstrapV2 && request.DNSPort != 0 {
-		verr := validators.ValidationError{}
-		verr.AddViolation("dnsPort", "DNS cannot be used in API V2. Upgrade Kuma DP to API V3")
-		return verr.OrNil()
 	}
 	return nil
 }
@@ -247,14 +240,14 @@ func (b *bootstrapGenerator) adminPortForIngress(request types.BootstrapRequest,
 	return adminPort, nil
 }
 
-func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, request types.BootstrapRequest, service string, adminPort uint32) (proto.Message, types.BootstrapVersion, error) {
+func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, request types.BootstrapRequest, service string, adminPort uint32) (proto.Message, error) {
 	cert, origin, err := b.caCert(request)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	if err := b.validateCaCert(cert, origin, request); err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	proxyType := mesh_proto.ProxyType(request.ProxyType)
@@ -294,7 +287,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, request types
 		ProxyType:          request.ProxyType,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
-	return b.configForParameters(params, request.BootstrapVersion)
+	return b.configForParametersV3(params)
 }
 
 func (b *bootstrapGenerator) validateCaCert(cert []byte, origin string, request types.BootstrapRequest) error {
@@ -336,33 +329,6 @@ func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
 		return b.config.Params.XdsHost
 	} else {
 		return request.Host
-	}
-}
-
-func (b *bootstrapGenerator) bootstrapVersion(reqVersion types.BootstrapVersion) types.BootstrapVersion {
-	if reqVersion != "" {
-		return reqVersion
-	}
-	// if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
-	switch b.config.APIVersion {
-	case envoy_common.APIV3:
-		return types.BootstrapV3
-	default:
-		return ""
-	}
-}
-
-func (b *bootstrapGenerator) configForParameters(params configParameters, reqVersion types.BootstrapVersion) (proto.Message, types.BootstrapVersion, error) {
-	version := b.bootstrapVersion(reqVersion)
-	switch {
-	case version == types.BootstrapV3:
-		cfg, err := b.configForParametersV3(params)
-		if err != nil {
-			return nil, "", err
-		}
-		return cfg, types.BootstrapV3, nil
-	default:
-		return nil, "", InvalidBootstrapVersion
 	}
 }
 
