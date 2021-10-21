@@ -22,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -42,6 +41,7 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+	tokens_rbac "github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -104,8 +104,10 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 
-	builder.WithRoleAssignments(rbac.NewStaticRoleAssignments(cfg.RBAC.Static))
-	builder.WithResourceAccess(resources_rbac.NewAdminResourceAccess(builder.RoleAssignments()))
+	builder.WithRBAC(core_runtime.RBAC{
+		ResourceAccess:               resources_rbac.NewAdminResourceAccess(builder.Config().RBAC.Static.AdminResources),
+		GenerateDataplaneTokenAccess: tokens_rbac.NewStaticGenerateDataplaneTokenAccess(builder.Config().RBAC.Static.GenerateDPToken),
+	})
 
 	if err := initializeAPIServerAuthenticator(builder); err != nil {
 		return nil, err

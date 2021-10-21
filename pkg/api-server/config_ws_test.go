@@ -320,8 +320,18 @@ var _ = Describe("Config WS", func() {
           "rbac": {
             "type": "static",
             "static": {
-              "adminUsers": ["admin"],
-              "adminGroups": ["admin"]
+              "adminResources": {
+                "users": ["admin"],
+                "groups": ["admin"]
+              },
+              "generateDpToken": {
+                "users": ["admin"],
+                "groups": ["admin"]
+              },
+              "generateUserToken": {
+                "users": ["admin"],
+                "groups": ["admin"]
+              }
             }
           }
         }

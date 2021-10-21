@@ -1,11 +1,14 @@
 package tokens
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/api-server/authn"
-	"github.com/kumahq/kuma/pkg/api-server/authz"
+	config_rbac "github.com/kumahq/kuma/pkg/config/rbac"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/rbac"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
 )
 
@@ -16,6 +19,13 @@ type plugin struct {
 
 var _ plugins.AuthnAPIServerPlugin = plugin{}
 var _ plugins.BootstrapPlugin = plugin{}
+
+// We declare RBACStrategies and not into Runtime because it's a plugin.
+var RBACStrategies = map[string]func(*plugins.MutablePluginContext) rbac.GenerateUserTokenAccess{
+	config_rbac.StaticType: func(context *plugins.MutablePluginContext) rbac.GenerateUserTokenAccess {
+		return rbac.NewStaticGenerateUserTokenAccess(context.Config().RBAC.Static.GenerateUserToken)
+	},
+}
 
 func init() {
 	plugins.Register(PluginName, &plugin{})
@@ -33,8 +43,11 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 	if err := context.ComponentManager().Add(issuer.NewDefaultSigningKeyComponent(issuer.NewSigningKeyManager(context.ResourceManager()))); err != nil {
 		return err
 	}
-	webService := server.NewWebService(tokenIssuer(context.ResourceManager()))
-	webService.Filter(authz.AdminFilter(context.RoleAssignments()))
+	accessFn, ok := RBACStrategies[context.Config().RBAC.Type]
+	if !ok {
+		return errors.Errorf("no RBAC strategy for type %q", context.Config().RBAC.Type)
+	}
+	webService := server.NewWebService(tokenIssuer(context.ResourceManager()), accessFn(context))
 	context.APIManager().Add(webService)
 	return nil
 }

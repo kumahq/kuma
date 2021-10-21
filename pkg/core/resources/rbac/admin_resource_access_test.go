@@ -7,7 +7,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_rbac "github.com/kumahq/kuma/pkg/config/rbac"
-	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -16,9 +15,9 @@ import (
 )
 
 var _ = Describe("Admin Resource Access", func() {
-	resourceAccess := resources_rbac.NewAdminResourceAccess(rbac.NewStaticRoleAssignments(config_rbac.RBACStaticConfig{
-		AdminUsers: []string{"admin"},
-	}))
+	resourceAccess := resources_rbac.NewAdminResourceAccess(config_rbac.AdminResourcesRBACStaticConfig{
+		Users: []string{"admin"},
+	})
 
 	It("should allow regular user to access non admin resource", func() {
 		err := resourceAccess.ValidateCreate(
@@ -55,7 +54,7 @@ var _ = Describe("Admin Resource Access", func() {
 		)
 
 		// then
-		Expect(err).To(MatchError(`access denied: user "john doe/users" of role "Member" cannot access the resource of type "Secret"`))
+		Expect(err).To(MatchError(`access denied: user "john doe/users" cannot access the resource of type "Secret"`))
 	})
 
 	It("should deny anonymous user to access Create", func() {
@@ -94,7 +93,7 @@ var _ = Describe("Admin Resource Access", func() {
 		)
 
 		// then
-		Expect(err).To(MatchError(`access denied: user "john doe/users" of role "Member" cannot access the resource of type "Secret"`))
+		Expect(err).To(MatchError(`access denied: user "john doe/users" cannot access the resource of type "Secret"`))
 	})
 
 	It("should allow admin to access Get", func() {
@@ -118,7 +117,7 @@ var _ = Describe("Admin Resource Access", func() {
 		)
 
 		// then
-		Expect(err).To(MatchError(`access denied: user "john doe/users" of role "Member" cannot access the resource of type "Secret"`))
+		Expect(err).To(MatchError(`access denied: user "john doe/users" cannot access the resource of type "Secret"`))
 	})
 
 	It("should allow admin to access List", func() {
@@ -140,6 +139,6 @@ var _ = Describe("Admin Resource Access", func() {
 		)
 
 		// then
-		Expect(err).To(MatchError(`access denied: user "john doe/users" of role "Member" cannot access the resource of type "Secret"`))
+		Expect(err).To(MatchError(`access denied: user "john doe/users" cannot access the resource of type "Secret"`))
 	})
 })
