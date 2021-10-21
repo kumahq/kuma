@@ -18,14 +18,12 @@ import (
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("Remote Bootstrap", func() {
 
 	type testCase struct {
 		config                   kuma_dp.Config
-		bootstrapVersion         types.BootstrapVersion
 		dataplane                *rest.Resource
 		dynamicMetadata          map[string]string
 		expectedBootstrapRequest string
@@ -51,7 +49,6 @@ var _ = Describe("Remote Bootstrap", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(given.expectedBootstrapRequest))
 
-			writer.Header().Set(types.BootstrapVersionHeader, string(given.bootstrapVersion))
 			response, err := ioutil.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			_, err = writer.Write(response)
@@ -65,18 +62,16 @@ var _ = Describe("Remote Bootstrap", func() {
 
 		// when
 		params := BootstrapParams{
-			Dataplane:        given.dataplane,
-			BootstrapVersion: given.bootstrapVersion,
+			Dataplane: given.dataplane,
 			EnvoyVersion: EnvoyVersion{
 				Build:   "hash/1.15.0/RELEASE",
 				Version: "1.15.0",
 			},
 			DynamicMetadata: given.dynamicMetadata,
 		}
-		config, version, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, params)
+		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, params)
 
 		// then
-		Expect(version).To(Equal(given.bootstrapVersion))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(config).ToNot(BeNil())
 	},
@@ -89,8 +84,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.DataplaneRuntime.Token = "token"
 
 				return testCase{
-					config:           cfg,
-					bootstrapVersion: "2",
+					config: cfg,
 					dataplane: &rest.Resource{
 						Meta: rest.ResourceMeta{
 							Type: "Dataplane",
@@ -122,10 +116,10 @@ var _ = Describe("Remote Bootstrap", func() {
 						}
 					  },
 					  "caCert": "",
-					  "bootstrapVersion": "2",
 					  "dynamicMetadata": {
 					    "test": "value"
-					  }
+					  },
+                      "bootstrapVersion": "3"
 					}`,
 				}
 			}()),
@@ -147,7 +141,6 @@ var _ = Describe("Remote Bootstrap", func() {
 							Name: "sample",
 						},
 					},
-					bootstrapVersion: "3",
 					expectedBootstrapRequest: `
                     {
                       "mesh": "demo",
@@ -169,8 +162,8 @@ var _ = Describe("Remote Bootstrap", func() {
                         }
                       },
                       "caCert": "",
-                      "bootstrapVersion": "3",
-					  "dynamicMetadata": null
+                      "dynamicMetadata": null,
+                      "bootstrapVersion": "3"
                     }`,
 				}
 			}()),
@@ -211,8 +204,8 @@ var _ = Describe("Remote Bootstrap", func() {
                         }
                       },
                       "caCert": "",
-                      "bootstrapVersion": "",
-					  "dynamicMetadata": null
+					  "dynamicMetadata": null,
+                      "bootstrapVersion": "3"
                     }`,
 				}
 			}()),
@@ -254,7 +247,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				},
 			},
 		}
-		_, _, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, params)
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, params)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -289,7 +282,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				},
 			},
 		}
-		_, _, err = generator(fmt.Sprintf("http://localhost:%d", port), config, params)
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config, params)
 
 		// then
 		Expect(err).To(MatchError("retryable: Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp or pass it to kuma-dp run --dataplane-file=/file. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))
