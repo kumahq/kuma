@@ -326,6 +326,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *kumaDeploymentOpti
 		argsMap["--env-var"] = fmt.Sprintf("KUMA_DNS_SERVER_CIDR=%s", cidrIPv6)
 	}
 
+	for opt, value := range opts.ctlOpts {
+		argsMap[opt] = value
+	}
+
 	var args []string
 	for k, v := range argsMap {
 		args = append(args, k, v)

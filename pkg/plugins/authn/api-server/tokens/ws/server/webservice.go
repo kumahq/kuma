@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/rbac"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws"
 )
 
@@ -18,11 +19,13 @@ var log = core.Log.WithName("user-token-ws")
 
 type userTokenWebService struct {
 	issuer issuer.UserTokenIssuer
+	access rbac.GenerateUserTokenAccess
 }
 
-func NewWebService(issuer issuer.UserTokenIssuer) *restful.WebService {
+func NewWebService(issuer issuer.UserTokenIssuer, access rbac.GenerateUserTokenAccess) *restful.WebService {
 	webservice := userTokenWebService{
 		issuer: issuer,
+		access: access,
 	}
 	return webservice.createWs()
 }
@@ -37,6 +40,11 @@ func (d *userTokenWebService) createWs() *restful.WebService {
 }
 
 func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, response *restful.Response) {
+	if err := d.access.ValidateGenerate(user.FromCtx(request.Request.Context())); err != nil {
+		errors.HandleError(response, err, "Could not issue a token")
+		return
+	}
+
 	idReq := ws.UserTokenRequest{}
 	if err := request.ReadEntity(&idReq); err != nil {
 		log.Error(err, "Could not read a request")

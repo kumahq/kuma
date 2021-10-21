@@ -9,7 +9,6 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/rbac"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -30,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	tokens_rbac "github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -84,8 +84,10 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
 	builder.WithAPIServerAuthenticator(certs.ClientCertAuthenticator)
-	builder.WithRoleAssignments(rbac.NewStaticRoleAssignments(cfg.RBAC.Static))
-	builder.WithResourceAccess(resources_rbac.NewAdminResourceAccess(builder.RoleAssignments()))
+	builder.WithRBAC(core_runtime.RBAC{
+		ResourceAccess:               resources_rbac.NewAdminResourceAccess(builder.Config().RBAC.Static.AdminResources),
+		GenerateDataplaneTokenAccess: tokens_rbac.NewStaticGenerateDataplaneTokenAccess(builder.Config().RBAC.Static.GenerateDPToken),
+	})
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)

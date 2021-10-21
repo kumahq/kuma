@@ -14,12 +14,20 @@ import (
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/client"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
+
+type noopGenerateUserTokenAccess struct {
+}
+
+func (n *noopGenerateUserTokenAccess) ValidateGenerate(*user.User) error {
+	return nil
+}
 
 var _ = Describe("Auth Tokens WS", func() {
 
@@ -33,7 +41,7 @@ var _ = Describe("Auth Tokens WS", func() {
 		userTokenIssuer = issuer.NewUserTokenIssuer(signingKeyManager, issuer.NewTokenRevocations(manager))
 
 		Expect(signingKeyManager.CreateDefaultSigningKey()).To(Succeed())
-		ws := server.NewWebService(userTokenIssuer)
+		ws := server.NewWebService(userTokenIssuer, &noopGenerateUserTokenAccess{})
 
 		container := restful.NewContainer()
 		container.Add(ws)

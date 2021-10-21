@@ -1,3 +1,4 @@
+//go:build gateway
 // +build gateway
 
 package mesh

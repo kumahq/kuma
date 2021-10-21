@@ -10,12 +10,12 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
@@ -46,7 +46,6 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	}
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	roleAssignments := rbac.NewStaticRoleAssignments(cfg.RBAC.Static)
 	apiServer, err := api_server.NewApiServer(
 		manager.NewResourceManager(store),
 		wsManager,
@@ -57,8 +56,10 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		func() string { return "instance-id" },
 		func() string { return "cluster-id" },
 		certs.ClientCertAuthenticator,
-		roleAssignments,
-		resources_rbac.NewAdminResourceAccess(roleAssignments),
+		runtime.RBAC{
+			ResourceAccess:               resources_rbac.NewAdminResourceAccess(cfg.RBAC.Static.AdminResources),
+			GenerateDataplaneTokenAccess: nil,
+		},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

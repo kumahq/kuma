@@ -13,6 +13,7 @@ import (
 	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
@@ -36,7 +37,7 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 
 	BeforeEach(func() {
 		container := restful.NewContainer()
-		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}))
+		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}, rbac.NoopGenerateDpTokenAccess{}))
 		server = httptest.NewServer(container.ServeMux)
 	})
 

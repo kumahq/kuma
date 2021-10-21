@@ -16,9 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/rbac"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -54,8 +52,7 @@ type BuilderContext interface {
 	MeshValidator() core_managers.MeshValidator
 	KDSContext() *kds_context.Context
 	APIServerAuthenticator() authn.Authenticator
-	ResourceAccess() resources_rbac.ResourceAccess
-	RoleAssignments() rbac.RoleAssignments
+	RBAC() RBAC
 }
 
 var _ BuilderContext = &Builder{}
@@ -86,8 +83,7 @@ type Builder struct {
 	kdsctx   *kds_context.Context
 	mv       core_managers.MeshValidator
 	au       authn.Authenticator
-	ra       resources_rbac.ResourceAccess
-	ras      rbac.RoleAssignments
+	rbac     RBAC
 	appCtx   context.Context
 	*runtimeInfo
 }
@@ -234,13 +230,8 @@ func (b *Builder) WithAPIServerAuthenticator(au authn.Authenticator) *Builder {
 	return b
 }
 
-func (b *Builder) WithResourceAccess(ra resources_rbac.ResourceAccess) *Builder {
-	b.ra = ra
-	return b
-}
-
-func (b *Builder) WithRoleAssignments(ras rbac.RoleAssignments) *Builder {
-	b.ras = ras
+func (b *Builder) WithRBAC(rbac RBAC) *Builder {
+	b.rbac = rbac
 	return b
 }
 
@@ -302,11 +293,8 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.au == nil {
 		return nil, errors.Errorf("API Server Authenticator has not been configured")
 	}
-	if b.ra == nil {
-		return nil, errors.Errorf("ResourceAccess has not been configured")
-	}
-	if b.ras == nil {
-		return nil, errors.Errorf("RoleAssignment has not been configured")
+	if b.rbac == (RBAC{}) {
+		return nil, errors.Errorf("RBAC has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
@@ -333,8 +321,7 @@ func (b *Builder) Build() (Runtime, error) {
 			kdsctx:   b.kdsctx,
 			mv:       b.mv,
 			au:       b.au,
-			ra:       b.ra,
-			ras:      b.ras,
+			rbac:     b.rbac,
 			appCtx:   b.appCtx,
 		},
 		Manager: b.cm,
@@ -410,11 +397,8 @@ func (b *Builder) MeshValidator() core_managers.MeshValidator {
 func (b *Builder) APIServerAuthenticator() authn.Authenticator {
 	return b.au
 }
-func (b *Builder) ResourceAccess() resources_rbac.ResourceAccess {
-	return b.ra
-}
-func (b *Builder) RoleAssignments() rbac.RoleAssignments {
-	return b.ras
+func (b *Builder) RBAC() RBAC {
+	return b.rbac
 }
 func (b *Builder) AppCtx() context.Context {
 	return b.appCtx

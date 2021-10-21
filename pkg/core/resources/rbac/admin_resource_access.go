@@ -3,19 +3,29 @@ package rbac
 import (
 	"fmt"
 
+	config_rbac "github.com/kumahq/kuma/pkg/config/rbac"
 	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 type adminResourceAccess struct {
-	roleAssignments rbac.RoleAssignments
+	usernames map[string]bool
+	groups    map[string]bool
 }
 
-func NewAdminResourceAccess(roleAssignments rbac.RoleAssignments) ResourceAccess {
-	return &adminResourceAccess{
-		roleAssignments: roleAssignments,
+func NewAdminResourceAccess(cfg config_rbac.AdminResourcesRBACStaticConfig) ResourceAccess {
+	a := &adminResourceAccess{
+		usernames: map[string]bool{},
+		groups:    map[string]bool{},
 	}
+	for _, user := range cfg.Users {
+		a.usernames[user] = true
+	}
+	for _, group := range cfg.Groups {
+		a.groups[group] = true
+	}
+	return a
 }
 
 var _ ResourceAccess = &adminResourceAccess{}
@@ -45,14 +55,19 @@ func (r *adminResourceAccess) validateAdminAccess(u *user.User, descriptor model
 		return nil
 	}
 	if u == nil {
-		return &AccessDeniedError{
+		return &rbac.AccessDeniedError{
 			Reason: "user did not authenticate",
 		}
 	}
-	role := r.roleAssignments.Role(*u)
-	if role != rbac.AdminRole {
-		return &AccessDeniedError{
-			Reason: fmt.Sprintf("user %q of role %q cannot access the resource of type %q", u.String(), role.String(), descriptor.Name),
+	allowed := r.usernames[u.Name]
+	for _, group := range u.Groups {
+		if r.groups[group] {
+			allowed = true
+		}
+	}
+	if !allowed {
+		return &rbac.AccessDeniedError{
+			Reason: fmt.Sprintf("user %q cannot access the resource of type %q", u.String(), descriptor.Name),
 		}
 	}
 	return nil
