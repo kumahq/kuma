@@ -1,10 +1,12 @@
 package framework
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
@@ -13,8 +15,13 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
@@ -283,4 +290,64 @@ func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) 
 		DefaultTimeout,
 		&tls.Config{},
 	)
+}
+
+// UpdateObject fetches an object and updates it after the update function is applied to it.
+func (c *K8sControlPlane) UpdateObject(
+	typeName string,
+	objectName string,
+	update func(object runtime.Object) runtime.Object,
+) error {
+	scheme, err := bootstrap_k8s.NewScheme()
+	if err != nil {
+		return err
+	}
+
+	out, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", typeName, objectName, "-o", "yaml")
+	if err != nil {
+		return err
+	}
+
+	decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
+	into := map[string]interface{}{}
+
+	if err := decoder.Decode(&into); err != nil {
+		return err
+	}
+
+	u := unstructured.Unstructured{Object: into}
+	obj, err := scheme.New(u.GroupVersionKind())
+	if err != nil {
+		return err
+	}
+
+	if err := scheme.Convert(u, obj, nil); err != nil {
+		return nil
+	}
+
+	obj = update(obj)
+
+	codecs := serializer.NewCodecFactory(scheme)
+	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
+	if !ok {
+		return errors.Errorf("no serializer for %q", runtime.ContentTypeYAML)
+	}
+
+	encoder := codecs.EncoderForVersion(info.Serializer, obj.GetObjectKind().GroupVersionKind().GroupVersion())
+	yaml, err := runtime.Encode(encoder, obj)
+	if err != nil {
+		return err
+	}
+
+	KubectlReplaceFromStringE := func(t testing.TestingT, options *k8s.KubectlOptions, configData string) error {
+		tmpfile, err := k8s.StoreConfigToTempFileE(t, configData)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(tmpfile)
+
+		return k8s.RunKubectlE(t, options, "replace", "-f", tmpfile)
+	}
+
+	return KubectlReplaceFromStringE(c.t, c.GetKubectlOptions(), string(yaml))
 }

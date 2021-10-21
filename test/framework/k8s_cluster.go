@@ -24,12 +24,16 @@ import (
 	"go.uber.org/multierr"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -540,9 +544,39 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 	}
 
-	err = c.controlplane.FinalizeAdd()
-	if err != nil {
+	if err := c.controlplane.FinalizeAdd(); err != nil {
 		return err
+	}
+
+	converter := resources_k8s.NewSimpleConverter()
+	for name, updateFuncs := range opts.meshUpdateFuncs {
+		for _, f := range updateFuncs {
+			Logf("applying update function to mesh %q", name)
+			err := c.controlplane.UpdateObject("mesh", name,
+				func(obj runtime.Object) runtime.Object {
+					mesh := core_mesh.NewMeshResource()
+
+					// The kubectl updater should have already converted the Kubernetes object
+					// to a concrete type, so we can safely cast here.
+					if err := converter.ToCoreResource(obj.(*mesh_k8s.Mesh), mesh); err != nil {
+						panic(err.Error())
+					}
+
+					// Apply the conversion function.
+					mesh.Spec = f(mesh.Spec)
+
+					// Convert back to a Kubernetes resource.
+					meshObj, err := converter.ToKubernetesObject(mesh)
+					if err != nil {
+						panic(err.Error())
+					}
+
+					return meshObj
+				})
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

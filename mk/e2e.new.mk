@@ -138,8 +138,5 @@ test/e2e/debug-universal: build/kumactl images/test
 
 .PHONY: test/e2e
 test/e2e: build/kumactl images test/e2e/k8s/start
-	$(MAKE) test/e2e/test || \
-	(ret=$$?; \
-	$(MAKE) test/e2e/k8s/stop && \
-	exit $$ret)
+	$(MAKE) test/e2e/test || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
