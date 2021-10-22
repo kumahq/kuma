@@ -61,7 +61,7 @@ func (j *jwtTokenIssuer) Generate(identity user.User, validFor time.Duration) (T
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, c)
 	token.Header[KeyIDHeader] = strconv.Itoa(serialNumber)
 	tokenString, err := token.SignedString(signingKey)
 	if err != nil {
@@ -85,7 +85,7 @@ func (j *jwtTokenIssuer) Validate(rawToken Token) (user.User, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not get signing key with serial number %d. The signing key most likely has been rotated, regenerate the token", serialNumber)
 		}
-		return signingKey, nil
+		return &signingKey.PublicKey, nil
 	})
 	if err != nil {
 		return user.User{}, errors.Wrap(err, "could not parse token")

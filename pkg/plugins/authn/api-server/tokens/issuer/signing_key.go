@@ -2,6 +2,8 @@ package issuer
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
 	"fmt"
 	"sort"
 	"strconv"
@@ -41,8 +43,8 @@ func IsSigningKeyResource(resKey model.ResourceKey) bool {
 // Example: "user-token-signing-key-1", "user-token-signing-key-2" etc.
 // The latest key is  a key with a higher serial number (number at the end of the name)
 type SigningKeyManager interface {
-	GetSigningKey(serialNumber int) ([]byte, error)
-	GetLatestSigningKey() ([]byte, int, error)
+	GetSigningKey(serialNumber int) (*rsa.PrivateKey, error)
+	GetLatestSigningKey() (*rsa.PrivateKey, int, error)
 	CreateDefaultSigningKey() error
 	CreateSigningKey(serialNumber int) error
 }
@@ -59,7 +61,7 @@ type signingKeyManager struct {
 
 var _ SigningKeyManager = &signingKeyManager{}
 
-func (s *signingKeyManager) GetSigningKey(serialNumber int) ([]byte, error) {
+func (s *signingKeyManager) GetSigningKey(serialNumber int) (*rsa.PrivateKey, error) {
 	resource := system.NewGlobalSecretResource()
 	if err := s.manager.Get(context.Background(), resource, store.GetBy(SigningKeyResourceKey(serialNumber))); err != nil {
 		if store.IsResourceNotFound(err) {
@@ -67,10 +69,14 @@ func (s *signingKeyManager) GetSigningKey(serialNumber int) ([]byte, error) {
 		}
 		return nil, errors.Wrap(err, "could not retrieve signing key from secret manager")
 	}
-	return resource.Spec.GetData().GetValue(), nil
+	key, err := x509.ParsePKCS1PrivateKey(resource.Spec.GetData().GetValue())
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
 }
 
-func (s *signingKeyManager) GetLatestSigningKey() ([]byte, int, error) {
+func (s *signingKeyManager) GetLatestSigningKey() (*rsa.PrivateKey, int, error) {
 	resources := system.GlobalSecretResourceList{}
 	if err := s.manager.List(context.Background(), &resources); err != nil {
 		return nil, 0, errors.Wrap(err, "could not retrieve signing key from secret manager")
@@ -94,7 +100,11 @@ func (s *signingKeyManager) GetLatestSigningKey() ([]byte, int, error) {
 		return nil, 0, err
 	}
 
-	return signingKeys[0].Spec.GetData().GetValue(), serialNumber, nil
+	key, err := x509.ParsePKCS1PrivateKey(signingKeys[0].Spec.GetData().GetValue())
+	if err != nil {
+		return nil, 0, err
+	}
+	return key, serialNumber, nil
 }
 
 func (s *signingKeyManager) CreateDefaultSigningKey() error {
