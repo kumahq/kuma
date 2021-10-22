@@ -35,6 +35,10 @@ var _ core_ca.Manager = &builtinCaManager{}
 func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh string, backends []*mesh_proto.CertificateAuthorityBackend) error {
 	for _, backend := range backends {
 		_, err := b.getCa(ctx, mesh, backend.Name)
+		if err == nil { // CA is there, nothing to ensure
+			continue
+		}
+
 		if !core_store.IsResourceNotFound(err) {
 			return err
 		}
