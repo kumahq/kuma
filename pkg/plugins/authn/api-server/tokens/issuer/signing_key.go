@@ -34,16 +34,11 @@ func SigningKeyResourceKey(serialNumber int) model.ResourceKey {
 	}
 }
 
-func IsSigningKeyResource(resKey model.ResourceKey) bool {
-	return strings.HasPrefix(resKey.Name, signingKeyPrefix) && resKey.Mesh == ""
-}
-
 // SigningKeyManager manages User Token's signing keys.
 // We can have many signing keys in the system.
 // Example: "user-token-signing-key-1", "user-token-signing-key-2" etc.
 // The latest key is  a key with a higher serial number (number at the end of the name)
 type SigningKeyManager interface {
-	GetSigningKey(serialNumber int) (*rsa.PrivateKey, error)
 	GetLatestSigningKey() (*rsa.PrivateKey, int, error)
 	CreateDefaultSigningKey() error
 	CreateSigningKey(serialNumber int) error
@@ -60,21 +55,6 @@ type signingKeyManager struct {
 }
 
 var _ SigningKeyManager = &signingKeyManager{}
-
-func (s *signingKeyManager) GetSigningKey(serialNumber int) (*rsa.PrivateKey, error) {
-	resource := system.NewGlobalSecretResource()
-	if err := s.manager.Get(context.Background(), resource, store.GetBy(SigningKeyResourceKey(serialNumber))); err != nil {
-		if store.IsResourceNotFound(err) {
-			return nil, SigningKeyNotFound
-		}
-		return nil, errors.Wrap(err, "could not retrieve signing key from secret manager")
-	}
-	key, err := x509.ParsePKCS1PrivateKey(resource.Spec.GetData().GetValue())
-	if err != nil {
-		return nil, err
-	}
-	return key, nil
-}
 
 func (s *signingKeyManager) GetLatestSigningKey() (*rsa.PrivateKey, int, error) {
 	resources := system.GlobalSecretResourceList{}

@@ -13,14 +13,14 @@ import (
 
 const bearerPrefix = "Bearer "
 
-func UserTokenAuthenticator(issuer issuer.UserTokenIssuer) authn.Authenticator {
+func UserTokenAuthenticator(validator issuer.UserTokenValidator) authn.Authenticator {
 	return func(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 		authnHeader := request.Request.Header.Get("authorization")
 		if user.FromCtx(request.Request.Context()) == nil && // do not overwrite existing user
 			authnHeader != "" &&
 			strings.HasPrefix(authnHeader, bearerPrefix) {
 			token := strings.TrimPrefix(authnHeader, bearerPrefix)
-			u, err := issuer.Validate(token)
+			u, err := validator.Validate(token)
 			if err != nil {
 				rest_errors.HandleError(response, &rest_errors.Unauthenticated{}, "invalid authentication data: "+err.Error())
 				return
