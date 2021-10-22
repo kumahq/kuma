@@ -8,6 +8,6 @@ import (
 )
 
 func TestV1alpha1(t *testing.T) {
-	RegisterFailHandlerWithT(t, Fail)
+	RegisterFailHandler(Fail)
 	RunSpecs(t, "v1 Suite")
 }
