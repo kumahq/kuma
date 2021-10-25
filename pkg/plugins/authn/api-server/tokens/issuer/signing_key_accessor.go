@@ -3,8 +3,8 @@ package issuer
 import (
 	"context"
 	"crypto/rsa"
-	"crypto/x509"
 
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -36,7 +36,8 @@ func (s *signingKeyAccessor) GetSigningPublicKey(serialNumber int) (*rsa.PublicK
 		}
 		return nil, errors.Wrap(err, "could not retrieve signing key")
 	}
-	key, err := x509.ParsePKCS1PrivateKey(resource.Spec.GetData().GetValue())
+
+	key, err := util_rsa.FromPEMBytes(resource.Spec.GetData().GetValue())
 	if err != nil {
 		return nil, err
 	}

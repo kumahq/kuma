@@ -32,13 +32,20 @@ func (j *jwtTokenValidator) Validate(rawToken Token) (user.User, error) {
 		if serialNumberRaw == nil {
 			return nil, errors.New("kid header not found")
 		}
-		serialNumber, err := strconv.Atoi(serialNumberRaw.(string))
+		serialNumberStr, ok := serialNumberRaw.(string)
+		if !ok {
+			return nil, errors.New("kid header is invalid. Expected string.")
+		}
+		serialNumber, err := strconv.Atoi(serialNumberStr)
 		if err != nil {
 			return nil, err
 		}
 		key, err := j.keyAccessor.GetSigningPublicKey(serialNumber)
+		if err == SigningKeyNotFound {
+			return nil, errors.Errorf("signing key with serial number %d not found. The signing key most likely has been rotated, regenerate the token", serialNumber)
+		}
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not get signing key with serial number %d. The signing key most likely has been rotated, regenerate the token", serialNumber)
+			return nil, errors.Wrapf(err, "could not get signing key with serial number %d", serialNumber)
 		}
 		return key, nil
 	})

@@ -2,14 +2,15 @@ package issuer
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/rsa"
-	"crypto/x509"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 	"github.com/pkg/errors"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -17,10 +18,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 const (
+	defaultRsaBits = 2048
 	signingKeyPrefix = "user-token-signing-key-"
 
 	DefaultSerialNumber = 1
@@ -80,7 +81,7 @@ func (s *signingKeyManager) GetLatestSigningKey() (*rsa.PrivateKey, int, error) 
 		return nil, 0, err
 	}
 
-	key, err := x509.ParsePKCS1PrivateKey(signingKeys[0].Spec.GetData().GetValue())
+	key, err := util_rsa.FromPEMBytes(signingKeys[0].Spec.GetData().GetValue())
 	if err != nil {
 		return nil, 0, err
 	}
@@ -92,7 +93,7 @@ func (s *signingKeyManager) CreateDefaultSigningKey() error {
 }
 
 func (s *signingKeyManager) CreateSigningKey(serialNumber int) error {
-	key, err := issuer.NewSigningKey()
+	key, err := NewSigningKey()
 	if err != nil {
 		return errors.Wrap(err, "could not construct signing key")
 	}
@@ -116,6 +117,14 @@ func signingKeySerialNumber(secretName string) (int, error) {
 		return 0, err
 	}
 	return serialNumber, nil
+}
+
+func NewSigningKey() ([]byte, error) {
+	key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate RSA key")
+	}
+	return util_rsa.ToPEMBytes(key)
 }
 
 type GlobalSecretsBySerial []*system.GlobalSecretResource
