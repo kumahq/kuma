@@ -29,6 +29,7 @@ type kumaDeploymentOptions struct {
 	verbose *bool
 
 	// cp specific
+	ctlOpts              map[string]string
 	globalAddress        string
 	installationMode     InstallationMode
 	skipDefaultMesh      bool
@@ -253,6 +254,18 @@ func WithCNI() KumaDeploymentOption {
 func WithGlobalAddress(address string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.globalAddress = address
+	})
+}
+
+// WithCtlOpt allows arbitrary options to be passed to kuma, which is important
+// for using test/framework in other libraries where additional options may have
+// been added.
+func WithCtlOpt(name, value string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		if o.ctlOpts == nil {
+			o.ctlOpts = map[string]string{}
+		}
+		o.ctlOpts[name] = value
 	})
 }
 
