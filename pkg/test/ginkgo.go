@@ -30,7 +30,7 @@ func RunSpecs(t *testing.T, description string) {
 		zap.WriteTo(ginkgo.GinkgoWriter),
 	))
 
-	gomega.RegisterFailHandlerWithT(t, ginkgo.Fail)
+	gomega.RegisterFailHandler(ginkgo.Fail)
 
 	resultsDir, ok := os.LookupEnv("GINKGO_XUNIT_RESULTS_DIR")
 	if !ok {
