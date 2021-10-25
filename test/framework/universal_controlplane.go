@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type UniversalControlPlane struct {
@@ -103,4 +104,12 @@ func (c *UniversalControlPlane) GenerateZoneIngressToken(zone string) (string, e
 		}
 		return sshApp.Out(), nil
 	})
+}
+
+func (c *UniversalControlPlane) UpdateObject(
+	typeName string,
+	objectName string,
+	update func(object core_model.Resource) core_model.Resource,
+) error {
+	return c.kumactl.KumactlUpdateObject(typeName, objectName, update)
 }

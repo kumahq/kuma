@@ -45,6 +45,7 @@ func NewProxyProfile(manager manager.ReadOnlyResourceManager) generator.Resource
 	return generator.CompositeResourceGenerator{
 		generator.AdminProxyGenerator{},
 		generator.PrometheusEndpointGenerator{},
+		generator.SecretsProxyGenerator{},
 		generator.TracingProxyGenerator{},
 		generator.TransparentProxyGenerator{},
 		generator.DNSGenerator{},

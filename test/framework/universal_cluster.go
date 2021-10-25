@@ -13,6 +13,8 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/template"
 )
 
@@ -139,6 +141,21 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		return err
 	}
 
+	for name, updateFuncs := range opts.meshUpdateFuncs {
+		for _, f := range updateFuncs {
+			Logf("applying update function to mesh %q", name)
+			err := c.controlplane.kumactl.KumactlUpdateObject("mesh", name,
+				func(resource core_model.Resource) core_model.Resource {
+					mesh := resource.(*core_mesh.MeshResource)
+					mesh.Spec = f(mesh.Spec)
+					return mesh
+				})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	c.apps[AppModeCP] = app
 
 	return nil
@@ -215,7 +232,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
 
-	Logf("IPV6 is %v\n", opts.isipv6)
+	Logf("IPV6 is %v", opts.isipv6)
 
 	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, *opts.verbose, caps)
 	if err != nil {
