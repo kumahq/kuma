@@ -12,6 +12,7 @@ import (
 
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/tls"
 	http2 "github.com/kumahq/kuma/pkg/util/http"
@@ -38,6 +39,7 @@ var _ = Describe("Auth test", func() {
 		cfg := config.DefaultApiServerConfig()
 		cfg.HTTPS.TlsCertFile = certPath
 		cfg.HTTPS.TlsKeyFile = keyPath
+		cfg.Authn.Type = certs.PluginName
 		cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 		apiServer := createTestApiServer(resourceStore, cfg, true, metrics)
 		httpsPort = cfg.HTTPS.Port

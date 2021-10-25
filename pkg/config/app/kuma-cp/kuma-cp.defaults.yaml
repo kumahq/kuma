@@ -134,8 +134,8 @@ apiServer:
     clientCertsDir: "" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   # Api Server Authentication configuration
   authn:
-    # Type of authentication mechanism (available values: "clientCerts")
-    type: clientCerts # ENV: KUMA_API_SERVER_AUTHN_TYPE
+    # Type of authentication mechanism (available values: "adminClientCerts", "tokens")
+    type: tokens # ENV: KUMA_API_SERVER_AUTHN_TYPE
     # Localhost is authenticated as a user admin of group admin
     localhostIsAdmin: true # ENV: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
     # Configuration for tokens authentication
