@@ -11,6 +11,7 @@ import (
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -194,8 +195,21 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 	if err := c.PortForwardKumaCP(); err != nil {
 		return err
 	}
-	// token is not important since we are accessing it from localhost anyways so we are admin
-	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), "")
+	token, err := c.retrieveAdminToken()
+	if err != nil {
+		return err
+	}
+	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token)
+}
+
+func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
+	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
+		sec, err := k8s.GetSecretE(c.t, c.GetKubectlOptions(KumaNamespace), "admin-user-token")
+		if err != nil {
+			return "", err
+		}
+		return string(sec.Data["value"]), nil
+	})
 }
 
 func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
@@ -261,6 +275,10 @@ func (c *K8sControlPlane) GetGlobaStatusAPI() string {
 }
 
 func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
+	token, err := c.retrieveAdminToken()
+	if err != nil {
+		return "", err
+	}
 	dpType := ""
 	if service == "ingress" {
 		dpType = "ingress"
@@ -270,7 +288,10 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 		"POST",
 		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
 		[]byte(fmt.Sprintf(`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, dpType, service)),
-		map[string]string{"content-type": "application/json"},
+		map[string]string{
+			"content-type":  "application/json",
+			"authorization": "Bearer " + token,
+		},
 		200,
 		DefaultRetries,
 		DefaultTimeout,
@@ -279,12 +300,19 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 }
 
 func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
+	token, err := c.retrieveAdminToken()
+	if err != nil {
+		return "", err
+	}
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
 		fmt.Sprintf("http://localhost:%d/tokens/zone-ingress", c.portFwd.localAPIPort),
 		[]byte(fmt.Sprintf(`{"zone": "%s"}`, zone)),
-		map[string]string{"content-type": "application/json"},
+		map[string]string{
+			"content-type":  "application/json",
+			"authorization": "Bearer " + token,
+		},
 		200,
 		DefaultRetries,
 		DefaultTimeout,
