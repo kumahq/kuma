@@ -83,6 +83,13 @@ type ApiServerAuthn struct {
 	Type string `yaml:"type" envconfig:"kuma_api_server_authn_type"`
 	// Localhost is authenticated as a user admin of group admin
 	LocalhostIsAdmin bool `yaml:"localhostIsAdmin" envconfig:"kuma_api_server_authn_localhost_is_admin"`
+	// Configuration for tokens authentication
+	Tokens ApiServerAuthnTokens `yaml:"tokens"`
+}
+
+type ApiServerAuthnTokens struct {
+	// If true then User Token with name admin and group admin will be created and placed as admin-user-token Kuma Global Secret
+	BootstrapAdminToken bool `yaml:"bootstrapAdminToken" envconfig:"kuma_api_server_authn_tokens_bootstrap_admin_token"`
 }
 
 func (a *ApiServerConfig) Sanitize() {
@@ -120,6 +127,9 @@ func DefaultApiServerConfig() *ApiServerConfig {
 		Authn: ApiServerAuthn{
 			Type:             "clientCerts",
 			LocalhostIsAdmin: true,
+			Tokens: ApiServerAuthnTokens{
+				BootstrapAdminToken: true,
+			},
 		},
 	}
 }

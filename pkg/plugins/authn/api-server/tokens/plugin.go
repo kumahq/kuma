@@ -47,7 +47,13 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 	if !ok {
 		return errors.Errorf("no RBAC strategy for type %q", context.Config().RBAC.Type)
 	}
-	webService := server.NewWebService(tokenIssuer(context.ResourceManager()), accessFn(context))
+	issuer := tokenIssuer(context.ResourceManager())
+	if context.Config().ApiServer.Authn.Tokens.BootstrapAdminToken {
+		if err := context.ComponentManager().Add(NewAdminTokenBootstrap(issuer, context.ResourceManager(), context.Config())); err != nil {
+			return err
+		}
+	}
+	webService := server.NewWebService(issuer, accessFn(context))
 	context.APIManager().Add(webService)
 	return nil
 }
