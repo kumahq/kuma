@@ -35,8 +35,8 @@ var (
 		}()
 		return ctx
 	}
-
-	NewUUID = func() string {
-		return uuid.New().String()
-	}
 )
+
+func NewUUID() string {
+	return uuid.NewString()
+}
