@@ -281,7 +281,11 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
-		Policies:   map[string]*mesh_proto.MeshInsight_PolicyStat{},
+		DataplanesByType: &mesh_proto.MeshInsight_DataplanesByType{
+			Standard: &mesh_proto.MeshInsight_DataplaneStat{},
+			Gateway:  &mesh_proto.MeshInsight_DataplaneStat{},
+		},
+		Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{},
 		DpVersions: &mesh_proto.MeshInsight_DpVersions{
 			KumaDp: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 			Envoy:  map[string]*mesh_proto.MeshInsight_DataplaneStat{},
@@ -313,22 +317,34 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		dpSubscription, _ := dpInsight.GetLatestSubscription()
 		kumaDpVersion := getOrDefault(dpSubscription.GetVersion().GetKumaDp().GetVersion())
 		envoyVersion := getOrDefault(dpSubscription.GetVersion().GetEnvoy().GetVersion())
+		networking := dpOverview.Spec.GetDataplane().GetNetworking()
+
 		ensureVersionExists(kumaDpVersion, insight.DpVersions.KumaDp)
 		ensureVersionExists(envoyVersion, insight.DpVersions.Envoy)
 
 		status, _ := dpOverview.GetStatus()
 
+		statByType := insight.GetDataplanesByType().GetStandard()
+		if networking.GetGateway() != nil {
+			statByType = insight.GetDataplanesByType().GetGateway()
+		}
+
+		statByType.Total++
+
 		switch status {
 		case core_mesh.Online:
 			insight.Dataplanes.Online++
+			statByType.Online++
 			insight.DpVersions.KumaDp[kumaDpVersion].Online++
 			insight.DpVersions.Envoy[envoyVersion].Online++
 		case core_mesh.PartiallyDegraded:
 			insight.Dataplanes.PartiallyDegraded++
+			statByType.PartiallyDegraded++
 			insight.DpVersions.KumaDp[kumaDpVersion].PartiallyDegraded++
 			insight.DpVersions.Envoy[envoyVersion].PartiallyDegraded++
 		case core_mesh.Offline:
 			insight.Dataplanes.Offline++
+			statByType.Offline++
 			insight.DpVersions.KumaDp[kumaDpVersion].Offline++
 			insight.DpVersions.Envoy[envoyVersion].Offline++
 		}
@@ -336,8 +352,6 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		updateTotal(kumaDpVersion, insight.DpVersions.KumaDp)
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
 		updateMTLS(dpInsight.GetMTLS(), status, insight.MTLS)
-
-		networking := dpOverview.Spec.GetDataplane().GetNetworking()
 
 		if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
 			internalServices[svc] = struct{}{}
