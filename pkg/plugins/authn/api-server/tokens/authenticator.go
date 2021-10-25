@@ -4,9 +4,9 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful"
-	"github.com/kumahq/kuma/pkg/core"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
+	"github.com/kumahq/kuma/pkg/core"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"

@@ -5,12 +5,12 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 	"github.com/pkg/errors"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -18,16 +18,27 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
 const (
-	defaultRsaBits = 2048
+	defaultRsaBits   = 2048
 	signingKeyPrefix = "user-token-signing-key-"
 
 	DefaultSerialNumber = 1
 )
 
-var SigningKeyNotFound = errors.New("there is no signing key in the Control Plane")
+type SigningKeyNotFound struct {
+	SerialNumber int
+}
+
+func (s *SigningKeyNotFound) Error() string {
+	return fmt.Sprintf("there is no signing key with serial number %d", s.SerialNumber)
+}
+
+func (a *SigningKeyNotFound) Is(err error) bool {
+	return reflect.TypeOf(a) == reflect.TypeOf(err)
+}
 
 func SigningKeyResourceKey(serialNumber int) model.ResourceKey {
 	return model.ResourceKey{
@@ -71,7 +82,7 @@ func (s *signingKeyManager) GetLatestSigningKey() (*rsa.PrivateKey, int, error) 
 	}
 
 	if len(signingKeys) == 0 {
-		return nil, 0, SigningKeyNotFound
+		return nil, 0, &SigningKeyNotFound{SerialNumber: DefaultSerialNumber}
 	}
 
 	sort.Stable(GlobalSecretsBySerial(signingKeys))

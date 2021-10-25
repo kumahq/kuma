@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto/rsa"
 
-	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
 type SigningKeyAccessor interface {
@@ -32,7 +32,9 @@ func (s *signingKeyAccessor) GetSigningPublicKey(serialNumber int) (*rsa.PublicK
 	resource := system.NewGlobalSecretResource()
 	if err := s.resManager.Get(context.Background(), resource, store.GetBy(SigningKeyResourceKey(serialNumber))); err != nil {
 		if store.IsResourceNotFound(err) {
-			return nil, SigningKeyNotFound
+			return nil, &SigningKeyNotFound{
+				SerialNumber: serialNumber,
+			}
 		}
 		return nil, errors.Wrap(err, "could not retrieve signing key")
 	}

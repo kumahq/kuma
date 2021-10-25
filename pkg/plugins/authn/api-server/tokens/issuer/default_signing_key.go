@@ -51,7 +51,7 @@ func (d *defaultSigningKeyComponent) createDefaultSigningKeyIfNotExist() error {
 		log.V(1).Info("user token's signing key already exists. Skip creating.")
 		return nil
 	}
-	if err != SigningKeyNotFound {
+	if !errors.Is(err, &SigningKeyNotFound{}) {
 		return err
 	}
 	log.Info("trying to create user token's signing key")

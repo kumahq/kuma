@@ -41,8 +41,8 @@ func (j *jwtTokenValidator) Validate(rawToken Token) (user.User, error) {
 			return nil, err
 		}
 		key, err := j.keyAccessor.GetSigningPublicKey(serialNumber)
-		if err == SigningKeyNotFound {
-			return nil, errors.Errorf("signing key with serial number %d not found. The signing key most likely has been rotated, regenerate the token", serialNumber)
+		if errors.Is(err, &SigningKeyNotFound{}) {
+			return nil, err
 		}
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not get signing key with serial number %d", serialNumber)
@@ -50,6 +50,12 @@ func (j *jwtTokenValidator) Validate(rawToken Token) (user.User, error) {
 		return key, nil
 	})
 	if err != nil {
+		if verr, ok := err.(*jwt.ValidationError); ok { // jwt.ValidationError does not implement Unwrap() to just use errors.As
+			var signingKeyNotFound *SigningKeyNotFound
+			if errors.As(verr.Inner, &signingKeyNotFound) {
+				return user.User{}, errors.Errorf("signing key with serial number %d not found. The signing key most likely has been rotated, regenerate the token", signingKeyNotFound.SerialNumber)
+			}
+		}
 		return user.User{}, errors.Wrap(err, "could not parse token")
 	}
 	if !token.Valid {
