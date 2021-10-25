@@ -16,11 +16,11 @@ require (
 	github.com/go-logr/logr v0.4.0
 	github.com/go-logr/zapr v0.4.0
 	github.com/golang-jwt/jwt/v4 v4.1.0
-	github.com/golang-migrate/migrate/v4 v4.15.0
+	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.38.1
+	github.com/gruntwork-io/terratest v0.38.2
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/iancoleman/orderedmap v0.2.0
@@ -30,7 +30,7 @@ require (
 	github.com/kumahq/protoc-gen-kumadoc v0.1.7
 	github.com/lib/pq v1.10.3
 	github.com/miekg/dns v1.1.43
-	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -47,15 +47,15 @@ require (
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
-	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2
+	golang.org/x/net v0.0.0-20211013171255-e13a2654a71e
+	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
-	google.golang.org/genproto v0.0.0-20210726143408-b02e89920bf0
+	google.golang.org/genproto v0.0.0-20211013025323-ce878158c4d4
 	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
-	helm.sh/helm/v3 v3.6.1
+	helm.sh/helm/v3 v3.7.1
 	k8s.io/api v0.22.2
 	k8s.io/apiextensions-apiserver v0.22.2
 	k8s.io/apimachinery v0.22.2

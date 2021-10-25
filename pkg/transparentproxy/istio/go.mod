@@ -3,7 +3,7 @@ module github.com/kumahq/kuma/pkg/transparentproxy/istio
 go 1.16
 
 require (
-	github.com/miekg/dns v1.0.14
+	github.com/miekg/dns v1.1.43
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.8.1

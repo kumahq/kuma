@@ -106,7 +106,6 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                             - name: backend-1
                               weight: 80
                             totalWeight: 100
-                          timeout: 0s
                   statPrefix: "127_0_0_1_18080"
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,
@@ -258,7 +257,6 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                           cluster: backend-0
                           hostRewriteLiteral: test
                           prefixRewrite: /another
-                          timeout: 0s
                   statPrefix: "127_0_0_1_18080"
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,

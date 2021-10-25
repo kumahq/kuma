@@ -92,9 +92,7 @@ var _ = Describe("Secrets", func() {
 		caManagers := core_ca.Managers{
 			"builtin": builtinCaManager,
 		}
-		err := builtinCaManager.Ensure(context.Background(), "default", newMesh().Spec.Mtls.Backends[0])
-		Expect(err).ToNot(HaveOccurred())
-		err = builtinCaManager.Ensure(context.Background(), "default", newMesh().Spec.Mtls.Backends[1])
+		err := builtinCaManager.EnsureBackends(context.Background(), "default", newMesh().Spec.Mtls.Backends)
 		Expect(err).ToNot(HaveOccurred())
 
 		caProvider := NewCaProvider(caManagers)

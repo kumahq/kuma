@@ -1,7 +1,7 @@
 # using Envoy's base to copy the Envoy binary
 FROM envoyproxy/envoy:v1.18.4 as envoy
 
-FROM ubuntu:20.04
+FROM ubuntu:21.04
 
 RUN mkdir /kuma
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \

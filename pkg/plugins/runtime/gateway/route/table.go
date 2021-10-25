@@ -1,6 +1,7 @@
 package route
 
 import (
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
@@ -90,9 +91,9 @@ type Destination struct {
 	Destination envoy.Tags
 	Weight      uint32
 
-	// TODO(jpeach) Kuma connection policies for traffic that is
-	// forwarded to this destination.
-	Policies []struct{}
+	// Kuma connection policies for traffic forwarded to
+	// this destination.
+	Policies map[model.ResourceType]model.Resource
 }
 
 // Headers is a set of operations to perform on HTTP message headers.

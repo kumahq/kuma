@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package cmd
@@ -22,7 +23,6 @@ import (
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("run", func() {
@@ -95,10 +95,10 @@ var _ = Describe("run", func() {
 
 			// given
 			rootCtx := DefaultRootContext()
-			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, error) {
 				respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
-				return respBytes, "", nil
+				return respBytes, nil
 			}
 			_, writer := io.Pipe()
 			cmd := NewRootCmd(opts, rootCtx)

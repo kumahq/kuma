@@ -11,7 +11,6 @@ import (
 
 func RateLimitOnUniversal() {
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
 	rateLimitPolicy := `
 type: RateLimit
 mesh: default
@@ -41,10 +40,9 @@ conf:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma3)
-		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -76,7 +74,7 @@ conf:
 		if ShouldSkipCleanup() {
 			return
 		}
-		err := cluster.DeleteKuma(deployOptsFuncs...)
+		err := cluster.DeleteKuma(KumaUniversalDeployOpts...)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = cluster.DismissCluster()

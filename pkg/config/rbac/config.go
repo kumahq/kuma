@@ -6,15 +6,23 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 )
 
+const StaticType = "static"
+
 func DefaultRBACConfig() RBACConfig {
 	return RBACConfig{
-		Type: "static",
+		Type: StaticType,
 		Static: RBACStaticConfig{
-			AdminUsers: []string{
-				"admin",
+			AdminResources: AdminResourcesRBACStaticConfig{
+				Users:  []string{"admin"},
+				Groups: []string{"admin"},
 			},
-			AdminGroups: []string{
-				"admin",
+			GenerateDPToken: GenerateDPTokenRBACStaticConfig{
+				Users:  []string{"admin"},
+				Groups: []string{"admin"},
+			},
+			GenerateUserToken: GenerateUserTokenRBACStaticConfig{
+				Users:  []string{"admin"},
+				Groups: []string{"admin"},
 			},
 		},
 	}
@@ -42,8 +50,31 @@ var _ config.Config = &RBACConfig{}
 
 // RBACStaticConfig a static RBAC strategy configuration
 type RBACStaticConfig struct {
-	// List of users that will be assigned an admin role
-	AdminUsers []string `yaml:"adminUsers" envconfig:"KUMA_RBAC_STATIC_ADMIN_USERS"`
-	// List of groups that will be assigned an admin role
-	AdminGroups []string `yaml:"adminGroups" envconfig:"KUMA_RBAC_STATIC_ADMIN_GROUPS"`
+	// AdminResources defines an access to admin resources (Secret/GlobalSecret)
+	AdminResources AdminResourcesRBACStaticConfig `yaml:"adminResources"`
+	// GenerateDPToken defines an access to generating dataplane token
+	GenerateDPToken GenerateDPTokenRBACStaticConfig `yaml:"generateDpToken"`
+	// GenerateDPToken defines an access to generating user token
+	GenerateUserToken GenerateUserTokenRBACStaticConfig `yaml:"generateUserToken"`
+}
+
+type AdminResourcesRBACStaticConfig struct {
+	// List of users that are allowed to access admin resources
+	Users []string `yaml:"users" envconfig:"KUMA_RBAC_STATIC_ADMIN_RESOURCES_USERS"`
+	// List of groups that are allowed to access admin resources
+	Groups []string `yaml:"groups" envconfig:"KUMA_RBAC_STATIC_ADMIN_RESOURCES_GROUPS"`
+}
+
+type GenerateDPTokenRBACStaticConfig struct {
+	// List of users that are allowed to generate dataplane token
+	Users []string `yaml:"users" envconfig:"KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_USERS"`
+	// List of groups that are allowed to generate dataplane token
+	Groups []string `yaml:"groups" envconfig:"KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_GROUPS"`
+}
+
+type GenerateUserTokenRBACStaticConfig struct {
+	// List of users that are allowed to generate user token
+	Users []string `yaml:"users" envconfig:"KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_USERS"`
+	// List of groups that are allowed to generate user token
+	Groups []string `yaml:"groups" envconfig:"KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_GROUPS"`
 }

@@ -21,13 +21,11 @@ import (
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/authn"
-	"github.com/kumahq/kuma/pkg/api-server/authz"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -36,6 +34,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
+	tokens_rbac "github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 )
@@ -84,13 +83,10 @@ func NewApiServer(
 	metrics metrics.Metrics,
 	getInstanceId func() string, getClusterId func() string,
 	authenticator authn.Authenticator,
-	roleAssignments rbac.RoleAssignments,
-	resourceAccess resources_rbac.ResourceAccess,
+	rbac runtime.RBAC,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
-
-	adminFilter := authz.AdminFilter(roleAssignments)
 
 	promMiddleware := middleware.New(middleware.Config{
 		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
@@ -119,7 +115,7 @@ func NewApiServer(
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, cfg, resourceAccess)
+	addResourcesEndpoints(ws, defs, resManager, cfg, rbac.ResourceAccess)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId); err != nil {
@@ -143,7 +139,7 @@ func NewApiServer(
 		config: *serverConfig,
 	}
 
-	dpWs, err := dataplaneTokenWs(resManager, adminFilter)
+	dpWs, err := dataplaneTokenWs(resManager, rbac.GenerateDataplaneTokenAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +220,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 }
 
-func dataplaneTokenWs(resManager manager.ResourceManager, adminFilter restful.FilterFunction) (*restful.WebService, error) {
+func dataplaneTokenWs(resManager manager.ResourceManager, access tokens_rbac.GenerateDataplaneTokenAccess) (*restful.WebService, error) {
 	dpIssuer, err := builtin.NewDataplaneTokenIssuer(resManager)
 	if err != nil {
 		return nil, err
@@ -233,7 +229,7 @@ func dataplaneTokenWs(resManager manager.ResourceManager, adminFilter restful.Fi
 	if err != nil {
 		return nil, err
 	}
-	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer).Filter(adminFilter), nil
+	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer, access), nil
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {
@@ -374,8 +370,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.GetInstanceId,
 		rt.GetClusterId,
 		rt.APIServerAuthenticator(),
-		rt.RoleAssignments(),
-		rt.ResourceAccess(),
+		rt.RBAC(),
 	)
 	if err != nil {
 		return err

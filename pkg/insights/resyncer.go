@@ -213,15 +213,14 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 
 	for _, dpOverview := range dpOverviews.Items {
 		status, _ := dpOverview.GetStatus()
+		networking := dpOverview.Spec.GetDataplane().GetNetworking()
 
-		// Builtin gateways have inbounds
-		if dpOverview.Spec.Dataplane.IsDelegatedGateway() {
-			svcName := dpOverview.Spec.Dataplane.Networking.GetGateway().GetTags()[mesh_proto.ServiceTag]
-			addDpToInsight(insight, svcName, status)
-		} else {
-			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
-				addDpToInsight(insight, inbound.GetService(), status)
-			}
+		if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
+			addDpToInsight(insight, svc, status)
+		}
+
+		for _, inbound := range networking.GetInbound() {
+			addDpToInsight(insight, inbound.GetService(), status)
 		}
 	}
 
@@ -305,6 +304,8 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		return err
 	}
 
+	internalServices := map[string]struct{}{}
+
 	dpOverviews := core_mesh.NewDataplaneOverviews(*dataplanes, *dpInsights)
 
 	for _, dpOverview := range dpOverviews.Items {
@@ -335,6 +336,27 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		updateTotal(kumaDpVersion, insight.DpVersions.KumaDp)
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
 		updateMTLS(dpInsight.GetMTLS(), status, insight.MTLS)
+
+		networking := dpOverview.Spec.GetDataplane().GetNetworking()
+
+		if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
+			internalServices[svc] = struct{}{}
+		}
+
+		for _, inbound := range networking.GetInbound() {
+			internalServices[inbound.GetService()] = struct{}{}
+		}
+	}
+
+	externalServices := &core_mesh.ExternalServiceResourceList{}
+	if err := r.rm.List(context.Background(), externalServices, store.ListByMesh(mesh)); err != nil {
+		return err
+	}
+
+	insight.Services = &mesh_proto.MeshInsight_ServiceStat{
+		Total:    uint32(len(internalServices) + len(externalServices.Items)),
+		Internal: uint32(len(internalServices)),
+		External: uint32(len(externalServices.Items)),
 	}
 
 	for _, resDesc := range r.registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.Not(model.Named(core_mesh.DataplaneType, core_mesh.DataplaneInsightType))) {

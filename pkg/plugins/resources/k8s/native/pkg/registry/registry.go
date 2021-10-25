@@ -1,11 +1,27 @@
 package registry
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
+
+// UnknownTypeError is returned by NewObject and NewList when the
+// requested object type has not been registered.
+type UnknownTypeError struct{ name string }
+
+var _ error = &UnknownTypeError{}
+
+func (u *UnknownTypeError) Error() string {
+	return fmt.Sprintf("unknown message type: %q", u.name)
+}
+
+func (u *UnknownTypeError) Typename() string {
+	return u.name
+}
 
 func NewTypeRegistry() TypeRegistry {
 	return &typeRegistry{
@@ -44,7 +60,7 @@ func (r *typeRegistry) NewObject(typ ResourceType) (model.KubernetesObject, erro
 	if obj, ok := r.objectTypes[name]; ok {
 		return obj.DeepCopyObject().(model.KubernetesObject), nil
 	}
-	return nil, errors.Errorf("unknown message type: %q", name)
+	return nil, &UnknownTypeError{name: name}
 }
 
 func (r *typeRegistry) NewList(typ ResourceType) (model.KubernetesList, error) {
@@ -52,5 +68,5 @@ func (r *typeRegistry) NewList(typ ResourceType) (model.KubernetesList, error) {
 	if obj, ok := r.objectListTypes[name]; ok {
 		return obj.DeepCopyObject().(model.KubernetesList), nil
 	}
-	return nil, errors.Errorf("unknown message type: %q", name)
+	return nil, &UnknownTypeError{name: name}
 }

@@ -14,7 +14,6 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/test/testenvconfig"
 )
 
@@ -83,7 +82,6 @@ var _ = Describe("Config loader", func() {
 			}
 
 			// then
-			Expect(cfg.BootstrapServer.APIVersion).To(Equal(envoy.APIV3))
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
@@ -242,8 +240,12 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
 			Expect(cfg.RBAC.Type).To(Equal("custom-rbac"))
-			Expect(cfg.RBAC.Static.AdminUsers).To(Equal([]string{"admin1", "admin2"}))
-			Expect(cfg.RBAC.Static.AdminGroups).To(Equal([]string{"group1", "group2"}))
+			Expect(cfg.RBAC.Static.AdminResources.Users).To(Equal([]string{"ar-admin1", "ar-admin2"}))
+			Expect(cfg.RBAC.Static.AdminResources.Groups).To(Equal([]string{"ar-group1", "ar-group2"}))
+			Expect(cfg.RBAC.Static.GenerateDPToken.Users).To(Equal([]string{"dp-admin1", "dp-admin2"}))
+			Expect(cfg.RBAC.Static.GenerateDPToken.Groups).To(Equal([]string{"dp-group1", "dp-group2"}))
+			Expect(cfg.RBAC.Static.GenerateUserToken.Users).To(Equal([]string{"ut-admin1", "ut-admin2"}))
+			Expect(cfg.RBAC.Static.GenerateUserToken.Groups).To(Equal([]string{"ut-group1", "ut-group2"}))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -276,7 +278,6 @@ store:
     conflictRetryBaseBackoff: 4s
     conflictRetryMaxTimes: 10
 bootstrapServer:
-  apiVersion: v3
   params:
     adminPort: 1234
     adminAccessLogPath: /access/log/test
@@ -443,13 +444,19 @@ dpServer:
 rbac:
   type: custom-rbac
   static:
-    adminUsers: ["admin1", "admin2"]
-    adminGroups: ["group1", "group2"]
+    adminResources:
+      users: ["ar-admin1", "ar-admin2"]
+      groups: ["ar-group1", "ar-group2"]
+    generateDpToken:
+      users: ["dp-admin1", "dp-admin2"]
+      groups: ["dp-group1", "dp-group2"]
+    generateUserToken:
+      users: ["ut-admin1", "ut-admin2"]
+      groups: ["ut-group1", "ut-group2"]
 `,
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
-				"KUMA_BOOTSTRAP_SERVER_API_VERSION":                                                        "v3",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                                                  "1234",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                                                    "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                                                    "4321",
@@ -581,9 +588,13 @@ rbac:
 				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
-				"KUMA_RBAC_TYPE":                "custom-rbac",
-				"KUMA_RBAC_STATIC_ADMIN_USERS":  "admin1,admin2",
-				"KUMA_RBAC_STATIC_ADMIN_GROUPS": "group1,group2",
+				"KUMA_RBAC_TYPE":                              "custom-rbac",
+				"KUMA_RBAC_STATIC_ADMIN_RESOURCES_USERS":      "ar-admin1,ar-admin2",
+				"KUMA_RBAC_STATIC_ADMIN_RESOURCES_GROUPS":     "ar-group1,ar-group2",
+				"KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_USERS":    "dp-admin1,dp-admin2",
+				"KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_GROUPS":   "dp-group1,dp-group2",
+				"KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_USERS":  "ut-admin1,ut-admin2",
+				"KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_GROUPS": "ut-group1,ut-group2",
 			},
 			yamlFileConfig: "",
 		}),

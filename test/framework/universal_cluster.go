@@ -15,6 +15,8 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/template"
 )
 
@@ -28,6 +30,8 @@ type UniversalCluster struct {
 	defaultTimeout time.Duration
 	defaultRetries int
 }
+
+var _ Cluster = &UniversalCluster{}
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
 	return &UniversalCluster{
@@ -77,13 +81,15 @@ func (c *UniversalCluster) Verbose() bool {
 	return c.verbose
 }
 
-func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
-	c.controlplane = NewUniversalControlPlane(c.t, mode, c.name, c, c.verbose)
-	opts := newDeployOpt(fs...)
+func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
+	var opts kumaDeploymentOptions
 
+	opts.apply(opt...)
 	if opts.installationMode != KumactlInstallationMode {
 		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, opts.installationMode)
 	}
+
+	c.controlplane = NewUniversalControlPlane(c.t, mode, c.name, c, c.verbose)
 
 	cmd := []string{"kuma-cp", "run"}
 	env := []string{"KUMA_MODE=" + mode, "KUMA_DNS_SERVER_PORT=53"}
@@ -141,10 +147,26 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		}
 	}
 
-	err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetKuma().GetAPIServerAddress(), token)
-	if err != nil {
+	if err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(
+		c.name, c.GetKuma().GetAPIServerAddress(), token); err != nil {
 		return err
 	}
+
+	for name, updateFuncs := range opts.meshUpdateFuncs {
+		for _, f := range updateFuncs {
+			Logf("applying update function to mesh %q", name)
+			err := c.controlplane.kumactl.KumactlUpdateObject("mesh", name,
+				func(resource core_model.Resource) core_model.Resource {
+					mesh := resource.(*core_mesh.MeshResource)
+					mesh.Spec = f(mesh.Spec)
+					return mesh
+				})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -180,7 +202,7 @@ func (c *UniversalCluster) VerifyKuma() error {
 	return c.controlplane.kumactl.RunKumactl("get", "dataplanes")
 }
 
-func (c *UniversalCluster) DeleteKuma(opts ...DeployOptionsFunc) error {
+func (c *UniversalCluster) DeleteKuma(...KumaDeploymentOption) error {
 	err := c.apps[AppModeCP].Stop()
 	delete(c.apps, AppModeCP)
 	c.controlplane = nil
@@ -222,8 +244,9 @@ func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml
 	return app.dpApp.Start()
 }
 
-func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
-	opts := newDeployOpt(fs...)
+func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
+	var opts appDeploymentOptions
+	opts.apply(opt...)
 	appname := opts.appname
 	token := opts.token
 	transparent := opts.transparent
@@ -242,7 +265,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
 
-	Logf("IPV6 is %v\n", opts.isipv6)
+	Logf("IPV6 is %v", opts.isipv6)
 
 	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, *opts.verbose, caps)
 	if err != nil {

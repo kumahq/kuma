@@ -79,7 +79,6 @@ var _ = Describe("Config WS", func() {
 			"readOnly": false
 		  },
 		  "bootstrapServer": {
-			"apiVersion": "v3",
 			"params": {
 			  "adminAccessLogPath": "/dev/null",
 			  "adminAddress": "127.0.0.1",
@@ -323,8 +322,18 @@ var _ = Describe("Config WS", func() {
           "rbac": {
             "type": "static",
             "static": {
-              "adminUsers": ["admin"],
-              "adminGroups": ["admin"]
+              "adminResources": {
+                "users": ["admin"],
+                "groups": ["admin"]
+              },
+              "generateDpToken": {
+                "users": ["admin"],
+                "groups": ["admin"]
+              },
+              "generateUserToken": {
+                "users": ["admin"],
+                "groups": ["admin"]
+              }
             }
           }
         }
