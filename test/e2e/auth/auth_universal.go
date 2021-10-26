@@ -37,7 +37,7 @@ func AuthUniversal() {
 		// given
 		token, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
 			"--name", "new-admin",
-			"--group", "admin",
+			"--group", "mesh-system:admin",
 			"--valid-for", "24h",
 		)
 		Expect(err).ToNot(HaveOccurred())
