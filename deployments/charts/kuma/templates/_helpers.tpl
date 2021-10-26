@@ -158,6 +158,8 @@ env:
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
 {{- end }}
+- name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
+  value: "false"
 {{- end }}
 
 {{/*
