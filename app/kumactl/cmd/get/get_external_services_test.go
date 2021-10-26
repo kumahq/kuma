@@ -99,15 +99,10 @@ var _ = Describe("kumactl get external-services", func() {
 
 		DescribeTable("kumactl get external-services -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "external-services"}, given.outputFormat, given.pagination))
-
 				// when
-				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
+				Expect(
+					ExecuteRootCommand(rootCmd, "external-services", given.outputFormat, given.pagination),
+				).To(Succeed())
 
 				// when
 				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))

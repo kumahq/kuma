@@ -15,6 +15,7 @@ func newConfigControlPlanesRemoveCmd(pctx *kumactl_cmd.RootContext) *cobra.Comma
 		Use:   "remove",
 		Short: "Remove a Control Plane",
 		Long:  `Remove a Control Plane.`,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := pctx.Config()
 			if !cfg.RemoveControlPlane(args.name) {

@@ -96,8 +96,8 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("requires at least 1 arg(s), only received 0"))
-			Expect(outbuf.String()).To(MatchRegexp(`Error: requires at least 1 arg\(s\), only received 0`))
+			Expect(err.Error()).To(Equal("accepts 1 arg(s), received 0"))
+			Expect(outbuf.String()).To(MatchRegexp(`Error: accepts 1 arg\(s\), received 0`))
 		},
 		entries...,
 	)
