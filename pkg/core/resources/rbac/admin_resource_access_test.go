@@ -16,7 +16,7 @@ import (
 
 var _ = Describe("Admin Resource Access", func() {
 	resourceAccess := resources_rbac.NewAdminResourceAccess(config_rbac.AdminResourcesRBACStaticConfig{
-		Users: []string{"admin"},
+		Users: []string{user.Admin.Name},
 	})
 
 	It("should allow regular user to access non admin resource", func() {
@@ -24,7 +24,7 @@ var _ = Describe("Admin Resource Access", func() {
 			model.ResourceKey{Name: "xyz", Mesh: "demo"},
 			&mesh_proto.CircuitBreaker{},
 			mesh.NewCircuitBreakerResource().Descriptor(),
-			nil,
+			user.Anonymous,
 		)
 
 		// then
@@ -37,7 +37,7 @@ var _ = Describe("Admin Resource Access", func() {
 			model.ResourceKey{Name: "xyz"},
 			&system_proto.Secret{},
 			system.NewSecretResource().Descriptor(),
-			&user.Admin,
+			user.Admin,
 		)
 
 		// then
@@ -50,7 +50,7 @@ var _ = Describe("Admin Resource Access", func() {
 			model.ResourceKey{Name: "xyz"},
 			&system_proto.Secret{},
 			system.NewSecretResource().Descriptor(),
-			&user.User{Name: "john doe", Groups: []string{"users"}},
+			user.User{Name: "john doe", Groups: []string{"users"}},
 		)
 
 		// then
@@ -63,11 +63,11 @@ var _ = Describe("Admin Resource Access", func() {
 			model.ResourceKey{Name: "xyz"},
 			&system_proto.Secret{},
 			system.NewSecretResource().Descriptor(),
-			nil,
+			user.Anonymous,
 		)
 
 		// then
-		Expect(err).To(MatchError(`access denied: user did not authenticate`))
+		Expect(err).To(MatchError(`access denied: user "mesh-system:anonymous/mesh-system:unauthenticated" cannot access the resource of type "Secret"`))
 	})
 
 	It("should allow admin to access Update", func() {
@@ -76,7 +76,7 @@ var _ = Describe("Admin Resource Access", func() {
 			model.ResourceKey{Name: "xyz"},
 			&system_proto.Secret{},
 			system.NewSecretResource().Descriptor(),
-			&user.Admin,
+			user.Admin,
 		)
 
 		// then
@@ -89,7 +89,7 @@ var _ = Describe("Admin Resource Access", func() {
 			model.ResourceKey{Name: "xyz"},
 			&system_proto.Secret{},
 			system.NewSecretResource().Descriptor(),
-			&user.User{Name: "john doe", Groups: []string{"users"}},
+			user.User{Name: "john doe", Groups: []string{"users"}},
 		)
 
 		// then
@@ -101,7 +101,7 @@ var _ = Describe("Admin Resource Access", func() {
 		err := resourceAccess.ValidateGet(
 			model.ResourceKey{Name: "xyz"},
 			system.NewSecretResource().Descriptor(),
-			&user.Admin,
+			user.Admin,
 		)
 
 		// then
@@ -113,7 +113,7 @@ var _ = Describe("Admin Resource Access", func() {
 		err := resourceAccess.ValidateGet(
 			model.ResourceKey{Name: "xyz"},
 			system.NewSecretResource().Descriptor(),
-			&user.User{Name: "john doe", Groups: []string{"users"}},
+			user.User{Name: "john doe", Groups: []string{"users"}},
 		)
 
 		// then
@@ -124,7 +124,7 @@ var _ = Describe("Admin Resource Access", func() {
 		// when
 		err := resourceAccess.ValidateList(
 			system.NewSecretResource().Descriptor(),
-			&user.Admin,
+			user.Admin,
 		)
 
 		// then
@@ -135,7 +135,7 @@ var _ = Describe("Admin Resource Access", func() {
 		// when
 		err := resourceAccess.ValidateList(
 			system.NewSecretResource().Descriptor(),
-			&user.User{Name: "john doe", Groups: []string{"users"}},
+			user.User{Name: "john doe", Groups: []string{"users"}},
 		)
 
 		// then

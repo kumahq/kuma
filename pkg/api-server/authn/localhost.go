@@ -20,7 +20,7 @@ func LocalhostAuthenticator(request *restful.Request, response *restful.Response
 	}
 	if host == "127.0.0.1" || host == "::1" {
 		log.V(1).Info("authenticated as admin because requests originates from the same machine")
-		request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), user.Admin))
+		request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), user.Admin.Authenticated()))
 	}
 	chain.ProcessFilter(request, response)
 }
