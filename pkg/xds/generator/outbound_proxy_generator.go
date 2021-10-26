@@ -43,7 +43,8 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	if len(outbounds) == 0 {
 		return resources, nil
 	}
-	services := envoy_common.Services{}
+
+	servicesAcc := envoy_common.NewServicesAccumulator(proxy.ServiceTLSReadiness)
 	splitCounter := &splitCounter{}
 
 	for _, outbound := range outbounds {
@@ -54,8 +55,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			return nil, err
 		}
 		clusters := routes.Clusters()
-		tlsReady := proxy.ServiceTLSReadiness
-		services.Add(tlsReady, clusters...)
+		servicesAcc.Add(clusters...)
 
 		protocol := g.inferProtocol(proxy, clusters)
 
@@ -71,8 +71,10 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		})
 	}
 
+	services := servicesAcc.Services()
+
 	// Generate clusters. It cannot be generated on the fly with outbound loop because we need to know all subsets of the cluster for every service.
-	cdsResources, err := g.generateCDS(ctx, proxy, services)
+	cdsResources, err := g.generateCDS(ctx, services, proxy)
 	if err != nil {
 		return nil, err
 	}
@@ -175,9 +177,9 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, routes envoy_com
 	return listener, nil
 }
 
-func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, services envoy_common.Services) (*model.ResourceSet, error) {
+func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services envoy_common.Services, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
-	for _, serviceName := range services.Names() {
+	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
@@ -227,7 +229,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 
 func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, services envoy_common.Services, apiVersion envoy_common.APIVersion) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
-	for _, serviceName := range services.Names() {
+	for _, serviceName := range services.Sorted() {
 		// Endpoints for ExternalServices are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !services[serviceName].HasExternalService() {
