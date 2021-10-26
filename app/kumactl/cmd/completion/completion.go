@@ -42,7 +42,8 @@ func newBashCommand(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bash",
 		Short: "Output shell completions for bash",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cmd.Parent().Parent().GenBashCompletion(cmd.OutOrStdout())
 		},
 	}
@@ -53,7 +54,8 @@ func newFishCommand(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fish",
 		Short: "Output shell completions for fish",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cmd.Parent().Parent().GenFishCompletion(cmd.OutOrStdout(), true)
 		},
 	}
@@ -64,7 +66,8 @@ func newZshCommand(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "zsh",
 		Short: "Output shell completions for zsh",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cmd.Parent().Parent().GenZshCompletion(cmd.OutOrStdout())
 		},
 	}

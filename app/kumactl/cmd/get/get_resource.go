@@ -20,7 +20,7 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTy
 		Use:   fmt.Sprintf("%s NAME", desc.KumactlArg),
 		Short: fmt.Sprintf("Show a single %s resource", desc.Name),
 		Long:  fmt.Sprintf("Show a single %s resource.", desc.Name),
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
