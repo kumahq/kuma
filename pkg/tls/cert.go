@@ -82,7 +82,7 @@ func newCert(commonName string, certType CertType, hosts ...string) (x509.Certif
 		NotAfter:              notAfter,
 		IsCA:                  true,
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		ExtKeyUsage:           []x509.ExtKeyUsage{},
 		BasicConstraintsValid: true,
 	}
 	switch certType {
