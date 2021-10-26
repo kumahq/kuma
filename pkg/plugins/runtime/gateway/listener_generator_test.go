@@ -52,13 +52,16 @@ var _ = Describe("Gateway Listener", func() {
 		Expect(err).To(Succeed(), "build runtime instance")
 
 		Expect(StoreNamedFixture(rt, "mesh-default.yaml")).To(Succeed())
+		Expect(StoreNamedFixture(rt, "serviceinsight-default.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "dataplane-default.yaml")).To(Succeed())
 
 		Expect(StoreNamedFixture(rt, "mesh-tracing.yaml")).To(Succeed())
+		Expect(StoreNamedFixture(rt, "serviceinsight-tracing.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "dataplane-tracing.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "traffictrace.yaml")).To(Succeed())
 
 		Expect(StoreNamedFixture(rt, "mesh-logging.yaml")).To(Succeed())
+		Expect(StoreNamedFixture(rt, "serviceinsight-logging.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "dataplane-logging.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "trafficlog.yaml")).To(Succeed())
 	})

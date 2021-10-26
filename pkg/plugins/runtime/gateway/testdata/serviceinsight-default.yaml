@@ -1,0 +1,4 @@
+type: ServiceInsight
+mesh: default
+name: all-services-default
+services: {}
