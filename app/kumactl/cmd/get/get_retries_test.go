@@ -91,22 +91,10 @@ var _ = Describe("kumactl get retries", func() {
 
 		DescribeTable("kumactl get retries -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append(
-					[]string{
-						"--config-file",
-						filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-						"get",
-						"retries",
-					},
-					given.outputFormat,
-					given.pagination,
-				))
-
 				// when
-				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
+				Expect(
+					ExecuteRootCommand(rootCmd, "retries", given.outputFormat, given.pagination),
+				).To(Succeed())
 
 				// when
 				testDataPath := filepath.Join("testdata", given.goldenFile)

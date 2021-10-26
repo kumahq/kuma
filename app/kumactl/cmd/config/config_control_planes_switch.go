@@ -15,6 +15,7 @@ func newConfigControlPlanesSwitchCmd(pctx *kumactl_cmd.RootContext) *cobra.Comma
 		Use:   "switch",
 		Short: "Switch active Control Plane",
 		Long:  `Switch active Control Plane.`,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := pctx.Config()
 			if !cfg.SwitchContext(args.name) {

@@ -118,13 +118,11 @@ var _ = Describe("kumactl get dataplanes", func() {
 
 		DescribeTable("kumactl get dataplanes -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "dataplanes"}, given.outputFormat, given.pagination))
-
 				// when
-				Expect(rootCmd.Execute()).ToNot(HaveOccurred())
+				Expect(
+					ExecuteRootCommand(rootCmd, "dataplanes", given.outputFormat, given.pagination),
+				).To(Succeed())
+
 				// then
 				Expect(buf.String()).To(given.matcher(
 					filepath.Join("testdata", given.goldenFile),

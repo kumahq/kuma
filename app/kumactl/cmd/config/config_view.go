@@ -13,6 +13,7 @@ func newConfigViewCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Use:   "view",
 		Short: "Show kumactl config",
 		Long:  `Show kumactl config.`,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg := pctx.Config()
 			contents, err := util_proto.ToYAML(cfg)
