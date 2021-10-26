@@ -33,15 +33,16 @@ type PortFwd struct {
 }
 
 type K8sControlPlane struct {
-	t          testing.TestingT
-	mode       core.CpMode
-	name       string
-	kubeconfig string
-	kumactl    *KumactlOptions
-	cluster    *K8sCluster
-	portFwd    PortFwd
-	verbose    bool
-	replicas   int
+	t                testing.TestingT
+	mode             core.CpMode
+	name             string
+	kubeconfig       string
+	kumactl          *KumactlOptions
+	cluster          *K8sCluster
+	portFwd          PortFwd
+	verbose          bool
+	replicas         int
+	localhostIsAdmin bool
 }
 
 func NewK8sControlPlane(
@@ -54,6 +55,7 @@ func NewK8sControlPlane(
 	hiPort uint32,
 	verbose bool,
 	replicas int,
+	localhostIsAdmin bool,
 ) *K8sControlPlane {
 	name := clusterName + "-" + mode
 	kumactl, _ := NewKumactlOptions(t, name, verbose)
@@ -69,6 +71,7 @@ func NewK8sControlPlane(
 		},
 		verbose:  verbose,
 		replicas: replicas,
+		localhostIsAdmin: localhostIsAdmin,
 	}
 }
 
@@ -195,9 +198,13 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 	if err := c.PortForwardKumaCP(); err != nil {
 		return err
 	}
-	token, err := c.retrieveAdminToken()
-	if err != nil {
-		return err
+	var token string
+	if !c.localhostIsAdmin {
+		t, err := c.retrieveAdminToken()
+		if err != nil {
+			return err
+		}
+		token = t
 	}
 	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token)
 }
@@ -275,9 +282,13 @@ func (c *K8sControlPlane) GetGlobaStatusAPI() string {
 }
 
 func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
-	token, err := c.retrieveAdminToken()
-	if err != nil {
-		return "", err
+	var token string
+	if !c.localhostIsAdmin {
+		t, err := c.retrieveAdminToken()
+		if err != nil {
+			return "", err
+		}
+		token = t
 	}
 	dpType := ""
 	if service == "ingress" {
@@ -300,9 +311,13 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 }
 
 func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
-	token, err := c.retrieveAdminToken()
-	if err != nil {
-		return "", err
+	var token string
+	if !c.localhostIsAdmin {
+		t, err := c.retrieveAdminToken()
+		if err != nil {
+			return "", err
+		}
+		token = t
 	}
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
