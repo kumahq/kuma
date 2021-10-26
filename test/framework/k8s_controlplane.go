@@ -69,8 +69,8 @@ func NewK8sControlPlane(
 		portFwd: PortFwd{
 			localAPIPort: loPort,
 		},
-		verbose:  verbose,
-		replicas: replicas,
+		verbose:          verbose,
+		replicas:         replicas,
 		localhostIsAdmin: localhostIsAdmin,
 	}
 }
