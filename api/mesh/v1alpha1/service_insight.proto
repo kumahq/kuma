@@ -41,6 +41,8 @@ message ServiceInsight {
     }
 
     DataplaneStat dataplanes = 2;
+
+    map<string, uint32> issuedBackends = 3;
   }
 
   map<string, Service> services = 2;
