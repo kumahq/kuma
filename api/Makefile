@@ -22,13 +22,9 @@ endef
 PROTOC_VERSION := 3.14.0
 PROTOC_PGV_VERSION := v0.4.1
 GOLANG_PROTOBUF_VERSION := v1.5.2
-DATAPLANE_API_LATEST_VERSION := main
 DATAPLANE_API_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/envoyproxy,data-plane-api))
-UDPA_LATEST_VERSION := main
 UDPA_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/cncf,udpa))
-GOOGLEAPIS_LATEST_VERSION := master
 GOOGLEAPIS_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/googleapis,googleapis))
-KUMADOC_VERSION := v0.1.7
 KUMADOC_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/kumahq,protoc-gen-kumadoc))
 
 protoc_search_go_packages := \
@@ -115,55 +111,7 @@ endif
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-dev/tools: install/protoc install/protobuf-wellknown-types install/data-plane-api install/protoc-gen-go install/protoc-gen-validate install/protoc-gen-kumadoc ## Install development tools
-
-install/protoc:
-	@if [ -e $(PROTOC_PATH) ]; then echo "Protoc $$( $(PROTOC_PATH) --version ) is already installed at $(PROTOC_PATH)" ; fi
-	@if [ ! -e $(PROTOC_PATH) ]; then \
-		echo "Installing Protoc $(PROTOC_VERSION) ..." \
-		&& set -x \
-		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
-		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip bin/protoc -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
-		&& mkdir -p $(CI_TOOLS_DIR) \
-		&& cp /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH)/bin/protoc $(PROTOC_PATH) \
-		&& rm -rf /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
-		&& rm /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
-		&& set +x \
-		&& echo "Protoc $(PROTOC_VERSION) has been installed at $(PROTOC_PATH)" ; fi
-
-install/protobuf-wellknown-types:
-	@if [ -e $(PROTOBUF_WKT_DIR) ]; then echo "Protobuf well-known types are already installed at $(PROTOBUF_WKT_DIR)" ; fi
-	@if [ ! -e $(PROTOBUF_WKT_DIR) ]; then \
-		echo "Installing Protobuf well-known types $(PROTOC_VERSION) ..." \
-		&& set -x \
-		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
-		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip 'include/*' -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
-		&& mkdir -p $(PROTOBUF_WKT_DIR) \
-		&& cp -r /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH)/include $(PROTOBUF_WKT_DIR) \
-		&& rm -rf /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
-		&& rm /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
-		&& set +x \
-		&& echo "Protobuf well-known types $(PROTOC_VERSION) have been installed at $(PROTOBUF_WKT_DIR)" ; fi
-
-install/protoc-gen-go:
-	go install github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
-
-install/protoc-gen-kumadoc:
-	go install github.com/kumahq/protoc-gen-kumadoc@$(KUMADOC_VERSION)
-
-install/protoc-gen-validate:
-	go install github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
-
-install/data-plane-api:
-	go get github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
-	go get github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
-	go get github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
-
-clean: ## Remove generated files
-	find . -name '*.pb.go' -delete
-	find . -name '*.pb.validate.go' -delete
-
-generate: clean protoc/mesh protoc/mesh/v1alpha1 protoc/observability/v1 protoc/system/v1alpha1 ## Process .proto definitions
+generate: protoc/mesh protoc/mesh/v1alpha1 protoc/observability/v1 protoc/system/v1alpha1 ## Process .proto definitions
 
 protoc/mesh:
 	$(PROTOC_GO) mesh/*.proto
@@ -176,18 +124,6 @@ protoc/observability/v1:
 
 protoc/system/v1alpha1:
 	$(PROTOC_GO) system/v1alpha1/*.proto
-
-build: ## Build generated files
-	go build ./...
-
-GO_TEST ?= go test
-GO_TEST_OPTS ?=
-
-test: ## Run tests
-	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./...
-
-check: generate build test ## Verify that auto-generated code is up-to-date
-	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
 
 generate/docs:
 	$(PROTOC_KUMADOC) mesh/v1alpha1/*.proto

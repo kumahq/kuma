@@ -733,34 +733,6 @@ jobs:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
 
-  api_check:
-    executor: golang
-    steps:
-    - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - api-go.mod-{{ .Branch }}-{{ checksum "api/go.sum" }}
-    - run:
-        name: "Download Go modules"
-        command: |
-          cd api && go mod download
-    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
-    - save_cache:
-        key: api-go.mod-{{ .Branch }}-{{ checksum "api/go.sum" }}
-        paths:
-          - "/go/pkg/mod"
-    - run:
-        name: "Install pre-requirements"
-        # `unzip` is necessary to install `protoc`
-        command: apt update && apt install -y unzip
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools -C api
-    - run:
-        name: "Verify that auto-generated code is up-to-date"
-        command: make check -C api
-
   test:
     executor: golang
     resource_class: medium
@@ -1189,10 +1161,6 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - go_cache
-    - api_check:
-        <<: *commit_workflow_filters
-        requires:
-        - go_cache
     - build:
         <<: *commit_workflow_filters
         requires:
@@ -1335,10 +1303,6 @@ workflows:
       - dev_mac: *master_workflow_filters
       - dev_ubuntu: *master_workflow_filters
       - go_cache: *master_workflow_filters
-      - api_check:
-          <<: *master_workflow_filters
-          requires:
-            - go_cache
       - check:
           <<: *master_workflow_filters
           requires:
@@ -1350,12 +1314,10 @@ workflows:
       - test:
           <<: *master_workflow_filters
           requires:
-            - api_check
             - check
       - integration:
           <<: *master_workflow_filters
           requires:
-            - api_check
             - check
       - images:
           <<: *master_workflow_filters
@@ -1432,10 +1394,6 @@ workflows:
   kuma-release:
     jobs:
     - go_cache: *release_workflow_filters
-    - api_check:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
     - check:
         <<: *release_workflow_filters
         requires:
@@ -1465,7 +1423,6 @@ workflows:
     - release:
         <<: *release_workflow_filters
         requires:
-        - api_check
         - check
         - test
         - test-release
