@@ -40,6 +40,7 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 
   # Generate a TLS certificate for use by a client of an HTTPS server, i.e. by the 'kumactl generate dataplane-token' command
   kumactl generate tls-certificate --type=client`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if ctx.args.certType != "client" && ctx.args.certType != "server" {
 				return errors.New(`--type has to be either "client" or "server"`)

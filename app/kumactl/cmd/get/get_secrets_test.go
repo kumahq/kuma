@@ -87,15 +87,10 @@ var _ = Describe("kumactl get secrets", func() {
 
 		DescribeTable("kumactl get secrets -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "secrets"}, given.outputFormat))
-
 				// when
-				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
+				Expect(
+					ExecuteRootCommand(rootCmd, "secrets", given.outputFormat, ""),
+				).To(Succeed())
 
 				// when
 				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))

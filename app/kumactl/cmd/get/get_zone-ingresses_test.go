@@ -98,16 +98,10 @@ var _ = Describe("kumactl get zone-ingresses", func() {
 
 		DescribeTable("kumactl get zone-ingresses -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "zone-ingresses"}, given.outputFormat, given.pagination))
-
 				// when
-				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
-
+				Expect(
+					ExecuteRootCommand(rootCmd, "zone-ingresses", given.outputFormat, given.pagination),
+				).To(Succeed())
 				// when
 				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then

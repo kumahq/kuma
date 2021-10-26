@@ -25,6 +25,7 @@ func NewGenerateZoneIngressTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Comman
 Generate token bound by zone
 $ kumactl generate zone-ingress-token --zone zone-1
 `,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, err := pctx.CurrentZoneIngressTokenClient()
 			if err != nil {
