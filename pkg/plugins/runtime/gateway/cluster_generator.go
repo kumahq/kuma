@@ -178,8 +178,9 @@ func newClusterBuilder(
 	switch protocol {
 	case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 		builder.Configure(clusters.Http2())
-	default:
+	case core_mesh.ProtocolHTTP:
 		builder.Configure(clusters.Http())
+	default:
 	}
 
 	return builder
@@ -216,9 +217,7 @@ func makeRouteDestinations(table *route.Table) (map[string]route.Destination, er
 
 func timeoutPolicyFor(dest *route.Destination) *core_mesh.TimeoutResource {
 	if policy, ok := dest.Policies[core_mesh.TimeoutType]; ok {
-		if timeout, ok := policy.(*core_mesh.TimeoutResource); ok {
-			return timeout
-		}
+		return policy.(*core_mesh.TimeoutResource)
 	}
 
 	return nil // TODO(jpeach) default timeout policy
@@ -226,9 +225,7 @@ func timeoutPolicyFor(dest *route.Destination) *core_mesh.TimeoutResource {
 
 func circuitBreakerPolicyFor(dest *route.Destination) *core_mesh.CircuitBreakerResource {
 	if policy, ok := dest.Policies[core_mesh.CircuitBreakerType]; ok {
-		if breaker, ok := policy.(*core_mesh.CircuitBreakerResource); ok {
-			return breaker
-		}
+		return policy.(*core_mesh.CircuitBreakerResource)
 	}
 
 	return nil // TODO(jpeach) default breaker policy
@@ -236,9 +233,7 @@ func circuitBreakerPolicyFor(dest *route.Destination) *core_mesh.CircuitBreakerR
 
 func healthCheckPolicyFor(dest *route.Destination) *core_mesh.HealthCheckResource {
 	if policy, ok := dest.Policies[core_mesh.HealthCheckType]; ok {
-		if checker, ok := policy.(*core_mesh.HealthCheckResource); ok {
-			return checker
-		}
+		return policy.(*core_mesh.HealthCheckResource)
 	}
 
 	return nil // TODO(jpeach) default breaker policy
