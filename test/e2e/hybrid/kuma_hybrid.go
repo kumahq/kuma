@@ -266,13 +266,13 @@ metadata:
 
 	It("should support jobs with a sidecar", func() {
 		// when deploy job that connects to a service on other K8S cluster
-		err := DemoClientJobK8s(nonDefaultMesh, "test-server_kuma-test_svc_80.mesh")(zone1)
+		err := DemoClientJobK8s(TestNamespace, nonDefaultMesh, "test-server_kuma-test_svc_80.mesh")(zone1)
 
 		// then job is properly cleaned up and finished
 		Expect(err).ToNot(HaveOccurred())
 
 		// when deploy job that connects to a service on other Universal cluster
-		err = DemoClientJobK8s(nonDefaultMesh, "test-server.mesh")(zone2)
+		err = DemoClientJobK8s(TestNamespace, nonDefaultMesh, "test-server.mesh")(zone2)
 
 		// then job is properly cleaned up and finished
 		Expect(err).ToNot(HaveOccurred())
