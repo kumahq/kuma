@@ -285,6 +285,7 @@ type Service struct {
 	name               string
 	clusters           []Cluster
 	hasExternalService bool
+	tlsReady           bool
 }
 
 func (c *Service) Add(cluster Cluster) {
@@ -311,6 +312,10 @@ func (c *Service) Clusters() []Cluster {
 	return c.clusters
 }
 
+func (c *Service) TLSReady() bool {
+	return c.tlsReady
+}
+
 type Services map[string]*Service
 
 func (c Services) Names() []string {
@@ -322,10 +327,12 @@ func (c Services) Names() []string {
 	return keys
 }
 
-func (c Services) Add(clusters ...Cluster) {
+func (c Services) Add(serviceTLSReadiness map[string]bool, clusters ...Cluster) {
 	for _, cluster := range clusters {
 		if c[cluster.Service()] == nil {
-			c[cluster.Service()] = &Service{}
+			c[cluster.Service()] = &Service{
+				tlsReady: serviceTLSReadiness[cluster.Service()],
+			}
 		}
 		c[cluster.Service()].Add(cluster)
 	}

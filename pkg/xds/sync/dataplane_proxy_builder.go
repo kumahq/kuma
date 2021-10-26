@@ -18,9 +18,11 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/insights"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	"github.com/pkg/errors"
 )
 
 var syncLog = core.Log.WithName("sync")
@@ -60,13 +62,19 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *
 		return nil, err
 	}
 
+	tlsReady, err := p.resolveTLSReadiness(ctx, key, envoyContext)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't determine TLS readiness of services")
+	}
+
 	proxy := &xds.Proxy{
-		Id:         xds.FromResourceKey(key),
-		APIVersion: p.APIVersion,
-		Dataplane:  dp,
-		Metadata:   p.MetadataTracker.Metadata(key),
-		Routing:    *routing,
-		Policies:   *matchedPolicies,
+		Id:                  xds.FromResourceKey(key),
+		APIVersion:          p.APIVersion,
+		Dataplane:           dp,
+		Metadata:            p.MetadataTracker.Metadata(key),
+		Routing:             *routing,
+		Policies:            *matchedPolicies,
+		ServiceTLSReadiness: tlsReady,
 	}
 	return proxy, nil
 }
@@ -216,4 +224,27 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		RateLimits:         ratelimits,
 	}
 	return matchedPolicies, nil
+}
+
+func (p *DataplaneProxyBuilder) resolveTLSReadiness(
+	ctx context.Context, key core_model.ResourceKey, envoyContext *xds_context.Context,
+) (map[string]bool, error) {
+	tlsReady := map[string]bool{}
+
+	backend := envoyContext.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
+	if backend == nil || backend.Mode != mesh_proto.CertificateAuthorityBackend_PERMISSIVE {
+		return tlsReady, nil
+	}
+
+	serviceInsight := core_mesh.NewServiceInsightResource()
+	insightName := insights.ServiceInsightName(key.Mesh)
+	if err := p.CachingResManager.Get(ctx, serviceInsight, core_store.GetByKey(insightName, key.Mesh)); err != nil {
+		return nil, err
+	}
+
+	for svc, insight := range serviceInsight.Spec.GetServices() {
+		tlsReady[svc] = insight.IssuedBackends[backend.Name] == insight.Dataplanes.Total
+	}
+
+	return tlsReady, nil
 }

@@ -54,7 +54,8 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			return nil, err
 		}
 		clusters := routes.Clusters()
-		services.Add(clusters...)
+		tlsReady := proxy.ServiceTLSReadiness
+		services.Add(tlsReady, clusters...)
 
 		protocol := g.inferProtocol(proxy, clusters)
 
@@ -181,6 +182,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
 		protocol := o.inferProtocol(proxy, service.Clusters())
+		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
@@ -205,7 +207,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 				edsClusterBuilder.
 					Configure(envoy_clusters.EdsCluster(cluster.Name())).
 					Configure(envoy_clusters.LB(cluster.LB())).
-					Configure(envoy_clusters.ClientSideMTLS(ctx, serviceName, []envoy_common.Tags{cluster.Tags()})).
+					Configure(envoy_clusters.ClientSideMTLS(ctx, serviceName, tlsReady, []envoy_common.Tags{cluster.Tags()})).
 					Configure(envoy_clusters.Http2())
 			}
 			edsCluster, err := edsClusterBuilder.Build()

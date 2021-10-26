@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -75,6 +76,19 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 			}
 			configs.Items = items
 			snapshot.resources[typ] = configs
+		case core_mesh.ServiceInsightType:
+			// We only want to consider a ServiceInsight if we have PERMISSIVE mTLS
+			// enabled
+			if backend := snapshot.mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
+				break
+			}
+
+			insights := &core_mesh.ServiceInsightResourceList{}
+			if err := rm.List(ctx, insights, core_store.ListByMesh(meshName)); err != nil {
+				return nil, err
+			}
+
+			snapshot.resources[typ] = insights
 		default:
 			rlist, err := registry.Global().NewList(typ)
 			if err != nil {
