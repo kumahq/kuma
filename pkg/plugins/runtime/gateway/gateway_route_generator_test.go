@@ -805,5 +805,67 @@ conf:
   unhealthyThreshold: 3
 `,
 		),
+
+		Entry("generates a HTTP external service cluster",
+			"18-gateway-route.yaml", `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+  kuma.io/protocol: http
+networking:
+  address: httpbin.com:80
+`, `
+type: GatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
+`,
+		),
+
+		Entry("generates a HTTP/2 external service cluster",
+			"19-gateway-route.yaml", `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+  kuma.io/protocol: http2
+networking:
+  address: httpbin.com:443
+  tls:
+    enabled: true
+`, `
+type: GatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
+`,
+		),
 	)
 })
