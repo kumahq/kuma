@@ -26,6 +26,7 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	"github.com/operator-framework/operator-lib/leader"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}
@@ -53,8 +54,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 			Host:                    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
 			Port:                    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
 			CertDir:                 b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
-			LeaderElection:          true,
-			LeaderElectionID:        "kuma-cp-leader",
+			LeaderElection:          false,
 			LeaderElectionNamespace: b.Config().Store.Kubernetes.SystemNamespace,
 			// Disable metrics bind address as we serve metrics some other way.
 			MetricsBindAddress: "0",
@@ -69,7 +69,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 		return err
 	}
 
-	b.WithComponentManager(&kubeComponentManager{mgr})
+	b.WithComponentManager(&kubeComponentManager{mgr, nil})
 	b.WithExtensions(k8s_extensions.NewManagerContext(b.Extensions(), mgr))
 	b.WithExtensions(k8s_extensions.NewSecretClientContext(b.Extensions(), secretClient))
 	if expTime := b.Config().Runtime.Kubernetes.MarshalingCacheExpirationTime; expTime > 0 {
@@ -143,6 +143,7 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 
 type kubeComponentManager struct {
 	kube_ctrl.Manager
+	leaderComponents []component.Component
 }
 
 var _ component.Manager = &kubeComponentManager{}
@@ -152,6 +153,21 @@ func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 	go func() {
 		defer cancel()
 		<-done
+	}()
+
+	go func() {
+		err := leader.Become(ctx, "kuma-cp-leader")
+		if err != nil {
+			log.Error(err, "Leader lock failure")
+			os.Exit(1)
+		}
+		// This CP is now leader
+		for _, c := range cm.leaderComponents {
+			if err := cm.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
+				log.Error(err, "Add component error")
+			}
+
+		}
 	}()
 	return cm.Manager.Start(ctx)
 }
@@ -163,7 +179,9 @@ var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-cha
 
 func (k *kubeComponentManager) Add(components ...component.Component) error {
 	for _, c := range components {
-		if err := k.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
+		if c.NeedLeaderElection() {
+			k.leaderComponents = append(k.leaderComponents, c)
+		} else if err := k.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
 			return err
 		}
 	}
