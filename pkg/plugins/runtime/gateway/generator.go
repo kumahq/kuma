@@ -44,9 +44,11 @@ type GatewayListener struct {
 }
 
 type GatewayResourceInfo struct {
-	Proxy      *core_xds.Proxy
-	Dataplane  *core_mesh.DataplaneResource
-	Gateway    *core_mesh.GatewayResource
+	Proxy            *core_xds.Proxy
+	Dataplane        *core_mesh.DataplaneResource
+	Gateway          *core_mesh.GatewayResource
+	ExternalServices *core_mesh.ExternalServiceResourceList
+
 	Listener   GatewayListener
 	Host       GatewayHost
 	Resources  Resources
@@ -103,6 +105,12 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 	resources := ResourceAggregator{core_xds.NewResourceSet()}
 
+	// Cache external services since multiple listeners might need them.
+	externalServices, err := listResources(manager, core_mesh.ExternalServiceType)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list ExternalServices")
+	}
+
 	for port, listeners := range collapsed {
 		// Force all listeners on the same port to have the same protocol.
 		for i := range listeners {
@@ -128,10 +136,11 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		})
 
 		info := GatewayResourceInfo{
-			Proxy:     proxy,
-			Dataplane: proxy.Dataplane,
-			Gateway:   gateway,
-			Listener:  listener,
+			Proxy:            proxy,
+			Dataplane:        proxy.Dataplane,
+			Gateway:          gateway,
+			ExternalServices: externalServices.(*core_mesh.ExternalServiceResourceList),
+			Listener:         listener,
 		}
 
 		// Make a pass over the generators for each virtual host.

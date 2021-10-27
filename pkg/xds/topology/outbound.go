@@ -176,7 +176,7 @@ func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServic
 	for _, externalService := range externalServices {
 		service := externalService.Spec.GetService()
 
-		externalServiceEndpoint, err := buildExternalServiceEndpoint(externalService, mesh, loader, zone)
+		externalServiceEndpoint, err := NewExternalServiceEndpoint(externalService, mesh, loader, zone)
 		if err != nil {
 			core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
 			continue
@@ -185,7 +185,13 @@ func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServic
 	}
 }
 
-func buildExternalServiceEndpoint(externalService *core_mesh.ExternalServiceResource, mesh *core_mesh.MeshResource, loader datasource.Loader, zone string) (*core_xds.Endpoint, error) {
+// NewExternalServiceEndpoint builds a new Endpoint from an ExternalServiceResource.
+func NewExternalServiceEndpoint(
+	externalService *core_mesh.ExternalServiceResource,
+	mesh *core_mesh.MeshResource,
+	loader datasource.Loader,
+	zone string,
+) (*core_xds.Endpoint, error) {
 	es := &core_xds.ExternalService{
 		TLSEnabled: externalService.Spec.GetNetworking().GetTls().GetEnabled(),
 		CaCert: convertToEnvoy(

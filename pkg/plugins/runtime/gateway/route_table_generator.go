@@ -1,21 +1,18 @@
 package gateway
 
 import (
-	"context"
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+=======
+>>>>>>> ad2e07dc (feat(kuma-cp): add gateway support for external services (#2990))
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 // RouteTableGenerator generates Envoy xDS resources gateway routes from
@@ -104,23 +101,11 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 		vh.Configure(route.VirtualHostRoute(&routeBuilder))
 	}
 
-	destinations, err := makeRouteDestinations(&info.RouteTable)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := resources.Add(r.generateClusters(ctx, info, destinations)); err != nil {
-		return nil, err
-	}
-
-	if err := resources.Add(r.generateEndpointAssignments(ctx, info, destinations)); err != nil {
-		return nil, err
-	}
-
 	info.Resources.RouteConfiguration.Configure(envoy_routes.VirtualHost(vh))
 
 	return resources.Get(), nil
 }
+<<<<<<< HEAD
 
 func (r *RouteTableGenerator) generateEndpointAssignments(
 	ctx xds_context.Context,
@@ -228,3 +213,5 @@ func makeRouteDestinations(table *route.Table) (map[string]route.Destination, er
 
 	return destinations, nil
 }
+=======
+>>>>>>> ad2e07dc (feat(kuma-cp): add gateway support for external services (#2990))
