@@ -113,7 +113,7 @@ var _ = Describe("Auth test", func() {
 		body, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
-		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user did not authenticate"}`))
+		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""}`))
 	})
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
@@ -126,7 +126,7 @@ var _ = Describe("Auth test", func() {
 		body, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
-		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user did not authenticate"}`))
+		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""}`))
 	})
 })
 

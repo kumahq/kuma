@@ -3,5 +3,5 @@ package rbac
 import "github.com/kumahq/kuma/pkg/core/user"
 
 type GenerateUserTokenAccess interface {
-	ValidateGenerate(user *user.User) error
+	ValidateGenerate(user user.User) error
 }

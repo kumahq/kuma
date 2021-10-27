@@ -30,34 +30,29 @@ func NewAdminResourceAccess(cfg config_rbac.AdminResourcesRBACStaticConfig) Reso
 
 var _ ResourceAccess = &adminResourceAccess{}
 
-func (a *adminResourceAccess) ValidateCreate(key model.ResourceKey, spec model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user *user.User) error {
+func (a *adminResourceAccess) ValidateCreate(key model.ResourceKey, spec model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(user, descriptor)
 }
 
-func (a *adminResourceAccess) ValidateUpdate(key model.ResourceKey, spec model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user *user.User) error {
+func (a *adminResourceAccess) ValidateUpdate(key model.ResourceKey, spec model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(user, descriptor)
 }
 
-func (a *adminResourceAccess) ValidateDelete(key model.ResourceKey, spec model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user *user.User) error {
+func (a *adminResourceAccess) ValidateDelete(key model.ResourceKey, spec model.ResourceSpec, descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(user, descriptor)
 }
 
-func (a *adminResourceAccess) ValidateList(descriptor model.ResourceTypeDescriptor, user *user.User) error {
+func (a *adminResourceAccess) ValidateList(descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(user, descriptor)
 }
 
-func (a *adminResourceAccess) ValidateGet(key model.ResourceKey, descriptor model.ResourceTypeDescriptor, user *user.User) error {
+func (a *adminResourceAccess) ValidateGet(key model.ResourceKey, descriptor model.ResourceTypeDescriptor, user user.User) error {
 	return a.validateAdminAccess(user, descriptor)
 }
 
-func (r *adminResourceAccess) validateAdminAccess(u *user.User, descriptor model.ResourceTypeDescriptor) error {
+func (r *adminResourceAccess) validateAdminAccess(u user.User, descriptor model.ResourceTypeDescriptor) error {
 	if !descriptor.AdminOnly {
 		return nil
-	}
-	if u == nil {
-		return &rbac.AccessDeniedError{
-			Reason: "user did not authenticate",
-		}
 	}
 	allowed := r.usernames[u.Name]
 	for _, group := range u.Groups {

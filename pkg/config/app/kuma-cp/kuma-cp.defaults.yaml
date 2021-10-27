@@ -400,18 +400,18 @@ rbac:
     # AdminResources defines an access to admin resources (Secret/GlobalSecret)
     adminResources:
       # List of users that are allowed to access admin resources
-      users: ["admin"] # ENV: KUMA_RBAC_STATIC_ADMIN_RESOURCES_USERS
+      users: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_ADMIN_RESOURCES_USERS
       # List of groups that are allowed to access admin resources
-      groups: ["admin"] # ENV: KUMA_RBAC_STATIC_ADMIN_RESOURCES_GROUPS
+      groups: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_ADMIN_RESOURCES_GROUPS
     # GenerateDPToken defines an access to generating dataplane token
     generateDpToken:
       # List of users that are allowed to generate dataplane token
-      users: ["admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_USERS
+      users: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_USERS
       # List of groups that are allowed to generate dataplane token
-      groups: ["admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_GROUPS
+      groups: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_GROUPS
     # GenerateDPToken defines an access to generating user token
     generateUserToken:
       # List of users that are allowed to generate user token
-      users: ["admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_USERS
+      users: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_USERS
       # List of groups that are allowed to generate user token
-      groups: ["admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_GROUPS
+      groups: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_GROUPS

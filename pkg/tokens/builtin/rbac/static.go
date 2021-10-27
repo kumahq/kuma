@@ -32,11 +32,8 @@ func (s *staticGenerateDataplaneTokenAccess) ValidateGenerate(
 	mesh string,
 	tags map[string][]string,
 	tokenType string,
-	user *user.User,
+	user user.User,
 ) error {
-	if user == nil {
-		return &rbac.AccessDeniedError{Reason: "authentication required"}
-	}
 	allowed := s.usernames[user.Name]
 	for _, group := range user.Groups {
 		if s.groups[group] {

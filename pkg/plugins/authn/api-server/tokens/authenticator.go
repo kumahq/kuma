@@ -16,7 +16,7 @@ const bearerPrefix = "Bearer "
 func UserTokenAuthenticator(issuer issuer.UserTokenIssuer) authn.Authenticator {
 	return func(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 		authnHeader := request.Request.Header.Get("authorization")
-		if user.FromCtx(request.Request.Context()) == nil && // do not overwrite existing user
+		if user.FromCtx(request.Request.Context()).Name == user.Anonymous.Name && // do not overwrite existing user
 			authnHeader != "" &&
 			strings.HasPrefix(authnHeader, bearerPrefix) {
 			token := strings.TrimPrefix(authnHeader, bearerPrefix)
@@ -25,7 +25,7 @@ func UserTokenAuthenticator(issuer issuer.UserTokenIssuer) authn.Authenticator {
 				rest_errors.HandleError(response, &rest_errors.Unauthenticated{}, "invalid authentication data: "+err.Error())
 				return
 			}
-			request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), u))
+			request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), u.Authenticated()))
 		}
 		chain.ProcessFilter(request, response)
 	}
