@@ -183,6 +183,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
 	zoneIngressOverviewEndpoints.addListEndpoint(ws)
 
+	globalInsightsEndpoints := globalInsightsEndpoints{
+		resManager:     resManager,
+		resourceAccess: resourceAccess,
+	}
+	globalInsightsEndpoints.addEndpoint(ws)
+
 	for _, definition := range defs {
 		defType := definition.Name
 		if cfg.ApiServer.ReadOnly || (defType == mesh.DataplaneType && cfg.Mode == config_core.Global) || (defType != mesh.DataplaneType && cfg.Mode == config_core.Zone) {
