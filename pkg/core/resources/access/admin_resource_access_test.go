@@ -1,4 +1,4 @@
-package rbac_test
+package access_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -6,16 +6,16 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	config_rbac "github.com/kumahq/kuma/pkg/config/rbac"
+	config_access "github.com/kumahq/kuma/pkg/config/access"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/user"
 )
 
 var _ = Describe("Admin Resource Access", func() {
-	resourceAccess := resources_rbac.NewAdminResourceAccess(config_rbac.AdminResourcesRBACStaticConfig{
+	resourceAccess := resources_access.NewAdminResourceAccess(config_access.AdminResourcesStaticAccessConfig{
 		Users: []string{user.Admin.Name},
 	})
 

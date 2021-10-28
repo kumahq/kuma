@@ -1,4 +1,4 @@
-package rbac_test
+package access_test
 
 import (
 	"testing"
@@ -7,5 +7,5 @@ import (
 )
 
 func TestManager(t *testing.T) {
-	test.RunSpecs(t, "RBAC")
+	test.RunSpecs(t, "Access")
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
@@ -21,13 +21,13 @@ var log = core.Log.WithName("dataplane-token-ws")
 type tokenWebService struct {
 	issuer            issuer.DataplaneTokenIssuer
 	zoneIngressIssuer zoneingress.TokenIssuer
-	access            rbac.GenerateDataplaneTokenAccess
+	access            access.GenerateDataplaneTokenAccess
 }
 
 func NewWebservice(
 	issuer issuer.DataplaneTokenIssuer,
 	zoneIngressIssuer zoneingress.TokenIssuer,
-	access rbac.GenerateDataplaneTokenAccess,
+	access access.GenerateDataplaneTokenAccess,
 ) *restful.WebService {
 	ws := tokenWebService{
 		issuer:            issuer,

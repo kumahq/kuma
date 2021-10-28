@@ -1,8 +1,8 @@
-package rbac
+package access
 
 import (
-	config_rbac "github.com/kumahq/kuma/pkg/config/rbac"
-	"github.com/kumahq/kuma/pkg/core/rbac"
+	config_access "github.com/kumahq/kuma/pkg/config/access"
+	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/user"
 )
 
@@ -13,7 +13,7 @@ type staticGenerateUserTokenAccess struct {
 
 var _ GenerateUserTokenAccess = &staticGenerateUserTokenAccess{}
 
-func NewStaticGenerateUserTokenAccess(cfg config_rbac.GenerateUserTokenRBACStaticConfig) GenerateUserTokenAccess {
+func NewStaticGenerateUserTokenAccess(cfg config_access.GenerateUserTokenStaticAccessConfig) GenerateUserTokenAccess {
 	s := &staticGenerateUserTokenAccess{
 		usernames: map[string]bool{},
 		groups:    map[string]bool{},
@@ -35,7 +35,7 @@ func (s *staticGenerateUserTokenAccess) ValidateGenerate(user user.User) error {
 		}
 	}
 	if !allowed {
-		return &rbac.AccessDeniedError{Reason: "action not allowed"}
+		return &access.AccessDeniedError{Reason: "action not allowed"}
 	}
 	return nil
 }

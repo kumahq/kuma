@@ -319,7 +319,7 @@ var _ = Describe("Config WS", func() {
             "serverPort": 5680,
             "debugEndpoints": false
           },
-          "rbac": {
+          "access": {
             "type": "static",
             "static": {
               "adminResources": {
