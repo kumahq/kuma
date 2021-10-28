@@ -32,16 +32,16 @@ func (n *noopGenerateUserTokenAccess) ValidateGenerate(user.User) error {
 var _ = Describe("Auth Tokens WS", func() {
 
 	var userTokenClient client.UserTokenClient
-	var userTokenIssuer issuer.UserTokenIssuer
+	var userTokenValidator issuer.UserTokenValidator
 
 	BeforeEach(func() {
 		store := memory.NewStore()
 		manager := secret_manager.NewGlobalSecretManager(secret_store.NewSecretStore(store), cipher.None())
 		signingKeyManager := issuer.NewSigningKeyManager(manager)
-		userTokenIssuer = issuer.NewUserTokenIssuer(signingKeyManager, issuer.NewTokenRevocations(manager))
+		userTokenValidator = issuer.NewUserTokenValidator(issuer.NewSigningKeyAccessor(manager), issuer.NewTokenRevocations(manager))
 
 		Expect(signingKeyManager.CreateDefaultSigningKey()).To(Succeed())
-		ws := server.NewWebService(userTokenIssuer, &noopGenerateUserTokenAccess{})
+		ws := server.NewWebService(issuer.NewUserTokenIssuer(signingKeyManager), &noopGenerateUserTokenAccess{})
 
 		container := restful.NewContainer()
 		container.Add(ws)
@@ -64,7 +64,7 @@ var _ = Describe("Auth Tokens WS", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		u, err := userTokenIssuer.Validate(token)
+		u, err := userTokenValidator.Validate(token)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(u.Name).To(Equal("john.doe@example.com"))
 		Expect(u.Groups).To(Equal([]string{"team-a"}))

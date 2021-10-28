@@ -6,7 +6,6 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	config_rbac "github.com/kumahq/kuma/pkg/config/rbac"
 	"github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/rbac"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
@@ -32,7 +31,11 @@ func init() {
 }
 
 func (c plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenticator, error) {
-	return UserTokenAuthenticator(tokenIssuer(context.ResourceManager())), nil
+	validator := issuer.NewUserTokenValidator(
+		issuer.NewSigningKeyAccessor(context.ResourceManager()),
+		issuer.NewTokenRevocations(context.ResourceManager()),
+	)
+	return UserTokenAuthenticator(validator), nil
 }
 
 func (c plugin) BeforeBootstrap(*plugins.MutablePluginContext, plugins.PluginConfig) error {
@@ -47,17 +50,13 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 	if !ok {
 		return errors.Errorf("no RBAC strategy for type %q", context.Config().RBAC.Type)
 	}
-	issuer := tokenIssuer(context.ResourceManager())
+	tokenIssuer := issuer.NewUserTokenIssuer(issuer.NewSigningKeyManager(context.ResourceManager()))
 	if context.Config().ApiServer.Authn.Tokens.BootstrapAdminToken {
-		if err := context.ComponentManager().Add(NewAdminTokenBootstrap(issuer, context.ResourceManager(), context.Config())); err != nil {
+		if err := context.ComponentManager().Add(NewAdminTokenBootstrap(tokenIssuer, context.ResourceManager(), context.Config())); err != nil {
 			return err
 		}
 	}
-	webService := server.NewWebService(issuer, accessFn(context))
+	webService := server.NewWebService(tokenIssuer, accessFn(context))
 	context.APIManager().Add(webService)
 	return nil
-}
-
-func tokenIssuer(resManager manager.ResourceManager) issuer.UserTokenIssuer {
-	return issuer.NewUserTokenIssuer(issuer.NewSigningKeyManager(resManager), issuer.NewTokenRevocations(resManager))
 }

@@ -11,7 +11,6 @@ import (
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -20,8 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 )
-
-var log = core.Log.WithName("plugins").WithName("authn").WithName("tokens")
 
 var AdminTokenKey = model.ResourceKey{
 	Name: "admin-user-token",

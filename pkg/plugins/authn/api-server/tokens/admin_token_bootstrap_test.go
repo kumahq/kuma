@@ -20,7 +20,8 @@ var _ = Describe("Admin Token Bootstrap", func() {
 		// given
 		resManager := manager.NewResourceManager(memory.NewStore())
 		signingKeyManager := issuer.NewSigningKeyManager(resManager)
-		tokenIssuer := issuer.NewUserTokenIssuer(signingKeyManager, issuer.NewTokenRevocations(resManager))
+		tokenIssuer := issuer.NewUserTokenIssuer(signingKeyManager)
+		tokenValidator := issuer.NewUserTokenValidator(issuer.NewSigningKeyAccessor(resManager), issuer.NewTokenRevocations(resManager))
 		component := tokens.NewAdminTokenBootstrap(tokenIssuer, resManager, kuma_cp.DefaultConfig())
 		err := signingKeyManager.CreateDefaultSigningKey()
 		Expect(err).ToNot(HaveOccurred())
@@ -37,7 +38,7 @@ var _ = Describe("Admin Token Bootstrap", func() {
 			globalSecret := system.NewGlobalSecretResource()
 			err = resManager.Get(context.Background(), globalSecret, core_store.GetBy(tokens.AdminTokenKey))
 			g.Expect(err).ToNot(HaveOccurred())
-			user, err := tokenIssuer.Validate(string(globalSecret.Spec.Data.Value))
+			user, err := tokenValidator.Validate(string(globalSecret.Spec.Data.Value))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(user.Name).To(Equal("mesh-system:admin"))
 			g.Expect(user.Groups).To(Equal([]string{"mesh-system:admin"}))
