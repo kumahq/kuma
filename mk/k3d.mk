@@ -43,7 +43,7 @@ k3d/load/images:
     	$(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) \
     	$(KUMA_INIT_DOCKER_IMAGE) $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) \
     	$(KUMACTL_DOCKER_IMAGE) kuma-universal:latest \
-    	--cluster=$(KIND_CLUSTER_NAME) --trace
+    	--cluster=$(KIND_CLUSTER_NAME) --verbose
 
 .PHONY: k3d/load
 k3d/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl docker/build/kuma-universal k3d/load/images
