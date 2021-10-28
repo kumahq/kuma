@@ -99,22 +99,22 @@ metadata:
 		header := fmt.Sprintf("Authorization: Bearer %s", token)
 		url := fmt.Sprintf("%s/api", apiServer)
 
-		cmd := fmt.Sprintf("curl --cacert %s --header %q -X GET -v -m 3 --fail %s", caCert, header, url)
+		cmd := fmt.Sprintf("curl -s --cacert %s --header %q -o /dev/null -w '%%{http_code}\\n' -m 3 --fail %s", caCert, header, url)
 
 		// given Mesh with passthrough enabled then communication with API Server works
-		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		stdout, _, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"bash", "-c", cmd)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/2 200"))
+		Expect(stdout).To(Equal("200"))
 
 		// when passthrough is disabled on the Mesh
 		err = YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication with API Server still works
-		_, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		stdout, _, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"bash", "-c", cmd)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/2 200"))
+		Expect(stdout).To(Equal("200"))
 	})
 }
