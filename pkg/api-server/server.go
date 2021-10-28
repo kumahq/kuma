@@ -26,16 +26,16 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
-	tokens_rbac "github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
+	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 )
@@ -84,7 +84,7 @@ func NewApiServer(
 	metrics metrics.Metrics,
 	getInstanceId func() string, getClusterId func() string,
 	authenticator authn.Authenticator,
-	rbac runtime.RBAC,
+	access runtime.Access,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -116,7 +116,7 @@ func NewApiServer(
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, cfg, rbac.ResourceAccess)
+	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId); err != nil {
@@ -140,7 +140,7 @@ func NewApiServer(
 		config: *serverConfig,
 	}
 
-	dpWs, err := dataplaneTokenWs(resManager, rbac.GenerateDataplaneTokenAccess)
+	dpWs, err := dataplaneTokenWs(resManager, access.GenerateDataplaneTokenAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func NewApiServer(
 	return newApiServer, nil
 }
 
-func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config, resourceAccess resources_rbac.ResourceAccess) {
+func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDescriptor, resManager manager.ResourceManager, cfg *kuma_cp.Config, resourceAccess resources_access.ResourceAccess) {
 	dpOverviewEndpoints := dataplaneOverviewEndpoints{
 		resManager:     resManager,
 		resourceAccess: resourceAccess,
@@ -227,7 +227,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 }
 
-func dataplaneTokenWs(resManager manager.ResourceManager, access tokens_rbac.GenerateDataplaneTokenAccess) (*restful.WebService, error) {
+func dataplaneTokenWs(resManager manager.ResourceManager, access tokens_access.GenerateDataplaneTokenAccess) (*restful.WebService, error) {
 	dpIssuer, err := builtin.NewDataplaneTokenIssuer(resManager)
 	if err != nil {
 		return nil, err
@@ -377,7 +377,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.GetInstanceId,
 		rt.GetClusterId,
 		rt.APIServerAuthenticator(),
-		rt.RBAC(),
+		rt.Access(),
 	)
 	if err != nil {
 		return err

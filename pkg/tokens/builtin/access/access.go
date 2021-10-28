@@ -1,4 +1,4 @@
-package rbac
+package access
 
 import (
 	"github.com/kumahq/kuma/pkg/core/user"

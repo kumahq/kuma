@@ -1,4 +1,4 @@
-package rbac
+package access
 
 import "reflect"
 

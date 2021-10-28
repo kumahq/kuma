@@ -391,27 +391,27 @@ dpServer:
       # UnhealthyThreshold is a number of unhealthy health checks required before a host is marked unhealthy
       unhealthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD
 
-# Role-Based Access Control configuration
-rbac:
-  # Type of RBAC strategy (available values: "static")
+# Access Control configuration
+access:
+  # Type of access strategy (available values: "static")
   type: static
-  # Configuration of static RBAC strategy
+  # Configuration of static access strategy
   static:
     # AdminResources defines an access to admin resources (Secret/GlobalSecret)
     adminResources:
       # List of users that are allowed to access admin resources
-      users: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_ADMIN_RESOURCES_USERS
+      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_ADMIN_RESOURCES_USERS
       # List of groups that are allowed to access admin resources
-      groups: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_ADMIN_RESOURCES_GROUPS
+      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_ADMIN_RESOURCES_GROUPS
     # GenerateDPToken defines an access to generating dataplane token
     generateDpToken:
       # List of users that are allowed to generate dataplane token
-      users: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_USERS
+      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_USERS
       # List of groups that are allowed to generate dataplane token
-      groups: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_GROUPS
+      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS
     # GenerateDPToken defines an access to generating user token
     generateUserToken:
       # List of users that are allowed to generate user token
-      users: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_USERS
+      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS
       # List of groups that are allowed to generate user token
-      groups: ["mesh-system:admin"] # ENV: KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_GROUPS
+      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS

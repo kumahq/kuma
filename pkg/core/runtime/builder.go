@@ -52,7 +52,7 @@ type BuilderContext interface {
 	MeshValidator() core_managers.MeshValidator
 	KDSContext() *kds_context.Context
 	APIServerAuthenticator() authn.Authenticator
-	RBAC() RBAC
+	Access() Access
 }
 
 var _ BuilderContext = &Builder{}
@@ -83,7 +83,7 @@ type Builder struct {
 	kdsctx   *kds_context.Context
 	mv       core_managers.MeshValidator
 	au       authn.Authenticator
-	rbac     RBAC
+	acc      Access
 	appCtx   context.Context
 	*runtimeInfo
 }
@@ -230,8 +230,8 @@ func (b *Builder) WithAPIServerAuthenticator(au authn.Authenticator) *Builder {
 	return b
 }
 
-func (b *Builder) WithRBAC(rbac RBAC) *Builder {
-	b.rbac = rbac
+func (b *Builder) WithAccess(acc Access) *Builder {
+	b.acc = acc
 	return b
 }
 
@@ -293,8 +293,8 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.au == nil {
 		return nil, errors.Errorf("API Server Authenticator has not been configured")
 	}
-	if b.rbac == (RBAC{}) {
-		return nil, errors.Errorf("RBAC has not been configured")
+	if b.acc == (Access{}) {
+		return nil, errors.Errorf("Access has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
@@ -321,7 +321,7 @@ func (b *Builder) Build() (Runtime, error) {
 			kdsctx:   b.kdsctx,
 			mv:       b.mv,
 			au:       b.au,
-			rbac:     b.rbac,
+			acc:      b.acc,
 			appCtx:   b.appCtx,
 		},
 		Manager: b.cm,
@@ -397,8 +397,8 @@ func (b *Builder) MeshValidator() core_managers.MeshValidator {
 func (b *Builder) APIServerAuthenticator() authn.Authenticator {
 	return b.au
 }
-func (b *Builder) RBAC() RBAC {
-	return b.rbac
+func (b *Builder) Access() Access {
+	return b.acc
 }
 func (b *Builder) AppCtx() context.Context {
 	return b.appCtx

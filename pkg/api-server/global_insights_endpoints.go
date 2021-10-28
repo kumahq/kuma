@@ -6,16 +6,16 @@ import (
 	"github.com/emicklei/go-restful"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/rbac"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 )
 
 type globalInsightsEndpoints struct {
 	resManager     manager.ResourceManager
-	resourceAccess rbac.ResourceAccess
+	resourceAccess access.ResourceAccess
 }
 
 type globalInsightsStat struct {

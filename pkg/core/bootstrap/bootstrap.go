@@ -23,11 +23,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -42,7 +42,7 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
-	tokens_rbac "github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
+	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -107,9 +107,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 
-	builder.WithRBAC(core_runtime.RBAC{
-		ResourceAccess:               resources_rbac.NewAdminResourceAccess(builder.Config().RBAC.Static.AdminResources),
-		GenerateDataplaneTokenAccess: tokens_rbac.NewStaticGenerateDataplaneTokenAccess(builder.Config().RBAC.Static.GenerateDPToken),
+	builder.WithAccess(core_runtime.Access{
+		ResourceAccess:               resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
+		GenerateDataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
 	})
 
 	if err := initializeAPIServerAuthenticator(builder); err != nil {

@@ -1,10 +1,10 @@
-package rbac
+package access
 
 import (
 	"fmt"
 
-	config_rbac "github.com/kumahq/kuma/pkg/config/rbac"
-	"github.com/kumahq/kuma/pkg/core/rbac"
+	config_access "github.com/kumahq/kuma/pkg/config/access"
+	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/user"
 )
@@ -14,7 +14,7 @@ type adminResourceAccess struct {
 	groups    map[string]bool
 }
 
-func NewAdminResourceAccess(cfg config_rbac.AdminResourcesRBACStaticConfig) ResourceAccess {
+func NewAdminResourceAccess(cfg config_access.AdminResourcesStaticAccessConfig) ResourceAccess {
 	a := &adminResourceAccess{
 		usernames: map[string]bool{},
 		groups:    map[string]bool{},
@@ -61,7 +61,7 @@ func (r *adminResourceAccess) validateAdminAccess(u user.User, descriptor model.
 		}
 	}
 	if !allowed {
-		return &rbac.AccessDeniedError{
+		return &access.AccessDeniedError{
 			Reason: fmt.Sprintf("user %q cannot access the resource of type %q", u.String(), descriptor.Name),
 		}
 	}

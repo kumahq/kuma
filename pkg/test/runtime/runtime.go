@@ -9,11 +9,11 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -29,7 +29,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	tokens_rbac "github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
+	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -84,9 +84,9 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
 	builder.WithAPIServerAuthenticator(certs.ClientCertAuthenticator)
-	builder.WithRBAC(core_runtime.RBAC{
-		ResourceAccess:               resources_rbac.NewAdminResourceAccess(builder.Config().RBAC.Static.AdminResources),
-		GenerateDataplaneTokenAccess: tokens_rbac.NewStaticGenerateDataplaneTokenAccess(builder.Config().RBAC.Static.GenerateDPToken),
+	builder.WithAccess(core_runtime.Access{
+		ResourceAccess:               resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
+		GenerateDataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
 	})
 
 	_ = initializeConfigManager(cfg, builder)

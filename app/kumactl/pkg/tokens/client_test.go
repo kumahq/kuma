@@ -13,8 +13,8 @@ import (
 	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 )
 
@@ -37,7 +37,7 @@ var _ = Describe("Tokens Client", func() {
 
 	BeforeEach(func() {
 		container := restful.NewContainer()
-		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}, rbac.NoopGenerateDpTokenAccess{}))
+		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}, access.NoopGenerateDpTokenAccess{}))
 		server = httptest.NewServer(container.ServeMux)
 	})
 

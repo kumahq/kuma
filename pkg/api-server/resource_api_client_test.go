@@ -12,10 +12,10 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -131,8 +131,8 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		func() string { return "instance-id" },
 		func() string { return "cluster-id" },
 		certs.ClientCertAuthenticator,
-		runtime.RBAC{
-			ResourceAccess:               resources_rbac.NewAdminResourceAccess(cfg.RBAC.Static.AdminResources),
+		runtime.Access{
+			ResourceAccess:               resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
 			GenerateDataplaneTokenAccess: nil,
 		},
 	)

@@ -4,10 +4,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
-	config_rbac "github.com/kumahq/kuma/pkg/config/rbac"
+	config_access "github.com/kumahq/kuma/pkg/config/access"
 	"github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/access"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/rbac"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
 )
 
@@ -19,10 +19,10 @@ type plugin struct {
 var _ plugins.AuthnAPIServerPlugin = plugin{}
 var _ plugins.BootstrapPlugin = plugin{}
 
-// We declare RBACStrategies and not into Runtime because it's a plugin.
-var RBACStrategies = map[string]func(*plugins.MutablePluginContext) rbac.GenerateUserTokenAccess{
-	config_rbac.StaticType: func(context *plugins.MutablePluginContext) rbac.GenerateUserTokenAccess {
-		return rbac.NewStaticGenerateUserTokenAccess(context.Config().RBAC.Static.GenerateUserToken)
+// We declare AccessStrategies and not into Runtime because it's a plugin.
+var AccessStrategies = map[string]func(*plugins.MutablePluginContext) access.GenerateUserTokenAccess{
+	config_access.StaticType: func(context *plugins.MutablePluginContext) access.GenerateUserTokenAccess {
+		return access.NewStaticGenerateUserTokenAccess(context.Config().Access.Static.GenerateUserToken)
 	},
 }
 
@@ -46,9 +46,9 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 	if err := context.ComponentManager().Add(issuer.NewDefaultSigningKeyComponent(issuer.NewSigningKeyManager(context.ResourceManager()))); err != nil {
 		return err
 	}
-	accessFn, ok := RBACStrategies[context.Config().RBAC.Type]
+	accessFn, ok := AccessStrategies[context.Config().Access.Type]
 	if !ok {
-		return errors.Errorf("no RBAC strategy for type %q", context.Config().RBAC.Type)
+		return errors.Errorf("no Access strategy for type %q", context.Config().Access.Type)
 	}
 	tokenIssuer := issuer.NewUserTokenIssuer(issuer.NewSigningKeyManager(context.ResourceManager()))
 	if context.Config().ApiServer.Authn.Tokens.BootstrapAdminToken {
