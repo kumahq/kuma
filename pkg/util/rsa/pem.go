@@ -26,7 +26,7 @@ func ToPEMBytes(key *rsa.PrivateKey) ([]byte, error) {
 func FromPEMBytes(b []byte) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode(b)
 	if block.Type != rsaBlockType {
-		return nil, errors.Errorf("PEM block is not RSA. Block is %s, expected %s", block.Type, rsaBlockType)
+		return nil, errors.Errorf("invalid key encoding %q", block.Type)
 	}
 	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }
