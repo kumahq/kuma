@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -34,10 +33,6 @@ type SigningKeyNotFound struct {
 
 func (s *SigningKeyNotFound) Error() string {
 	return fmt.Sprintf("there is no signing key with serial number %d. GlobalSecret of name %q is not found. If signing key was rotated, regenerate the token", s.SerialNumber, SigningKeyResourceKey(s.SerialNumber).Name)
-}
-
-func (a *SigningKeyNotFound) Is(err error) bool {
-	return reflect.TypeOf(a) == reflect.TypeOf(err)
 }
 
 func SigningKeyResourceKey(serialNumber int) model.ResourceKey {
