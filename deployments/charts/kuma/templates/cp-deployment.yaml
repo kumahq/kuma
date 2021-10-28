@@ -25,6 +25,10 @@ spec:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
         app: {{ include "kuma.name" . }}-control-plane
     spec:
+      {{- with .Values.controlPlane.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
       {{- with .Values.controlPlane.nodeSelector }}
       nodeSelector:
