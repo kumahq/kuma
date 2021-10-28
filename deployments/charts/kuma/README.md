@@ -71,7 +71,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
 | ingress.annotations | object | `{}` | Additional deployment annotation |
 | ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
-| ingress.affinity | object | `{}` | Affinity placement rule for the Ingress pods |
+| ingress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kubectl.image.registry | string | `"bitnami"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |

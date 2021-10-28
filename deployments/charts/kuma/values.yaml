@@ -56,8 +56,8 @@ controlPlane:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
 
-  # -- Affinity placement rule for the Kuma Control Plane pods, update label to match the deployment
-  affinity:
+  # -- Affinity placement rule for the Kuma Control Plane pods
+  affinity: {}
 
   # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
   injectorFailurePolicy: Ignore
@@ -197,7 +197,7 @@ ingress:
     kubernetes.io/arch: amd64
   
   # -- Affinity placement rule for the Kuma Ingress pods
-  affinity:
+  affinity: {}
 
 kumactl:
   image:
