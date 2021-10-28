@@ -27,10 +27,7 @@ func NewStaticGenerateUserTokenAccess(cfg config_rbac.GenerateUserTokenRBACStati
 	return s
 }
 
-func (s *staticGenerateUserTokenAccess) ValidateGenerate(user *user.User) error {
-	if user == nil {
-		return &rbac.AccessDeniedError{Reason: "authentication required"}
-	}
+func (s *staticGenerateUserTokenAccess) ValidateGenerate(user user.User) error {
 	allowed := s.usernames[user.Name]
 	for _, group := range user.Groups {
 		if s.groups[group] {

@@ -13,16 +13,16 @@ func DefaultRBACConfig() RBACConfig {
 		Type: StaticType,
 		Static: RBACStaticConfig{
 			AdminResources: AdminResourcesRBACStaticConfig{
-				Users:  []string{"admin"},
-				Groups: []string{"admin"},
+				Users:  []string{"mesh-system:admin"},
+				Groups: []string{"mesh-system:admin"},
 			},
 			GenerateDPToken: GenerateDPTokenRBACStaticConfig{
-				Users:  []string{"admin"},
-				Groups: []string{"admin"},
+				Users:  []string{"mesh-system:admin"},
+				Groups: []string{"mesh-system:admin"},
 			},
 			GenerateUserToken: GenerateUserTokenRBACStaticConfig{
-				Users:  []string{"admin"},
-				Groups: []string{"admin"},
+				Users:  []string{"mesh-system:admin"},
+				Groups: []string{"mesh-system:admin"},
 			},
 		},
 	}

@@ -2,6 +2,8 @@ package tls
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -14,7 +16,7 @@ type KeyPair struct {
 	KeyPEM  []byte
 }
 
-func ToKeyPair(key interface{}, cert []byte) (*KeyPair, error) {
+func ToKeyPair(key crypto.PrivateKey, cert []byte) (*KeyPair, error) {
 	keyPem, err := pemEncodeKey(key)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to PEM encode a private key")
@@ -29,9 +31,15 @@ func ToKeyPair(key interface{}, cert []byte) (*KeyPair, error) {
 	}, nil
 }
 
-func pemEncodeKey(priv interface{}) ([]byte, error) {
+func pemEncodeKey(priv crypto.PrivateKey) ([]byte, error) {
 	var block *pem.Block
 	switch k := priv.(type) {
+	case *ecdsa.PrivateKey:
+		bytes, err := x509.MarshalECPrivateKey(k)
+		if err != nil {
+			return nil, err
+		}
+		block = &pem.Block{Type: "EC PRIVATE KEY", Bytes: bytes}
 	case *rsa.PrivateKey:
 		block = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
 	default:

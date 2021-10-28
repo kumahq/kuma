@@ -19,7 +19,7 @@ var log = core.Log.WithName("plugins").WithName("authn").WithName("api-server").
 func UserTokenAuthenticator(validator issuer.UserTokenValidator) authn.Authenticator {
 	return func(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 		authnHeader := request.Request.Header.Get("authorization")
-		if user.FromCtx(request.Request.Context()) == nil && // do not overwrite existing user
+		if user.FromCtx(request.Request.Context()).Name == user.Anonymous.Name && // do not overwrite existing user
 			authnHeader != "" &&
 			strings.HasPrefix(authnHeader, bearerPrefix) {
 			token := strings.TrimPrefix(authnHeader, bearerPrefix)
@@ -29,7 +29,7 @@ func UserTokenAuthenticator(validator issuer.UserTokenValidator) authn.Authentic
 				log.Info("authentication rejected", "reason", err.Error())
 				return
 			}
-			request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), u))
+			request.Request = request.Request.WithContext(user.Ctx(request.Request.Context(), u.Authenticated()))
 		}
 		chain.ProcessFilter(request, response)
 	}

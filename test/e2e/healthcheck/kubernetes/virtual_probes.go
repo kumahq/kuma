@@ -42,7 +42,7 @@ func VirtualProbes() {
 			return err
 		}
 		for _, p := range pods {
-			err := WaitUntilPodReadyE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(namespace), p.GetName(), 0, 0)
+			err := k8s.WaitUntilPodAvailableE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(namespace), p.GetName(), 0, 0)
 			if err != nil {
 				return err
 			}

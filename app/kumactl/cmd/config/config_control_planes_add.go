@@ -32,6 +32,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 		Use:   "add",
 		Short: "Add a Control Plane",
 		Long:  `Add a Control Plane.`,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateArgs(args, pctx.Runtime.AuthnPlugins); err != nil {
 				return err

@@ -111,6 +111,40 @@ var _ = Describe("Builtin CA Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cert.NotAfter).To(Equal(core.Now().UTC().Add(time.Minute).Truncate(time.Second)))
 		})
+
+		It("should ensure first backend and then second", func() {
+			// given
+			mesh := "default"
+			backends := []*mesh_proto.CertificateAuthorityBackend{{
+				Name: "builtin-1",
+				Type: "builtin",
+			}}
+
+			// when
+			err := caManager.EnsureBackends(context.Background(), mesh, backends)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// when second one is added AFTER the CA for the first one was created
+			backends = append(backends, &mesh_proto.CertificateAuthorityBackend{
+				Name: "builtin-2",
+				Type: "builtin",
+			})
+			err = caManager.EnsureBackends(context.Background(), mesh, backends)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// and both CAs have their keys
+			secretRes := system.NewSecretResource()
+			err = secretManager.Get(context.Background(), secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-1", "default"))
+			Expect(err).ToNot(HaveOccurred())
+
+			secretRes = system.NewSecretResource()
+			err = secretManager.Get(context.Background(), secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-2", "default"))
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 
 	Context("GetRootCert", func() {

@@ -56,7 +56,10 @@ var _ = Describe("Config WS", func() {
 			},
 			"authn": {
 			  "localhostIsAdmin": true,
-			  "type": "clientCerts"
+			  "type": "tokens",
+			  "tokens": {
+			    "bootstrapAdminToken": true
+			  }
 			},
 			"corsAllowedDomains": [
 			  ".*"
@@ -320,16 +323,16 @@ var _ = Describe("Config WS", func() {
             "type": "static",
             "static": {
               "adminResources": {
-                "users": ["admin"],
-                "groups": ["admin"]
+                "users": ["mesh-system:admin"],
+                "groups": ["mesh-system:admin"]
               },
               "generateDpToken": {
-                "users": ["admin"],
-                "groups": ["admin"]
+                "users": ["mesh-system:admin"],
+                "groups": ["mesh-system:admin"]
               },
               "generateUserToken": {
-                "users": ["admin"],
-                "groups": ["admin"]
+                "users": ["mesh-system:admin"],
+                "groups": ["mesh-system:admin"]
               }
             }
           }

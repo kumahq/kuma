@@ -33,6 +33,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_rbac "github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
@@ -182,6 +183,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
 	zoneIngressOverviewEndpoints.addListEndpoint(ws)
 
+	globalInsightsEndpoints := globalInsightsEndpoints{
+		resManager:     resManager,
+		resourceAccess: resourceAccess,
+	}
+	globalInsightsEndpoints.addEndpoint(ws)
+
 	for _, definition := range defs {
 		defType := definition.Name
 		if cfg.ApiServer.ReadOnly || (defType == mesh.DataplaneType && cfg.Mode == config_core.Global) || (defType != mesh.DataplaneType && cfg.Mode == config_core.Zone) {
@@ -281,7 +288,7 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 
 func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
 	var tlsConfig *tls.Config
-	if a.config.Authn.Type == "clientCerts" {
+	if a.config.Authn.Type == certs.PluginName {
 		tlsC, err := configureMTLS(a.config.Auth.ClientCertsDir)
 		if err != nil {
 			errChan <- err

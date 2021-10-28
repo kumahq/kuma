@@ -174,6 +174,90 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(envoy["1.15.0"].Offline).To(Equal(uint32(2)))
 	})
 
+	It("should count dataplanes by type", func() {
+		// setup
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp1 := core_mesh.NewDataplaneInsightResource()
+		dp1.Spec.Subscriptions = append(dp1.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			Id: strconv.Itoa(1),
+		})
+		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp2 := core_mesh.NewDataplaneInsightResource()
+		dp2.Spec.Subscriptions = append(dp2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			Id: strconv.Itoa(2),
+			ConnectTime: &timestamppb.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+			DisconnectTime: &timestamppb.Timestamp{
+				Seconds: 101,
+				Nanos:   202,
+			},
+		})
+		err = rm.Create(context.Background(), dp2, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp3", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp3 := core_mesh.NewDataplaneInsightResource()
+		dp3.Spec.Subscriptions = append(dp3.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			Id: strconv.Itoa(3),
+			ConnectTime: &timestamppb.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+		})
+		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.GatewayDataplane}, store.CreateByKey("dp4", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp4 := core_mesh.NewDataplaneInsightResource()
+		dp4.Spec.Subscriptions = append(dp4.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			Id: strconv.Itoa(4),
+			ConnectTime: &timestamppb.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+		})
+		err = rm.Create(context.Background(), dp4, store.CreateByKey("dp4", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		nowMtx.Lock()
+		now = now.Add(60 * time.Second)
+		nowMtx.Unlock()
+		tickCh <- now
+
+		// when
+		meshInsight := core_mesh.NewMeshInsightResource()
+		Eventually(func() error {
+			return rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
+		}, "10s", "100ms").Should(BeNil())
+
+		// then
+		standardDP := meshInsight.Spec.GetDataplanesByType().GetStandard()
+		Expect(standardDP.GetTotal()).To(Equal(uint32(3)))
+		Expect(standardDP.GetOnline()).To(Equal(uint32(1)))
+		Expect(standardDP.GetOffline()).To(Equal(uint32(2)))
+
+		gatewayDP := meshInsight.Spec.GetDataplanesByType().GetGateway()
+		Expect(gatewayDP.GetTotal()).To(Equal(uint32(1)))
+		Expect(gatewayDP.GetOffline()).To(Equal(uint32(0)))
+		Expect(gatewayDP.GetOnline()).To(Equal(uint32(1)))
+	})
+
 	It("should count dataplanes by mTLS backends", func() {
 		// given mesh
 		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))

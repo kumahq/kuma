@@ -18,6 +18,7 @@ services:
     # DNS name of the Kuma xDS server
     - KUMA_GENERAL_TLS_CERT_FILE=/certs/server/cert.pem
     - KUMA_GENERAL_TLS_KEY_FILE=/certs/server/key.pem
+    - KUMA_API_SERVER_AUTHN_TYPE=adminClientCerts
     - KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR=/certs/client
     expose:
     - "5678"
