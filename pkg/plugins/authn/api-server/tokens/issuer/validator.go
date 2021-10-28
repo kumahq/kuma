@@ -44,7 +44,7 @@ func (j *jwtTokenValidator) Validate(rawToken Token) (user.User, error) {
 	})
 	if err != nil {
 		if verr, ok := err.(*jwt.ValidationError); ok { // jwt.ValidationError does not implement Unwrap() to just use errors.As
-			if singingKeyErr, ok :=  verr.Inner.(*SigningKeyNotFound); ok {
+			if singingKeyErr, ok := verr.Inner.(*SigningKeyNotFound); ok {
 				return user.User{}, singingKeyErr
 			}
 		}
