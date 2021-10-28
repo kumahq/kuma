@@ -1,0 +1,46 @@
+name: "Push"
+
+on:
+  push:
+    branches:
+    - master
+
+  workflow_dispatch:
+
+jobs:
+  inform-kong-mesh-about-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: jwalton/gh-find-current-pr@v1
+      id: findPR
+      with:
+        state: all
+
+    - name: "Add backport label"
+      uses: actions/github-script@v5
+      with:
+        github-token: ${{ secrets.GH_TOKEN }}
+        script: |
+          console.log("hello world");
+          console.log({ context });
+
+          const { before, after, commits = [] } = context.payload;
+          const pr = ${{ toJSON(steps.findPR.outputs) }};
+
+          github.rest.repos.createDispatchEvent({
+            owner: 'bartsmykla',
+            repo: 'kong-mesh',
+            event_type: 'abracadabra',
+            client_payload: {
+              before,
+              after,
+              pr: {
+                number: pr.number,
+                title: pr.title,
+              },
+              commits: commits.map(({ id }) => id),
+            },
+          });
