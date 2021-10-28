@@ -93,6 +93,17 @@ func genHttpRetryPolicy(
 		policy.RetriableStatusCodes = conf.RetriableStatusCodes
 	}
 
+	if conf.RetriableMethods != nil {
+		for _, method := range conf.RetriableMethods {
+			policy.RetriableRequestHeaders = append(policy.RetriableRequestHeaders,
+				&envoy_route.HeaderMatcher{
+					Name:                 ":method",
+					HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{ExactMatch: strings.ToUpper(method)},
+					InvertMatch:          false,
+				})
+		}
+	}
+
 	return &policy
 }
 

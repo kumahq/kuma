@@ -78,7 +78,8 @@ var _ = Describe("RetryConfigurer", func() {
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
-							NumRetries: util_proto.UInt32(7),
+							NumRetries:       util_proto.UInt32(7),
+							RetriableMethods: []string{"get", "post"},
 						},
 					},
 				},
@@ -108,6 +109,11 @@ var _ = Describe("RetryConfigurer", func() {
                       name: backend
                       retryPolicy:
                         numRetries: 7
+                        retriableRequestHeaders:
+                        - exactMatch: GET
+                          name: :method
+                        - exactMatch: POST
+                          name: :method
                         retryOn: gateway-error,connect-failure,refused-stream
                       routes:
                       - match:

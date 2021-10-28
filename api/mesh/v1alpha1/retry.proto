@@ -56,6 +56,9 @@ message Retry {
 
       //  +optional
       repeated uint32 retriable_status_codes = 5;
+
+      //  +optional
+      repeated string retriable_methods = 6;
     }
 
     message Tcp {
