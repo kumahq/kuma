@@ -15,7 +15,7 @@ import (
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
 
-var _ = Describe("Gateway Gateway Route", func() {
+var _ = Describe("Gateway Route", func() {
 	var rt runtime.Runtime
 	var dataplanes *DataplaneGenerator
 
@@ -46,7 +46,6 @@ var _ = Describe("Gateway Gateway Route", func() {
 		Expect(StoreNamedFixture(rt, "mesh-default.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "serviceinsight-default.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "dataplane-default.yaml")).To(Succeed())
-		Expect(StoreNamedFixture(rt, "gateway-default.yaml")).To(Succeed())
 
 		dataplanes = &DataplaneGenerator{Manager: rt.ResourceManager()}
 
@@ -69,22 +68,7 @@ var _ = Describe("Gateway Gateway Route", func() {
 		}
 	})
 
-	DescribeTable("generate matching resources",
-		func(goldenFileName string, fixtureResources ...string) {
-			// given
-			for _, resource := range fixtureResources {
-				Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
-			}
-
-			// when
-			snap, err := Do()
-			Expect(err).To(Succeed())
-
-			// then
-			Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
-				To(matchers.MatchGoldenYAML(path.Join("testdata", goldenFileName)))
-
-		},
+	entries := []TableEntry{
 		// When we have a route with multiple hostnames that is
 		// attached to a listener with no hostname (i.e. a wildcard),
 		// we ought to generate distinct Envoy virtualhost entries
@@ -186,10 +170,6 @@ conf:
 		// Given a route with matching hostnames and a route with
 		// non-matching hostnames, only the route with matching
 		// hostnames should be configured on the Gateway.
-		//
-		// TODO(jpeach) This test won't test anything until we
-		// implement route generation, because neither of the two
-		// GatewayRoute fixtures generate anything at all
 		Entry("should match route hostnames on the listener",
 			"03-gateway-route.yaml", `
 type: GatewayRoute
@@ -868,5 +848,55 @@ conf:
           kuma.io/service: external-httpbin
 `,
 		),
-	)
+	}
+
+	Context("with a HTTP gateway", func() {
+		JustBeforeEach(func() {
+			Expect(StoreNamedFixture(rt, "gateway-http-default.yaml")).To(Succeed())
+		})
+		DescribeTable("generating xDS resources",
+			func(goldenFileName string, fixtureResources ...string) {
+				// given
+				for _, resource := range fixtureResources {
+					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				}
+
+				// when
+				snap, err := Do()
+				Expect(err).To(Succeed())
+
+				// then
+				Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
+					To(matchers.MatchGoldenYAML(path.Join("testdata", "http", goldenFileName)))
+
+			},
+			entries...,
+		)
+	})
+
+	Context("with a HTTPS gateway", func() {
+		JustBeforeEach(func() {
+			Expect(StoreNamedFixture(rt, "gateway-https-default.yaml")).To(Succeed())
+			Expect(StoreNamedFixture(rt, "secret-https-default.yaml")).To(Succeed())
+		})
+		DescribeTable("generating xDS resources",
+			func(goldenFileName string, fixtureResources ...string) {
+				// given
+				for _, resource := range fixtureResources {
+					Expect(StoreInlineFixture(rt, []byte(resource))).To(Succeed())
+				}
+
+				// when
+				snap, err := Do()
+				Expect(err).To(Succeed())
+
+				// then
+				Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
+					To(matchers.MatchGoldenYAML(path.Join("testdata", "https", goldenFileName)))
+
+			},
+			entries...,
+		)
+	})
+
 })

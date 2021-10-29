@@ -60,6 +60,8 @@ conf:
   listeners:
   - port: 443
     protocol: HTTPS
+    tls:
+      mode: PASSTHROUGH
     tags:
       name: https
 `),
@@ -167,7 +169,7 @@ conf:
 
 		ErrorCase("has a passthrough TLS secret",
 			validators.Violation{
-				Field:   "conf.listeners[0].tls.certificate",
+				Field:   "conf.listeners[0].tls.certificates",
 				Message: "must be empty in TLS passthrough mode",
 			}, `
 type: Gateway
@@ -186,13 +188,13 @@ conf:
       name: https
     tls:
       mode: PASSTHROUGH
-      certificate:
-        secret: foo
+      certificates:
+      - secret: foo
 `),
 
 		ErrorCase("is missing a TLS termination secret",
 			validators.Violation{
-				Field:   "conf.listeners[0].tls.certificate",
+				Field:   "conf.listeners[0].tls.certificates",
 				Message: "cannot be empty in TLS termination mode",
 			}, `
 type: Gateway

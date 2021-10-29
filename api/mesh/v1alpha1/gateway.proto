@@ -53,11 +53,19 @@ message Gateway {
       // by the client.
       Mode mode = 1;
 
-      // Certificate is a reference to a object that contains a TLS
-      // certificate and private key. This certificate is used to establish
-      // a TLS session for requests that match the hostname of the associated
-      // listener.
-      kuma.system.v1alpha1.DataSource certificate = 2;
+      // Certificates is an array of datasources that contain TLS
+      // certificates and private keys.  Each datasource must contain a
+      // sequence of PEM-encoded objects. The server certificate and private
+      // key are required, but additional certificates are allowed and will
+      // be added to the certificate chain.  The server certificate must
+      // be the first certificate in the datasource.
+      //
+      // When multiple certificate datasources are configured, they must have
+      // different key types. In practice, this means that one datasource
+      // should contain an RSA key and certificate, and the other an
+      // ECDSA key and certificate.
+      repeated kuma.system.v1alpha1.DataSource certificates = 2
+          [ (validate.rules).repeated = {min_items : 1, max_items : 2} ];
 
       // Options should eventually configure how TLS is configured. This
       // is where cipher suite and version configuration can be specified,
@@ -111,7 +119,7 @@ message Gateway {
     // Listeners define logical endpoints that are bound on this Gateway's
     // address(es).
     repeated Listener listeners = 2
-        [ (validate.rules).repeated .min_items = 1 ];
+        [ (validate.rules).repeated = {min_items : 1} ];
 
     // Note that the Kubernetes API Gateway resource defines a  list of
     // gateway addresses here. In Kuma, however, the Dataplane resources
@@ -121,13 +129,14 @@ message Gateway {
 
   // Selectors is a list of selectors that are used to match builtin
   // gateway dataplanes that will receive this Gateway configuration.
-  repeated Selector selectors = 1 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector selectors = 1
+      [ (validate.rules).repeated = {min_items : 1} ];
 
   // Tags is the set of tags common to all of the gateway's listeners.
   //
   // This field must not include a `kuma.io/service` tag (the service is always
   // defined on the dataplanes).
-  map<string, string> tags = 2 [ (validate.rules).repeated .min_items = 1 ];
+  map<string, string> tags = 2 [ (validate.rules).repeated = {min_items : 1} ];
 
   // The desired configuration of the Gateway.
   Conf conf = 3;
