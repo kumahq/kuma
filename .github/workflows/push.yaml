@@ -34,16 +34,25 @@ jobs:
 
           console.log("pr", pr);
 
+          // TODO: add error checking
           const fullPR = await github.rest.pulls.get({
             owner,
             repo: 'kuma',
             pull_number: pr.number,
           });
 
+          const { data = {} } = fullPR;
+
+          const {
+            user = {},
+            merged_by: mergedBy = {},
+            labels = [],
+          } = data
+
           console.log("fullPR", fullPR);
 
           github.rest.repos.createDispatchEvent({
-            owner: 'bartsmykla',
+            owner,
             repo: 'kong-mesh',
             event_type: 'abracadabra',
             client_payload: {
@@ -52,6 +61,14 @@ jobs:
               pr: {
                 number: pr.number,
                 title: pr.title,
+                openedBy: {
+                  login: user.login,
+                  id: user.id,
+                },
+                mergedBy: {
+                  login: mergedBy.login,
+                  id: mergedBy.id,
+                },
               },
               commits: commits.map(({ id }) => id),
             },
