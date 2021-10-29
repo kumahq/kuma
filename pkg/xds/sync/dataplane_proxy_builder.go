@@ -233,6 +233,8 @@ func (p *DataplaneProxyBuilder) resolveTLSReadiness(
 	tlsReady := map[string]bool{}
 
 	backend := envoyContext.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
+	// TLS readiness is irrelevant unless we are using PERMISSIVE TLS, so skip
+	// checking ServiceInsights if we aren't.
 	if backend == nil || backend.Mode != mesh_proto.CertificateAuthorityBackend_PERMISSIVE {
 		return tlsReady, nil
 	}

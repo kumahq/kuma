@@ -77,8 +77,9 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 			configs.Items = items
 			snapshot.resources[typ] = configs
 		case core_mesh.ServiceInsightType:
-			// We only want to consider a ServiceInsight if we have PERMISSIVE mTLS
-			// enabled
+			// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
+			// This information is only useful when mTLS is enabled with PERMISSIVE mode.
+			// Not including this into mesh hash for other cases saves us unnecessary XDS config generations.
 			if backend := snapshot.mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
 				break
 			}
