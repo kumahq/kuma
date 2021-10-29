@@ -14,6 +14,11 @@ import (
 func PermissiveMode() {
 	var universal Cluster
 	var universalOpts = KumaUniversalDeployOpts
+	// This option is important for introducing update delays into the enable
+	// PERMISSIVE mTLS test
+	universalOpts = append(universalOpts,
+		WithEnv("KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL", "3s"),
+	)
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters([]string{Kuma1}, Silent)
@@ -61,6 +66,21 @@ mtls:
 		}
 		Expect(TestServerUniversal("test-server", mesh, echoServerToken, WithArgs(args), WithProtocol("tcp"))(universal)).To(Succeed())
 	}
+
+	curlAddr := func(addr string, opts ...string) func() error {
+		return func() error {
+			cmd := []string{"curl", "-v", "-m", "3", "--fail"}
+			cmd = append(cmd, opts...)
+			cmd = append(cmd, addr)
+			_, _, err := universal.Exec("", "", "demo-client", cmd...)
+			if err != nil {
+				return fmt.Errorf("request from client to %s failed", addr)
+			}
+			return nil
+		}
+	}
+
+	clientToServer := curlAddr("test-server.mesh")
 
 	It("should support STRICT mTLS mode", func() {
 		createMeshMTLS("default", "STRICT")
@@ -140,5 +160,24 @@ mtls:
 			_, _, err := universal.Exec("", "", "demo-client", cmd...)
 			return err
 		}, "30s", "1s").ShouldNot(HaveOccurred())
+	})
+
+	It("should support enabling PERMISSIVE mTLS mode with no failed requests", func() {
+		// Disable retries so that we see every failed request
+		kumactl := universal.GetKumactlOptions()
+		Expect(kumactl.KumactlDelete("retry", "retry-all-default", "default")).To(Succeed())
+
+		// We must start client before server to test this properly. The client
+		// should get XDS refreshes first to trigger the race condition fixed by
+		// kumahq/kuma#3019
+		runDemoClient("default")
+
+		runTestServer("default", false)
+
+		Eventually(clientToServer, "30s", "1s").Should(Succeed())
+
+		createMeshMTLS("default", "PERMISSIVE")
+
+		Consistently(clientToServer, "20s", "100ms").Should(Succeed())
 	})
 }
