@@ -104,6 +104,19 @@ func httpHealthCheck(
 	}
 }
 
+func grpcHealthCheck(
+	grpcConf *mesh_proto.HealthCheck_Conf_Grpc,
+) *envoy_core.HealthCheck_GrpcHealthCheck_ {
+	grpcHealthCheck := envoy_core.HealthCheck_GrpcHealthCheck{
+		ServiceName: grpcConf.ServiceName,
+		Authority:   grpcConf.Authority,
+	}
+
+	return &envoy_core.HealthCheck_GrpcHealthCheck_{
+		GrpcHealthCheck: &grpcHealthCheck,
+	}
+}
+
 func healthPanicThreshold(cluster *envoy_cluster.Cluster, value *wrapperspb.FloatValue) {
 	if value == nil {
 		return
@@ -163,6 +176,8 @@ func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker interfa
 		healthCheck.HealthChecker = httpHc
 	} else if tcpHc, ok := healthChecker.(*envoy_core.HealthCheck_TcpHealthCheck_); ok {
 		healthCheck.HealthChecker = tcpHc
+	} else if grpcHc, ok := healthChecker.(*envoy_core.HealthCheck_GrpcHealthCheck_); ok {
+		healthCheck.HealthChecker = grpcHc
 	}
 
 	return healthCheck
@@ -180,8 +195,9 @@ func (e *HealthCheckConfigurer) Configure(cluster *envoy_cluster.Cluster) error 
 
 	tcp := activeChecks.GetTcp()
 	http := activeChecks.GetHttp()
+	grpc := activeChecks.GetGrpc()
 
-	if tcp == nil && http == nil {
+	if tcp == nil && http == nil && grpc == nil {
 		cluster.HealthChecks = append(cluster.HealthChecks, buildHealthCheck(activeChecks))
 
 		return nil
@@ -198,6 +214,14 @@ func (e *HealthCheckConfigurer) Configure(cluster *envoy_cluster.Cluster) error 
 	if http != nil {
 		defaultHealthCheck := buildHealthCheck(activeChecks)
 		healthChecker := httpHealthCheck(e.Protocol, http)
+		healthCheck := addHealthChecker(defaultHealthCheck, healthChecker)
+
+		cluster.HealthChecks = append(cluster.HealthChecks, healthCheck)
+	}
+
+	if grpc != nil {
+		defaultHealthCheck := buildHealthCheck(activeChecks)
+		healthChecker := grpcHealthCheck(grpc)
 		healthCheck := addHealthChecker(defaultHealthCheck, healthChecker)
 
 		cluster.HealthChecks = append(cluster.HealthChecks, healthCheck)

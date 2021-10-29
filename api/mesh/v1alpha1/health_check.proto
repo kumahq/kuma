@@ -160,8 +160,21 @@ message HealthCheck {
           [ (validate.rules).uint32 = {gte : 100, lt : 600} ];
     }
 
+    message Grpc {
+      // Service name parameter which will be sent to gRPC service in 
+      // grpc.health.v1.HealthCheckRequest message
+      //  +optional
+      string service_name = 1;
+      // The value of :authority header in the gRPC health check request. If
+      // left empty the name of the cluster this health check is associated
+      // with will be used.
+      //  +optional
+      string authority = 2;
+    }
+
     Tcp tcp = 5;
     Http http = 6;
+    Grpc grpc = 17;
 
     // Reuse health check connection between health checks. Default is true.
     google.protobuf.BoolValue reuse_connection = 15;
