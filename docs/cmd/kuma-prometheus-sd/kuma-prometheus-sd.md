@@ -1,10 +1,13 @@
 ## kuma-prometheus-sd
 
-Prometheus service discovery adapter for native integration with Kuma
+[DEPRECATED] Prometheus service discovery adapter for native integration with Kuma
 
 ### Synopsis
 
-Prometheus service discovery adapter for native integration with Kuma.
+[DEPRECATED] Prometheus service discovery adapter for native integration with Kuma.
+It has been superseded by the native kuma_sd in Prometheus as of Prometheus 2.29.
+See: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kuma_sd_config
+
 
 ### Options
 

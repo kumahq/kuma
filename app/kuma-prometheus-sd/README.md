@@ -1,5 +1,11 @@
 # kuma-prometheus-sd
 
+## DEPRECATION NOTICE
+
+`kuma-prometheus-sd` has been deprecated in favor of
+the native [`kuma_sd`](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kuma_sd_config)
+that is builtin to Prometheus 2.29 and later.
+
 ## Overview
 
 `kuma-prometheus-sd` is an **adapter** that integrates `Prometheus` service discovery mechanism with [Kuma](https://kuma.io) Service Mesh.
