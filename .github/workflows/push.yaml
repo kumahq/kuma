@@ -30,17 +30,17 @@ jobs:
 
           const { before, after, commits = [] } = context.payload;
 
-          const pr1 = await github.rest.pulls.get({
+          const pr = ${{ toJSON(steps.findPR.outputs) }};
+
+          console.log("pr", pr);
+
+          const fullPR = await github.rest.pulls.get({
             owner,
             repo: 'kuma',
             pull_number: pr.number,
           });
 
-          console.log("pr1", pr1);
-
-          const pr = ${{ toJSON(steps.findPR.outputs) }};
-
-          console.log("pr2", pr);
+          console.log("fullPR", fullPR);
 
           github.rest.repos.createDispatchEvent({
             owner: 'bartsmykla',
