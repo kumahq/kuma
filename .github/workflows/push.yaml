@@ -24,11 +24,23 @@ jobs:
       with:
         github-token: ${{ secrets.GH_TOKEN }}
         script: |
+          const owner = 'bartsmykla';
           console.log("hello world");
           console.log({ context });
 
           const { before, after, commits = [] } = context.payload;
+
+          const pr1 = await github.rest.pulls.get({
+            owner,
+            repo: 'kuma',
+            pull_number: pr.number,
+          });
+
+          console.log("pr1", pr1);
+
           const pr = ${{ toJSON(steps.findPR.outputs) }};
+
+          console.log("pr2", pr);
 
           github.rest.repos.createDispatchEvent({
             owner: 'bartsmykla',
