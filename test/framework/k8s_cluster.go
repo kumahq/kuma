@@ -20,6 +20,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	v1 "k8s.io/api/core/v1"
@@ -267,6 +268,32 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	return str, nil
 }
 
+type cniConf struct {
+	binDir   string
+	netDir   string
+	confName string
+}
+
+func (c *K8sCluster) getCniConfig() (cfg cniConf) {
+	nodes := k8s.GetNodes(c.t, c.GetKubectlOptions())
+	Expect(nodes).ToNot(BeEmpty())
+	// Check if it's k3d or kind
+	if strings.HasPrefix(nodes[0].Spec.ProviderID, "k3s://") {
+		cfg.confName = "10-flannel.conflist"
+		cfg.netDir = "/var/lib/rancher/k3s/agent/etc/cni/net.d"
+		cfg.binDir = "/bin"
+	} else {
+		cfg.confName = "10-kindnet.conflist"
+		cfg.netDir = "/etc/cni/net.d"
+		cfg.binDir = "/opt/cni/bin"
+	}
+	cName := GetCniConfName()
+	if cName != "" {
+		cfg.confName = cName
+	}
+	return cfg
+}
+
 // deployKumaViaKubectl uses kubectl to install kuma
 // using the resources from the `kumactl install control-plane` command
 func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *kumaDeploymentOptions) error {
@@ -311,15 +338,12 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *kumaDeploymentOpti
 	}
 
 	if opts.cni {
+		cniCfg := c.getCniConfig()
 		argsMap["--cni-enabled"] = ""
 		argsMap["--cni-chained"] = ""
-		argsMap["--cni-net-dir"] = "/etc/cni/net.d"
-		argsMap["--cni-bin-dir"] = "/opt/cni/bin"
-		argsMap["--cni-conf-name"] = "10-kindnet.conflist"
-
-		if HasCniConfName() {
-			argsMap["--cni-conf-name"] = GetCniConfName()
-		}
+		argsMap["--cni-net-dir"] = cniCfg.netDir
+		argsMap["--cni-bin-dir"] = cniCfg.binDir
+		argsMap["--cni-conf-name"] = cniCfg.confName
 	}
 
 	if HasApiVersion() {
@@ -346,7 +370,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *kumaDeploymentOpti
 	return c.controlplane.InstallCP(args...)
 }
 
-func genValues(mode string, opts *kumaDeploymentOptions, kumactlOpts *KumactlOptions) map[string]string {
+func (c *K8sCluster) genValues(mode string, opts *kumaDeploymentOptions) map[string]string {
 	values := map[string]string{
 		"controlPlane.mode":                      mode,
 		"global.image.tag":                       kuma_version.Build.Version,
@@ -390,15 +414,12 @@ func genValues(mode string, opts *kumaDeploymentOptions, kumactlOpts *KumactlOpt
 	}
 
 	if opts.cni {
+		cniCfg := c.getCniConfig()
 		values["cni.enabled"] = "true"
 		values["cni.chained"] = "true"
-		values["cni.netDir"] = "/etc/cni/net.d"
-		values["cni.binDir"] = "/opt/cni/bin"
-		values["cni.confName"] = "10-kindnet.conflist"
-
-		if HasCniConfName() {
-			values["cni.confName"] = GetCniConfName()
-		}
+		values["cni.netDir"] = cniCfg.netDir
+		values["cni.binDir"] = cniCfg.binDir
+		values["cni.confName"] = cniCfg.confName
 	}
 
 	if opts.isipv6 {
@@ -411,7 +432,7 @@ func genValues(mode string, opts *kumaDeploymentOptions, kumactlOpts *KumactlOpt
 			values["controlPlane.globalZoneSyncService.type"] = "NodePort"
 		}
 	case core.Zone:
-		values["controlPlane.zone"] = kumactlOpts.CPName
+		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
 	}
 
@@ -444,7 +465,7 @@ func (c *K8sCluster) processViaHelm(mode string, opts *kumaDeploymentOptions, fn
 		helmChart = *opts.helmChartPath
 	}
 
-	values := genValues(mode, opts, c.GetKumactlOptions())
+	values := c.genValues(mode, opts)
 
 	helmOpts := &helm.Options{
 		SetValues:      values,
