@@ -81,6 +81,17 @@ mtls:
 	}
 
 	clientToServer := curlAddr("test-server.mesh")
+	clientToServerDirect := func() error {
+		// using direct IP:PORT allows bypassing outbound listeners
+		addr := net.JoinHostPort(universal.(*UniversalCluster).GetApp("test-server").GetIP(), "80")
+		return curlAddr(addr)()
+	}
+	clientToServerTLS := curlAddr("https://test-server.mesh:80", "--cacert", "/kuma/server.crt")
+	clientToServerTLSDirect := func() error {
+		host := universal.(*UniversalCluster).GetApp("test-server").GetIP()
+		// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
+		return curlAddr("https://test-server.mesh:80", "--cacert", "/kuma/server.crt", "--resolve", fmt.Sprintf("test-server.mesh:80:[%s]", host))()
+	}
 
 	It("should support STRICT mTLS mode", func() {
 		createMeshMTLS("default", "STRICT")
@@ -90,17 +101,10 @@ mtls:
 		runDemoClient("default")
 
 		// check the inside-mesh communication
-		Eventually(func() error {
-			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-			return err
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+		Eventually(clientToServer, "30s", "1s").Should(Succeed())
 
-		// check the outside-mesh communication (using direct IP:PORT allows bypassing outbound listeners)
-		addr := net.JoinHostPort(universal.(*UniversalCluster).GetApp("test-server").GetIP(), "80")
-		Eventually(func() error {
-			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", addr)
-			return err
-		}, "30s", "1s").ShouldNot(Succeed())
+		// check the outside-mesh communication
+		Eventually(clientToServerDirect, "30s", "1s").ShouldNot(Succeed())
 	})
 
 	It("should support PERMISSIVE mTLS mode", func() {
@@ -111,17 +115,10 @@ mtls:
 		runDemoClient("default")
 
 		// check the inside-mesh communication
-		Eventually(func() error {
-			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "test-server.mesh")
-			return err
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+		Eventually(clientToServer, "30s", "1s").Should(Succeed())
 
 		// check the outside-mesh communication (using direct IP:PORT allows bypassing outbound listeners)
-		addr := net.JoinHostPort(universal.(*UniversalCluster).GetApp("test-server").GetIP(), "80")
-		Eventually(func() error {
-			_, _, err := universal.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", addr)
-			return err
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+		Eventually(clientToServerDirect, "30s", "1s").Should(Succeed())
 	})
 
 	It("should support mTLS if connection already TLS", func() {
@@ -131,11 +128,7 @@ mtls:
 
 		runDemoClient("default")
 
-		Eventually(func() error {
-			cmd := []string{"curl", "-v", "-m", "3", "--fail", "--cacert", "/kuma/server.crt", "https://test-server.mesh:80"}
-			_, _, err := universal.Exec("", "", "demo-client", cmd...)
-			return err
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+		Eventually(clientToServerTLS, "30s", "1s").Should(Succeed())
 	})
 
 	It("should support PERMISSIVE mTLS mode if the client is using TLS", func() {
@@ -146,20 +139,10 @@ mtls:
 		runDemoClient("default")
 
 		// check the inside-mesh communication with mTLS over TLS
-		Eventually(func() error {
-			cmd := []string{"curl", "-v", "-m", "3", "--fail", "--cacert", "/kuma/server.crt", "https://test-server.mesh:80"}
-			_, _, err := universal.Exec("", "", "demo-client", cmd...)
-			return err
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+		Eventually(clientToServerTLS, "30s", "1s").Should(Succeed())
 
 		// check the outside-mesh communication with mTLS over TLS
-		// we're using curl with '--resolve' flag to verify certificate Common Name 'test-server.mesh'
-		host := universal.(*UniversalCluster).GetApp("test-server").GetIP()
-		Eventually(func() error {
-			cmd := []string{"curl", "-v", "-m", "3", "--resolve", fmt.Sprintf("test-server.mesh:80:[%s]", host), "--fail", "--cacert", "/kuma/server.crt", "https://test-server.mesh:80"}
-			_, _, err := universal.Exec("", "", "demo-client", cmd...)
-			return err
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+		Eventually(clientToServerTLSDirect, "30s", "1s").Should(Succeed())
 	})
 
 	It("should support enabling PERMISSIVE mTLS mode with no failed requests", func() {
