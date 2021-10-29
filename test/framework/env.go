@@ -103,10 +103,6 @@ func GetCniConfName() string {
 	return os.Getenv("KUMA_CNI_CONF_NAME")
 }
 
-func HasCniConfName() bool {
-	return envIsPresent("KUMA_CNI_CONF_NAME")
-}
-
 func UseLoadBalancer() bool {
 	return envBool("KUMA_USE_LOAD_BALANCER")
 }
