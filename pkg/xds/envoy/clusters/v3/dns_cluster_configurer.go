@@ -20,7 +20,7 @@ func (e *DnsClusterConfigurer) Configure(c *envoy_cluster.Cluster) error {
 	c.ClusterDiscoveryType = &envoy_cluster.Cluster_Type{Type: envoy_cluster.Cluster_STRICT_DNS}
 	c.LbPolicy = envoy_cluster.Cluster_ROUND_ROBIN
 	c.LoadAssignment = endpoints.CreateStaticEndpoint(e.Name, e.Address, e.Port)
-	if e.IsHttps == true {
+	if e.IsHttps {
 		c.TransportSocket = endpoints.UpgradeClusterTlsUpstream(e.Address)
 	}
 	return nil

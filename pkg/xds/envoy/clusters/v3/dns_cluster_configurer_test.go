@@ -34,7 +34,7 @@ var _ = Describe("DNSClusterConfigurer", func() {
 
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-			Configure(clusters.DNSCluster(clusterName, address, port)).
+			Configure(clusters.DNSCluster(clusterName, address, port, false)).
 			Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
 			Build()
 
