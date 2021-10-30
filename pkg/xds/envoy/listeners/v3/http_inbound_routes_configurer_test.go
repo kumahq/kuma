@@ -113,7 +113,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                           prefix: /
                         route:
                           cluster: localhost:8080
-                          timeout: 0s
                   statPrefix: localhost_8080
 `,
 		}),
@@ -174,7 +173,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                           prefix: /
                         route:
                           cluster: localhost:8080
-                          timeout: 0s
                         typedPerFilterConfig:
                           envoy.filters.http.local_ratelimit:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
@@ -270,7 +268,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                           prefix: /
                         route:
                           cluster: localhost:8080
-                          timeout: 0s
                         typedPerFilterConfig:
                           envoy.filters.http.local_ratelimit:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit

@@ -33,17 +33,17 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 		Entry("from non-empty node", testCase{
 			node: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
-					"dataplane.admin.port": &structpb.Value{
+					"dataplane.admin.port": {
 						Kind: &structpb.Value_StringValue{
 							StringValue: "1234",
 						},
 					},
-					"dataplane.dns.port": &structpb.Value{
+					"dataplane.dns.port": {
 						Kind: &structpb.Value_StringValue{
 							StringValue: "8000",
 						},
 					},
-					"dataplane.dns.empty.port": &structpb.Value{
+					"dataplane.dns.empty.port": {
 						Kind: &structpb.Value_StringValue{
 							StringValue: "8001",
 						},
@@ -75,7 +75,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 
 		node := &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				"version": &structpb.Value{
+				"version": {
 					Kind: &structpb.Value_StructValue{
 						StructValue: util_proto.MustToStruct(version),
 					},

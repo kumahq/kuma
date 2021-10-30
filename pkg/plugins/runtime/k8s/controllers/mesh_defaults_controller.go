@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -27,9 +26,9 @@ type MeshDefaultsReconciler struct {
 	ResourceManager manager.ResourceManager
 }
 
-func (r *MeshDefaultsReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
+func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	mesh := core_mesh.NewMeshResource()
-	if err := r.ResourceManager.Get(context.Background(), mesh, store.GetByKey(req.Name, core_model.NoMesh)); err != nil {
+	if err := r.ResourceManager.Get(ctx, mesh, store.GetByKey(req.Name, core_model.NoMesh)); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
@@ -51,19 +50,13 @@ func (r *MeshDefaultsReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Res
 		mesh.GetMeta().(*k8s.KubernetesMetaAdapter).Annotations = map[string]string{}
 	}
 	mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sMeshDefaultsGenerated] = "true"
-	if err := r.ResourceManager.Update(context.Background(), mesh, store.ModifiedAt(core.Now())); err != nil {
+	if err := r.ResourceManager.Update(ctx, mesh, store.ModifiedAt(core.Now())); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not update default mesh resources")
 	}
 	return kube_ctrl.Result{}, nil
 }
 
 func (r *MeshDefaultsReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
-	}
-	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", mesh_k8s.GroupVersion)
-	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&mesh_k8s.Mesh{}, builder.WithPredicates(onlyCreate)).
 		Complete(r)

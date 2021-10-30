@@ -55,6 +55,12 @@ message ControlPlaneCoordinates {
 
     // Headers to be added for communication with Kuma control plane
     repeated Headers headers = 5;
+
+    // Authentication type
+    string auth_type = 6;
+
+    // Authentication configuration for defined authentication type
+    map<string, string> auth_conf = 7;
   }
 
   ApiServer api_server = 1 [ (validate.rules).message.required = true ];

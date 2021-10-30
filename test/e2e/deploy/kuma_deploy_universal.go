@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -154,5 +155,45 @@ name: %s
 				}
 				return "should retry", errors.Errorf("should retry")
 			})
+	})
+
+	It("should access only local service if zone is disabled", func() {
+		// given zone 'kuma-4' enabled
+		// then we should receive responses from both test-server instances
+		Eventually(func() (map[string]int, error) {
+			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(2),
+				HaveKey(Equal(`universal1`)),
+				HaveKey(Equal(`universal2`)),
+			),
+		)
+
+		// when disable zone 'kuma-4'
+		Expect(YamlUniversal(`
+name: kuma-4
+type: Zone
+enabled: false
+`)(global)).To(Succeed())
+
+		// then 'kuma-4.ingress' is deleted from zone 'kuma-3'
+		Eventually(func() bool {
+			output, err := zone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
+			if err != nil {
+				return false
+			}
+			return !strings.Contains(output, "kuma-4.ingress")
+		}, "30s", "10ms").Should(BeTrue())
+
+		// and then responses only from the local service instance
+		Eventually(func() (map[string]int, error) {
+			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(1),
+				HaveKey(Equal(`universal1`)),
+			),
+		)
 	})
 }

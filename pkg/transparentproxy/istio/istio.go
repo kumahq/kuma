@@ -3,6 +3,7 @@ package istio
 import (
 	"os"
 
+	"github.com/kumahq/kuma/pkg/transparentproxy/istio/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -10,8 +11,6 @@ import (
 
 	uninstall "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-clean-iptables/pkg/cmd"
 	install "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/cmd"
-
-	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
 type IstioTransparentProxy struct {

@@ -1,13 +1,11 @@
 package tls
 
 import (
-	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"math/big"
 	"net"
 	"time"
@@ -38,7 +36,7 @@ func NewSelfSignedCert(commonName string, certType CertType, hosts ...string) (K
 		return KeyPair{}, err
 	}
 
-	keyBytes, err := marshalKey(key)
+	keyBytes, err := pemEncodeKey(key)
 	if err != nil {
 		return KeyPair{}, err
 	}
@@ -58,11 +56,7 @@ func generateCert(signer crypto.Signer, commonName string, certType CertType, ho
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate TLS certificate")
 	}
-	var certBuf bytes.Buffer
-	if err := pem.Encode(&certBuf, &pem.Block{Type: "CERTIFICATE", Bytes: certDerBytes}); err != nil {
-		return nil, errors.Wrap(err, "failed to PEM encode TLS certificate")
-	}
-	return certBuf.Bytes(), nil
+	return pemEncodeCert(certDerBytes)
 }
 
 func newCert(commonName string, certType CertType, hosts ...string) (x509.Certificate, error) {
@@ -82,7 +76,7 @@ func newCert(commonName string, certType CertType, hosts ...string) (x509.Certif
 		NotAfter:              notAfter,
 		IsCA:                  true,
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		ExtKeyUsage:           []x509.ExtKeyUsage{},
 		BasicConstraintsValid: true,
 	}
 	switch certType {
@@ -91,7 +85,8 @@ func newCert(commonName string, certType CertType, hosts ...string) (x509.Certif
 	case ClientCertType:
 		csr.ExtKeyUsage = append(csr.ExtKeyUsage, x509.ExtKeyUsageClientAuth)
 	default:
-		return x509.Certificate{}, errors.Errorf("invalid type of CertType: %q. Expected either %q or %q", certType, ServerCertType, ClientCertType)
+		return x509.Certificate{}, errors.Errorf("invalid certificate type %q, expected either %q or %q",
+			certType, ServerCertType, ClientCertType)
 	}
 	for _, host := range hosts {
 		if ip := net.ParseIP(host); ip != nil {
@@ -101,19 +96,4 @@ func newCert(commonName string, certType CertType, hosts ...string) (x509.Certif
 		}
 	}
 	return csr, nil
-}
-
-func marshalKey(priv interface{}) ([]byte, error) {
-	var block *pem.Block
-	switch k := priv.(type) {
-	case *rsa.PrivateKey:
-		block = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
-	default:
-		return nil, errors.Errorf("unsupported private key type %T", priv)
-	}
-	var keyBuf bytes.Buffer
-	if err := pem.Encode(&keyBuf, block); err != nil {
-		return nil, err
-	}
-	return keyBuf.Bytes(), nil
 }

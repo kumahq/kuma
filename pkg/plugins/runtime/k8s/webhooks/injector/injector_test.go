@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kumahq/kuma/pkg/config"
 	conf "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
@@ -51,11 +52,11 @@ var _ = Describe("Injector", func() {
 			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
 			obj, _, errMesh := decoder.Decode([]byte(given.mesh), nil, nil)
 			Expect(errMesh).ToNot(HaveOccurred())
-			errCreate := k8sClient.Create(context.Background(), obj)
+			errCreate := k8sClient.Create(context.Background(), obj.(kube_client.Object))
 			Expect(errCreate).ToNot(HaveOccurred())
 			ns, _, errNs := decoder.Decode([]byte(given.namespace), nil, nil)
 			Expect(errNs).ToNot(HaveOccurred())
-			errUpd := k8sClient.Update(context.Background(), ns)
+			errUpd := k8sClient.Update(context.Background(), ns.(kube_client.Object))
 			Expect(errUpd).ToNot(HaveOccurred())
 
 			// given
@@ -516,6 +517,38 @@ var _ = Describe("Injector", func() {
                 annotations:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.builtindns.config.yaml",
+		}),
+		Entry("26. sidecar with high concurrency", testCase{
+			num: "26",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.builtindns.config.yaml",
+		}),
+		Entry("27. sidecar with high resource limit", testCase{
+			num: "27",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.high-resources.config.yaml",
 		}),
 	)
 })

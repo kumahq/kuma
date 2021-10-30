@@ -4,7 +4,7 @@ Install Tracing backend in Kubernetes cluster (Jaeger)
 
 ### Synopsis
 
-Install Tracing backend in Kubernetes cluster (Jaeger) in a 'kuma-tracing' namespace
+Install Tracing backend in Kubernetes cluster (Jaeger) in its own namespace.
 
 ```
 kumactl install tracing [flags]

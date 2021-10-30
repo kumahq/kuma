@@ -3,7 +3,6 @@ package cla_test
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"net"
 	"path/filepath"
 	"sync"
@@ -19,6 +18,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -103,12 +103,9 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		// - GetZoneIngresses
 		Expect(countingManager.listQueries).To(Equal(2))
 
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "cla.get.0.json"))
+		js, err := json.MarshalIndent(cla, "", "  ")
 		Expect(err).ToNot(HaveOccurred())
-
-		js, err := json.Marshal(cla)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(js).To(MatchJSON(string(expected)))
+		Expect(js).To(matchers.MatchGoldenJSON(filepath.Join("testdata", "cla.get.0.json")))
 
 		By("getting cached CLA")
 		_, err = claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
@@ -131,11 +128,9 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		Expect(countingManager.getQueries).To(Equal(2))
 		Expect(countingManager.listQueries).To(Equal(4))
 
-		expected, err = ioutil.ReadFile(filepath.Join("testdata", "cla.get.1.json"))
+		js, err = json.MarshalIndent(cla, "", "  ")
 		Expect(err).ToNot(HaveOccurred())
-		js, err = json.Marshal(cla)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(js).To(MatchJSON(expected))
+		Expect(js).To(matchers.MatchGoldenJSON(filepath.Join("testdata", "cla.get.1.json")))
 	})
 
 	It("should cache concurrent Get() requests", func() {

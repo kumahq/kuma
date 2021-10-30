@@ -38,7 +38,7 @@ type ConfigMapReconciler struct {
 	SystemNamespace   string
 }
 
-func (r *ConfigMapReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
+func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	mesh, ok := vips.MeshFromConfigKey(req.Name)
 	if !ok {
 		return kube_ctrl.Result{}, nil
@@ -60,195 +60,143 @@ func (r *ConfigMapReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 }
 
 func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	for _, addToScheme := range []func(*kube_runtime.Scheme) error{kube_core.AddToScheme, mesh_k8s.AddToScheme} {
-		if err := addToScheme(mgr.GetScheme()); err != nil {
-			return err
-		}
-	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.ConfigMap{}).
-		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ServiceToConfigMapsMapper{
-				Client:          mgr.GetClient(),
-				Log:             r.Log.WithName("service-to-configmap-mapper"),
-				SystemNamespace: r.SystemNamespace,
-			},
-		}).
-		Watches(&kube_source.Kind{Type: &mesh_k8s.Dataplane{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &DataplaneToMeshMapper{
-				Client:            mgr.GetClient(),
-				Log:               r.Log.WithName("dataplane-to-configmap-mapper"),
-				SystemNamespace:   r.SystemNamespace,
-				ResourceConverter: r.ResourceConverter,
-			},
-		}).
-		Watches(&kube_source.Kind{Type: &mesh_k8s.ZoneIngress{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ZoneIngressToMeshMapper{
-				Log:               r.Log.WithName("zone-ingress-to-configmap-mapper"),
-				SystemNamespace:   r.SystemNamespace,
-				ResourceConverter: r.ResourceConverter,
-			},
-		}).
-		Watches(&kube_source.Kind{Type: &mesh_k8s.VirtualOutbound{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &VirtualOutboundToConfigMapsMapper{
-				Client:          mgr.GetClient(),
-				Log:             r.Log.WithName("virtualoutbound-to-configmap-mapper"),
-				SystemNamespace: r.SystemNamespace,
-			},
-		}).
-		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ExternalServiceToConfigMapsMapper{
-				Client:          mgr.GetClient(),
-				Log:             r.Log.WithName("external-service-to-configmap-mapperr"),
-				SystemNamespace: r.SystemNamespace,
-			},
-		}).
+		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToConfigMapsMapper(mgr.GetClient(), r.Log, r.SystemNamespace))).
+		Watches(&kube_source.Kind{Type: &mesh_k8s.Dataplane{}}, kube_handler.EnqueueRequestsFromMapFunc(DataplaneToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
+		Watches(&kube_source.Kind{Type: &mesh_k8s.ZoneIngress{}}, kube_handler.EnqueueRequestsFromMapFunc(ZoneIngressToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
+		Watches(&kube_source.Kind{Type: &mesh_k8s.VirtualOutbound{}}, kube_handler.EnqueueRequestsFromMapFunc(VirtualOutboundToConfigMapsMapper(r.Log, r.SystemNamespace))).
+		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToConfigMapsMapper(r.Log, r.SystemNamespace))).
 		Complete(r)
 }
 
-type ServiceToConfigMapsMapper struct {
-	kube_client.Client
-	Log             logr.Logger
-	SystemNamespace string
-}
-
-func (m *ServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	cause, ok := obj.Object.(*kube_core.Service)
-	if !ok {
-		m.Log.WithValues("dataplane", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
-		return nil
-	}
-
-	ctx := context.Background()
-	svcName := fmt.Sprintf("%s/%s", cause.Namespace, cause.Name)
-	// List Pods in the same namespace
-	pods := &kube_core.PodList{}
-	if err := m.Client.List(ctx, pods, kube_client.InNamespace(obj.Meta.GetNamespace())); err != nil {
-		m.Log.WithValues("service", svcName).Error(err, "failed to fetch Dataplanes in namespace")
-		return nil
-	}
-
-	meshSet := map[string]bool{}
-	for _, pod := range pods.Items {
-		if mesh, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
-			meshSet[mesh] = true
+func ServiceToConfigMapsMapper(client kube_client.Reader, l logr.Logger, ns string) kube_handler.MapFunc {
+	l = l.WithName("service-to-configmap-mapper")
+	return func(obj kube_client.Object) []kube_reconile.Request {
+		cause, ok := obj.(*kube_core.Service)
+		if !ok {
+			l.WithValues("dataplane", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			return nil
 		}
-	}
-	var req []kube_reconile.Request
-	for mesh := range meshSet {
-		req = append(req, kube_reconile.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(mesh)},
-		})
-	}
 
-	return req
-}
+		ctx := context.Background()
+		svcName := fmt.Sprintf("%s/%s", cause.Namespace, cause.Name)
+		// List Pods in the same namespace
+		pods := &kube_core.PodList{}
+		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace())); err != nil {
+			l.WithValues("service", svcName).Error(err, "failed to fetch Dataplanes in namespace")
+			return nil
+		}
 
-type DataplaneToMeshMapper struct {
-	kube_client.Client
-	Log               logr.Logger
-	SystemNamespace   string
-	ResourceConverter k8s_common.Converter
-}
-
-func (m *DataplaneToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	cause, ok := obj.Object.(*mesh_k8s.Dataplane)
-	if !ok {
-		m.Log.WithValues("dataplane", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
-		return nil
-	}
-
-	dp := core_mesh.NewDataplaneResource()
-	if err := m.ResourceConverter.ToCoreResource(cause, dp); err != nil {
-		converterLog.Error(err, "failed to parse Dataplane", "dataplane", cause.Spec)
-		return nil
-	}
-
-	// backwards compatibility
-	if dp.Spec.IsIngress() {
 		meshSet := map[string]bool{}
-		for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
+		for _, pod := range pods.Items {
+			if mesh, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
+				meshSet[mesh] = true
+			}
+		}
+		var req []kube_reconile.Request
+		for mesh := range meshSet {
+			req = append(req, kube_reconile.Request{
+				NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh)},
+			})
+		}
+
+		return req
+	}
+}
+
+func DataplaneToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_common.Converter) kube_handler.MapFunc {
+	l = l.WithName("dataplane-to-mesh-mapper")
+	return func(obj kube_client.Object) []kube_reconile.Request {
+		cause, ok := obj.(*mesh_k8s.Dataplane)
+		if !ok {
+			l.WithValues("dataplane", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			return nil
+		}
+
+		dp := core_mesh.NewDataplaneResource()
+		if err := resourceConverter.ToCoreResource(cause, dp); err != nil {
+			converterLog.Error(err, "failed to parse Dataplane", "dataplane", cause.Spec)
+			return nil
+		}
+
+		// backwards compatibility
+		if dp.Spec.IsIngress() {
+			meshSet := map[string]bool{}
+			for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
+				meshSet[service.Mesh] = true
+			}
+
+			var requests []kube_reconile.Request
+			for mesh := range meshSet {
+				requests = append(requests, kube_reconile.Request{
+					NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh)},
+				})
+			}
+			return requests
+		}
+
+		return []kube_reconile.Request{{
+			NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(cause.Mesh)},
+		}}
+	}
+}
+
+func ZoneIngressToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_common.Converter) kube_handler.MapFunc {
+	l = l.WithName("zone-ingress-to-mesh-mapper")
+	return func(obj kube_client.Object) []kube_reconile.Request {
+		cause, ok := obj.(*mesh_k8s.ZoneIngress)
+		if !ok {
+			l.WithValues("zoneIngress", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			return nil
+		}
+		zoneIngress := core_mesh.NewZoneIngressResource()
+		if err := resourceConverter.ToCoreResource(cause, zoneIngress); err != nil {
+			converterLog.Error(err, "failed to parse ZoneIngress", "zoneIngress", cause.Spec)
+			return nil
+		}
+
+		meshSet := map[string]bool{}
+		for _, service := range zoneIngress.Spec.GetAvailableServices() {
 			meshSet[service.Mesh] = true
 		}
 
 		var requests []kube_reconile.Request
 		for mesh := range meshSet {
 			requests = append(requests, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(mesh)},
+				NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh)},
 			})
 		}
 		return requests
 	}
-
-	return []kube_reconile.Request{{
-		NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(cause.Mesh)},
-	}}
 }
 
-type ZoneIngressToMeshMapper struct {
-	Log               logr.Logger
-	ResourceConverter k8s_common.Converter
-	SystemNamespace   string
+func ExternalServiceToConfigMapsMapper(l logr.Logger, ns string) kube_handler.MapFunc {
+	l = l.WithName("external-service-to-configmap-mapper")
+	return func(obj kube_client.Object) []kube_reconile.Request {
+		cause, ok := obj.(*mesh_k8s.ExternalService)
+		if !ok {
+			l.WithValues("externalService", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			return nil
+		}
+
+		return []kube_reconile.Request{{
+			NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(cause.Mesh)},
+		}}
+	}
 }
 
-func (m *ZoneIngressToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	cause, ok := obj.Object.(*mesh_k8s.ZoneIngress)
-	if !ok {
-		m.Log.WithValues("zoneIngress", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
-		return nil
+func VirtualOutboundToConfigMapsMapper(l logr.Logger, ns string) kube_handler.MapFunc {
+	l = l.WithName("virtual-outbound-to-configmap-mapper")
+	return func(obj kube_client.Object) []kube_reconile.Request {
+		cause, ok := obj.(*mesh_k8s.VirtualOutbound)
+		if !ok {
+			l.WithValues("virtualOutbound", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			return nil
+		}
+
+		return []kube_reconile.Request{{
+			NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(cause.Mesh)},
+		}}
 	}
-	zoneIngress := core_mesh.NewZoneIngressResource()
-	if err := m.ResourceConverter.ToCoreResource(cause, zoneIngress); err != nil {
-		converterLog.Error(err, "failed to parse ZoneIngress", "zoneIngress", cause.Spec)
-		return nil
-	}
-
-	meshSet := map[string]bool{}
-	for _, service := range zoneIngress.Spec.GetAvailableServices() {
-		meshSet[service.Mesh] = true
-	}
-
-	var requests []kube_reconile.Request
-	for mesh := range meshSet {
-		requests = append(requests, kube_reconile.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(mesh)},
-		})
-	}
-	return requests
-}
-
-type ExternalServiceToConfigMapsMapper struct {
-	kube_client.Client
-	Log             logr.Logger
-	SystemNamespace string
-}
-
-func (m *ExternalServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	cause, ok := obj.Object.(*mesh_k8s.ExternalService)
-	if !ok {
-		m.Log.WithValues("externalService", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
-		return nil
-	}
-
-	return []kube_reconile.Request{{
-		NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(cause.Mesh)},
-	}}
-}
-
-type VirtualOutboundToConfigMapsMapper struct {
-	kube_client.Client
-	Log             logr.Logger
-	SystemNamespace string
-}
-
-func (m *VirtualOutboundToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	cause, ok := obj.Object.(*mesh_k8s.VirtualOutbound)
-	if !ok {
-		m.Log.WithValues("virtualOutbound", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
-		return nil
-	}
-
-	return []kube_reconile.Request{{
-		NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(cause.Mesh)},
-	}}
 }

@@ -8,7 +8,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
@@ -19,12 +21,18 @@ var log = core.Log.WithName("dataplane-token-ws")
 type tokenWebService struct {
 	issuer            issuer.DataplaneTokenIssuer
 	zoneIngressIssuer zoneingress.TokenIssuer
+	access            access.GenerateDataplaneTokenAccess
 }
 
-func NewWebservice(issuer issuer.DataplaneTokenIssuer, zoneIngressIssuer zoneingress.TokenIssuer) *restful.WebService {
+func NewWebservice(
+	issuer issuer.DataplaneTokenIssuer,
+	zoneIngressIssuer zoneingress.TokenIssuer,
+	access access.GenerateDataplaneTokenAccess,
+) *restful.WebService {
 	ws := tokenWebService{
 		issuer:            issuer,
 		zoneIngressIssuer: zoneIngressIssuer,
+		access:            access,
 	}
 	return ws.createWs()
 }
@@ -52,6 +60,17 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 		verr := validators.ValidationError{}
 		verr.AddViolation("mesh", "cannot be empty")
 		errors.HandleError(response, verr.OrNil(), "Invalid request")
+		return
+	}
+
+	if err := d.access.ValidateGenerate(
+		idReq.Name,
+		idReq.Mesh,
+		idReq.Tags,
+		idReq.Type,
+		user.FromCtx(request.Request.Context()),
+	); err != nil {
+		errors.HandleError(response, err, "Could not issue a token")
 		return
 	}
 

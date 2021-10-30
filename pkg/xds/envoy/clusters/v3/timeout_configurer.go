@@ -16,26 +16,33 @@ const defaultConnectTimeout = 10 * time.Second
 
 type TimeoutConfigurer struct {
 	Protocol core_mesh.Protocol
-	Conf     *mesh_proto.Timeout_Conf
+	Timeout  *core_mesh.TimeoutResource
 }
 
 var _ ClusterConfigurer = &TimeoutConfigurer{}
 
 func (t *TimeoutConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	cluster.ConnectTimeout = util_proto.Duration(t.Conf.GetConnectTimeoutOrDefault(defaultConnectTimeout))
+	var conf *mesh_proto.Timeout_Conf
+
+	// Protobuf nil-checking semantics returns defaults for a nil config.
+	if t.Timeout != nil {
+		conf = t.Timeout.Spec.GetConf()
+	}
+
+	cluster.ConnectTimeout = util_proto.Duration(conf.GetConnectTimeoutOrDefault(defaultConnectTimeout))
 	switch t.Protocol {
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 		err := UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
 			if options.CommonHttpProtocolOptions == nil {
 				options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
 			}
-			options.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(t.Conf.GetHttp().GetIdleTimeout().AsDuration())
+			options.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(conf.GetHttp().GetIdleTimeout().AsDuration())
 		})
 		if err != nil {
 			return err
 		}
 	case core_mesh.ProtocolGRPC:
-		if maxStreamDuration := t.Conf.GetGrpc().GetMaxStreamDuration().AsDuration(); maxStreamDuration != 0 {
+		if maxStreamDuration := conf.GetGrpc().GetMaxStreamDuration().AsDuration(); maxStreamDuration != 0 {
 			err := UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
 				if options.CommonHttpProtocolOptions == nil {
 					options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}

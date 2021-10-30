@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"net"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
@@ -8,6 +9,7 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -23,9 +25,11 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -49,9 +53,8 @@ func (i *TestRuntimeInfo) GetClusterId() string {
 	return i.ClusterId
 }
 
-func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
-	stopCh := make(chan struct{})
-	builder, err := core_runtime.BuilderFor(cfg, stopCh)
+func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {
+	builder, err := core_runtime.BuilderFor(appCtx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +83,11 @@ func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
+	builder.WithAPIServerAuthenticator(certs.ClientCertAuthenticator)
+	builder.WithAccess(core_runtime.Access{
+		ResourceAccess:               resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
+		GenerateDataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
+	})
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)

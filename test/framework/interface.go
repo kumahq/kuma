@@ -5,6 +5,9 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/config/core"
 )
 
 type Clusters interface {
@@ -19,8 +22,15 @@ var (
 	KumactlInstallationMode = InstallationMode("kumactl")
 )
 
-type deployOptions struct {
+// kumaDeploymentOptions are the options used for installing the Kuma
+// control plane.
+type kumaDeploymentOptions struct {
+	// common
+	isipv6  bool
+	verbose *bool
+
 	// cp specific
+	ctlOpts              map[string]string
 	globalAddress        string
 	installationMode     InstallationMode
 	skipDefaultMesh      bool
@@ -29,16 +39,47 @@ type deployOptions struct {
 	helmChartVersion     string
 	helmOpts             map[string]string
 	noHelmOpts           []string
-	ctlOpts              map[string]string
 	env                  map[string]string
 	ingress              bool
 	cni                  bool
 	cpReplicas           int
-	proxyOnly            bool
 	hdsDisabled          bool
-	serviceProbe         bool
-	isipv6               bool
 	runPostgresMigration bool
+
+	// Functions to apply to each mesh after the control plane
+	// is provisioned.
+	meshUpdateFuncs map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh
+}
+
+func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
+	// Set defaults.
+	k.isipv6 = IsIPv6()
+	k.installationMode = KumactlInstallationMode
+	k.env = map[string]string{}
+	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
+
+	// Apply options.
+	for _, o := range opts {
+		o.ApplyKuma(k)
+	}
+}
+
+type KumaDeploymentOption interface {
+	ApplyKuma(options *kumaDeploymentOptions)
+}
+
+type KumaOptionFunc func(options *kumaDeploymentOptions)
+
+func (f KumaOptionFunc) ApplyKuma(opts *kumaDeploymentOptions) {
+	if f != nil {
+		f(opts)
+	}
+}
+
+type appDeploymentOptions struct {
+	// common
+	isipv6  bool
+	verbose *bool
 
 	// app specific
 	namespace       string
@@ -56,12 +97,77 @@ type deployOptions struct {
 	mesh            string
 	dpVersion       string
 	kumactlFlow     bool
+	concurrency     int
+	omitDataplane   bool
+	proxyOnly       bool
+	serviceProbe    bool
 }
 
-type DeployOptionsFunc func(*deployOptions)
+func (d *appDeploymentOptions) apply(opts ...AppDeploymentOption) {
+	// Set defaults.
+	d.isipv6 = IsIPv6()
 
-func WithPostgres(envVars map[string]string) DeployOptionsFunc {
-	return func(o *deployOptions) {
+	// Apply options.
+	for _, o := range opts {
+		o.ApplyApp(d)
+	}
+}
+
+type AppDeploymentOption interface {
+	ApplyApp(*appDeploymentOptions)
+}
+
+type AppOptionFunc func(*appDeploymentOptions)
+
+func (f AppOptionFunc) ApplyApp(opts *appDeploymentOptions) {
+	if f != nil {
+		f(opts)
+	}
+}
+
+type GenericOption struct {
+	Kuma KumaOptionFunc
+	App  AppOptionFunc
+}
+
+var _ KumaDeploymentOption = &GenericOption{}
+var _ AppDeploymentOption = &GenericOption{}
+
+func (o *GenericOption) ApplyApp(opts *appDeploymentOptions) {
+	o.App(opts)
+}
+
+func (o *GenericOption) ApplyKuma(opts *kumaDeploymentOptions) {
+	o.Kuma(opts)
+}
+
+// WithVerbose enables verbose mode on the deployment.
+func WithVerbose() *GenericOption {
+	enabled := true
+
+	return &GenericOption{
+		App: func(o *appDeploymentOptions) {
+			o.verbose = &enabled
+		},
+		Kuma: func(o *kumaDeploymentOptions) {
+			o.verbose = &enabled
+		},
+	}
+}
+
+func WithIPv6(enabled bool) *GenericOption {
+	return &GenericOption{
+		Kuma: func(o *kumaDeploymentOptions) {
+			o.isipv6 = enabled
+		},
+		App: func(o *appDeploymentOptions) {
+			o.isipv6 = enabled
+		},
+	}
+}
+
+func WithPostgres(envVars map[string]string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.runPostgresMigration = true
 
 		if o.env == nil {
@@ -71,223 +177,234 @@ func WithPostgres(envVars map[string]string) DeployOptionsFunc {
 		for key, value := range envVars {
 			o.env[key] = value
 		}
-	}
+	})
 }
 
-// WithKumactlFlow allows to create Dataplane resource before the actual data plane proxy start.
-// If proxy is disconnected, resource won't be deleted from the storage and will be displayed as Offline.
-func WithKumactlFlow() DeployOptionsFunc {
-	return func(options *deployOptions) {
-		options.kumactlFlow = true
-	}
-}
-
-func WithYaml(appYaml string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.appYaml = appYaml
-	}
-}
-
-func WithIPv6(isipv6 bool) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.isipv6 = isipv6
-	}
-}
-
-func WithProtocol(protocol string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.protocol = protocol
-	}
-}
-
-func WithArgs(appArgs []string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.appArgs = appArgs
-	}
-}
-
-func WithServiceName(name string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.serviceName = name
-	}
-}
-
-func WithServiceVersion(version string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.serviceVersion = version
-	}
-}
-
-func WithServiceInstance(instance string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.serviceInstance = instance
-	}
-}
-
-func ProxyOnly() DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.proxyOnly = true
-	}
-}
-
-func ServiceProbe() DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.serviceProbe = true
-	}
-}
-
-func WithHDS(enabled bool) DeployOptionsFunc {
-	return func(o *deployOptions) {
+func WithHDS(enabled bool) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.hdsDisabled = !enabled
-	}
+	})
 }
 
-func WithGlobalAddress(address string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.globalAddress = address
-	}
-}
-
-// WithDPVersion only works with Universal now
-func WithDPVersion(version string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.dpVersion = version
-	}
-}
-
-// WithCPReplicas works only with HELM now
-func WithCPReplicas(cpReplicas int) DeployOptionsFunc {
-	return func(o *deployOptions) {
+// WithCPReplicas works only with HELM for now.
+func WithCPReplicas(cpReplicas int) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.cpReplicas = cpReplicas
-	}
+	})
 }
 
-// WithSkipDefaultMesh works only with HELM now
-func WithSkipDefaultMesh(skip bool) DeployOptionsFunc {
-	return func(o *deployOptions) {
+// WithSkipDefaultMesh works only with HELM now.
+func WithSkipDefaultMesh(skip bool) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.skipDefaultMesh = skip
-	}
+	})
 }
 
-func WithInstallationMode(mode InstallationMode) DeployOptionsFunc {
-	return func(o *deployOptions) {
+func WithInstallationMode(mode InstallationMode) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.installationMode = mode
-	}
+	})
 }
 
-func WithHelmReleaseName(name string) DeployOptionsFunc {
-	return func(o *deployOptions) {
+func WithHelmReleaseName(name string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.helmReleaseName = name
-	}
+	})
 }
 
-func WithHelmChartPath(path string) DeployOptionsFunc {
-	return func(o *deployOptions) {
+func WithHelmChartPath(path string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.helmChartPath = &path
-	}
+	})
 }
 
-func WithHelmChartVersion(version string) DeployOptionsFunc {
-	return func(o *deployOptions) {
+func WithHelmChartVersion(version string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.helmChartVersion = version
-	}
+	})
 }
 
-func WithHelmOpt(name, value string) DeployOptionsFunc {
-	return func(o *deployOptions) {
+func WithHelmOpt(name, value string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		if o.helmOpts == nil {
 			o.helmOpts = map[string]string{}
 		}
 		o.helmOpts[name] = value
-	}
+	})
 }
 
-func WithoutHelmOpt(name string) DeployOptionsFunc {
-	return func(o *deployOptions) {
+func WithoutHelmOpt(name string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.noHelmOpts = append(o.noHelmOpts, name)
-	}
+	})
 }
 
-func WithEnv(name, value string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		if o.env == nil {
-			o.env = map[string]string{}
-		}
+func WithEnv(name, value string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.env[name] = value
-	}
+	})
 }
 
-func WithIngress() DeployOptionsFunc {
-	return func(o *deployOptions) {
+func WithIngress() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.ingress = true
-	}
+	})
 }
 
-func WithCNI() DeployOptionsFunc {
-	return func(o *deployOptions) {
+func WithCNI() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.cni = true
-	}
+	})
 }
 
-func WithNamespace(namespace string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.namespace = namespace
-	}
+func WithGlobalAddress(address string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.globalAddress = address
+	})
 }
 
-func WithMesh(mesh string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.mesh = mesh
-	}
-}
-
-func WithAppname(appname string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.appname = appname
-	}
-}
-
-func WithName(name string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.name = name
-	}
-}
-
-func WithToken(token string) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.token = token
-	}
-}
-
-func WithTransparentProxy(transparent bool) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.transparent = transparent
-	}
-}
-
-func WithBuiltinDNS(builtindns bool) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.builtindns = &builtindns
-	}
-}
-
-func WithCtlOpt(name, value string) DeployOptionsFunc {
-	return func(o *deployOptions) {
+// WithCtlOpt allows arbitrary options to be passed to kuma, which is important
+// for using test/framework in other libraries where additional options may have
+// been added.
+func WithCtlOpt(name, value string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		if o.ctlOpts == nil {
 			o.ctlOpts = map[string]string{}
 		}
 		o.ctlOpts[name] = value
-	}
+	})
 }
 
-func newDeployOpt(fs ...DeployOptionsFunc) *deployOptions {
-	rv := &deployOptions{
-		installationMode: KumactlInstallationMode,
-	}
-	for _, f := range fs {
-		f(rv)
-	}
-	return rv
+type MeshUpdateFunc func(mesh *mesh_proto.Mesh) *mesh_proto.Mesh
+
+// WithMeshUpdate registers a function to update the specification
+// for the named mesh. When the control plane implementation creates the
+// mesh, it invokes the function and applies configuration changes to the
+// mesh object.
+func WithMeshUpdate(mesh string, u MeshUpdateFunc) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.meshUpdateFuncs[mesh] = append(o.meshUpdateFuncs[mesh], u)
+	})
+}
+
+// WithoutDataplane suppresses the automatic configuration of kuma-dp
+// in the application container. This is useful when the test requires a
+// container that is not bound to the mesh.
+func WithoutDataplane() AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.omitDataplane = true
+	})
+}
+
+// WithKumactlFlow creates the Dataplane resource in the control plane before the actual data plane proxy start.
+// If proxy is disconnected, resource won't be deleted from the storage and will be displayed as Offline.
+func WithKumactlFlow() AppDeploymentOption {
+	return AppOptionFunc(func(options *appDeploymentOptions) {
+		options.kumactlFlow = true
+	})
+}
+
+func WithYaml(appYaml string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.appYaml = appYaml
+	})
+}
+
+func WithProtocol(protocol string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.protocol = protocol
+	})
+}
+
+func WithArgs(appArgs []string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.appArgs = appArgs
+	})
+}
+
+func WithServiceName(name string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.serviceName = name
+	})
+}
+
+func WithServiceVersion(version string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.serviceVersion = version
+	})
+}
+
+func WithServiceInstance(instance string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.serviceInstance = instance
+	})
+}
+
+func ProxyOnly() AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.proxyOnly = true
+	})
+}
+
+func ServiceProbe() AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.serviceProbe = true
+	})
+}
+
+// WithDPVersion only works with Universal now
+func WithDPVersion(version string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.dpVersion = version
+	})
+}
+
+func WithNamespace(namespace string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.namespace = namespace
+	})
+}
+
+func WithMesh(mesh string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.mesh = mesh
+	})
+}
+
+func WithAppname(appname string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.appname = appname
+	})
+}
+
+func WithName(name string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.name = name
+	})
+}
+
+func WithToken(token string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.token = token
+	})
+}
+
+func WithTransparentProxy(transparent bool) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.transparent = transparent
+	})
+}
+
+func WithBuiltinDNS(builtindns bool) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.builtindns = &builtindns
+	})
+}
+
+func WithConcurrency(concurrency int) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.concurrency = concurrency
+	})
 }
 
 type Deployment interface {
@@ -301,10 +418,10 @@ type Cluster interface {
 	Name() string
 	DismissCluster() error
 	// Generic
-	DeployKuma(mode string, opts ...DeployOptionsFunc) error
+	DeployKuma(mode core.CpMode, opts ...KumaDeploymentOption) error
 	GetKuma() ControlPlane
 	VerifyKuma() error
-	DeleteKuma(opts ...DeployOptionsFunc) error
+	DeleteKuma(opts ...KumaDeploymentOption) error
 	InjectDNS(namespace ...string) error
 	GetKumactlOptions() *KumactlOptions
 	Deployment(name string) Deployment
@@ -318,7 +435,7 @@ type Cluster interface {
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
-	DeployApp(fs ...DeployOptionsFunc) error
+	DeployApp(fs ...AppDeploymentOption) error
 	DeleteApp(namespace, appname string) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
 	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
@@ -333,6 +450,7 @@ type ControlPlane interface {
 	GetMetrics() (string, error)
 	GetKDSServerAddress() string
 	GetGlobaStatusAPI() string
-	GenerateDpToken(mesh, appname string) (string, error)
+	GetAPIServerAddress() string
+	GenerateDpToken(mesh, serviceName string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)
 }

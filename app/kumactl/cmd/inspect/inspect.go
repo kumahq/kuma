@@ -9,18 +9,27 @@ import (
 )
 
 func NewInspectCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
-	cmd := &cobra.Command{
+	inspectCmd := &cobra.Command{
 		Use:   "inspect",
 		Short: "Inspect Kuma resources",
 		Long:  `Inspect Kuma resources.`,
 	}
+	inspectCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if err := kumactl_cmd.RunParentPreRunE(inspectCmd, args); err != nil {
+			return err
+		}
+		if err := pctx.CheckServerVersionCompatibility(); err != nil {
+			cmd.PrintErrln(err)
+		}
+		return nil
+	}
 	// flags
-	cmd.PersistentFlags().StringVarP(&pctx.InspectContext.Args.OutputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
+	inspectCmd.PersistentFlags().StringVarP(&pctx.InspectContext.Args.OutputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
 	// sub-commands
-	cmd.AddCommand(newInspectDataplanesCmd(pctx))
-	cmd.AddCommand(newInspectZoneIngressesCmd(pctx))
-	cmd.AddCommand(newInspectZonesCmd(pctx))
-	cmd.AddCommand(newInspectMeshesCmd(pctx))
-	cmd.AddCommand(newInspectServicesCmd(pctx))
-	return cmd
+	inspectCmd.AddCommand(newInspectDataplanesCmd(pctx))
+	inspectCmd.AddCommand(newInspectZoneIngressesCmd(pctx))
+	inspectCmd.AddCommand(newInspectZonesCmd(pctx))
+	inspectCmd.AddCommand(newInspectMeshesCmd(pctx))
+	inspectCmd.AddCommand(newInspectServicesCmd(pctx))
+	return inspectCmd
 }

@@ -1,0 +1,231 @@
+Clusters:
+  Resources:
+    echo-service-_1_:
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-_1_
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+    echo-service-_2_:
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-_2_
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+    echo-service-_3_:
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-_3_
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+    echo-service-_5_:
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-_5_
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+Endpoints:
+  Resources:
+    echo-service-_1_:
+      clusterName: echo-service-_1_
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.2
+                portValue: 20002
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                version: "2"
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                version: "2"
+    echo-service-_2_:
+      clusterName: echo-service-_2_
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.3
+                portValue: 20003
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                rumored-version: "1"
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                rumored-version: "1"
+    echo-service-_3_:
+      clusterName: echo-service-_3_
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.4
+                portValue: 20004
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                rumored-version: "2"
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                rumored-version: "2"
+    echo-service-_5_:
+      clusterName: echo-service-_5_
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.1
+                portValue: 20001
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                version: "1"
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                version: "1"
+Listeners:
+  Resources:
+    edge-gateway:HTTP:8080:
+      address:
+        socketAddress:
+          address: 192.168.1.1
+          portValue: 8080
+      filterChains:
+      - filters:
+        - name: envoy.filters.network.http_connection_manager
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            commonHttpProtocolOptions:
+              headersWithUnderscoresAction: REJECT_REQUEST
+              idleTimeout: 300s
+            http2ProtocolOptions:
+              allowConnect: true
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
+              maxConcurrentStreams: 100
+            httpFilters:
+            - name: envoy.filters.http.router
+            mergeSlashes: true
+            normalizePath: true
+            rds:
+              configSource:
+                ads: {}
+                resourceApiVersion: V3
+              routeConfigName: edge-gateway:HTTP:8080
+            requestHeadersTimeout: 0.500s
+            serverName: Kuma Gateway
+            statPrefix: gateway-default
+            streamIdleTimeout: 5s
+            stripAnyHostPort: true
+      listenerFilters:
+      - name: envoy.filters.listener.tls_inspector
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+      name: edge-gateway:HTTP:8080
+      perConnectionBufferLimitBytes: 32768
+      reusePort: true
+      trafficDirection: INBOUND
+Routes:
+  Resources:
+    edge-gateway:HTTP:8080:
+      name: edge-gateway:HTTP:8080
+      requestHeadersToRemove:
+      - x-kuma-tags
+      validateClusters: false
+      virtualHosts:
+      - domains:
+        - echo.example.com
+        name: edge-gateway:HTTP:8080:echo.example.com
+        routes:
+        - match:
+            prefix: /api/foo
+          route:
+            cluster: echo-service-_1_
+            timeout: 0s
+        - match:
+            prefix: /phoney
+          route:
+            timeout: 0s
+            weightedClusters:
+              clusters:
+              - name: echo-service-_2_
+                weight: 4
+              - name: echo-service-_3_
+                weight: 5
+              totalWeight: 9
+        - match:
+            prefix: /honey
+          route:
+            cluster: echo-service-_3_
+            timeout: 0s
+        - match:
+            prefix: /api
+          route:
+            timeout: 0s
+            weightedClusters:
+              clusters:
+              - name: echo-service-_5_
+                weight: 1
+              - name: echo-service-_1_
+                weight: 1
+              totalWeight: 2
+        - match:
+            prefix: /
+          route:
+            weightedClusters:
+              totalWeight: 0
+Runtimes:
+  Resources: {}
+Secrets:
+  Resources: {}

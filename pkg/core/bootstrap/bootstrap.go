@@ -10,6 +10,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
@@ -22,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -40,15 +42,18 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
-func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
+var log = core.Log.WithName("bootstrap")
+
+func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := autoconfigure(&cfg); err != nil {
 		return nil, err
 	}
-	builder, err := core_runtime.BuilderFor(cfg, closeCh)
+	builder, err := core_runtime.BuilderFor(appCtx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +107,15 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 
+	builder.WithAccess(core_runtime.Access{
+		ResourceAccess:               resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
+		GenerateDataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
+	})
+
+	if err := initializeAPIServerAuthenticator(builder); err != nil {
+		return nil, err
+	}
+
 	if err := initializeAfterBootstrap(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -119,7 +133,15 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 		return nil, err
 	}
 
+	logWarnings(rt.Config())
+
 	return rt, nil
+}
+
+func logWarnings(config kuma_cp.Config) {
+	if config.ApiServer.Authn.LocalhostIsAdmin {
+		log.Info("WARNING: you can access Control Plane API as admin by sending requests from the same machine where Control Plane runs. To increase security, it is recommended to extract admin credentials and set KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN to false.")
+	}
 }
 
 func initializeMetrics(builder *core_runtime.Builder) error {
@@ -140,8 +162,8 @@ func initializeMetrics(builder *core_runtime.Builder) error {
 	return nil
 }
 
-func Bootstrap(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
-	runtime, err := buildRuntime(cfg, closeCh)
+func Bootstrap(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runtime, error) {
+	runtime, err := buildRuntime(appCtx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -283,6 +305,20 @@ func initializeCaManagers(builder *core_runtime.Builder) error {
 		}
 		builder.WithCaManager(string(pluginName), caManager)
 	}
+	return nil
+}
+
+func initializeAPIServerAuthenticator(builder *core_runtime.Builder) error {
+	authnType := builder.Config().ApiServer.Authn.Type
+	plugin, ok := core_plugins.Plugins().AuthnAPIServer()[core_plugins.PluginName(authnType)]
+	if !ok {
+		return errors.Errorf("there is not implementation of authn named %s", authnType)
+	}
+	authenticator, err := plugin.NewAuthenticator(builder)
+	if err != nil {
+		return errors.Wrapf(err, "could not initiate authenticator %s", authnType)
+	}
+	builder.WithAPIServerAuthenticator(authenticator)
 	return nil
 }
 

@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
-	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -33,8 +31,7 @@ type MeshReconciler struct {
 	ResourceManager manager.ResourceManager
 }
 
-func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	ctx := context.Background()
+func (r *MeshReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	log := r.Log.WithValues("mesh", req.NamespacedName)
 
 	// Fetch the Mesh instance
@@ -69,12 +66,6 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 }
 
 func (r *MeshReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
-	}
-	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", mesh_k8s.GroupVersion)
-	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&mesh_k8s.Mesh{}).
 		Complete(r)

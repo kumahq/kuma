@@ -1,17 +1,19 @@
 package get_test
 
 import (
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 func hasSubCommand(cmd *cobra.Command, sub string) bool {
@@ -22,6 +24,26 @@ func hasSubCommand(cmd *cobra.Command, sub string) bool {
 	}
 
 	return false
+}
+
+func ExecuteRootCommand(cmd *cobra.Command, resourceName string, formatOpt string, pageOpt string) error {
+	args := []string{
+		"--config-file",
+		filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+		"get",
+		resourceName,
+	}
+
+	if formatOpt != "" {
+		args = append(args, formatOpt)
+	}
+
+	if pageOpt != "" {
+		args = append(args, pageOpt)
+	}
+
+	cmd.SetArgs(args)
+	return cmd.Execute()
 }
 
 var _ = Describe("kumactl get ", func() {
@@ -35,8 +57,8 @@ var _ = Describe("kumactl get ", func() {
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			rootCtx = kumactl_cmd.DefaultRootContext()
-			rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-				return store, nil
+			rootCtx.Runtime.NewResourceStore = func(util_http.Client) core_store.ResourceStore {
+				return store
 			}
 			rootCmd = cmd.NewRootCmd(rootCtx)
 			for _, cmd := range rootCmd.Commands() {

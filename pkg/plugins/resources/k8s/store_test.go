@@ -9,12 +9,11 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -38,40 +37,40 @@ var _ = Describe("KubernetesStore", func() {
 	const mesh = "default"
 
 	var backend = struct {
-		ParseYAML       func(yaml string) runtime.Object
-		Create          func(obj runtime.Object)
-		Get             func(obj runtime.Object, ns, name string)
-		AssertNotExists func(obj runtime.Object, ns, name string)
-		Delete          func(obj runtime.Object)
+		ParseYAML       func(yaml string) client.Object
+		Create          func(obj client.Object)
+		Get             func(obj client.Object, ns, name string)
+		AssertNotExists func(obj client.Object, ns, name string)
+		Delete          func(obj client.Object)
 	}{
-		ParseYAML: func(text string) runtime.Object {
+		ParseYAML: func(text string) client.Object {
 			// setup
 			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
 			// when
 			obj, _, err := decoder.Decode([]byte(text), nil, nil)
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			return obj
+			return obj.(client.Object)
 		},
-		Create: func(obj runtime.Object) {
+		Create: func(obj client.Object) {
 			// when
 			err := k8sClient.Create(context.Background(), obj)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		},
-		Get: func(obj runtime.Object, ns, name string) {
+		Get: func(obj client.Object, ns, name string) {
 			// when
 			err := k8sClient.Get(context.Background(), client.ObjectKey{Namespace: ns, Name: name}, obj)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		},
-		AssertNotExists: func(obj runtime.Object, ns, name string) {
+		AssertNotExists: func(obj client.Object, ns, name string) {
 			// when
 			err := k8sClient.Get(context.Background(), client.ObjectKey{Namespace: ns, Name: name}, obj)
 			// then
 			Expect(apierrs.IsNotFound(err)).To(BeTrue())
 		},
-		Delete: func(obj runtime.Object) {
+		Delete: func(obj client.Object) {
 			// when
 			err := k8sClient.Delete(context.Background(), obj)
 			// then
@@ -96,7 +95,7 @@ var _ = Describe("KubernetesStore", func() {
 			Scheme: k8sClientScheme,
 		}
 		s = store.NewStrictResourceStore(store.NewPaginationStore(ks))
-		ns = string(uuid.NewUUID())
+		ns = core.NewUUID()
 
 		err := k8sClient.Create(context.Background(), &kube_core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{Name: ns},

@@ -1,3 +1,4 @@
+//go:build gateway
 // +build gateway
 
 package register
@@ -20,4 +21,5 @@ func init() {
 	// resources from Universal -> Kubernetes and have to deal with namespace
 	// semantics and a lot of other unpleasantness.
 	registry.RegisterType(core_mesh.GatewayResourceTypeDescriptor)
+	registry.RegisterType(core_mesh.GatewayRouteResourceTypeDescriptor)
 }

@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
-    app: kuma-control-plane
+    app: {{ include "kuma.name" . }}-control-plane
 spec:
   replicas: {{ .Values.controlPlane.replicas }}
   strategy:
@@ -15,7 +15,7 @@ spec:
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}
-      app: kuma-control-plane
+      app: {{ include "kuma.name" . }}-control-plane
   template:
     metadata:
       annotations:
@@ -23,7 +23,7 @@ spec:
         checksum/tls-secrets: {{ include (print $.Template.BasePath "/cp-webhooks-and-secrets.yaml") . | sha256sum }}
       labels:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
-        app: kuma-control-plane
+        app: {{ include "kuma.name" . }}-control-plane
     spec:
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
       {{- with .Values.controlPlane.nodeSelector }}

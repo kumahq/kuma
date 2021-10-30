@@ -22,7 +22,6 @@ type KDSStream interface {
 	Receive() (string, model.ResourceList, error)
 	ACK(typ string) error
 	NACK(typ string, err error) error
-	Close() error
 }
 
 var _ KDSStream = &stream{}
@@ -125,8 +124,4 @@ func (s *stream) NACK(typ string, err error) error {
 			Message: fmt.Sprintf("%s", err),
 		},
 	})
-}
-
-func (s *stream) Close() error {
-	return s.streamClient.CloseSend()
 }

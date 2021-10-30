@@ -13,6 +13,9 @@ func ExpectMatchesGoldenFiles(actual []byte, goldenFilePath string) {
 	actualManifests := data.SplitYAML(data.File{Data: actual})
 
 	if golden.UpdateGoldenFiles() {
+		if actual[len(actual)-1] != '\n' {
+			actual = append(actual, '\n')
+		}
 		err := ioutil.WriteFile(goldenFilePath, actual, 0664)
 		Expect(err).ToNot(HaveOccurred())
 	}

@@ -636,8 +636,8 @@ func (t *GatewayResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
 
-func (t *GatewayResource) Sources() []*mesh_proto.Selector {
-	return t.Spec.GetSources()
+func (t *GatewayResource) Selectors() []*mesh_proto.Selector {
+	return t.Spec.GetSelectors()
 }
 
 func (t *GatewayResource) SetSpec(spec model.ResourceSpec) error {
@@ -697,10 +697,104 @@ var GatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:       false,
 	AdminOnly:      false,
 	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromZoneToGlobal,
 	WsPath:         "gateways",
 	KumactlArg:     "gateway",
 	KumactlListArg: "gateways",
+}
+
+const (
+	GatewayRouteType model.ResourceType = "GatewayRoute"
+)
+
+var _ model.Resource = &GatewayRouteResource{}
+
+type GatewayRouteResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.GatewayRoute
+}
+
+func NewGatewayRouteResource() *GatewayRouteResource {
+	return &GatewayRouteResource{
+		Spec: &mesh_proto.GatewayRoute{},
+	}
+}
+
+func (t *GatewayRouteResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *GatewayRouteResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *GatewayRouteResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *GatewayRouteResource) Selectors() []*mesh_proto.Selector {
+	return t.Spec.GetSelectors()
+}
+
+func (t *GatewayRouteResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.GatewayRoute)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		t.Spec = protoType
+		return nil
+	}
+}
+
+func (t *GatewayRouteResource) Descriptor() model.ResourceTypeDescriptor {
+	return GatewayRouteResourceTypeDescriptor
+}
+
+var _ model.ResourceList = &GatewayRouteResourceList{}
+
+type GatewayRouteResourceList struct {
+	Items      []*GatewayRouteResource
+	Pagination model.Pagination
+}
+
+func (l *GatewayRouteResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *GatewayRouteResourceList) GetItemType() model.ResourceType {
+	return GatewayRouteType
+}
+
+func (l *GatewayRouteResourceList) NewItem() model.Resource {
+	return NewGatewayRouteResource()
+}
+
+func (l *GatewayRouteResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*GatewayRouteResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*GatewayRouteResource)(nil), r)
+	}
+}
+
+func (l *GatewayRouteResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+var GatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           GatewayRouteType,
+	Resource:       NewGatewayRouteResource(),
+	ResourceList:   &GatewayRouteResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	WsPath:         "gateway-routes",
+	KumactlArg:     "gateway-route",
+	KumactlListArg: "gateway-routes",
 }
 
 const (

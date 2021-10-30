@@ -14,6 +14,7 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -38,7 +39,10 @@ func init() {
 }
 
 func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
-	scheme := kube_runtime.NewScheme()
+	scheme, err := NewScheme()
+	if err != nil {
+		return err
+	}
 	config := kube_ctrl.GetConfigOrDie()
 	mgr, err := kube_ctrl.NewManager(
 		config,
@@ -52,13 +56,15 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 			LeaderElection:          true,
 			LeaderElectionID:        "kuma-cp-leader",
 			LeaderElectionNamespace: b.Config().Store.Kubernetes.SystemNamespace,
+			// Disable metrics bind address as we serve metrics some other way.
+			MetricsBindAddress: "0",
 		},
 	)
 	if err != nil {
 		return err
 	}
 
-	secretClient, err := secretClient(b.Config().Store.Kubernetes.SystemNamespace, config, scheme, mgr.GetRESTMapper(), b.ShutdownCh())
+	secretClient, err := createSecretClient(b.AppCtx(), scheme, b.Config().Store.Kubernetes.SystemNamespace, config, mgr.GetRESTMapper())
 	if err != nil {
 		return err
 	}
@@ -80,9 +86,9 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 // If we try to use regular cached client for Secrets then we will see following error: E1126 10:42:52.097662       1 reflector.go:178] pkg/mod/k8s.io/client-go@v0.18.9/tools/cache/reflector.go:125: Failed to list *v1.Secret: secrets is forbidden: User "system:serviceaccount:kuma-system:kuma-control-plane" cannot list resource "secrets" in API group "" at the cluster scope
 // We cannot specify this Namespace parameter for the main cache in ControllerManager because it affect all the resources, therefore we need separate client with cache for Secrets.
 // The alternative was to use non-cached client, but it had performance problems.
-func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runtime.Scheme, restMapper meta.RESTMapper, closeCh <-chan struct{}) (kube_client.Client, error) {
+func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, systemNamespace string, config *rest.Config, restMapper meta.RESTMapper) (kube_client.Client, error) {
 	resyncPeriod := 10 * time.Hour // default resyncPeriod in Kubernetes
-	kubeCache, err := kuma_kube_cache.New(config, cache.Options{
+	kubeCache, err := cache.New(config, cache.Options{
 		Scheme:    scheme,
 		Mapper:    restMapper,
 		Resync:    &resyncPeriod,
@@ -91,13 +97,9 @@ func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runt
 	if err != nil {
 		return nil, err
 	}
-	// Add kube core scheme first, otherwise cache won't start
-	if err := kube_core.AddToScheme(scheme); err != nil {
-		return nil, errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
-	}
 
 	// We are listing secrets by our custom "type", therefore we need to add index by this field into cache
-	err = kubeCache.IndexField(context.Background(), &kube_core.Secret{}, "type", func(object kube_runtime.Object) []string {
+	err = kubeCache.IndexField(context.Background(), &kube_core.Secret{}, "type", func(object kube_client.Object) []string {
 		secret := object.(*kube_core.Secret)
 		return []string{string(secret.Type)}
 	})
@@ -108,19 +110,22 @@ func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runt
 	// According to ControllerManager code, cache needs to start before all the Runnables (our Components)
 	// So we need separate go routine to start a cache and then wait for cache
 	go func() {
-		if err := kubeCache.Start(closeCh); err != nil {
+		if err := kubeCache.Start(appCtx); err != nil {
 			// According to implementations, there is no case when error is returned. It just for the Runnable contract.
 			log.Error(err, "could not start the secret k8s cache")
 		}
 	}()
 
-	if ok := kubeCache.WaitForCacheSync(closeCh); !ok {
+	if ok := kubeCache.WaitForCacheSync(appCtx); !ok {
 		// ControllerManager ignores case when WaitForCacheSync returns false.
 		// It might be a better idea to return an error and stop the Control Plane altogether, but sticking to return error for now.
 		core.Log.Error(errors.New("could not sync secret cache"), "failed to wait for cache")
 	}
 
-	return kube_manager.DefaultNewClient(kubeCache, config, kube_client.Options{Scheme: scheme, Mapper: restMapper})
+	return cluster.DefaultNewClient(kubeCache, config, kube_client.Options{
+		Scheme: scheme,
+		Mapper: restMapper,
+	})
 }
 
 func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
@@ -142,6 +147,15 @@ type kubeComponentManager struct {
 
 var _ component.Manager = &kubeComponentManager{}
 
+func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		defer cancel()
+		<-done
+	}()
+	return cm.Manager.Start(ctx)
+}
+
 // Extra check that component.Component implements LeaderElectionRunnable so the leader election works so we won't break leader election on K8S when refactoring component.Component
 var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-chan struct{}) error {
 	return nil
@@ -149,9 +163,25 @@ var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-cha
 
 func (k *kubeComponentManager) Add(components ...component.Component) error {
 	for _, c := range components {
-		if err := k.Manager.Add(c); err != nil {
+		if err := k.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
+
+// This adaptor is required unless component.Component takes a context as input
+type componentRunnableAdaptor struct {
+	component.Component
+}
+
+func (c componentRunnableAdaptor) Start(ctx context.Context) error {
+	return c.Component.Start(ctx.Done())
+}
+
+func (c componentRunnableAdaptor) NeedLeaderElection() bool {
+	return c.Component.NeedLeaderElection()
+}
+
+var _ kube_manager.LeaderElectionRunnable = &componentRunnableAdaptor{}
+var _ kube_manager.Runnable = &componentRunnableAdaptor{}

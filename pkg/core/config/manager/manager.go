@@ -65,21 +65,3 @@ func (s *configManager) DeleteAll(ctx context.Context, fs ...core_store.DeleteAl
 	}
 	return nil
 }
-
-func Upsert(manager ConfigManager, key model.ResourceKey, resource *config_model.ConfigResource, fn func(resource *config_model.ConfigResource)) error {
-	create := false
-	err := manager.Get(context.Background(), resource, core_store.GetBy(key))
-	if err != nil {
-		if core_store.IsResourceNotFound(err) {
-			create = true
-		} else {
-			return err
-		}
-	}
-	fn(resource)
-	if create {
-		return manager.Create(context.Background(), resource, core_store.CreateBy(key))
-	} else {
-		return manager.Update(context.Background(), resource)
-	}
-}

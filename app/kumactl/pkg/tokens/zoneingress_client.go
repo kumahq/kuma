@@ -8,21 +8,15 @@ import (
 
 	"github.com/pkg/errors"
 
-	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
-	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
-func NewZoneIngressTokenClient(config *kumactl_config.ControlPlaneCoordinates_ApiServer) (ZoneIngressTokenClient, error) {
-	client, err := kumactl_client.ApiServerClient(config)
-	if err != nil {
-		return nil, err
-	}
+func NewZoneIngressTokenClient(client util_http.Client) ZoneIngressTokenClient {
 	return &httpZoneIngressTokenClient{
 		client: client,
-	}, nil
+	}
 }
 
 type ZoneIngressTokenClient interface {

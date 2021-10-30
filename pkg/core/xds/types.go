@@ -60,9 +60,7 @@ type ExternalService struct {
 }
 
 type Locality struct {
-	Region   string
 	Zone     string
-	SubZone  string
 	Priority uint32
 }
 
@@ -94,8 +92,8 @@ type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
 // RetryMap holds the most specific Retry for each reachable service.
 type RetryMap map[ServiceName]*core_mesh.RetryResource
 
-// FaultInjectionMap holds the most specific FaultInjectionResource for each InboundInterface
-type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjection
+// FaultInjectionMap holds all matched FaultInjectionResources for each InboundInterface
+type FaultInjectionMap map[mesh_proto.InboundInterface][]*mesh_proto.FaultInjection
 
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
@@ -196,7 +194,7 @@ func (e Endpoint) LocalityString() string {
 	if e.Locality == nil {
 		return ""
 	}
-	return e.Locality.Region + "/" + e.Locality.Zone + "/" + e.Locality.SubZone
+	return e.Locality.Zone
 }
 
 func (e Endpoint) HasLocality() bool {

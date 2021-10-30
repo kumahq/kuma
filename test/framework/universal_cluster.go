@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -13,6 +15,8 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/template"
 )
 
@@ -26,6 +30,8 @@ type UniversalCluster struct {
 	defaultTimeout time.Duration
 	defaultRetries int
 }
+
+var _ Cluster = &UniversalCluster{}
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
 	return &UniversalCluster{
@@ -75,13 +81,15 @@ func (c *UniversalCluster) Verbose() bool {
 	return c.verbose
 }
 
-func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
-	c.controlplane = NewUniversalControlPlane(c.t, mode, c.name, c, c.verbose)
-	opts := newDeployOpt(fs...)
+func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
+	var opts kumaDeploymentOptions
 
+	opts.apply(opt...)
 	if opts.installationMode != KumactlInstallationMode {
 		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, opts.installationMode)
 	}
+
+	c.controlplane = NewUniversalControlPlane(c.t, mode, c.name, c, c.verbose)
 
 	cmd := []string{"kuma-cp", "run"}
 	env := []string{"KUMA_MODE=" + mode, "KUMA_DNS_SERVER_PORT=53"}
@@ -129,15 +137,61 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		return err
 	}
 
-	kumacpURL := "http://localhost:" + app.ports["5681"]
-	err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
-	if err != nil {
+	c.apps[AppModeCP] = app
+
+	var token string
+	if opts.env["KUMA_API_SERVER_AUTHN_TYPE"] == "tokens" {
+		token, err = c.retrieveAdminToken()
+		if err != nil {
+			return err
+		}
+	}
+
+	if err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(
+		c.name, c.GetKuma().GetAPIServerAddress(), token); err != nil {
 		return err
 	}
 
-	c.apps[AppModeCP] = app
+	for name, updateFuncs := range opts.meshUpdateFuncs {
+		for _, f := range updateFuncs {
+			Logf("applying update function to mesh %q", name)
+			err := c.controlplane.kumactl.KumactlUpdateObject("mesh", name,
+				func(resource core_model.Resource) core_model.Resource {
+					mesh := resource.(*core_mesh.MeshResource)
+					mesh.Spec = f(mesh.Spec)
+					return mesh
+				})
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	return nil
+}
+
+func (c *UniversalCluster) retrieveAdminToken() (string, error) {
+	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
+		sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
+			"--fail", "--show-error",
+			"http://localhost:5681/global-secrets/admin-user-token"})
+		if err := sshApp.Run(); err != nil {
+			return "", err
+		}
+		if sshApp.Err() != "" {
+			return "", errors.New(sshApp.Err())
+		}
+		var secret map[string]string
+		if err := json.Unmarshal([]byte(sshApp.Out()), &secret); err != nil {
+			return "", err
+		}
+		data := secret["data"]
+		token, err := base64.StdEncoding.DecodeString(data)
+		if err != nil {
+			return "", err
+		}
+		return string(token), nil
+	})
 }
 
 func (c *UniversalCluster) GetKuma() ControlPlane {
@@ -148,7 +202,7 @@ func (c *UniversalCluster) VerifyKuma() error {
 	return c.controlplane.kumactl.RunKumactl("get", "dataplanes")
 }
 
-func (c *UniversalCluster) DeleteKuma(opts ...DeployOptionsFunc) error {
+func (c *UniversalCluster) DeleteKuma(...KumaDeploymentOption) error {
 	err := c.apps[AppModeCP].Stop()
 	delete(c.apps, AppModeCP)
 	c.controlplane = nil
@@ -176,26 +230,31 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, token string, builtindns bool) error {
+func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, token string, builtindns bool, concurrency int) error {
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, false)
+	app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, false, concurrency)
 	return app.dpApp.Start()
 }
 
 func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, name, "", ip, dpyaml, builtindns, true)
+	app.CreateDP(token, cpAddress, name, "", ip, dpyaml, builtindns, true, 0)
 	return app.dpApp.Start()
 }
 
-func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
-	opts := newDeployOpt(fs...)
+func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
+	var opts appDeploymentOptions
+	opts.apply(opt...)
 	appname := opts.appname
 	token := opts.token
 	transparent := opts.transparent
 	args := opts.appArgs
+
+	if opts.verbose == nil {
+		opts.verbose = &c.verbose
+	}
 
 	if opts.mesh == "" {
 		opts.mesh = "default"
@@ -206,48 +265,57 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
 
-	fmt.Printf("IPV6 is %v\n", opts.isipv6)
-	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, c.verbose, caps)
+	Logf("IPV6 is %v", opts.isipv6)
+
+	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, *opts.verbose, caps)
 	if err != nil {
 		return err
 	}
 
-	if opts.kumactlFlow {
-		dataplaneResource := template.Render(opts.appYaml, map[string]string{
-			"name":    opts.name,
-			"address": app.ip,
-		})
-		err := c.GetKumactlOptions().KumactlApplyFromString(string(dataplaneResource))
-		if err != nil {
+	// We need to record the app before running any other options,
+	// since those options might fail. If they do, we have a running
+	// container that isn't fully configured, and we need it to be
+	// recorded so that DismissCluster can clean it up.
+	Logf("Started universal app %q in container %q", opts.name, app.container)
+	c.apps[opts.name] = app
+
+	if !opts.omitDataplane {
+		if opts.kumactlFlow {
+			dataplaneResource := template.Render(opts.appYaml, map[string]string{
+				"name":    opts.name,
+				"address": app.ip,
+			})
+			err := c.GetKumactlOptions().KumactlApplyFromString(string(dataplaneResource))
+			if err != nil {
+				return err
+			}
+		}
+
+		if opts.dpVersion != "" {
+			// override needs to be before setting up transparent proxy.
+			// Otherwise, we won't be able to fetch specific Kuma DP version.
+			if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
+				return err
+			}
+		}
+
+		builtindns := opts.builtindns == nil || *opts.builtindns
+		if transparent {
+			app.setupTransparent(c.apps[AppModeCP].ip, builtindns)
+		}
+
+		ip := app.ip
+
+		var dataplaneResource string
+		if opts.kumactlFlow {
+			dataplaneResource = ""
+		} else {
+			dataplaneResource = opts.appYaml
+		}
+
+		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns, opts.concurrency); err != nil {
 			return err
 		}
-	}
-
-	if opts.dpVersion != "" {
-		// override needs to be before setting up transparent proxy.
-		// Otherwise, we won't be able to fetch specific Kuma DP version.
-		if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
-			return err
-		}
-	}
-
-	builtindns := opts.builtindns == nil || *opts.builtindns
-	if transparent {
-		app.setupTransparent(c.apps[AppModeCP].ip, builtindns)
-	}
-
-	ip := app.ip
-
-	var dataplaneResource string
-	if opts.kumactlFlow {
-		dataplaneResource = ""
-	} else {
-		dataplaneResource = opts.appYaml
-	}
-
-	err = c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns)
-	if err != nil {
-		return err
 	}
 
 	if !opts.proxyOnly {
@@ -257,8 +325,6 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 			return err
 		}
 	}
-
-	c.apps[opts.name] = app
 
 	return nil
 }

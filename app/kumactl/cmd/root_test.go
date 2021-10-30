@@ -10,7 +10,9 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 	"github.com/kumahq/kuma/pkg/util/test"
 )
 
@@ -35,6 +37,9 @@ var _ = Describe("kumactl root cmd", func() {
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+					return nil, nil
+				},
 				Registry:           registry.NewTypeRegistry(),
 				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
@@ -69,6 +74,9 @@ currentContext: local
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+					return nil, nil
+				},
 				Registry:           registry.NewTypeRegistry(),
 				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},

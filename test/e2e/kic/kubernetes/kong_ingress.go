@@ -131,7 +131,7 @@ metadata:
 		Expect(kubernetes.DismissCluster()).To(Succeed())
 	})
 	It("should install kong ingress into default namespace", func() {
-		ingressNamespace = kic.DefaultIngressNamespace
+		ingressNamespace = DefaultGatewayNamespace
 		// given kong ingress
 		err := NewClusterSetup().
 			Install(kic.KongIngressController()).

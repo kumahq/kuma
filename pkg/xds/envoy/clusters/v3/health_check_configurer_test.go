@@ -29,7 +29,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
 				Configure(clusters.HealthCheck(core_mesh.ProtocolHTTP, given.healthCheck)).
-				Configure(clusters.Timeout(core_mesh.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: util_proto.Duration(5 * time.Second)})).
+				Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
 				Build()
 
 			// then

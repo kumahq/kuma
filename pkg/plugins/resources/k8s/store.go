@@ -20,6 +20,11 @@ import (
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
+func typeIsUnregistered(err error) bool {
+	var typeErr *k8s_registry.UnknownTypeError
+	return errors.As(err, &typeErr)
+}
+
 var _ store.ResourceStore = &KubernetesStore{}
 
 type KubernetesStore struct {
@@ -40,6 +45,9 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	opts := store.NewCreateOptions(fs...)
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
+		if typeIsUnregistered(err) {
+			return errors.Errorf("cannot create instance of unregistered type %q", r.Descriptor().Name)
+		}
 		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 	}
 	name, namespace, err := k8sNameNamespace(opts.Name, obj.Scope())
@@ -76,6 +84,9 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...store.UpdateOptionsFunc) error {
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
+		if typeIsUnregistered(err) {
+			return errors.Errorf("cannot update instance of unregistered type %q", r.Descriptor().Name)
+		}
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
 
@@ -102,8 +113,13 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
+		// Unregistered types can't exist in the first place, so deletion would automatically succeed.
+		if typeIsUnregistered(err) {
+			return nil
+		}
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
+
 	name, namespace, err := k8sNameNamespace(opts.Name, obj.Scope())
 	if err != nil {
 		return err
@@ -123,6 +139,9 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	opts := store.NewGetOptions(fs...)
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
+		if typeIsUnregistered(err) {
+			return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
+		}
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
 	name, namespace, err := k8sNameNamespace(opts.Name, obj.Scope())
@@ -151,6 +170,9 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	opts := store.NewListOptions(fs...)
 	obj, err := s.Converter.ToKubernetesList(rs)
 	if err != nil {
+		if typeIsUnregistered(err) {
+			return nil
+		}
 		return errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.GetItemType())
 	}
 	if err := s.Client.List(ctx, obj); err != nil {

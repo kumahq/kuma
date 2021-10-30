@@ -40,7 +40,7 @@ message MeshInsight {
     // Dataplane stats grouped by KumaDP version
     map<string, DataplaneStat> kumaDp = 1;
 
-    // Dataplan stats grouped by Envoy version
+    // Dataplane stats grouped by Envoy version
     map<string, DataplaneStat> envoy = 2;
   }
   DpVersions dpVersions = 4;
@@ -54,4 +54,19 @@ message MeshInsight {
 
   // mTLS statistics
   MTLS mTLS = 5;
+
+  // ServiceStat defines statistics of mesh services
+  message ServiceStat {
+    uint32 total = 1;
+    uint32 internal = 2;
+    uint32 external = 3;
+  }
+  ServiceStat services = 6;
+
+  // DataplanesByType defines statistics splitted by dataplane types
+  message DataplanesByType {
+    DataplaneStat standard = 1;
+    DataplaneStat gateway = 2;
+  }
+  DataplanesByType dataplanesByType = 7;
 }

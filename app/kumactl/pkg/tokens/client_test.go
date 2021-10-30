@@ -10,8 +10,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
+	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 )
@@ -35,7 +37,7 @@ var _ = Describe("Tokens Client", func() {
 
 	BeforeEach(func() {
 		container := restful.NewContainer()
-		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}))
+		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}, access.NoopGenerateDpTokenAccess{}))
 		server = httptest.NewServer(container.ServeMux)
 	})
 
@@ -45,10 +47,11 @@ var _ = Describe("Tokens Client", func() {
 
 	It("should return a token", func() {
 		// given
-		client, err := tokens.NewDataplaneTokenClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
+		baseClient, err := kumactl_client.ApiServerClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
 		})
 		Expect(err).ToNot(HaveOccurred())
+		client := tokens.NewDataplaneTokenClient(baseClient)
 
 		// wait for server
 		Eventually(func() error {
@@ -75,9 +78,11 @@ var _ = Describe("Tokens Client", func() {
 			_, err := writer.Write([]byte("Internal Server Error"))
 			Expect(err).ToNot(HaveOccurred())
 		})
-		client, err := tokens.NewDataplaneTokenClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
+		baseClient, err := kumactl_client.ApiServerClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
 		})
+		Expect(err).ToNot(HaveOccurred())
+		client := tokens.NewDataplaneTokenClient(baseClient)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

@@ -19,10 +19,10 @@ import (
 var log = core.Log.WithName("kds")
 
 type Context struct {
-	ZoneClientCtx         context.Context
-	GlobalServerCallbacks []mux.Callbacks
-	GlobalProvidedFilter  reconcile.ResourceFilter
-	ZoneProvidedFilter    reconcile.ResourceFilter
+	ZoneClientCtx        context.Context
+	GlobalProvidedFilter reconcile.ResourceFilter
+	ZoneProvidedFilter   reconcile.ResourceFilter
+	GlobalServerFilters  []mux.Filter
 	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
 	Configs map[string]bool
 }
@@ -44,19 +44,16 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
 	return func(clusterID string, r model.Resource) bool {
 		resType := r.Descriptor().Name
-		if resType == mesh.ZoneIngressType {
-			return r.(*mesh.ZoneIngressResource).Spec.GetZone() != clusterID
-		}
 		if resType == system.ConfigType && !configs[r.GetMeta().GetName()] {
 			return false
 		}
 		if resType == system.GlobalSecretType {
 			return zoneingress.IsSigningKeyResource(model.MetaToResourceKey(r.GetMeta()))
 		}
-		if resType != mesh.DataplaneType {
+		if resType != mesh.DataplaneType && resType != mesh.ZoneIngressType {
 			return true
 		}
-		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
+		if resType == mesh.DataplaneType && !r.(*mesh.DataplaneResource).Spec.IsIngress() {
 			return false
 		}
 		if clusterID == util.ZoneTag(r) {

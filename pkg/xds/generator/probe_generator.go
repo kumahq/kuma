@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"net/url"
+
 	"github.com/pkg/errors"
 
 	model "github.com/kumahq/kuma/pkg/core/xds"
@@ -33,16 +35,24 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 		portSet[proxy.Dataplane.Spec.Networking.ToInboundInterface(inbound).WorkloadPort] = true
 	}
 	for _, endpoint := range probes.Endpoints {
+		matchURL, err := url.Parse(endpoint.Path)
+		if err != nil {
+			return nil, err
+		}
+		newURL, err := url.Parse(endpoint.InboundPath)
+		if err != nil {
+			return nil, err
+		}
 		if portSet[endpoint.InboundPort] {
 			virtualHostBuilder.Configure(
-				envoy_routes.Route(endpoint.Path, endpoint.InboundPath, names.GetLocalClusterName(endpoint.InboundPort), true))
+				envoy_routes.Route(matchURL.Path, newURL.Path, names.GetLocalClusterName(endpoint.InboundPort), true))
 		} else {
 			// On Kubernetes we are overriding probes for every container, but there is no guarantee that given
 			// probe will have an equivalent in inbound interface (ex. sidecar that is not selected by any service).
 			// In this situation there is no local cluster therefore we are sending redirect to a real destination.
 			// System responsible for using virtual probes needs to support redirect (kubelet on K8S supports it).
 			virtualHostBuilder.Configure(
-				envoy_routes.Redirect(endpoint.Path, endpoint.InboundPath, true, endpoint.InboundPort))
+				envoy_routes.Redirect(matchURL.Path, newURL.Path, true, endpoint.InboundPort))
 		}
 	}
 

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -15,26 +14,19 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd/inspect"
 	"github.com/kumahq/kuma/app/kumactl/cmd/install"
 	"github.com/kumahq/kuma/app/kumactl/cmd/uninstall"
+	"github.com/kumahq/kuma/app/kumactl/cmd/version"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	kumactl_config "github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_errors "github.com/kumahq/kuma/app/kumactl/pkg/errors"
-	"github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/cmd/version"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 
 	// Register gateway resources.
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
 
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works
 	_ "github.com/kumahq/kuma/pkg/xds/envoy"
-)
-
-var (
-	kumactlLog       = core.Log.WithName("kumactl")
-	kumaBuildVersion *types.IndexResponse
 )
 
 // newRootCmd represents the base command when called without any subcommands.
@@ -74,29 +66,18 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 				return err
 			}
 
-			client, err := root.CurrentApiClient()
-			if err != nil {
-				kumactlLog.Error(err, "Unable to get index client")
-			} else {
-				kumaBuildVersion, err = client.GetVersion(context.Background())
-				if err != nil {
-					kumactlLog.Error(err, "Unable to retrieve server version")
-				}
-			}
-
-			if kumaBuildVersion == nil {
-				cmd.PrintErr("WARNING: Unable to confirm the server supports this kumactl version\n")
-			} else if kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product {
-				cmd.PrintErr("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version + "\n")
-			}
 			return nil
 		},
 	}
+
+	cmd.SetOut(os.Stdout)
+
 	// root flags
 	cmd.PersistentFlags().StringVar(&root.Args.ConfigFile, "config-file", "", "path to the configuration file to use")
 	cmd.PersistentFlags().StringVarP(&root.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.OffLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	cmd.PersistentFlags().BoolVar(&args.noConfig, "no-config", false, "if set no config file and config directory will be created")
+
 	// sub-commands
 	cmd.AddCommand(apply.NewApplyCmd(root))
 	cmd.AddCommand(completion.NewCompletionCommand(root))
@@ -107,7 +88,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(inspect.NewInspectCmd(root))
 	cmd.AddCommand(install.NewInstallCmd(root))
 	cmd.AddCommand(uninstall.NewUninstallCmd())
-	cmd.AddCommand(version.NewVersionCmd())
+	cmd.AddCommand(version.NewCmd(root))
 
 	kumactl_cmd.WrapRunnables(cmd, kumactl_errors.FormatErrorWrapper)
 	return cmd

@@ -6,7 +6,6 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -75,7 +74,7 @@ func (c *virtualHostModificator) applyHCMModification(hcm *envoy_hcm.HttpConnect
 func (c *virtualHostModificator) patch(routeCfg *envoy_route.RouteConfiguration, vHostPatch *envoy_route.VirtualHost) {
 	for _, vHost := range routeCfg.VirtualHosts {
 		if c.virtualHostMatches(vHost) {
-			proto.Merge(vHost, vHostPatch)
+			util_proto.Merge(vHost, vHostPatch)
 		}
 	}
 }

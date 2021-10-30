@@ -28,10 +28,10 @@ store:
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
     # Maximum number of open connections to the database
     # `0` value means number of open connections is unlimited
-    maxOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
+    maxOpenConnections: 50 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
     # Maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
-    maxIdleConnections: 0  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
+    maxIdleConnections: 50  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
@@ -132,8 +132,16 @@ apiServer:
   auth:
     # Directory of authorized client certificates (only validate in HTTPS)
     clientCertsDir: "" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-    # Allow requests that are originating from localhost
-    allowFromLocalhost: true # ENV: KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST
+  # Api Server Authentication configuration
+  authn:
+    # Type of authentication mechanism (available values: "adminClientCerts", "tokens")
+    type: tokens # ENV: KUMA_API_SERVER_AUTHN_TYPE
+    # Localhost is authenticated as a user admin of group admin
+    localhostIsAdmin: true # ENV: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
+    # Configuration for tokens authentication
+    tokens:
+      # If true then User Token with name admin and group admin will be created and placed as admin-user-token Kuma secret
+      bootstrapAdminToken: true # ENV: KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
@@ -382,3 +390,28 @@ dpServer:
       healthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD
       # UnhealthyThreshold is a number of unhealthy health checks required before a host is marked unhealthy
       unhealthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD
+
+# Access Control configuration
+access:
+  # Type of access strategy (available values: "static")
+  type: static
+  # Configuration of static access strategy
+  static:
+    # AdminResources defines an access to admin resources (Secret/GlobalSecret)
+    adminResources:
+      # List of users that are allowed to access admin resources
+      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_ADMIN_RESOURCES_USERS
+      # List of groups that are allowed to access admin resources
+      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_ADMIN_RESOURCES_GROUPS
+    # GenerateDPToken defines an access to generating dataplane token
+    generateDpToken:
+      # List of users that are allowed to generate dataplane token
+      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_USERS
+      # List of groups that are allowed to generate dataplane token
+      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS
+    # GenerateDPToken defines an access to generating user token
+    generateUserToken:
+      # List of users that are allowed to generate user token
+      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS
+      # List of groups that are allowed to generate user token
+      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS

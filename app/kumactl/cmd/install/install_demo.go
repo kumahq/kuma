@@ -20,7 +20,7 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "demo",
 		Short: "Install Kuma demo on Kubernetes",
-		Long:  "Install Kuma demo on Kubernetes in a 'kuma-demo' namespace.",
+		Long:  "Install Kuma demo on Kubernetes in its own namespace.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateDemoArgs(args); err != nil {
 				return err

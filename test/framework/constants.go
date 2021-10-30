@@ -53,6 +53,7 @@ var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
 var KumaGlobalZoneSyncServiceName = "kuma-global-zone-sync"
 var DefaultTracingNamespace = "kuma-tracing"
+var DefaultGatewayNamespace = "kuma-gateway"
 
 var CNIApp = "kuma-cni"
 var CNINamespace = "kube-system"
@@ -62,6 +63,6 @@ var KumaCPImageRepo = "kuma-cp"
 var KumaDPImageRepo = "kuma-dp"
 var KumaInitImageRepo = "kuma-init"
 
-var KumaUniversalDeployOpts []DeployOptionsFunc
-var KumaK8sDeployOpts []DeployOptionsFunc
-var KumaZoneK8sDeployOpts []DeployOptionsFunc
+var KumaUniversalDeployOpts []KumaDeploymentOption
+var KumaK8sDeployOpts []KumaDeploymentOption
+var KumaZoneK8sDeployOpts []KumaDeploymentOption

@@ -1,8 +1,10 @@
+//go:build !windows
 // +build !windows
 
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,36 +20,25 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("run", func() {
 
-	var backupSetupSignalHandler func() <-chan struct{}
-
-	BeforeEach(func() {
-		backupSetupSignalHandler = core.SetupSignalHandler
-	})
-	AfterEach(func() {
-		core.SetupSignalHandler = backupSetupSignalHandler
-	})
-
-	var stopCh chan struct{}
-
-	BeforeEach(func() {
-		stopCh = make(chan struct{})
-
-		core.SetupSignalHandler = func() <-chan struct{} {
-			return stopCh
-		}
-	})
+	var cancel func()
+	var ctx context.Context
+	opts := kuma_cmd.RunCmdOpts{
+		SetupSignalHandler: func() context.Context {
+			return ctx
+		},
+	}
 
 	var tmpDir string
 
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
 		var err error
 		tmpDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
@@ -104,13 +95,13 @@ var _ = Describe("run", func() {
 
 			// given
 			rootCtx := DefaultRootContext()
-			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, error) {
 				respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
-				return respBytes, "", nil
+				return respBytes, nil
 			}
 			_, writer := io.Pipe()
-			cmd := NewRootCmd(rootCtx)
+			cmd := NewRootCmd(opts, rootCtx)
 			cmd.SetArgs(append([]string{"run"}, given.args...))
 			cmd.SetOut(writer)
 			cmd.SetErr(writer)
@@ -145,7 +136,7 @@ var _ = Describe("run", func() {
 			// and
 			actualArgs := strings.Split(string(cmdline), "\n")
 			Expect(actualArgs[0]).To(Equal("--version"))
-			Expect(actualArgs[1]).To(Equal("-c"))
+			Expect(actualArgs[1]).To(Equal("--config-path"))
 			actualConfigFile := actualArgs[2]
 			Expect(actualConfigFile).To(BeARegularFile())
 
@@ -156,7 +147,7 @@ var _ = Describe("run", func() {
 
 			// when
 			By("signaling the dataplane manager to stop")
-			close(stopCh)
+			cancel()
 
 			// then
 			err = <-errCh
@@ -317,7 +308,7 @@ var _ = Describe("run", func() {
 		defer l.Close()
 
 		// given
-		cmd := NewRootCmd(DefaultRootContext())
+		cmd := NewRootCmd(opts, DefaultRootContext())
 		cmd.SetArgs([]string{
 			"run",
 			"--cp-address", "http://localhost:1234",
@@ -338,7 +329,7 @@ var _ = Describe("run", func() {
 
 	It("should fail when name and mesh is provided with dataplane definition", func() {
 		// given
-		cmd := NewRootCmd(DefaultRootContext())
+		cmd := NewRootCmd(opts, DefaultRootContext())
 		cmd.SetArgs([]string{
 			"run",
 			"--cp-address", "http://localhost:1234",
@@ -361,7 +352,7 @@ var _ = Describe("run", func() {
 
 	It("should fail when the proxy type is unknown", func() {
 		// given
-		cmd := NewRootCmd(DefaultRootContext())
+		cmd := NewRootCmd(opts, DefaultRootContext())
 		cmd.SetArgs([]string{
 			"run",
 			"--cp-address", "http://localhost:1234",

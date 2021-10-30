@@ -52,8 +52,14 @@ var _ = Describe("Config WS", func() {
 		{
 		  "apiServer": {
 			"auth": {
-			  "allowFromLocalhost": true,
 			  "clientCertsDir": "../../test/certs/client"
+			},
+			"authn": {
+			  "localhostIsAdmin": true,
+			  "type": "tokens",
+			  "tokens": {
+			    "bootstrapAdminToken": true
+			  }
 			},
 			"corsAllowedDomains": [
 			  ".*"
@@ -73,7 +79,6 @@ var _ = Describe("Config WS", func() {
 			"readOnly": false
 		  },
 		  "bootstrapServer": {
-			"apiVersion": "v3",
 			"params": {
 			  "adminAccessLogPath": "/dev/null",
 			  "adminAddress": "127.0.0.1",
@@ -285,6 +290,8 @@ var _ = Describe("Config WS", func() {
               "port": 15432,
               "maxReconnectInterval": "1m0s",
               "minReconnectInterval": "10s",
+              "maxIdleConnections": 50,
+              "maxOpenConnections": 50,
               "tls": {
                 "certPath": "",
                 "keyPath": "",
@@ -311,6 +318,23 @@ var _ = Describe("Config WS", func() {
           "diagnostics": {
             "serverPort": 5680,
             "debugEndpoints": false
+          },
+          "access": {
+            "type": "static",
+            "static": {
+              "adminResources": {
+                "users": ["mesh-system:admin"],
+                "groups": ["mesh-system:admin"]
+              },
+              "generateDpToken": {
+                "users": ["mesh-system:admin"],
+                "groups": ["mesh-system:admin"]
+              },
+              "generateUserToken": {
+                "users": ["mesh-system:admin"],
+                "groups": ["mesh-system:admin"]
+              }
+            }
           }
         }
 		`, port, cfg.HTTPS.Port)

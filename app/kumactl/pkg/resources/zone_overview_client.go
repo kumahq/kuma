@@ -6,29 +6,23 @@ import (
 
 	"github.com/pkg/errors"
 
-	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
-	kuma_http "github.com/kumahq/kuma/pkg/util/http"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 type ZoneOverviewClient interface {
 	List(ctx context.Context) (*system.ZoneOverviewResourceList, error)
 }
 
-func NewZoneOverviewClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (ZoneOverviewClient, error) {
-	client, err := kumactl_client.ApiServerClient(coordinates)
-	if err != nil {
-		return nil, err
-	}
+func NewZoneOverviewClient(client util_http.Client) ZoneOverviewClient {
 	return &httpZoneOverviewClient{
 		Client: client,
-	}, nil
+	}
 }
 
 type httpZoneOverviewClient struct {
-	Client kuma_http.Client
+	Client util_http.Client
 }
 
 func (d *httpZoneOverviewClient) List(ctx context.Context) (*system.ZoneOverviewResourceList, error) {

@@ -1,11 +1,11 @@
 package gateway_test
 
 import (
-	"encoding/json"
 	"path"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/test/matchers"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
 
@@ -34,12 +33,12 @@ var _ = Describe("Gateway Listener", func() {
 
 		// We expect there to be a Dataplane fixture named
 		// "default" in the current mesh.
-		proxy := MakeDataplaneProxy(rt,
+		ctx, proxy := MakeGeneratorContext(rt,
 			core_model.ResourceKey{Mesh: r.GetMeta().GetMesh(), Name: "default"})
 
 		Expect(proxy.Dataplane.Spec.IsBuiltinGateway()).To(BeTrue())
 
-		if err := reconciler.Reconcile(xds_context.Context{}, proxy); err != nil {
+		if err := reconciler.Reconcile(*ctx, proxy); err != nil {
 			return cache.Snapshot{}, err
 		}
 
@@ -69,18 +68,17 @@ var _ = Describe("Gateway Listener", func() {
 			snap, err := Do(gateway)
 			Expect(err).To(Succeed())
 
-			out, err := json.MarshalIndent(
-				MakeProtoResource(snap.Resources[envoy_types.Listener]), "", "  ")
+			out, err := yaml.Marshal(MakeProtoResource(snap.Resources[envoy_types.Listener]))
 			Expect(err).To(Succeed())
 
-			Expect(out).To(matchers.MatchGoldenJSON(path.Join("testdata", golden)))
+			Expect(out).To(matchers.MatchGoldenYAML(path.Join("testdata", golden)))
 		},
 		Entry("should generate a single listener",
 			"01-gateway-listener.yaml", `
 type: Gateway
 mesh: default
 name: edge-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
@@ -95,7 +93,7 @@ conf:
 type: Gateway
 mesh: default
 name: edge-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
@@ -114,7 +112,7 @@ conf:
 type: Gateway
 mesh: tracing
 name: tracing-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
@@ -129,7 +127,7 @@ conf:
 type: Gateway
 mesh: logging
 name: logging-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
@@ -153,7 +151,7 @@ conf:
 type: Gateway
 mesh: default
 name: edge-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:
@@ -174,7 +172,7 @@ conf:
 type: Gateway
 mesh: default
 name: edge-gateway
-sources:
+selectors:
 - match:
     kuma.io/service: gateway-default
 conf:

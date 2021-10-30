@@ -14,6 +14,28 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 )
 
+type componentVersion struct {
+	args    *install_context.InstallControlPlaneArgs
+	version string
+}
+
+func (cv *componentVersion) String() string {
+	return cv.version
+}
+
+func (cv *componentVersion) Set(v string) error {
+	cv.version = v
+	cv.args.Cni_image_tag = v
+	cv.args.ControlPlane_image_tag = v
+	cv.args.DataPlane_image_tag = v
+	cv.args.DataPlane_initImage_tag = v
+	return nil
+}
+
+func (cv *componentVersion) Type() string {
+	return "string"
+}
+
 func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Command {
 	args := ctx.Args
 	useNodePort := false
@@ -21,7 +43,7 @@ func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Com
 	cmd := &cobra.Command{
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
-		Long: `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.
+		Long: `Install Kuma Control Plane on Kubernetes in its own namespace.
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateArgs(args); err != nil {
@@ -69,8 +91,14 @@ This command requires that the KUBECONFIG environment is set`,
 			return nil
 		},
 	}
+	componentVersion := componentVersion{
+		args: &args,
+	}
 	// flags
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install Kuma Control Plane to")
+
+	cmd.Flags().Var(&componentVersion, "version", "version of Kuma Control Plane components")
+
 	cmd.Flags().StringVar(&args.ControlPlane_image_pullPolicy, "image-pull-policy", args.ControlPlane_image_pullPolicy, "image pull policy that applies to all components of the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.ControlPlane_image_registry, "control-plane-registry", args.ControlPlane_image_registry, "registry for the image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlane_image_repository, "control-plane-repository", args.ControlPlane_image_repository, "repository for the image of the Kuma Control Plane component")

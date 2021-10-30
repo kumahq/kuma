@@ -29,18 +29,33 @@ resources:
                 addressList:
                   address:
                   - 240.0.0.0
+                  - ::ffff:f000:0
               name: backend.test-ns.svc.8080.mesh
             - answerTtl: 30s
               endpoint:
                 addressList:
                   address:
                   - 240.0.0.0
+                  - ::ffff:f000:0
               name: backend_test-ns_svc_8080.mesh
             - answerTtl: 30s
               endpoint:
                 addressList:
                   address:
+                  - 2001:db8::ff00:42:8329
+              name: frontend.test-ns.svc.8080.mesh
+            - answerTtl: 30s
+              endpoint:
+                addressList:
+                  address:
+                  - 2001:db8::ff00:42:8329
+              name: frontend_test-ns_svc_8080.mesh
+            - answerTtl: 30s
+              endpoint:
+                addressList:
+                  address:
                   - 240.0.0.1
+                  - ::ffff:f000:1
               name: httpbin.mesh
         statPrefix: kuma_dns
     name: kuma:dns

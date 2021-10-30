@@ -14,9 +14,9 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -31,7 +31,7 @@ var runLog = dataplaneLog.WithName("run")
 // PreRunE loads the Kuma DP config
 // PostRunE actually runs all the components with loaded config
 // To extend Kuma DP, plug your code in RunE. Use RootContext.Config and add components to RootContext.ComponentManager
-func newRunCmd(rootCtx *RootContext) *cobra.Command {
+func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cfg := rootCtx.Config
 	var tmpDir string
 	var adminPort uint32
@@ -151,7 +151,15 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				}()
 			}
 
-			shouldQuit := setupQuitChannel()
+			shouldQuit := make(chan struct{})
+			ctx := opts.SetupSignalHandler()
+			go func() {
+				<-ctx.Done()
+				runLog.Info("Kuma DP caught an exit signal")
+				if shouldQuit != nil {
+					close(shouldQuit)
+				}
+			}()
 			components := []component.Component{
 				accesslogs.NewAccessLogServer(cfg.Dataplane),
 			}
@@ -209,7 +217,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 	}
-
+	var bootstrapVersion string
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
 	cmd.PersistentFlags().Var(&cfg.Dataplane.AdminPort, "admin-port", `Port (or range of ports to choose from) for Envoy Admin API to listen on. Empty value indicates that Envoy Admin API should not be exposed over TCP. Format: "9901 | 9901-9999 | 9901- | -9901"`)
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
@@ -217,7 +225,10 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane Dataplane Server. Example: https://localhost:5678")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCertFile, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
-	cmd.PersistentFlags().StringVar(&cfg.Dataplane.BootstrapVersion, "bootstrap-version", cfg.Dataplane.BootstrapVersion, "Bootstrap version (and API version) of xDS config. If empty, default version defined in Kuma CP will be used. (ex. '2', '3')")
+	cmd.PersistentFlags().Uint32Var(&cfg.DataplaneRuntime.Concurrency, "concurrency", cfg.DataplaneRuntime.Concurrency, "Number of Envoy worker threads")
+	// todo(lobkovilya): delete deprecated bootstrap-version flag. Issue https://github.com/kumahq/kuma/issues/2986
+	cmd.PersistentFlags().StringVar(&bootstrapVersion, "bootstrap-version", "", "Bootstrap version (and API version) of xDS config. If empty, default version defined in Kuma CP will be used. (ex. '2', '3')")
+	_ = cmd.PersistentFlags().MarkDeprecated("bootstrap-version", "Envoy API v3 is used and can not be changed")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
@@ -240,18 +251,4 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	return ioutil.WriteFile(filename, data, perm)
-}
-
-func setupQuitChannel() chan struct{} {
-	quit := make(chan struct{})
-	quitOnSignal := core.SetupSignalHandler()
-	go func() {
-		<-quitOnSignal
-		runLog.Info("Kuma DP caught an exit signal")
-		if quit != nil {
-			close(quit)
-		}
-	}()
-
-	return quit
 }

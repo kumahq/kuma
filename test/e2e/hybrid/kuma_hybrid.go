@@ -104,7 +104,7 @@ metadata:
 			Install(Kuma(core.Zone, optsZone2...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(testserver.Install(testserver.WithMesh(nonDefaultMesh))).
+			Install(testserver.Install(testserver.WithMesh(nonDefaultMesh), testserver.WithServiceAccount("sa-test"))).
 			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
@@ -266,13 +266,13 @@ metadata:
 
 	It("should support jobs with a sidecar", func() {
 		// when deploy job that connects to a service on other K8S cluster
-		err := DemoClientJobK8s(nonDefaultMesh, "test-server_kuma-test_svc_80.mesh")(zone1)
+		err := DemoClientJobK8s(TestNamespace, nonDefaultMesh, "test-server_kuma-test_svc_80.mesh")(zone1)
 
 		// then job is properly cleaned up and finished
 		Expect(err).ToNot(HaveOccurred())
 
 		// when deploy job that connects to a service on other Universal cluster
-		err = DemoClientJobK8s(nonDefaultMesh, "test-server.mesh")(zone2)
+		err = DemoClientJobK8s(TestNamespace, nonDefaultMesh, "test-server.mesh")(zone2)
 
 		// then job is properly cleaned up and finished
 		Expect(err).ToNot(HaveOccurred())

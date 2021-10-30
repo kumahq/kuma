@@ -68,7 +68,7 @@ func KongIngressNodePort(fs ...deployOptionsFunc) framework.InstallFunc {
 	proxy_ssl_port := NodePortHTTPS()
 	opts := newDeployOpt(fs...)
 	if opts.namespace == "" {
-		opts.namespace = DefaultIngressNamespace
+		opts.namespace = framework.DefaultGatewayNamespace
 	}
 	nodeport := `
 apiVersion: v1

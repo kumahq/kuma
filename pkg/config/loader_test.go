@@ -14,7 +14,6 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/test/testenvconfig"
 )
 
@@ -83,7 +82,6 @@ var _ = Describe("Config loader", func() {
 			}
 
 			// then
-			Expect(cfg.BootstrapServer.APIVersion).To(Equal(envoy.APIV3))
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
@@ -127,8 +125,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.HTTPS.Port).To(Equal(uint32(15682)))
 			Expect(cfg.ApiServer.HTTPS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.ApiServer.HTTPS.TlsKeyFile).To(Equal("/key"))
-			Expect(cfg.ApiServer.Auth.AllowFromLocalhost).To(Equal(false))
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
+			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(Equal(false))
+			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
+			Expect(cfg.ApiServer.Authn.Tokens.BootstrapAdminToken).To(BeFalse())
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
 			// nolint: staticcheck
@@ -238,6 +238,14 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.NoTrafficInterval).To(Equal(7 * time.Second))
 			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
+
+			Expect(cfg.Access.Type).To(Equal("custom-rbac"))
+			Expect(cfg.Access.Static.AdminResources.Users).To(Equal([]string{"ar-admin1", "ar-admin2"}))
+			Expect(cfg.Access.Static.AdminResources.Groups).To(Equal([]string{"ar-group1", "ar-group2"}))
+			Expect(cfg.Access.Static.GenerateDPToken.Users).To(Equal([]string{"dp-admin1", "dp-admin2"}))
+			Expect(cfg.Access.Static.GenerateDPToken.Groups).To(Equal([]string{"dp-group1", "dp-group2"}))
+			Expect(cfg.Access.Static.GenerateUserToken.Users).To(Equal([]string{"ut-admin1", "ut-admin2"}))
+			Expect(cfg.Access.Static.GenerateUserToken.Groups).To(Equal([]string{"ut-group1", "ut-group2"}))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -270,7 +278,6 @@ store:
     conflictRetryBaseBackoff: 4s
     conflictRetryMaxTimes: 10
 bootstrapServer:
-  apiVersion: v3
   params:
     adminPort: 1234
     adminAccessLogPath: /access/log/test
@@ -291,7 +298,11 @@ apiServer:
     tlsKeyFile: "/key" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
   auth:
     clientCertsDir: "/certs" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-    allowFromLocalhost: false # ENV: KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST
+  authn:
+    type: custom-authn
+    localhostIsAdmin: false
+    tokens:
+      bootstrapAdminToken: false
   readOnly: true
   corsAllowedDomains:
     - https://kuma
@@ -430,11 +441,22 @@ dpServer:
       noTrafficInterval: 7s
       healthyThreshold: 8
       unhealthyThreshold: 9
+access:
+  type: custom-rbac
+  static:
+    adminResources:
+      users: ["ar-admin1", "ar-admin2"]
+      groups: ["ar-group1", "ar-group2"]
+    generateDpToken:
+      users: ["dp-admin1", "dp-admin2"]
+      groups: ["dp-group1", "dp-group2"]
+    generateUserToken:
+      users: ["ut-admin1", "ut-admin2"]
+      groups: ["ut-group1", "ut-group2"]
 `,
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
-				"KUMA_BOOTSTRAP_SERVER_API_VERSION":                                                        "v3",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                                                  "1234",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                                                    "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                                                    "4321",
@@ -472,7 +494,9 @@ dpServer:
 				"KUMA_API_SERVER_HTTPS_TLS_CERT_FILE":                                                      "/cert",
 				"KUMA_API_SERVER_HTTPS_TLS_KEY_FILE":                                                       "/key",
 				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
-				"KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST":                                                "false",
+				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
+				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
+				"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN":                                       "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                                              "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",
@@ -564,6 +588,13 @@ dpServer:
 				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
+				"KUMA_ACCESS_TYPE":                                                                         "custom-rbac",
+				"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_USERS":                                                 "ar-admin1,ar-admin2",
+				"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_GROUPS":                                                "ar-group1,ar-group2",
+				"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_USERS":                                               "dp-admin1,dp-admin2",
+				"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS":                                              "dp-group1,dp-group2",
+				"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS":                                             "ut-admin1,ut-admin2",
+				"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS":                                            "ut-group1,ut-group2",
 			},
 			yamlFileConfig: "",
 		}),

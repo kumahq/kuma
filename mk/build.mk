@@ -13,6 +13,7 @@ build_info_ld_flags := $(foreach entry,$(build_info_fields), -X github.com/kumah
 LD_FLAGS := -ldflags="-s -w $(build_info_ld_flags) $(EXTRA_LD_FLAGS)"
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
+CGO_ENABLED := 0
 GOFLAGS :=
 
 TOP := $(shell pwd)
@@ -21,8 +22,8 @@ BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
 export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 
-GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(GOFLAGS) $(LD_FLAGS)
-GO_BUILD_COREDNS := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v
+GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -v $(GOFLAGS) $(LD_FLAGS)
+GO_BUILD_COREDNS := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -v
 
 COREDNS_GIT_REPOSITORY ?= https://github.com/coredns/coredns.git
 COREDNS_VERSION ?= v1.8.3
@@ -39,12 +40,12 @@ BUILD_TEST_BINARIES := test-server
 # gateway plugin. Experimental means "for experiments", NOT "for production".
 BUILD_WITH_EXPERIMENTAL_GATEWAY ?= N
 
-# Build_Go_Application is a build command for the Kuma Go applications.
-ifeq ($(BUILD_WITH_EXPERIMENTAL_GATEWAY),N)
-Build_Go_Application = $(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@) ./app/$(notdir $@)
-else
-Build_Go_Application = $(GO_BUILD) -tags gateway -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@) ./app/$(notdir $@)
+ifneq ($(BUILD_WITH_EXPERIMENTAL_GATEWAY),N)
+GO_BUILD += -tags gateway
 endif
+
+# Build_Go_Application is a build command for the Kuma Go applications.
+Build_Go_Application = $(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@)
 
 .PHONY: build
 build: build/release build/test
@@ -69,15 +70,15 @@ build/test/linux-amd64:
 
 .PHONY: build/kuma-cp
 build/kuma-cp: ## Dev: Build `Control Plane` binary
-	$(Build_Go_Application)
+	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kuma-dp
 build/kuma-dp: ## Dev: Build `kuma-dp` binary
-	$(Build_Go_Application)
+	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/kumactl
 build/kumactl: ## Dev: Build `kumactl` binary
-	$(Build_Go_Application)
+	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/coredns
 build/coredns:
@@ -92,11 +93,11 @@ build/coredns:
 
 .PHONY: build/kuma-prometheus-sd
 build/kuma-prometheus-sd: ## Dev: Build `kuma-prometheus-sd` binary
-	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-prometheus-sd/kuma-prometheus-sd ./app/kuma-prometheus-sd
+	$(Build_Go_Application) ./app/$(notdir $@)
 
 .PHONY: build/test-server
 build/test-server: ## Dev: Build `test-server` binary
-	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/test-server/test-server ./test/server
+	$(Build_Go_Application) ./test/server
 
 .PHONY: build/kuma-cp/linux-amd64
 build/kuma-cp/linux-amd64:

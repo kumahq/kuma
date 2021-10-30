@@ -18,7 +18,7 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "metrics",
 		Short: "Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)",
-		Long:  `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in a kuma-metrics namespace`,
+		Long:  `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			args.Mesh = pctx.Args.Mesh
 
@@ -98,6 +98,8 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install metrics to")
 	cmd.Flags().StringVar(&args.KumaCpAddress, "kuma-cp-address", args.KumaCpAddress, "the address of Kuma CP")
+	cmd.Flags().StringVar(&args.JaegerAddress, "jaeger-address", args.JaegerAddress, "the address of jaeger to query")
+	cmd.Flags().StringVar(&args.LokiAddress, "loki-address", args.LokiAddress, "the address of the loki to query")
 	cmd.Flags().BoolVar(&args.WithoutPrometheus, "without-prometheus", args.WithoutPrometheus, "disable Prometheus resources generation")
 	cmd.Flags().BoolVar(&args.WithoutGrafana, "without-grafana", args.WithoutGrafana, "disable Grafana resources generation")
 	return cmd

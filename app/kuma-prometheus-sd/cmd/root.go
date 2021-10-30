@@ -18,7 +18,7 @@ var (
 )
 
 // newRootCmd represents the base command when called without any subcommands.
-func newRootCmd() *cobra.Command {
+func NewRootCmd(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 	args := struct {
 		logLevel   string
 		outputPath string
@@ -28,8 +28,11 @@ func newRootCmd() *cobra.Command {
 	}{}
 	cmd := &cobra.Command{
 		Use:   "kuma-prometheus-sd",
-		Short: "Prometheus service discovery adapter for native integration with Kuma",
-		Long:  `Prometheus service discovery adapter for native integration with Kuma.`,
+		Short: "[DEPRECATED] Prometheus service discovery adapter for native integration with Kuma",
+		Long: `[DEPRECATED] Prometheus service discovery adapter for native integration with Kuma.
+It has been superseded by the native kuma_sd in Prometheus as of Prometheus 2.29.
+See: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kuma_sd_config
+`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
@@ -50,6 +53,11 @@ func newRootCmd() *cobra.Command {
 			// avoid printing usage instructions
 			cmd.SilenceUsage = true
 
+			if cmd.Name() != "help" {
+				fmt.Println(`kuma-prometheus-sd is DEPRECATED and will be removed in a future version.
+It has been superseded by the native kuma_sd in Prometheus as of Prometheus 2.29.
+See: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kuma_sd_config`)
+			}
 			return nil
 		},
 	}
@@ -60,13 +68,13 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().IntVar(&args.maxSize, "log-max-size", 100, "maximum size in megabytes of a log file before it gets rotated")
 	cmd.PersistentFlags().IntVar(&args.maxAge, "log-max-age", 30, "maximum number of days to retain old log files based on the timestamp encoded in their filename")
 	// sub-commands
-	cmd.AddCommand(newRunCmd())
+	cmd.AddCommand(newRunCmdWithOpts(opts))
 	cmd.AddCommand(version.NewVersionCmd())
 	return cmd
 }
 
 func DefaultRootCmd() *cobra.Command {
-	return newRootCmd()
+	return NewRootCmd(kuma_cmd.DefaultRunCmdOpts)
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

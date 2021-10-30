@@ -9,7 +9,7 @@ import (
 	kumactl_pkg_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/types"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -21,15 +21,15 @@ func (m *MockAPIServerClient) GetVersion(ctx context.Context) (*types.IndexRespo
 	return &m.Version, nil
 }
 
-func GetMockNewAPIServerClient() func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error) {
-	return func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error) {
+func GetMockNewAPIServerClient() func(util_http.Client) kumactl_resources.ApiServerClient {
+	return func(util_http.Client) kumactl_resources.ApiServerClient {
 		return &MockAPIServerClient{
 			Version: types.IndexResponse{
 				Hostname: "localhost",
 				Tagline:  kuma_version.Product,
 				Version:  kuma_version.Build.Version,
 			},
-		}, nil
+		}
 	}
 }
 

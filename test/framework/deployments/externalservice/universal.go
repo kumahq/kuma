@@ -1,6 +1,7 @@
 package externalservice
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/docker"
@@ -27,12 +28,17 @@ type universalDeployment struct {
 
 var _ Deployment = &universalDeployment{}
 
-var UniversalAppEchoServer = Command([]string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo 80\n\"'"})
-var UniversalAppEchoServer81 = Command([]string{"ncat", "-lk", "-p", "81", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo 81\n\"'"})
+var UniversalAppEchoServer = ExternalServiceCommand(80, "Echo 80")
+var UniversalAppEchoServer81 = ExternalServiceCommand(81, "Echo 81")
 var UniversalAppHttpsEchoServer = Command([]string{"ncat",
 	"-lk", "-p", "443",
 	"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",
 	"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"})
+
+var ExternalServiceCommand = func(port uint32, message string) Command {
+	return []string{"ncat", "-lk", "-p", fmt.Sprintf("%d", port), "--sh-exec",
+		fmt.Sprintf("'echo \"HTTP/1.1 200 OK\n\n%s\n\"'", message)}
+}
 
 func (u *universalDeployment) Name() string {
 	return DeploymentName + u.name

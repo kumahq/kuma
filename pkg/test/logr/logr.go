@@ -32,7 +32,7 @@ func (log TestLogger) Error(err error, msg string, args ...interface{}) {
 	log.T.Logf("%s: %v -- %v", msg, err, args)
 }
 
-func (log TestLogger) V(v int) logr.InfoLogger {
+func (log TestLogger) V(v int) logr.Logger {
 	return log
 }
 

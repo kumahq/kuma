@@ -1,6 +1,8 @@
 package controllers_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -26,8 +28,7 @@ var _ = Describe("PodStatusReconciler", func() {
 	var postQuitCalled int
 
 	BeforeEach(func() {
-		kubeClient = kube_client_fake.NewFakeClientWithScheme(
-			k8sClientScheme,
+		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
@@ -168,7 +169,7 @@ var _ = Describe("PodStatusReconciler", func() {
 					Name:      "pod-with-kuma-sidecar-workload-terminated",
 				},
 			},
-		)
+		).Build()
 
 		postQuitCalled = 0
 		reconciler = &PodStatusReconciler{
@@ -190,7 +191,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -206,7 +207,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -222,7 +223,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -238,7 +239,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -254,7 +255,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -270,7 +271,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -286,7 +287,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and

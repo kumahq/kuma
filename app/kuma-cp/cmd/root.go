@@ -58,16 +58,21 @@ func newRootCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.SetOut(os.Stdout)
+
 	// root flags
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.InfoLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	cmd.PersistentFlags().StringVar(&args.outputPath, "log-output-path", args.outputPath, "path to the file that will be filled with logs. Example: if we set it to /tmp/kuma.log then after the file is rotated we will have /tmp/kuma-2021-06-07T09-15-18.265.log")
 	cmd.PersistentFlags().IntVar(&args.maxBackups, "log-max-retained-files", 1000, "maximum number of the old log files to retain")
 	cmd.PersistentFlags().IntVar(&args.maxSize, "log-max-size", 100, "maximum size in megabytes of a log file before it gets rotated")
 	cmd.PersistentFlags().IntVar(&args.maxAge, "log-max-age", 30, "maximum number of days to retain old log files based on the timestamp encoded in their filename")
+
 	// sub-commands
-	cmd.AddCommand(newRunCmd())
+	cmd.AddCommand(newRunCmdWithOpts(kuma_cmd.DefaultRunCmdOpts))
 	cmd.AddCommand(newMigrateCmd())
 	cmd.AddCommand(version.NewVersionCmd())
+
 	return cmd
 }
 

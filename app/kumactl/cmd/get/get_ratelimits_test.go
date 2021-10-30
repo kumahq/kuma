@@ -109,15 +109,10 @@ var _ = Describe("kumactl get rate-limits", func() {
 
 		DescribeTable("kumactl get rate-limits -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "rate-limits"}, given.outputFormat, given.pagination))
-
 				// when
-				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
+				Expect(
+					ExecuteRootCommand(rootCmd, "rate-limits", given.outputFormat, given.pagination),
+				).To(Succeed())
 
 				// when
 				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
