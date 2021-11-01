@@ -49,7 +49,7 @@ func UpgradeClusterTlsUpstream(address string) *envoy_core.TransportSocket {
 		return nil
 	}
 	return &envoy_core.TransportSocket{
-		Name: "envoyxx",
+		Name: "envoy.transport_sockets.tls",
 		ConfigType: &envoy_core.TransportSocket_TypedConfig{
 			TypedConfig: pbst,
 		},
