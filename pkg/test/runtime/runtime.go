@@ -55,21 +55,21 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	if err != nil {
 		return nil, err
 	}
+
 	builder.
 		WithComponentManager(component.NewManager(leader_memory.NewAlwaysLeaderElector())).
-		WithResourceStore(resources_memory.NewStore())
-
-	metrics, _ := metrics.NewMetrics("Standalone")
-	builder.WithMetrics(metrics)
-
-	builder.WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore()))
-	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
-	builder.WithMeshValidator(mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()))
+		WithResourceStore(resources_memory.NewStore()).
+		WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore())).
+		WithMeshValidator(mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()))
 
 	rm := newResourceManager(builder)
 	builder.WithResourceManager(rm).
 		WithReadOnlyResourceManager(rm)
 
+	metrics, _ := metrics.NewMetrics("Standalone")
+	builder.WithMetrics(metrics)
+
+	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 	builder.WithLookupIP(net.LookupIP)
