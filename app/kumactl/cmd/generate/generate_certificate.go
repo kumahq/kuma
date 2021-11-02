@@ -2,10 +2,11 @@ package generate
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
@@ -21,59 +22,84 @@ type generateCertificateContext struct {
 	*kumactl_cmd.RootContext
 
 	args struct {
-		key                  string
-		cert                 string
-		certType             string
-		controlPlaneHostname []string
+		key       string
+		cert      string
+		certType  string
+		hostnames []string
 	}
 }
 
 func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	ctx := &generateCertificateContext{RootContext: pctx}
 	cmd := &cobra.Command{
-		Use:   "tls-certificate",
+		Use:   "tls-certificate --type=server|client --hostname=HOST1[,HOST2...]",
 		Short: "Generate a TLS certificate",
 		Long:  `Generate self signed key and certificate pair that can be used for example in Dataplane Token Server setup.`,
 		Example: `
   # Generate a TLS certificate for use by an HTTPS server, i.e. by the Dataplane Token server
-  kumactl generate tls-certificate --type=server
+  kumactl generate tls-certificate --type=server --hostname=localhost
 
   # Generate a TLS certificate for use by a client of an HTTPS server, i.e. by the 'kumactl generate dataplane-token' command
-  kumactl generate tls-certificate --type=client`,
+  kumactl generate tls-certificate --type=client --hostname=dataplane-1`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if ctx.args.certType != "client" && ctx.args.certType != "server" {
-				return errors.New(`--type has to be either "client" or "server"`)
-			}
 			certType := tls.CertType(ctx.args.certType)
-			if certType == tls.ClientCertType && len(ctx.args.controlPlaneHostname) != 0 {
-				return errors.New(`--cp-hostname cannot be used with "client" type`)
-			}
-			if certType == tls.ServerCertType && len(ctx.args.controlPlaneHostname) < 1 {
-				return errors.New(`--cp-hostname has to be specified with "server" type`)
+			switch certType {
+			case tls.ClientCertType, tls.ServerCertType:
+				if len(ctx.args.hostnames) == 0 {
+					return errors.New("at least one hostname must be given")
+				}
+			default:
+				return errors.Errorf("invalid certificate type %q", certType)
 			}
 
-			keyPair, err := NewSelfSignedCert("kuma", certType, append(ctx.args.controlPlaneHostname, "localhost")...)
+			keyPair, err := NewSelfSignedCert(ctx.args.hostnames[0], certType, ctx.args.hostnames...)
 			if err != nil {
 				return errors.Wrap(err, "could not generate certificate")
 			}
-			if err := ioutil.WriteFile(ctx.args.key, keyPair.KeyPEM, 0400); err != nil {
+
+			if ctx.args.key == "-" {
+				_, err = cmd.OutOrStdout().Write(keyPair.KeyPEM)
+			} else {
+				err = os.WriteFile(ctx.args.key, keyPair.KeyPEM, 0400)
+			}
+			if err != nil {
 				return errors.Wrap(err, "could not write the key file")
 			}
-			if err := ioutil.WriteFile(ctx.args.cert, keyPair.CertPEM, 0644); err != nil {
+
+			if ctx.args.cert == "-" {
+				_, err = cmd.OutOrStdout().Write(keyPair.CertPEM)
+			} else {
+				err = os.WriteFile(ctx.args.cert, keyPair.CertPEM, 0644)
+			}
+			if err != nil {
 				return errors.Wrap(err, "could not write the cert file")
 			}
-			_, err = cmd.OutOrStdout().Write([]byte(fmt.Sprintf(`Certificates generated
-Key was saved in: %s
-Cert was saved in: %s
-`, ctx.args.key, ctx.args.cert)))
-			return err
+
+			if ctx.args.cert != "-" && ctx.args.key != "-" {
+				fmt.Fprintf(cmd.OutOrStdout(), "Private key saved in %s\n", ctx.args.key)
+				fmt.Fprintf(cmd.OutOrStdout(), "Certificate saved in %s\n", ctx.args.cert)
+			}
+
+			return nil
 		},
 	}
-	cmd.Flags().StringVar(&ctx.args.key, "key-file", "key.pem", "path to a file with a generated private key")
-	cmd.Flags().StringVar(&ctx.args.cert, "cert-file", "cert.pem", "path to a file with a generated TLS certificate")
+	cmd.Flags().StringVar(&ctx.args.key, "key-file", "key.pem", "path to a file with a generated private key ('-' for stdout)")
+	cmd.Flags().StringVar(&ctx.args.cert, "cert-file", "cert.pem", "path to a file with a generated TLS certificate ('-' for stdout)")
 	cmd.Flags().StringVar(&ctx.args.certType, "type", "", kuma_cmd.UsageOptions("type of the certificate", "client", "server"))
-	cmd.Flags().StringSliceVar(&ctx.args.controlPlaneHostname, "cp-hostname", []string{}, "DNS name of the control plane")
+	cmd.Flags().StringSliceVar(&ctx.args.hostnames, "hostname", []string{}, "DNS hostname(s) to issue the certificate for")
 	_ = cmd.MarkFlagRequired("type")
+	_ = cmd.MarkFlagRequired("hostname")
+
+	// Alias "--cp-hostname" to "--hostname" for backwards compatibility. Unfortunately,
+	// we can't emit a deprecation message when "--cp-hostname" is used, since the two
+	// are indistinguishable to pflag.
+	cmd.Flags().SetNormalizeFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {
+		if name == "cp-hostname" {
+			return pflag.NormalizedName("hostname")
+		}
+		return pflag.NormalizedName(name)
+	})
+
 	return cmd
 }

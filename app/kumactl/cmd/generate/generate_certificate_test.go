@@ -30,6 +30,15 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
 
+	AssertOutput := func(keyPath string, certPath string) {
+		Expect(stdout.String()).To(ContainSubstring(
+			fmt.Sprintf("Private key saved in %s", keyFile.Name())),
+		)
+		Expect(stdout.String()).To(ContainSubstring(
+			fmt.Sprintf("Certificate saved in %s", certFile.Name())),
+		)
+	}
+
 	BeforeEach(func() {
 		key, err := ioutil.TempFile("", "")
 		Expect(err).ToNot(HaveOccurred())
@@ -45,9 +54,10 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 
 	Context("client certificate", func() {
 		BeforeEach(func() {
-			generate.NewSelfSignedCert = func(commonName string, certType tls.CertType, _ ...string) (tls.KeyPair, error) {
-				Expect(commonName).To(Equal("kuma"))
+			generate.NewSelfSignedCert = func(commonName string, certType tls.CertType, hosts ...string) (tls.KeyPair, error) {
+				Expect(commonName).To(Equal("client-name"))
 				Expect(certType).To(Equal(tls.ClientCertType))
+				Expect(hosts).To(ConsistOf("client-name"))
 				return tls.KeyPair{
 					CertPEM: []byte("CERT"),
 					KeyPEM:  []byte("KEY"),
@@ -62,6 +72,7 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "client",
+				"--hostname", "client-name",
 			})
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
@@ -83,20 +94,16 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 			Expect(string(certBytes)).To(Equal("CERT"))
 
 			// and
-			Expect(stdout.String()).To(Equal(fmt.Sprintf(`Certificates generated
-Key was saved in: %s
-Cert was saved in: %s
-`, keyFile.Name(), certFile.Name())))
+			AssertOutput(keyFile.Name(), certFile.Name())
 		})
 
-		It("should not allow to specify control plane hostname", func() {
+		It("should validate that --hostname is present", func() {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs([]string{"generate", "tls-certificate",
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "client",
-				"--cp-hostname", "kuma1.internal",
 			})
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
@@ -105,17 +112,17 @@ Cert was saved in: %s
 			err := rootCmd.Execute()
 
 			// then
-			Expect(err).To(MatchError(`--cp-hostname cannot be used with "client" type`))
+			Expect(err).To(MatchError("required flag(s) \"hostname\" not set"))
 		})
+
 	})
 
 	Context("server certificate", func() {
 		BeforeEach(func() {
 			generate.NewSelfSignedCert = func(commonName string, certType tls.CertType, hosts ...string) (tls.KeyPair, error) {
-				Expect(commonName).To(Equal("kuma"))
+				Expect(commonName).To(Equal("kuma1.internal"))
 				Expect(certType).To(Equal(tls.ServerCertType))
-				Expect(hosts).To(HaveLen(3))
-				Expect(hosts).To(ConsistOf("kuma1.internal", "kuma2.internal", "localhost"))
+				Expect(hosts).To(ConsistOf("kuma1.internal", "kuma2.internal"))
 				return tls.KeyPair{
 					CertPEM: []byte("CERT"),
 					KeyPEM:  []byte("KEY"),
@@ -130,8 +137,8 @@ Cert was saved in: %s
 				"--key-file", keyFile.Name(),
 				"--cert-file", certFile.Name(),
 				"--type", "server",
-				"--cp-hostname", "kuma1.internal",
-				"--cp-hostname", "kuma2.internal",
+				"--hostname", "kuma1.internal",
+				"--hostname", "kuma2.internal",
 			})
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
@@ -153,13 +160,10 @@ Cert was saved in: %s
 			Expect(string(certBytes)).To(Equal("CERT"))
 
 			// and
-			Expect(stdout.String()).To(Equal(fmt.Sprintf(`Certificates generated
-Key was saved in: %s
-Cert was saved in: %s
-`, keyFile.Name(), certFile.Name())))
+			AssertOutput(keyFile.Name(), certFile.Name())
 		})
 
-		It("should validate that cp-hostname is present", func() {
+		It("should validate that --hostname is present", func() {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs([]string{"generate", "tls-certificate",
@@ -174,7 +178,8 @@ Cert was saved in: %s
 			err := rootCmd.Execute()
 
 			// then
-			Expect(err).To(MatchError(`--cp-hostname has to be specified with "server" type`))
+			Expect(err).To(MatchError("required flag(s) \"hostname\" not set"))
 		})
+
 	})
 })
