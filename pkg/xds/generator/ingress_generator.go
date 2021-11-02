@@ -95,14 +95,16 @@ func (i IngressGenerator) generateLDS(
 				continue
 			}
 			sniUsed[sni] = true
-			inboundListenerBuilder = inboundListenerBuilder.
-				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion).
-					Configure(envoy_listeners.FilterChainMatch("tls", []string{sni}, nil)).
-					Configure(envoy_listeners.TcpProxyWithMetadata(service, envoy_common.NewCluster(
+			inboundListenerBuilder = inboundListenerBuilder.Configure(envoy_listeners.FilterChain(
+				envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
+					envoy_listeners.MatchTransportProtocol("tls"),
+					envoy_listeners.MatchServerNames(sni),
+					envoy_listeners.TcpProxyWithMetadata(service, envoy_common.NewCluster(
 						envoy_common.WithService(service),
 						envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
-					))),
-				))
+					)),
+				),
+			))
 		}
 	}
 
