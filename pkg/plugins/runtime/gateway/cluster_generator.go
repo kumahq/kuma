@@ -110,7 +110,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	builder := newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
 		clusters.EdsCluster(name),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(ctx, dest.Destination[mesh_proto.ServiceTag], []envoy.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(ctx, dest.Destination[mesh_proto.ServiceTag], true, []envoy.Tags{dest.Destination}),
 	)
 
 	// TODO(jpeach) Envoy configures retries and fault injection with
