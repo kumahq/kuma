@@ -7,7 +7,7 @@ package system
 import (
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
@@ -20,12 +20,12 @@ var _ model.Resource = &ConfigResource{}
 
 type ConfigResource struct {
 	Meta model.ResourceMeta
-	Spec *mesh_proto.Config
+	Spec *system_proto.Config
 }
 
 func NewConfigResource() *ConfigResource {
 	return &ConfigResource{
-		Spec: &mesh_proto.Config{},
+		Spec: &system_proto.Config{},
 	}
 }
 
@@ -46,7 +46,7 @@ func (t *ConfigResource) Validate() error {
 }
 
 func (t *ConfigResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*mesh_proto.Config)
+	protoType, ok := spec.(*system_proto.Config)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
@@ -120,12 +120,12 @@ var _ model.Resource = &SecretResource{}
 
 type SecretResource struct {
 	Meta model.ResourceMeta
-	Spec *mesh_proto.Secret
+	Spec *system_proto.Secret
 }
 
 func NewSecretResource() *SecretResource {
 	return &SecretResource{
-		Spec: &mesh_proto.Secret{},
+		Spec: &system_proto.Secret{},
 	}
 }
 
@@ -146,7 +146,7 @@ func (t *SecretResource) Validate() error {
 }
 
 func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*mesh_proto.Secret)
+	protoType, ok := spec.(*system_proto.Secret)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
@@ -220,12 +220,12 @@ var _ model.Resource = &ZoneResource{}
 
 type ZoneResource struct {
 	Meta model.ResourceMeta
-	Spec *mesh_proto.Zone
+	Spec *system_proto.Zone
 }
 
 func NewZoneResource() *ZoneResource {
 	return &ZoneResource{
-		Spec: &mesh_proto.Zone{},
+		Spec: &system_proto.Zone{},
 	}
 }
 
@@ -246,7 +246,7 @@ func (t *ZoneResource) Validate() error {
 }
 
 func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*mesh_proto.Zone)
+	protoType, ok := spec.(*system_proto.Zone)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
@@ -319,12 +319,12 @@ var _ model.Resource = &ZoneInsightResource{}
 
 type ZoneInsightResource struct {
 	Meta model.ResourceMeta
-	Spec *mesh_proto.ZoneInsight
+	Spec *system_proto.ZoneInsight
 }
 
 func NewZoneInsightResource() *ZoneInsightResource {
 	return &ZoneInsightResource{
-		Spec: &mesh_proto.ZoneInsight{},
+		Spec: &system_proto.ZoneInsight{},
 	}
 }
 
@@ -345,7 +345,7 @@ func (t *ZoneInsightResource) Validate() error {
 }
 
 func (t *ZoneInsightResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*mesh_proto.ZoneInsight)
+	protoType, ok := spec.(*system_proto.ZoneInsight)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
@@ -418,12 +418,12 @@ var _ model.Resource = &ZoneOverviewResource{}
 
 type ZoneOverviewResource struct {
 	Meta model.ResourceMeta
-	Spec *mesh_proto.ZoneOverview
+	Spec *system_proto.ZoneOverview
 }
 
 func NewZoneOverviewResource() *ZoneOverviewResource {
 	return &ZoneOverviewResource{
-		Spec: &mesh_proto.ZoneOverview{},
+		Spec: &system_proto.ZoneOverview{},
 	}
 }
 
@@ -444,7 +444,7 @@ func (t *ZoneOverviewResource) Validate() error {
 }
 
 func (t *ZoneOverviewResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*mesh_proto.ZoneOverview)
+	protoType, ok := spec.(*system_proto.ZoneOverview)
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
