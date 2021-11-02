@@ -18,14 +18,14 @@ var _ = Describe("DNSClusterConfigurer", func() {
 		address     string
 		port        int32
 		expected    string
-		isHttp      bool
+		isHttps     bool
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-				Configure(clusters.DNSCluster(given.clusterName, given.address, uint32(given.port), given.isHttp)).
+				Configure(clusters.DNSCluster(given.clusterName, given.address, uint32(given.port), given.isHttps)).
 				Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
 				Build()
 
@@ -41,7 +41,7 @@ var _ = Describe("DNSClusterConfigurer", func() {
 			clusterName: "test:cluster",
 			address:     "google.com",
 			port:        80,
-			isHttp:      false,
+			isHttps:     false,
 			expected: `
         altStatName: test_cluster
         connectTimeout: 5s
@@ -62,7 +62,7 @@ var _ = Describe("DNSClusterConfigurer", func() {
 			clusterName: "test:cluster",
 			address:     "google.com",
 			port:        80,
-			isHttp:      true,
+			isHttps:     true,
 			expected: `
         altStatName: test_cluster
         connectTimeout: 5s
