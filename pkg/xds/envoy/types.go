@@ -284,6 +284,7 @@ type Service struct {
 	name               string
 	clusters           []Cluster
 	hasExternalService bool
+	tlsReady           bool
 }
 
 func (c *Service) Add(cluster Cluster) {
@@ -291,7 +292,6 @@ func (c *Service) Add(cluster Cluster) {
 	if cluster.IsExternalService() {
 		c.hasExternalService = true
 	}
-	c.name = cluster.Service()
 }
 
 func (c *Service) Tags() []Tags {
@@ -310,9 +310,13 @@ func (c *Service) Clusters() []Cluster {
 	return c.clusters
 }
 
+func (c *Service) TLSReady() bool {
+	return c.tlsReady
+}
+
 type Services map[string]*Service
 
-func (c Services) Names() []string {
+func (c Services) Sorted() []string {
 	var keys []string
 	for key := range c {
 		keys = append(keys, key)
@@ -321,12 +325,31 @@ func (c Services) Names() []string {
 	return keys
 }
 
-func (c Services) Add(clusters ...Cluster) {
-	for _, cluster := range clusters {
-		if c[cluster.Service()] == nil {
-			c[cluster.Service()] = &Service{}
+type ServicesAccumulator struct {
+	tlsReadiness map[string]bool
+	services     map[string]*Service
+}
+
+func NewServicesAccumulator(tlsReadiness map[string]bool) ServicesAccumulator {
+	return ServicesAccumulator{
+		tlsReadiness: tlsReadiness,
+		services:     map[string]*Service{},
+	}
+}
+
+func (sa ServicesAccumulator) Services() Services {
+	return sa.services
+}
+
+func (sa ServicesAccumulator) Add(clusters ...Cluster) {
+	for _, c := range clusters {
+		if sa.services[c.Service()] == nil {
+			sa.services[c.Service()] = &Service{
+				tlsReady: sa.tlsReadiness[c.Service()],
+				name:     c.Service(),
+			}
 		}
-		c[cluster.Service()].Add(cluster)
+		sa.services[c.Service()].Add(c)
 	}
 }
 

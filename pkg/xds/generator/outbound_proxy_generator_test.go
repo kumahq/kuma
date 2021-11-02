@@ -165,6 +165,16 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
+				ServiceTLSReadiness: map[string]bool{
+					"api-http":  true,
+					"api-tcp":   true,
+					"api-http2": true,
+					"api-grpc":  true,
+					"backend":   true,
+					"db":        true,
+					"es":        true,
+					"es2":       true,
+				},
 				APIVersion: envoy_common.APIV3,
 				Routing: model.Routing{
 					TrafficRoutes: model.RouteMap{

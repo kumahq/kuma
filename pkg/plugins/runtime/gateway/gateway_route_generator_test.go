@@ -44,6 +44,7 @@ var _ = Describe("Gateway Gateway Route", func() {
 		Expect(err).To(Succeed(), "build runtime instance")
 
 		Expect(StoreNamedFixture(rt, "mesh-default.yaml")).To(Succeed())
+		Expect(StoreNamedFixture(rt, "serviceinsight-default.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "dataplane-default.yaml")).To(Succeed())
 		Expect(StoreNamedFixture(rt, "gateway-default.yaml")).To(Succeed())
 

@@ -173,10 +173,11 @@ func (r *resyncer) createOrUpdateServiceInsights() error {
 	return nil
 }
 
-func addDpToInsight(insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status) {
+func addDpStatusToInsight(insight *mesh_proto.ServiceInsight, svcName string, status core_mesh.Status) {
 	if _, ok := insight.Services[svcName]; !ok {
 		insight.Services[svcName] = &mesh_proto.ServiceInsight_Service{
-			Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{},
+			IssuedBackends: map[string]uint32{},
+			Dataplanes:     &mesh_proto.ServiceInsight_Service_DataplaneStat{},
 		}
 	}
 
@@ -191,6 +192,26 @@ func addDpToInsight(insight *mesh_proto.ServiceInsight, svcName string, status c
 		dataplanes.Offline++
 	case core_mesh.PartiallyDegraded:
 		dataplanes.Offline++
+	}
+}
+
+func addDpOverviewToInsight(insight *mesh_proto.ServiceInsight, dpOverview *core_mesh.DataplaneOverviewResource) {
+	status, _ := dpOverview.GetStatus()
+	networking := dpOverview.Spec.GetDataplane().GetNetworking()
+	backend := dpOverview.Spec.GetDataplaneInsight().GetMTLS().GetIssuedBackend()
+
+	if svc := networking.GetGateway().GetTags()[mesh_proto.ServiceTag]; svc != "" {
+		addDpStatusToInsight(insight, svc, status)
+		if backend != "" {
+			insight.Services[svc].IssuedBackends[backend]++
+		}
+	}
+
+	for _, inbound := range networking.GetInbound() {
+		addDpStatusToInsight(insight, inbound.GetService(), status)
+		if backend != "" {
+			insight.Services[inbound.GetService()].IssuedBackends[backend]++
+		}
 	}
 }
 
@@ -212,17 +233,7 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	dpOverviews := core_mesh.NewDataplaneOverviews(*dp, *dpInsights)
 
 	for _, dpOverview := range dpOverviews.Items {
-		status, _ := dpOverview.GetStatus()
-
-		// Builtin gateways have inbounds
-		if dpOverview.Spec.Dataplane.IsDelegatedGateway() {
-			svcName := dpOverview.Spec.Dataplane.Networking.GetGateway().GetTags()[mesh_proto.ServiceTag]
-			addDpToInsight(insight, svcName, status)
-		} else {
-			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
-				addDpToInsight(insight, inbound.GetService(), status)
-			}
-		}
+		addDpOverviewToInsight(insight, dpOverview)
 	}
 
 	for _, svc := range insight.Services {

@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -75,6 +76,20 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 			}
 			configs.Items = items
 			snapshot.resources[typ] = configs
+		case core_mesh.ServiceInsightType:
+			// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
+			// This information is only useful when mTLS is enabled with PERMISSIVE mode.
+			// Not including this into mesh hash for other cases saves us unnecessary XDS config generations.
+			if backend := snapshot.mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
+				break
+			}
+
+			insights := &core_mesh.ServiceInsightResourceList{}
+			if err := rm.List(ctx, insights, core_store.ListByMesh(meshName)); err != nil {
+				return nil, err
+			}
+
+			snapshot.resources[typ] = insights
 		default:
 			rlist, err := registry.Global().NewList(typ)
 			if err != nil {

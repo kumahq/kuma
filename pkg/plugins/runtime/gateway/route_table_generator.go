@@ -180,7 +180,7 @@ func (r *RouteTableGenerator) generateClusters(
 
 		// Assuming this is an intra-Mesh service, enable mTLS.
 		builder.Configure(
-			clusters.ClientSideMTLS(ctx, dest.Destination[mesh_proto.ServiceTag], []envoy.Tags{dest.Destination}),
+			clusters.ClientSideMTLS(ctx, dest.Destination[mesh_proto.ServiceTag], true, []envoy.Tags{dest.Destination}),
 		)
 
 		// TODO(jpeach) External services are "strict DNS" clusters and don't use mTLS.

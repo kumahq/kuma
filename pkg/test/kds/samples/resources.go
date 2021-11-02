@@ -85,6 +85,9 @@ var (
 			CertificateRegenerations: 3,
 		},
 	}
+	ServiceInsight = &mesh_proto.ServiceInsight{
+		Services: map[string]*mesh_proto.ServiceInsight_Service{},
+	}
 	Ingress = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Ingress: &mesh_proto.Dataplane_Networking_Ingress{
