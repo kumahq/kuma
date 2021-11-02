@@ -19,6 +19,30 @@ type FilterChainConfigurer interface {
 	Configure(filterChain *envoy_listener.FilterChain) error
 }
 
+// FilterChainConfigureFunc adapts a FilterChain configuration function to the
+// FilterChainConfigurer interface.
+type FilterChainConfigureFunc func(chain *envoy_listener.FilterChain) error
+
+func (f FilterChainConfigureFunc) Configure(chain *envoy_listener.FilterChain) error {
+	if f != nil {
+		return f(chain)
+	}
+
+	return nil
+}
+
+// FilterChainConfigureFunc adapts a FilterChain configuration function that
+// never fails to the FilterChainConfigurer interface.
+type FilterChainMustConfigureFunc func(chain *envoy_listener.FilterChain)
+
+func (f FilterChainMustConfigureFunc) Configure(chain *envoy_listener.FilterChain) error {
+	if f != nil {
+		f(chain)
+	}
+
+	return nil
+}
+
 // HttpConnectionManagerConfigureFunc adapts a HttpConnectionManager
 // configuration function to the FilterChainConfigurer interface.
 type HttpConnectionManagerConfigureFunc func(hcm *envoy_hcm.HttpConnectionManager) error
