@@ -114,12 +114,19 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
 			listenerBuilder.
 				Configure(envoy_listeners.TLSInspector()).
-				Configure(envoy_listeners.FilterChain(filterChainBuilder(false).
-					Configure(envoy_listeners.FilterChainMatch("raw_buffer", nil, nil)))).
-				Configure(envoy_listeners.FilterChain(filterChainBuilder(false).
-					Configure(envoy_listeners.FilterChainMatch("tls", nil, nil)))).
-				Configure(envoy_listeners.FilterChain(filterChainBuilder(true).
-					Configure(envoy_listeners.FilterChainMatch("tls", nil, xds_tls.KumaALPNProtocols))))
+				Configure(envoy_listeners.FilterChain(
+					filterChainBuilder(false).Configure(
+						envoy_listeners.MatchTransportProtocol("raw_buffer"))),
+				).
+				Configure(envoy_listeners.FilterChain(
+					filterChainBuilder(false).Configure(
+						envoy_listeners.MatchTransportProtocol("tls"))),
+				).
+				Configure(envoy_listeners.FilterChain(
+					filterChainBuilder(true).Configure(
+						envoy_listeners.MatchTransportProtocol("tls"),
+						envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...))),
+				)
 		default:
 			return nil, errors.New("unknown mode for CA backend")
 		}

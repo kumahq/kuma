@@ -59,20 +59,6 @@ func HttpConnectionManager(statsName string, forwardClientCertDetails bool) Filt
 	})
 }
 
-func FilterChainMatch(transport string, serverNames, applicationProtocols []string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.FilterChainMatchConfigurer{
-		ServerNames:          serverNames,
-		TransportProtocol:    transport,
-		ApplicationProtocols: applicationProtocols,
-	})
-}
-
-func SourceMatcher(address string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.SourceMatcherConfigurer{
-		Address: address,
-	})
-}
-
 func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.TrafficPermissionResource) FilterChainBuilderOpt {
 	if !rbacEnabled {
 		return FilterChainBuilderOptFunc(nil)

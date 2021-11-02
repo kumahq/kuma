@@ -82,7 +82,7 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 				se.HeaderExactMatch = fmt.Sprintf("Bearer %s", token)
 			}
 			filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-				Configure(envoy_listeners.FilterChainMatch("tls", nil, nil)).
+				Configure(envoy_listeners.MatchTransportProtocol("tls")).
 				Configure(envoy_listeners.StaticTlsEndpoints(envoy_names.GetAdminListenerName(), ctx.ControlPlane.AdminProxyKeyPair, staticTlsEndpointPaths)),
 			))
 		}
