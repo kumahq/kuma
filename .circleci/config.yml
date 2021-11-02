@@ -893,6 +893,7 @@ jobs:
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
                   export BUILD_WITH_EXPERIMENTAL_GATEWAY=Y
+                  export K3D=true
                   make test/e2e
             - store_test_results:
                 path: /tmp/xunit
