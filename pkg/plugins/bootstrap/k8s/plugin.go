@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/operator-framework/operator-lib/leader"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -26,7 +27,6 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	"github.com/operator-framework/operator-lib/leader"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}
@@ -166,7 +166,6 @@ func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 			if err := cm.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
 				log.Error(err, "Add component error")
 			}
-
 		}
 	}()
 	return cm.Manager.Start(ctx)
