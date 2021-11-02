@@ -1,4 +1,4 @@
-package hybrid
+package globaluniversal
 
 import (
 	"fmt"
@@ -45,7 +45,7 @@ metadata:
 	const nonDefaultMesh = "non-default"
 	const defaultMesh = "default"
 
-	BeforeEach(func() {
+	BeforeSuite(func() {
 		k8sClusters, err := NewK8sClusters(
 			[]string{Kuma1, Kuma2},
 			Silent)
@@ -148,7 +148,7 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
+	AfterSuite(func() {
 		if ShouldSkipCleanup() {
 			return
 		}

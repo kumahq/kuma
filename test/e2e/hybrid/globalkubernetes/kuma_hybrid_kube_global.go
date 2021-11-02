@@ -1,4 +1,4 @@
-package hybrid
+package globalkubernetes
 
 import (
 	. "github.com/onsi/ginkgo"
