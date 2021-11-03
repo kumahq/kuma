@@ -140,7 +140,7 @@ func NewApiServer(
 		config: *serverConfig,
 	}
 
-	dpWs, err := dataplaneTokenWs(resManager, access.GenerateDataplaneTokenAccess)
+	dpWs, err := dataplaneTokenWs(resManager, access.DataplaneTokenAccess)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 }
 
-func dataplaneTokenWs(resManager manager.ResourceManager, access tokens_access.GenerateDataplaneTokenAccess) (*restful.WebService, error) {
+func dataplaneTokenWs(resManager manager.ResourceManager, access tokens_access.DataplaneTokenAccess) (*restful.WebService, error) {
 	dpIssuer, err := builtin.NewDataplaneTokenIssuer(resManager)
 	if err != nil {
 		return nil, err

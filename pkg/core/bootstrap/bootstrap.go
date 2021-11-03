@@ -108,8 +108,8 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 
 	builder.WithAccess(core_runtime.Access{
-		ResourceAccess:               resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
-		GenerateDataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
+		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
+		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
 	})
 
 	if err := initializeAPIServerAuthenticator(builder); err != nil {

@@ -21,13 +21,13 @@ var log = core.Log.WithName("dataplane-token-ws")
 type tokenWebService struct {
 	issuer            issuer.DataplaneTokenIssuer
 	zoneIngressIssuer zoneingress.TokenIssuer
-	access            access.GenerateDataplaneTokenAccess
+	access            access.DataplaneTokenAccess
 }
 
 func NewWebservice(
 	issuer issuer.DataplaneTokenIssuer,
 	zoneIngressIssuer zoneingress.TokenIssuer,
-	access access.GenerateDataplaneTokenAccess,
+	access access.DataplaneTokenAccess,
 ) *restful.WebService {
 	ws := tokenWebService{
 		issuer:            issuer,
@@ -63,11 +63,10 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 		return
 	}
 
-	if err := d.access.ValidateGenerate(
+	if err := d.access.ValidateGenerateDataplaneToken(
 		idReq.Name,
 		idReq.Mesh,
 		idReq.Tags,
-		idReq.Type,
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		errors.HandleError(response, err, "Could not issue a token")
@@ -96,6 +95,11 @@ func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Requ
 	if err := request.ReadEntity(&idReq); err != nil {
 		log.Error(err, "Could not read a request")
 		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err := d.access.ValidateGenerateZoneIngressToken(idReq.Zone, user.FromCtx(request.Request.Context())); err != nil {
+		errors.HandleError(response, err, "Could not issue a token")
 		return
 	}
 

@@ -71,8 +71,8 @@ type RuntimeContext interface {
 }
 
 type Access struct {
-	ResourceAccess               resources_access.ResourceAccess
-	GenerateDataplaneTokenAccess tokens_access.GenerateDataplaneTokenAccess
+	ResourceAccess       resources_access.ResourceAccess
+	DataplaneTokenAccess tokens_access.DataplaneTokenAccess
 }
 
 var _ Runtime = &runtime{}

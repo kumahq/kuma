@@ -11,9 +11,9 @@ type staticGenerateDataplaneTokenAccess struct {
 	groups    map[string]bool
 }
 
-var _ GenerateDataplaneTokenAccess = &staticGenerateDataplaneTokenAccess{}
+var _ DataplaneTokenAccess = &staticGenerateDataplaneTokenAccess{}
 
-func NewStaticGenerateDataplaneTokenAccess(cfg config_access.GenerateDPTokenStaticAccessConfig) GenerateDataplaneTokenAccess {
+func NewStaticGenerateDataplaneTokenAccess(cfg config_access.GenerateDPTokenStaticAccessConfig) DataplaneTokenAccess {
 	s := &staticGenerateDataplaneTokenAccess{
 		usernames: map[string]bool{},
 		groups:    map[string]bool{},
@@ -27,13 +27,15 @@ func NewStaticGenerateDataplaneTokenAccess(cfg config_access.GenerateDPTokenStat
 	return s
 }
 
-func (s *staticGenerateDataplaneTokenAccess) ValidateGenerate(
-	name string,
-	mesh string,
-	tags map[string][]string,
-	tokenType string,
-	user user.User,
-) error {
+func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateDataplaneToken(name string, mesh string, tags map[string][]string, user user.User) error {
+	return s.validateAccess(user)
+}
+
+func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateZoneIngressToken(zone string, user user.User) error {
+	return s.validateAccess(user)
+}
+
+func (s *staticGenerateDataplaneTokenAccess) validateAccess(user user.User) error {
 	allowed := s.usernames[user.Name]
 	for _, group := range user.Groups {
 		if s.groups[group] {

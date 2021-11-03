@@ -37,7 +37,7 @@ var _ = Describe("Tokens Client", func() {
 
 	BeforeEach(func() {
 		container := restful.NewContainer()
-		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}, access.NoopGenerateDpTokenAccess{}))
+		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}, access.NoopDpTokenAccess{}))
 		server = httptest.NewServer(container.ServeMux)
 	})
 
