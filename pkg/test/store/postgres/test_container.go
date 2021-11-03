@@ -18,7 +18,7 @@ import (
 
 type PostgresContainer struct {
 	container testcontainers.Container
-	WithSsl   bool
+	WithTLS   bool
 }
 
 func resourceDir() string {
@@ -26,7 +26,7 @@ func resourceDir() string {
 	for path.Base(dir) != "pkg" && path.Base(dir) != "app" {
 		dir = path.Dir(dir)
 	}
-	rDir := path.Join(path.Dir(dir), "pkg/test/store/postgres/resources")
+	rDir := path.Join(path.Dir(dir), "tools/postgres")
 	err := os.Chmod(path.Join(rDir, "certs/postgres.client.key"), 0600)
 	if err != nil {
 		panic(err)
@@ -36,9 +36,16 @@ func resourceDir() string {
 
 func (v *PostgresContainer) Start() error {
 	ctx := context.Background()
+	buildArgs := map[string]*string{}
+	mode := "standard"
+	if v.WithTLS {
+		mode = "tls"
+	}
+	buildArgs ["MODE"] = &mode
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context: resourceDir(),
+			BuildArgs: buildArgs,
 		},
 		Env: map[string]string{
 			"POSTGRES_USER":     "kuma",
@@ -47,9 +54,6 @@ func (v *PostgresContainer) Start() error {
 		},
 		ExposedPorts: []string{"5432/tcp"},
 		WaitingFor:   wait.ForListeningPort("5432"),
-	}
-	if v.WithSsl {
-		req.Cmd = strings.Split("-c ssl=on -c ssl_cert_file=/var/lib/postgresql/postgres.server.crt -c ssl_key_file=/var/lib/postgresql/postgres.server.key -c ssl_ca_file=/var/lib/postgresql/rootCA.crt -c hba_file=/var/lib/postgresql/pg_hba.conf", " ")
 	}
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -82,7 +86,7 @@ func (v *PostgresContainer) Config(withRandomDB bool) (*pg_config.PostgresStoreC
 	cfg.Host = ip
 	cfg.Port = port.Int()
 	rDir := resourceDir()
-	if v.WithSsl {
+	if v.WithTLS {
 		cfg.TLS.Mode = pg_config.VerifyCa
 		cfg.TLS.KeyPath = path.Join(rDir, "certs/postgres.client.key")
 		cfg.TLS.CertPath = path.Join(rDir, "certs/postgres.client.crt")

@@ -7,14 +7,14 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/test"
-	pg_test "github.com/kumahq/kuma/pkg/test/store/postgres"
+	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 )
 
-var c pg_test.PostgresContainer
+var c test_postgres.PostgresContainer
 
 func TestPostgresStore(t *testing.T) {
 	BeforeSuite(func() {
-		c = pg_test.PostgresContainer{WithSsl: true}
+		c = test_postgres.PostgresContainer{WithTLS: true}
 		Expect(c.Start()).To(Succeed())
 	})
 	AfterSuite(func() {

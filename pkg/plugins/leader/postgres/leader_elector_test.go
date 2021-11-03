@@ -12,14 +12,14 @@ import (
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 	leader_postgres "github.com/kumahq/kuma/pkg/plugins/leader/postgres"
 	"github.com/kumahq/kuma/pkg/test"
-	pg_test "github.com/kumahq/kuma/pkg/test/store/postgres"
+	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 )
 
 var _ = Describe("postgresLeaderElector", func() {
-	var c pg_test.PostgresContainer
+	var c test_postgres.PostgresContainer
 	var electors map[string]component.LeaderElector
 	BeforeEach(func() {
-		c = pg_test.PostgresContainer{WithSsl: true}
+		c = test_postgres.PostgresContainer{WithTLS: true}
 		Expect(c.Start()).To(Succeed())
 		cfg, err := c.Config(false)
 		Expect(err).ToNot(HaveOccurred())

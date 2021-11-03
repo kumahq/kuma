@@ -1,0 +1,14 @@
+version: '3.5'
+services:
+  db:
+    build:
+      context: .
+      args:
+        MODE: ${POSTGRES_MODE:-standard}
+    restart: always
+    environment:
+      POSTGRES_USER: ${KUMA_STORE_POSTGRES_USER:-kuma}
+      POSTGRES_PASSWORD: ${KUMA_STORE_POSTGRES_PASSWORD:-kuma}
+      POSTGRES_DB: ${KUMA_STORE_POSTGRES_DB_NAME:-kuma}
+    ports:
+      - ${KUMA_STORE_POSTGRES_PORT:-15432}:5432

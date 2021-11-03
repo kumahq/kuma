@@ -10,17 +10,17 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	pg_test "github.com/kumahq/kuma/pkg/test/store/postgres"
+	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 )
 
 var _ = Describe("Standalone Postgres test", func() {
-	var c pg_test.PostgresContainer
+	var c test_postgres.PostgresContainer
 	var pgCfg *postgres.PostgresStoreConfig
 
 	BeforeEach(func() {
 		// setup migrate DB
 		var err error
-		c = pg_test.PostgresContainer{WithSsl: false}
+		c = test_postgres.PostgresContainer{}
 		Expect(c.Start()).To(Succeed())
 		pgCfg, err = c.Config(false)
 		Expect(err).ToNot(HaveOccurred())
