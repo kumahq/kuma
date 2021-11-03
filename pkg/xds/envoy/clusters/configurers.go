@@ -53,12 +53,13 @@ func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
 	})
 }
 
-func DNSCluster(name string, address string, port uint32) ClusterBuilderOpt {
+func DNSCluster(name string, address string, port uint32, isHttps bool) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.DnsClusterConfigurer{
 			Name:    name,
 			Address: address,
 			Port:    port,
+			IsHttps: isHttps,
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
 		config.AddV3(&v3.TimeoutConfigurer{})
