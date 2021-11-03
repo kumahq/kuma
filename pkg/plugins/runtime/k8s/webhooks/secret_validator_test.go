@@ -176,7 +176,7 @@ var _ = Describe("ServiceValidator", func() {
             uid: ""
 `,
 		}),
-		Entry("should not allow Secret with mesh that does not exist", testCase{
+		Entry("should allow Secret with mesh that does not exist", testCase{
 			request: `
             apiVersion: admission.k8s.io/v1
             kind: AdmissionReview
@@ -202,21 +202,11 @@ var _ = Describe("ServiceValidator", func() {
               operation: CREATE
 `,
 			expected: `
-            allowed: false
-            status:
-              code: 422
-              details:
-                causes:
-                - field: metadata.labels["kuma.io/mesh"]
-                  message: mesh does not exist
-                  reason: FieldValueInvalid
-                kind: Secret
-                name: sec-1
-              message: 'metadata.labels["kuma.io/mesh"]: mesh does not exist'
-              metadata: {}
-              reason: Invalid
-              status: Failure
-            uid: ""
+              allowed: true
+              status:
+                code: 200
+                metadata: {}
+              uid: ""
 `,
 		}),
 		Entry("should not allow switching mesh in Secret", testCase{
