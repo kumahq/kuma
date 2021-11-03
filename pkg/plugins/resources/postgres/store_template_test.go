@@ -7,11 +7,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	test_store "github.com/kumahq/kuma/pkg/test/store"
+	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 )
 
 var _ = Describe("PostgresStore template", func() {
 	createStore := func() store.ResourceStore {
-		cfg, err := c.Config(true)
+		cfg, err := c.Config(test_postgres.WithRandomDb)
 		Expect(err).ToNot(HaveOccurred())
 
 		metrics, err := core_metrics.NewMetrics("Standalone")

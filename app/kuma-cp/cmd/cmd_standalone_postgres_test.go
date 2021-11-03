@@ -22,7 +22,7 @@ var _ = Describe("Standalone Postgres test", func() {
 		var err error
 		c = test_postgres.PostgresContainer{}
 		Expect(c.Start()).To(Succeed())
-		pgCfg, err = c.Config(false)
+		pgCfg, err = c.Config()
 		Expect(err).ToNot(HaveOccurred())
 		cfg := kuma_cp.DefaultConfig()
 		cfg.Store.Type = store.PostgresStore

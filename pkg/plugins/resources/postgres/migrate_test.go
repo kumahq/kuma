@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
+	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 )
 
 var _ = Describe("Migrate", func() {
@@ -14,7 +15,7 @@ var _ = Describe("Migrate", func() {
 	var cfg postgres.PostgresStoreConfig
 
 	BeforeEach(func() {
-		c, err := c.Config(true)
+		c, err := c.Config(test_postgres.WithRandomDb)
 		Expect(err).ToNot(HaveOccurred())
 		cfg = *c
 	})

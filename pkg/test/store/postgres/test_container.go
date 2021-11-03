@@ -41,10 +41,10 @@ func (v *PostgresContainer) Start() error {
 	if v.WithTLS {
 		mode = "tls"
 	}
-	buildArgs ["MODE"] = &mode
+	buildArgs["MODE"] = &mode
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context: resourceDir(),
+			Context:   resourceDir(),
 			BuildArgs: buildArgs,
 		},
 		Env: map[string]string{
@@ -73,7 +73,13 @@ func (v *PostgresContainer) Stop() error {
 	return nil
 }
 
-func (v *PostgresContainer) Config(withRandomDB bool) (*pg_config.PostgresStoreConfig, error) {
+type DbOption string
+
+const (
+	WithRandomDb DbOption = "random-db"
+)
+
+func (v *PostgresContainer) Config(dbOpts ...DbOption) (*pg_config.PostgresStoreConfig, error) {
 	cfg := pg_config.DefaultPostgresStoreConfig()
 	ip, err := v.container.Host(context.Background())
 	if err != nil {
@@ -95,20 +101,23 @@ func (v *PostgresContainer) Config(withRandomDB bool) (*pg_config.PostgresStoreC
 	if err := config.Load("", cfg); err != nil {
 		return nil, err
 	}
-	if withRandomDB {
-		db, err := postgres.ConnectToDb(*cfg)
-		if err != nil {
-			return nil, err
+	for _, o := range dbOpts {
+		switch o {
+		case WithRandomDb:
+			db, err := postgres.ConnectToDb(*cfg)
+			if err != nil {
+				return nil, err
+			}
+			dbName := fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
+			statement := fmt.Sprintf("CREATE DATABASE %s", dbName)
+			if _, err = db.Exec(statement); err != nil {
+				return nil, err
+			}
+			if err = db.Close(); err != nil {
+				return nil, err
+			}
+			cfg.DbName = dbName
 		}
-		dbName := fmt.Sprintf("kuma_%s", strings.ReplaceAll(core.NewUUID(), "-", ""))
-		statement := fmt.Sprintf("CREATE DATABASE %s", dbName)
-		if _, err = db.Exec(statement); err != nil {
-			return nil, err
-		}
-		if err = db.Close(); err != nil {
-			return nil, err
-		}
-		cfg.DbName = dbName
 	}
 	return cfg, nil
 }

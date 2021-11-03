@@ -21,7 +21,7 @@ var _ = Describe("postgresLeaderElector", func() {
 	BeforeEach(func() {
 		c = test_postgres.PostgresContainer{WithTLS: true}
 		Expect(c.Start()).To(Succeed())
-		cfg, err := c.Config(false)
+		cfg, err := c.Config()
 		Expect(err).ToNot(HaveOccurred())
 		sql, err := common_postgres.ConnectToDb(*cfg)
 		Expect(err).ToNot(HaveOccurred())
