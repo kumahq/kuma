@@ -213,7 +213,7 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 	@if [ ! -e $(MINIKUBE_PATH) ]; then \
 		echo "Installing Minikube $(CI_MINIKUBE_VERSION) ..." \
 		&& set -x \
-		&& $(CURL_DOWNLOAD) -o minikube https://storage.googleapis.com/minikube/releases/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
+		&& $(CURL_DOWNLOAD) -o minikube https://github.com/kubernetes/minikube/releases/download/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
 		&& chmod +x minikube \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv minikube $(MINIKUBE_PATH) \
