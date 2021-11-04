@@ -605,28 +605,6 @@ jobs:
 
           wait
 
-  dev_golang:
-    docker:
-    - image: *golang_image
-    environment:
-      GO_VERSION: *go_version
-      GO111MODULE: "on"
-    steps:
-    - checkout
-    - run:
-        name: "Install pre-requirements"
-        # `unzip` is necessary to install `protoc`
-        command: apt update && apt install -y unzip
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools
-    - run:
-        name: "Build all binaries"
-        command: make build
-    - run:
-        name: "Run unit tests"
-        command: GO_TEST_OPTS='-p 2' make test
-
   dev_ubuntu:
     docker:
     - image: ubuntu:20.04
@@ -734,38 +712,10 @@ jobs:
         command: make check
 
   test:
-    executor: golang
-    resource_class: medium
-    parameters:
-      target:
-        description: The test make target.
-        type: string
-        default: test
-    steps:
-    - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-    - run:
-        name: "Install pre-requirements"
-        # `unzip` is necessary to install `protoc`
-        command: apt update && apt install -y unzip
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools
-    - run:
-        name: "Run unit tests"
-        command: GO_TEST_OPTS='-p 2' make << parameters.target >>
-    - store_artifacts:
-        path: build/coverage
-        destination: /coverage
-
-  integration:
     executor: vm
     parameters:
       target:
-        description: The integration make target.
+        description: The test make target.
         type: string
         default: test
     environment:
@@ -791,7 +741,7 @@ jobs:
         command: |
           make dev/tools
     - run:
-        name: "Run integration tests"
+        name: "Run tests"
         command: |
           export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
           make << parameters.target >>
@@ -1166,7 +1116,7 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - go_cache
-    - integration:
+    - test:
         <<: *commit_workflow_filters
         requires:
         - check
@@ -1289,7 +1239,6 @@ workflows:
 
   kuma-master:
     jobs:
-      - dev_golang: *master_workflow_filters
       - dev_mac: *master_workflow_filters
       - dev_ubuntu: *master_workflow_filters
       - go_cache: *master_workflow_filters
@@ -1302,10 +1251,6 @@ workflows:
           requires:
             - go_cache
       - test:
-          <<: *master_workflow_filters
-          requires:
-            - check
-      - integration:
           <<: *master_workflow_filters
           requires:
             - check
@@ -1391,23 +1336,12 @@ workflows:
         <<: *helm_release_workflow_filters
         requires:
           - go_cache
-        name: test-release
-        target: test/release
-    - test:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
-    - integration:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
+        target: test test/release
     - release:
         <<: *release_workflow_filters
         requires:
         - check
         - test
-        - test-release
-        - integration
     - helm-release:
         <<: *helm_release_workflow_filters
         requires:
