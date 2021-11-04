@@ -14,10 +14,10 @@ resources:
                 address: zipkin.us
                 portValue: 9090
     name: tracing:zipkin
-    type: STRICT_DNS
     transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-            allowRenegotiation: true
-            sni: zipkin.us
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        allowRenegotiation: true
+        sni: zipkin.us
+    type: STRICT_DNS
