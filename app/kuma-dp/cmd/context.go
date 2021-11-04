@@ -15,7 +15,7 @@ import (
 // RootContext contains variables, functions and components that can be overridden when extending kuma-dp or running the test.
 type RootContext struct {
 	ComponentManager         component.Manager
-	BootstrapGenerator       envoy.BootstrapConfigFactoryFunc
+	BootstrapGenerator       envoy.BootstrapConfigGenerator
 	BootstrapDynamicMetadata map[string]string
 	Config                   *kumadp.Config
 	LogLevel                 log.LogLevel

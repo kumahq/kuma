@@ -69,7 +69,7 @@ var _ = Describe("Remote Bootstrap", func() {
 			},
 			DynamicMetadata: given.dynamicMetadata,
 		}
-		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, params)
+		config, err := generator.Generate(fmt.Sprintf("http://localhost:%d", port), given.config, params)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -82,6 +82,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.Dataplane.Name = "sample"
 				cfg.Dataplane.AdminPort = config_types.MustExactPort(4321) // exact port
 				cfg.DataplaneRuntime.Token = "token"
+				cfg.DNS.Enabled = false
 
 				return testCase{
 					config: cfg,
@@ -123,6 +124,49 @@ var _ = Describe("Remote Bootstrap", func() {
 					}`,
 				}
 			}()),
+		Entry("should default to DNS enabled",
+			func() testCase {
+				cfg := kuma_dp.DefaultConfig()
+				cfg.Dataplane.Mesh = "demo"
+				cfg.Dataplane.Name = "sample"
+
+				return testCase{
+					config: cfg,
+					dataplane: &rest.Resource{
+						Meta: rest.ResourceMeta{
+							Type: "Dataplane",
+							Mesh: "demo",
+							Name: "sample",
+						},
+					},
+					dynamicMetadata: map[string]string{},
+					expectedBootstrapRequest: `
+					{
+					  "mesh": "demo",
+					  "name": "sample",
+					  "proxyType": "dataplane",
+					  "adminPort": 30001,
+					  "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
+					  "version": {
+						"kumaDp": {
+						  "version": "0.0.1",
+						  "gitTag": "v0.0.1",
+						  "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+						  "buildDate": "2019-08-07T11:26:06Z"
+						},
+						"envoy": {
+						  "version": "1.15.0",
+						  "build": "hash/1.15.0/RELEASE"
+						}
+					  },
+					  "caCert": "",
+					  "bootstrapVersion": "3",
+					  "dynamicMetadata": {},
+					  "dnsPort": 15053,
+					  "emptyDnsPort": 15055
+					}`,
+				}
+			}()),
 
 		Entry("should support port range with multiple ports (choose the lowest port)",
 			func() testCase {
@@ -131,6 +175,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.Dataplane.Name = "sample"
 				cfg.Dataplane.AdminPort = config_types.MustPortRange(4321, 8765) // port range
 				cfg.DataplaneRuntime.Token = "token"
+				cfg.DNS.Enabled = false
 
 				return testCase{
 					config: cfg,
@@ -174,6 +219,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.Dataplane.Name = "sample"
 				cfg.Dataplane.AdminPort = config_types.PortRange{} // empty port range
 				cfg.DataplaneRuntime.Token = "token"
+				cfg.DNS.Enabled = false
 
 				return testCase{
 					config: cfg,
@@ -247,7 +293,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				},
 			},
 		}
-		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, params)
+		_, err = generator.Generate(fmt.Sprintf("http://localhost:%d", port), cfg, params)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -282,7 +328,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				},
 			},
 		}
-		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config, params)
+		_, err = generator.Generate(fmt.Sprintf("http://localhost:%d", port), config, params)
 
 		// then
 		Expect(err).To(MatchError("retryable: Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp or pass it to kuma-dp run --dataplane-file=/file. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))

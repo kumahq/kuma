@@ -176,9 +176,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			if cfg.DNS.Enabled {
-				opts.DNSPort = cfg.DNS.EnvoyDNSPort
-				opts.EmptyDNSPort = cfg.DNS.CoreDNSEmptyPort
-
 				dnsOpts := &dnsserver.Opts{
 					Config: *cfg,
 					Stdout: cmd.OutOrStdout(),

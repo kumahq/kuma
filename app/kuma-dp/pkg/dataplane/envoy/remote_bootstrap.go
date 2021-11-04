@@ -24,9 +24,8 @@ type remoteBootstrap struct {
 	client *http.Client
 }
 
-func NewRemoteBootstrapGenerator(client *http.Client) BootstrapConfigFactoryFunc {
-	rb := remoteBootstrap{client: client}
-	return rb.Generate
+func NewRemoteBootstrapGenerator(client *http.Client) BootstrapConfigGenerator {
+	return &remoteBootstrap{client: client}
 }
 
 var (
@@ -139,8 +138,10 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 			},
 		},
 		DynamicMetadata: params.DynamicMetadata,
-		DNSPort:         params.DNSPort,
-		EmptyDNSPort:    params.EmptyDNSPort,
+	}
+	if cfg.DNS.Enabled {
+		request.DNSPort = cfg.DNS.CoreDNSPort
+		request.EmptyDNSPort = cfg.DNS.CoreDNSEmptyPort
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {

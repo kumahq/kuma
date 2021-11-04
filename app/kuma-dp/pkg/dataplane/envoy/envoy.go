@@ -29,21 +29,24 @@ var (
 
 type BootstrapParams struct {
 	Dataplane       *rest.Resource
-	DNSPort         uint32
-	EmptyDNSPort    uint32
 	EnvoyVersion    EnvoyVersion
 	DynamicMetadata map[string]string
 }
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error)
+type BootstrapConfigGenerator interface {
+	Generate(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error)
+}
+type BootstrapConfigGeneratorFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error)
+
+func (f BootstrapConfigGeneratorFunc) Generate(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
+	return f(url, cfg, params)
+}
 
 type Opts struct {
 	Config          kuma_dp.Config
-	Generator       BootstrapConfigFactoryFunc
+	Generator       BootstrapConfigGenerator
 	Dataplane       *rest.Resource
 	DynamicMetadata map[string]string
-	DNSPort         uint32
-	EmptyDNSPort    uint32
 	Stdout          io.Writer
 	Stderr          io.Writer
 	Quit            chan struct{}
@@ -123,10 +126,8 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	}
 	runLog.Info("fetched Envoy version", "version", envoyVersion)
 	runLog.Info("generating bootstrap configuration")
-	bootstrapConfig, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
+	bootstrapConfig, err := e.opts.Generator.Generate(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
 		Dataplane:       e.opts.Dataplane,
-		DNSPort:         e.opts.DNSPort,
-		EmptyDNSPort:    e.opts.EmptyDNSPort,
 		EnvoyVersion:    *envoyVersion,
 		DynamicMetadata: e.opts.DynamicMetadata,
 	})

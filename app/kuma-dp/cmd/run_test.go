@@ -95,11 +95,11 @@ var _ = Describe("run", func() {
 
 			// given
 			rootCtx := DefaultRootContext()
-			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, error) {
+			rootCtx.BootstrapGenerator = envoy.BootstrapConfigGeneratorFunc(func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, error) {
 				respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
 				return respBytes, nil
-			}
+			})
 			_, writer := io.Pipe()
 			cmd := NewRootCmd(opts, rootCtx)
 			cmd.SetArgs(append([]string{"run"}, given.args...))

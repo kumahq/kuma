@@ -21,6 +21,12 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 )
 
+type StaticBootstrapConfigGenerator string
+
+func (s StaticBootstrapConfigGenerator) Generate(_ string, _ kuma_dp.Config, _ BootstrapParams) ([]byte, error) {
+	return []byte(s), nil
+}
+
 var _ = Describe("Envoy", func() {
 
 	var configDir string
@@ -90,10 +96,8 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, error) {
-				return []byte(`node:
-  id: example`), nil
-			}
+			sampleConfig := StaticBootstrapConfigGenerator(`node:
+  id: example`)
 			expectedConfigFile := filepath.Join(configDir, "bootstrap.yaml")
 
 			By("starting a mock dataplane")
@@ -154,10 +158,8 @@ var _ = Describe("Envoy", func() {
 				},
 			}
 
-			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, error) {
-				return []byte(`node:
-  id: example`), nil
-			}
+			sampleConfig := StaticBootstrapConfigGenerator(`node:
+  id: example`)
 
 			expectedConfigFile := filepath.Join(configDir, "bootstrap.yaml")
 
@@ -196,15 +198,12 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, error) {
-				return nil, nil
-			}
 
 			By("starting a mock dataplane")
 			// when
 			dataplane, err := New(Opts{
 				Config:    cfg,
-				Generator: sampleConfig,
+				Generator: StaticBootstrapConfigGenerator(""),
 				Stdout:    &bytes.Buffer{},
 				Stderr:    &bytes.Buffer{},
 			})
@@ -235,15 +234,12 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, error) {
-				return nil, nil
-			}
 
 			By("starting a mock dataplane")
 			// when
 			dataplane, err := New(Opts{
 				Config:    cfg,
-				Generator: sampleConfig,
+				Generator: StaticBootstrapConfigGenerator(""),
 				Stdout:    &bytes.Buffer{},
 				Stderr:    &bytes.Buffer{},
 			})
