@@ -282,7 +282,7 @@ metrics:
 # Reports configuration
 reports:
   # If true then usage stats will be reported
-  enabled: false # ENV: KUMA_REPORTS_ENABLED
+  enabled: true # ENV: KUMA_REPORTS_ENABLED
 
 # General configuration
 general:

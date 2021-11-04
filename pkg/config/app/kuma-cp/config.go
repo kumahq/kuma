@@ -188,7 +188,7 @@ func DefaultConfig() Config {
 			},
 		},
 		Reports: &Reports{
-			Enabled: false,
+			Enabled: true,
 		},
 		General:     DefaultGeneralConfig(),
 		GuiServer:   gui_server.DefaultGuiServerConfig(),
