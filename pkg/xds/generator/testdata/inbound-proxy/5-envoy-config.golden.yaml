@@ -140,10 +140,6 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: envoy.filters.http.fault
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
@@ -156,6 +152,10 @@ resources:
                 safeRegexMatch:
                   googleRe2: {}
                   regex: .*&kuma.io/service=[^&]*frontend[,&].*
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
           - name: envoy.filters.http.router
           routeConfig:
             name: inbound:backend1
@@ -257,10 +257,6 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: envoy.filters.http.fault
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
@@ -273,6 +269,10 @@ resources:
                 safeRegexMatch:
                   googleRe2: {}
                   regex: .*&kuma.io/service=[^&]*frontend[,&].*
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
           - name: envoy.filters.http.router
           routeConfig:
             name: inbound:backend1
@@ -376,10 +376,6 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
-          - name: envoy.filters.http.local_ratelimit
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-              statPrefix: rate_limit
           - name: envoy.filters.http.fault
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
@@ -392,6 +388,10 @@ resources:
                 safeRegexMatch:
                   googleRe2: {}
                   regex: .*&kuma.io/service=[^&]*frontend[,&].*
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
           - name: envoy.filters.http.router
           routeConfig:
             name: inbound:backend1
