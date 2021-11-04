@@ -2,7 +2,6 @@ package issuer
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
 	"sort"
@@ -21,7 +20,6 @@ import (
 )
 
 const (
-	defaultRsaBits   = 2048
 	signingKeyPrefix = "user-token-signing-key-"
 
 	DefaultSerialNumber = 1
@@ -126,7 +124,7 @@ func signingKeySerialNumber(secretName string) (int, error) {
 }
 
 func NewSigningKey() ([]byte, error) {
-	key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
+	key, err := util_rsa.GenerateKey(util_rsa.DefaultKeySize)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate RSA key")
 	}

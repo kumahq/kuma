@@ -3,7 +3,6 @@ package tls
 import (
 	"crypto"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"math/big"
@@ -11,10 +10,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
 var (
-	DefaultRsaBits        = 2048
 	DefaultValidityPeriod = 10 * 365 * 24 * time.Hour
 )
 
@@ -26,7 +26,7 @@ const (
 )
 
 func NewSelfSignedCert(commonName string, certType CertType, hosts ...string) (KeyPair, error) {
-	key, err := rsa.GenerateKey(rand.Reader, DefaultRsaBits)
+	key, err := util_rsa.GenerateKey(util_rsa.DefaultKeySize)
 	if err != nil {
 		return KeyPair{}, errors.Wrap(err, "failed to generate TLS key")
 	}
