@@ -353,6 +353,11 @@ func (i *KumaInjector) sidecarEnvVars(mesh string, podAnnotations map[string]str
 			Name:  "KUMA_DNS_CORE_DNS_BINARY_PATH",
 			Value: "coredns",
 		}
+	} else {
+		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_DNS_ENABLED",
+			Value: "false",
+		}
 	}
 
 	// override defaults with cfg env vars
