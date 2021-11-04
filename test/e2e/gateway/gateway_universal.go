@@ -305,7 +305,7 @@ name: external-service
 tags:
   kuma.io/service: external-echo
 networking:
-  address: %s
+  address: "%s"
 `, net.JoinHostPort(cluster.GetApp("external-echo").GetIP(), "8080"))),
 			).To(Succeed())
 		})
