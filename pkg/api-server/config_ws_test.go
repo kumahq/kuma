@@ -176,7 +176,7 @@ var _ = Describe("Config WS", func() {
 			}
 		  },
 		  "reports": {
-			"enabled": false
+			"enabled": true
 		  },
 		  "runtime": {
 			"kubernetes": {
