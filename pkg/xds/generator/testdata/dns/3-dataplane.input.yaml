@@ -10,5 +10,4 @@ networking:
         kuma.io/service: httpbin
   transparentProxying:
     redirectPortOutbound: 15001
-    redirectPortInboundV6: 15002
     redirectPortInbound: 15003
