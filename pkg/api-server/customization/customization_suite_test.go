@@ -57,8 +57,8 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		func() string { return "cluster-id" },
 		certs.ClientCertAuthenticator,
 		runtime.Access{
-			ResourceAccess:               resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
-			GenerateDataplaneTokenAccess: nil,
+			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
+			DataplaneTokenAccess: nil,
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())

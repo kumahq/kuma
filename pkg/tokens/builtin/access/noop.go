@@ -2,11 +2,15 @@ package access
 
 import "github.com/kumahq/kuma/pkg/core/user"
 
-type NoopGenerateDpTokenAccess struct {
+type NoopDpTokenAccess struct {
 }
 
-var _ GenerateDataplaneTokenAccess = NoopGenerateDpTokenAccess{}
+var _ DataplaneTokenAccess = NoopDpTokenAccess{}
 
-func (n NoopGenerateDpTokenAccess) ValidateGenerate(name string, mesh string, tags map[string][]string, tokenType string, user user.User) error {
+func (n NoopDpTokenAccess) ValidateGenerateDataplaneToken(name string, mesh string, tags map[string][]string, user user.User) error {
+	return nil
+}
+
+func (n NoopDpTokenAccess) ValidateGenerateZoneIngressToken(zone string, user user.User) error {
 	return nil
 }

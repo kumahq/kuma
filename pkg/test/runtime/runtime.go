@@ -85,8 +85,8 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
 	builder.WithAPIServerAuthenticator(certs.ClientCertAuthenticator)
 	builder.WithAccess(core_runtime.Access{
-		ResourceAccess:               resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
-		GenerateDataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
+		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
+		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
 	})
 
 	_ = initializeConfigManager(cfg, builder)

@@ -55,7 +55,7 @@ var _ = Describe("Dataplane Token Webservice", func() {
 	var url string
 
 	BeforeEach(func() {
-		ws := server.NewWebservice(&staticTokenIssuer{credentials}, &zoneIngressStaticTokenIssuer{}, &access.NoopGenerateDpTokenAccess{})
+		ws := server.NewWebservice(&staticTokenIssuer{credentials}, &zoneIngressStaticTokenIssuer{}, &access.NoopDpTokenAccess{})
 
 		container := restful.NewContainer()
 		container.Add(ws)
