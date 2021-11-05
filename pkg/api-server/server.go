@@ -183,10 +183,10 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
 	zoneIngressOverviewEndpoints.addListEndpoint(ws)
 
-	globalInsightsEndpoints := globalInsightsEndpoints{
-		resManager:     resManager,
-		resourceAccess: resourceAccess,
-	}
+	globalInsightsEndpoints := newGlobalInsightsEndpoints(
+		resManager,
+		resourceAccess,
+	)
 	globalInsightsEndpoints.addEndpoint(ws)
 
 	for _, definition := range defs {
