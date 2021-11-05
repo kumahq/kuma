@@ -18,18 +18,6 @@ import (
 type globalInsightsEndpoints struct {
 	resManager     manager.ResourceManager
 	resourceAccess access.ResourceAccess
-	resources      map[string]globalInsightsStat
-}
-
-func newGlobalInsightsEndpoints(
-	resManager manager.ResourceManager,
-	resourceAccess access.ResourceAccess,
-) *globalInsightsEndpoints {
-	return &globalInsightsEndpoints{
-		resManager:     resManager,
-		resourceAccess: resourceAccess,
-		resources:      map[string]globalInsightsStat{},
-	}
 }
 
 type globalInsightsStat struct {
@@ -57,6 +45,8 @@ func (r *globalInsightsEndpoints) addEndpoint(ws *restful.WebService) {
 }
 
 func (r *globalInsightsEndpoints) inspectGlobalResources(request *restful.Request, response *restful.Response) {
+	resources := map[string]globalInsightsStat{}
+
 	for _, descriptor := range registry.Global().ObjectDescriptors() {
 		if descriptor.Scope != model.ScopeGlobal ||
 			descriptor.Name == system.ConfigType ||
@@ -64,18 +54,18 @@ func (r *globalInsightsEndpoints) inspectGlobalResources(request *restful.Reques
 			continue
 		}
 
-		resources := descriptor.NewList()
-		if err := r.resManager.List(request.Request.Context(), resources); err != nil {
+		list := descriptor.NewList()
+		if err := r.resManager.List(request.Request.Context(), list); err != nil {
 			rest_errors.HandleError(response, err, "Could not retrieve global insights")
 			return
 		}
 
-		r.resources[string(descriptor.Name)] = globalInsightsStat{
-			Total: uint32(len(resources.GetItems())),
+		resources[string(descriptor.Name)] = globalInsightsStat{
+			Total: uint32(len(list.GetItems())),
 		}
 	}
 
-	insights := newGlobalInsightsResponse(r.resources)
+	insights := newGlobalInsightsResponse(resources)
 
 	if err := response.WriteAsJson(insights); err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve global insights")
