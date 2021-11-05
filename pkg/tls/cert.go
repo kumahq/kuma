@@ -2,6 +2,8 @@ package tls
 
 import (
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -25,8 +27,20 @@ const (
 	ClientCertType CertType = "client"
 )
 
-func NewSelfSignedCert(commonName string, certType CertType, hosts ...string) (KeyPair, error) {
-	key, err := util_rsa.GenerateKey(util_rsa.DefaultKeySize)
+type KeyType func() (crypto.Signer, error)
+
+var ECDSAKeyType KeyType = func() (crypto.Signer, error) {
+	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+}
+
+var RSAKeyType KeyType = func() (crypto.Signer, error) {
+	return util_rsa.GenerateKey(util_rsa.DefaultKeySize)
+}
+
+var DefaultKeyType = RSAKeyType
+
+func NewSelfSignedCert(commonName string, certType CertType, keyType KeyType, hosts ...string) (KeyPair, error) {
+	key, err := keyType()
 	if err != nil {
 		return KeyPair{}, errors.Wrap(err, "failed to generate TLS key")
 	}
