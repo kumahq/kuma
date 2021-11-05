@@ -1157,11 +1157,11 @@ workflows:
           - images
           - check
 # keep this one disabled and enable only for development
-    - e2e:
-        <<: *commit_workflow_filters
-        name: test/e2e-ipv6
-        # custom parameters
-        ipv6: true
+#    - e2e:
+#        <<: *commit_workflow_filters
+#        name: test/e2e-ipv6
+#        # custom parameters
+#        ipv6: true
 
   clean-eks:
     when: << pipeline.parameters.run_workflow_clean_eks >>
