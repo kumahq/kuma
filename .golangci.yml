@@ -37,6 +37,8 @@ linters-settings:
       alias: system_proto
     - pkg: github.com/kumahq/kuma/pkg/util/proto
       alias: util_proto
+    - pkg: github.com/kumahq/kuma/pkg/util/rsa
+      alias: util_rsa
     - pkg: github.com/kumahq/kuma/pkg/cmd
       alias: kuma_cmd
     - pkg: github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s
