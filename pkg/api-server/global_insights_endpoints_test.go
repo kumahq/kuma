@@ -100,14 +100,19 @@ var _ = Describe("Global Insights Endpoints", func() {
 {
   "type": "GlobalInsights",
   "creationTime": "2018-07-17T16:05:36.995Z",
-  "meshes": {
-    "total": 3
-  },
-  "zones": {
-    "total": 2
-  },
-  "zoneIngresses": {
-    "total": 1
+  "resources": {
+    "GlobalSecret": {
+      "total": 0
+    },
+    "Mesh": {
+      "total": 3
+    },
+    "Zone": {
+      "total": 2
+    },
+    "ZoneIngress": {
+      "total": 1
+    }
   }
 }
 `
