@@ -25,6 +25,7 @@ type generateCertificateContext struct {
 		key       string
 		cert      string
 		certType  string
+		keyType   string
 		hostnames []string
 	}
 }
@@ -53,7 +54,18 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return errors.Errorf("invalid certificate type %q", certType)
 			}
 
-			keyPair, err := NewSelfSignedCert(ctx.args.hostnames[0], certType, ctx.args.hostnames...)
+			keyType := tls.DefaultKeyType
+			switch ctx.args.keyType {
+			case "":
+			case "rsa":
+				keyType = tls.RSAKeyType
+			case "ecdsa":
+				keyType = tls.ECDSAKeyType
+			default:
+				return errors.Errorf("invalid key type %q", ctx.args.keyType)
+			}
+
+			keyPair, err := NewSelfSignedCert(ctx.args.hostnames[0], certType, keyType, ctx.args.hostnames...)
 			if err != nil {
 				return errors.Wrap(err, "could not generate certificate")
 			}
@@ -87,6 +99,7 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&ctx.args.key, "key-file", "key.pem", "path to a file with a generated private key ('-' for stdout)")
 	cmd.Flags().StringVar(&ctx.args.cert, "cert-file", "cert.pem", "path to a file with a generated TLS certificate ('-' for stdout)")
 	cmd.Flags().StringVar(&ctx.args.certType, "type", "", kuma_cmd.UsageOptions("type of the certificate", "client", "server"))
+	cmd.Flags().StringVar(&ctx.args.keyType, "key-type", "", kuma_cmd.UsageOptions("type of the private key", "rsa", "ecdsa"))
 	cmd.Flags().StringSliceVar(&ctx.args.hostnames, "hostname", []string{}, "DNS hostname(s) to issue the certificate for")
 	_ = cmd.MarkFlagRequired("type")
 	_ = cmd.MarkFlagRequired("hostname")

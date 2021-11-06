@@ -28,6 +28,7 @@ kumactl generate tls-certificate --type=server|client --hostname=HOST1[,HOST2...
   -h, --help               help for tls-certificate
       --hostname strings   DNS hostname(s) to issue the certificate for
       --key-file string    path to a file with a generated private key ('-' for stdout) (default "key.pem")
+      --key-type string    type of the private key: one of rsa|ecdsa
       --type string        type of the certificate: one of client|server
 ```
 
