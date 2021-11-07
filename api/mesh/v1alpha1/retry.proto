@@ -57,8 +57,21 @@ message Retry {
       //  +optional
       repeated uint32 retriable_status_codes = 5;
 
+
+      enum Method {
+        CONNECT = 0;
+        DELETE = 1;
+        GET = 2;
+        HEAD = 3;
+        OPTIONS = 4;
+        PATCH = 5;
+        POST = 6;
+        PUT = 7;
+        TRACE = 8;
+      };
+
       //  +optional
-      repeated string retriable_methods = 6;
+      repeated Method retriable_methods = 6;
     }
 
     message Tcp {

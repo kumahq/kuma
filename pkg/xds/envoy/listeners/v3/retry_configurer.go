@@ -94,11 +94,15 @@ func genHttpRetryPolicy(
 	}
 
 	if conf.RetriableMethods != nil {
-		for _, method := range conf.RetriableMethods {
+		for _, methodValue := range conf.RetriableMethods {
+			method, ok := mesh_proto.Retry_Conf_Http_Method_name[int32(methodValue)]
+			if !ok {
+				continue
+			}
 			policy.RetriableRequestHeaders = append(policy.RetriableRequestHeaders,
 				&envoy_route.HeaderMatcher{
 					Name:                 ":method",
-					HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{ExactMatch: strings.ToUpper(method)},
+					HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{ExactMatch: method},
 					InvertMatch:          false,
 				})
 		}
