@@ -55,6 +55,10 @@ func NewProxyProfile(rt core_runtime.Runtime) generator.ResourceGenerator {
 				// The order here matters because generators can
 				// depend on state created by a previous generator.
 				&ListenerGenerator{},
+				&HTTPFilterChainGenerator{},
+				&HTTPSFilterChainGenerator{
+					DataSourceLoader: rt.DataSourceLoader(),
+				},
 				&RouteConfigurationGenerator{},
 				&GatewayRouteGenerator{},
 				&ConnectionPolicyGenerator{},

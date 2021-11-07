@@ -32,7 +32,14 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 
 	// Ensure that we get TLS on HTTPS protocol listeners.
 	if info.Listener.Protocol == mesh_proto.Gateway_Listener_HTTPS {
-		vh.Configure(envoy_routes.RequireTLS())
+		vh.Configure(
+			envoy_routes.RequireTLS(),
+			// Set HSTS header to 1 year.
+			envoy_routes.SetResponseHeader(
+				"Strict-Transport-Security",
+				"max-age=31536000; includeSubDomains",
+			),
+		)
 	}
 
 	// TODO(jpeach) apply additional virtual host configuration.

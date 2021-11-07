@@ -45,14 +45,14 @@ type GatewayHost struct {
 	Hostname string
 	Routes   []model.Resource
 	Policies map[model.ResourceType][]match.RankedPolicy
-
-	// TODO(jpeach) Track TLS state for this host.
+	TLS      *mesh_proto.Gateway_TLS_Conf
 }
 
 // Resources tracks partially-built xDS resources that can be updated
 // by multiple gateway generators.
 type Resources struct {
 	Listener           *envoy_listeners.ListenerBuilder
+	FilterChain        *envoy_listeners.FilterChainBuilder
 	RouteConfiguration *envoy_routes.RouteConfigurationBuilder
 }
 
@@ -186,6 +186,8 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			}
 		}
 
+		info.Resources.Listener.Configure(envoy_listeners.FilterChain(info.Resources.FilterChain))
+
 		if err := resources.Add(BuildResourceSet(info.Resources.Listener)); err != nil {
 			return nil, errors.Wrapf(err, "failed to build listener resource")
 		}
@@ -266,6 +268,7 @@ func MakeGatewayListener(
 		host := GatewayHost{
 			Hostname: hostname,
 			Policies: map[model.ResourceType][]match.RankedPolicy{},
+			TLS:      l.GetTls(),
 		}
 
 		switch listener.Protocol {

@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
@@ -179,10 +180,6 @@ conf:
 		Expect(
 			cluster.GetKumactlOptions().KumactlList("gateways", "default"),
 		).To(ContainElement("edge-gateway"))
-
-		gateways, err := cluster.GetKumactlOptions().KumactlList("gateways", "default")
-		Expect(err).To(Succeed())
-		Expect(gateways).To(ContainElement("edge-gateway"))
 	})
 
 	E2EAfterEach(func() {
@@ -242,7 +239,7 @@ conf:
 			Expect(
 				cluster.GetKumactlOptions().KumactlDelete(
 					"traffic-permission", "allow-all-default", "default"),
-			).ToNot(HaveOccurred())
+			).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				target := fmt.Sprintf("http://%s/%s",
@@ -312,5 +309,86 @@ networking:
 
 		It("should proxy simple HTTP requests",
 			ProxySimpleRequests("/external", "external-echo"))
+	})
+
+	Context("when targeting a HTTPS gateway", func() {
+		BeforeEach(func() {
+			// We need kumactl admin access to deploy a secret. Enabling token auth
+			// is the easiest way to get that from here.
+			DeployCluster(
+				append(KumaUniversalDeployOpts,
+					WithEnv("KUMA_API_SERVER_AUTHN_TYPE", "tokens"),
+				)...,
+			)
+		})
+
+		JustBeforeEach(func() {
+			// Delete the default gateway that the test fixtures create.
+			Expect(
+				cluster.GetKumactlOptions().KumactlDelete("gateway", "edge-gateway", "default"),
+			).To(Succeed())
+
+			// And replace it with a HTTPS gateway.
+			Expect(
+				cluster.GetKumactlOptions().KumactlApplyFromString(`
+type: Gateway
+mesh: default
+name: edge-https-gateway
+selectors:
+- match:
+    kuma.io/service: edge-gateway
+conf:
+  listeners:
+  - port: 8080
+    protocol: HTTPS
+    hostname: example.kuma.io
+    tls:
+      mode: TERMINATE
+      certificates:
+      - secret: example-kuma-io-certificate
+    tags:
+      hostname: example.kuma.io
+`),
+			).To(Succeed())
+
+			cert, key, err := CreateCertsFor("example.kuma.io")
+			Expect(err).To(Succeed())
+
+			payload := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{key, cert}, "\n")))
+
+			// Create the TLS secret containing the self-signed certificate and corresponding private key.
+			Expect(
+				cluster.GetKumactlOptions().KumactlApplyFromString(fmt.Sprintf(`
+type: Secret
+mesh: default
+name: example-kuma-io-certificate
+data: %s
+`, payload)),
+			).To(Succeed())
+
+			Expect(
+				cluster.GetKumactlOptions().KumactlList("gateways", "default"),
+			).To(ContainElement("edge-https-gateway"))
+		})
+
+		It("should proxy simple HTTPS requests", func() {
+			Eventually(func(g Gomega) {
+				target := fmt.Sprintf("https://%s/%s",
+					net.JoinHostPort("example.kuma.io", "8080"),
+					path.Join("https", "test", url.PathEscape(GinkgoT().Name())),
+				)
+
+				response, err := testutil.CollectResponse(
+					cluster, "gateway-client", target,
+					testutil.Insecure(),
+					testutil.Resolve("example.kuma.io", 8080, cluster.GetApp("gateway-proxy").GetIP()),
+					testutil.WithHeader("Host", "example.kuma.io"),
+				)
+
+				g.Expect(err).To(Succeed())
+				g.Expect(response.Instance).To(Equal("universal"))
+				g.Expect(response.Received.Headers["Host"]).To(ContainElement("example.kuma.io"))
+			}, "30s", "1s").Should(Succeed())
+		})
 	})
 }
