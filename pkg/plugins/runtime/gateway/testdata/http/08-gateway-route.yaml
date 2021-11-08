@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    exact-service:
+    exact-service-09493d2d54b2a972:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: exact-service
+      name: exact-service-09493d2d54b2a972
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -27,7 +27,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    prefix-service:
+    prefix-service-5061ee504b81a555:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -39,7 +39,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: prefix-service
+      name: prefix-service-5061ee504b81a555
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -56,8 +56,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    exact-service:
-      clusterName: exact-service
+    exact-service-09493d2d54b2a972:
+      clusterName: exact-service-09493d2d54b2a972
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -72,8 +72,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    prefix-service:
-      clusterName: prefix-service
+    prefix-service-5061ee504b81a555:
+      clusterName: prefix-service-5061ee504b81a555
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -156,7 +156,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: exact-service
+              - name: exact-service-09493d2d54b2a972
                 weight: 1
               totalWeight: 1
         - match:
@@ -164,7 +164,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: prefix-service
+              - name: prefix-service-5061ee504b81a555
                 weight: 1
               totalWeight: 1
 Runtimes:

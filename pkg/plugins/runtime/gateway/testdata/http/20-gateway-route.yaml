@@ -1,21 +1,22 @@
 Clusters:
   Resources:
-    api-service-49c6d22609eca2d2:
+    echo-service-b5c2b60cba392c4e:
       circuitBreakers:
         thresholds:
-        - maxRetries: 20
-      connectTimeout: 5s
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 10s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: api-service-49c6d22609eca2d2
+      name: echo-service-b5c2b60cba392c4e
       outlierDetection:
-        baseEjectionTime: 20s
-        consecutiveLocalOriginFailure: 20
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 100
+        enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
         enforcingSuccessRate: 0
       type: EDS
@@ -23,25 +24,26 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 3600s
+            idleTimeout: 10s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-mirror-f534124491f4385f:
+    echo-service-cff7b41a9764f367:
       circuitBreakers:
         thresholds:
-        - maxRetries: 20
-      connectTimeout: 5s
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 300s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-mirror-f534124491f4385f
+      name: echo-service-cff7b41a9764f367
       outlierDetection:
-        baseEjectionTime: 30s
-        consecutiveLocalOriginFailure: 30
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 100
+        enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
         enforcingSuccessRate: 0
       type: EDS
@@ -49,25 +51,26 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 3600s
+            idleTimeout: 30s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    echo-service-48cd7f2dbb98df84:
+    echo-service-dbfe9218dfa3ba0c:
       circuitBreakers:
         thresholds:
-        - maxRetries: 10
-      connectTimeout: 5s
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 20s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service-48cd7f2dbb98df84
+      name: echo-service-dbfe9218dfa3ba0c
       outlierDetection:
-        baseEjectionTime: 10s
-        consecutiveLocalOriginFailure: 10
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 100
+        enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
         enforcingSuccessRate: 0
       type: EDS
@@ -75,20 +78,20 @@ Clusters:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 3600s
+            idleTimeout: 20s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    api-service-49c6d22609eca2d2:
-      clusterName: api-service-49c6d22609eca2d2
+    echo-service-b5c2b60cba392c4e:
+      clusterName: echo-service-b5c2b60cba392c4e
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
               socketAddress:
-                address: 192.168.1.1
-                portValue: 20001
+                address: 192.168.1.6
+                portValue: 20006
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
@@ -96,15 +99,15 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    echo-mirror-f534124491f4385f:
-      clusterName: echo-mirror-f534124491f4385f
+    echo-service-cff7b41a9764f367:
+      clusterName: echo-service-cff7b41a9764f367
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
               socketAddress:
-                address: 192.168.1.3
-                portValue: 20003
+                address: 192.168.1.6
+                portValue: 20006
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
@@ -112,8 +115,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    echo-service-48cd7f2dbb98df84:
-      clusterName: echo-service-48cd7f2dbb98df84
+    echo-service-dbfe9218dfa3ba0c:
+      clusterName: echo-service-dbfe9218dfa3ba0c
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -130,11 +133,11 @@ Endpoints:
                 kuma.io/protocol: http
 Listeners:
   Resources:
-    edge-gateway:HTTP:8080:
+    gateway-multihost:HTTP:9080:
       address:
         socketAddress:
           address: 192.168.1.1
-          portValue: 8080
+          portValue: 9080
       filterChains:
       - filters:
         - name: envoy.filters.network.http_connection_manager
@@ -165,59 +168,62 @@ Listeners:
               configSource:
                 ads: {}
                 resourceApiVersion: V3
-              routeConfigName: edge-gateway:HTTP:8080
+              routeConfigName: gateway-multihost:HTTP:9080
             requestHeadersTimeout: 0.500s
             serverName: Kuma Gateway
-            statPrefix: gateway-default
+            statPrefix: gateway-multihost
             streamIdleTimeout: 5s
             stripAnyHostPort: true
       listenerFilters:
       - name: envoy.filters.listener.tls_inspector
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-      name: edge-gateway:HTTP:8080
+      name: gateway-multihost:HTTP:9080
       perConnectionBufferLimitBytes: 32768
       reusePort: true
       trafficDirection: INBOUND
 Routes:
   Resources:
-    edge-gateway:HTTP:8080:
-      name: edge-gateway:HTTP:8080
+    gateway-multihost:HTTP:9080:
+      name: gateway-multihost:HTTP:9080
       requestHeadersToRemove:
       - x-kuma-tags
       validateClusters: false
       virtualHosts:
       - domains:
-        - echo.example.com
-        name: edge-gateway:HTTP:8080:echo.example.com
+        - two.example.com
+        name: gateway-multihost:HTTP:9080:two.example.com
         routes:
-        - match:
-            path: /api
-          route:
-            weightedClusters:
-              clusters:
-              - name: api-service-49c6d22609eca2d2
-                weight: 1
-              totalWeight: 1
-        - match:
-            prefix: /api/
-          route:
-            weightedClusters:
-              clusters:
-              - name: api-service-49c6d22609eca2d2
-                weight: 1
-              totalWeight: 1
         - match:
             prefix: /
           route:
-            requestMirrorPolicies:
-            - cluster: echo-mirror-f534124491f4385f
-              runtimeFraction:
-                defaultValue:
-                  numerator: 1
             weightedClusters:
               clusters:
-              - name: echo-service-48cd7f2dbb98df84
+              - name: echo-service-dbfe9218dfa3ba0c
+                weight: 1
+              totalWeight: 1
+      - domains:
+        - three.example.com
+        name: gateway-multihost:HTTP:9080:three.example.com
+        routes:
+        - match:
+            prefix: /
+          route:
+            weightedClusters:
+              clusters:
+              - name: echo-service-cff7b41a9764f367
+                weight: 1
+              totalWeight: 1
+      - domains:
+        - one.example.com
+        name: gateway-multihost:HTTP:9080:one.example.com
+        routes:
+        - match:
+            prefix: /
+          route:
+            weightedClusters:
+              clusters:
+              - name: echo-service-b5c2b60cba392c4e
                 weight: 1
               totalWeight: 1
 Runtimes:

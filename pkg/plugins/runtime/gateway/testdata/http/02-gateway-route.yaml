@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    echo-service:
+    echo-service-5a416c39037aa8f6:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service
+      name: echo-service-5a416c39037aa8f6
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -27,10 +27,41 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
+    echo-service-07fd732a85aa6a99:
+      connectTimeout: 10s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-07fd732a85aa6a99
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
 Endpoints:
   Resources:
-    echo-service:
-      clusterName: echo-service
+    echo-service-5a416c39037aa8f6:
+      clusterName: echo-service-5a416c39037aa8f6
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.6
+                portValue: 20006
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    echo-service-07fd732a85aa6a99:
+      clusterName: echo-service-07fd732a85aa6a99
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -113,7 +144,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: echo-service
+              - name: echo-service-07fd732a85aa6a99
                 weight: 1
               totalWeight: 1
       - domains:
@@ -125,7 +156,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: echo-service
+              - name: echo-service-5a416c39037aa8f6
                 weight: 1
               totalWeight: 1
 Runtimes:

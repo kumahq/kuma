@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    echo-service:
+    echo-service-5a416c39037aa8f6:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service
+      name: echo-service-5a416c39037aa8f6
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -29,8 +29,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    echo-service:
-      clusterName: echo-service
+    echo-service-5a416c39037aa8f6:
+      clusterName: echo-service-5a416c39037aa8f6
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -146,7 +146,7 @@ Routes:
             hostRewriteLiteral: newhost.example.com
             weightedClusters:
               clusters:
-              - name: echo-service
+              - name: echo-service-5a416c39037aa8f6
                 weight: 1
               totalWeight: 1
 Runtimes:
