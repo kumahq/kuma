@@ -24,4 +24,18 @@ func init() {
 			Kind:       "GatewayList",
 		},
 	})
+
+	SchemeBuilder.Register(&GatewayRoute{}, &GatewayRouteList{})
+	registry.RegisterObjectType(&mesh_proto.GatewayRoute{}, &GatewayRoute{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "GatewayRoute",
+		},
+	})
+	registry.RegisterListType(&mesh_proto.GatewayRoute{}, &GatewayRouteList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "GatewayRouteList",
+		},
+	})
 }

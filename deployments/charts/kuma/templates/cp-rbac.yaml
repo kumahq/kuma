@@ -93,6 +93,7 @@ rules:
       - kuma.io
     resources:
       - gateways
+      - gatewayroutes
     verbs:
       - get
       - list

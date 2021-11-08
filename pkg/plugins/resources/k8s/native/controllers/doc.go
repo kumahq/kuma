@@ -16,3 +16,4 @@ package controllers
 // +kubebuilder:rbac:groups=kuma.io,resources=proxytemplates,verbs=get;list;watch;create;update;patch;delete
 
 // +kubebuilder:rbac:groups=kuma.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=kuma.io,resources=gatewayroutes,verbs=get;list;watch;create;update;patch;delete
