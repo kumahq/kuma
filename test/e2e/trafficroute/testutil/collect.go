@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
-	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework"
@@ -82,10 +82,10 @@ func CollectResponse(cluster framework.Cluster, source, destination string, fn .
 		"--max-time", "3",
 	}
 	for key, value := range opts.Headers {
-		cmd = append(cmd, "--header", shellquote.Join(fmt.Sprintf("%s: %s", key, value)))
+		cmd = append(cmd, "--header", ShellEscape(fmt.Sprintf("%s: %s", key, value)))
 	}
 	cmd = append(cmd, opts.Flags...)
-	cmd = append(cmd, shellquote.Join(destination))
+	cmd = append(cmd, ShellEscape(destination))
 	stdout, _, err := cluster.ExecWithRetries("", "", source, cmd...)
 	if err != nil {
 		return types.EchoResponse{}, err
@@ -95,6 +95,10 @@ func CollectResponse(cluster framework.Cluster, source, destination string, fn .
 		return types.EchoResponse{}, err
 	}
 	return *response, nil
+}
+
+func ShellEscape(arg string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(arg, "'", "\\'"))
 }
 
 // FailureResponse is the JSON output for a Curl command. Note that the available
@@ -134,10 +138,10 @@ func CollectFailure(cluster framework.Cluster, source, destination string, fn ..
 	}
 
 	for key, value := range opts.Headers {
-		cmd = append(cmd, "--header", shellquote.Join(fmt.Sprintf("%s: %s", key, value)))
+		cmd = append(cmd, "--header", ShellEscape(fmt.Sprintf("%s: %s", key, value)))
 	}
 
-	cmd = append(cmd, shellquote.Join(destination))
+	cmd = append(cmd, ShellEscape(destination))
 	stdout, _, err := cluster.Exec("", "", source, cmd...)
 
 	// 1. If we fail to decode the JSON status, return the JSON error,
