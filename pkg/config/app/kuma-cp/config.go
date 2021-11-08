@@ -161,7 +161,7 @@ func (c *Config) Sanitize() {
 	c.Diagnostics.Sanitize()
 }
 
-func DefaultConfig() Config {
+var DefaultConfig = func() Config {
 	return Config{
 		Environment:                core.UniversalEnvironment,
 		Mode:                       core.Standalone,

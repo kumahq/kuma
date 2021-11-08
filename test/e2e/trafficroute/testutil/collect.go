@@ -17,6 +17,8 @@ type CollectResponsesOpts struct {
 	NumberOfRequests int
 	Method           string
 	Headers          map[string]string
+
+	Flags []string
 }
 
 func DefaultCollectResponsesOpts() CollectResponsesOpts {
@@ -47,6 +49,27 @@ func WithHeader(key, value string) CollectResponsesOptsFn {
 	}
 }
 
+// Resolve sets the curl --resolve flag.
+// See https://curl.se/docs/manpage.html#--resolve.
+func Resolve(host string, port int, address string) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.Flags = append(opts.Flags,
+			"--resolve",
+			fmt.Sprintf("%s:%d:%s", host, port, address),
+		)
+	}
+}
+
+// Insecure sets the curl --insecure flag.
+// See https://curl.se/docs/manpage.html#-k.
+func Insecure() CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.Flags = append(opts.Flags,
+			"--insecure",
+		)
+	}
+}
+
 func CollectResponse(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (types.EchoResponse, error) {
 	opts := DefaultCollectResponsesOpts()
 	for _, f := range fn {
@@ -61,6 +84,7 @@ func CollectResponse(cluster framework.Cluster, source, destination string, fn .
 	for key, value := range opts.Headers {
 		cmd = append(cmd, "--header", ShellEscape(fmt.Sprintf("%s: %s", key, value)))
 	}
+	cmd = append(cmd, opts.Flags...)
 	cmd = append(cmd, ShellEscape(destination))
 	stdout, _, err := cluster.ExecWithRetries("", "", source, cmd...)
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/mads"
 )
 
-func DefaultConfig() Config {
+var DefaultConfig = func() Config {
 	return Config{
 		MonitoringAssignment: MonitoringAssignmentConfig{
 			Client: MonitoringAssignmentClientConfig{
