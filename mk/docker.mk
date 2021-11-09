@@ -66,7 +66,7 @@ docker/build/kuma-universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/a
 image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
 
 .PHONY: image/kuma-dp
-image/kuma-dp: build/kuma-dp/linux-amd64 build/coredns/linux-amd64 docker/build/kuma-dp ## Dev: Rebuild `kuma-dp` Docker image
+image/kuma-dp: build/kuma-dp/linux-amd64 build/coredns/linux-amd64 build/artifacts-linux-amd64/envoy docker/build/kuma-dp ## Dev: Rebuild `kuma-dp` Docker image
 
 .PHONY: image/kumactl
 image/kumactl: build/kumactl/linux-amd64 docker/build/kumactl ## Dev: Rebuild `kumactl` Docker image

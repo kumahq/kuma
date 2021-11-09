@@ -1,0 +1,8 @@
+ARG ENVOY_BUILD_IMAGE
+FROM $ENVOY_BUILD_IMAGE
+
+ARG BUILD_CMD
+
+RUN mkdir /build /source
+COPY out/envoy-sources /envoy-sources
+RUN bash -c "pushd /envoy-sources && $BUILD_CMD"
