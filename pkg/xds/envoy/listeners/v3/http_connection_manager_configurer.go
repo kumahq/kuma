@@ -15,11 +15,9 @@ type HttpConnectionManagerConfigurer struct {
 
 func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	config := &envoy_hcm.HttpConnectionManager{
-		StatPrefix: util_xds.SanitizeMetric(c.StatsName),
-		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
-		HttpFilters: []*envoy_hcm.HttpFilter{
-			{Name: "envoy.filters.http.router"},
-		},
+		StatPrefix:  util_xds.SanitizeMetric(c.StatsName),
+		CodecType:   envoy_hcm.HttpConnectionManager_AUTO,
+		HttpFilters: []*envoy_hcm.HttpFilter{},
 		// notice that route configuration is left up to other configurers
 	}
 
