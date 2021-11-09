@@ -3,7 +3,6 @@ package gateway
 import (
 	"context"
 	"sort"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -12,8 +11,12 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+=======
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+>>>>>>> 40f8aa39 (chore(*) formalize the Envoy name separator (#3105))
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -32,8 +35,7 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 	resources := ResourceAggregator{}
 
 	vh := envoy_routes.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
-		// TODO(jpeach) use separator from envoy names package.
-		envoy_routes.CommonVirtualHost(strings.Join([]string{info.Listener.ResourceName, info.Host.Hostname}, ":")),
+		envoy_routes.CommonVirtualHost(envoy_names.Join(info.Listener.ResourceName, info.Host.Hostname)),
 		envoy_routes.DomainNames(info.Host.Hostname),
 	)
 
