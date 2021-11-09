@@ -67,15 +67,6 @@ type Resource interface {
 	Descriptor() ResourceTypeDescriptor
 }
 
-func InitDescriptor(res ResourceTypeDescriptor) ResourceTypeDescriptor {
-	newType := reflect.TypeOf(res.Resource).Elem()
-	res.objectType = newType
-	if res.ResourceList != nil {
-		res.listType = reflect.TypeOf(res.ResourceList).Elem()
-	}
-	return res
-}
-
 type ResourceTypeDescriptor struct {
 	// Name identifier of this resourceType this maps to the k8s entity and universal name.
 	Name ResourceType
@@ -97,13 +88,12 @@ type ResourceTypeDescriptor struct {
 	KumactlArg string
 	// KumactlListArg the name of the cmdline argument when doing `list`.
 	KumactlListArg string
-	objectType     reflect.Type
-	listType       reflect.Type
 }
 
 func (d ResourceTypeDescriptor) NewObject() Resource {
 	newSpec := proto.Clone(d.Resource.GetSpec())
-	resource := reflect.New(d.objectType).Interface().(Resource)
+	resType := reflect.TypeOf(d.Resource).Elem()
+	resource := reflect.New(resType).Interface().(Resource)
 	if err := resource.SetSpec(newSpec); err != nil {
 		panic(errors.Wrap(err, "could not set spec on the new resource"))
 	}
@@ -111,7 +101,8 @@ func (d ResourceTypeDescriptor) NewObject() Resource {
 }
 
 func (d ResourceTypeDescriptor) NewList() ResourceList {
-	return reflect.New(d.listType).Interface().(ResourceList)
+	listType := reflect.TypeOf(d.ResourceList).Elem()
+	return reflect.New(listType).Interface().(ResourceList)
 }
 
 type TypeFilter interface {
