@@ -2,12 +2,12 @@ package gateway
 
 import (
 	"sort"
-	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
@@ -25,8 +25,7 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 	resources := ResourceAggregator{}
 
 	vh := envoy_routes.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
-		// TODO(jpeach) use separator from envoy names package.
-		envoy_routes.CommonVirtualHost(strings.Join([]string{info.Listener.ResourceName, info.Host.Hostname}, ":")),
+		envoy_routes.CommonVirtualHost(envoy_names.Join(info.Listener.ResourceName, info.Host.Hostname)),
 		envoy_routes.DomainNames(info.Host.Hostname),
 	)
 

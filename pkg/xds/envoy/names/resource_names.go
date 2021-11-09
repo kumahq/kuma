@@ -9,8 +9,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Separator is the separator used in resource names.
+const Separator = ":"
+
+func formatPort(port uint32) string {
+	return strconv.FormatUint(uint64(port), 10)
+}
+
+// Join uses Separator to join the given parts into a resource name.
+func Join(parts ...string) string {
+	return strings.Join(parts, Separator)
+}
+
 func GetLocalClusterName(port uint32) string {
-	return fmt.Sprintf("localhost:%d", port)
+	return Join("localhost", formatPort(port))
 }
 
 func GetSplitClusterName(service string, idx int) string {
@@ -18,7 +30,7 @@ func GetSplitClusterName(service string, idx int) string {
 }
 
 func GetPortForLocalClusterName(cluster string) (uint32, error) {
-	parts := strings.Split(cluster, ":")
+	parts := strings.Split(cluster, Separator)
 	if len(parts) != 2 {
 		return 0, errors.Errorf("failed to  parse local cluster name: %s", cluster)
 	}
@@ -30,49 +42,49 @@ func GetPortForLocalClusterName(cluster string) (uint32, error) {
 }
 
 func GetInboundListenerName(address string, port uint32) string {
-	return fmt.Sprintf("inbound:%s",
-		net.JoinHostPort(address, strconv.FormatUint(uint64(port), 10)))
+	return Join("inbound",
+		net.JoinHostPort(address, formatPort(port)))
 }
 
 func GetOutboundListenerName(address string, port uint32) string {
-	return fmt.Sprintf("outbound:%s",
-		net.JoinHostPort(address, strconv.FormatUint(uint64(port), 10)))
+	return Join("outbound",
+		net.JoinHostPort(address, formatPort(port)))
 }
 
 func GetInboundRouteName(service string) string {
-	return fmt.Sprintf("inbound:%s", service)
+	return Join("inbound", service)
 }
 
 func GetOutboundRouteName(service string) string {
-	return fmt.Sprintf("outbound:%s", service)
+	return Join("outbound", service)
 }
 
 func GetEnvoyAdminClusterName() string {
-	return "kuma:envoy:admin"
+	return Join("kuma", "envoy", "admin")
 }
 
 func GetMetricsHijackerClusterName() string {
-	return "kuma:metrics:hijacker"
+	return Join("kuma", "metrics", "hijacker")
 }
 
 func GetPrometheusListenerName() string {
-	return "kuma:metrics:prometheus"
+	return Join("kuma", "metrics", "prometheus")
 }
 
 func GetAdminListenerName() string {
-	return "kuma:envoy:admin"
+	return Join("kuma", "envoy", "admin")
 }
 
 func GetTracingClusterName(backendName string) string {
-	return fmt.Sprintf("tracing:%s", backendName)
+	return Join("tracing", backendName)
 }
 
 func GetDNSListenerName() string {
-	return "kuma:dns"
+	return Join("kuma", "dns")
 }
 
 func GetGatewayListenerName(gatewayName string, protoName string, port uint32) string {
-	return strings.Join([]string{gatewayName, protoName, strconv.Itoa(int(port))}, ":")
+	return Join(gatewayName, protoName, formatPort(port))
 }
 
 // GetSecretName constructs a secret name that has a good chance of being
@@ -87,5 +99,5 @@ func GetGatewayListenerName(gatewayName string, protoName string, port uint32) s
 //
 // identifier is a name that should be unique within a category and scope.
 func GetSecretName(category string, scope string, identifier string) string {
-	return strings.Join([]string{category, scope, identifier}, ":")
+	return Join(category, scope, identifier)
 }
