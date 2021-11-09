@@ -27,6 +27,14 @@ func MarshalAnyDeterministic(pb proto.Message) (*any.Any, error) {
 	return &any.Any{TypeUrl: googleApis + proto.MessageName(pb), Value: buffer.Bytes()}, nil
 }
 
+func MustMarshalAny(pb proto.Message) *any.Any {
+	msg, err := MarshalAnyDeterministic(pb)
+	if err != nil {
+		panic(err.Error())
+	}
+	return msg
+}
+
 func UnmarshalAnyTo(src *anypb.Any, dst proto2.Message) error {
 	return anypb.UnmarshalTo(src, dst, proto2.UnmarshalOptions{})
 }
