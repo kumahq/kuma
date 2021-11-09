@@ -25,14 +25,13 @@ func (g *GrpcStatsConfigurer) Configure(filterChain *envoy_listener.FilterChain)
 		return err
 	}
 	return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-		manager.HttpFilters = append([]*envoy_hcm.HttpFilter{
-			{
+		manager.HttpFilters = append(manager.HttpFilters,
+			&envoy_hcm.HttpFilter{
 				Name: "envoy.filters.http.grpc_stats",
 				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
 					TypedConfig: pbst,
 				},
-			},
-		}, manager.HttpFilters...)
+			})
 		return nil
 	})
 }
