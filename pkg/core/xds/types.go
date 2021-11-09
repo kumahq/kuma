@@ -122,13 +122,14 @@ const (
 )
 
 type Proxy struct {
-	Id          ProxyId
-	APIVersion  envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
-	Dataplane   *core_mesh.DataplaneResource
-	ZoneIngress *core_mesh.ZoneIngressResource
-	Metadata    *DataplaneMetadata
-	Routing     Routing
-	Policies    MatchedPolicies
+	Id                  ProxyId
+	APIVersion          envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
+	Dataplane           *core_mesh.DataplaneResource
+	ZoneIngress         *core_mesh.ZoneIngressResource
+	Metadata            *DataplaneMetadata
+	Routing             Routing
+	Policies            MatchedPolicies
+	ServiceTLSReadiness map[string]bool
 }
 
 type VIPDomains struct {

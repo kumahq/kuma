@@ -10,7 +10,6 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/tls"
 	"github.com/kumahq/kuma/pkg/util/test"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -55,12 +54,6 @@ var _ = Describe("kumactl install control-plane", func() {
 			rootCtx.InstallCpContext.Args.ControlPlane_image_tag = "0.0.1"
 			rootCtx.InstallCpContext.Args.DataPlane_image_tag = "0.0.1"
 			rootCtx.InstallCpContext.Args.DataPlane_initImage_tag = "0.0.1"
-			rootCtx.InstallCpContext.NewSelfSignedCert = func(string, tls.CertType, ...string) (tls.KeyPair, error) {
-				return tls.KeyPair{
-					CertPEM: []byte("CERT"),
-					KeyPEM:  []byte("KEY"),
-				}, nil
-			}
 
 			// given
 			rootCmd := cmd.NewRootCmd(rootCtx)

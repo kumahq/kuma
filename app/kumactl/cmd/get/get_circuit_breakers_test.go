@@ -142,15 +142,10 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 
 		DescribeTable("kumactl get circuit-breakers -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "circuit-breakers"}, given.outputFormat, given.pagination))
-
 				// when
-				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
+				Expect(
+					ExecuteRootCommand(rootCmd, "circuit-breakers", given.outputFormat, given.pagination),
+				).To(Succeed())
 
 				// when
 				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))

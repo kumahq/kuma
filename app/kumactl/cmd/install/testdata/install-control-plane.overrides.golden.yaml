@@ -862,6 +862,8 @@ spec:
           image: "kuma-ci/kuma-cp:greatest"
           imagePullPolicy: Never
           env:
+            - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
+              value: "false"
             - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
               value: "/var/run/secrets/kuma.io/api-server-client-certs/"
             - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE

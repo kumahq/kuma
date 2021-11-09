@@ -1,22 +1,22 @@
 package tls
 
 import (
-	"bytes"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
 	"math/big"
 	"net"
 	"time"
 
 	"github.com/pkg/errors"
+
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
 var (
-	DefaultRsaBits        = 2048
 	DefaultValidityPeriod = 10 * 365 * 24 * time.Hour
 )
 
@@ -27,8 +27,20 @@ const (
 	ClientCertType CertType = "client"
 )
 
-func NewSelfSignedCert(commonName string, certType CertType, hosts ...string) (KeyPair, error) {
-	key, err := rsa.GenerateKey(rand.Reader, DefaultRsaBits)
+type KeyType func() (crypto.Signer, error)
+
+var ECDSAKeyType KeyType = func() (crypto.Signer, error) {
+	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+}
+
+var RSAKeyType KeyType = func() (crypto.Signer, error) {
+	return util_rsa.GenerateKey(util_rsa.DefaultKeySize)
+}
+
+var DefaultKeyType = RSAKeyType
+
+func NewSelfSignedCert(commonName string, certType CertType, keyType KeyType, hosts ...string) (KeyPair, error) {
+	key, err := keyType()
 	if err != nil {
 		return KeyPair{}, errors.Wrap(err, "failed to generate TLS key")
 	}
@@ -38,7 +50,7 @@ func NewSelfSignedCert(commonName string, certType CertType, hosts ...string) (K
 		return KeyPair{}, err
 	}
 
-	keyBytes, err := marshalKey(key)
+	keyBytes, err := pemEncodeKey(key)
 	if err != nil {
 		return KeyPair{}, err
 	}
@@ -58,11 +70,7 @@ func generateCert(signer crypto.Signer, commonName string, certType CertType, ho
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate TLS certificate")
 	}
-	var certBuf bytes.Buffer
-	if err := pem.Encode(&certBuf, &pem.Block{Type: "CERTIFICATE", Bytes: certDerBytes}); err != nil {
-		return nil, errors.Wrap(err, "failed to PEM encode TLS certificate")
-	}
-	return certBuf.Bytes(), nil
+	return pemEncodeCert(certDerBytes)
 }
 
 func newCert(commonName string, certType CertType, hosts ...string) (x509.Certificate, error) {
@@ -82,7 +90,7 @@ func newCert(commonName string, certType CertType, hosts ...string) (x509.Certif
 		NotAfter:              notAfter,
 		IsCA:                  true,
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		ExtKeyUsage:           []x509.ExtKeyUsage{},
 		BasicConstraintsValid: true,
 	}
 	switch certType {
@@ -91,7 +99,8 @@ func newCert(commonName string, certType CertType, hosts ...string) (x509.Certif
 	case ClientCertType:
 		csr.ExtKeyUsage = append(csr.ExtKeyUsage, x509.ExtKeyUsageClientAuth)
 	default:
-		return x509.Certificate{}, errors.Errorf("invalid type of CertType: %q. Expected either %q or %q", certType, ServerCertType, ClientCertType)
+		return x509.Certificate{}, errors.Errorf("invalid certificate type %q, expected either %q or %q",
+			certType, ServerCertType, ClientCertType)
 	}
 	for _, host := range hosts {
 		if ip := net.ParseIP(host); ip != nil {
@@ -101,19 +110,4 @@ func newCert(commonName string, certType CertType, hosts ...string) (x509.Certif
 		}
 	}
 	return csr, nil
-}
-
-func marshalKey(priv interface{}) ([]byte, error) {
-	var block *pem.Block
-	switch k := priv.(type) {
-	case *rsa.PrivateKey:
-		block = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
-	default:
-		return nil, errors.Errorf("unsupported private key type %T", priv)
-	}
-	var keyBuf bytes.Buffer
-	if err := pem.Encode(&keyBuf, block); err != nil {
-		return nil, err
-	}
-	return keyBuf.Bytes(), nil
 }

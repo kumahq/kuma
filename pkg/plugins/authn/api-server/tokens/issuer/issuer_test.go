@@ -24,6 +24,7 @@ import (
 var _ = Describe("User token issuer", func() {
 
 	var issuer UserTokenIssuer
+	var validator UserTokenValidator
 	var store core_store.ResourceStore
 	var signingKeyManager SigningKeyManager
 
@@ -33,7 +34,8 @@ var _ = Describe("User token issuer", func() {
 		store = memory.NewStore()
 		secretManager := secret_manager.NewGlobalSecretManager(secret_store.NewSecretStore(store), cipher.None())
 		signingKeyManager = NewSigningKeyManager(secretManager)
-		issuer = NewUserTokenIssuer(signingKeyManager, NewTokenRevocations(secretManager))
+		issuer = NewUserTokenIssuer(signingKeyManager)
+		validator = NewUserTokenValidator(NewSigningKeyAccessor(secretManager), NewTokenRevocations(secretManager))
 
 		Expect(signingKeyManager.CreateDefaultSigningKey()).To(Succeed())
 		core.Now = func() time.Time {
@@ -61,7 +63,7 @@ var _ = Describe("User token issuer", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		_, err = issuer.Validate(token1)
+		_, err = validator.Validate(token1)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when new signing key with higher serial number is created
@@ -73,9 +75,9 @@ var _ = Describe("User token issuer", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then all tokens are valid because 2 signing keys are present in the system
-		_, err = issuer.Validate(token1)
+		_, err = validator.Validate(token1)
 		Expect(err).ToNot(HaveOccurred())
-		_, err = issuer.Validate(token2)
+		_, err = validator.Validate(token2)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when first signing key is deleted
@@ -83,11 +85,11 @@ var _ = Describe("User token issuer", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then old tokens are no longer valid
-		_, err = issuer.Validate(token1)
-		Expect(err).To(MatchError("could not parse token: could not get signing key with serial number 1. The signing key most likely has been rotated, regenerate the token: there is no signing key in the Control Plane"))
+		_, err = validator.Validate(token1)
+		Expect(err).To(MatchError(`there is no signing key with serial number 1. GlobalSecret of name "user-token-signing-key-1" is not found. If signing key was rotated, regenerate the token`))
 
 		// and new token is valid because new signing key is present
-		_, err = issuer.Validate(token2)
+		_, err = validator.Validate(token2)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -102,7 +104,7 @@ var _ = Describe("User token issuer", func() {
 
 		// when
 		now = now.Add(60*time.Second + 1*time.Second)
-		_, err = issuer.Validate(token)
+		_, err = validator.Validate(token)
 
 		// then
 		Expect(err.Error()).To(ContainSubstring("could not parse token: token is expired"))
@@ -117,7 +119,7 @@ var _ = Describe("User token issuer", func() {
 
 		token, err := issuer.Generate(id, 60*time.Second)
 		Expect(err).ToNot(HaveOccurred())
-		_, err = issuer.Validate(token)
+		_, err = validator.Validate(token)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when id of the token is added to revocation list
@@ -136,7 +138,7 @@ var _ = Describe("User token issuer", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		_, err = issuer.Validate(token)
+		_, err = validator.Validate(token)
 		Expect(err).To(MatchError("token is revoked"))
 	})
 })

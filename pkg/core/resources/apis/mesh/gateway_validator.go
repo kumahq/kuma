@@ -77,6 +77,10 @@ func validateGatewayConf(path validators.PathBuilder, conf *mesh_proto.Gateway_C
 			mesh_proto.Gateway_Listener_TCP,
 			mesh_proto.Gateway_Listener_TLS:
 			err.AddViolationAt(path.Index(i).Field("protocol"), "protocol type is not supported")
+		case mesh_proto.Gateway_Listener_HTTPS:
+			if l.GetTls() == nil {
+				err.AddViolationAt(path.Index(i).Field("tls"), "cannot be empty")
+			}
 		}
 
 		if tls := l.GetTls(); tls != nil {
@@ -86,16 +90,23 @@ func validateGatewayConf(path validators.PathBuilder, conf *mesh_proto.Gateway_C
 					path.Index(i).Field("tls").Field("mode"),
 					"cannot be empty")
 			case mesh_proto.Gateway_TLS_PASSTHROUGH:
-				if tls.GetCertificate() != nil {
+				if len(tls.GetCertificates()) > 0 {
 					err.AddViolationAt(
-						path.Index(i).Field("tls").Field("certificate"),
+						path.Index(i).Field("tls").Field("certificates"),
 						"must be empty in TLS passthrough mode")
 				}
 			case mesh_proto.Gateway_TLS_TERMINATE:
-				if tls.GetCertificate() == nil {
+				switch len(tls.GetCertificates()) {
+				case 0:
 					err.AddViolationAt(
-						path.Index(i).Field("tls").Field("certificate"),
+						path.Index(i).Field("tls").Field("certificates"),
 						"cannot be empty in TLS termination mode")
+				case 1, 2:
+					// Can have RSA and/or ECDSA certificates.
+				default:
+					err.AddViolationAt(
+						path.Index(i).Field("tls").Field("certificates"),
+						"cannot have more than 2 certificates")
 				}
 			}
 		}

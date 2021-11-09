@@ -20,6 +20,7 @@ func NewGetResourcesCmd(pctx *kumactl_cmd.RootContext, desc model.ResourceTypeDe
 		Use:   desc.KumactlListArg,
 		Short: fmt.Sprintf("Show %s", desc.Name),
 		Long:  fmt.Sprintf("Show %s entities.", desc.Name),
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {

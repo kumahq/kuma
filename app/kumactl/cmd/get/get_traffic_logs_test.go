@@ -115,15 +115,10 @@ var _ = Describe("kumactl get traffic-logs", func() {
 
 		DescribeTable("kumactl get traffic-logs -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "traffic-logs"}, given.outputFormat, given.pagination))
-
 				// when
-				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
+				Expect(
+					ExecuteRootCommand(rootCmd, "traffic-logs", given.outputFormat, given.pagination),
+				).To(Succeed())
 
 				// when
 				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))

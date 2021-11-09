@@ -3,6 +3,7 @@ package generator
 import (
 	net_url "net/url"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -60,9 +61,11 @@ func (t TracingProxyGenerator) zipkinCluster(backend *mesh_proto.TracingBackend,
 		return nil, err
 	}
 
+	isHttps := strings.HasPrefix(cfg.Url, "https://")
+
 	clusterName := names.GetTracingClusterName(backend.Name)
 	cluster, err := clusters.NewClusterBuilder(apiVersion).
-		Configure(clusters.DNSCluster(clusterName, url.Hostname(), uint32(port))).
+		Configure(clusters.DNSCluster(clusterName, url.Hostname(), uint32(port), isHttps)).
 		Build()
 	if err != nil {
 		return nil, err
@@ -84,10 +87,11 @@ func (t TracingProxyGenerator) datadogCluster(backend *mesh_proto.TracingBackend
 	if cfg.Port > 0xFFFF || cfg.Port < 1 {
 		return nil, errors.Errorf("invalid Datadog port number %d. Must be in range 1-65535", cfg.Port)
 	}
+	isHttps := strings.HasPrefix(cfg.Address, "https://")
 
 	clusterName := names.GetTracingClusterName(backend.Name)
 	cluster, err := clusters.NewClusterBuilder(apiVersion).
-		Configure(clusters.DNSCluster(clusterName, cfg.Address, cfg.Port)).
+		Configure(clusters.DNSCluster(clusterName, cfg.Address, cfg.Port, isHttps)).
 		Build()
 	if err != nil {
 		return nil, err

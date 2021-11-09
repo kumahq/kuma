@@ -77,7 +77,7 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 	env := []string{}
 
 	// ceritficates
-	cert, key, err := framework.CreateCertsFor([]string{"localhost", ip, name})
+	cert, key, err := framework.CreateCertsFor("localhost", ip, name)
 	if err != nil {
 		return err
 	}

@@ -28,14 +28,13 @@ func (r *RateLimitConfigurer) Configure(filterChain *envoy_listener.FilterChain)
 	}
 
 	return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-		manager.HttpFilters = append([]*envoy_hcm.HttpFilter{
-			{
+		manager.HttpFilters = append(manager.HttpFilters,
+			&envoy_hcm.HttpFilter{
 				Name: "envoy.filters.http.local_ratelimit",
 				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
 					TypedConfig: pbst,
 				},
-			},
-		}, manager.HttpFilters...)
+			})
 		return nil
 	})
 }

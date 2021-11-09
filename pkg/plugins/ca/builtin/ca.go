@@ -3,7 +3,6 @@ package builtin
 import (
 	"crypto"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"math/big"
@@ -16,10 +15,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
 const (
-	DefaultRsaBits              = 2048
 	DefaultAllowedClockSkew     = 10 * time.Second
 	DefaultCACertValidityPeriod = 10 * 365 * 24 * time.Hour
 )
@@ -35,9 +34,9 @@ func withExpirationTime(expiration time.Duration) certOptsFn {
 
 func newRootCa(mesh string, rsaBits int, certOpts ...certOptsFn) (*core_ca.KeyPair, error) {
 	if rsaBits == 0 {
-		rsaBits = DefaultRsaBits
+		rsaBits = util_rsa.DefaultKeySize
 	}
-	key, err := rsa.GenerateKey(rand.Reader, rsaBits)
+	key, err := util_rsa.GenerateKey(rsaBits)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate a private key")
 	}

@@ -13,6 +13,7 @@ func newConfigControlPlanesListCmd(pctx *kumactl_cmd.RootContext) *cobra.Command
 		Use:   "list",
 		Short: "List Control Planes",
 		Long:  `List Control Planes.`,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			context, _ := pctx.CurrentContext()
 

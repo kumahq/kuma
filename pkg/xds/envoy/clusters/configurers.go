@@ -22,12 +22,13 @@ func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBui
 	})
 }
 
-func ClientSideMTLS(ctx xds_context.Context, upstreamService string, tags []envoy.Tags) ClusterBuilderOpt {
+func ClientSideMTLS(ctx xds_context.Context, upstreamService string, upstreamTLSReady bool, tags []envoy.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
-			Ctx:             ctx,
-			UpstreamService: upstreamService,
-			Tags:            tags,
+			Ctx:              ctx,
+			UpstreamService:  upstreamService,
+			Tags:             tags,
+			UpstreamTLSReady: upstreamTLSReady,
 		})
 	})
 }
@@ -36,9 +37,10 @@ func ClientSideMTLS(ctx xds_context.Context, upstreamService string, tags []envo
 func UnknownDestinationClientSideMTLS(ctx xds_context.Context) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
-			Ctx:             ctx,
-			UpstreamService: "*",
-			Tags:            nil,
+			Ctx:              ctx,
+			UpstreamService:  "*",
+			Tags:             nil,
+			UpstreamTLSReady: true,
 		})
 	})
 }
@@ -51,12 +53,13 @@ func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
 	})
 }
 
-func DNSCluster(name string, address string, port uint32) ClusterBuilderOpt {
+func DNSCluster(name string, address string, port uint32, isHttps bool) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.DnsClusterConfigurer{
 			Name:    name,
 			Address: address,
 			Port:    port,
+			IsHttps: isHttps,
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
 		config.AddV3(&v3.TimeoutConfigurer{})

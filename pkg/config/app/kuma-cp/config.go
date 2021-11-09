@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config/access"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -16,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
-	"github.com/kumahq/kuma/pkg/config/rbac"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 )
@@ -141,8 +141,8 @@ type Config struct {
 	Diagnostics *diagnostics.DiagnosticsConfig `yaml:"diagnostics,omitempty"`
 	// Dataplane Server configuration
 	DpServer *dp_server.DpServerConfig `yaml:"dpServer"`
-	// Role-Based Access Control configuration
-	RBAC rbac.RBACConfig `yaml:"rbac"`
+	// Access Control configuration
+	Access access.AccessConfig `yaml:"access"`
 }
 
 func (c *Config) Sanitize() {
@@ -161,7 +161,7 @@ func (c *Config) Sanitize() {
 	c.Diagnostics.Sanitize()
 }
 
-func DefaultConfig() Config {
+var DefaultConfig = func() Config {
 	return Config{
 		Environment:                core.UniversalEnvironment,
 		Mode:                       core.Standalone,
@@ -199,7 +199,7 @@ func DefaultConfig() Config {
 		Multizone:   multizone.DefaultMultizoneConfig(),
 		Diagnostics: diagnostics.DefaultDiagnosticsConfig(),
 		DpServer:    dp_server.DefaultDpServerConfig(),
-		RBAC:        rbac.DefaultRBACConfig(),
+		Access:      access.DefaultAccessConfig(),
 	}
 }
 

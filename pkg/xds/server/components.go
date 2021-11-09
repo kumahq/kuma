@@ -22,7 +22,6 @@ var (
 	HashMeshExcludedResources = map[core_model.ResourceType]bool{
 		core_mesh.DataplaneInsightType:  true,
 		core_mesh.DataplaneOverviewType: true,
-		core_mesh.ServiceInsightType:    true,
 	}
 	HashMeshIncludedGlobalResources = map[core_model.ResourceType]bool{
 		core_system.ConfigType:       true,
