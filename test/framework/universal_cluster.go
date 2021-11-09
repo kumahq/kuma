@@ -139,12 +139,9 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	c.apps[AppModeCP] = app
 
-	var token string
-	if opts.env["KUMA_API_SERVER_AUTHN_TYPE"] == "tokens" {
-		token, err = c.retrieveAdminToken()
-		if err != nil {
-			return err
-		}
+	token, err := c.retrieveAdminToken()
+	if err != nil {
+		return err
 	}
 
 	if err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(

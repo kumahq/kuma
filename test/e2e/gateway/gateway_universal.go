@@ -316,13 +316,7 @@ networking:
 
 	Context("when targeting a HTTPS gateway", func() {
 		BeforeEach(func() {
-			// We need kumactl admin access to deploy a secret. Enabling token auth
-			// is the easiest way to get that from here.
-			DeployCluster(
-				append(KumaUniversalDeployOpts,
-					WithEnv("KUMA_API_SERVER_AUTHN_TYPE", "tokens"),
-				)...,
-			)
+			DeployCluster(KumaUniversalDeployOpts...)
 		})
 
 		JustBeforeEach(func() {
