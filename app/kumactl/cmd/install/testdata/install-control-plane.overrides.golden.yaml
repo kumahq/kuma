@@ -912,6 +912,10 @@ spec:
               value: "kuma"
             - name: KUMA_STORE_TYPE
               value: "kubernetes"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           args:
             - run
             - --log-level=info
