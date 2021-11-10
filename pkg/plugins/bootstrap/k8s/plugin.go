@@ -2,13 +2,17 @@ package k8s
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/operator-framework/operator-lib/leader"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -49,24 +53,40 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 			Scheme:   scheme,
 			NewCache: kuma_kube_cache.New,
 			// Admission WebHook Server
+<<<<<<< HEAD
 			Host:                    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
 			Port:                    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
 			CertDir:                 b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
 			LeaderElection:          true,
 			LeaderElectionID:        "kuma-cp-leader",
 			LeaderElectionNamespace: b.Config().Store.Kubernetes.SystemNamespace,
+=======
+			Host:           b.Config().Runtime.Kubernetes.AdmissionServer.Address,
+			Port:           int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
+			CertDir:        b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
+			LeaderElection: false,
+
+			// Disable metrics bind address as we serve metrics some other way.
+			MetricsBindAddress: "0",
+>>>>>>> f5b2b27e (fix(kuma-cp) switch leader election to leader-for-life (#3023))
 		},
 	)
 	if err != nil {
 		return err
 	}
 
+<<<<<<< HEAD
 	secretClient, err := secretClient(b.AppCtx(), b.Config().Store.Kubernetes.SystemNamespace, config, scheme, mgr.GetRESTMapper())
+=======
+	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
+
+	secretClient, err := createSecretClient(b.AppCtx(), scheme, systemNamespace, config, mgr.GetRESTMapper())
+>>>>>>> f5b2b27e (fix(kuma-cp) switch leader election to leader-for-life (#3023))
 	if err != nil {
 		return err
 	}
 
-	b.WithComponentManager(&kubeComponentManager{mgr})
+	b.WithComponentManager(&kubeComponentManager{mgr, systemNamespace, nil})
 	b.WithExtensions(k8s_extensions.NewManagerContext(b.Extensions(), mgr))
 	b.WithExtensions(k8s_extensions.NewSecretClientContext(b.Extensions(), secretClient))
 	if expTime := b.Config().Runtime.Kubernetes.MarshalingCacheExpirationTime; expTime > 0 {
@@ -137,10 +157,146 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 
 type kubeComponentManager struct {
 	kube_ctrl.Manager
+	oldLeaderElectionNamespace string
+	leaderComponents           []component.Component
 }
 
 var _ component.Manager = &kubeComponentManager{}
 
+<<<<<<< HEAD
+=======
+type leaderAnnotation struct {
+	HolderIdentity       string `json:"holderIdentity"`
+	LeaseDurationSeconds int    `json:"leaseDurationSeconds"`
+	AcquireTime          string `json:"acquireTime"`
+	RenewTime            string `json:"renewTime"`
+	LeaderTransitions    int    `json:"leaderTransistions"`
+}
+
+var blockerHolderId = "cp-leader-lock-transition"
+var oldLeaderConfigMapName = "kuma-cp-leader"
+
+func makeOldLockAnnotation() string {
+	nowStr := time.Now().Format(time.RFC3339)
+	annot := &leaderAnnotation{
+		HolderIdentity:       blockerHolderId,
+		LeaseDurationSeconds: 99999999999999999,
+		AcquireTime:          nowStr,
+		RenewTime:            nowStr,
+		LeaderTransitions:    0,
+	}
+
+	annotJson, _ := json.Marshal(annot)
+	return string(annotJson)
+}
+
+// Previous versions of kuma-cp used a timeout lock for leader election. We now
+// keep the election for the lifetime of the pod. This function forces any previous
+// style leader to see itself as having lost its election, and locks out any
+// further old leaders.
+//
+// Only call this after acquiring new-style leader election, so as to only contend
+// with old leaders over old locks.
+func (cm *kubeComponentManager) forceTakeOldLock(ctx context.Context) error {
+	log.Info("checking for deprecated leader locks")
+	client := cm.Manager.GetClient()
+	ns := cm.oldLeaderElectionNamespace
+
+	pod := &kube_core.Pod{}
+	if err := client.Get(ctx, kube_client.ObjectKey{
+		Namespace: ns,
+		Name:      os.Getenv("POD_NAME"),
+	}, pod); err != nil {
+		log.Error(err, "unable to retrieve this pod")
+		return err
+	}
+
+	owner := &metav1.OwnerReference{
+		APIVersion: "v1",
+		Kind:       "Pod",
+		Name:       pod.ObjectMeta.Name,
+		UID:        pod.ObjectMeta.UID,
+	}
+
+	var mustWait = false
+
+	for {
+		newLock := &kube_core.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            oldLeaderConfigMapName,
+				Namespace:       ns,
+				OwnerReferences: []metav1.OwnerReference{*owner},
+				Annotations: map[string]string{
+					"control-plane.alpha.kubernetes.io/leader": makeOldLockAnnotation(),
+				},
+			},
+		}
+
+		// Numerous potential races between new and old CP leader in this loop. Just keep
+		// trying to grab the lock until it succeeds. Since the old leader will
+		// politely die when we acquire lock, and we are relentless, we will eventually
+		// prevail.
+
+		err := client.Create(ctx, newLock)
+		switch {
+		case err == nil:
+			// Acquired old lock.
+			if mustWait {
+				log.Info("waiting 30 seconds for old leader to terminate")
+				time.Sleep(30 * time.Second)
+			}
+			return nil
+		case apierrors.IsAlreadyExists(err):
+			log.Info("existing deprecated lock found; stealing")
+			mustWait = true
+
+			existing := &kube_core.ConfigMap{}
+			key := kube_client.ObjectKey{Namespace: ns, Name: oldLeaderConfigMapName}
+			err = client.Get(ctx, key, existing)
+			if err != nil {
+				log.Error(err, "error reading old lock; trying again")
+				break
+			}
+
+			err := client.Delete(ctx, existing)
+			if err != nil {
+				log.Error(err, "error deleting old lock; trying again")
+			}
+		default:
+			log.Error(err, "error creating ConfigMap; trying again")
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		defer cancel()
+		<-done
+	}()
+
+	go func() {
+		if err := leader.Become(ctx, "cp-leader"); err != nil {
+			log.Error(err, "leader lock failure")
+			os.Exit(1)
+		}
+		// This CP will now be leader. But first, destroy deprecated leader lock,
+		// forcing any old leaders to restart as non-leaders.
+		if err := cm.forceTakeOldLock(ctx); err != nil {
+			log.Error(err, "error attempting to clean up deprecated lock")
+			os.Exit(1)
+		}
+		for _, c := range cm.leaderComponents {
+			if err := cm.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
+				log.Error(err, "add component error")
+			}
+		}
+	}()
+	return cm.Manager.Start(ctx)
+}
+
+>>>>>>> f5b2b27e (fix(kuma-cp) switch leader election to leader-for-life (#3023))
 // Extra check that component.Component implements LeaderElectionRunnable so the leader election works so we won't break leader election on K8S when refactoring component.Component
 var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-chan struct{}) error {
 	return nil
@@ -148,7 +304,13 @@ var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-cha
 
 func (k *kubeComponentManager) Add(components ...component.Component) error {
 	for _, c := range components {
+<<<<<<< HEAD
 		if err := k.Manager.Add(c); err != nil {
+=======
+		if c.NeedLeaderElection() {
+			k.leaderComponents = append(k.leaderComponents, c)
+		} else if err := k.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
+>>>>>>> f5b2b27e (fix(kuma-cp) switch leader election to leader-for-life (#3023))
 			return err
 		}
 	}

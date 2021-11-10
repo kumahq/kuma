@@ -54,6 +54,10 @@ spec:
                   name: {{ $element.Secret }}
                   key: {{ $element.Key }}
           {{- end }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           args:
             - run
             - --log-level={{ .Values.controlPlane.logLevel }}

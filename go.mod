@@ -20,7 +20,11 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.2.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
+<<<<<<< HEAD
 	github.com/gruntwork-io/terratest v0.30.15
+=======
+	github.com/gruntwork-io/terratest v0.38.2
+>>>>>>> f5b2b27e (fix(kuma-cp) switch leader election to leader-for-life (#3023))
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
@@ -30,7 +34,12 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/miekg/dns v1.1.43
 	github.com/onsi/ginkgo v1.16.5
+<<<<<<< HEAD
 	github.com/onsi/gomega v1.16.0
+=======
+	github.com/operator-framework/operator-lib v0.8.0
+	github.com/onsi/gomega v1.17.0
+>>>>>>> f5b2b27e (fix(kuma-cp) switch leader election to leader-for-life (#3023))
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
