@@ -203,7 +203,7 @@ var _ = Describe("Mesh Manager", func() {
 			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
 
 			// then
-			Expect(err).To(MatchError("mtls.backends[0].config.cert: has to be defined; mtls.backends[0].config.key: has to be defined"))
+			Expect(err).To(MatchError("mtls.backends[0].conf.cert: has to be defined; mtls.backends[0].conf.key: has to be defined"))
 		})
 	})
 
