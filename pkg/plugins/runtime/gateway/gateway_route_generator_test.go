@@ -848,10 +848,92 @@ conf:
           kuma.io/service: external-httpbin
 `,
 		),
+
+		Entry("generates policy-specific clusters",
+			"20-gateway-route.yaml",
+			`
+# Rewrite the dataplane to attach the "gateway-multihost" Gateway.
+type: Dataplane
+mesh: default
+name: default
+networking:
+  address: 192.168.1.1
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: gateway-multihost
+`, `
+type: GatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-multihost
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`, `
+type: Timeout
+mesh: default
+name: host-one-timeout
+sources:
+- match:
+    kuma.io/service: gateway-multihost
+    hostname: one.example.com
+destinations:
+- match:
+    kuma.io/service: echo-service
+conf:
+  connect_timeout: 10s
+  http:
+    request_timeout: 10s
+    idle_timeout: 10s
+`, `
+type: Timeout
+mesh: default
+name: host-two-timeout
+sources:
+- match:
+    kuma.io/service: gateway-multihost
+    hostname: two.example.com
+destinations:
+- match:
+    kuma.io/service: echo-service
+conf:
+  connect_timeout: 20s
+  http:
+    request_timeout: 20s
+    idle_timeout: 20s
+`, `
+type: Timeout
+mesh: default
+name: host-three-timeout
+sources:
+- match:
+    kuma.io/service: gateway-multihost
+    hostname: three.example.com
+destinations:
+- match:
+    kuma.io/service: echo-service
+conf:
+  connect_timeout: 300s
+  http:
+    request_timeout: 30s
+    idle_timeout: 30s
+`,
+		),
 	}
 
 	Context("with a HTTP gateway", func() {
 		JustBeforeEach(func() {
+			Expect(StoreNamedFixture(rt, "gateway-http-multihost.yaml")).To(Succeed())
 			Expect(StoreNamedFixture(rt, "gateway-http-default.yaml")).To(Succeed())
 		})
 		DescribeTable("generating xDS resources",
@@ -869,6 +951,8 @@ conf:
 				Expect(yaml.Marshal(MakeProtoSnapshot(snap))).
 					To(matchers.MatchGoldenYAML(path.Join("testdata", "http", goldenFileName)))
 
+				// then
+				Expect(snap.Consistent()).To(Succeed())
 			},
 			entries...,
 		)
@@ -876,6 +960,7 @@ conf:
 
 	Context("with a HTTPS gateway", func() {
 		JustBeforeEach(func() {
+			Expect(StoreNamedFixture(rt, "gateway-https-multihost.yaml")).To(Succeed())
 			Expect(StoreNamedFixture(rt, "gateway-https-default.yaml")).To(Succeed())
 			Expect(StoreNamedFixture(rt, "secret-https-default.yaml")).To(Succeed())
 		})

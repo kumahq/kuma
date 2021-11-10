@@ -232,11 +232,6 @@ func RouteMirror(percent float64, destination Destination) RouteConfigurer {
 	}
 
 	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
-		clusterName, err := DestinationClusterName(destination)
-		if err != nil {
-			return errors.Wrap(err, "failed to generate mirror cluster name")
-		}
-
 		if r.GetAction() == nil {
 			return errors.New("cannot configure mirroring before the route action")
 		}
@@ -250,7 +245,7 @@ func RouteMirror(percent float64, destination Destination) RouteConfigurer {
 
 		action.RequestMirrorPolicies = append(action.RequestMirrorPolicies,
 			&envoy_config_route.RouteAction_RequestMirrorPolicy{
-				Cluster: clusterName,
+				Cluster: destination.Name,
 				RuntimeFraction: &envoy_config_core.RuntimeFractionalPercent{
 					DefaultValue: envoy_listeners.ConvertPercentage(util_proto.Double(percent)),
 				},
@@ -312,19 +307,12 @@ func RouteActionForward(destinations []Destination) RouteConfigurer {
 		byName := map[string]Destination{}
 
 		for _, d := range destinations {
-			name, err := DestinationClusterName(d)
-			if err != nil {
-				return errors.Wrap(err, "failed to generate forwarding cluster name")
-			}
-
-			byName[name] = d
-
 			// If there's only one destination, force the weight to 100%.
 			if d.Weight == 0 && len(destinations) == 1 {
-				d := byName[name]
 				d.Weight = 1
-				byName[name] = d
 			}
+
+			byName[d.Name] = d
 		}
 
 		var total uint32

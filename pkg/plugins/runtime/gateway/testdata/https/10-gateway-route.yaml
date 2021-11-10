@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    exact-header-match:
+    exact-header-match-f6b57a6b55557c81:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -12,7 +12,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: exact-header-match
+      name: exact-header-match-f6b57a6b55557c81
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -27,7 +27,7 @@ Clusters:
             idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
-    regex-header-match:
+    regex-header-match-ad0dd92f37b8a38d:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -39,7 +39,7 @@ Clusters:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: regex-header-match
+      name: regex-header-match-ad0dd92f37b8a38d
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -56,8 +56,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    exact-header-match:
-      clusterName: exact-header-match
+    exact-header-match-f6b57a6b55557c81:
+      clusterName: exact-header-match-f6b57a6b55557c81
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -72,8 +72,8 @@ Endpoints:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    regex-header-match:
-      clusterName: regex-header-match
+    regex-header-match-ad0dd92f37b8a38d:
+      clusterName: regex-header-match-ad0dd92f37b8a38d
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -193,7 +193,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: regex-header-match
+              - name: regex-header-match-ad0dd92f37b8a38d
                 weight: 1
               totalWeight: 1
         - match:
@@ -203,7 +203,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: exact-header-match
+              - name: exact-header-match-f6b57a6b55557c81
                 weight: 1
               totalWeight: 1
         - match:
@@ -213,7 +213,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: exact-header-match
+              - name: exact-header-match-f6b57a6b55557c81
                 weight: 1
               totalWeight: 1
 Runtimes:

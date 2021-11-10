@@ -91,6 +91,11 @@ type Destination struct {
 	Destination envoy.Tags
 	Weight      uint32
 
+	// Name is the globally unique name for this destination instance.
+	// It takes into account not only the service that it targets, but
+	// also the configuration context.
+	Name string
+
 	// Kuma connection policies for traffic forwarded to
 	// this destination.
 	Policies map[model.ResourceType]model.Resource

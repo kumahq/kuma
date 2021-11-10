@@ -1,6 +1,6 @@
 Clusters:
   Resources:
-    external-httpbin:
+    external-httpbin-241b25f6d3fc3b49:
       circuitBreakers:
         thresholds:
         - maxConnections: 1024
@@ -27,7 +27,7 @@ Clusters:
                 envoy.transport_socket_match:
                   kuma.io/external-service-name: external-httpbin
                   kuma.io/protocol: http2
-      name: external-httpbin
+      name: external-httpbin-241b25f6d3fc3b49
       outlierDetection:
         enforcingConsecutive5xx: 0
         enforcingConsecutiveGatewayFailure: 0
@@ -123,7 +123,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: external-httpbin
+              - name: external-httpbin-241b25f6d3fc3b49
                 weight: 1
               totalWeight: 1
 Runtimes:

@@ -176,23 +176,20 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 					continue
 				}
 
-				generated, err := generator.GenerateHost(ctx, &info)
-				if err != nil {
+				if err := resources.AddSet(generator.GenerateHost(ctx, &info)); err != nil {
 					return nil, errors.Wrapf(err, "%T failed to generate resources for dataplane %q",
 						generator, proxy.Id)
 				}
-
-				resources.AddSet(generated)
 			}
 		}
 
 		info.Resources.Listener.Configure(envoy_listeners.FilterChain(info.Resources.FilterChain))
 
-		if err := resources.Add(BuildResourceSet(info.Resources.Listener)); err != nil {
+		if err := resources.AddSet(BuildResourceSet(info.Resources.Listener)); err != nil {
 			return nil, errors.Wrapf(err, "failed to build listener resource")
 		}
 
-		if err := resources.Add(BuildResourceSet(info.Resources.RouteConfiguration)); err != nil {
+		if err := resources.AddSet(BuildResourceSet(info.Resources.RouteConfiguration)); err != nil {
 			return nil, errors.Wrapf(err, "failed to build route configuration resource")
 		}
 	}

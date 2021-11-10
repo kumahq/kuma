@@ -67,6 +67,10 @@ func (*HTTPFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *Gat
 	// HTTP listeners get a single filter chain for all hostnames. So
 	// if there's already a filter chain, we have nothing to do.
 	if info.Resources.FilterChain != nil {
+		log.V(1).Info("updating existing filter chain",
+			"hostname", info.Host.Hostname,
+		)
+
 		return nil, nil
 	}
 

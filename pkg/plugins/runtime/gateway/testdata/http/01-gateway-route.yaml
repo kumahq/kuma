@@ -1,12 +1,12 @@
 Clusters:
   Resources:
-    echo-service:
+    echo-service-07fd732a85aa6a99:
       connectTimeout: 10s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service
+      name: echo-service-07fd732a85aa6a99
       type: EDS
       typedExtensionProtocolOptions:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -17,8 +17,8 @@ Clusters:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    echo-service:
-      clusterName: echo-service
+    echo-service-07fd732a85aa6a99:
+      clusterName: echo-service-07fd732a85aa6a99
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -101,7 +101,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: echo-service
+              - name: echo-service-07fd732a85aa6a99
                 weight: 1
               totalWeight: 1
       - domains:
@@ -113,7 +113,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: echo-service
+              - name: echo-service-07fd732a85aa6a99
                 weight: 1
               totalWeight: 1
       - domains:
@@ -125,7 +125,7 @@ Routes:
           route:
             weightedClusters:
               clusters:
-              - name: echo-service
+              - name: echo-service-07fd732a85aa6a99
                 weight: 1
               totalWeight: 1
       - domains:
