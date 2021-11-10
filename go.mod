@@ -26,11 +26,11 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
 	github.com/kumahq/protoc-gen-kumadoc v0.1.7
-	github.com/lib/pq v1.10.3
+	github.com/lib/pq v1.10.4
 	github.com/miekg/dns v1.1.43
 	github.com/onsi/ginkgo v1.16.5
-	github.com/operator-framework/operator-lib v0.8.0
 	github.com/onsi/gomega v1.17.0
+	github.com/operator-framework/operator-lib v0.8.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
