@@ -154,7 +154,7 @@ type kubeComponentManager struct {
 
 var _ component.Manager = &kubeComponentManager{}
 
-type leaderAnnot struct {
+type leaderAnnotation struct {
 	HolderIdentity       string `json:"holderIdentity"`
 	LeaseDurationSeconds int    `json:"leaseDurationSeconds"`
 	AcquireTime          string `json:"acquireTime"`
@@ -167,7 +167,7 @@ var oldLeaderConfigMapName = "kuma-cp-leader"
 
 func makeOldLockAnnotation() string {
 	nowStr := time.Now().Format(time.RFC3339)
-	annot := &leaderAnnot{
+	annot := &leaderAnnotation{
 		HolderIdentity:       blockerHolderId,
 		LeaseDurationSeconds: 99999999999999999,
 		AcquireTime:          nowStr,
@@ -187,19 +187,16 @@ func makeOldLockAnnotation() string {
 // Only call this after acquiring new-style leader election, so as to only contend
 // with old leaders over old locks.
 func (cm *kubeComponentManager) forceTakeOldLock(ctx context.Context) error {
-	log.Info("Checking for deprecated leader locks.")
+	log.Info("checking for deprecated leader locks")
 	client := cm.Manager.GetClient()
 	ns := cm.oldLeaderElectionNamespace
-	existing := &kube_core.ConfigMap{}
-
-	key := kube_client.ObjectKey{Namespace: ns, Name: oldLeaderConfigMapName}
 
 	pod := &kube_core.Pod{}
 	if err := client.Get(ctx, kube_client.ObjectKey{
 		Namespace: ns,
 		Name:      os.Getenv("POD_NAME"),
 	}, pod); err != nil {
-		log.Error(err, "Unable to retrieve this pod.")
+		log.Error(err, "unable to retrieve this pod")
 		return err
 	}
 
@@ -234,30 +231,30 @@ func (cm *kubeComponentManager) forceTakeOldLock(ctx context.Context) error {
 		case err == nil:
 			// Acquired old lock.
 			if mustWait {
-				log.Info("Waiting 30 seconds for old leader to terminate.")
+				log.Info("waiting 30 seconds for old leader to terminate")
 				time.Sleep(30 * time.Second)
 			}
 			return nil
 		case apierrors.IsAlreadyExists(err):
-			log.Info("Existing deprecated lock found. Stealing.")
+			log.Info("existing deprecated lock found; stealing")
 			mustWait = true
 
+			existing := &kube_core.ConfigMap{}
+			key := kube_client.ObjectKey{Namespace: ns, Name: oldLeaderConfigMapName}
 			err = client.Get(ctx, key, existing)
 			if err != nil {
-				log.Error(err, "Error reading old lock. Trying again.")
-				time.Sleep(1 * time.Second)
-				continue
+				log.Error(err, "error reading old lock; trying again")
+				break
 			}
 
 			err := client.Delete(ctx, existing)
 			if err != nil {
-				log.Error(err, "Error deleting old lock. Trying again.")
-				time.Sleep(1 * time.Second)
+				log.Error(err, "error deleting old lock; trying again")
 			}
 		default:
-			log.Error(err, "Error creating ConfigMap. Trying again.")
-			time.Sleep(1 * time.Second)
+			log.Error(err, "error creating ConfigMap; trying again")
 		}
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -269,21 +266,19 @@ func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 	}()
 
 	go func() {
-		err := leader.Become(ctx, "cp-leader")
-		if err != nil {
-			log.Error(err, "Leader lock failure")
+		if err := leader.Become(ctx, "cp-leader"); err != nil {
+			log.Error(err, "leader lock failure")
 			os.Exit(1)
 		}
 		// This CP will now be leader. But first, destroy deprecated leader lock,
 		// forcing any old leaders to restart as non-leaders.
-		err = cm.forceTakeOldLock(ctx)
-		if err != nil {
-			log.Error(err, "Error attempting to clean up deprecated lock")
+		if err := cm.forceTakeOldLock(ctx); err != nil {
+			log.Error(err, "error attempting to clean up deprecated lock")
 			os.Exit(1)
 		}
 		for _, c := range cm.leaderComponents {
 			if err := cm.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
-				log.Error(err, "Add component error")
+				log.Error(err, "add component error")
 			}
 		}
 	}()
