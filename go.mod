@@ -29,8 +29,8 @@ require (
 	github.com/lib/pq v1.10.3
 	github.com/miekg/dns v1.1.43
 	github.com/onsi/ginkgo v1.16.5
-	github.com/operator-framework/operator-lib v0.8.0
 	github.com/onsi/gomega v1.17.0
+	github.com/operator-framework/operator-lib v0.8.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
@@ -62,7 +62,7 @@ require (
 	k8s.io/apimachinery v0.22.3
 	k8s.io/client-go v0.22.3
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
-	sigs.k8s.io/controller-runtime v0.10.2
+	sigs.k8s.io/controller-runtime v0.10.3
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
 
