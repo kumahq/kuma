@@ -1,0 +1,4 @@
+type: ServiceInsight
+mesh: logging
+name: all-services-logging
+services: {}

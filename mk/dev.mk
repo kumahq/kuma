@@ -5,6 +5,10 @@ HELM_DOCS_VERSION := 1.4.0
 KUSTOMIZE_VERSION := v4.1.3
 PROTOC_PGV_VERSION := v0.4.1
 PROTOC_VERSION := 3.14.0
+UDPA_LATEST_VERSION := main
+GOOGLEAPIS_LATEST_VERSION := master
+KUMADOC_VERSION := v0.1.7
+DATAPLANE_API_LATEST_VERSION := main
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_MINIKUBE_VERSION ?= v1.18.1
@@ -62,6 +66,7 @@ dev/tools: dev/tools/all ## Bootstrap: Install all development tools
 .PHONY: dev/tools/all
 dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/protoc-gen-go dev/install/protoc-gen-validate \
+	dev/install/protoc-gen-kumadoc \
 	dev/install/ginkgo \
 	dev/install/kubebuilder dev/install/kustomize \
 	dev/install/kubectl \
@@ -69,7 +74,18 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/minikube \
 	dev/install/golangci-lint \
 	dev/install/helm3 \
-	dev/install/helm-docs
+	dev/install/helm-docs \
+	dev/install/data-plane-api
+
+.PHONY: dev/install/protoc-gen-kumadoc
+dev/install/protoc-gen-kumadoc:
+	go install github.com/kumahq/protoc-gen-kumadoc@$(KUMADOC_VERSION)
+
+.PHONY: dev/install/data-plane-api
+dev/install/data-plane-api:
+	go get github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
+	go get github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
+	go get github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
 
 .PHONY: dev/install/protoc
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
@@ -197,7 +213,7 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 	@if [ ! -e $(MINIKUBE_PATH) ]; then \
 		echo "Installing Minikube $(CI_MINIKUBE_VERSION) ..." \
 		&& set -x \
-		&& $(CURL_DOWNLOAD) -o minikube https://storage.googleapis.com/minikube/releases/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
+		&& $(CURL_DOWNLOAD) -o minikube https://github.com/kubernetes/minikube/releases/download/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
 		&& chmod +x minikube \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv minikube $(MINIKUBE_PATH) \

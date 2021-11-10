@@ -605,28 +605,6 @@ jobs:
 
           wait
 
-  dev_golang:
-    docker:
-    - image: *golang_image
-    environment:
-      GO_VERSION: *go_version
-      GO111MODULE: "on"
-    steps:
-    - checkout
-    - run:
-        name: "Install pre-requirements"
-        # `unzip` is necessary to install `protoc`
-        command: apt update && apt install -y unzip
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools
-    - run:
-        name: "Build all binaries"
-        command: make build
-    - run:
-        name: "Run unit tests"
-        command: GO_TEST_OPTS='-p 2' make test
-
   dev_ubuntu:
     docker:
     - image: ubuntu:20.04
@@ -733,69 +711,13 @@ jobs:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
 
-  api_check:
-    executor: golang
-    steps:
-    - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - api-go.mod-{{ .Branch }}-{{ checksum "api/go.sum" }}
-    - run:
-        name: "Download Go modules"
-        command: |
-          cd api && go mod download
-    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
-    - save_cache:
-        key: api-go.mod-{{ .Branch }}-{{ checksum "api/go.sum" }}
-        paths:
-          - "/go/pkg/mod"
-    - run:
-        name: "Install pre-requirements"
-        # `unzip` is necessary to install `protoc`
-        command: apt update && apt install -y unzip
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools -C api
-    - run:
-        name: "Verify that auto-generated code is up-to-date"
-        command: make check -C api
-
   test:
-    executor: golang
-    resource_class: medium
+    executor: vm
     parameters:
       target:
         description: The test make target.
         type: string
         default: test
-    steps:
-    - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-    - run:
-        name: "Install pre-requirements"
-        # `unzip` is necessary to install `protoc`
-        command: apt update && apt install -y unzip
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools
-    - run:
-        name: "Run unit tests"
-        command: GO_TEST_OPTS='-p 2' make << parameters.target >>
-    - store_artifacts:
-        path: build/coverage
-        destination: /coverage
-
-  integration:
-    executor: vm
-    parameters:
-      target:
-        description: The integration make target.
-        type: string
-        default: integration
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
@@ -819,7 +741,7 @@ jobs:
         command: |
           make dev/tools
     - run:
-        name: "Run integration tests"
+        name: "Run tests"
         command: |
           export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
           make << parameters.target >>
@@ -921,6 +843,7 @@ jobs:
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
                   export BUILD_WITH_EXPERIMENTAL_GATEWAY=Y
+                  export K3D=true
                   make test/e2e
             - store_test_results:
                 path: /tmp/xunit
@@ -1189,20 +1112,14 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - go_cache
-    - api_check:
-        <<: *commit_workflow_filters
-        requires:
-        - go_cache
     - build:
         <<: *commit_workflow_filters
         requires:
         - go_cache
-    - integration:
+    - test:
         <<: *commit_workflow_filters
         requires:
         - check
-        # custom parameters
-        target: -j1 integration test
     - images:
         <<: *commit_workflow_filters
         requires:
@@ -1322,14 +1239,9 @@ workflows:
 
   kuma-master:
     jobs:
-      - dev_golang: *master_workflow_filters
       - dev_mac: *master_workflow_filters
       - dev_ubuntu: *master_workflow_filters
       - go_cache: *master_workflow_filters
-      - api_check:
-          <<: *master_workflow_filters
-          requires:
-            - go_cache
       - check:
           <<: *master_workflow_filters
           requires:
@@ -1341,12 +1253,6 @@ workflows:
       - test:
           <<: *master_workflow_filters
           requires:
-            - api_check
-            - check
-      - integration:
-          <<: *master_workflow_filters
-          requires:
-            - api_check
             - check
       - images:
           <<: *master_workflow_filters
@@ -1414,10 +1320,6 @@ workflows:
   kuma-release:
     jobs:
     - go_cache: *release_workflow_filters
-    - api_check:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
     - check:
         <<: *release_workflow_filters
         requires:
@@ -1434,24 +1336,12 @@ workflows:
         <<: *helm_release_workflow_filters
         requires:
           - go_cache
-        name: test-release
-        target: test/release
-    - test:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
-    - integration:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
+        target: test test/release
     - release:
         <<: *release_workflow_filters
         requires:
-        - api_check
         - check
         - test
-        - test-release
-        - integration
     - helm-release:
         <<: *helm_release_workflow_filters
         requires:

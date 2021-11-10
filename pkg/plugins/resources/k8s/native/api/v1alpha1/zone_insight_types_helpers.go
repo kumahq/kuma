@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -45,13 +45,13 @@ func (l *ZoneInsightList) GetItems() []model.KubernetesObject {
 }
 
 func init() {
-	registry.RegisterObjectType(&proto.ZoneInsight{}, &ZoneInsight{
+	registry.RegisterObjectType(&system_proto.ZoneInsight{}, &ZoneInsight{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "ZoneInsight",
 		},
 	})
-	registry.RegisterListType(&proto.ZoneInsight{}, &ZoneInsightList{
+	registry.RegisterListType(&system_proto.ZoneInsight{}, &ZoneInsightList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "ZoneInsightList",

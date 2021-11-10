@@ -10,8 +10,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/access"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/rbac"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws"
 )
 
@@ -19,10 +19,10 @@ var log = core.Log.WithName("user-token-ws")
 
 type userTokenWebService struct {
 	issuer issuer.UserTokenIssuer
-	access rbac.GenerateUserTokenAccess
+	access access.GenerateUserTokenAccess
 }
 
-func NewWebService(issuer issuer.UserTokenIssuer, access rbac.GenerateUserTokenAccess) *restful.WebService {
+func NewWebService(issuer issuer.UserTokenIssuer, access access.GenerateUserTokenAccess) *restful.WebService {
 	webservice := userTokenWebService{
 		issuer: issuer,
 		access: access,

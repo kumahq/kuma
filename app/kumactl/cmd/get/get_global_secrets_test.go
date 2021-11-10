@@ -82,18 +82,13 @@ var _ = Describe("kumactl get global-secrets", func() {
 			goldenFile   string
 		}
 
-		DescribeTable("kumactl get secrets -o table|json|yaml",
+		DescribeTable("kumactl get global-secrets -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "global-secrets"}, given.outputFormat))
-
 				// when
-				err := rootCmd.Execute()
+				Expect(
+					ExecuteRootCommand(rootCmd, "global-secrets", given.outputFormat, ""),
+				).To(Succeed())
 
-				// then
-				Expect(err).ToNot(HaveOccurred())
 				Expect(buf.String()).To(MatchGoldenEqual(filepath.Join("testdata", given.goldenFile)))
 			},
 			Entry("should support Table output by default", testCase{

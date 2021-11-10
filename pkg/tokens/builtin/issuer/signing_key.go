@@ -2,8 +2,6 @@ package issuer
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
 	"strings"
@@ -16,11 +14,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
 const (
-	defaultRsaBits = 2048
-
 	DataplaneTokenPrefix        = "dataplane-token"
 	EnvoyAdminClientTokenPrefix = "envoy-admin-client-token"
 )
@@ -44,7 +41,7 @@ func SigningKeyResourceKey(prefix, meshName string) model.ResourceKey {
 }
 
 func NewSigningKey() ([]byte, error) {
-	key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
+	key, err := util_rsa.GenerateKey(util_rsa.DefaultKeySize)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate RSA key")
 	}

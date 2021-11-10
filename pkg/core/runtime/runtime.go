@@ -12,8 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	resources_rbac "github.com/kumahq/kuma/pkg/core/resources/rbac"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -23,7 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
-	rbac2 "github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
+	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -65,14 +65,14 @@ type RuntimeContext interface {
 	KDSContext() *kds_context.Context
 	MeshValidator() core_managers.MeshValidator
 	APIServerAuthenticator() authn.Authenticator
-	RBAC() RBAC
+	Access() Access
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
 }
 
-type RBAC struct {
-	ResourceAccess               resources_rbac.ResourceAccess
-	GenerateDataplaneTokenAccess rbac2.GenerateDataplaneTokenAccess
+type Access struct {
+	ResourceAccess       resources_access.ResourceAccess
+	DataplaneTokenAccess tokens_access.DataplaneTokenAccess
 }
 
 var _ Runtime = &runtime{}
@@ -134,8 +134,7 @@ type runtimeContext struct {
 	kdsctx   *kds_context.Context
 	mv       core_managers.MeshValidator
 	au       authn.Authenticator
-	ra       resources_rbac.ResourceAccess
-	rbac     RBAC
+	acc      Access
 	appCtx   context.Context
 }
 
@@ -230,12 +229,8 @@ func (rc *runtimeContext) APIServerAuthenticator() authn.Authenticator {
 	return rc.au
 }
 
-func (rc *runtimeContext) ResourceAccess() resources_rbac.ResourceAccess {
-	return rc.ra
-}
-
-func (rc *runtimeContext) RBAC() RBAC {
-	return rc.rbac
+func (rc *runtimeContext) Access() Access {
+	return rc.acc
 }
 
 func (rc *runtimeContext) AppContext() context.Context {

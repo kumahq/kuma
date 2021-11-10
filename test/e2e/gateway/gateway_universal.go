@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net"
@@ -47,6 +48,16 @@ func GatewayOnUniversal() {
 		}
 	}
 
+	ExternalServerUniversal := func(name string) InstallFunc {
+		return func(cluster Cluster) error {
+			return cluster.DeployApp(
+				WithArgs([]string{"test-server", "echo", "--port", "8080", "--instance", name}),
+				WithName(name),
+				WithoutDataplane(),
+				WithVerbose())
+		}
+	}
+
 	GatewayProxyUniversal := func(name string) InstallFunc {
 		return func(cluster Cluster) error {
 			token, err := cluster.GetKuma().GenerateDpToken("default", "edge-gateway")
@@ -75,21 +86,11 @@ networking:
 		}
 	}
 
-	// DeployCluster creates a universal Kuma cluster using the
-	// provided options, installing an echo service as well as a
-	// gateway and a client container to send HTTP requests.
-	DeployCluster := func(opt ...KumaDeploymentOption) {
+	SetupCluster := func(setup *ClusterSetup) {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 		Expect(cluster).ToNot(BeNil())
 
-		opt = append(opt, WithVerbose())
-
-		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone, opt...)).
-			Install(GatewayClientUniversal("gateway-client")).
-			Install(EchoServerUniversal("echo-server")).
-			Install(GatewayProxyUniversal("gateway-proxy")).
-			Setup(cluster)
+		err := setup.Setup(cluster)
 
 		// The makefile rule that builds the kuma-universal:latest image
 		// that is used for e2e tests by default rebuilds Kuma with Gateway
@@ -107,6 +108,20 @@ networking:
 
 		// Otherwise, we expect the cluster build to succeed.
 		Expect(err).To(Succeed())
+	}
+
+	// DeployCluster creates a universal Kuma cluster using the
+	// provided options, installing an echo service as well as a
+	// gateway and a client container to send HTTP requests.
+	DeployCluster := func(opt ...KumaDeploymentOption) {
+		opt = append(opt, WithVerbose())
+
+		SetupCluster(NewClusterSetup().
+			Install(Kuma(config_core.Standalone, opt...)).
+			Install(GatewayClientUniversal("gateway-client")).
+			Install(EchoServerUniversal("echo-server")).
+			Install(GatewayProxyUniversal("gateway-proxy")),
+		)
 	}
 
 	// Before each test, verify the cluster is up and stable.
@@ -165,10 +180,6 @@ conf:
 		Expect(
 			cluster.GetKumactlOptions().KumactlList("gateways", "default"),
 		).To(ContainElement("edge-gateway"))
-
-		gateways, err := cluster.GetKumactlOptions().KumactlList("gateways", "default")
-		Expect(err).To(Succeed())
-		Expect(gateways).To(ContainElement("edge-gateway"))
 	})
 
 	E2EAfterEach(func() {
@@ -176,22 +187,24 @@ conf:
 	})
 
 	// ProxySimpleRequests tests that basic HTTP requests are proxied to a service.
-	ProxySimpleRequests := func() {
-		Eventually(func(g Gomega) {
-			target := fmt.Sprintf("http://%s/%s",
-				net.JoinHostPort(cluster.GetApp("gateway-proxy").GetIP(), "8080"),
-				path.Join("test", url.PathEscape(GinkgoT().Name())),
-			)
+	ProxySimpleRequests := func(prefix string, instance string) func() {
+		return func() {
+			Eventually(func(g Gomega) {
+				target := fmt.Sprintf("http://%s/%s",
+					net.JoinHostPort(cluster.GetApp("gateway-proxy").GetIP(), "8080"),
+					path.Join(prefix, "test", url.PathEscape(GinkgoT().Name())),
+				)
 
-			response, err := testutil.CollectResponse(
-				cluster, "gateway-client", target,
-				testutil.WithHeader("Host", "example.kuma.io"),
-			)
+				response, err := testutil.CollectResponse(
+					cluster, "gateway-client", target,
+					testutil.WithHeader("Host", "example.kuma.io"),
+				)
 
-			g.Expect(err).To(Succeed())
-			g.Expect(response.Instance).To(Equal("universal"))
-			g.Expect(response.Received.Headers["Host"]).To(ContainElement("example.kuma.io"))
-		}, "30s", "1s").Should(Succeed())
+				g.Expect(err).To(Succeed())
+				g.Expect(response.Instance).To(Equal(instance))
+				g.Expect(response.Received.Headers["Host"]).To(ContainElement("example.kuma.io"))
+			}, "30s", "1s").Should(Succeed())
+		}
 	}
 
 	Context("when mTLS is disabled", func() {
@@ -199,7 +212,7 @@ conf:
 			DeployCluster(KumaUniversalDeployOpts...)
 		})
 
-		It("should proxy simple HTTP requests", ProxySimpleRequests)
+		It("should proxy simple HTTP requests", ProxySimpleRequests("/", "universal"))
 	})
 
 	Context("when mTLS is enabled", func() {
@@ -217,7 +230,7 @@ conf:
 			DeployCluster(append(KumaUniversalDeployOpts, mtls)...)
 		})
 
-		It("should proxy simple HTTP requests", ProxySimpleRequests)
+		It("should proxy simple HTTP requests", ProxySimpleRequests("/", "universal"))
 
 		// In mTLS mode, only the presence of TrafficPermission rules allow services to receive
 		// traffic, so removing the permission should cause requests to fail. We use this to
@@ -226,7 +239,7 @@ conf:
 			Expect(
 				cluster.GetKumactlOptions().KumactlDelete(
 					"traffic-permission", "allow-all-default", "default"),
-			).ToNot(HaveOccurred())
+			).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				target := fmt.Sprintf("http://%s/%s",
@@ -241,6 +254,143 @@ conf:
 
 				g.Expect(err).To(Succeed())
 				g.Expect(status.ResponseCode).To(Equal(503))
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("when targeting an external service", func() {
+		BeforeEach(func() {
+			if IsIPv6() {
+				Skip("Skipping these tests because of: https://github.com/kumahq/kuma/issues/3096")
+			}
+			opt := append(KumaUniversalDeployOpts, WithVerbose())
+			SetupCluster(NewClusterSetup().
+				Install(Kuma(config_core.Standalone, opt...)).
+				Install(ExternalServerUniversal("external-echo")).
+				Install(GatewayClientUniversal("gateway-client")).
+				Install(GatewayProxyUniversal("gateway-proxy")).
+				Install(EchoServerUniversal("echo-server")),
+			)
+		})
+
+		JustBeforeEach(func() {
+			// The suite-level JustBeforeEach adds a default route to the mesh echo server.
+			// Add new route to the external echo server.
+			Expect(
+				cluster.GetKumactlOptions().KumactlApplyFromString(`
+type: GatewayRoute
+mesh: default
+name: external-routes
+selectors:
+- match:
+    kuma.io/service: edge-gateway
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /external
+      backends:
+      - destination:
+          kuma.io/service: external-echo
+`),
+			).To(Succeed())
+
+			Expect(
+				cluster.GetKumactlOptions().KumactlApplyFromString(fmt.Sprintf(`
+type: ExternalService
+mesh: default
+name: external-service
+tags:
+  kuma.io/service: external-echo
+networking:
+  address: "%s"
+`, net.JoinHostPort(cluster.GetApp("external-echo").GetIP(), "8080"))),
+			).To(Succeed())
+		})
+
+		It("should proxy simple HTTP requests",
+			ProxySimpleRequests("/external", "external-echo"))
+	})
+
+	Context("when targeting a HTTPS gateway", func() {
+		BeforeEach(func() {
+			// We need kumactl admin access to deploy a secret. Enabling token auth
+			// is the easiest way to get that from here.
+			DeployCluster(
+				append(KumaUniversalDeployOpts,
+					WithEnv("KUMA_API_SERVER_AUTHN_TYPE", "tokens"),
+				)...,
+			)
+		})
+
+		JustBeforeEach(func() {
+			// Delete the default gateway that the test fixtures create.
+			Expect(
+				cluster.GetKumactlOptions().KumactlDelete("gateway", "edge-gateway", "default"),
+			).To(Succeed())
+
+			// And replace it with a HTTPS gateway.
+			Expect(
+				cluster.GetKumactlOptions().KumactlApplyFromString(`
+type: Gateway
+mesh: default
+name: edge-https-gateway
+selectors:
+- match:
+    kuma.io/service: edge-gateway
+conf:
+  listeners:
+  - port: 8080
+    protocol: HTTPS
+    hostname: example.kuma.io
+    tls:
+      mode: TERMINATE
+      certificates:
+      - secret: example-kuma-io-certificate
+    tags:
+      hostname: example.kuma.io
+`),
+			).To(Succeed())
+
+			cert, key, err := CreateCertsFor("example.kuma.io")
+			Expect(err).To(Succeed())
+
+			payload := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{key, cert}, "\n")))
+
+			// Create the TLS secret containing the self-signed certificate and corresponding private key.
+			Expect(
+				cluster.GetKumactlOptions().KumactlApplyFromString(fmt.Sprintf(`
+type: Secret
+mesh: default
+name: example-kuma-io-certificate
+data: %s
+`, payload)),
+			).To(Succeed())
+
+			Expect(
+				cluster.GetKumactlOptions().KumactlList("gateways", "default"),
+			).To(ContainElement("edge-https-gateway"))
+		})
+
+		It("should proxy simple HTTPS requests", func() {
+			Eventually(func(g Gomega) {
+				target := fmt.Sprintf("https://%s/%s",
+					net.JoinHostPort("example.kuma.io", "8080"),
+					path.Join("https", "test", url.PathEscape(GinkgoT().Name())),
+				)
+
+				response, err := testutil.CollectResponse(
+					cluster, "gateway-client", target,
+					testutil.Insecure(),
+					testutil.Resolve("example.kuma.io", 8080, cluster.GetApp("gateway-proxy").GetIP()),
+					testutil.WithHeader("Host", "example.kuma.io"),
+				)
+
+				g.Expect(err).To(Succeed())
+				g.Expect(response.Instance).To(Equal("universal"))
+				g.Expect(response.Received.Headers["Host"]).To(ContainElement("example.kuma.io"))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})

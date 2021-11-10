@@ -37,7 +37,7 @@ func BuildControlPlaneContext(
 	claCache xds.CLACache,
 	secrets secrets.Secrets,
 ) (*ControlPlaneContext, error) {
-	adminKeyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, "localhost")
+	adminKeyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, tls.DefaultKeyType, "localhost")
 	if err != nil {
 		return nil, err
 	}

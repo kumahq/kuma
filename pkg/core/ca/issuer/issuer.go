@@ -3,7 +3,6 @@ package issuer
 import (
 	"crypto"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -17,10 +16,10 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
 const (
-	DefaultRsaBits                    = 2048
 	DefaultAllowedClockSkew           = 10 * time.Second
 	DefaultWorkloadCertValidityPeriod = 24 * time.Hour
 )
@@ -40,7 +39,7 @@ func NewWorkloadCert(ca util_tls.KeyPair, mesh string, tags mesh_proto.MultiValu
 		return nil, errors.Wrap(err, "failed to load CA key pair")
 	}
 
-	workloadKey, err := rsa.GenerateKey(rand.Reader, DefaultRsaBits)
+	workloadKey, err := util_rsa.GenerateKey(util_rsa.DefaultKeySize)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate a private key")
 	}

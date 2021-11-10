@@ -34,6 +34,7 @@ metadata:
 type: system.kuma.io/global-secret
 " | kubectl apply -f - 
 `,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			key, err := ctx.GenerateContext.NewSigningKey()
 			if err != nil {

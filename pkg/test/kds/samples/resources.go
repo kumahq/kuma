@@ -80,10 +80,33 @@ var (
 			},
 		},
 	}
+	GatewayDataplane = &mesh_proto.Dataplane{
+		Networking: &mesh_proto.Dataplane_Networking{
+			Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "gateway",
+				},
+				Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+			},
+			Address: "192.168.0.1",
+			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+				{
+					Port: 1213,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag:  "web",
+						mesh_proto.ProtocolTag: "http",
+					},
+				},
+			},
+		},
+	}
 	DataplaneInsight = &mesh_proto.DataplaneInsight{
 		MTLS: &mesh_proto.DataplaneInsight_MTLS{
 			CertificateRegenerations: 3,
 		},
+	}
+	ServiceInsight = &mesh_proto.ServiceInsight{
+		Services: map[string]*mesh_proto.ServiceInsight_Service{},
 	}
 	Ingress = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{

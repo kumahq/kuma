@@ -2,6 +2,7 @@ package listeners
 
 import (
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/pkg/errors"
 
@@ -43,12 +44,24 @@ func (b *FilterChainBuilder) Build() (envoy_types.Resource, error) {
 	switch b.apiVersion {
 	case envoy.APIV3:
 		filterChain := envoy_listener_v3.FilterChain{}
+
 		for _, configurer := range b.config.ConfigurersV3 {
 			if err := configurer.Configure(&filterChain); err != nil {
 				return nil, err
 			}
 		}
+
+		// Ensure there is always an HTTP router terminating the filter chain.
+		_ = v3.UpdateHTTPConnectionManager(&filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+			router := &envoy_hcm.HttpFilter{
+				Name: "envoy.filters.http.router",
+			}
+			hcm.HttpFilters = append(hcm.HttpFilters, router)
+			return nil
+		})
+
 		return &filterChain, nil
+
 	default:
 		return nil, errors.New("unknown API")
 	}

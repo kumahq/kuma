@@ -58,8 +58,8 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, upstreamService string, s
 }
 
 func createCommonTlsContext(validationSANMatcher *envoy_type_matcher.StringMatcher) (*envoy_tls.CommonTlsContext, error) {
-	meshCaSecret := sdsSecretConfig(xds_tls.MeshCaResource)
-	identitySecret := sdsSecretConfig(xds_tls.IdentityCertResource)
+	meshCaSecret := NewSecretConfigSource(xds_tls.MeshCaResource)
+	identitySecret := NewSecretConfigSource(xds_tls.IdentityCertResource)
 	return &envoy_tls.CommonTlsContext{
 		ValidationContextType: &envoy_tls.CommonTlsContext_CombinedValidationContext{
 			CombinedValidationContext: &envoy_tls.CommonTlsContext_CombinedCertificateValidationContext{
@@ -75,9 +75,9 @@ func createCommonTlsContext(validationSANMatcher *envoy_type_matcher.StringMatch
 	}, nil
 }
 
-func sdsSecretConfig(name string) *envoy_tls.SdsSecretConfig {
+func NewSecretConfigSource(secretName string) *envoy_tls.SdsSecretConfig {
 	return &envoy_tls.SdsSecretConfig{
-		Name: name,
+		Name: secretName,
 		SdsConfig: &envoy_core.ConfigSource{
 			ResourceApiVersion:    envoy_core.ApiVersion_V3,
 			ConfigSourceSpecifier: &envoy_core.ConfigSource_Ads{},

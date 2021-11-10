@@ -56,7 +56,7 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 	}
 
 	return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-		manager.HttpFilters = append(httpFilters, manager.HttpFilters...)
+		manager.HttpFilters = append(manager.HttpFilters, httpFilters...)
 		return nil
 	})
 }

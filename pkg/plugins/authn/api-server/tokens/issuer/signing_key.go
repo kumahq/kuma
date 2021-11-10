@@ -2,6 +2,7 @@ package issuer
 
 import (
 	"context"
+	"crypto/rsa"
 	"fmt"
 	"sort"
 	"strconv"
@@ -15,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
 const (
@@ -24,7 +25,13 @@ const (
 	DefaultSerialNumber = 1
 )
 
-var SigningKeyNotFound = errors.New("there is no signing key in the Control Plane")
+type SigningKeyNotFound struct {
+	SerialNumber int
+}
+
+func (s *SigningKeyNotFound) Error() string {
+	return fmt.Sprintf("there is no signing key with serial number %d. GlobalSecret of name %q is not found. If signing key was rotated, regenerate the token", s.SerialNumber, SigningKeyResourceKey(s.SerialNumber).Name)
+}
 
 func SigningKeyResourceKey(serialNumber int) model.ResourceKey {
 	return model.ResourceKey{
@@ -32,17 +39,12 @@ func SigningKeyResourceKey(serialNumber int) model.ResourceKey {
 	}
 }
 
-func IsSigningKeyResource(resKey model.ResourceKey) bool {
-	return strings.HasPrefix(resKey.Name, signingKeyPrefix) && resKey.Mesh == ""
-}
-
 // SigningKeyManager manages User Token's signing keys.
 // We can have many signing keys in the system.
 // Example: "user-token-signing-key-1", "user-token-signing-key-2" etc.
 // The latest key is  a key with a higher serial number (number at the end of the name)
 type SigningKeyManager interface {
-	GetSigningKey(serialNumber int) ([]byte, error)
-	GetLatestSigningKey() ([]byte, int, error)
+	GetLatestSigningKey() (*rsa.PrivateKey, int, error)
 	CreateDefaultSigningKey() error
 	CreateSigningKey(serialNumber int) error
 }
@@ -59,18 +61,7 @@ type signingKeyManager struct {
 
 var _ SigningKeyManager = &signingKeyManager{}
 
-func (s *signingKeyManager) GetSigningKey(serialNumber int) ([]byte, error) {
-	resource := system.NewGlobalSecretResource()
-	if err := s.manager.Get(context.Background(), resource, store.GetBy(SigningKeyResourceKey(serialNumber))); err != nil {
-		if store.IsResourceNotFound(err) {
-			return nil, SigningKeyNotFound
-		}
-		return nil, errors.Wrap(err, "could not retrieve signing key from secret manager")
-	}
-	return resource.Spec.GetData().GetValue(), nil
-}
-
-func (s *signingKeyManager) GetLatestSigningKey() ([]byte, int, error) {
+func (s *signingKeyManager) GetLatestSigningKey() (*rsa.PrivateKey, int, error) {
 	resources := system.GlobalSecretResourceList{}
 	if err := s.manager.List(context.Background(), &resources); err != nil {
 		return nil, 0, errors.Wrap(err, "could not retrieve signing key from secret manager")
@@ -84,7 +75,7 @@ func (s *signingKeyManager) GetLatestSigningKey() ([]byte, int, error) {
 	}
 
 	if len(signingKeys) == 0 {
-		return nil, 0, SigningKeyNotFound
+		return nil, 0, &SigningKeyNotFound{SerialNumber: DefaultSerialNumber}
 	}
 
 	sort.Stable(GlobalSecretsBySerial(signingKeys))
@@ -94,7 +85,11 @@ func (s *signingKeyManager) GetLatestSigningKey() ([]byte, int, error) {
 		return nil, 0, err
 	}
 
-	return signingKeys[0].Spec.GetData().GetValue(), serialNumber, nil
+	key, err := util_rsa.FromPEMBytes(signingKeys[0].Spec.GetData().GetValue())
+	if err != nil {
+		return nil, 0, err
+	}
+	return key, serialNumber, nil
 }
 
 func (s *signingKeyManager) CreateDefaultSigningKey() error {
@@ -102,7 +97,7 @@ func (s *signingKeyManager) CreateDefaultSigningKey() error {
 }
 
 func (s *signingKeyManager) CreateSigningKey(serialNumber int) error {
-	key, err := issuer.NewSigningKey()
+	key, err := NewSigningKey()
 	if err != nil {
 		return errors.Wrap(err, "could not construct signing key")
 	}
@@ -126,6 +121,14 @@ func signingKeySerialNumber(secretName string) (int, error) {
 		return 0, err
 	}
 	return serialNumber, nil
+}
+
+func NewSigningKey() ([]byte, error) {
+	key, err := util_rsa.GenerateKey(util_rsa.DefaultKeySize)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate RSA key")
+	}
+	return util_rsa.ToPEMBytes(key)
 }
 
 type GlobalSecretsBySerial []*system.GlobalSecretResource

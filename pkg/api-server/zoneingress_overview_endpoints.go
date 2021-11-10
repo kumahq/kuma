@@ -6,11 +6,11 @@ import (
 	"github.com/emicklei/go-restful"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/rbac"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/user"
@@ -18,7 +18,7 @@ import (
 
 type zoneIngressOverviewEndpoints struct {
 	resManager     manager.ResourceManager
-	resourceAccess rbac.ResourceAccess
+	resourceAccess access.ResourceAccess
 }
 
 func (r *zoneIngressOverviewEndpoints) addFindEndpoint(ws *restful.WebService) {

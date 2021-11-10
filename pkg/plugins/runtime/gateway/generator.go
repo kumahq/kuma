@@ -45,14 +45,14 @@ type GatewayHost struct {
 	Hostname string
 	Routes   []model.Resource
 	Policies map[model.ResourceType][]match.RankedPolicy
-
-	// TODO(jpeach) Track TLS state for this host.
+	TLS      *mesh_proto.Gateway_TLS_Conf
 }
 
 // Resources tracks partially-built xDS resources that can be updated
 // by multiple gateway generators.
 type Resources struct {
 	Listener           *envoy_listeners.ListenerBuilder
+	FilterChain        *envoy_listeners.FilterChainBuilder
 	RouteConfiguration *envoy_routes.RouteConfigurationBuilder
 }
 
@@ -63,9 +63,11 @@ type GatewayListener struct {
 }
 
 type GatewayResourceInfo struct {
-	Proxy      *core_xds.Proxy
-	Dataplane  *core_mesh.DataplaneResource
-	Gateway    *core_mesh.GatewayResource
+	Proxy            *core_xds.Proxy
+	Dataplane        *core_mesh.DataplaneResource
+	Gateway          *core_mesh.GatewayResource
+	ExternalServices *core_mesh.ExternalServiceResourceList
+
 	Listener   GatewayListener
 	Host       GatewayHost
 	Resources  Resources
@@ -122,6 +124,12 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 	resources := ResourceAggregator{core_xds.NewResourceSet()}
 
+	// Cache external services since multiple listeners might need them.
+	externalServices, err := listResources(manager, core_mesh.ExternalServiceType)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list ExternalServices")
+	}
+
 	for port, listeners := range collapsed {
 		// Force all listeners on the same port to have the same protocol.
 		for i := range listeners {
@@ -147,10 +155,11 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		})
 
 		info := GatewayResourceInfo{
-			Proxy:     proxy,
-			Dataplane: proxy.Dataplane,
-			Gateway:   gateway,
-			Listener:  listener,
+			Proxy:            proxy,
+			Dataplane:        proxy.Dataplane,
+			Gateway:          gateway,
+			ExternalServices: externalServices.(*core_mesh.ExternalServiceResourceList),
+			Listener:         listener,
 		}
 
 		// Make a pass over the generators for each virtual host.
@@ -176,6 +185,8 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 				resources.AddSet(generated)
 			}
 		}
+
+		info.Resources.Listener.Configure(envoy_listeners.FilterChain(info.Resources.FilterChain))
 
 		if err := resources.Add(BuildResourceSet(info.Resources.Listener)); err != nil {
 			return nil, errors.Wrapf(err, "failed to build listener resource")
@@ -257,6 +268,7 @@ func MakeGatewayListener(
 		host := GatewayHost{
 			Hostname: hostname,
 			Policies: map[model.ResourceType][]match.RankedPolicy{},
+			TLS:      l.GetTls(),
 		}
 
 		switch listener.Protocol {

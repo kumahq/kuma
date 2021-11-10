@@ -55,6 +55,7 @@ func UpgradingWithHelmChart() {
 			)
 
 			deployOptsFuncs = append(deployOptsFuncs,
+				WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmChartPath(HelmRepo),
 				WithHelmReleaseName(releaseName),

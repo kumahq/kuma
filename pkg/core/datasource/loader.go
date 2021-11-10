@@ -50,6 +50,9 @@ func (l *loader) Load(ctx context.Context, mesh string, source *system_proto.Dat
 }
 
 func (l *loader) loadSecret(ctx context.Context, mesh string, secret string) ([]byte, error) {
+	if l.secretManager == nil {
+		return nil, errors.New("no resource manager")
+	}
 	resource := system.NewSecretResource()
 	if err := l.secretManager.Get(ctx, resource, core_store.GetByKey(secret, mesh)); err != nil {
 		return nil, err

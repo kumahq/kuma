@@ -159,6 +159,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						},
 					},
 				},
+				ServiceTLSReadiness: map[string]bool{
+					"db":      true,
+					"elastic": true,
+				},
 			}
 
 			// when

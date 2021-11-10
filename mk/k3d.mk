@@ -4,6 +4,7 @@ K3D_PATH := $(CI_TOOLS_DIR)/k3d
 
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
+PORT_PREFIX := $$(( $(subst kuma-,30,$(KIND_CLUSTER_NAME)) - 1 ))
 
 .PHONY: k3d/start
 k3d/start: ${KIND_KUBECONFIG_DIR}
@@ -17,6 +18,7 @@ k3d/start: ${KIND_KUBECONFIG_DIR}
 		  	--k3s-server-arg '--disable=metrics-server' \
 		  	--no-lb --no-hostip \
 		  	--network kind \
+		  	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)89:30080-30089" \
 		  	--timeout 120s && \
 		until \
 			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
@@ -43,7 +45,7 @@ k3d/load/images:
     	$(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) \
     	$(KUMA_INIT_DOCKER_IMAGE) $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) \
     	$(KUMACTL_DOCKER_IMAGE) kuma-universal:latest \
-    	--cluster=$(KIND_CLUSTER_NAME) --trace
+    	--cluster=$(KIND_CLUSTER_NAME) --verbose
 
 .PHONY: k3d/load
 k3d/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl docker/build/kuma-universal k3d/load/images

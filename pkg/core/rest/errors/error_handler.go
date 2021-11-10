@@ -8,7 +8,7 @@ import (
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/rbac"
+	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
@@ -34,18 +34,14 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleInvalidPageSize(title, response)
 	case issuer.IsSigningKeyNotFoundErr(err):
 		handleSigningKeyNotFound(err, response)
-	case errors.Is(err, &rbac.AccessDeniedError{}):
-		var rbacErr *rbac.AccessDeniedError
-		errors.As(err, &rbacErr)
-		handleRbacAccessDenied(rbacErr, response)
+	case errors.Is(err, &access.AccessDeniedError{}):
+		var accessErr *access.AccessDeniedError
+		errors.As(err, &accessErr)
+		handleAccessDenied(accessErr, response)
 	case errors.Is(err, &Unauthenticated{}):
 		var unauthenticated *Unauthenticated
 		errors.As(err, &err)
 		handleUnauthenticated(unauthenticated, title, response)
-	case errors.Is(err, &AccessDenied{}):
-		var accessDenied *AccessDenied
-		errors.As(err, &err)
-		handleAccessDenied(accessDenied, title, response)
 	default:
 		handleUnknownError(err, title, response)
 	}
@@ -154,7 +150,7 @@ func handleSigningKeyNotFound(err error, response *restful.Response) {
 	writeError(response, 404, kumaErr)
 }
 
-func handleRbacAccessDenied(err *rbac.AccessDeniedError, response *restful.Response) {
+func handleAccessDenied(err *access.AccessDeniedError, response *restful.Response) {
 	kumaErr := types.Error{
 		Title:   "Access Denied",
 		Details: err.Reason,
@@ -168,14 +164,6 @@ func handleUnauthenticated(err *Unauthenticated, title string, response *restful
 		Details: err.Error(),
 	}
 	writeError(response, 401, kumaErr)
-}
-
-func handleAccessDenied(err *AccessDenied, title string, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: err.Error(),
-	}
-	writeError(response, 403, kumaErr)
 }
 
 func writeError(response *restful.Response, httpStatus int, kumaErr types.Error) {

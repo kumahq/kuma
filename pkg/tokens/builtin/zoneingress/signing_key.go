@@ -2,8 +2,6 @@ package zoneingress
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 
 	"github.com/pkg/errors"
@@ -14,10 +12,10 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
 const (
-	defaultRsaBits = 2048
 	signingKeyName = "zone-ingress-token-signing-key"
 )
 
@@ -49,9 +47,9 @@ func GetSigningKey(manager manager.ReadOnlyResourceManager) ([]byte, error) {
 
 func CreateSigningKey() (*system.GlobalSecretResource, error) {
 	res := system.NewGlobalSecretResource()
-	key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
+	key, err := util_rsa.GenerateKey(util_rsa.DefaultKeySize)
 	if err != nil {
-		return res, errors.Wrap(err, "failed to generate rsa key")
+		return res, errors.Wrap(err, "failed to generate RSA key")
 	}
 	res.Spec = &system_proto.Secret{
 		Data: util_proto.Bytes(x509.MarshalPKCS1PrivateKey(key)),
