@@ -46,11 +46,19 @@ require (
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
+<<<<<<< HEAD
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5
 	golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.41.0
+=======
+	golang.org/x/net v0.0.0-20211013171255-e13a2654a71e
+	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c
+	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
+	google.golang.org/genproto v0.0.0-20211013025323-ce878158c4d4
+	google.golang.org/grpc v1.42.0
+>>>>>>> 2773bf96 (chore(deps): bump google.golang.org/grpc from 1.41.0 to 1.42.0 (#3101))
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
