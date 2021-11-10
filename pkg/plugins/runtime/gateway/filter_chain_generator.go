@@ -267,6 +267,7 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 
 	// Tracing and logging have to be configured after the HttpConnectionManager is enabled.
 	builder.Configure(
+		envoy_listeners.DefaultCompressorFilter(),
 		envoy_listeners.Tracing(info.Proxy.Policies.TracingBackend, service),
 		// TODO(jpeach) Logging policy doesn't work at all. The logging backend is
 		// selected by matching against outbound service names, and gateway dataplanes
@@ -280,11 +281,6 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 			info.Proxy,
 		),
 	)
-
-	// TODO(jpeach) add compressor filter.
-	// TODO(jpeach) add decompressor filter.
-	// TODO(jpeach) add grpc_web filter.
-	// TODO(jpeach) add grpc_stats filter.
 
 	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
 
