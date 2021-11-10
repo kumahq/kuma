@@ -47,7 +47,7 @@ func ValidateMTLSBackends(ctx context.Context, caManagers core_ca.Managers, name
 			return verr.OrNil()
 		} else if err := caManager.ValidateBackend(ctx, name, backend); err != nil {
 			if configErr, ok := err.(*validators.ValidationError); ok {
-				verr.AddErrorAt(path.Index(idx).Field("config"), *configErr)
+				verr.AddErrorAt(path.Index(idx).Field("conf"), *configErr)
 			} else {
 				verr.AddViolationAt(path.Index(idx), err.Error())
 				return err
