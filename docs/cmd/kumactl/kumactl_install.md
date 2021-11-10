@@ -29,6 +29,7 @@ Install various Kuma components.
 * [kumactl install demo](kumactl_install_demo.md)	 - Install Kuma demo on Kubernetes
 * [kumactl install dns](kumactl_install_dns.md)	 - Install DNS to Kubernetes
 * [kumactl install gateway](kumactl_install_gateway.md)	 - Install ingress gateway on Kubernetes
+* [kumactl install gateway-controller](kumactl_install_gateway-controller.md)	 - Install the Kuma Gateway controller on Kubernetes
 * [kumactl install logging](kumactl_install_logging.md)	 - Install Logging backend in Kubernetes cluster (Loki)
 * [kumactl install metrics](kumactl_install_metrics.md)	 - Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
 * [kumactl install tracing](kumactl_install_tracing.md)	 - Install Tracing backend in Kubernetes cluster (Jaeger)

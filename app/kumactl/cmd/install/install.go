@@ -6,6 +6,8 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 )
 
+var optionalInstallCmds []func(*kumactl_cmd.RootContext) *cobra.Command
+
 func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
@@ -23,6 +25,10 @@ func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newInstallDemoCmd(&pctx.InstallDemoContext))
 	cmd.AddCommand(newInstallGatewayCmd(pctx))
 	cmd.AddCommand(newInstallTransparentProxy())
+
+	for _, c := range optionalInstallCmds {
+		cmd.AddCommand(c(pctx))
+	}
 
 	return cmd
 }
