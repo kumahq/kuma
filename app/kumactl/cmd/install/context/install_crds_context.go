@@ -34,16 +34,5 @@ func DefaultInstallCrdsContext() InstallCrdsContext {
 
 			return crdFiles, nil
 		},
-		FilterCrdNamesToInstall: func(names []string) []string {
-			var result []string
-
-			for _, name := range names {
-				if strings.HasSuffix(name, "kuma.io") {
-					result = append(result, name)
-				}
-			}
-
-			return result
-		},
 	}
 }
