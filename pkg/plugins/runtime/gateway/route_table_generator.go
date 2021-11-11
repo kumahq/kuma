@@ -41,6 +41,9 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 		)
 	}
 
+	// TODO(jpeach) match the Retry policy for this virtual host.
+	// TODO(jpeach) match the FaultInjection policy for this virtual host.
+
 	// TODO(jpeach) apply additional virtual host configuration.
 
 	// Sort routing table entries so the most specific match comes first.

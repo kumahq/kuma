@@ -72,16 +72,5 @@ func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayRes
 
 	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
 
-	// Now, for each of the virtual hosts this port, configure the
-	// TLS transport sockets and matching.
-	switch protocol {
-	case mesh_proto.Gateway_Listener_HTTPS:
-		// TODO(jpeach) add a SNI listener to match the hostname
-		// and apply the right set of dynamic HTTP routes.
-	case mesh_proto.Gateway_Listener_TLS:
-		// TODO(jpeach) add a SNI listener to match the hostname
-		// and apply the right set of dynamic TCP or TLS routes.
-	}
-
 	return nil, nil
 }
