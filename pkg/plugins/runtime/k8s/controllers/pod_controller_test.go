@@ -27,6 +27,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 var _ = Describe("PodReconciler", func() {
@@ -175,6 +176,30 @@ var _ = Describe("PodReconciler", func() {
 							TargetPort: kube_intstr.IntOrString{
 								Type:   kube_intstr.String,
 								StrVal: "metrics",
+							},
+						},
+					},
+					Selector: map[string]string{
+						"app": "sample",
+					},
+				},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "ignored-service",
+					Annotations: map[string]string{
+						metadata.KumaIgnoreAnnotation: metadata.AnnotationTrue,
+					},
+				},
+				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.1",
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 85,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
 							},
 						},
 					},
