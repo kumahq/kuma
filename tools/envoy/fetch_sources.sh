@@ -10,7 +10,10 @@
 # - $ENVOY_COMMIT_HASH, hash of the git commit. If specified, then $ENVOY_TAG will be ignored
 #
 # at least one of $ENVOY_TAG or $ENVOY_COMMIT_HASH should be specified
-set -e
+
+set -o errexit
+set -o pipefail
+set -o nounset
 
 function msg_red() {
   builtin echo -en "\033[1;31m" >&2
@@ -23,12 +26,18 @@ function msg_err() {
   exit 1
 }
 
-[[ -z "${SOURCE_DIR}" ]] && msg_err "Error: SOURCE_DIR is not specified"
+ENVOY_TAG=${ENVOY_TAG:-}
+ENVOY_COMMIT_HASH=${ENVOY_COMMIT_HASH:-}
 [[ -z "${ENVOY_TAG}" ]] && [[ -z "${ENVOY_COMMIT_HASH}" ]] && msg_err "Error: either ENVOY_TAG or ENVOY_COMMIT_HASH should be specified"
 
 # clone Envoy repo if not exists
 if [[ ! -d "${SOURCE_DIR}" ]]; then
-  git clone https://github.com/envoyproxy/envoy.git ${SOURCE_DIR}
+  mkdir -p "${SOURCE_DIR}"
+  (
+    cd "${SOURCE_DIR}"
+    git init .
+    git remote add origin https://github.com/envoyproxy/envoy.git
+  )
 else
   echo "Envoy source directory already exists, just fetching"
   pushd ${SOURCE_DIR} && git fetch --all && popd
@@ -36,11 +45,10 @@ fi
 
 pushd ${SOURCE_DIR}
 
-ENVOY_COMMIT_HASH=${ENVOY_COMMIT_HASH:-$(git rev-list -n 1 "${ENVOY_TAG}")}
+git fetch origin --depth=1 "${ENVOY_COMMIT_HASH:-${ENVOY_TAG}}"
+git reset --hard FETCH_HEAD
 
 echo "ENVOY_TAG=${ENVOY_TAG}"
 echo "ENVOY_COMMIT_HASH=${ENVOY_COMMIT_HASH}"
-
-git reset --hard ${ENVOY_COMMIT_HASH}
 
 popd

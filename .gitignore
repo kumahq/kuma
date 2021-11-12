@@ -12,6 +12,3 @@ build/
 
 # Release artifacts
 .cr-release-packages
-
-# Fetched Envoy source code
-out/envoy-sources

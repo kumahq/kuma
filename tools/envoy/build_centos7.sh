@@ -1,19 +1,18 @@
 #!/bin/bash
 
-set -e
+set -o errexit
+set -o pipefail
+set -o nounset
 
 echo "Building Envoy for CentOS 7"
 
-BINARY_PATH=${BINARY_PATH:-"out/envoy"}
-BINARY_DIR=$(dirname ${BINARY_PATH})
-mkdir -p "${BINARY_DIR}"
+mkdir -p "$(dirname ${BINARY_PATH})"
 
-SOURCE_DIR=${SOURCE_DIR:-"out/envoy-sources"}
 SOURCE_DIR="${SOURCE_DIR}" ./tools/envoy/fetch_sources.sh
 
-BUILD_CMD=${BUILD_CMD:-"BAZEL_BUILD_EXTRA_OPTIONS=\"${BAZEL_BUILD_EXTRA_OPTIONS}\" ./ci/do_ci.sh bazel.release.server_only"}
+BUILD_CMD=${BUILD_CMD:-"BAZEL_BUILD_EXTRA_OPTIONS=\"${BAZEL_BUILD_EXTRA_OPTIONS:-}\" ./ci/do_ci.sh bazel.release.server_only"}
 
-ENVOY_BUILD_SHA=$(curl -s https://raw.githubusercontent.com/envoyproxy/envoy/"${ENVOY_TAG}"/.bazelrc | grep envoyproxy/envoy-build-ubuntu | sed -e 's#.*envoyproxy/envoy-build-ubuntu:\(.*\)#\1#'| uniq)
+ENVOY_BUILD_SHA=$(curl --silent https://raw.githubusercontent.com/envoyproxy/envoy/"${ENVOY_TAG}"/.bazelrc | grep envoyproxy/envoy-build-ubuntu | sed -e 's#.*envoyproxy/envoy-build-ubuntu:\(.*\)#\1#'| uniq)
 ENVOY_BUILD_IMAGE="envoyproxy/envoy-build-centos:${ENVOY_BUILD_SHA}"
 LOCAL_BUILD_IMAGE="envoy-builder:${ENVOY_TAG}"
 

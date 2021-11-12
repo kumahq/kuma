@@ -12,7 +12,9 @@
 #
 # at least one of $ENVOY_TAG or $ENVOY_COMMIT_HASH should be specified
 
-set -e
+set -o errexit
+set -o pipefail
+set -o nounset
 
 function msg_red() {
   builtin echo -en "\033[1;31m" >&2
@@ -29,25 +31,38 @@ function download_envoy() {
     local binary_name=$1
     echo "Downloading ${binary_name}"
 
-    local status=$(curl -# -L -o "${BINARY_PATH}" --write-out %{http_code} --output /dev/null \
+    if [ ! -d "$(dirname "${BINARY_PATH}")" ]; then
+      mkdir -p "$(dirname "${BINARY_PATH}")"
+    fi
+
+    local status=$(curl -# --location --output "${BINARY_PATH}" --write-out %{http_code} \
     "https://download.konghq.com/mesh-alpine/${binary_name}")
 
   [ -f "${BINARY_PATH}" ] && chmod +x "${BINARY_PATH}"
   [ "$status" -ne "200" ] && msg_err "Error: failed downloading Envoy" || true
 }
 
-[[ -z "${BINARY_PATH}" ]] && msg_err "Error: BINARY_PATH is not specified"
-[[ -z "${ENVOY_DISTRO}" ]] && msg_err "Error: ENVOY_DISTRO is not specified"
+ENVOY_TAG=${ENVOY_TAG:-}
+ENVOY_COMMIT_HASH=${ENVOY_COMMIT_HASH:-}
 [[ -z "${ENVOY_TAG}" ]] && [[ -z "${ENVOY_COMMIT_HASH}" ]] && msg_err "Error: either ENVOY_TAG or ENVOY_COMMIT_HASH should be specified"
 
 if [ "${ENVOY_DISTRO}" == "linux" ]; then
   ENVOY_DISTRO="alpine"
 fi
 
+if [ "${ENVOY_DISTRO}" == "centos7" ]; then
+  ENVOY_DISTRO="centos"
+fi
+
 if [[ -n "${ENVOY_COMMIT_HASH}" ]]; then
   ENVOY_SHORT_HASH=${ENVOY_COMMIT_HASH:0:8}
-  BINARY_NAME=$(curl -s https://download.konghq.com/mesh-alpine/ \
-    | grep "${ENVOY_SHORT_HASH}" | grep "${ENVOY_DISTRO}" | sed -e 's#.*<li><a href=".*">\(.*\)</a></li>#\1#')
+
+  BINARY_NAME=$(curl --silent https://download.konghq.com/mesh-alpine/ \
+    | { grep "${ENVOY_SHORT_HASH}" || true; } \
+    | { grep "${ENVOY_DISTRO}" || true; } \
+    | sed -e 's#.*<li><a href=".*">\(.*\)</a></li>#\1#')
+
+  [[ -z "${BINARY_NAME}" ]] && msg_err "failed to resolve binary name by ENVOY_COMMIT_HASH=${ENVOY_COMMIT_HASH}"
 
   download_envoy "${BINARY_NAME}"
   exit 0
@@ -60,6 +75,3 @@ if [[ -n "${ENVOY_TAG}" ]]; then
   download_envoy "${BINARY_NAME}"
   exit 0
 fi
-
-
-

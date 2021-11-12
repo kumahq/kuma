@@ -2,7 +2,7 @@
 
 The current directory contains tools for building, publishing and fetching Envoy binaries.
 
-There is a new Makefile target `build/envoy` that places an `envoy` binary in `build/artifacts-$OS-$ARCH/` directory.
+There is a new Makefile target `build/envoy` that places an `envoy` binary in `build/artifacts-$GOOS-$GOARCH/` directory.
 The default behaviour of that target – fetching binaries from [download.konghq.com](download.konghq.com) since it makes more sense for
 overwhelming majority of users. However, there is a variable `BUILD_ENVOY_FROM_SOURCES` that allows to build Envoy from 
 source code. 
