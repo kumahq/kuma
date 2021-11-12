@@ -157,7 +157,7 @@ func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core
 	}
 
 	// only consider Services that match this Pod
-	matchingServices := util_k8s.FindServices(allServices, util_k8s.AnySelector(), util_k8s.MatchServiceThatSelectsPod(pod))
+	matchingServices := util_k8s.FindServices(allServices, util_k8s.Not(util_k8s.Ignored()), util_k8s.AnySelector(), util_k8s.MatchServiceThatSelectsPod(pod))
 
 	return matchingServices, nil
 }
