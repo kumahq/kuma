@@ -2,38 +2,11 @@
 
 set -e
 
+source "$(dirname "$(dirname "$0")")/common.sh" # relative path to ../common.sh
+
 [ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="docker.io"
 [ -z "$KUMA_DOCKER_REPO_ORG" ] && KUMA_DOCKER_REPO_ORG=${KUMA_DOCKER_REPO}/kumahq
 KUMA_COMPONENTS=("kuma-cp" "kuma-dp" "kumactl" "kuma-init" "kuma-prometheus-sd")
-
-function msg_green() {
-  builtin echo -en "\033[1;32m"
-  echo "$@"
-  builtin echo -en "\033[0m"
-}
-
-function msg_red() {
-  builtin echo -en "\033[1;31m" >&2
-  echo "$@" >&2
-  builtin echo -en "\033[0m" >&2
-}
-
-function msg_yellow() {
-  builtin echo -en "\033[1;33m"
-  echo "$@"
-  builtin echo -en "\033[0m"
-}
-
-function msg() {
-  builtin echo -en "\033[1m"
-  echo "$@"
-  builtin echo -en "\033[0m"
-}
-
-function msg_err() {
-  msg_red "$@"
-  exit 1
-}
 
 function build() {
   for component in "${KUMA_COMPONENTS[@]}"; do

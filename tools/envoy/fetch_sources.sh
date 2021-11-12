@@ -15,16 +15,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-function msg_red() {
-  builtin echo -en "\033[1;31m" >&2
-  echo "$@" >&2
-  builtin echo -en "\033[0m" >&2
-}
-
-function msg_err() {
-  msg_red "$@"
-  exit 1
-}
+source "$(dirname "$(dirname "$0")")/common.sh" # relative path to ../common.sh
 
 ENVOY_TAG=${ENVOY_TAG:-}
 ENVOY_COMMIT_HASH=${ENVOY_COMMIT_HASH:-}

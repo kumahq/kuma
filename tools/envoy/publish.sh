@@ -9,10 +9,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-function msg_err() {
-  echo $@
-  exit 1
-}
+source "$(dirname "$(dirname "$0")")/common.sh" # relative path to ../common.sh
 
 if [ $# -eq 0 ]; then
     echo "Usage: ./publish.sh path_to_envoy"
