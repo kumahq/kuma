@@ -32,7 +32,7 @@ var _ = Describe("DNS sync", func() {
 		cfgManager := config_manager.NewConfigManager(memory)
 		dnsResolver = resolver.NewDNSResolver("mesh")
 
-		vipAllocator, err := dns.NewVIPsAllocator(resManager, cfgManager, "240.0.0.0/24", dnsResolver)
+		vipAllocator, err := dns.NewVIPsAllocator(resManager, cfgManager, true, "240.0.0.0/24", dnsResolver)
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			Expect(vipAllocator.Start(stop)).ToNot(HaveOccurred())
