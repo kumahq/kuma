@@ -9,6 +9,5 @@ RUN groupadd --gid $(id -g) -f envoygroup \
   && mkdir /build /source \
   && chown envoybuild:envoygroup /build /source
 
-COPY out/envoy-sources /envoy-sources
-
+COPY . /envoy-sources/
 RUN sudo -EHs -u envoybuild bash -c "pushd /envoy-sources && $BUILD_CMD"

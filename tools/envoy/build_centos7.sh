@@ -19,9 +19,9 @@ LOCAL_BUILD_IMAGE="envoy-builder:${ENVOY_TAG}"
 docker build -t "${LOCAL_BUILD_IMAGE}" --progress=plain \
   --build-arg ENVOY_BUILD_IMAGE="${ENVOY_BUILD_IMAGE}" \
   --build-arg BUILD_CMD="${BUILD_CMD}" \
-  -f tools/envoy/Dockerfile.build-centos7 .
+  -f tools/envoy/Dockerfile.build-centos7 "${SOURCE_DIR}"
 
 # copy out the binary
 id=$(docker create "${LOCAL_BUILD_IMAGE}")
-docker cp "$id":/envoy-sources/linux/amd64/build_release_stripped/envoy "${BINARY_PATH}"
+docker cp "$id":/envoy-sources/linux/amd64/build_envoy_release_stripped/envoy "${BINARY_PATH}"
 docker rm -v "$id"

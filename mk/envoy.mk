@@ -15,7 +15,7 @@ build/envoy:
 build/artifacts-%-amd64/envoy:
 ifeq ($(BUILD_ENVOY_FROM_SOURCES),true)
 	ENVOY_TAG=${ENVOY_TAG} \
-	ENVOY_COMMIT_HASH=${ENV./tools/envoy/build_darwin.shOY_COMMIT_HASH} \
+	ENVOY_COMMIT_HASH=${ENVOY_COMMIT_HASH} \
 	SOURCE_DIR=${SOURCE_DIR} \
 	BINARY_PATH=$@ ./tools/envoy/build_$*.sh
 else
