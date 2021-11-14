@@ -18,6 +18,8 @@ export TEST_ASSET_KUBE_APISERVER=$(KUBE_APISERVER_PATH)
 export TEST_ASSET_ETCD=$(ETCD_PATH)
 export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 
+CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen
+
 all:
 
 GO_TEST ?= go test
@@ -47,22 +49,12 @@ deploy: manifests
 	kustomize build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests: controller-gen
+manifests:
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/...;./controllers/..." $(CRD_OUTPUT)
 
 # Generate code
-generate: controller-gen
+generate:
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt,year=$$(date +%Y) paths=./api/...
-
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0
-CONTROLLER_GEN=$(GOPATH_BIN_DIR)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
