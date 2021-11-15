@@ -30,6 +30,7 @@ node:
   cluster: backend
   id: mesh.name.namespace
   metadata:
+    dataplane.proxyType: dataplane
     version:
       envoy:
         build: hash/1.15.0/RELEASE

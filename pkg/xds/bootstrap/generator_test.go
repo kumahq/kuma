@@ -23,22 +23,22 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
+var defaultVersion = types.Version{
+	KumaDp: types.KumaDpVersion{
+		Version:   "0.0.1",
+		GitTag:    "v0.0.1",
+		GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+		BuildDate: "2019-08-07T11:26:06Z",
+	},
+	Envoy: types.EnvoyVersion{
+		Build:   "hash/1.15.0/RELEASE",
+		Version: "1.15.0",
+	},
+}
+
 var _ = Describe("bootstrapGenerator", func() {
 
 	var resManager core_manager.ResourceManager
-
-	defaultVersion := types.Version{
-		KumaDp: types.KumaDpVersion{
-			Version:   "0.0.1",
-			GitTag:    "v0.0.1",
-			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
-			BuildDate: "2019-08-07T11:26:06Z",
-		},
-		Envoy: types.EnvoyVersion{
-			Build:   "hash/1.15.0/RELEASE",
-			Version: "1.15.0",
-		},
-	}
 
 	BeforeEach(func() {
 		resManager = core_manager.NewResourceManager(memory.NewStore())

@@ -8,15 +8,13 @@ type configParameters struct {
 	AdminAddress       string
 	AdminPort          uint32
 	AdminAccessLogPath string
-	XdsClusterType     string
 	XdsHost            string
 	XdsPort            uint32
-	XdsUri             string
 	XdsConnectTimeout  time.Duration
 	AccessLogPipe      string
 	DataplaneToken     string
 	DataplaneResource  string
-	CertBytes          string
+	CertBytes          []byte
 	KumaDpVersion      string
 	KumaDpGitTag       string
 	KumaDpGitCommit    string
