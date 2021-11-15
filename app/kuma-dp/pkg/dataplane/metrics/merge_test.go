@@ -6,9 +6,14 @@ import (
 	"io"
 	"os"
 
+	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 func toLines(r io.Reader) (lines []string) {
@@ -73,4 +78,39 @@ var _ = Describe("Merge", func() {
 			expected: "./testdata/counter-status-codes.out",
 		}),
 	)
+})
+
+var _ = Describe("Detect mergable clusters", func() {
+	It("should crack split cluster names", func() {
+		clusterName := envoy_names.GetSplitClusterName("foo-service", 99)
+		Expect(clusterName).ToNot(BeEmpty())
+
+		name, ok := isMergeableClusterName(clusterName)
+		Expect(ok).To(BeTrue())
+		Expect(name).To(Equal("foo-service"))
+	})
+
+	It("should crack gateway cluster names", func() {
+		clusterName, err := route.DestinationClusterName(
+			&route.Destination{
+				Destination: map[string]string{
+					mesh_proto.ServiceTag: "foo-service",
+					mesh_proto.ZoneTag:    "foo-zone",
+				},
+			},
+			&envoy_cluster_v3.Cluster{},
+		)
+		Expect(err).To(Succeed())
+		Expect(clusterName).ToNot(BeEmpty())
+
+		name, ok := isMergeableClusterName(clusterName)
+		Expect(ok).To(BeTrue())
+		Expect(name).To(Equal("foo-service"))
+	})
+
+	It("should ignore other names", func() {
+		name, ok := isMergeableClusterName("foo-service")
+		Expect(ok).To(BeFalse())
+		Expect(name).To(BeEmpty())
+	})
 })
