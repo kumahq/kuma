@@ -20,23 +20,25 @@ import (
 var vipsAllocatorLog = core.Log.WithName("dns-vips-allocator")
 
 type VIPsAllocator struct {
-	rm          manager.ReadOnlyResourceManager
-	persistence *vips.Persistence
-	resolver    resolver.DNSResolver
-	newTicker   func() *time.Ticker
-	cidr        string
+	rm                manager.ReadOnlyResourceManager
+	persistence       *vips.Persistence
+	resolver          resolver.DNSResolver
+	newTicker         func() *time.Ticker
+	cidr              string
+	serviceVipEnabled bool
 }
 
 // NewVIPsAllocator creates new object of VIPsAllocator. You can either
 // call method CreateOrUpdateVIPConfig manually or start VIPsAllocator as a component.
 // In the latter scenario it will call CreateOrUpdateVIPConfig every 'tickInterval'
 // for all meshes in the store.
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, cidr string, resolver resolver.DNSResolver) (*VIPsAllocator, error) {
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, serviceVipEnabled bool, cidr string, resolver resolver.DNSResolver) (*VIPsAllocator, error) {
 	return &VIPsAllocator{
-		rm:          rm,
-		persistence: vips.NewPersistence(rm, configManager),
-		cidr:        cidr,
-		resolver:    resolver,
+		rm:                rm,
+		persistence:       vips.NewPersistence(rm, configManager),
+		serviceVipEnabled: serviceVipEnabled,
+		cidr:              cidr,
+		resolver:          resolver,
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(tickInterval)
 		},
@@ -107,7 +109,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 	}
 
 	forEachMesh := func(mesh string, meshed *vips.VirtualOutboundMeshView) error {
-		newVirtualOutboundView, err := BuildVirtualOutboundMeshView(d.rm, mesh)
+		newVirtualOutboundView, err := BuildVirtualOutboundMeshView(d.rm, d.serviceVipEnabled, mesh)
 		if err != nil {
 			return err
 		}
@@ -143,7 +145,7 @@ var ingressOpts = store.ListOptionsFunc(func(options *store.ListOptions) {
 	}
 })
 
-func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, mesh string) (*vips.VirtualOutboundMeshView, error) {
+func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, serviceVipEnabled bool, mesh string) (*vips.VirtualOutboundMeshView, error) {
 	outboundSet := vips.NewEmptyVirtualOutboundView()
 	ctx := context.Background()
 
@@ -161,7 +163,9 @@ func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, mesh strin
 			continue
 		}
 		for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
-			errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
+			if serviceVipEnabled {
+				errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
+			}
 			for _, vob := range Match(virtualOutbounds.Items, inbound.Tags) {
 				addFromVirtualOutbound(outboundSet, vob, inbound.Tags, dp.Descriptor().Name, dp.Meta.GetName())
 			}
@@ -175,7 +179,7 @@ func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, mesh strin
 	}
 	for _, dp := range legacyIngresses.Items {
 		for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
-			if service.Mesh == mesh {
+			if service.Mesh == mesh && serviceVipEnabled {
 				errs = multierr.Append(errs, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
 			}
 		}
@@ -188,7 +192,7 @@ func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, mesh strin
 
 	for _, zi := range zoneIngresses.Items {
 		for _, service := range zi.Spec.GetAvailableServices() {
-			if service.Mesh == mesh {
+			if service.Mesh == mesh && serviceVipEnabled {
 				errs = multierr.Append(errs, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
 			}
 			for _, vob := range Match(virtualOutbounds.Items, service.Tags) {
@@ -203,7 +207,9 @@ func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, mesh strin
 	}
 	for _, es := range externalServices.Items {
 		tags := map[string]string{mesh_proto.ServiceTag: es.Spec.GetService()}
-		errs = multierr.Append(errs, addDefault(outboundSet, es.Spec.GetService(), es.Spec.GetPortUInt32()))
+		if serviceVipEnabled {
+			errs = multierr.Append(errs, addDefault(outboundSet, es.Spec.GetService(), es.Spec.GetPortUInt32()))
+		}
 		errs = multierr.Append(errs, outboundSet.Add(vips.NewHostEntry(es.Spec.GetHost()), vips.OutboundEntry{
 			Port:   es.Spec.GetPortUInt32(),
 			TagSet: tags,

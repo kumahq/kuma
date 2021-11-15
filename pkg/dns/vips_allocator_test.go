@@ -81,7 +81,7 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		allocator, err = dns.NewVIPsAllocator(rm, cm, "240.0.0.0/24", r)
+		allocator, err = dns.NewVIPsAllocator(rm, cm, true, "240.0.0.0/24", r)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -146,7 +146,7 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should return error if failed to update VIP config", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, "240.0.0.0/24", r)
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24", r)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1")
@@ -162,7 +162,7 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should try to update all meshes and return combined error", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, "240.0.0.0/24", r)
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24", r)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfigs()
@@ -286,7 +286,7 @@ var _ = Describe("BuildVirtualOutboundMeshView", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		serviceSet, err := dns.BuildVirtualOutboundMeshView(rm, "mesh-1")
+		serviceSet, err := dns.BuildVirtualOutboundMeshView(rm, true, "mesh-1")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -315,6 +315,7 @@ var _ = Describe("BuildVirtualOutboundMeshView", func() {
 type outboundViewTestCase struct {
 	givenResources      map[model.ResourceKey]model.Resource
 	whenMesh            string
+	whenSkipServiceVips bool
 	thenHostnameEntries []vips.HostnameEntry
 	thenOutbounds       map[vips.HostnameEntry][]vips.OutboundEntry
 }
@@ -334,7 +335,7 @@ var _ = DescribeTable("outboundView",
 		}
 
 		// When
-		serviceSet, err := dns.BuildVirtualOutboundMeshView(rm, tc.whenMesh)
+		serviceSet, err := dns.BuildVirtualOutboundMeshView(rm, !tc.whenSkipServiceVips, tc.whenMesh)
 
 		// Then
 		Expect(err).ToNot(HaveOccurred())
@@ -538,6 +539,29 @@ var _ = DescribeTable("outboundView",
 		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
 			vips.NewFqdnEntry("service1.mesh"): {
 				{Port: 8080, TagSet: map[string]string{mesh_proto.ServiceTag: "service1"}, Origin: "virtual-outbound:vob-2"},
+			},
+		},
+	}),
+	Entry("dp skip service vips", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "dp1"): &mesh.DataplaneResource{Spec: dp("service1")},
+			model.WithMesh("mesh", "es-1"): &mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "external.service.com:8080",
+					},
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "my-external-service-1",
+					},
+				},
+			},
+		},
+		whenSkipServiceVips: true,
+		whenMesh:            "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewHostEntry("external.service.com")},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewHostEntry("external.service.com"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "host", Port: 8080},
 			},
 		},
 	}),
