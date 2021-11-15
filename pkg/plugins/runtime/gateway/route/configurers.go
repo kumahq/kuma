@@ -328,6 +328,7 @@ func RouteActionForward(destinations []Destination) RouteConfigurer {
 
 		r.Action = &envoy_config_route.Route_Route{
 			Route: &envoy_config_route.RouteAction{
+				Timeout: nil, // TODO(jpeach) support request timeout from the Timeout policy, but which one?
 				ClusterSpecifier: &envoy_config_route.RouteAction_WeightedClusters{
 					WeightedClusters: &envoy_config_route.WeightedCluster{
 						Clusters:    weights,

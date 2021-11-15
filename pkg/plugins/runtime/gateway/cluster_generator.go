@@ -247,7 +247,7 @@ func circuitBreakerPolicyFor(dest *route.Destination) *core_mesh.CircuitBreakerR
 		return policy.(*core_mesh.CircuitBreakerResource)
 	}
 
-	return nil // TODO(jpeach) default breaker policy
+	return nil // TODO(jpeach) default circuit breaker policy
 }
 
 func healthCheckPolicyFor(dest *route.Destination) *core_mesh.HealthCheckResource {
@@ -255,5 +255,5 @@ func healthCheckPolicyFor(dest *route.Destination) *core_mesh.HealthCheckResourc
 		return policy.(*core_mesh.HealthCheckResource)
 	}
 
-	return nil // TODO(jpeach) default breaker policy
+	return nil // TODO(jpeach) default health check policy
 }
