@@ -57,8 +57,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 				return errors.Wrap(err, "Failed obtaining CRDs from Kubernetes cluster")
 			}
 
-			installedCrds := ctx.FilterCrdNamesToInstall(getCrdNamesFromList(crds))
-			for _, installedCrdName := range installedCrds {
+			for _, installedCrdName := range getCrdNamesFromList(crds) {
 				delete(crdsToInstallMap, installedCrdName)
 			}
 
