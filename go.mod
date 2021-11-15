@@ -30,7 +30,7 @@ require (
 	github.com/miekg/dns v1.1.43
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
-	github.com/operator-framework/operator-lib v0.8.0
+	github.com/operator-framework/operator-lib v0.9.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
