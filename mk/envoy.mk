@@ -8,11 +8,15 @@ endif
 
 BUILD_ENVOY_FROM_SOURCES ?= false
 
+# Target 'build/envoy' allows to put Envoy binary under the build/artifacts-$GOOS-$GOARCH directory.
+# Depending on the flag BUILD_ENVOY_FROM_SOURCES this target either fetches Envoy from binary registry or
+# builds from sources. It's possible to build binaries for darwin, linux and centos7 by specifying GOOS variable.
+# Envoy version could be specified either by ENVOY_TAG or ENVOY_COMMIT_HASH, the latter takes precedence.
 .PHONY: build/envoy
 build/envoy:
-	$(MAKE) build/artifacts-${GOOS}-${GOARCH}/envoy
+	$(MAKE) build/artifacts-${GOOS}-${GOARCH}/envoy/envoy
 
-build/artifacts-%-amd64/envoy:
+build/artifacts-%-amd64/envoy/envoy:
 ifeq ($(BUILD_ENVOY_FROM_SOURCES),true)
 	ENVOY_TAG=${ENVOY_TAG} \
 	ENVOY_COMMIT_HASH=${ENVOY_COMMIT_HASH} \
