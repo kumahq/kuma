@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## [1.4.0 RC2]
+
+Changes:
+
+* Disable reporting by default [#3070](https://github.com//kumahq/kuma/pull/3070) [#3159](https://github.com//kumahq/kuma/pull/3159)
+* chore(kumactl) remove install CRDs filter function [#3139](https://github.com//kumahq/kuma/pull/3139)
+* feat(kuma-dp) Add conf to disable service vip [#3143](https://github.com//kumahq/kuma/pull/3143)
+* chore(kuma-cp) update some TODO comments [#3141](https://github.com//kumahq/kuma/pull/3141)
+* feat(kuma-cp) Add kuma.io/ignore annotation [#3142](https://github.com//kumahq/kuma/pull/3142)
+* fix(kuma-dp) match gateway cluster names in the hijacker [#3106](https://github.com//kumahq/kuma/pull/3106)
+
+* chore(kuma-cp) upgrade gui to new version [#3148](https://github.com//kumahq/kuma/pull/3148)
+* chore(*) upgrade to Go 1.17.3 [#3147](https://github.com//kumahq/kuma/pull/3147)
+* chore(deps): bump github.com/operator-framework/operator-lib [#3158](https://github.com//kumahq/kuma/pull/3158)
+* chore(deps): bump github.com/gruntwork-io/terratest [#3130](https://github.com//kumahq/kuma/pull/3130)
+
 ## [1.4.0 RC1]
 
 Changes:
