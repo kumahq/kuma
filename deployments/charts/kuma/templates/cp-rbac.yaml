@@ -92,6 +92,19 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
+      - gateways
+      - gatewayroutes
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - kuma.io
+    resources:
       - externalservices
       - faultinjections
       - healthchecks
