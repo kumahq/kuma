@@ -1,24 +1,14 @@
 # CHANGELOG
 
-## [1.4.0 RC2]
+## [1.4.0 RC1]
 
 Changes:
-
 * Disable reporting by default [#3070](https://github.com//kumahq/kuma/pull/3070) [#3159](https://github.com//kumahq/kuma/pull/3159)
 * chore(kumactl) remove install CRDs filter function [#3139](https://github.com//kumahq/kuma/pull/3139)
 * feat(kuma-dp) Add conf to disable service vip [#3143](https://github.com//kumahq/kuma/pull/3143)
 * chore(kuma-cp) update some TODO comments [#3141](https://github.com//kumahq/kuma/pull/3141)
 * feat(kuma-cp) Add kuma.io/ignore annotation [#3142](https://github.com//kumahq/kuma/pull/3142)
 * fix(kuma-dp) match gateway cluster names in the hijacker [#3106](https://github.com//kumahq/kuma/pull/3106)
-
-* chore(kuma-cp) upgrade gui to new version [#3148](https://github.com//kumahq/kuma/pull/3148)
-* chore(*) upgrade to Go 1.17.3 [#3147](https://github.com//kumahq/kuma/pull/3147)
-* chore(deps): bump github.com/operator-framework/operator-lib [#3158](https://github.com//kumahq/kuma/pull/3158)
-* chore(deps): bump github.com/gruntwork-io/terratest [#3130](https://github.com//kumahq/kuma/pull/3130)
-
-## [1.4.0 RC1]
-
-Changes:
 * feat: add ECDSA certificate generator support [#3093](https://github.com//kumahq/kuma/pull/3093)
 * feat: add more global resources to GlobalInsights [#3094](https://github.com//kumahq/kuma/pull/3094)
 * feat: allow creating secrets for the not yet existing mesh [#3076](https://github.com//kumahq/kuma/pull/3076)
@@ -63,6 +53,10 @@ Changes:
 * feat: User Token for API Server authentication [#2892](https://github.com//kumahq/kuma/pull/2892)
 * chore: refactor authz and authn to plugins [#2837](https://github.com//kumahq/kuma/pull/2837)
 
+* chore(kuma-cp) upgrade gui to new version [#3148](https://github.com//kumahq/kuma/pull/3148)
+* chore(*) upgrade to Go 1.17.3 [#3147](https://github.com//kumahq/kuma/pull/3147)
+* chore(deps): bump github.com/operator-framework/operator-lib [#3158](https://github.com//kumahq/kuma/pull/3158)
+* chore(deps): bump github.com/gruntwork-io/terratest [#3130](https://github.com//kumahq/kuma/pull/3130)
 * chore: update helm and controller-runtime [#2764](https://github.com//kumahq/kuma/pull/2764)
 * chore: bump github.com/lib/pq from 1.10.3 to 1.10.4 [#3131](https://github.com//kumahq/kuma/pull/3131)
 * chore: bump google.golang.org/grpc from 1.41.0 to 1.42.0 [#3101](https://github.com//kumahq/kuma/pull/3101)
