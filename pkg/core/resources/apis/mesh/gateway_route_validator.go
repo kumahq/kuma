@@ -158,7 +158,7 @@ func validateGatewayRouteHTTPMatch(
 	var err validators.ValidationError
 
 	if conf.GetPath() == nil &&
-		conf.GetMethod() == mesh_proto.GatewayRoute_HttpRoute_Match_NONE &&
+		conf.GetMethod() == mesh_proto.HttpMethod_NONE &&
 		len(conf.GetHeaders()) < 1 &&
 		len(conf.GetQueryParameters()) < 1 {
 		err.AddViolationAt(path, "cannot be empty")

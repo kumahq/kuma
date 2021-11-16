@@ -6,6 +6,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/options.proto";
 import "mesh/v1alpha1/selector.proto";
+import "mesh/v1alpha1/http_method.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -56,6 +57,9 @@ message Retry {
 
       //  +optional
       repeated uint32 retriable_status_codes = 5;
+
+      //  +optional
+      repeated HttpMethod retriable_methods = 6;
     }
 
     message Tcp {

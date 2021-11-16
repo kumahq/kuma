@@ -181,12 +181,12 @@ func validateConfHttp(
 		return
 	}
 
-	numRetries, perTryTimeout, backOff, retriableStatusCodes :=
+	numRetries, perTryTimeout, backOff, retriableStatusCodes, retriableMethods :=
 		conf.NumRetries, conf.PerTryTimeout, conf.BackOff,
-		conf.RetriableStatusCodes
+		conf.RetriableStatusCodes, conf.RetriableMethods
 
 	if numRetries == nil && perTryTimeout == nil && backOff == nil &&
-		retriableStatusCodes == nil {
+		retriableStatusCodes == nil && retriableMethods == nil {
 		err.AddViolationAt(path, EmptyFieldViolation)
 	}
 
@@ -201,6 +201,12 @@ func validateConfHttp(
 	))
 
 	err.Add(validateConfProtocolBackOff(path.Field("backOff"), backOff))
+
+	for i, m := range retriableMethods {
+		if m == mesh_proto.HttpMethod_NONE {
+			err.AddViolationAt(path.Field("retriableMethods").Index(i), EmptyFieldViolation)
+		}
+	}
 
 	return
 }
