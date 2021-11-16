@@ -2,7 +2,7 @@
 
 set -e
 
-source "$(dirname "$(dirname "$0")")/common.sh" # relative path to ../common.sh
+source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
 
 [ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="docker.io"
 [ -z "$KUMA_DOCKER_REPO_ORG" ] && KUMA_DOCKER_REPO_ORG=${KUMA_DOCKER_REPO}/kumahq

@@ -2,7 +2,7 @@
 
 set -e
 
-source "$(dirname "$(dirname "$0")")/common.sh" # relative path to ../common.sh
+source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
 
 [ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
 [ -z "$GH_REPO" ] && GH_REPO="charts"

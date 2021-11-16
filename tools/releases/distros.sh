@@ -2,7 +2,7 @@
 
 set -e
 
-source "$(dirname "$(dirname "$0")")/common.sh" # relative path to ../common.sh
+source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
 
 GOARCH=(amd64)
 

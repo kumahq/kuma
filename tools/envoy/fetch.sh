@@ -16,7 +16,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-source "$(dirname "$(dirname "$0")")/common.sh" # relative path to ../common.sh
+source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
 
 function download_envoy() {
     local binary_name=$1
