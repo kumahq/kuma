@@ -13,7 +13,7 @@ BUILD_ENVOY_FROM_SOURCES ?= false
 # builds from sources. It's possible to build binaries for darwin, linux and centos7 by specifying GOOS variable.
 # Envoy version could be specified either by ENVOY_TAG or ENVOY_COMMIT_HASH, the latter takes precedence.
 .PHONY: build/envoy
-build/envoy:
+build/envoy: ## Envoy: build or fetch envoy binaries
 	$(MAKE) build/artifacts-${GOOS}-${GOARCH}/envoy/envoy
 
 build/artifacts-%-amd64/envoy/envoy:
