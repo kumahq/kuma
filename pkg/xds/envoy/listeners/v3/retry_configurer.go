@@ -93,19 +93,17 @@ func genHttpRetryPolicy(
 		policy.RetriableStatusCodes = conf.RetriableStatusCodes
 	}
 
-	if conf.RetriableMethods != nil {
-		for _, methodValue := range conf.RetriableMethods {
-			method, ok := mesh_proto.Retry_Conf_Http_Method_name[int32(methodValue)]
-			if !ok {
-				continue
-			}
-			policy.RetriableRequestHeaders = append(policy.RetriableRequestHeaders,
-				&envoy_route.HeaderMatcher{
-					Name:                 ":method",
-					HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{ExactMatch: method},
-					InvertMatch:          false,
-				})
+	for _, method := range conf.GetRetriableMethods() {
+		if method == mesh_proto.HttpMethod_NONE {
+			continue
 		}
+
+		policy.RetriableRequestHeaders = append(policy.RetriableRequestHeaders,
+			&envoy_route.HeaderMatcher{
+				Name:                 ":method",
+				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{ExactMatch: method.String()},
+				InvertMatch:          false,
+			})
 	}
 
 	return &policy

@@ -79,7 +79,7 @@ var _ = Describe("RetryConfigurer", func() {
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
 							NumRetries:       util_proto.UInt32(7),
-							RetriableMethods: []mesh_proto.Retry_Conf_Http_Method{mesh_proto.Retry_Conf_Http_GET, mesh_proto.Retry_Conf_Http_POST},
+							RetriableMethods: []mesh_proto.HttpMethod{mesh_proto.HttpMethod_GET, mesh_proto.HttpMethod_POST},
 						},
 					},
 				},
