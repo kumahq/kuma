@@ -11,26 +11,15 @@ import (
 	envoy_metrics_v3 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"google.golang.org/protobuf/types/known/anypb"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
-
-func mustNewStruct(in map[string]interface{}) *structpb.Struct {
-	r, err := structpb.NewStruct(in)
-	if err != nil {
-		panic(err)
-	}
-	return r
-}
 
 func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, error) {
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{
 			Id:      parameters.Id,
 			Cluster: parameters.Service,
-			Metadata: mustNewStruct(map[string]interface{}{
+			Metadata: util_proto.MustStruct(map[string]interface{}{
 				"version": map[string]interface{}{
 					"kumaDp": map[string]interface{}{
 						"version":   parameters.KumaDpVersion,
@@ -50,7 +39,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 				{
 					Name: "kuma",
 					LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_StaticLayer{
-						StaticLayer: mustNewStruct(map[string]interface{}{
+						StaticLayer: util_proto.MustStruct(map[string]interface{}{
 							"envoy.restart_features.use_apple_api_for_dns_lookups": false,
 							"re2.max_program_size.error_level":                     4294967295,
 							"re2.max_program_size.warn_level":                      1000,
@@ -116,14 +105,14 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 				{
 					// TODO does timeout and keepAlive make sense on this as it uses unix domain sockets?
 					Name:                 "access_log_sink",
-					ConnectTimeout:       durationpb.New(parameters.XdsConnectTimeout),
+					ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
 					Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
 					LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
 					UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
 						TcpKeepalive: &envoy_core_v3.TcpKeepalive{
-							KeepaliveProbes:   wrapperspb.UInt32(3),
-							KeepaliveTime:     wrapperspb.UInt32(10),
-							KeepaliveInterval: wrapperspb.UInt32(10),
+							KeepaliveProbes:   util_proto.UInt32(3),
+							KeepaliveTime:     util_proto.UInt32(10),
+							KeepaliveInterval: util_proto.UInt32(10),
 						},
 					},
 					ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: envoy_cluster_v3.Cluster_STATIC},
@@ -148,14 +137,14 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 				},
 				{
 					Name:                 "ads_cluster",
-					ConnectTimeout:       durationpb.New(parameters.XdsConnectTimeout),
+					ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
 					Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
 					LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
 					UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
 						TcpKeepalive: &envoy_core_v3.TcpKeepalive{
-							KeepaliveProbes:   wrapperspb.UInt32(3),
-							KeepaliveTime:     wrapperspb.UInt32(10),
-							KeepaliveInterval: wrapperspb.UInt32(10),
+							KeepaliveProbes:   util_proto.UInt32(3),
+							KeepaliveTime:     util_proto.UInt32(10),
+							KeepaliveInterval: util_proto.UInt32(10),
 						},
 					},
 					ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: clusterTypeFromHost(parameters.XdsHost)},
@@ -212,7 +201,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 					},
 				}
 			}
-			any, err := anypb.New(transport)
+			any, err := util_proto.MarshalAnyDeterministic(transport)
 			if err != nil {
 				return nil, err
 			}
@@ -242,7 +231,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 	}
 
 	if parameters.DataplaneToken != "" {
-		res.Node.Metadata.Fields["dataplane.token"] = structpb.NewStringValue(parameters.DataplaneToken)
+		res.Node.Metadata.Fields["dataplane.token"] = util_proto.MustNewValueForStruct(parameters.DataplaneToken)
 		if res.HdsConfig != nil {
 			for _, n := range res.HdsConfig.GrpcServices {
 				n.InitialMetadata = []*envoy_core_v3.HeaderValue{
@@ -257,10 +246,10 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 		}
 	}
 	if parameters.DataplaneResource != "" {
-		res.Node.Metadata.Fields["dataplane.resource"] = structpb.NewStringValue(parameters.DataplaneResource)
+		res.Node.Metadata.Fields["dataplane.resource"] = util_proto.MustNewValueForStruct(parameters.DataplaneResource)
 	}
 	if parameters.AdminPort != 0 {
-		res.Node.Metadata.Fields["dataplane.admin.port"] = structpb.NewStringValue(strconv.Itoa(int(parameters.AdminPort)))
+		res.Node.Metadata.Fields["dataplane.admin.port"] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.AdminPort)))
 		res.Admin = &envoy_bootstrap_v3.Admin{
 			AccessLogPath: parameters.AdminAccessLogPath,
 			Address: &envoy_core_v3.Address{
@@ -277,20 +266,20 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 		}
 	}
 	if parameters.DNSPort != 0 {
-		res.Node.Metadata.Fields["dataplane.dns.port"] = structpb.NewStringValue(strconv.Itoa(int(parameters.DNSPort)))
+		res.Node.Metadata.Fields["dataplane.dns.port"] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.DNSPort)))
 	}
 	if parameters.EmptyDNSPort != 0 {
-		res.Node.Metadata.Fields["dataplane.dns.empty.port"] = structpb.NewStringValue(strconv.Itoa(int(parameters.EmptyDNSPort)))
+		res.Node.Metadata.Fields["dataplane.dns.empty.port"] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.EmptyDNSPort)))
 	}
 	if parameters.ProxyType != "" {
-		res.Node.Metadata.Fields["dataplane.proxyType"] = structpb.NewStringValue(parameters.ProxyType)
+		res.Node.Metadata.Fields["dataplane.proxyType"] = util_proto.MustNewValueForStruct(parameters.ProxyType)
 	}
 	if len(parameters.DynamicMetadata) > 0 {
-		dm, _ := structpb.NewStruct(map[string]interface{}{})
+		md := make(map[string]interface{}, len(parameters.DynamicMetadata))
 		for k, v := range parameters.DynamicMetadata {
-			dm.Fields[k] = structpb.NewStringValue(v)
+			md[k] = v
 		}
-		res.Node.Metadata.Fields["dynamicMetadata"] = structpb.NewStructValue(dm)
+		res.Node.Metadata.Fields["dynamicMetadata"] = util_proto.MustNewValueForStruct(md)
 	}
 	return res, nil
 }
