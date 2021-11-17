@@ -36,6 +36,7 @@ node:
   cluster: backend
   id: default.dp-1
   metadata:
+    dataplane.proxyType: dataplane
     dataplane.token: token
     version:
       envoy:

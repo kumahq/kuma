@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -61,4 +62,28 @@ func Double(f float64) *wrapperspb.DoubleValue {
 
 func Duration(d time.Duration) *durationpb.Duration {
 	return durationpb.New(d)
+}
+
+func Struct(in map[string]interface{}) (*structpb.Struct, error) {
+	return structpb.NewStruct(in)
+}
+
+func MustStruct(in map[string]interface{}) *structpb.Struct {
+	r, err := Struct(in)
+	if err != nil {
+		panic(err.Error())
+	}
+	return r
+}
+
+func NewValueForStruct(in interface{}) (*structpb.Value, error) {
+	return structpb.NewValue(in)
+}
+
+func MustNewValueForStruct(in interface{}) *structpb.Value {
+	r, err := NewValueForStruct(in)
+	if err != nil {
+		panic(err.Error())
+	}
+	return r
 }
