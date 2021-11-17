@@ -2,6 +2,8 @@
 
 set -e
 
+source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
+
 [ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
 [ -z "$GH_REPO" ] && GH_REPO="charts"
 CHARTS_REPO_URL="https://$GH_OWNER.github.io/$GH_REPO"
@@ -10,38 +12,6 @@ CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
 GH_PAGES_BRANCH="gh-pages"
 [ -z "$GH_REPO_URL" ] && GH_REPO_URL="git@github.com:${GH_OWNER}/${GH_REPO}.git"
-
-function msg_green {
-  builtin echo -en "\033[1;32m"
-  echo "$@"
-  builtin echo -en "\033[0m"
-}
-
-function msg_red() {
-  builtin echo -en "\033[1;31m" >&2
-  echo "$@" >&2
-  builtin echo -en "\033[0m" >&2
-}
-
-
-function msg_yellow() {
-    builtin echo -en "\033[1;33m"
-    echo "$@"
-    builtin echo -en "\033[0m"
-}
-
-
-function msg() {
-    builtin echo -en "\033[1m"
-    echo "$@"
-    builtin echo -en "\033[0m"
-}
-
-
-function msg_err() {
-  msg_red $@
-  exit 1
-}
 
 function package {
   # First package all the charts
