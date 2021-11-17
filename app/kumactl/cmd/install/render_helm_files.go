@@ -8,14 +8,59 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/engine"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	kube_runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
+
+func unregisteredCRD(scheme *kube_runtime.Scheme, chartFile *data.File) bool {
+	types := scheme.AllKnownTypes()
+
+	if !strings.HasPrefix(chartFile.FullPath, "crds/") {
+		return false
+	}
+
+	var crdRes apiextensionsv1.CustomResourceDefinition
+
+	if err := yaml.Unmarshal(chartFile.Data, &crdRes); err != nil {
+		return false
+	}
+
+	for _, v := range crdRes.Spec.Versions {
+		gvk := schema.GroupVersionKind{
+			Group:   crdRes.Spec.Group,
+			Version: v.Name,
+			Kind:    crdRes.Spec.Names.Kind,
+		}
+		if _, ok := types[gvk]; ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+func filterHelmTemplates(scheme *kube_runtime.Scheme, files data.FileList) data.FileList {
+	var filteredFiles data.FileList
+
+	for _, file := range files {
+		if unregisteredCRD(scheme, &file) {
+			continue
+		}
+
+		filteredFiles = append(filteredFiles, file)
+	}
+
+	return filteredFiles
+}
 
 func labelRegex(label string) *regexp.Regexp {
 	return regexp.MustCompile("(?m)[\r\n]+^.*" + label + ".*$")
@@ -45,43 +90,45 @@ func renderHelmFiles(
 	helmValuesPrefix string,
 	kubeClientConfig *rest.Config,
 ) ([]data.File, error) {
-	chart, err := loadCharts(templates)
+	kumaChart, err := loadCharts(templates)
 	if err != nil {
 		return nil, errors.Errorf("Failed to load charts: %s", err)
 	}
 
 	overrideValues := generateOverrideValues(args, helmValuesPrefix)
-	if err := chartutil.ProcessDependencies(chart, overrideValues); err != nil {
+
+	if err := chartutil.ProcessDependencies(kumaChart, overrideValues); err != nil {
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)
 	}
 
-	options := generateReleaseOptions(chart.Metadata.Name, namespace)
+	options := generateReleaseOptions(kumaChart.Metadata.Name, namespace)
 
-	valuesToRender, err := chartutil.ToRenderValues(chart, overrideValues, options, nil)
+	valuesToRender, err := chartutil.ToRenderValues(kumaChart, overrideValues, options, nil)
 	if err != nil {
 		return nil, errors.Errorf("Failed to render values: %s", err)
 	}
 
 	var files map[string]string
 	if kubeClientConfig == nil {
-		files, err = engine.Render(chart, valuesToRender)
+		files, err = engine.Render(kumaChart, valuesToRender)
 	} else {
-		files, err = engine.RenderWithClient(chart, valuesToRender, kubeClientConfig)
+		files, err = engine.RenderWithClient(kumaChart, valuesToRender, kubeClientConfig)
 	}
 	if err != nil {
 		return nil, errors.Errorf("Failed to render templates: %s", err)
 	}
 	files["namespace.yaml"] = kumaSystemNamespace(namespace)
 
-	return postRender(chart, files), nil
+	return postRender(kumaChart, files), nil
 }
 
 func loadCharts(templates []data.File) (*chart.Chart, error) {
-	files := []*loader.BufferedFile{}
-	for _, f := range templates {
+	var files []*loader.BufferedFile
+
+	for _, template := range templates {
 		files = append(files, &loader.BufferedFile{
-			Name: f.FullPath,
-			Data: f.Data,
+			Name: template.FullPath,
+			Data: template.Data,
 		})
 	}
 
@@ -123,9 +170,9 @@ func generateOverrideValues(args interface{}, helmValuesPrefix string) map[strin
 	}
 
 	if helmValuesPrefix != "" {
-		prefixed := map[string]interface{}{}
-		prefixed[helmValuesPrefix] = overrideValues
-		return prefixed
+		return map[string]interface{}{
+			helmValuesPrefix: overrideValues,
+		}
 	}
 
 	return overrideValues

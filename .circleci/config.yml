@@ -30,11 +30,11 @@ parameters:
 reusable:
 
   constants:
-    - &go_version "1.16.3"
+    - &go_version "1.17.3"
 
   docker_images:
-    - &golang_image "golang:1.16.3"
-    - &circleci_golang_image "circleci/golang:1.16.3"
+    - &golang_image "golang:1.17.3"
+    - &circleci_golang_image "circleci/golang:1.17.3"
 
   vm_images:
   - &ubuntu_vm_image "ubuntu-2004:202104-01"
@@ -677,8 +677,6 @@ jobs:
     executor: golang
     # we need a large resource class to satisfy the needs of golangci-lint run under `make check`
     resource_class: large
-    environment:
-      CLANG_FORMAT_PATH: clang-format-13
     steps:
     - checkout
     - restore_cache:
@@ -697,16 +695,20 @@ jobs:
         command: |
          # see https://apt.llvm.org/
 
+         # Assuming this is Debian, $VERSION_CODENAME nas the release name we
+         # need for apt.
+         . /etc/os-release
+
          cat  >>/etc/apt/sources.list \<<EOF
 
-         deb http://apt.llvm.org/stretch/ llvm-toolchain-stretch main
-         deb-src http://apt.llvm.org/stretch/ llvm-toolchain-stretch main
+         deb https://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME} main
+         deb-src https://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME} main
 
          EOF
 
          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
-         apt update && apt install -y clang-format-13
+         apt update && apt install -y clang-format
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check

@@ -362,44 +362,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 	})
 })
 
-var _ = Describe("MeshFor(..)", func() {
-
-	type testCase struct {
-		podAnnotations map[string]string
-		expected       string
-	}
-
-	DescribeTable("should use value of `kuma.io/mesh` annotation on a Pod or fallback to the `default` Mesh",
-		func(given testCase) {
-			// given
-			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Annotations: given.podAnnotations,
-				},
-			}
-
-			// then
-			Expect(MeshFor(pod)).To(Equal(given.expected))
-		},
-		Entry("Pod without annotations", testCase{
-			podAnnotations: nil,
-			expected:       "default",
-		}),
-		Entry("Pod with empty `kuma.io/mesh` annotation", testCase{
-			podAnnotations: map[string]string{
-				"kuma.io/mesh": "",
-			},
-			expected: "default",
-		}),
-		Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
-			podAnnotations: map[string]string{
-				"kuma.io/mesh": "demo",
-			},
-			expected: "demo",
-		}),
-	)
-})
-
 var _ = Describe("InboundTagsForService(..)", func() {
 
 	type testCase struct {

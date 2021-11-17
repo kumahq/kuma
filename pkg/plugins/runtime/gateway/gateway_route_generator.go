@@ -190,17 +190,17 @@ func makeRouteMatch(ruleMatch *mesh_proto.GatewayRoute_HttpRoute_Match) route.Ma
 		}
 	}
 
-	if m := ruleMatch.GetMethod(); m != mesh_proto.GatewayRoute_HttpRoute_Match_NONE {
-		names := map[mesh_proto.GatewayRoute_HttpRoute_Match_Method]string{
-			mesh_proto.GatewayRoute_HttpRoute_Match_CONNECT: "CONNECT",
-			mesh_proto.GatewayRoute_HttpRoute_Match_DELETE:  "DELETE",
-			mesh_proto.GatewayRoute_HttpRoute_Match_GET:     "GET",
-			mesh_proto.GatewayRoute_HttpRoute_Match_HEAD:    "HEAD",
-			mesh_proto.GatewayRoute_HttpRoute_Match_OPTIONS: "OPTIONS",
-			mesh_proto.GatewayRoute_HttpRoute_Match_PATCH:   "PATCH",
-			mesh_proto.GatewayRoute_HttpRoute_Match_POST:    "POST",
-			mesh_proto.GatewayRoute_HttpRoute_Match_PUT:     "PUT",
-			mesh_proto.GatewayRoute_HttpRoute_Match_TRACE:   "TRACE",
+	if m := ruleMatch.GetMethod(); m != mesh_proto.HttpMethod_NONE {
+		names := map[mesh_proto.HttpMethod]string{
+			mesh_proto.HttpMethod_CONNECT: "CONNECT",
+			mesh_proto.HttpMethod_DELETE:  "DELETE",
+			mesh_proto.HttpMethod_GET:     "GET",
+			mesh_proto.HttpMethod_HEAD:    "HEAD",
+			mesh_proto.HttpMethod_OPTIONS: "OPTIONS",
+			mesh_proto.HttpMethod_PATCH:   "PATCH",
+			mesh_proto.HttpMethod_POST:    "POST",
+			mesh_proto.HttpMethod_PUT:     "PUT",
+			mesh_proto.HttpMethod_TRACE:   "TRACE",
 		}
 
 		match.Method = names[m]

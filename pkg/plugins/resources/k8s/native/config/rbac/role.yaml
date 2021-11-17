@@ -49,6 +49,30 @@ rules:
 - apiGroups:
   - kuma.io
   resources:
+  - gatewayroutes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kuma.io
+  resources:
+  - gateways
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - kuma.io
+  resources:
   - healthchecks
   verbs:
   - get

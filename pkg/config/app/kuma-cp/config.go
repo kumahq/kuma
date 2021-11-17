@@ -191,7 +191,7 @@ var DefaultConfig = func() Config {
 			},
 		},
 		Reports: &Reports{
-			Enabled: true,
+			Enabled: false,
 		},
 		General:     DefaultGeneralConfig(),
 		GuiServer:   gui_server.DefaultGuiServerConfig(),

@@ -151,6 +151,8 @@ var _ = Describe("Retry", func() {
                         numRetries: 0
                         perTryTimeout: "0"
                         backOff: {}
+                        retriableMethods:
+                        - NONE
 `,
 				expected: `
                 violations:
@@ -160,6 +162,8 @@ var _ = Describe("Retry", func() {
                   message: has to be greater than 0 when defined
                 - field: conf.http.backOff.baseInterval
                   message: has to be defined
+                - field: conf.http.retriableMethods[0]
+                  message: field cannot be empty
 `,
 			}),
 			Entry("empty conf.grpc", testCase{
