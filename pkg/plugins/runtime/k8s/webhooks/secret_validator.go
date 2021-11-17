@@ -107,9 +107,7 @@ func (v *SecretValidator) validateMeshSecret(ctx context.Context, verr *validato
 		Name: meshOfSecret(secret),
 	}
 	if err := v.Client.Get(ctx, key, &mesh); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(meshLabel), "mesh does not exist")
-		} else {
+		if !kube_apierrs.IsNotFound(err) {
 			return errors.Wrap(err, "could not fetch mesh")
 		}
 	}

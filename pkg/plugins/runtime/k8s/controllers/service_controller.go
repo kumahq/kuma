@@ -55,10 +55,19 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	}
 
 	log.Info("annotating service which is part of the mesh", "annotation", fmt.Sprintf("%s=%s", metadata.IngressServiceUpstream, metadata.AnnotationTrue))
-	if svc.Annotations == nil {
-		svc.Annotations = map[string]string{}
+	annotations := metadata.Annotations(svc.Annotations)
+	if annotations == nil {
+		annotations = metadata.Annotations{}
 	}
-	svc.Annotations[metadata.IngressServiceUpstream] = metadata.AnnotationTrue
+	ignored, _, err := annotations.GetBool(metadata.KumaIgnoreAnnotation)
+	if err != nil {
+		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to retrieve %s annotation for %s", metadata.KumaIgnoreAnnotation, svc.Name)
+	}
+	if ignored {
+		return kube_ctrl.Result{}, nil
+	}
+	annotations[metadata.IngressServiceUpstream] = metadata.AnnotationTrue
+	svc.Annotations = annotations
 
 	if err = r.Update(ctx, svc); err != nil {
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to update ingress service upstream annotation on service %s", svc.Name)

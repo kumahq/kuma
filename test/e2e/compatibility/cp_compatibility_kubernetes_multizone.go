@@ -61,6 +61,7 @@ func CpCompatibilityMultizoneKubernetes() {
 		)
 
 		globalDeployOptsFuncs = append(globalDeployOptsFuncs,
+			WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmChartPath(HelmRepo),
 			WithHelmReleaseName(globalReleaseName),
@@ -90,6 +91,7 @@ func CpCompatibilityMultizoneKubernetes() {
 		)
 
 		zoneDeployOptsFuncs = append(zoneDeployOptsFuncs,
+			WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmChartPath(HelmRepo),
 			WithHelmReleaseName(zoneReleaseName),

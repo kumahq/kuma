@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -106,16 +105,6 @@ func WaitService(namespace, service string) InstallFunc {
 	}
 }
 
-func WaitNumPodsNamespace(namespace string, num int, app string) InstallFunc {
-	return func(c Cluster) error {
-		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", app),
-			}, num, DefaultRetries, DefaultTimeout)
-		return nil
-	}
-}
-
 func WaitNumPods(num int, app string) InstallFunc {
 	return func(c Cluster) error {
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(),
@@ -134,7 +123,7 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 			return err
 		}
 		for _, p := range pods {
-			err := WaitUntilPodReadyE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), DefaultRetries, DefaultTimeout)
+			err := k8s.WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), DefaultRetries, DefaultTimeout)
 			if err != nil {
 				return err
 			}
@@ -143,90 +132,9 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 	}
 }
 
-// WaitUntilPodReadyE waits until all the containers within the pod are ready, retrying the check for the specified amount of times, sleeping
-// for the provided duration between each try.
-func WaitUntilPodReadyE(t testing.TestingT, options *k8s.KubectlOptions, podName string, retries int, sleepBetweenRetries time.Duration) error {
-	logger.Default.Logf(t, "Waiting for pod %s to be available", podName)
-	if err := k8s.WaitUntilPodAvailableE(t, options, podName, retries, sleepBetweenRetries); err != nil {
-		logger.Default.Logf(t, "Timed out waiting for Pod %s: %s", podName, err)
-		return err
-	}
-	logger.Default.Logf(t, "Pod %s is available", podName)
-	return nil
-}
-
-func WaitUntilPodCompleteE(t testing.TestingT, options *k8s.KubectlOptions, podName string, retries int, sleepBetweenRetries time.Duration) error {
-	statusMsg := fmt.Sprintf("Waiting for pod %s to complete", podName)
-	message, err := retry.DoWithRetryE(
-		t,
-		statusMsg,
-		retries,
-		sleepBetweenRetries,
-		func() (string, error) {
-			pod, err := k8s.GetPodE(t, options, podName)
-			if err != nil {
-				return "", err
-			}
-			for _, cs := range pod.Status.ContainerStatuses {
-				if cs.State.Terminated == nil || cs.State.Terminated.ExitCode != 0 {
-					return "", errors.Errorf("Pod is not complete yet")
-				}
-			}
-			return "Pod is now complete", nil
-		},
-	)
-	if err != nil {
-		logger.Default.Logf(t, "Timed out waiting for Pod to be completed: %s", err)
-		return err
-	}
-	logger.Default.Logf(t, message)
-	return nil
-}
-
-func WaitPodsComplete(namespace, app string) InstallFunc {
+func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 	return func(c Cluster) error {
-		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
-			metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
-		if err != nil {
-			return err
-		}
-		for _, p := range pods {
-			err := WaitUntilPodCompleteE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), DefaultRetries, DefaultTimeout)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
-
-func WaitPodsNotAvailable(namespace, app string) InstallFunc {
-	return func(c Cluster) error {
-		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
-			metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
-		if err != nil {
-			return err
-		}
-
-		for _, p := range pods {
-			_, _ = retry.DoWithRetryE(
-				c.GetTesting(),
-				"Wait pod deletion",
-				DefaultRetries,
-				DefaultTimeout,
-				func() (string, error) {
-					pod, err := k8s.GetPodE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName())
-					if err == nil {
-						return "", err
-					}
-					if !k8s.IsPodAvailable(pod) {
-						return "Pod is not available", nil
-					}
-					return "", errors.Errorf("Pod is still available")
-				},
-			)
-		}
-		return nil
+		return k8s.WaitUntilJobSucceedE(c.GetTesting(), c.GetKubectlOptions(namespace), app, DefaultRetries, DefaultTimeout)
 	}
 }
 
@@ -313,41 +221,42 @@ metadata:
 `, namespace))
 }
 
-func DemoClientJobK8s(mesh, destination string) InstallFunc {
+func DemoClientJobK8s(namespace, mesh, destination string) InstallFunc {
 	const name = "demo-job-client"
-	deployment := `
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: demo-job-client
-  namespace: kuma-test
-  labels:
-    app: demo-job-client
-spec:
-  template:
-    metadata:
-      annotations:
-        kuma.io/mesh: %s
-      labels:
-        app: demo-job-client
-    spec:
-      containers:
-      - name: demo-job-client
-        image: %s
-        imagePullPolicy: IfNotPresent
-        command: [ "curl" ]
-        args:
-          - -v
-          - -m
-          - "3"
-          - --fail
-          - %s
-      restartPolicy: OnFailure
-`
+	job := &batchv1.Job{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Job",
+			APIVersion: batchv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    map[string]string{"app": name},
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{"kuma.io/mesh": mesh},
+					Labels:      map[string]string{"app": name},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:            name,
+							Image:           GetUniversalImage(),
+							ImagePullPolicy: "IfNotPresent",
+							Command:         []string{"curl"},
+							Args:            []string{"-v", "-m", "3", "--fail", destination},
+						},
+					},
+					RestartPolicy: "OnFailure",
+				},
+			},
+		},
+	}
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage(), destination)),
-		WaitNumPods(1, name),
-		WaitPodsComplete(TestNamespace, name),
+		YamlK8sObject(job),
+		WaitUntilJobSucceed(namespace, name),
 	)
 }
 
@@ -477,8 +386,8 @@ func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
 }
 
-func CreateCertsFor(names []string) (cert, key string, err error) {
-	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, names...)
+func CreateCertsFor(names ...string) (cert, key string, err error) {
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, names...)
 	if err != nil {
 		return "", "", err
 	}

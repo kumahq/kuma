@@ -10,7 +10,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 var _ = Describe("Util", func() {
@@ -35,7 +35,7 @@ var _ = Describe("Util", func() {
 			}
 
 			// when
-			predicate := MatchServiceThatSelectsPod(pod)
+			predicate := util.MatchServiceThatSelectsPod(pod)
 			// then
 			Expect(predicate(svc)).To(BeTrue())
 		})
@@ -60,7 +60,7 @@ var _ = Describe("Util", func() {
 			}
 
 			// when
-			predicate := MatchServiceThatSelectsPod(pod)
+			predicate := util.MatchServiceThatSelectsPod(pod)
 			// then
 			Expect(predicate(svc)).To(BeFalse())
 		})
@@ -70,7 +70,7 @@ var _ = Describe("Util", func() {
 	DescribeTable("FindServices",
 		func(pod *kube_core.Pod, svcs *kube_core.ServiceList, matchSvcNames []string) {
 			// when
-			matchingServices := FindServices(svcs, AnySelector(), MatchServiceThatSelectsPod(pod))
+			matchingServices := util.FindServices(svcs, util.AnySelector(), util.MatchServiceThatSelectsPod(pod))
 			// then
 			Expect(matchingServices).To(WithTransform(func(svcs []*kube_core.Service) []string {
 				var res []string
@@ -182,12 +182,50 @@ var _ = Describe("Util", func() {
 		),
 	)
 
+	Describe("MeshFor(..)", func() {
+
+		type testCase struct {
+			podAnnotations map[string]string
+			expected       string
+		}
+
+		DescribeTable("should use value of `kuma.io/mesh` annotation on a Pod or fallback to the `default` Mesh",
+			func(given testCase) {
+				// given
+				pod := &kube_core.Pod{
+					ObjectMeta: kube_meta.ObjectMeta{
+						Annotations: given.podAnnotations,
+					},
+				}
+
+				// then
+				Expect(util.MeshFor(pod)).To(Equal(given.expected))
+			},
+			Entry("Pod without annotations", testCase{
+				podAnnotations: nil,
+				expected:       "default",
+			}),
+			Entry("Pod with empty `kuma.io/mesh` annotation", testCase{
+				podAnnotations: map[string]string{
+					"kuma.io/mesh": "",
+				},
+				expected: "default",
+			}),
+			Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
+				podAnnotations: map[string]string{
+					"kuma.io/mesh": "demo",
+				},
+				expected: "demo",
+			}),
+		)
+	})
+
 	Describe("CopyStringMap", func() {
 		It("should return nil if input is nil", func() {
-			Expect(CopyStringMap(nil)).To(BeNil())
+			Expect(util.CopyStringMap(nil)).To(BeNil())
 		})
 		It("should return empty map if input is empty map", func() {
-			Expect(CopyStringMap(map[string]string{})).To(Equal(map[string]string{}))
+			Expect(util.CopyStringMap(map[string]string{})).To(Equal(map[string]string{}))
 		})
 		It("should return a copy if input map is not empty", func() {
 			// given
@@ -197,7 +235,7 @@ var _ = Describe("Util", func() {
 			}
 
 			// when
-			copy := CopyStringMap(original)
+			copy := util.CopyStringMap(original)
 			// then
 			Expect(copy).To(Equal(original))
 			Expect(copy).ToNot(BeIdenticalTo(original))
@@ -229,7 +267,7 @@ var _ = Describe("Util", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, _, err := FindPort(&pod, &svcPort)
+					actual, _, err := util.FindPort(&pod, &svcPort)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					// and
@@ -410,7 +448,7 @@ var _ = Describe("Util", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, _, err := FindPort(&pod, &svcPort)
+					actual, _, err := util.FindPort(&pod, &svcPort)
 					// then
 					Expect(err).To(HaveOccurred())
 					// and

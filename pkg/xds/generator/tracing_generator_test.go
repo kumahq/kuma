@@ -98,5 +98,32 @@ var _ = Describe("TracingProxyGenerator", func() {
 			},
 			expected: "zipkin.envoy-config.golden.yaml",
 		}),
+		Entry("should create cluster for Zipkin with tls sni", testCase{
+			proxy: &core_xds.Proxy{
+				Id: *core_xds.BuildProxyId("", "demo.https-backend-01"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "https-backend-01",
+						Mesh: "demo",
+					},
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
+					},
+				},
+				APIVersion: envoy_common.APIV3,
+				Policies: core_xds.MatchedPolicies{
+					TracingBackend: &mesh_proto.TracingBackend{
+						Name: "zipkin",
+						Type: mesh_proto.TracingZipkinType,
+						Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+							Url: "https://zipkin.us:9090/v2/spans",
+						}),
+					},
+				},
+			},
+			expected: "zipkin.envoy-config-https.golden.yaml",
+		}),
 	)
 })

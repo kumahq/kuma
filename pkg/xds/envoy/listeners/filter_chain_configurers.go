@@ -1,6 +1,9 @@
 package listeners
 
 import (
+	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_extensions_compression_gzip_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
+	envoy_extensions_filters_http_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -56,20 +59,6 @@ func HttpConnectionManager(statsName string, forwardClientCertDetails bool) Filt
 	return AddFilterChainConfigurer(&v3.HttpConnectionManagerConfigurer{
 		StatsName:                statsName,
 		ForwardClientCertDetails: forwardClientCertDetails,
-	})
-}
-
-func FilterChainMatch(transport string, serverNames, applicationProtocols []string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.FilterChainMatchConfigurer{
-		ServerNames:          serverNames,
-		TransportProtocol:    transport,
-		ApplicationProtocols: applicationProtocols,
-	})
-}
-
-func SourceMatcher(address string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.SourceMatcherConfigurer{
-		Address: address,
 	})
 }
 
@@ -249,6 +238,32 @@ func StripHostPort() FilterChainBuilderOpt {
 			hcm.StripPortMode = &envoy_hcm.HttpConnectionManager_StripAnyHostPort{
 				StripAnyHostPort: true,
 			}
+		}),
+	)
+}
+
+// DefaultCompressorFilter adds a gzip compressor filter in its default configuration.
+func DefaultCompressorFilter() FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(
+		v3.HttpConnectionManagerMustConfigureFunc(func(hcm *envoy_hcm.HttpConnectionManager) {
+			c := envoy_extensions_filters_http_compressor_v3.Compressor{
+				CompressorLibrary: &envoy_config_core.TypedExtensionConfig{
+					Name:        "gzip",
+					TypedConfig: util_proto.MustMarshalAny(&envoy_extensions_compression_gzip_compressor_v3.Gzip{}),
+				},
+				ResponseDirectionConfig: &envoy_extensions_filters_http_compressor_v3.Compressor_ResponseDirectionConfig{
+					DisableOnEtagHeader: true,
+				},
+			}
+
+			gzip := &envoy_hcm.HttpFilter{
+				Name: "gzip-compress",
+				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+					TypedConfig: util_proto.MustMarshalAny(&c),
+				},
+			}
+
+			hcm.HttpFilters = append(hcm.HttpFilters, gzip)
 		}),
 	)
 }

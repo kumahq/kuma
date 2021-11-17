@@ -15,8 +15,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/rbac"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
@@ -55,7 +55,7 @@ var _ = Describe("Dataplane Token Webservice", func() {
 	var url string
 
 	BeforeEach(func() {
-		ws := server.NewWebservice(&staticTokenIssuer{credentials}, &zoneIngressStaticTokenIssuer{}, &rbac.NoopGenerateDpTokenAccess{})
+		ws := server.NewWebservice(&staticTokenIssuer{credentials}, &zoneIngressStaticTokenIssuer{}, &access.NoopDpTokenAccess{})
 
 		container := restful.NewContainer()
 		container.Add(ws)

@@ -180,6 +180,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 	vipsAllocator, err := dns.NewVIPsAllocator(
 		rt.ResourceManager(),
 		rt.ConfigManager(),
+		rt.Config().DNSServer.ServiceVipEnabled,
 		rt.Config().DNSServer.CIDR,
 		rt.DNSResolver(),
 	)

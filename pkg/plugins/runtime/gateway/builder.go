@@ -45,7 +45,20 @@ func (r *ResourceAggregator) Get() *xds.ResourceSet {
 	return r.ResourceSet
 }
 
-func (r *ResourceAggregator) Add(set *xds.ResourceSet, err error) error {
+func (r *ResourceAggregator) Add(resource *xds.Resource, err error) error {
+	if err != nil {
+		return err
+	}
+
+	if r.ResourceSet == nil {
+		r.ResourceSet = xds.NewResourceSet()
+	}
+
+	r.ResourceSet.Add(resource)
+	return nil
+}
+
+func (r *ResourceAggregator) AddSet(set *xds.ResourceSet, err error) error {
 	if err != nil {
 		return err
 	}

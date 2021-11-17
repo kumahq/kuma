@@ -4,7 +4,6 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/deployments"
 	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/tls"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -58,7 +57,6 @@ type ImageEnvSecret struct {
 type InstallCpContext struct {
 	Args                   InstallControlPlaneArgs
 	InstallCpTemplateFiles func(*InstallControlPlaneArgs) (data.FileList, error)
-	NewSelfSignedCert      func(commonName string, certType tls.CertType, hosts ...string) (tls.KeyPair, error)
 	// When Kuma chart is embedded into other chart all the values need to have a prefix. You can set this prefix with this var.
 	HELMValuesPrefix string
 }
@@ -96,7 +94,6 @@ func DefaultInstallCpContext() InstallCpContext {
 			Ingress_drainTime:                       "30s",
 			Ingress_service_type:                    "LoadBalancer",
 		},
-		NewSelfSignedCert: tls.NewSelfSignedCert,
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
 			return data.ReadFiles(deployments.KumaChartFS())
 		},

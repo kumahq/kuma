@@ -33,8 +33,12 @@ linters-settings:
       alias: core_mesh
     - pkg: github.com/kumahq/kuma/api/mesh/v1alpha1
       alias: mesh_proto
+    - pkg: github.com/kumahq/kuma/api/system/v1alpha1
+      alias: system_proto
     - pkg: github.com/kumahq/kuma/pkg/util/proto
       alias: util_proto
+    - pkg: github.com/kumahq/kuma/pkg/util/rsa
+      alias: util_rsa
     - pkg: github.com/kumahq/kuma/pkg/cmd
       alias: kuma_cmd
     - pkg: github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s

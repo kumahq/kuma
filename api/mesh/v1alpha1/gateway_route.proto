@@ -9,6 +9,7 @@ import "google/protobuf/wrappers.proto";
 import "mesh/options.proto";
 import "mesh/v1alpha1/selector.proto";
 import "validate/validate.proto";
+import "mesh/v1alpha1/http_method.proto";
 
 option (doc.config) = {
   type : Policy,
@@ -176,21 +177,8 @@ message GatewayRoute {
         ];
       };
 
-      enum Method {
-        NONE = 0;
-        CONNECT = 1;
-        DELETE = 2;
-        GET = 3;
-        HEAD = 4;
-        OPTIONS = 5;
-        PATCH = 6;
-        POST = 7;
-        PUT = 8;
-        TRACE = 9;
-      };
-
       Path path = 1;
-      Method method = 2;
+      HttpMethod method = 2;
       repeated Header headers = 3;
       repeated Query query_parameters = 4;
     };

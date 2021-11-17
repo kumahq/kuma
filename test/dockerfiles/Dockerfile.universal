@@ -1,7 +1,7 @@
 # using Envoy's base to copy the Envoy binary
 FROM envoyproxy/envoy-contrib:v1.20.0 as envoy
 
-FROM ubuntu:20.04
+FROM ubuntu:21.04
 
 RUN mkdir /kuma
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
@@ -37,6 +37,7 @@ COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/envoy/envoy /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/coredns/coredns /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/test-server/test-server /usr/bin

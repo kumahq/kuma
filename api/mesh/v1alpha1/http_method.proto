@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+enum HttpMethod {
+  NONE = 0;
+  CONNECT = 1;
+  DELETE = 2;
+  GET = 3;
+  HEAD = 4;
+  OPTIONS = 5;
+  PATCH = 6;
+  POST = 7;
+  PUT = 8;
+  TRACE = 9;
+};

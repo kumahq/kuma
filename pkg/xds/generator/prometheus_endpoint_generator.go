@@ -106,27 +106,31 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 		listener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port, core_xds.SocketAddressProtocolTCP)).
 			// generate filter chain that does not require mTLS when DP scrapes itself (for example DP next to Prometheus Server)
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-				Configure(envoy_listeners.SourceMatcher(proxy.Dataplane.Spec.GetNetworking().Address)).
-				Configure(envoy_listeners.StaticEndpoints(prometheusListenerName,
-					[]*envoy_common.StaticEndpointPath{
-						{
-							ClusterName: clusterName,
-							Path:        prometheusEndpoint.Path,
-							RewritePath: statsPath,
-						},
-					})),
+			Configure(envoy_listeners.FilterChain(
+				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).Configure(
+					envoy_listeners.MatchSourceAddress(proxy.Dataplane.Spec.GetNetworking().Address),
+					envoy_listeners.StaticEndpoints(prometheusListenerName,
+						[]*envoy_common.StaticEndpointPath{
+							{
+								ClusterName: clusterName,
+								Path:        prometheusEndpoint.Path,
+								RewritePath: statsPath,
+							},
+						})),
 			)).
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-				Configure(envoy_listeners.StaticEndpoints(prometheusListenerName, []*envoy_common.StaticEndpointPath{
-					{
-						ClusterName: clusterName,
-						Path:        prometheusEndpoint.Path,
-						RewritePath: statsPath,
-					},
-				})).
-				Configure(envoy_listeners.ServerSideMTLS(ctx)).
-				Configure(envoy_listeners.NetworkRBAC(prometheusListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface])),
+			Configure(envoy_listeners.FilterChain(
+				envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).Configure(
+					envoy_listeners.ServerSideMTLS(ctx),
+					envoy_listeners.NetworkRBAC(prometheusListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface]),
+					envoy_listeners.StaticEndpoints(prometheusListenerName,
+						[]*envoy_common.StaticEndpointPath{
+							{
+								ClusterName: clusterName,
+								Path:        prometheusEndpoint.Path,
+								RewritePath: statsPath,
+							},
+						}),
+				),
 			)).
 			Build()
 	} else {

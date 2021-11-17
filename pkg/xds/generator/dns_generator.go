@@ -24,13 +24,16 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 	if proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying() == nil {
 		return nil, nil // DNS only makes sense when transparent proxy is used
 	}
+	ipV6Enabled := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetRedirectPortInboundV6() != 0
 
 	vips := map[string][]string{}
 	for _, dnsOutbound := range proxy.Routing.VipDomains {
 		for _, domain := range dnsOutbound.Domains {
-			vips[domain] = []string{dnsOutbound.Address}
 			v6 := util_net.ToV6(dnsOutbound.Address)
-			if v6 != dnsOutbound.Address { // It's already a v6
+			if v6 != dnsOutbound.Address { // The address passed is not already v6
+				vips[domain] = []string{dnsOutbound.Address}
+			}
+			if ipV6Enabled {
 				vips[domain] = append(vips[domain], v6)
 			}
 		}

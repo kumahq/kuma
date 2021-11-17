@@ -1,5 +1,5 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
-PROTO_DIR := ./pkg/config
+PROTO_DIRS := ./pkg/config ./api
 
 protoc_search_go_packages := \
 	github.com/golang/protobuf@$(GOLANG_PROTOBUF_VERSION) \
@@ -18,16 +18,16 @@ PROTOC_GO := protoc \
 
 .PHONY: clean/proto
 clean/proto: ## Dev: Remove auto-generated Protobuf files
-	find $(PROTO_DIR) -name '*.pb.go' -delete
-	find $(PROTO_DIR) -name '*.pb.validate.go' -delete
+	find $(PROTO_DIRS) -name '*.pb.go' -delete
+	find $(PROTO_DIRS) -name '*.pb.validate.go' -delete
 
 .PHONY: generate
 generate:  ## Dev: Run code generators
-generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/deepcopy
+generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/deepcopy
 
 .PHONY: resources/type
 resources/type:
-	$(GO_RUN) ./tools/resource-gen.go -generator type
+	$(GO_RUN) ./tools/resource-gen/main.go -generator type
 
 .PHONY: protoc/pkg/config/app/kumactl/v1alpha1
 protoc/pkg/config/app/kumactl/v1alpha1:
@@ -67,3 +67,7 @@ generate/envoy-imports:
 .PHONY: generate/deepcopy
 generate/deepcopy:
 	$(MAKE) -C pkg/plugins/resources/k8s/native generate
+
+.PHONY: generate/api
+generate/api:
+	$(MAKE) -C api generate

@@ -37,6 +37,7 @@ node:
   id: mesh.name.namespace
   metadata:
     dataplane.admin.port: "9902"
+    dataplane.proxyType: dataplane
     version:
       envoy:
         build: hash/1.15.0/RELEASE

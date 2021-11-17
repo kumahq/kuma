@@ -38,6 +38,7 @@ $ kumactl generate dataplane-token --type ingress
 Generate token bound by tag
 $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 `,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, err := pctx.CurrentDataplaneTokenClient()
 			if err != nil {

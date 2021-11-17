@@ -72,6 +72,7 @@ const (
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
 	KumaSidecarInjectedAnnotation                  = "kuma.io/sidecar-injected"
+	KumaIgnoreAnnotation                           = "kuma.io/ignore"
 	KumaSidecarUID                                 = "kuma.io/sidecar-uid"
 	KumaTransparentProxyingAnnotation              = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingInboundPortAnnotation   = "kuma.io/transparent-proxying-inbound-port"

@@ -9,10 +9,10 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -33,7 +33,7 @@ func (p *PodConverter) PodToDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
-	dataplane.Mesh = MeshFor(pod)
+	dataplane.Mesh = util_k8s.MeshFor(pod)
 	dataplaneProto, err := p.DataplaneFor(pod, services, others)
 	if err != nil {
 		return err
@@ -61,14 +61,6 @@ func (p *PodConverter) PodToIngress(zoneIngress *mesh_k8s.ZoneIngress, pod *kube
 	}
 	zoneIngress.Spec = spec
 	return nil
-}
-
-func MeshFor(pod *kube_core.Pod) string {
-	mesh, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMeshAnnotation)
-	if !exist || mesh == "" {
-		return model.DefaultMesh
-	}
-	return mesh
 }
 
 func (p *PodConverter) DataplaneFor(

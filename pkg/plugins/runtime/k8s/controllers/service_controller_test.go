@@ -53,6 +53,26 @@ var _ = Describe("ServiceReconciler", func() {
 			},
 			&kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "non-system-ns-with-sidecar-injection",
+					Name:      "ignored",
+					Annotations: map[string]string{
+						metadata.KumaIgnoreAnnotation: metadata.AnnotationTrue,
+					},
+				},
+				Spec: kube_core.ServiceSpec{},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "non-system-ns-with-sidecar-injection",
+					Name:      "non-ignored",
+					Annotations: map[string]string{
+						metadata.KumaIgnoreAnnotation: metadata.AnnotationFalse,
+					},
+				},
+				Spec: kube_core.ServiceSpec{},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "non-system-ns-without-sidecar-injection",
 					Name:      "service",
 					Annotations: map[string]string{
@@ -138,4 +158,45 @@ var _ = Describe("ServiceReconciler", func() {
 		Expect(svc.GetAnnotations()[metadata.IngressServiceUpstream]).To(Equal(metadata.AnnotationTrue))
 	})
 
+	It("should ignore service in an annotated namespace with ignored annotation", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-with-sidecar-injection", Name: "ignored"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
+
+		// and service is annotated
+		svc := &kube_core.Service{}
+		err = kubeClient.Get(context.Background(), req.NamespacedName, svc)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(svc.GetAnnotations()).ToNot(HaveKey(metadata.IngressServiceUpstream))
+	})
+
+	It("should ignore service in an annotated namespace with ignored annotation", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-with-sidecar-injection", Name: "non-ignored"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
+
+		// and service is annotated
+		svc := &kube_core.Service{}
+		err = kubeClient.Get(context.Background(), req.NamespacedName, svc)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(svc.GetAnnotations()).To(HaveKey(metadata.IngressServiceUpstream))
+		Expect(svc.GetAnnotations()[metadata.IngressServiceUpstream]).To(Equal(metadata.AnnotationTrue))
+		Expect(svc.GetAnnotations()[metadata.KumaIgnoreAnnotation]).To(Equal(metadata.AnnotationFalse))
+	})
 })

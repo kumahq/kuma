@@ -12,6 +12,7 @@ import (
 
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/tls"
 	http2 "github.com/kumahq/kuma/pkg/util/http"
@@ -38,6 +39,7 @@ var _ = Describe("Auth test", func() {
 		cfg := config.DefaultApiServerConfig()
 		cfg.HTTPS.TlsCertFile = certPath
 		cfg.HTTPS.TlsKeyFile = keyPath
+		cfg.Authn.Type = certs.PluginName
 		cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 		apiServer := createTestApiServer(resourceStore, cfg, true, metrics)
 		httpsPort = cfg.HTTPS.Port
@@ -111,7 +113,7 @@ var _ = Describe("Auth test", func() {
 		body, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
-		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user did not authenticate"}`))
+		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""}`))
 	})
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
@@ -124,13 +126,13 @@ var _ = Describe("Auth test", func() {
 		body, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
-		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user did not authenticate"}`))
+		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""}`))
 	})
 })
 
 // we need to autogenerate cert dynamically for the external IP so the HTTPS client can validate san
 func createCertsForIP(ip string) (certPath string, keyPath string) {
-	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, "localhost", ip)
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, "localhost", ip)
 	Expect(err).ToNot(HaveOccurred())
 	dir, err := ioutil.TempDir("", "temp-certs")
 	Expect(err).ToNot(HaveOccurred())

@@ -32,6 +32,10 @@ func (*RouteConfigurationGenerator) GenerateHost(ctx xds_context.Context, info *
 		Configure(
 			envoy_routes.CommonRouteConfiguration(info.Listener.ResourceName),
 			// TODO(jpeach) propagate merged listener tags.
+			// Ideally we would propagate the tags header
+			// to mesh services but not to external services,
+			// but in the route configuration, we don't know
+			// yet where the request will route to.
 			// envoy_routes.TagsHeader(...),
 			envoy_routes.ResetTagsHeader(),
 		)

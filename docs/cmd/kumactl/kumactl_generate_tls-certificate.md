@@ -7,7 +7,7 @@ Generate a TLS certificate
 Generate self signed key and certificate pair that can be used for example in Dataplane Token Server setup.
 
 ```
-kumactl generate tls-certificate [flags]
+kumactl generate tls-certificate --type=server|client --hostname=HOST1[,HOST2...] [flags]
 ```
 
 ### Examples
@@ -15,20 +15,21 @@ kumactl generate tls-certificate [flags]
 ```
 
   # Generate a TLS certificate for use by an HTTPS server, i.e. by the Dataplane Token server
-  kumactl generate tls-certificate --type=server
+  kumactl generate tls-certificate --type=server --hostname=localhost
 
   # Generate a TLS certificate for use by a client of an HTTPS server, i.e. by the 'kumactl generate dataplane-token' command
-  kumactl generate tls-certificate --type=client
+  kumactl generate tls-certificate --type=client --hostname=dataplane-1
 ```
 
 ### Options
 
 ```
-      --cert-file string      path to a file with a generated TLS certificate (default "cert.pem")
-      --cp-hostname strings   DNS name of the control plane
-  -h, --help                  help for tls-certificate
-      --key-file string       path to a file with a generated private key (default "key.pem")
-      --type string           type of the certificate: one of client|server
+      --cert-file string   path to a file with a generated TLS certificate ('-' for stdout) (default "cert.pem")
+  -h, --help               help for tls-certificate
+      --hostname strings   DNS hostname(s) to issue the certificate for
+      --key-file string    path to a file with a generated private key ('-' for stdout) (default "key.pem")
+      --key-type string    type of the private key: one of rsa|ecdsa
+      --type string        type of the certificate: one of client|server
 ```
 
 ### Options inherited from parent commands

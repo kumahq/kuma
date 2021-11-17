@@ -53,11 +53,9 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 	}
 
 	config := &envoy_hcm.HttpConnectionManager{
-		StatPrefix: util_xds.SanitizeMetric(c.VirtualHostName),
-		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
-		HttpFilters: []*envoy_hcm.HttpFilter{{
-			Name: "envoy.filters.http.router",
-		}},
+		StatPrefix:  util_xds.SanitizeMetric(c.VirtualHostName),
+		CodecType:   envoy_hcm.HttpConnectionManager_AUTO,
+		HttpFilters: []*envoy_hcm.HttpFilter{},
 		RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: &envoy_route.RouteConfiguration{
 				VirtualHosts: []*envoy_route.VirtualHost{{

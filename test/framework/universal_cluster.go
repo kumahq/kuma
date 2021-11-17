@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -13,6 +15,8 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/template"
 )
 
@@ -135,37 +139,59 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	c.apps[AppModeCP] = app
 
-	var token string
-	if opts.env["KUMA_API_SERVER_AUTHN_TYPE"] == "tokens" {
-		token, err = c.generateAdminToken()
-		if err != nil {
-			return err
-		}
-	}
-
-	err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetKuma().GetAPIServerAddress(), token)
+	token, err := c.retrieveAdminToken()
 	if err != nil {
 		return err
 	}
+
+	if err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(
+		c.name, c.GetKuma().GetAPIServerAddress(), token); err != nil {
+		return err
+	}
+
+	for name, updateFuncs := range opts.meshUpdateFuncs {
+		for _, f := range updateFuncs {
+			Logf("applying update function to mesh %q", name)
+			err := c.controlplane.kumactl.KumactlUpdateObject("mesh", name,
+				func(resource core_model.Resource) core_model.Resource {
+					mesh := resource.(*core_mesh.MeshResource)
+					mesh.Spec = f(mesh.Spec)
+					return mesh
+				})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
-func (c *UniversalCluster) generateAdminToken() (string, error) {
-	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
-		sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
-			"--fail", "--show-error",
-			"-XPOST",
-			"-H", "'content-type: application/json'",
-			"--data", `'{"name": "admin", "group": "admin", "validFor": "24h"}'`,
-			"http://localhost:5681/tokens/user"})
-		if err := sshApp.Run(); err != nil {
-			return "", err
-		}
-		if sshApp.Err() != "" {
-			return "", errors.New(sshApp.Err())
-		}
-		return sshApp.Out(), nil
-	})
+func (c *UniversalCluster) retrieveAdminToken() (string, error) {
+	return retry.DoWithRetryE(c.t, "fetching user admin token",
+		DefaultRetries,
+		DefaultTimeout,
+		func() (string, error) {
+			sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
+				"--fail", "--show-error",
+				"http://localhost:5681/global-secrets/admin-user-token"})
+			if err := sshApp.Run(); err != nil {
+				return "", err
+			}
+			if sshApp.Err() != "" {
+				return "", errors.New(sshApp.Err())
+			}
+			var secret map[string]string
+			if err := json.Unmarshal([]byte(sshApp.Out()), &secret); err != nil {
+				return "", err
+			}
+			data := secret["data"]
+			token, err := base64.StdEncoding.DecodeString(data)
+			if err != nil {
+				return "", err
+			}
+			return string(token), nil
+		})
 }
 
 func (c *UniversalCluster) GetKuma() ControlPlane {
@@ -239,7 +265,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
 
-	Logf("IPV6 is %v\n", opts.isipv6)
+	Logf("IPV6 is %v", opts.isipv6)
 
 	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, *opts.verbose, caps)
 	if err != nil {

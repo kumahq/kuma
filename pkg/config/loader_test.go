@@ -128,6 +128,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(Equal(false))
 			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
+			Expect(cfg.ApiServer.Authn.Tokens.BootstrapAdminToken).To(BeFalse())
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
 			// nolint: staticcheck
@@ -211,6 +212,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DNSServer.Domain).To(Equal("test-domain"))
 			Expect(cfg.DNSServer.Port).To(Equal(uint32(15653)))
 			Expect(cfg.DNSServer.CIDR).To(Equal("127.1.0.0/16"))
+			Expect(cfg.DNSServer.ServiceVipEnabled).To(BeFalse())
 
 			Expect(cfg.XdsServer.DataplaneStatusFlushInterval).To(Equal(7 * time.Second))
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval).To(Equal(21 * time.Second))
@@ -238,13 +240,13 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
-			Expect(cfg.RBAC.Type).To(Equal("custom-rbac"))
-			Expect(cfg.RBAC.Static.AdminResources.Users).To(Equal([]string{"ar-admin1", "ar-admin2"}))
-			Expect(cfg.RBAC.Static.AdminResources.Groups).To(Equal([]string{"ar-group1", "ar-group2"}))
-			Expect(cfg.RBAC.Static.GenerateDPToken.Users).To(Equal([]string{"dp-admin1", "dp-admin2"}))
-			Expect(cfg.RBAC.Static.GenerateDPToken.Groups).To(Equal([]string{"dp-group1", "dp-group2"}))
-			Expect(cfg.RBAC.Static.GenerateUserToken.Users).To(Equal([]string{"ut-admin1", "ut-admin2"}))
-			Expect(cfg.RBAC.Static.GenerateUserToken.Groups).To(Equal([]string{"ut-group1", "ut-group2"}))
+			Expect(cfg.Access.Type).To(Equal("custom-rbac"))
+			Expect(cfg.Access.Static.AdminResources.Users).To(Equal([]string{"ar-admin1", "ar-admin2"}))
+			Expect(cfg.Access.Static.AdminResources.Groups).To(Equal([]string{"ar-group1", "ar-group2"}))
+			Expect(cfg.Access.Static.GenerateDPToken.Users).To(Equal([]string{"dp-admin1", "dp-admin2"}))
+			Expect(cfg.Access.Static.GenerateDPToken.Groups).To(Equal([]string{"dp-group1", "dp-group2"}))
+			Expect(cfg.Access.Static.GenerateUserToken.Users).To(Equal([]string{"ut-admin1", "ut-admin2"}))
+			Expect(cfg.Access.Static.GenerateUserToken.Groups).To(Equal([]string{"ut-group1", "ut-group2"}))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -300,6 +302,8 @@ apiServer:
   authn:
     type: custom-authn
     localhostIsAdmin: false
+    tokens:
+      bootstrapAdminToken: false
   readOnly: true
   corsAllowedDomains:
     - https://kuma
@@ -401,6 +405,7 @@ dnsServer:
   domain: test-domain
   port: 15653
   CIDR: 127.1.0.0/16
+  serviceVipEnabled: false
 defaults:
   skipMeshCreation: true
 diagnostics:
@@ -438,7 +443,7 @@ dpServer:
       noTrafficInterval: 7s
       healthyThreshold: 8
       unhealthyThreshold: 9
-rbac:
+access:
   type: custom-rbac
   static:
     adminResources:
@@ -493,6 +498,7 @@ rbac:
 				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
 				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
 				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
+				"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN":                                       "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                                              "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",
@@ -546,6 +552,7 @@ rbac:
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
 				"KUMA_DNS_SERVER_PORT":                                                                     "15653",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",
+				"KUMA_DNS_SERVER_SERVICE_VIP_ENABLED":                                                      "false",
 				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
 				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                                               "2s",
@@ -584,13 +591,13 @@ rbac:
 				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
-				"KUMA_RBAC_TYPE":                              "custom-rbac",
-				"KUMA_RBAC_STATIC_ADMIN_RESOURCES_USERS":      "ar-admin1,ar-admin2",
-				"KUMA_RBAC_STATIC_ADMIN_RESOURCES_GROUPS":     "ar-group1,ar-group2",
-				"KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_USERS":    "dp-admin1,dp-admin2",
-				"KUMA_RBAC_STATIC_GENERATE_DP_TOKEN_GROUPS":   "dp-group1,dp-group2",
-				"KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_USERS":  "ut-admin1,ut-admin2",
-				"KUMA_RBAC_STATIC_GENERATE_USER_TOKEN_GROUPS": "ut-group1,ut-group2",
+				"KUMA_ACCESS_TYPE":                                                                         "custom-rbac",
+				"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_USERS":                                                 "ar-admin1,ar-admin2",
+				"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_GROUPS":                                                "ar-group1,ar-group2",
+				"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_USERS":                                               "dp-admin1,dp-admin2",
+				"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS":                                              "dp-group1,dp-group2",
+				"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS":                                             "ut-admin1,ut-admin2",
+				"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS":                                            "ut-group1,ut-group2",
 			},
 			yamlFileConfig: "",
 		}),

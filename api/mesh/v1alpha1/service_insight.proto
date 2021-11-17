@@ -13,6 +13,7 @@ message ServiceInsight {
   option (kuma.mesh.resource).type = "ServiceInsight";
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "service-insight";
   option (kuma.mesh.resource).ws.read_only = true;
 
@@ -41,6 +42,8 @@ message ServiceInsight {
     }
 
     DataplaneStat dataplanes = 2;
+
+    map<string, uint32> issuedBackends = 3;
   }
 
   map<string, Service> services = 2;

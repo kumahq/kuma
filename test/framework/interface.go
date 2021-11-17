@@ -6,6 +6,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core"
 )
 
@@ -44,6 +45,10 @@ type kumaDeploymentOptions struct {
 	cpReplicas           int
 	hdsDisabled          bool
 	runPostgresMigration bool
+
+	// Functions to apply to each mesh after the control plane
+	// is provisioned.
+	meshUpdateFuncs map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh
 }
 
 func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
@@ -51,6 +56,7 @@ func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	k.isipv6 = IsIPv6()
 	k.installationMode = KumactlInstallationMode
 	k.env = map[string]string{}
+	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
 
 	// Apply options.
 	for _, o := range opts {
@@ -266,6 +272,18 @@ func WithCtlOpt(name, value string) KumaDeploymentOption {
 			o.ctlOpts = map[string]string{}
 		}
 		o.ctlOpts[name] = value
+	})
+}
+
+type MeshUpdateFunc func(mesh *mesh_proto.Mesh) *mesh_proto.Mesh
+
+// WithMeshUpdate registers a function to update the specification
+// for the named mesh. When the control plane implementation creates the
+// mesh, it invokes the function and applies configuration changes to the
+// mesh object.
+func WithMeshUpdate(mesh string, u MeshUpdateFunc) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.meshUpdateFuncs[mesh] = append(o.meshUpdateFuncs[mesh], u)
 	})
 }
 

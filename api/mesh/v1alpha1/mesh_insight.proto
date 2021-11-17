@@ -62,4 +62,11 @@ message MeshInsight {
     uint32 external = 3;
   }
   ServiceStat services = 6;
+
+  // DataplanesByType defines statistics splitted by dataplane types
+  message DataplanesByType {
+    DataplaneStat standard = 1;
+    DataplaneStat gateway = 2;
+  }
+  DataplanesByType dataplanesByType = 7;
 }

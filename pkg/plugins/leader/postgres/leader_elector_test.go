@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package postgres_test
 
 import (
@@ -11,39 +8,22 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config"
-	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 	leader_postgres "github.com/kumahq/kuma/pkg/plugins/leader/postgres"
 	"github.com/kumahq/kuma/pkg/test"
+	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 )
 
 var _ = Describe("postgresLeaderElector", func() {
-
+	var c test_postgres.PostgresContainer
 	var electors map[string]component.LeaderElector
-
-	BeforeSuite(func() {
-		// wait for postgres
-		cfg := postgres.PostgresStoreConfig{}
-		err := config.Load("", &cfg)
-		Expect(err).ToNot(HaveOccurred())
-		Eventually(func() error {
-			_, err := common_postgres.ConnectToDb(cfg)
-			return err
-		}, "5s", "100ms").ShouldNot(HaveOccurred())
-	})
-
 	BeforeEach(func() {
-		cfg := postgres.PostgresStoreConfig{}
-		err := config.Load("", &cfg)
+		c = test_postgres.PostgresContainer{WithTLS: true}
+		Expect(c.Start()).To(Succeed())
+		cfg, err := c.Config()
 		Expect(err).ToNot(HaveOccurred())
-
-		dbName, err := common_postgres.CreateRandomDb(cfg)
-		Expect(err).ToNot(HaveOccurred())
-		cfg.DbName = dbName
-
-		sql, err := common_postgres.ConnectToDb(cfg)
+		sql, err := common_postgres.ConnectToDb(*cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		createElector := func(name string) component.LeaderElector {
@@ -64,6 +44,9 @@ var _ = Describe("postgresLeaderElector", func() {
 			name := fmt.Sprintf("elector-%d", i)
 			electors[name] = createElector(name)
 		}
+	})
+	AfterEach(func() {
+		Expect(c.Stop()).To(Succeed())
 	})
 
 	It("should elect only one leader", test.Within(30*time.Second, func() {

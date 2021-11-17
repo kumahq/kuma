@@ -2,7 +2,6 @@ package server_test
 
 import (
 	"context"
-	"reflect"
 	"sync"
 	"time"
 
@@ -59,36 +58,31 @@ var _ = Describe("KDS Server", func() {
 		ctx := context.Background()
 
 		// Do not forget to update this test after updating 'kds.SupportedTypes
-		Expect([]proto.Message{
-			kds_samples.CircuitBreaker,
-			kds_samples.DataplaneInsight,
-			kds_samples.ExternalService,
-			kds_samples.FaultInjection,
-			kds_samples.GlobalSecret,
-			kds_samples.HealthCheck,
-			kds_samples.Ingress, // mesh.DataplaneType
-			kds_samples.Mesh1,
-			kds_samples.ProxyTemplate,
-			kds_samples.RateLimit,
-			kds_samples.Retry,
-			kds_samples.Secret,
-			kds_samples.Timeout,
-			kds_samples.TrafficLog,
-			kds_samples.TrafficPermission,
-			kds_samples.TrafficRoute,
-			kds_samples.TrafficTrace,
-			kds_samples.ZoneIngress,
-			kds_samples.ZoneIngressInsight,
-			kds_samples.Config,
-			kds_samples.VirtualOutbound,
-		}).
-			To(WithTransform(func(messages []proto.Message) []string {
-				var res []string
-				for _, m := range messages {
-					res = append(res, reflect.TypeOf(m).String())
-				}
-				return res
-			}, HaveLen(len(registry.Global().ObjectTypes(model.HasKdsEnabled())))))
+		Expect(registry.Global().ObjectTypes(model.HasKdsEnabled())).
+			To(HaveLen(len([]proto.Message{
+				kds_samples.CircuitBreaker,
+				kds_samples.DataplaneInsight,
+				kds_samples.ServiceInsight,
+				kds_samples.ExternalService,
+				kds_samples.FaultInjection,
+				kds_samples.GlobalSecret,
+				kds_samples.HealthCheck,
+				kds_samples.Ingress, // mesh.DataplaneType
+				kds_samples.Mesh1,
+				kds_samples.ProxyTemplate,
+				kds_samples.RateLimit,
+				kds_samples.Retry,
+				kds_samples.Secret,
+				kds_samples.Timeout,
+				kds_samples.TrafficLog,
+				kds_samples.TrafficPermission,
+				kds_samples.TrafficRoute,
+				kds_samples.TrafficTrace,
+				kds_samples.ZoneIngress,
+				kds_samples.ZoneIngressInsight,
+				kds_samples.Config,
+				kds_samples.VirtualOutbound,
+			})))
 
 		vrf := kds_verifier.New().
 			// NOTE: The resources all have to be created before any DiscoveryRequests are made.

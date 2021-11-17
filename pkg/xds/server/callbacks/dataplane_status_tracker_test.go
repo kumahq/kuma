@@ -70,7 +70,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		key, subscription = accessor.GetStatus()
 		// then
 		Expect(key).To(Equal(core_model.ResourceKey{}))
-		Expect(subscription.DisconnectTime.GetNanos()).To(BeNumerically(">=", subscription.ConnectTime.GetNanos()))
+		Expect(subscription.DisconnectTime.AsTime().UnixNano()).To(BeNumerically(">=", subscription.ConnectTime.AsTime().UnixNano()))
 	})
 
 	zeroStatus := mesh_proto.DiscoverySubscriptionStatus{
@@ -181,7 +181,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				Name: "example-001",
 			}))
 			Expect(subscription.Status).To(MatchProto(&zeroStatus))
-			Expect(subscription.ConnectTime.GetNanos()).NotTo(BeZero())
+			Expect(subscription.ConnectTime.AsTime().UnixNano()).NotTo(BeZero())
 			Expect(subscription.Version).To(MatchProto(&version))
 
 			By("simulating initial xDS response")
@@ -201,7 +201,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			sent := &mesh_proto.DiscoveryServiceStats{
 				ResponsesSent: 1,
 			}
-			sentTime := subscription.Status.LastUpdateTime.GetNanos()
+			sentTime := subscription.Status.LastUpdateTime.AsTime().UnixNano()
 			Expect(subscription.Status).To(PointTo(MatchFields(IgnoreExtras, Fields{
 				"Total":         MatchProto(sent),
 				"Cds":           MatchProto(&mesh_proto.DiscoveryServiceStats{}),
@@ -234,7 +234,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				ResponsesAcknowledged: 1,
 				ResponsesSent:         1,
 			}
-			ackTime := subscription.Status.LastUpdateTime.GetNanos()
+			ackTime := subscription.Status.LastUpdateTime.AsTime().UnixNano()
 			Expect(subscription.Status).To(PointTo(MatchFields(IgnoreExtras, Fields{
 				"Total":         MatchProto(acked),
 				"Cds":           MatchProto(&mesh_proto.DiscoveryServiceStats{}),
@@ -271,7 +271,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				ResponsesAcknowledged: 1,
 				ResponsesSent:         1,
 			}
-			nackTime := subscription.Status.LastUpdateTime.GetNanos()
+			nackTime := subscription.Status.LastUpdateTime.AsTime().UnixNano()
 			Expect(subscription.Status).To(PointTo(MatchFields(IgnoreExtras, Fields{
 				"Total":         MatchProto(nacked),
 				"Cds":           MatchProto(&mesh_proto.DiscoveryServiceStats{}),

@@ -90,5 +90,9 @@ var _ = Describe("DNSGenerator", func() {
 			dataplaneFile: "2-dataplane.input.yaml",
 			expected:      "2-envoy-config.golden.yaml",
 		}),
+		Entry("03. DNS enabled no ipv6", testCase{
+			dataplaneFile: "3-dataplane.input.yaml",
+			expected:      "3-envoy-config.golden.yaml",
+		}),
 	)
 })

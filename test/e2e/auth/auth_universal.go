@@ -15,7 +15,6 @@ func AuthUniversal() {
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 		deployOptsFuncs = KumaUniversalDeployOpts
-		deployOptsFuncs = append(deployOptsFuncs, WithEnv("KUMA_API_SERVER_AUTHN_TYPE", "tokens"))
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
@@ -37,7 +36,7 @@ func AuthUniversal() {
 		// given
 		token, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
 			"--name", "new-admin",
-			"--group", "admin",
+			"--group", "mesh-system:admin",
 			"--valid-for", "24h",
 		)
 		Expect(err).ToNot(HaveOccurred())

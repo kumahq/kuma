@@ -12,7 +12,7 @@ import (
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
-func DefaultConfig() Config {
+var DefaultConfig = func() Config {
 	return Config{
 		ControlPlane: ControlPlane{
 			URL: "https://localhost:5678",

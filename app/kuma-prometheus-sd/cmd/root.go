@@ -28,8 +28,11 @@ func NewRootCmd(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 	}{}
 	cmd := &cobra.Command{
 		Use:   "kuma-prometheus-sd",
-		Short: "Prometheus service discovery adapter for native integration with Kuma",
-		Long:  `Prometheus service discovery adapter for native integration with Kuma.`,
+		Short: "[DEPRECATED] Prometheus service discovery adapter for native integration with Kuma",
+		Long: `[DEPRECATED] Prometheus service discovery adapter for native integration with Kuma.
+It has been superseded by the native kuma_sd in Prometheus as of Prometheus 2.29.
+See: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kuma_sd_config
+`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
@@ -50,6 +53,11 @@ func NewRootCmd(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			// avoid printing usage instructions
 			cmd.SilenceUsage = true
 
+			if cmd.Name() != "help" {
+				fmt.Println(`kuma-prometheus-sd is DEPRECATED and will be removed in a future version.
+It has been superseded by the native kuma_sd in Prometheus as of Prometheus 2.29.
+See: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kuma_sd_config`)
+			}
 			return nil
 		},
 	}

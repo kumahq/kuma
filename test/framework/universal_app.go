@@ -229,7 +229,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 		// Here we make sure the IPv6 address is not allocated to the container unless explicitly requested.
 		opts.OtherOptions = append(opts.OtherOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
 	}
-	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
+	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker(isipv6)...)
 	container, err := docker.RunAndGetIDE(t, GetUniversalImage(), &opts)
 	if err != nil {
 		return nil, err
@@ -246,7 +246,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 			return "Success", nil
 		})
 
-	fmt.Printf("Node IP %s\n", app.ip)
+	Logf("Node IP %s", app.ip)
 
 	return app, nil
 }
@@ -262,9 +262,16 @@ func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
 	}
 }
 
-func (s *UniversalApp) publishPortsForDocker() (args []string) {
+func (s *UniversalApp) publishPortsForDocker(isipv6 bool) (args []string) {
+	// If we aren't using IPv6 in the container then we only want to listen on
+	// IPv4 interfaces to prevent resolving 'localhost' to the IPv6 address of
+	// the container and having the container not respond.
+	ip := "0.0.0.0:"
+	if isipv6 {
+		ip = ""
+	}
 	for port, pubPort := range s.ports {
-		args = append(args, "--publish="+pubPort+":"+port)
+		args = append(args, "--publish="+ip+pubPort+":"+port)
 	}
 	return
 }
@@ -509,12 +516,12 @@ func NewSshApp(verbose bool, port string, env []string, args []string) *SshApp {
 }
 
 func (s *SshApp) Run() error {
-	fmt.Printf("Running %v\n", s.cmd)
+	Logf("Running %v", s.cmd)
 	return s.cmd.Run()
 }
 
 func (s *SshApp) Start() error {
-	fmt.Printf("Starting %v\n", s.cmd)
+	Logf("Starting %v", s.cmd)
 	return s.cmd.Start()
 }
 

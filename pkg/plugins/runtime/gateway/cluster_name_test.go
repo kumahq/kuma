@@ -1,6 +1,7 @@
 package gateway_test
 
 import (
+	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -21,7 +22,8 @@ var _ = Describe("Cluster name", func() {
 			d.Destination[tags[i]] = tags[i+1]
 		}
 
-		name, err := route.DestinationClusterName(d)
+		c := envoy_cluster_v3.Cluster{}
+		name, err := route.DestinationClusterName(&d, &c)
 		Expect(err).To(Succeed())
 
 		return name
@@ -29,12 +31,13 @@ var _ = Describe("Cluster name", func() {
 
 	It("should require the service tag", func() {
 		_, err := route.DestinationClusterName(
-			route.Destination{
+			&route.Destination{
 				Destination: map[string]string{
 					"somemthing":   "else",
 					"kuma.io/zone": "one",
 				},
 			},
+			&envoy_cluster_v3.Cluster{},
 		)
 
 		Expect(err).To(Not(Succeed()))
@@ -77,13 +80,29 @@ var _ = Describe("Cluster name", func() {
 			"kuma.io/zone", "one",
 			"organization", "kumahq",
 		))))
-
 	})
 
-	It("should be the service name", func() {
-		Expect(NameOf(
-			"kuma.io/service", "echo",
-		)).To(Equal("echo"))
-	})
+	It("should generate different names for different config", func() {
+		n1, err := route.DestinationClusterName(
+			&route.Destination{
+				Destination: map[string]string{
+					"kuma.io/service": "one",
+				},
+			},
+			&envoy_cluster_v3.Cluster{RespectDnsTtl: true},
+		)
+		Expect(err).To(Succeed())
 
+		n2, err := route.DestinationClusterName(
+			&route.Destination{
+				Destination: map[string]string{
+					"kuma.io/service": "one",
+				},
+			},
+			&envoy_cluster_v3.Cluster{},
+		)
+		Expect(err).To(Succeed())
+
+		Expect(n1).ToNot(Equal(n2))
+	})
 })
