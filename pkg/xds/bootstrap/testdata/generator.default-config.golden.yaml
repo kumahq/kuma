@@ -45,6 +45,7 @@ node:
     dataplane.admin.port: "1234"
     dataplane.dns.empty.port: "53002"
     dataplane.dns.port: "53001"
+    dataplane.proxyType: dataplane
     dataplane.token: token
     version:
       envoy:

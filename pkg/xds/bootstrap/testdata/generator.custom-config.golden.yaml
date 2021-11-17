@@ -43,11 +43,29 @@ node:
   id: mesh.name.namespace
   metadata:
     dataplane.admin.port: "1234"
-    dataplane.resource: ' { "type": "Dataplane", "mesh": "mesh", "name": "name.namespace",
-      "creationTime": "1970-01-01T00:00:00Z", "modificationTime": "1970-01-01T00:00:00Z",
-      "networking": { "address": "127.0.0.1", "inbound": [ { "port": 22022, "servicePort":
-      8443, "tags": { "kuma.io/protocol": "http2", "kuma.io/service": "backend" }
-      }, ] } }'
+    dataplane.proxyType: dataplane
+    dataplane.resource: |2-
+
+      {
+        "type": "Dataplane",
+        "mesh": "mesh",
+        "name": "name.namespace",
+        "creationTime": "1970-01-01T00:00:00Z",
+        "modificationTime": "1970-01-01T00:00:00Z",
+        "networking": {
+          "address": "127.0.0.1",
+          "inbound": [
+            {
+              "port": 22022,
+              "servicePort": 8443,
+              "tags": {
+                "kuma.io/protocol": "http2",
+                "kuma.io/service": "backend"
+              }
+            },
+          ]
+        }
+      }
     dataplane.token: token
     dynamicMetadata:
       test: value
