@@ -8,7 +8,7 @@ echo "Building Envoy for Linux"
 
 mkdir -p "$(dirname ${BINARY_PATH})"
 
-SOURCE_DIR="${SOURCE_DIR}" ./tools/envoy/fetch_sources.sh
+SOURCE_DIR="${SOURCE_DIR}" "${KUMA_DIR:-.}/tools/envoy/fetch_sources.sh"
 
 BUILD_CMD=${BUILD_CMD:-"BAZEL_BUILD_EXTRA_OPTIONS=\"${BAZEL_BUILD_EXTRA_OPTIONS:-}\" ./ci/do_ci.sh bazel.release.server_only"}
 

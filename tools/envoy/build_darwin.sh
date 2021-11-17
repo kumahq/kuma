@@ -8,7 +8,7 @@ echo "Building Envoy for Darwin"
 
 mkdir -p "$(dirname ${BINARY_PATH})"
 
-SOURCE_DIR="${SOURCE_DIR}" ./tools/envoy/fetch_sources.sh
+SOURCE_DIR="${SOURCE_DIR}" "${KUMA_DIR:-.}/tools/envoy/fetch_sources.sh"
 
 pushd "${SOURCE_DIR}"
 
