@@ -11,6 +11,7 @@ import (
 	envoy_metrics_v3 "github.com/envoyproxy/go-control-plane/envoy/config/metrics/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 

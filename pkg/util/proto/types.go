@@ -1,10 +1,10 @@
 package proto
 
 import (
-	"google.golang.org/protobuf/types/known/structpb"
 	"time"
 
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
