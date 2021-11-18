@@ -226,10 +226,13 @@ func (e *Envoy) version() (*EnvoyVersion, error) {
 	build = regexp.MustCompile(`version:(.*)`).FindString(build)
 	build = strings.Trim(build, "version:")
 	build = strings.Trim(build, " ")
-	version := regexp.MustCompile(`/([0-9.]+)/`).FindString(build)
-	version = strings.Trim(version, "/")
+
+	parts := strings.Split(build, "/")
+	if len(parts) != 5 { // revision/build_version_number/revision_status/build_type/ssl_version
+		return nil, errors.Errorf("wrong Envoy build format: %s", build)
+	}
 	return &EnvoyVersion{
 		Build:   build,
-		Version: version,
+		Version: parts[1],
 	}, nil
 }
