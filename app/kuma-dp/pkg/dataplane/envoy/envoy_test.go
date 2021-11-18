@@ -279,6 +279,30 @@ var _ = Describe("Envoy", func() {
 			Expect(version.Build).To(Equal("50ef0945fa2c5da4bff7627c3abf41fdd3b7cffd/1.15.0/clean-getenvoy-2aa564b-envoy/RELEASE/BoringSSL"))
 		})
 
+		It("should properly read envoy version with label for unix-based systems", func() {
+			// given
+			cfg := kuma_dp.Config{
+				DataplaneRuntime: kuma_dp.DataplaneRuntime{
+					BinaryPath: filepath.Join("testdata", "envoy-mock.with-label.sh"),
+					ConfigDir:  configDir,
+				},
+			}
+
+			// when
+			dataplane, err := New(Opts{
+				Config: cfg,
+				Stdout: &bytes.Buffer{},
+				Stderr: &bytes.Buffer{},
+			})
+			Expect(err).ToNot(HaveOccurred())
+			version, err := dataplane.version()
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(version.Version).To(Equal("1.20.0-dev"))
+			Expect(version.Build).To(Equal("50ef0945fa2c5da4bff7627c3abf41fdd3b7cffd/1.20.0-dev/clean-getenvoy-2aa564b-envoy/RELEASE/BoringSSL"))
+		})
+
 		It("should properly read envoy version for windows", func() {
 			// given
 			cfg := kuma_dp.Config{
