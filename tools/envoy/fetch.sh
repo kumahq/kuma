@@ -45,6 +45,11 @@ if [ "${ENVOY_DISTRO}" == "centos7" ]; then
   ENVOY_DISTRO="centos"
 fi
 
+FILE_EXTENSION=""
+if [ "${ENVOY_DISTRO}" == "windows" ]; then
+  FILE_EXTENSION=".exe"
+fi
+
 if [[ -n "${ENVOY_COMMIT_HASH}" ]]; then
   ENVOY_SHORT_HASH=${ENVOY_COMMIT_HASH:0:8}
 
@@ -61,7 +66,7 @@ fi
 
 if [[ -n "${ENVOY_TAG}" ]]; then
   ENVOY_VERSION=${ENVOY_TAG:1}
-  BINARY_NAME="envoy-${ENVOY_VERSION}-${ENVOY_DISTRO}"
+  BINARY_NAME="envoy-${ENVOY_VERSION}-${ENVOY_DISTRO}${FILE_EXTENSION}"
 
   download_envoy "${BINARY_NAME}"
   exit 0
