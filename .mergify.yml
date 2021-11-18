@@ -1,9 +1,29 @@
 pull_request_rules:
-  - name: backport patches to stable branch
-    conditions:
-      - base=master
-      - label=backport-to-stable
-    actions:
-      backport:
-        branches:
-          - release-1.4
+- name: backport patches to stable branch
+  conditions:
+  - base=master
+  - label=backport-to-stable
+  actions:
+    backport:
+      branches:
+      - release-1.4
+
+- name: automatically approve backport PRs
+  conditions:
+  - and:
+    - base~=^release-.*
+    - title~=^(.*)\(backport \#(.*)\)$
+  actions:
+    review:
+      type: APPROVE
+      message: automatically approving backport PR
+
+- name: automatically merge backport PRs
+  conditions:
+  - and:
+    - base~=^release-.*
+    - title~=^(.*)\(backport \#(.*)\)$
+    - check-success=kuma-commit
+  actions:
+    merge:
+      method: squash
