@@ -8,16 +8,6 @@ pull_request_rules:
       branches:
       - release-1.4
 
-- name: automatically approve backport PRs
-  conditions:
-  - and:
-    - base~=^release-.*
-    - title~=^(.*)\(backport \#(.*)\)$
-  actions:
-    review:
-      type: APPROVE
-      message: automatically approving backport PR
-
 - name: automatically merge backport PRs
   conditions:
   - and:
