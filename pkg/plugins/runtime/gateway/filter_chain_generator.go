@@ -242,7 +242,14 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 		// general-purpose gateway.
 		envoy_listeners.HttpConnectionManager(service, false),
 		envoy_listeners.ServerHeader("Kuma Gateway"),
-		envoy_listeners.HttpDynamicRoute(info.Listener.ResourceName),
+		envoy_listeners.HttpScopedRouteDiscovery(),
+		envoy_listeners.HttpScopedKeyBuilder(&envoy_listeners.HeaderValueExtractor{
+			Name:             ":authority",
+			ElementSeparator: "",
+			ExtractType: &envoy_hcm.ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_Index{
+				Index: 0,
+			},
+		}),
 	)
 
 	// Add edge proxy recommendations.

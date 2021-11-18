@@ -188,10 +188,6 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		if err := resources.AddSet(BuildResourceSet(info.Resources.Listener)); err != nil {
 			return nil, errors.Wrapf(err, "failed to build listener resource")
 		}
-
-		if err := resources.AddSet(BuildResourceSet(info.Resources.RouteConfiguration)); err != nil {
-			return nil, errors.Wrapf(err, "failed to build route configuration resource")
-		}
 	}
 
 	return resources.Get(), nil

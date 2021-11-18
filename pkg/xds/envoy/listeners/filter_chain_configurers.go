@@ -2,9 +2,11 @@ package listeners
 
 import (
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_extensions_compression_gzip_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	envoy_extensions_filters_http_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -160,6 +162,66 @@ func HttpDynamicRoute(name string) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.HttpDynamicRouteConfigurer{
 		RouteName: name,
 	})
+}
+
+type HeaderValueExtractor = envoy_hcm.ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor
+
+func HttpScopedKeyBuilder(e *HeaderValueExtractor) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(v3.FilterChainConfigureFunc(func(chain *envoy_listener.FilterChain) error {
+		return v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+			scoped := hcm.GetScopedRoutes()
+
+			if scoped == nil {
+				return errors.Errorf("scoped routing is not enabled")
+			}
+
+			if scoped.GetScopeKeyBuilder() == nil {
+				scoped.ScopeKeyBuilder = &envoy_hcm.ScopedRoutes_ScopeKeyBuilder{}
+			}
+
+			scoped.GetScopeKeyBuilder().Fragments = append(scoped.ScopeKeyBuilder.Fragments,
+				&envoy_hcm.ScopedRoutes_ScopeKeyBuilder_FragmentBuilder{
+					Type: &envoy_hcm.ScopedRoutes_ScopeKeyBuilder_FragmentBuilder_HeaderValueExtractor_{
+						HeaderValueExtractor: e,
+					},
+				})
+
+			return nil
+		})
+	}))
+}
+
+// HttpScopedRouteDiscovery enables scoped routing on the
+// HTTPConnectionManager. This requires ADS support for both
+// RouteConfiguration and ScopedRouteConfiguration resources.
+func HttpScopedRouteDiscovery() FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(v3.FilterChainConfigureFunc(func(chain *envoy_listener.FilterChain) error {
+		return v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+			adsConfig := &envoy_config_core.ConfigSource{
+				ResourceApiVersion: envoy_config_core.ApiVersion_V3,
+				ConfigSourceSpecifier: &envoy_config_core.ConfigSource_Ads{
+					Ads: &envoy_config_core.AggregatedConfigSource{},
+				},
+			}
+
+			// Initialize the scoped routing machinery.
+			hcm.RouteSpecifier = &envoy_hcm.HttpConnectionManager_ScopedRoutes{
+				ScopedRoutes: &envoy_hcm.ScopedRoutes{
+					Name: "scoped-routes",
+					// Get the RouteConfigurations from ADS.
+					RdsConfigSource: adsConfig,
+					// Get the ScopedRouteConfigurations from ADS too.
+					ConfigSpecifier: &envoy_hcm.ScopedRoutes_ScopedRds{
+						ScopedRds: &envoy_hcm.ScopedRds{
+							ScopedRdsConfigSource: adsConfig,
+						},
+					},
+				},
+			}
+
+			return nil
+		})
+	}))
 }
 
 func HttpInboundRoutes(service string, routes envoy_common.Routes) FilterChainBuilderOpt {

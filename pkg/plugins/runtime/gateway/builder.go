@@ -1,6 +1,8 @@
 package gateway
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
@@ -26,6 +28,11 @@ func BuildResourceSet(b ResourceBuilder) (*xds.ResourceSet, error) {
 	if resource.GetName() == "" {
 		return nil, errors.Errorf("anonymous resource %T", resource)
 	}
+
+	log.Info("built new gateway resource",
+		"name", resource.GetName(),
+		"type", fmt.Sprintf("%T", resource),
+	)
 
 	set := xds.NewResourceSet()
 	set.Add(&xds.Resource{

@@ -3,6 +3,8 @@ package gateway
 import (
 	"sort"
 
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
@@ -107,6 +109,10 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 	}
 
 	info.Resources.RouteConfiguration.Configure(envoy_routes.VirtualHost(vh))
+
+	if err := resources.AddSet(BuildResourceSet(info.Resources.RouteConfiguration)); err != nil {
+		return nil, errors.Wrapf(err, "failed to build route configuration resource")
+	}
 
 	return resources.Get(), nil
 }

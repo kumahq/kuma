@@ -365,3 +365,37 @@ func VirtualHostRoute(route *RouteBuilder) envoy_routes.VirtualHostBuilderOpt {
 		}),
 	)
 }
+
+// ScopedCommonConfiguration sets name as the ScopedRouteConfiguration
+// resource name, and routeName as the name of the RouteConfiguration resource
+// it maps to.
+func ScopedCommonConfiguration(name string, routeName string) ScopedRouteConfigurer {
+	return ScopedRouteMustConfigureFunc(func(r *envoy_config_route.ScopedRouteConfiguration) {
+		r.Name = name
+		r.RouteConfigurationName = routeName
+	})
+}
+
+// ScopedRouteOnDemand sets the ScopedRouteConfiguration to be on-demand.
+func ScopedRouteOnDemand(enabled bool) ScopedRouteConfigurer {
+	return ScopedRouteMustConfigureFunc(func(r *envoy_config_route.ScopedRouteConfiguration) {
+		r.OnDemand = enabled
+	})
+}
+
+// ScopedKeyFragment appends the given key fragment to the ScopedRouteConfiguration key.
+func ScopedKeyFragment(key string) ScopedRouteConfigurer {
+	return ScopedRouteMustConfigureFunc(func(r *envoy_config_route.ScopedRouteConfiguration) {
+		if r.GetKey() == nil {
+			r.Key = &envoy_config_route.ScopedRouteConfiguration_Key{}
+		}
+
+		fragment := &envoy_config_route.ScopedRouteConfiguration_Key_Fragment{
+			Type: &envoy_config_route.ScopedRouteConfiguration_Key_Fragment_StringKey{
+				StringKey: key,
+			},
+		}
+
+		r.GetKey().Fragments = append(r.GetKey().Fragments, fragment)
+	})
+}
