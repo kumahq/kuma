@@ -45,7 +45,7 @@ var _ = Describe("Compatibility", func() {
 		_, err := version.CompatibilityMatrix.DataplaneConstraints("!@#")
 
 		// then
-		Expect(err).To(MatchError(`could not build a constraint !@#: Invalid Semantic Version`))
+		Expect(err).To(MatchError(`could not build a constraint for Kuma version !@#: Invalid Semantic Version`))
 	})
 
 	It("should throw an error when there are multiple matching constraints", func() {
@@ -66,5 +66,17 @@ var _ = Describe("Compatibility", func() {
 
 		// then
 		Expect(err).To(MatchError("more than one constraint for version 1.0.0: 1.16.0, 1.16.0"))
+	})
+
+	It("should include an entry that matches the master version after a release is made", func() {
+		// given
+		currentVersion := version.Build.Version
+
+		// when
+		dpComptibility, err := version.CompatibilityMatrix.DataplaneConstraints(currentVersion)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(dpComptibility).ToNot(BeNil(), "Update version.CompatibilityMatrix with a tag including prereleases so there is information about the master branch.")
 	})
 })

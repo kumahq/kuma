@@ -38,7 +38,3 @@ test/kuma-dp: test/kuma ## Dev: Run `kuma-dp` tests only
 .PHONY: test/kumactl
 test/kumactl: PKG_LIST=./app/kumactl/... ./pkg/config/app/kumactl/...
 test/kumactl: test/kuma ## Dev: Run `kumactl` tests only
-
-.PHONY: test/release
-test/release: # Dev: Run release tests
-	$(GO_TEST) $(GO_TEST_OPTS) -tags=release ./test/release/...

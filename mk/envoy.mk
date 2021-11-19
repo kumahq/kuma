@@ -1,3 +1,4 @@
+# Remember to update pkg/version/compatibility.go
 ENVOY_TAG ?= v1.20.0
 ENVOY_COMMIT_HASH ?= b16d390f11376e47f479778f2362ea4f48bdc895
 
