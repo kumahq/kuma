@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [1.4.0 RC2]
+
+Changes:
+* chore(*) scripts for build, publish and fetch Envoy binaries [#3110](https://github.com//kumahq/kuma/pull/3110) [#3182](https://github.com//kumahq/kuma/pull/3182)
+* chore(kuma-cp) upgrade gui to new version [#3178](https://github.com//kumahq/kuma/pull/3178) [#3179](https://github.com//kumahq/kuma/pull/3179)
+* chore(kuma-cp) Use go structs instead of gotemplate for bootstrap [#3156](https://github.com//kumahq/kuma/pull/3156) [#3173](https://github.com//kumahq/kuma/pull/3173)
+* chore(deps): bump github.com/slok/go-http-metrics from 0.9.0 to 0.10.0 [#3170](https://github.com//kumahq/kuma/pull/3170)
+
 ## [1.4.0 RC1]
 
 Changes:
