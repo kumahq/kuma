@@ -1,0 +1,14 @@
+name: project-lifecycle
+on:
+  schedule:
+    - cron: 0 8 * * *
+  workflow_dispatch:
+  issues:
+    types:
+      - reopened
+      - opened
+      - labeled
+
+jobs:
+  lifecycle:
+    uses: kumahq/.github/.github/workflows/wfc_lifecycle.yml@main
