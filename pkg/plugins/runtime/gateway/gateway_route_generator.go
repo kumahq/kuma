@@ -60,8 +60,10 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 		"listener-name", info.Listener.ResourceName,
 	)
 
-	exactEntries := map[string]route.Entry{}
-	prefixEntries := map[string]route.Entry{}
+	// Index the routes by their path. There are typically multiple
+	// routes per path with additional matching criteria.
+	exactEntries := map[string][]route.Entry{}
+	prefixEntries := map[string][]route.Entry{}
 
 	for _, route := range gatewayRoutes {
 		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
@@ -77,9 +79,11 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 
 				switch {
 				case routeEntry.Match.ExactPath != "":
-					exactEntries[routeEntry.Match.ExactPath] = routeEntry
+					exactEntries[routeEntry.Match.ExactPath] =
+						append(exactEntries[routeEntry.Match.ExactPath], routeEntry)
 				case routeEntry.Match.PrefixPath != "":
-					prefixEntries[routeEntry.Match.PrefixPath] = routeEntry
+					prefixEntries[routeEntry.Match.PrefixPath] =
+						append(prefixEntries[routeEntry.Match.PrefixPath], routeEntry)
 				default:
 					info.RouteTable.Entries = append(info.RouteTable.Entries, routeEntry)
 				}
@@ -93,32 +97,36 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 	// transformations. Unless there is already an exact match for the
 	// path in question, we expand each prefix path to both a prefix and
 	// an exact path, duplicating the route.
-	for _, prefixEntry := range prefixEntries {
-		exact := strings.TrimRight(prefixEntry.Match.PrefixPath, "/")
+	for path, entries := range prefixEntries {
+		exactPath := strings.TrimRight(path, "/")
 
-		// Make sure the prefix has a trailing '/' so that it only matches
-		// complete path components.
-		prefixEntry.Match.PrefixPath = exact + "/"
-		info.RouteTable.Entries = append(info.RouteTable.Entries, prefixEntry)
+		_, hasExactMatch := exactEntries[exactPath]
 
-		// If the prefix is '/', it matches everything anyway,
-		// so we don't need to install an exact match.
-		if prefixEntry.Match.PrefixPath == "/" {
-			continue
-		}
+		for _, e := range entries {
+			// Make sure the prefix has a trailing '/' so that it only matches
+			// complete path components.
+			e.Match.PrefixPath = exactPath + "/"
+			info.RouteTable.Entries = append(info.RouteTable.Entries, e)
 
-		// Duplicate the route to an exact match only if there
-		// isn't already an exact match for this path.
-		if _, ok := exactEntries[exact]; !ok {
-			exactMatch := prefixEntry
-			exactMatch.Match.PrefixPath = ""
-			exactMatch.Match.ExactPath = exact
-			exactEntries[exact] = exactMatch
+			// If the prefix is '/', it matches everything anyway,
+			// so we don't need to install an exact match.
+			if e.Match.PrefixPath == "/" {
+				continue
+			}
+
+			// Duplicate the route to an exact match only if there
+			// isn't already an exact match for this path.
+			if !hasExactMatch {
+				exactMatch := e
+				exactMatch.Match.PrefixPath = ""
+				exactMatch.Match.ExactPath = exactPath
+				exactEntries[exactPath] = append(exactEntries[exactPath], exactMatch)
+			}
 		}
 	}
 
-	for _, e := range exactEntries {
-		info.RouteTable.Entries = append(info.RouteTable.Entries, e)
+	for _, entries := range exactEntries {
+		info.RouteTable.Entries = append(info.RouteTable.Entries, entries...)
 	}
 
 	return nil, nil
@@ -188,6 +196,11 @@ func makeRouteMatch(ruleMatch *mesh_proto.GatewayRoute_HttpRoute_Match) route.Ma
 		case mesh_proto.GatewayRoute_HttpRoute_Match_Path_REGEX:
 			match.RegexPath = p.GetValue()
 		}
+	} else {
+		// Envoy routes require a path match, so if the route
+		// didn't specify, we match any path so that the additional
+		// match criteria will be applied.
+		match.PrefixPath = "/"
 	}
 
 	if m := ruleMatch.GetMethod(); m != mesh_proto.HttpMethod_NONE {
