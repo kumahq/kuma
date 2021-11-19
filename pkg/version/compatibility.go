@@ -53,6 +53,9 @@ var CompatibilityMatrix = Compatibility{
 		"~1.3.0": {
 			Envoy: "~1.18.4",
 		},
+		"~1.4.0": {
+			Envoy: "~1.18.4",
+		},
 	},
 }
 
