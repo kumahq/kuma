@@ -14,7 +14,6 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	util_error "github.com/kumahq/kuma/pkg/util/error"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
@@ -51,7 +50,7 @@ var _ = Describe("UpdateFilterConfig()", func() {
 			}),
 			Entry("1 filter", func() testCase {
 				pbst, err := anypb.New(&envoy_tcp.TcpProxy{})
-				util_error.MustNot(err)
+				Expect(err).ToNot(HaveOccurred())
 				return testCase{
 					filterChain: &envoy_listener.FilterChain{
 						Filters: []*envoy_listener.Filter{{
@@ -80,7 +79,7 @@ var _ = Describe("UpdateFilterConfig()", func() {
 			}()),
 			Entry("2 filters", func() testCase {
 				pbst, err := anypb.New(&envoy_tcp.TcpProxy{})
-				util_error.MustNot(err)
+				Expect(err).ToNot(HaveOccurred())
 				return testCase{
 					filterChain: &envoy_listener.FilterChain{
 						Filters: []*envoy_listener.Filter{
@@ -146,7 +145,7 @@ var _ = Describe("UpdateFilterConfig()", func() {
 			}),
 			Entry("1 filter with a wrong config type", func() testCase {
 				pbst, err := anypb.New(&envoy_hcm.HttpConnectionManager{})
-				util_error.MustNot(err)
+				Expect(err).ToNot(HaveOccurred())
 				return testCase{
 					filterChain: &envoy_listener.FilterChain{
 						Filters: []*envoy_listener.Filter{{
