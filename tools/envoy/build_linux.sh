@@ -10,7 +10,14 @@ mkdir -p "$(dirname ${BINARY_PATH})"
 
 SOURCE_DIR="${SOURCE_DIR}" "${KUMA_DIR:-.}/tools/envoy/fetch_sources.sh"
 
-BUILD_CMD=${BUILD_CMD:-"BAZEL_BUILD_EXTRA_OPTIONS=\"${BAZEL_BUILD_EXTRA_OPTIONS:-}\" ./ci/do_ci.sh bazel.release.server_only"}
+BAZEL_BUILD_EXTRA_OPTIONS=${BAZEL_BUILD_EXTRA_OPTIONS:-""}
+read -ra BAZEL_BUILD_EXTRA_OPTIONS <<< "${BAZEL_BUILD_EXTRA_OPTIONS}"
+BAZEL_BUILD_OPTIONS=(
+    "--config=clang"
+    "--verbose_failures"
+    "${BAZEL_BUILD_EXTRA_OPTIONS[@]+"${BAZEL_BUILD_EXTRA_OPTIONS[@]}"}")
+BUILD_TARGET=${BUILD_TARGET:-"//contrib/exe:envoy-static"}
+BUILD_CMD=${BUILD_CMD:-"bazel build ${BAZEL_BUILD_OPTIONS[@]} -c opt ${BUILD_TARGET}"}
 
 ENVOY_BUILD_SHA=$(curl --fail --location --silent https://raw.githubusercontent.com/envoyproxy/envoy/"${ENVOY_TAG}"/.bazelrc | grep envoyproxy/envoy-build-ubuntu | sed -e 's#.*envoyproxy/envoy-build-ubuntu:\(.*\)#\1#'| uniq)
 ENVOY_BUILD_IMAGE="envoyproxy/envoy-build-ubuntu:${ENVOY_BUILD_SHA}"
@@ -25,5 +32,5 @@ docker build -t "${LOCAL_BUILD_IMAGE}" --progress=plain \
 
 # copy out the binary
 id=$(docker create "${LOCAL_BUILD_IMAGE}")
-docker cp "$id":/envoy-sources/linux/amd64/build_envoy_release_stripped/envoy "${BINARY_PATH}"
+docker cp "$id":/envoy-sources/bazel-bin/contrib/exe/envoy "${BINARY_PATH}"
 docker rm -v "$id"

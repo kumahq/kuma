@@ -37,6 +37,15 @@ func NewVersion() *Version {
 	}
 }
 
+func (x *EnvoyVersion) ParseVersion() (version, label string) {
+	parts := strings.SplitN(x.Version, "-", 2)
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	} else {
+		return x.Version, ""
+	}
+}
+
 func (x *DataplaneInsight) IsOnline() bool {
 	for _, s := range x.GetSubscriptions() {
 		if s.GetConnectTime() != nil && s.GetDisconnectTime() == nil {

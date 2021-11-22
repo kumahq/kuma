@@ -11,7 +11,6 @@ import (
 	envoy_dns "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/dns_filter/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/any"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -35,7 +34,8 @@ type DNSConfigurer struct {
 }
 
 func (c *DNSConfigurer) Configure(listener *envoy_listener.Listener) error {
-	v, err := semver.NewVersion(c.EnvoyVersion.Version)
+	version, _ := c.EnvoyVersion.ParseVersion()
+	v, err := semver.NewVersion(version)
 	if err != nil {
 		return err
 	}
