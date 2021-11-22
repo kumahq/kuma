@@ -1,16 +1,13 @@
 # CHANGELOG
 
-## [1.4.0 RC2]
+## [1.4.0]
+> Released on 2021/11/22
 
 Changes:
 * chore(*) scripts for build, publish and fetch Envoy binaries [#3110](https://github.com//kumahq/kuma/pull/3110) [#3182](https://github.com//kumahq/kuma/pull/3182)
 * chore(kuma-cp) upgrade gui to new version [#3178](https://github.com//kumahq/kuma/pull/3178) [#3179](https://github.com//kumahq/kuma/pull/3179)
 * chore(kuma-cp) Use go structs instead of gotemplate for bootstrap [#3156](https://github.com//kumahq/kuma/pull/3156) [#3173](https://github.com//kumahq/kuma/pull/3173)
 * chore(deps): bump github.com/slok/go-http-metrics from 0.9.0 to 0.10.0 [#3170](https://github.com//kumahq/kuma/pull/3170)
-
-## [1.4.0 RC1]
-
-Changes:
 * Disable reporting by default [#3070](https://github.com//kumahq/kuma/pull/3070) [#3159](https://github.com//kumahq/kuma/pull/3159)
 * chore(kumactl) remove install CRDs filter function [#3139](https://github.com//kumahq/kuma/pull/3139)
 * feat(kuma-dp) Add conf to disable service vip [#3143](https://github.com//kumahq/kuma/pull/3143)
@@ -42,14 +39,12 @@ Changes:
 * feat: add install control-plane --version flag for all components [#2904](https://github.com//kumahq/kuma/pull/2904)
 * feat: add zone selector to Kuma Mesh dashboard [#2860](https://github.com//kumahq/kuma/pull/2860)
 * fix: possible to delete resources on Zone CP [#2665](https://github.com//kumahq/kuma/pull/2665)
-
 * fix: make cluster names contextually unique [#3098](https://github.com//kumahq/kuma/pull/3098)
 * feat: automatically enable gzip content on gateways [#3104](https://github.com//kumahq/kuma/pull/3104)
 * feat: add Gateway TLS termination support [#3044](https://github.com//kumahq/kuma/pull/3044)
 * feat: add gateway support for external services [#2990](https://github.com//kumahq/kuma/pull/2990)
 * fix: enable secrets support for Gateway resources [#2953](https://github.com//kumahq/kuma/pull/2953)
 * feat: initial connection policy support for Gateway [#2933](https://github.com//kumahq/kuma/pull/2933)
-
 * feat: add access to generate zone ingress token [#3075](https://github.com//kumahq/kuma/pull/3075)
 * feat: user token with RSA256 [#2992](https://github.com//kumahq/kuma/pull/2992)
 * feat: prefix system users and groups with mesh-system [#3013](https://github.com//kumahq/kuma/pull/3013)
@@ -60,7 +55,6 @@ Changes:
 * feat: support plugin based authentication including user tokens [#2895](https://github.com//kumahq/kuma/pull/2895)
 * feat: User Token for API Server authentication [#2892](https://github.com//kumahq/kuma/pull/2892)
 * chore: refactor authz and authn to plugins [#2837](https://github.com//kumahq/kuma/pull/2837)
-
 * chore(kuma-cp) upgrade gui to new version [#3148](https://github.com//kumahq/kuma/pull/3148)
 * chore(*) upgrade to Go 1.17.3 [#3147](https://github.com//kumahq/kuma/pull/3147)
 * chore(deps): bump github.com/operator-framework/operator-lib [#3158](https://github.com//kumahq/kuma/pull/3158)
