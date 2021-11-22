@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
@@ -556,6 +557,32 @@ var _ = Describe("Util", func() {
 					expectedErr: `no suitable port for manifest: 8648e081-576d-4a23-861b-8f2d94d28d34`,
 				}),
 			)
+		})
+	})
+	Describe("ServiceTagFor", func() {
+		It("should use Service FQDN", func() {
+			// given
+			svc := &kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example",
+				},
+				Spec: kube_core.ServiceSpec{
+					Ports: []kube_core.ServicePort{
+						{
+							Name: "http",
+							Port: 80,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+						},
+					},
+				},
+			}
+
+			// then
+			Expect(util.ServiceTagFor(svc, &svc.Spec.Ports[0])).To(Equal("example_demo_svc_80"))
 		})
 	})
 })

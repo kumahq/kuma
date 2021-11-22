@@ -131,7 +131,7 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	if tags == nil {
 		tags = make(map[string]string)
 	}
-	tags[mesh_proto.ServiceTag] = ServiceTagFor(svc, svcPort)
+	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTagFor(svc, svcPort)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
 	}
@@ -140,10 +140,6 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 		tags[mesh_proto.InstanceTag] = pod.Name
 	}
 	return tags
-}
-
-func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
-	return fmt.Sprintf("%s_%s_svc_%d", svc.Name, svc.Namespace, svcPort.Port)
 }
 
 // ProtocolTagFor infers service protocol from a `<port>.service.kuma.io/protocol` annotation or `appProtocol`.
