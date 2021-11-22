@@ -190,6 +190,7 @@ Routes:
               safeRegexMatch:
                 googleRe2: {}
                 regex: .*sh
+            prefix: /
           route:
             weightedClusters:
               clusters:
@@ -200,6 +201,7 @@ Routes:
             headers:
             - exactMatch: application/json
               name: Content-Type
+            prefix: /
           route:
             weightedClusters:
               clusters:
@@ -210,6 +212,7 @@ Routes:
             headers:
             - exactMatch: gibberish
               name: Language
+            prefix: /
           route:
             weightedClusters:
               clusters:
