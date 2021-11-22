@@ -1,4 +1,4 @@
-.PHONY: all test install crd/install crd/uninstall crd/upgrade deploy manifests generate controller-gen
+.PHONY: all test install crd/install crd/uninstall crd/upgrade deploy generate controller-gen
 
 # TODO(yskopets): CRD generation is broken since introduction of .proto definitions
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
@@ -27,33 +27,28 @@ GO_TEST_OPTS ?=
 COVERAGE_PROFILE ?= cover.out
 
 # Run tests
-test: generate manifests
+test: generate
 	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" ./api/... ./controllers/...
 
 # Install CRDs into a cluster
-install: manifests
+install: crd/install
+
+crd/install: generate ## Install CRDs into a cluster
 	kubectl apply -f config/crd/bases
 
-crd/install: ## Install CRDs into a cluster
-	kubectl apply -f config/crd/bases
-
-crd/uninstall: manifests ## Uninstall CRDs from a cluster
+crd/uninstall: generate ## Uninstall CRDs from a cluster
 	kubectl delete -f config/crd/bases
 
-crd/upgrade: manifests ## Upgrade CRDs in a cluster
+crd/upgrade: generate ## Upgrade CRDs in a cluster
 	kubectl diff -f config/crd/bases || kubectl apply -f config/crd/bases
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests
+deploy: generate
 	kubectl apply -f config/crd/bases
 	kustomize build config/default | kubectl apply -f -
 
-# Generate manifests e.g. CRD, RBAC etc.
-manifests:
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./api/...;./controllers/..." $(CRD_OUTPUT)
-
-# Generate code
 generate:
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) webhook paths="./api/..." $(CRD_OUTPUT)
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt,year=$$(date +%Y) paths=./api/...
 
 help: ## Display this help screen
