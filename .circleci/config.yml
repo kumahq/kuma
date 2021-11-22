@@ -1335,7 +1335,7 @@ workflows:
         requires:
         - build
     - test:
-        <<: *helm_release_workflow_filters
+        <<: *release_workflow_filters
         requires:
           - go_cache
         target: test test/release
