@@ -160,6 +160,8 @@ env:
 {{- end }}
 - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
   value: "false"
+- name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
+  value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
 {{- end }}
 
 {{/*

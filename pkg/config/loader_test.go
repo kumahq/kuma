@@ -140,6 +140,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(ContainElements("v1"))
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
+			Expect(cfg.Runtime.Kubernetes.ServiceAccountName).To(Equal("custom-sa"))
 
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -318,6 +319,7 @@ runtime:
   universal:
     dataplaneCleanupAge: 1h
   kubernetes:
+    serviceAccountName: custom-sa
     controlPlaneServiceName: custom-control-plane
     admissionServer:
       address: 127.0.0.2
@@ -506,6 +508,7 @@ access:
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":                            "12s",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
+				"KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME":                                             "custom-sa",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":                                         "127.0.0.2",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                                            "9443",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR":                                        "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
