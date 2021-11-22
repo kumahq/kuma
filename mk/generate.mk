@@ -23,7 +23,7 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 
 .PHONY: generate
 generate:  ## Dev: Run code generators
-generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/deepcopy
+generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/kubernetes
 
 .PHONY: resources/type
 resources/type:
@@ -64,8 +64,8 @@ generate/envoy-imports:
 	go list github.com/envoyproxy/go-control-plane/... | grep "github.com/envoyproxy/go-control-plane/envoy/" | awk '{printf "\t_ \"%s\"\n", $$1}' >> ${ENVOY_IMPORTS}
 	echo ')' >> ${ENVOY_IMPORTS}
 
-.PHONY: generate/deepcopy
-generate/deepcopy:
+.PHONY: generate/kubernetes
+generate/kubernetes:
 	$(MAKE) -C pkg/plugins/resources/k8s/native generate
 
 .PHONY: generate/api
