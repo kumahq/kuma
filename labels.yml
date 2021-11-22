@@ -1,0 +1,25 @@
+default:
+  labels:
+    - color: 5319e7
+      name: "backport-to-stable"
+      description: "Automatically backport this PR to the latest stable branch"
+    - color: 0052cc
+      name: "area/kuma-cp"
+    - color: 0052cc
+      name: "area/kuma-dp"
+    - color: 0052cc
+      name: "area/kumactl"
+    - color: 0052cc
+      name: "area/k8s"
+    - color: 0052cc
+      name: "area/universal"
+    - color: 0052cc
+      name: "area/observability"
+    - color: 0052cc
+      name: "area/dns"
+    - color: 0052cc
+      name: "area/multizone"
+    - color: 0052cc
+      name: "area/api"
+    - color: 0052cc
+      name: "area/ci-cd"
