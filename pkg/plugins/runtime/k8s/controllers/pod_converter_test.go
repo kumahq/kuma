@@ -520,33 +520,6 @@ var _ = Describe("InboundTagsForService(..)", func() {
 	)
 })
 
-var _ = Describe("ServiceTagFor(..)", func() {
-	It("should use Service FQDN", func() {
-		// given
-		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "example",
-			},
-			Spec: kube_core.ServiceSpec{
-				Ports: []kube_core.ServicePort{
-					{
-						Name: "http",
-						Port: 80,
-						TargetPort: kube_intstr.IntOrString{
-							Type:   kube_intstr.Int,
-							IntVal: 8080,
-						},
-					},
-				},
-			},
-		}
-
-		// then
-		Expect(ServiceTagFor(svc, &svc.Spec.Ports[0])).To(Equal("example_demo_svc_80"))
-	})
-})
-
 var _ = Describe("ProtocolTagFor(..)", func() {
 
 	type testCase struct {
