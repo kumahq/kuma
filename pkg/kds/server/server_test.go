@@ -57,7 +57,7 @@ var _ = Describe("KDS Server", func() {
 	It("should support all existing resource types", func() {
 		ctx := context.Background()
 
-		// Do not forget to update this test after updating 'kds.SupportedTypes
+		// Do not forget to update this test after updating protobuf `KumaKdsOptions`.
 		Expect(registry.Global().ObjectTypes(model.HasKdsEnabled())).
 			To(HaveLen(len([]proto.Message{
 				kds_samples.CircuitBreaker,
@@ -82,6 +82,8 @@ var _ = Describe("KDS Server", func() {
 				kds_samples.ZoneIngressInsight,
 				kds_samples.Config,
 				kds_samples.VirtualOutbound,
+				kds_samples.Gateway,
+				kds_samples.GatewayRoute,
 			})))
 
 		vrf := kds_verifier.New().
