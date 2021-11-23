@@ -3,7 +3,7 @@ package injector_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
@@ -64,7 +64,7 @@ var _ = Describe("Injector", func() {
 
 			By("loading input Pod")
 			// when
-			input, err := ioutil.ReadFile(inputFile)
+			input, err := os.ReadFile(inputFile)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when

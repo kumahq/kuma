@@ -3,7 +3,6 @@ package framework
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 
@@ -126,7 +125,7 @@ func (k *KumactlOptions) KumactlApplyFromString(configData string) error {
 func storeConfigToTempFile(name string, configData string) (string, error) {
 	escapedTestName := url.PathEscape(name)
 
-	tmpfile, err := ioutil.TempFile("", escapedTestName)
+	tmpfile, err := os.CreateTemp("", escapedTestName)
 	if err != nil {
 		return "", err
 	}

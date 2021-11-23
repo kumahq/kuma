@@ -1,7 +1,7 @@
 package generator_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -59,7 +59,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			}
 
 			dataplane := mesh_proto.Dataplane{}
-			dpBytes, err := ioutil.ReadFile(filepath.Join("testdata", "inbound-proxy", given.dataplaneFile))
+			dpBytes, err := os.ReadFile(filepath.Join("testdata", "inbound-proxy", given.dataplaneFile))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 			proxy := &model.Proxy{

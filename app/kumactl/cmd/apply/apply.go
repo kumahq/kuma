@@ -4,8 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -66,7 +67,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 			var err error
 
 			if ctx.args.file == "-" {
-				b, err = ioutil.ReadAll(cmd.InOrStdin())
+				b, err = io.ReadAll(cmd.InOrStdin())
 				if err != nil {
 					return err
 				}
@@ -88,12 +89,12 @@ $ kumactl apply -f https://example.com/resource.yaml
 						return errors.Wrap(err, "error while retrieving URL")
 					}
 					defer resp.Body.Close()
-					b, err = ioutil.ReadAll(resp.Body)
+					b, err = io.ReadAll(resp.Body)
 					if err != nil {
 						return errors.Wrap(err, "error while reading provided file")
 					}
 				} else {
-					b, err = ioutil.ReadFile(ctx.args.file)
+					b, err = os.ReadFile(ctx.args.file)
 					if err != nil {
 						return errors.Wrap(err, "error while reading provided file")
 					}

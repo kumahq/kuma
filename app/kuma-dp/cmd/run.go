@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -101,7 +100,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			if cfg.DataplaneRuntime.ConfigDir == "" || cfg.DNS.ConfigDir == "" {
-				tmpDir, err = ioutil.TempDir("", "kuma-dp-")
+				tmpDir, err = os.MkdirTemp("", "kuma-dp-")
 				if err != nil {
 					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
 					return err
@@ -134,7 +133,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			if cfg.ControlPlane.CaCert == "" && cfg.ControlPlane.CaCertFile != "" {
-				cert, err := ioutil.ReadFile(cfg.ControlPlane.CaCertFile)
+				cert, err := os.ReadFile(cfg.ControlPlane.CaCertFile)
 				if err != nil {
 					return errors.Wrapf(err, "could not read certificate file %s", cfg.ControlPlane.CaCertFile)
 				}
@@ -250,5 +249,5 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 	if err := os.MkdirAll(filepath.Dir(filename), perm); err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
 }

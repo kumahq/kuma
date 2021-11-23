@@ -3,7 +3,7 @@ package api_server_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -237,7 +237,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(200))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(dp1Json))
 		})
@@ -255,7 +255,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 				// then
 				Expect(response.StatusCode).To(Equal(200))
-				body, err := ioutil.ReadAll(response.Body)
+				body, err := io.ReadAll(response.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(string(body)).To(MatchJSON(tc.expectedJson))

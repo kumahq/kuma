@@ -3,7 +3,7 @@ package get_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -168,7 +168,7 @@ var _ = Describe("kumactl get meshes", func() {
 				).To(Succeed())
 
 				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and

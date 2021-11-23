@@ -2,7 +2,7 @@ package uninstall_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 
@@ -44,7 +44,7 @@ var _ = Describe("kumactl install tracing", func() {
 			Expect(stderr.String()).To(BeEmpty())
 
 			// when
-			regex, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+			regex, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

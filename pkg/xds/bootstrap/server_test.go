@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -144,7 +144,7 @@ var _ = Describe("Bootstrap Server", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			received, err := ioutil.ReadAll(resp.Body)
+			received, err := io.ReadAll(resp.Body)
 			Expect(resp.Body.Close()).To(Succeed())
 			Expect(err).ToNot(HaveOccurred())
 
@@ -217,7 +217,7 @@ var _ = Describe("Bootstrap Server", func() {
 		resp, err := httpClient.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(json))
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		bytes, err := ioutil.ReadAll(resp.Body)
+		bytes, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
 		Expect(resp.StatusCode).To(Equal(422))
