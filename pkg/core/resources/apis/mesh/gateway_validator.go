@@ -111,11 +111,12 @@ func validateGatewayConf(path validators.PathBuilder, conf *mesh_proto.Gateway_C
 			}
 		}
 
+		// Listener tags are optional, but if given, must not contain
+		// various tags that are well-known properties of Dataplanes.
 		err.Add(ValidateSelector(
 			path.Index(i).Field("tags"),
 			l.GetTags(),
 			ValidateSelectorOpts{
-				RequireAtLeastOneTag: true,
 				ExtraTagKeyValidators: []TagKeyValidatorFunc{
 					SelectorKeyNotInSet(
 						mesh_proto.ExternalServiceTag,
