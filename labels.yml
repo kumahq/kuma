@@ -34,3 +34,6 @@ default:
     - color: 0052cc
       name: "area/adoption"
       description: "Likely to cause problem to new comers"
+    - color: 0052cc
+      name: "area/gateway"
+      description: "Built-in Kuma gateway support"
