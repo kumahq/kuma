@@ -162,8 +162,8 @@ func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
 	return false
 }
 
-func meshName(pod *kube_core.Pod, ns *kube_core.Namespace) string {
-	if mesh, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
+func meshName(annotations map[string]string, ns *kube_core.Namespace) string {
+	if mesh, exist := metadata.Annotations(annotations).GetString(metadata.KumaMeshAnnotation); exist {
 		return mesh
 	}
 	if mesh, exist := metadata.Annotations(ns.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
@@ -173,7 +173,7 @@ func meshName(pod *kube_core.Pod, ns *kube_core.Namespace) string {
 }
 
 func (i *KumaInjector) meshFor(pod *kube_core.Pod, ns *kube_core.Namespace) (*core_mesh.MeshResource, error) {
-	meshName := meshName(pod, ns)
+	meshName := meshName(pod.Annotations, ns)
 	mesh := &mesh_k8s.Mesh{}
 	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
 		return nil, err
@@ -197,8 +197,8 @@ func (i *KumaInjector) namespaceFor(pod *kube_core.Pod) (*kube_core.Namespace, e
 	return ns, nil
 }
 
-func (i *KumaInjector) proxyConcurrencyFor(pod *kube_core.Pod) (int64, error) {
-	count, ok, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaSidecarConcurrencyAnnotation)
+func (i *KumaInjector) proxyConcurrencyFor(annotations map[string]string) (int64, error) {
+	count, ok, err := metadata.Annotations(annotations).GetUint32(metadata.KumaSidecarConcurrencyAnnotation)
 	if ok {
 		return int64(count), err
 	}
@@ -215,14 +215,53 @@ func (i *KumaInjector) proxyConcurrencyFor(pod *kube_core.Pod) (int64, error) {
 	return ncpu, nil
 }
 
-func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Namespace) (kube_core.Container, error) {
-	mesh := meshName(pod, ns)
-	env, err := i.sidecarEnvVars(mesh, pod.GetAnnotations())
+func (i *KumaInjector) NewSidecarContainer(
+	pod *kube_core.Pod,
+	ns *kube_core.Namespace,
+) (kube_core.Container, error) {
+	container, err := i.newDpContainer(pod.Annotations, ns)
+	if err != nil {
+		return container, err
+	}
+
+	// On versions of Kubernetes prior to v1.15.0
+	// ServiceAccount admission plugin is called only once, prior to any mutating web hook.
+	// That's why it is a responsibility of every mutating web hook to copy
+	// ServiceAccount volume mount into containers it creates.
+	container.VolumeMounts = i.NewVolumeMounts(pod)
+
+	container.Name = util.KumaSidecarContainerName
+
+	return container, nil
+}
+
+func (i *KumaInjector) NewGatewayContainer(
+	annotations map[string]string,
+	ns *kube_core.Namespace,
+) (kube_core.PodSpec, error) {
+	container, err := i.newDpContainer(annotations, ns)
+	if err != nil {
+		return kube_core.PodSpec{}, err
+	}
+
+	container.Name = util.KumaGatewayContainerName
+
+	return kube_core.PodSpec{
+		Containers: []kube_core.Container{container},
+	}, nil
+}
+
+func (i *KumaInjector) newDpContainer(
+	annotations map[string]string,
+	ns *kube_core.Namespace,
+) (kube_core.Container, error) {
+	mesh := meshName(annotations, ns)
+	env, err := i.sidecarEnvVars(mesh, annotations)
 	if err != nil {
 		return kube_core.Container{}, err
 	}
 
-	cpuCount, err := i.proxyConcurrencyFor(pod)
+	cpuCount, err := i.proxyConcurrencyFor(annotations)
 	if err != nil {
 		return kube_core.Container{}, err
 	}
@@ -238,7 +277,6 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 	}
 
 	return kube_core.Container{
-		Name:            util.KumaSidecarContainerName,
 		Image:           i.cfg.SidecarContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Args:            args,
@@ -287,11 +325,6 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 				kube_core.ResourceMemory: kube_api.MustParse(i.cfg.SidecarContainer.Resources.Limits.Memory),
 			},
 		},
-		// On versions of Kubernetes prior to v1.15.0
-		// ServiceAccount admission plugin is called only once, prior to any mutating web hook.
-		// That's why it is a responsibility of every mutating web hook to copy
-		// ServiceAccount volume mount into containers it creates.
-		VolumeMounts: i.NewVolumeMounts(pod),
 	}, nil
 }
 
@@ -421,17 +454,17 @@ func (i *KumaInjector) sidecarEnvVars(mesh string, podAnnotations map[string]str
 }
 
 func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) []kube_core.VolumeMount {
-	if tokenVolumeMount := i.FindServiceAccountToken(pod); tokenVolumeMount != nil {
+	if tokenVolumeMount := i.FindServiceAccountToken(&pod.Spec); tokenVolumeMount != nil {
 		return []kube_core.VolumeMount{*tokenVolumeMount}
 	}
 	return nil
 }
 
-func (i *KumaInjector) FindServiceAccountToken(pod *kube_core.Pod) *kube_core.VolumeMount {
-	for i := range pod.Spec.Containers {
-		for j := range pod.Spec.Containers[i].VolumeMounts {
-			if pod.Spec.Containers[i].VolumeMounts[j].MountPath == serviceAccountTokenMountPath {
-				return &pod.Spec.Containers[i].VolumeMounts[j]
+func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube_core.VolumeMount {
+	for i := range podSpec.Containers {
+		for j := range podSpec.Containers[i].VolumeMounts {
+			if podSpec.Containers[i].VolumeMounts[j].MountPath == serviceAccountTokenMountPath {
+				return &podSpec.Containers[i].VolumeMounts[j]
 			}
 		}
 	}

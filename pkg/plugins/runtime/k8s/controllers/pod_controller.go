@@ -102,6 +102,12 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 		return kube_ctrl.Result{}, nil
 	}
 
+	// If we are using a builtin gateway, we want to generate a builtin gateway
+	// dataplane.
+	if name, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaGatewayAnnotation); name == metadata.AnnotationBuiltin {
+		return kube_ctrl.Result{}, r.createorUpdateBuiltinGatewayDataplane(ctx, pod)
+	}
+
 	// only Pods with injected Kuma need a Dataplane descriptor
 	injected, exist, err := metadata.Annotations(pod.Annotations).GetBool(metadata.KumaSidecarInjectedAnnotation)
 	if err != nil {
