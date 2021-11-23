@@ -3,7 +3,7 @@ package tokens
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -50,7 +50,7 @@ func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[s
 		return "", errors.Wrap(err, "could not execute the request")
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", errors.Wrap(err, "could not read a body of the request")
 	}

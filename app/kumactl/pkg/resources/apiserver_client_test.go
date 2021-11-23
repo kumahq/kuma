@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -30,7 +30,7 @@ var _ = Describe("httpApiServerClient", func() {
 						Expect(req.URL.String()).To(Equal("/"))
 						return &http.Response{
 							StatusCode: http.StatusOK,
-							Body:       ioutil.NopCloser(bytes.NewBufferString(buildVersion)),
+							Body:       io.NopCloser(bytes.NewBufferString(buildVersion)),
 						}, nil
 					}),
 				},
@@ -52,7 +52,7 @@ var _ = Describe("httpApiServerClient", func() {
 					Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 						return &http.Response{
 							StatusCode: http.StatusBadRequest,
-							Body:       ioutil.NopCloser(strings.NewReader("some error from server")),
+							Body:       io.NopCloser(strings.NewReader("some error from server")),
 						}, nil
 					}),
 				},

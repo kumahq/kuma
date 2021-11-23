@@ -1,9 +1,6 @@
 package config
 
 import (
-
-	// we use gopkg.in/yaml.v2 because it supports time.Duration
-	"io/ioutil"
 	"os"
 
 	"github.com/kelseyhightower/envconfig"
@@ -34,7 +31,7 @@ func loadFromFile(file string, cfg Config) error {
 	if !fileExists(file) {
 		return errors.Errorf("Failed to access configuration file %q", file)
 	}
-	if contents, err := ioutil.ReadFile(file); err != nil {
+	if contents, err := os.ReadFile(file); err != nil {
 		return errors.Wrapf(err, "Failed to read configuration from file %q", file)
 	} else if err := yaml.Unmarshal(contents, cfg); err != nil {
 		return errors.Wrapf(err, "Failed to parse configuration from file %q", file)

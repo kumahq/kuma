@@ -2,7 +2,7 @@ package api_server_test
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -117,7 +117,7 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
 			// then
 			Expect(response.StatusCode).To(Equal(200))
 			// when
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

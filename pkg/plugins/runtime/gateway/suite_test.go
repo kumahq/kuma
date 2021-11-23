@@ -3,7 +3,7 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"testing"
 
@@ -185,7 +185,7 @@ func FetchNamedFixture(
 // StoreNamedFixture reads the given YAML file name from the testdata
 // directory, then stores it in the runtime resource manager.
 func StoreNamedFixture(rt runtime.Runtime, name string) error {
-	bytes, err := ioutil.ReadFile(path.Join("testdata", name))
+	bytes, err := os.ReadFile(path.Join("testdata", name))
 	if err != nil {
 		return err
 	}

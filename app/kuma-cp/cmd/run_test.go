@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -54,7 +53,7 @@ func RunSmokeTest(factory ConfigFactory, workdir string) {
 			Expect(err).NotTo(HaveOccurred())
 			diagnosticsPort = freePort
 
-			file, err := ioutil.TempFile("", "*")
+			file, err := os.CreateTemp("", "*")
 			Expect(err).ToNot(HaveOccurred())
 			configFile = file
 		})

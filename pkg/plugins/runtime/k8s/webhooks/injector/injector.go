@@ -3,7 +3,7 @@ package injector
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -41,7 +41,7 @@ func New(
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
-		bytes, err := ioutil.ReadFile(cfg.CaCertFile)
+		bytes, err := os.ReadFile(cfg.CaCertFile)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not read provided CA cert file %s", cfg.CaCertFile)
 		}

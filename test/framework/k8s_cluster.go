@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -729,7 +728,7 @@ func (c *K8sCluster) deleteCRDs() (errs error) {
 
 	if err := cmd.Run(); err != nil {
 		errs = multierr.Append(errs, err)
-	} else if tmpfile, err := ioutil.TempFile("", "crds.yaml"); err != nil {
+	} else if tmpfile, err := os.CreateTemp("", "crds.yaml"); err != nil {
 		errs = multierr.Append(errs, err)
 	} else {
 		defer os.Remove(tmpfile.Name()) // clean up

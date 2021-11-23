@@ -2,9 +2,10 @@ package api_server_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -110,7 +111,7 @@ var _ = Describe("Auth test", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(403))
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
 		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""}`))
@@ -123,7 +124,7 @@ var _ = Describe("Auth test", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(403))
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
 		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""}`))
@@ -134,13 +135,13 @@ var _ = Describe("Auth test", func() {
 func createCertsForIP(ip string) (certPath string, keyPath string) {
 	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, "localhost", ip)
 	Expect(err).ToNot(HaveOccurred())
-	dir, err := ioutil.TempDir("", "temp-certs")
+	dir, err := os.MkdirTemp("", "temp-certs")
 	Expect(err).ToNot(HaveOccurred())
 	certPath = dir + "/cert.pem"
 	keyPath = dir + "/cert.key"
-	err = ioutil.WriteFile(certPath, keyPair.CertPEM, 0600)
+	err = os.WriteFile(certPath, keyPair.CertPEM, 0600)
 	Expect(err).ToNot(HaveOccurred())
-	err = ioutil.WriteFile(keyPath, keyPair.KeyPEM, 0600)
+	err = os.WriteFile(keyPath, keyPair.KeyPEM, 0600)
 	Expect(err).ToNot(HaveOccurred())
 	return
 }

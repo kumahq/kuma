@@ -2,7 +2,7 @@ package api_server_test
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -150,7 +150,7 @@ var _ = Describe("Service Insight Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(200))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(expected))
 		})
@@ -177,7 +177,7 @@ var _ = Describe("Service Insight Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(200))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(expected))
 		})
@@ -195,7 +195,7 @@ var _ = Describe("Service Insight Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(200))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 
 			expected := strings.ReplaceAll(given.expected, "{{address}}", apiServer.Address())

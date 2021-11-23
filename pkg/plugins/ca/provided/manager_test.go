@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -180,7 +180,7 @@ var _ = Describe("Provided CA", func() {
 	Context("GetRootCert", func() {
 		It("should load return root certs", func() {
 			// given
-			expectedCert, err := ioutil.ReadFile(filepath.Join("testdata", "ca.pem"))
+			expectedCert, err := os.ReadFile(filepath.Join("testdata", "ca.pem"))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when

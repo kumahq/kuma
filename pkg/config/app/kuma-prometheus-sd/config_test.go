@@ -1,7 +1,6 @@
 package kuma_prometheus_sd_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -84,7 +83,7 @@ var _ = Describe("Config", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
+		expected, err := os.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and

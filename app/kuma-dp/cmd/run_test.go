@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -40,7 +39,7 @@ var _ = Describe("run", func() {
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		var err error
-		tmpDir, err = ioutil.TempDir("", "")
+		tmpDir, err = os.MkdirTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
@@ -96,7 +95,7 @@ var _ = Describe("run", func() {
 			// given
 			rootCtx := DefaultRootContext()
 			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, error) {
-				respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
+				respBytes, err := os.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
 				return respBytes, nil
 			}
@@ -118,7 +117,7 @@ var _ = Describe("run", func() {
 			var pid int64
 			By("waiting for dataplane (Envoy) to get started")
 			Eventually(func() bool {
-				data, err := ioutil.ReadFile(pidFile)
+				data, err := os.ReadFile(pidFile)
 				if err != nil {
 					return false
 				}
@@ -130,7 +129,7 @@ var _ = Describe("run", func() {
 
 			By("verifying the arguments Envoy was launched with")
 			// when
-			cmdline, err := ioutil.ReadFile(cmdlineFile)
+			cmdline, err := os.ReadFile(cmdlineFile)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

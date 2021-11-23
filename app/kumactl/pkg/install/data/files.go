@@ -1,8 +1,8 @@
 package data
 
 import (
+	"io"
 	"io/fs"
-	"io/ioutil"
 
 	"github.com/pkg/errors"
 )
@@ -51,7 +51,7 @@ func ReadFile(fileSys fs.FS, file string) (File, error) {
 	if err != nil {
 		return File{}, err
 	}
-	b, err := ioutil.ReadAll(f)
+	b, err := io.ReadAll(f)
 	if err != nil {
 		return File{}, err
 	}
