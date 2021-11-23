@@ -46,7 +46,6 @@ node:
     dataplane.dns.empty.port: "53002"
     dataplane.dns.port: "53001"
     dataplane.proxyType: dataplane
-    dataplane.token: token
     version:
       envoy:
         build: hash/1.15.0/RELEASE
