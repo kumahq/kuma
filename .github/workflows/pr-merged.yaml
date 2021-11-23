@@ -5,7 +5,6 @@ on:
     types: [closed]
     branches:
       - master
-      - release-*
 
 jobs:
   notify-about-merged-pr:
@@ -22,7 +21,6 @@ jobs:
               owner: '${{ secrets.NOTIFY_OWNER }}',
               repo: '${{ secrets.NOTIFY_REPO }}',
               event_type: '${{ secrets.NOTIFY_EVENT_TYPE }}',
-              branch: context.payload.pull_request.base.ref,
               client_payload: {
                 pr: context.payload.pull_request.number,
               },
