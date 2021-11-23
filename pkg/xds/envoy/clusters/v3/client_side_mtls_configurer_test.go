@@ -7,7 +7,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -22,7 +21,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		clientService string
 		tags          []envoy.Tags
 		ctx           xds_context.Context
-		metadata      *core_xds.DataplaneMetadata
 		expected      string
 	}
 
@@ -211,9 +209,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 						},
 					},
 				},
-			},
-			metadata: &core_xds.DataplaneMetadata{
-				DataplaneToken: "token",
 			},
 			tags: []envoy.Tags{
 				{

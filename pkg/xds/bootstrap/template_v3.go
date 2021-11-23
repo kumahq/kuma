@@ -232,7 +232,6 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 	}
 
 	if parameters.DataplaneToken != "" {
-		res.Node.Metadata.Fields["dataplane.token"] = util_proto.MustNewValueForStruct(parameters.DataplaneToken)
 		if res.HdsConfig != nil {
 			for _, n := range res.HdsConfig.GrpcServices {
 				n.InitialMetadata = []*envoy_core_v3.HeaderValue{
