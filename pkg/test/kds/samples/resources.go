@@ -331,6 +331,18 @@ var (
 			}},
 		},
 	}
+	GatewayRoute = &mesh_proto.GatewayRoute{
+		Selectors: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "gateway",
+			},
+		}},
+		Conf: &mesh_proto.GatewayRoute_Conf{
+			Route: &mesh_proto.GatewayRoute_Conf_Http{
+				Http: &mesh_proto.GatewayRoute_HttpRoute{},
+			},
+		},
+	}
 	VirtualOutbound = &mesh_proto.VirtualOutbound{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{
