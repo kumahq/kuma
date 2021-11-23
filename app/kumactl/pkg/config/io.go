@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -24,7 +23,7 @@ func Load(file string, cfg *config_proto.Configuration) error {
 		}
 	}
 	if util_files.FileExists(configFile) {
-		if contents, err := ioutil.ReadFile(configFile); err != nil {
+		if contents, err := os.ReadFile(configFile); err != nil {
 			return errors.Wrapf(err, "Failed to read configuration from file %q", configFile)
 		} else if err := util_proto.FromYAML(contents, cfg); err != nil {
 			return errors.Wrapf(err, "Failed to parse configuration from file %q", configFile)
@@ -48,7 +47,7 @@ func Save(file string, cfg *config_proto.Configuration) error {
 			return errors.Wrapf(err, "Failed to create a directory %q", dir)
 		}
 	}
-	if err := ioutil.WriteFile(configFile, contents, 0600); err != nil {
+	if err := os.WriteFile(configFile, contents, 0600); err != nil {
 		return errors.Wrapf(err, "Failed to write configuration into file %q", configFile)
 	}
 	return nil

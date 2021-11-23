@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -31,7 +30,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 
 	BeforeEach(func() {
 		var err error
-		configFile, err = ioutil.TempFile("", "")
+		configFile, err = os.CreateTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
@@ -181,9 +180,9 @@ var _ = Describe("kumactl config control-planes add", func() {
 		DescribeTable("should add a new Control Plane by name and address",
 			func(given testCase) {
 				// setup
-				initial, err := ioutil.ReadFile(filepath.Join("testdata", given.configFile))
+				initial, err := os.ReadFile(filepath.Join("testdata", given.configFile))
 				Expect(err).ToNot(HaveOccurred())
-				err = ioutil.WriteFile(configFile.Name(), initial, 0600)
+				err = os.WriteFile(configFile.Name(), initial, 0600)
 				Expect(err).ToNot(HaveOccurred())
 
 				// setup cp index server for validation to pass
@@ -211,13 +210,13 @@ var _ = Describe("kumactl config control-planes add", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				expectedWithPlaceholder, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				expectedWithPlaceholder, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				expected := strings.ReplaceAll(string(expectedWithPlaceholder), "http://placeholder-address", fmt.Sprintf("http://localhost:%d", port))
 
 				// when
-				actual, err := ioutil.ReadFile(configFile.Name())
+				actual, err := os.ReadFile(configFile.Name())
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

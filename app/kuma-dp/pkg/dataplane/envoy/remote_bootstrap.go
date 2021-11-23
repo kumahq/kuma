@@ -6,9 +6,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	net_url "net/url"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -106,7 +107,7 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 	}
 	token := ""
 	if cfg.DataplaneRuntime.TokenPath != "" {
-		tokenData, err := ioutil.ReadFile(cfg.DataplaneRuntime.TokenPath)
+		tokenData, err := os.ReadFile(cfg.DataplaneRuntime.TokenPath)
 		if err != nil {
 			return nil, err
 		}
@@ -152,7 +153,7 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Unable to read the response with status code: %d. Make sure you are using https URL", resp.StatusCode)
 		}
@@ -167,7 +168,7 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		}
 		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read the body of the response")
 	}

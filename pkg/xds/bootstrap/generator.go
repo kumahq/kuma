@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 
@@ -258,7 +258,7 @@ func (b *bootstrapGenerator) caCert(request types.BootstrapRequest) ([]byte, err
 		origin = "request .CaCert"
 	case b.xdsCertFile != "":
 		var err error
-		cert, err = ioutil.ReadFile(b.xdsCertFile)
+		cert, err = os.ReadFile(b.xdsCertFile)
 		origin = "file " + b.xdsCertFile
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed getting cert from %s", origin)
@@ -301,7 +301,7 @@ func (s SANSet) slice() []string {
 }
 
 func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
-	certBytes, err := ioutil.ReadFile(dpServerCertFile)
+	certBytes, err := os.ReadFile(dpServerCertFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read certificate")
 	}

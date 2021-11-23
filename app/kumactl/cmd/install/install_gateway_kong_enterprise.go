@@ -1,7 +1,7 @@
 package install
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -29,7 +29,7 @@ func newInstallGatewayKongEnterpriseCmd(ctx *install_context.InstallGatewayKongE
 				return errors.Wrap(err, "Failed to read template files")
 			}
 
-			licenseBytes, err := ioutil.ReadFile(args.LicensePath)
+			licenseBytes, err := os.ReadFile(args.LicensePath)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read license file")
 			}

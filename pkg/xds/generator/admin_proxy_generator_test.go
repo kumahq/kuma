@@ -1,7 +1,7 @@
 package generator_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -33,7 +33,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 
 			// dataplane
 			dataplane := core_mesh.NewDataplaneResource()
-			bytes, err := ioutil.ReadFile(filepath.Join("testdata", "admin", given.dataplaneFile))
+			bytes, err := os.ReadFile(filepath.Join("testdata", "admin", given.dataplaneFile))
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, dataplane)
 

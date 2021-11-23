@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"net/url"
+	"os"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -121,7 +121,7 @@ func tlsConfig(rootCaFile string) (*tls.Config, error) {
 		}, nil
 	}
 	roots := x509.NewCertPool()
-	caCert, err := ioutil.ReadFile(rootCaFile)
+	caCert, err := os.ReadFile(rootCaFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not read certificate %s", rootCaFile)
 	}

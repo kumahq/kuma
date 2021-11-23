@@ -1,7 +1,7 @@
 package generator_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
@@ -49,13 +49,13 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 
 			// dataplane
 			dataplane := core_mesh.NewDataplaneResource()
-			bytes, err := ioutil.ReadFile(filepath.Join("testdata", "direct-access", given.dataplaneFile))
+			bytes, err := os.ReadFile(filepath.Join("testdata", "direct-access", given.dataplaneFile))
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, dataplane)
 
 			// all dataplanes
 			var dataplanes []*core_mesh.DataplaneResource
-			dpsBytes, err := ioutil.ReadFile(filepath.Join("testdata", "direct-access", given.dataplanesFile))
+			dpsBytes, err := os.ReadFile(filepath.Join("testdata", "direct-access", given.dataplanesFile))
 			Expect(err).ToNot(HaveOccurred())
 			dpYamls := util_yaml.SplitYAML(string(dpsBytes))
 			for _, dpYAML := range dpYamls {
@@ -66,7 +66,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 
 			// mesh
 			mesh := core_mesh.NewMeshResource()
-			bytes, err = ioutil.ReadFile(filepath.Join("testdata", "direct-access", given.meshFile))
+			bytes, err = os.ReadFile(filepath.Join("testdata", "direct-access", given.meshFile))
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, mesh)
 

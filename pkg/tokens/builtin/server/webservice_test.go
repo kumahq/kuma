@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -89,7 +89,7 @@ var _ = Describe("Dataplane Token Webservice", func() {
 		Expect(resp.StatusCode).To(Equal(200))
 
 		// when
-		respBody, err := ioutil.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

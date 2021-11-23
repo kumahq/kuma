@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"io"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -24,11 +25,11 @@ func readResource(cmd *cobra.Command, r *kuma_dp.DataplaneRuntime) (model.Resour
 			b = []byte(r.Resource)
 		}
 	case "-":
-		if b, err = ioutil.ReadAll(cmd.InOrStdin()); err != nil {
+		if b, err = io.ReadAll(cmd.InOrStdin()); err != nil {
 			return nil, err
 		}
 	default:
-		if b, err = ioutil.ReadFile(r.ResourcePath); err != nil {
+		if b, err = os.ReadFile(r.ResourcePath); err != nil {
 			return nil, errors.Wrap(err, "error while reading provided file")
 		}
 	}

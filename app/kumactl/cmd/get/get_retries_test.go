@@ -3,7 +3,7 @@ package get_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -98,7 +98,7 @@ var _ = Describe("kumactl get retries", func() {
 
 				// when
 				testDataPath := filepath.Join("testdata", given.goldenFile)
-				expected, err := ioutil.ReadFile(testDataPath)
+				expected, err := os.ReadFile(testDataPath)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
