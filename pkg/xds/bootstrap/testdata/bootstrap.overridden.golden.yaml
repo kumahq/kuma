@@ -44,7 +44,6 @@ node:
   metadata:
     dataplane.admin.port: "1234"
     dataplane.proxyType: dataplane
-    dataplane.token: token
     version:
       envoy:
         build: hash/1.15.0/RELEASE
