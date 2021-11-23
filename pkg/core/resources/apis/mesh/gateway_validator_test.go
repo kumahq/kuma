@@ -41,6 +41,21 @@ conf:
     tags:
       name: https`,
 		),
+		Entry("HTTPS listener without tags", `
+type: Gateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  product: edge
+conf:
+  listeners:
+  - hostname: www-1.example.com
+    port: 443
+    protocol: HTTP`,
+		),
 	)
 
 	DescribeErrorCases(
