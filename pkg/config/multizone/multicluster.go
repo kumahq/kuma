@@ -2,8 +2,8 @@ package multizone
 
 import (
 	"crypto/x509"
-	"io/ioutil"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -72,7 +72,7 @@ func (r *ZoneConfig) Validate() error {
 		rootCaFile := r.KDS.RootCAFile
 		if rootCaFile != "" {
 			roots := x509.NewCertPool()
-			caCert, err := ioutil.ReadFile(rootCaFile)
+			caCert, err := os.ReadFile(rootCaFile)
 			if err != nil {
 				return errors.Wrapf(err, "could not read certificate %s", rootCaFile)
 			}

@@ -3,7 +3,7 @@ package generate_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 
@@ -43,12 +43,12 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		keyBytes, err := ioutil.ReadAll(keyFile)
+		keyBytes, err := io.ReadAll(keyFile)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(string(keyBytes)).To(Equal("KEY"))
 
 		// and
-		certBytes, err := ioutil.ReadAll(certFile)
+		certBytes, err := io.ReadAll(certFile)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(string(certBytes)).To(Equal("CERT"))
 
@@ -62,11 +62,11 @@ var _ = Describe("kumactl generate tls-certificate", func() {
 	}
 
 	BeforeEach(func() {
-		key, err := ioutil.TempFile("", "")
+		key, err := os.CreateTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 		keyFile = key
 
-		cert, err := ioutil.TempFile("", "")
+		cert, err := os.CreateTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 		certFile = cert
 

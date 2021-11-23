@@ -162,7 +162,7 @@ executors:
   mac:
     resource_class: large
     macos:
-      xcode: "11.6.0"
+      xcode: "12.5.1"
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
@@ -1335,7 +1335,7 @@ workflows:
         requires:
         - build
     - test:
-        <<: *helm_release_workflow_filters
+        <<: *release_workflow_filters
         requires:
           - go_cache
         target: test test/release

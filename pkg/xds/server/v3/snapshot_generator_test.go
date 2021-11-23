@@ -1,7 +1,7 @@
 package v3
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -62,7 +62,7 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			dataplane := mesh_proto.Dataplane{}
-			dpBytes, err := ioutil.ReadFile(filepath.Join("testdata", "dataplane.input.yaml"))
+			dpBytes, err := os.ReadFile(filepath.Join("testdata", "dataplane.input.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 

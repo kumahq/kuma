@@ -2,7 +2,7 @@ package api_server_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -60,7 +60,7 @@ var _ = Describe("Index Endpoints", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
 		hostname, err := os.Hostname()

@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -31,7 +31,7 @@ func (s *service) RegisterRoutes(ws *restful.WebService) {
 }
 
 func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
-	body, err := ioutil.ReadAll(req.Request.Body)
+	body, err := io.ReadAll(req.Request.Body)
 	if err != nil {
 		writeBadRequestError(res, rest_error_types.Error{
 			Title:   "Could not read request body",

@@ -40,5 +40,4 @@ ginkgo/unfocus:
 
 .PHONY: check
 check: generate fmt docs helm-lint golangci-lint tidy helm-docs ginkgo/unfocus ## Dev: Run code checks (go fmt, go vet, ...)
-	$(MAKE) generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty

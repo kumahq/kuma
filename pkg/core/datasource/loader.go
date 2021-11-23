@@ -2,7 +2,7 @@ package datasource
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -39,7 +39,7 @@ func (l *loader) Load(ctx context.Context, mesh string, source *system_proto.Dat
 	case *system_proto.DataSource_InlineString:
 		data, err = []byte(source.GetInlineString()), nil
 	case *system_proto.DataSource_File:
-		data, err = ioutil.ReadFile(source.GetFile())
+		data, err = os.ReadFile(source.GetFile())
 	default:
 		return nil, errors.New("unsupported type of the DataSource")
 	}

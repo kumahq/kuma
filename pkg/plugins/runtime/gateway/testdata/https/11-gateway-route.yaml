@@ -181,6 +181,7 @@ Routes:
             value: max-age=31536000; includeSubDomains
         routes:
         - match:
+            prefix: /
             queryParameters:
             - name: Content-Type
               stringMatch:
@@ -199,6 +200,7 @@ Routes:
                 weight: 1
               totalWeight: 1
         - match:
+            prefix: /
             queryParameters:
             - name: Content-Type
               stringMatch:
@@ -210,6 +212,7 @@ Routes:
                 weight: 1
               totalWeight: 1
         - match:
+            prefix: /
             queryParameters:
             - name: Language
               stringMatch:

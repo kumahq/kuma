@@ -2,9 +2,10 @@ package envoy
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -45,11 +46,11 @@ var _ = Describe("Remote Bootstrap", func() {
 		defer server.Close()
 		mux.HandleFunc("/bootstrap", func(writer http.ResponseWriter, req *http.Request) {
 			defer GinkgoRecover()
-			body, err := ioutil.ReadAll(req.Body)
+			body, err := io.ReadAll(req.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(given.expectedBootstrapRequest))
 
-			response, err := ioutil.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
+			response, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			_, err = writer.Write(response)
 			Expect(err).ToNot(HaveOccurred())
@@ -223,7 +224,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				writer.WriteHeader(404)
 				i++
 			} else {
-				response, err := ioutil.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
+				response, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
 				_, err = writer.Write(response)
 				Expect(err).ToNot(HaveOccurred())

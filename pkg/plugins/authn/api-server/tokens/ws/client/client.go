@@ -3,7 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -50,7 +50,7 @@ func (h *httpUserTokenClient) Generate(name string, groups []string, validFor ti
 		return "", errors.Wrap(err, "could not execute the request")
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", errors.Wrap(err, "could not read a body of the request")
 	}

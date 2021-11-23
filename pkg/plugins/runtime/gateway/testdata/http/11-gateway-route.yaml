@@ -152,6 +152,7 @@ Routes:
         name: edge-gateway:HTTP:8080:echo.example.com
         routes:
         - match:
+            prefix: /
             queryParameters:
             - name: Content-Type
               stringMatch:
@@ -170,6 +171,7 @@ Routes:
                 weight: 1
               totalWeight: 1
         - match:
+            prefix: /
             queryParameters:
             - name: Content-Type
               stringMatch:
@@ -181,6 +183,7 @@ Routes:
                 weight: 1
               totalWeight: 1
         - match:
+            prefix: /
             queryParameters:
             - name: Language
               stringMatch:

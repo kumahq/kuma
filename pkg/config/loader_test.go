@@ -1,7 +1,6 @@
 package config_test
 
 import (
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -23,7 +22,7 @@ var _ = Describe("Config loader", func() {
 
 	BeforeEach(func() {
 		os.Clearenv()
-		file, err := ioutil.TempFile("", "*")
+		file, err := os.CreateTemp("", "*")
 		Expect(err).ToNot(HaveOccurred())
 		configFile = file
 	})
@@ -47,7 +46,7 @@ var _ = Describe("Config loader", func() {
 	DescribeTable("should load config",
 		func(given testCase) {
 			// given file with sample config
-			file, err := ioutil.TempFile("", "*")
+			file, err := os.CreateTemp("", "*")
 			Expect(err).ToNot(HaveOccurred())
 			_, err = file.WriteString(given.yamlFileConfig)
 			Expect(err).ToNot(HaveOccurred())
@@ -605,7 +604,7 @@ access:
 
 	It("should override via env var", func() {
 		// given file with sample cfg
-		file, err := ioutil.TempFile("", "*")
+		file, err := os.CreateTemp("", "*")
 		Expect(err).ToNot(HaveOccurred())
 		_, err = file.WriteString("environment: kubernetes")
 		Expect(err).ToNot(HaveOccurred())

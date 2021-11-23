@@ -2,7 +2,7 @@ package tracker
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -54,7 +54,7 @@ var _ = Describe("HDS Snapshot generator", func() {
 			yml, err := util_proto.ToYAML(snapshot.GetResources(cache.HealthCheckSpecifierType)["hcs"])
 			Expect(err).ToNot(HaveOccurred())
 
-			golden, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+			golden, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(golden).To(MatchYAML(yml))
 		},

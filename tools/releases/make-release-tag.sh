@@ -37,12 +37,12 @@ if [ -n "$(git tag --list "$NEWVERS")" ]; then
 fi
 
 case "$NEWVERS" in
-# Match a leading 'v' followed by any combination of numbers and
+# TODO: Match a leading 'v' followed by any combination of numbers and
 # dots. Optional hyphen-separated trailer can contain anything.
-v+([0-9.])?([-]*))
++([0-9.])?([-]*))
     ;;
 *)
-    printf "%s: tag '%s' must be of the form vX.Y.X\n" "$PROGNAME" "$NEWVERS"
+    printf "%s: tag '%s' must be of the form X.Y.X\n" "$PROGNAME" "$NEWVERS"
     exit 1
     ;;
 esac

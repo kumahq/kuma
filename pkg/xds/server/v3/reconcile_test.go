@@ -2,21 +2,40 @@ package v3
 
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_model "github.com/kumahq/kuma/pkg/core/xds"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
+
+func hcmForRoute(routeName string) *anypb.Any {
+	hcm := envoy_hcm.HttpConnectionManager{
+		RouteSpecifier: &envoy_hcm.HttpConnectionManager_Rds{
+			Rds: &envoy_hcm.Rds{
+				RouteConfigName: routeName,
+			},
+		},
+	}
+
+	a, err := proto.MarshalAnyDeterministic(&hcm)
+	Expect(err).To(Succeed())
+
+	return a
+}
 
 var _ = Describe("Reconcile", func() {
 	Describe("reconciler", func() {
@@ -31,7 +50,26 @@ var _ = Describe("Reconcile", func() {
 				envoy_types.Listener: {
 					Items: map[string]envoy_types.ResourceWithTTL{
 						"listener": {
-							Resource: &envoy_listener.Listener{},
+							Resource: &envoy_listener.Listener{
+								Address: &envoy_core.Address{
+									Address: &envoy_core.Address_SocketAddress{
+										SocketAddress: &envoy_core.SocketAddress{
+											Address: "127.0.0.1",
+											PortSpecifier: &envoy_core.SocketAddress_PortValue{
+												PortValue: 99,
+											},
+										},
+									},
+								},
+								FilterChains: []*envoy_listener.FilterChain{{
+									Filters: []*envoy_listener.Filter{{
+										Name: "envoy.filters.network.http_connection_manager",
+										ConfigType: &envoy_listener.Filter_TypedConfig{
+											TypedConfig: hcmForRoute("route"),
+										},
+									}},
+								}},
+							},
 						},
 					},
 				},
@@ -45,14 +83,25 @@ var _ = Describe("Reconcile", func() {
 				envoy_types.Cluster: {
 					Items: map[string]envoy_types.ResourceWithTTL{
 						"cluster": {
-							Resource: &envoy_cluster.Cluster{},
+							Resource: &envoy_cluster.Cluster{
+								Name:                 "cluster",
+								ClusterDiscoveryType: &envoy_cluster.Cluster_Type{Type: envoy_cluster.Cluster_EDS},
+								EdsClusterConfig: &envoy_cluster.Cluster_EdsClusterConfig{
+									EdsConfig: &envoy_core.ConfigSource{
+										ResourceApiVersion: envoy_core.ApiVersion_V3,
+										ConfigSourceSpecifier: &envoy_core.ConfigSource_Ads{
+											Ads: &envoy_core.AggregatedConfigSource{},
+										},
+									},
+								},
+							},
 						},
 					},
 				},
 				envoy_types.Endpoint: {
 					Items: map[string]envoy_types.ResourceWithTTL{
-						"endpoint": {
-							Resource: &envoy_endpoint.ClusterLoadAssignment{},
+						"cluster": {
+							Resource: &envoy_endpoint.ClusterLoadAssignment{ClusterName: "cluster"},
 						},
 					},
 				},

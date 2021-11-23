@@ -3,6 +3,7 @@ GO_TEST := TMPDIR=/tmp UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) go test $(GOFL
 GO_TEST_E2E := UPDATE_GOLDEN_FILES=$(UPDATE_GOLDEN_FILES) go test -p 1 $(GOFLAGS) $(LD_FLAGS)
 GO_TEST_OPTS ?=
 PKG_LIST ?= ./...
+VENDORED_PKGS = pkg/transparentproxy/istio/tools
 
 BUILD_COVERAGE_DIR ?= $(BUILD_DIR)/coverage
 
@@ -16,7 +17,7 @@ export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 
 .PHONY: test
 test: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
-	$(GO_TEST) $(GO_TEST_OPTS) --tags=gateway -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $(PKG_LIST)
+	$(GO_TEST) $(GO_TEST_OPTS) --tags=gateway -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $$(go list $(PKG_LIST) | grep -E -v "$(VENDORED_PKGS)")
 	$(MAKE) coverage
 
 ${COVERAGE_PROFILE}:

@@ -1,7 +1,7 @@
 package api_server_test
 
 import (
-	"io/ioutil"
+	"io"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -88,7 +88,7 @@ var _ = Describe("Read only Resource Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(405))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(body)).To(Equal(
@@ -105,7 +105,7 @@ var _ = Describe("Read only Resource Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(405))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(body)).To(Equal(

@@ -1,7 +1,7 @@
 package matchers
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -58,12 +58,12 @@ func (g *GoldenYAMLMatcher) Match(actual interface{}) (success bool, err error) 
 		if actualContent[len(actualContent)-1] != '\n' {
 			actualContent += "\n"
 		}
-		err := ioutil.WriteFile(g.GoldenFilePath, []byte(actualContent), 0644)
+		err := os.WriteFile(g.GoldenFilePath, []byte(actualContent), 0644)
 		if err != nil {
 			return false, errors.Wrap(err, "could not update golden file")
 		}
 	}
-	expected, err := ioutil.ReadFile(g.GoldenFilePath)
+	expected, err := os.ReadFile(g.GoldenFilePath)
 	if err != nil {
 		return false, errors.Wrap(err, "could not read golden file")
 	}

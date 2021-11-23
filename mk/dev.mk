@@ -67,9 +67,11 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/protoc-gen-go dev/install/protoc-gen-validate \
 	dev/install/protoc-gen-kumadoc \
 	dev/install/ginkgo \
-	dev/install/kubebuilder dev/install/kustomize \
 	dev/install/kubectl \
-	dev/install/kind dev/install/k3d \
+	dev/install/kubebuilder \
+	dev/install/kustomize \
+	dev/install/kind \
+	dev/install/k3d \
 	dev/install/minikube \
 	dev/install/golangci-lint \
 	dev/install/helm3 \

@@ -1,7 +1,6 @@
 package bootstrap_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -94,7 +93,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
+		expected, err := os.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and

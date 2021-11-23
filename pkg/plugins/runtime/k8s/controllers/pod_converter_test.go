@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
@@ -88,7 +88,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// given
 			// pod
 			pod := &kube_core.Pod{}
-			bytes, err := ioutil.ReadFile(filepath.Join("testdata", given.pod))
+			bytes, err := os.ReadFile(filepath.Join("testdata", given.pod))
 			Expect(err).ToNot(HaveOccurred())
 			err = yaml.Unmarshal(bytes, pod)
 			Expect(err).ToNot(HaveOccurred())
@@ -96,7 +96,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// services for pod
 			services := []*kube_core.Service{}
 			if given.servicesForPod != "" {
-				bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.servicesForPod))
+				bytes, err = os.ReadFile(filepath.Join("testdata", given.servicesForPod))
 				Expect(err).ToNot(HaveOccurred())
 				YAMLs := util_yaml.SplitYAML(string(bytes))
 				services, err = ParseServices(YAMLs)
@@ -106,7 +106,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// other services
 			var serviceGetter kube_client.Reader
 			if given.otherServices != "" {
-				bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.otherServices))
+				bytes, err = os.ReadFile(filepath.Join("testdata", given.otherServices))
 				Expect(err).ToNot(HaveOccurred())
 				YAMLs := util_yaml.SplitYAML(string(bytes))
 				services, err := ParseServices(YAMLs)
@@ -119,7 +119,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// other dataplanes
 			var otherDataplanes []*mesh_k8s.Dataplane
 			if given.otherDataplanes != "" {
-				bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.otherDataplanes))
+				bytes, err = os.ReadFile(filepath.Join("testdata", given.otherDataplanes))
 				Expect(err).ToNot(HaveOccurred())
 				YAMLs := util_yaml.SplitYAML(string(bytes))
 				otherDataplanes, err = ParseDataplanes(YAMLs)
@@ -141,7 +141,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			actual, err := json.Marshal(dataplane)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.dataplane))
+			expected, err := os.ReadFile(filepath.Join("testdata", given.dataplane))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(expected))
 		},
@@ -238,13 +238,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// given
 			// pod
 			pod := &kube_core.Pod{}
-			bytes, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.pod))
+			bytes, err := os.ReadFile(filepath.Join("testdata", "ingress", given.pod))
 			Expect(err).ToNot(HaveOccurred())
 			err = yaml.Unmarshal(bytes, pod)
 			Expect(err).ToNot(HaveOccurred())
 
 			// services for pod
-			bytes, err = ioutil.ReadFile(filepath.Join("testdata", "ingress", given.servicesForPod))
+			bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.servicesForPod))
 			Expect(err).ToNot(HaveOccurred())
 			YAMLs := util_yaml.SplitYAML(string(bytes))
 			services, err := ParseServices(YAMLs)
@@ -253,7 +253,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// node
 			var nodeGetter kube_client.Reader
 			if given.node != "" {
-				bytes, err = ioutil.ReadFile(filepath.Join("testdata", "ingress", given.node))
+				bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.node))
 				Expect(err).ToNot(HaveOccurred())
 				nodeGetter = fakeNodeReader(bytes)
 			}
@@ -518,33 +518,6 @@ var _ = Describe("InboundTagsForService(..)", func() {
 			},
 		}),
 	)
-})
-
-var _ = Describe("ServiceTagFor(..)", func() {
-	It("should use Service FQDN", func() {
-		// given
-		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "example",
-			},
-			Spec: kube_core.ServiceSpec{
-				Ports: []kube_core.ServicePort{
-					{
-						Name: "http",
-						Port: 80,
-						TargetPort: kube_intstr.IntOrString{
-							Type:   kube_intstr.Int,
-							IntVal: 8080,
-						},
-					},
-				},
-			},
-		}
-
-		// then
-		Expect(ServiceTagFor(svc, &svc.Spec.Ports[0])).To(Equal("example_demo_svc_80"))
-	})
 })
 
 var _ = Describe("ProtocolTagFor(..)", func() {
