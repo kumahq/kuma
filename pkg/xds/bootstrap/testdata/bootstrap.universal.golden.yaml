@@ -37,7 +37,6 @@ node:
   id: default.dp-1
   metadata:
     dataplane.proxyType: dataplane
-    dataplane.token: token
     version:
       envoy:
         build: hash/1.15.0/RELEASE

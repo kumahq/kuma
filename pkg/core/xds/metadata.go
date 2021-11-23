@@ -18,7 +18,6 @@ var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
 const (
 	// Supported Envoy node metadata fields.
 
-	fieldDataplaneToken             = "dataplane.token"
 	fieldDataplaneAdminPort         = "dataplane.admin.port"
 	fieldDataplaneDNSPort           = "dataplane.dns.port"
 	fieldDataplaneDNSEmptyPort      = "dataplane.dns.empty.port"
@@ -43,7 +42,6 @@ const (
 // This way, xDS server will be able to use Envoy node metadata
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
-	DataplaneToken  string
 	Resource        model.Resource
 	AdminPort       uint32
 	DNSPort         uint32
@@ -51,13 +49,6 @@ type DataplaneMetadata struct {
 	DynamicMetadata map[string]string
 	ProxyType       mesh_proto.ProxyType
 	Version         *mesh_proto.Version
-}
-
-func (m *DataplaneMetadata) GetDataplaneToken() string {
-	if m == nil {
-		return ""
-	}
-	return m.DataplaneToken
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -130,9 +121,6 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	metadata := DataplaneMetadata{}
 	if xdsMetadata == nil {
 		return &metadata
-	}
-	if field := xdsMetadata.Fields[fieldDataplaneToken]; field != nil {
-		metadata.DataplaneToken = field.GetStringValue()
 	}
 	if field := xdsMetadata.Fields[fieldDataplaneProxyType]; field != nil {
 		metadata.ProxyType = mesh_proto.ProxyType(field.GetStringValue())
