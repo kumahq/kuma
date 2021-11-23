@@ -1,7 +1,7 @@
 package install_test
 
 import (
-	"io/ioutil"
+	"os"
 
 	. "github.com/onsi/gomega"
 
@@ -16,10 +16,10 @@ func ExpectMatchesGoldenFiles(actual []byte, goldenFilePath string) {
 		if actual[len(actual)-1] != '\n' {
 			actual = append(actual, '\n')
 		}
-		err := ioutil.WriteFile(goldenFilePath, actual, 0664)
+		err := os.WriteFile(goldenFilePath, actual, 0664)
 		Expect(err).ToNot(HaveOccurred())
 	}
-	expected, err := ioutil.ReadFile(goldenFilePath)
+	expected, err := os.ReadFile(goldenFilePath)
 	Expect(err).ToNot(HaveOccurred())
 	expectedManifests := data.SplitYAML(data.File{Data: expected})
 

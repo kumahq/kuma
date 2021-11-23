@@ -7,9 +7,9 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -323,7 +323,7 @@ func configureMTLS(certsDir string) (*tls.Config, error) {
 	if certsDir != "" {
 		log.Info("loading client certificates")
 		clientCertPool := x509.NewCertPool()
-		files, err := ioutil.ReadDir(certsDir)
+		files, err := os.ReadDir(certsDir)
 		if err != nil {
 			return nil, err
 		}
@@ -337,7 +337,7 @@ func configureMTLS(certsDir string) (*tls.Config, error) {
 			}
 			log.Info("adding client certificate", "file", file.Name())
 			path := filepath.Join(certsDir, file.Name())
-			caCert, err := ioutil.ReadFile(path)
+			caCert, err := os.ReadFile(path)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not read certificate %q", path)
 			}

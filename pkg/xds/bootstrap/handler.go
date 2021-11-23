@@ -2,7 +2,7 @@ package bootstrap
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 
@@ -22,7 +22,7 @@ type BootstrapHandler struct {
 }
 
 func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
-	bytes, err := ioutil.ReadAll(req.Body)
+	bytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Error(err, "Could not read a request")
 		resp.WriteHeader(http.StatusInternalServerError)

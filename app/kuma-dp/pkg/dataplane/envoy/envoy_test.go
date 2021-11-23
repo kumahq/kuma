@@ -6,7 +6,6 @@ package envoy
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,7 +26,7 @@ var _ = Describe("Envoy", func() {
 
 	BeforeEach(func() {
 		var err error
-		configDir, err = ioutil.TempDir("", "")
+		configDir, err = os.MkdirTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -131,7 +130,7 @@ var _ = Describe("Envoy", func() {
 
 			By("verifying the contents Envoy config file")
 			// when
-			actual, err := ioutil.ReadFile(expectedConfigFile)
+			actual, err := os.ReadFile(expectedConfigFile)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

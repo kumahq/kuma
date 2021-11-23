@@ -6,7 +6,6 @@ package dnsserver
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,7 +25,7 @@ var _ = Describe("DNS Server", func() {
 
 	BeforeEach(func() {
 		var err error
-		configDir, err = ioutil.TempDir("", "")
+		configDir, err = os.MkdirTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
@@ -116,7 +115,7 @@ var _ = Describe("DNS Server", func() {
 
 			By("verifying the contents DNS Server config file")
 			// when
-			actual, err := ioutil.ReadFile(expectedConfigFile)
+			actual, err := os.ReadFile(expectedConfigFile)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

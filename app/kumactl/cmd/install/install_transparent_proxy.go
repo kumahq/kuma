@@ -6,8 +6,8 @@ package install
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	os_user "os/user"
 	"regexp"
 	"runtime"
@@ -295,7 +295,7 @@ func storeFirewalld(cmd *cobra.Command, args *transparentProxyArgs, output strin
 
 func modifyResolvConf(cmd *cobra.Command, args *transparentProxyArgs) error {
 	kumaCPLine := fmt.Sprintf("nameserver %s", args.KumaCpIP.String())
-	content, err := ioutil.ReadFile("/etc/resolv.conf")
+	content, err := os.ReadFile("/etc/resolv.conf")
 	if err != nil {
 		return errors.Wrap(err, "unable to open /etc/resolv.conf")
 	}
@@ -308,11 +308,11 @@ func modifyResolvConf(cmd *cobra.Command, args *transparentProxyArgs) error {
 	}
 
 	if !strings.Contains(string(content), kumaCPLine) {
-		err = ioutil.WriteFile("/etc/resolv.conf.kuma-backup", content, 0644)
+		err = os.WriteFile("/etc/resolv.conf.kuma-backup", content, 0644)
 		if err != nil {
 			return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma-backup")
 		}
-		err = ioutil.WriteFile("/etc/resolv.conf", []byte(newcontent), 0644)
+		err = os.WriteFile("/etc/resolv.conf", []byte(newcontent), 0644)
 		if err != nil {
 			return errors.Wrap(err, "unable to write /etc/resolv.conf")
 		}

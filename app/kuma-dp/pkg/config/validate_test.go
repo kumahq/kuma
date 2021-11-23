@@ -2,7 +2,6 @@ package config_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	. "github.com/onsi/ginkgo"
@@ -17,7 +16,7 @@ var _ = Describe("ValidateTokenPath", func() {
 	var tokenFile *os.File
 
 	BeforeEach(func() {
-		tf, err := ioutil.TempFile("", "")
+		tf, err := os.CreateTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 		tokenFile = tf
 	})
@@ -66,7 +65,7 @@ var _ = Describe("ValidateTokenPath", func() {
 		DescribeTable("should fail with invalid token",
 			func(given testCase) {
 				// setup
-				invalidTokenFile, err := ioutil.TempFile("", "")
+				invalidTokenFile, err := os.CreateTemp("", "")
 				Expect(err).ToNot(HaveOccurred())
 
 				_, err = invalidTokenFile.Write([]byte(given.token))

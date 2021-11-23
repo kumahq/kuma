@@ -4,7 +4,6 @@
 package uninstall
 
 import (
-	"io/ioutil"
 	"os"
 	"runtime"
 
@@ -46,13 +45,13 @@ func newUninstallTransparentProxy() *cobra.Command {
 			}
 
 			if _, err := os.Stat("/etc/resolv.conf.kuma-backup"); !os.IsNotExist(err) {
-				content, err := ioutil.ReadFile("/etc/resolv.conf.kuma-backup")
+				content, err := os.ReadFile("/etc/resolv.conf.kuma-backup")
 				if err != nil {
 					return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma-backup")
 				}
 
 				if !args.DryRun {
-					err = ioutil.WriteFile("/etc/resolv.conf", content, 0644)
+					err = os.WriteFile("/etc/resolv.conf", content, 0644)
 					if err != nil {
 						return errors.Wrap(err, "unable to write /etc/resolv.conf")
 					}

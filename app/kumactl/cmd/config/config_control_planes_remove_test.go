@@ -2,7 +2,6 @@ package config_test
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,7 +21,7 @@ var _ = Describe("kumactl config control-planes remove", func() {
 
 	BeforeEach(func() {
 		var err error
-		configFile, err = ioutil.TempFile("", "")
+		configFile, err = os.CreateTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
@@ -88,9 +87,9 @@ var _ = Describe("kumactl config control-planes remove", func() {
 		DescribeTable("should remove an existing Control Plane",
 			func(given testCase) {
 				// setup
-				initial, err := ioutil.ReadFile(filepath.Join("testdata", given.configFile))
+				initial, err := os.ReadFile(filepath.Join("testdata", given.configFile))
 				Expect(err).ToNot(HaveOccurred())
-				err = ioutil.WriteFile(configFile.Name(), initial, 0600)
+				err = os.WriteFile(configFile.Name(), initial, 0600)
 				Expect(err).ToNot(HaveOccurred())
 
 				// given
@@ -103,12 +102,12 @@ var _ = Describe("kumactl config control-planes remove", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				actual, err := ioutil.ReadFile(configFile.Name())
+				actual, err := os.ReadFile(configFile.Name())
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

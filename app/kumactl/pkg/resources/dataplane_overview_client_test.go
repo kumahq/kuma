@@ -3,7 +3,7 @@ package resources
 import (
 	"bufio"
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -37,7 +37,7 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 						}
 						return &http.Response{
 							StatusCode: http.StatusOK,
-							Body:       ioutil.NopCloser(bufio.NewReader(file)),
+							Body:       io.NopCloser(bufio.NewReader(file)),
 						}, nil
 					}),
 				},
@@ -71,7 +71,7 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 						}
 						return &http.Response{
 							StatusCode: http.StatusOK,
-							Body:       ioutil.NopCloser(bufio.NewReader(file)),
+							Body:       io.NopCloser(bufio.NewReader(file)),
 						}, nil
 					}),
 				},
@@ -95,7 +95,7 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 					Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 						return &http.Response{
 							StatusCode: http.StatusBadRequest,
-							Body:       ioutil.NopCloser(strings.NewReader("some error from server")),
+							Body:       io.NopCloser(strings.NewReader("some error from server")),
 						}, nil
 					}),
 				},

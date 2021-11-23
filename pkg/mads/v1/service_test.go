@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -99,7 +98,7 @@ var _ = Describe("MADS http service", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 		// when
-		respBody, err := ioutil.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -129,7 +128,7 @@ var _ = Describe("MADS http service", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusNotModified))
 
 		// when
-		respBody, err = ioutil.ReadAll(resp.Body)
+		respBody, err = io.ReadAll(resp.Body)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -248,7 +247,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			// when
-			respBody, err := ioutil.ReadAll(resp.Body)
+			respBody, err := io.ReadAll(resp.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -291,7 +290,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusNotModified))
 
 			// when
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -323,7 +322,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			// when
-			respBody, err := ioutil.ReadAll(resp.Body)
+			respBody, err := io.ReadAll(resp.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -360,7 +359,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			// when
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -400,7 +399,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			// when
-			respBody, err := ioutil.ReadAll(resp.Body)
+			respBody, err := io.ReadAll(resp.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -446,7 +445,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(resp2.StatusCode).To(Equal(http.StatusOK))
 
 			// when
-			respBody, err = ioutil.ReadAll(resp2.Body)
+			respBody, err = io.ReadAll(resp2.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -543,7 +542,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			// when
-			respBody, err := ioutil.ReadAll(resp.Body)
+			respBody, err := io.ReadAll(resp.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
