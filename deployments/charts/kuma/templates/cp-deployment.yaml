@@ -25,6 +25,23 @@ spec:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
         app: {{ include "kuma.name" . }}-control-plane
     spec:
+      {{- with .Values.controlPlane.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - {{ include "kuma.name" . }}-control-plane
+              topologyKey: kubernetes.io/hostname
+      {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
       {{- with .Values.controlPlane.nodeSelector }}
       nodeSelector:
