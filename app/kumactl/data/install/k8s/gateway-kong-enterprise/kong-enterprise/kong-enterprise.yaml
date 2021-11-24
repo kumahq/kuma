@@ -1226,6 +1226,11 @@ spec:
     spec:
       containers:
       - env:
+        - name: KONG_LICENSE_DATA
+          valueFrom:
+            secretKeyRef:
+              key: license
+              name: kong-enterprise-license
         - name: KONG_PROXY_LISTEN
           value: 0.0.0.0:8000, 0.0.0.0:8443 ssl http2
         - name: KONG_PORT_MAPS
@@ -1244,7 +1249,7 @@ spec:
           value: /dev/stderr
         - name: KONG_PROXY_ERROR_LOG
           value: /dev/stderr
-        image: kong:2.5
+        image: kong/kong-gateway:2.5
         lifecycle:
           preStop:
             exec:
@@ -1330,4 +1335,16 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
+      imagePullSecrets:
+      - name: kong-enterprise-edition-docker
       serviceAccountName: kong-serviceaccount
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kong-enterprise-license
+  namespace: {{ .Namespace }}
+type: Opaque
+stringData:
+  license: |
+    {{ .LicenseText }}
