@@ -296,9 +296,6 @@ resources:
               name: kuma:envoy:admin
               routes:
               - match:
-                  headers:
-                  - exactMatch: Bearer token
-                    name: Authorization
                   prefix: /
                 route:
                   cluster: kuma:envoy:admin
@@ -309,11 +306,12 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
-            tlsCertificates:
-            - certificateChain:
-                inlineBytes: TFMwPT0=
-              privateKey:
-                inlineBytes: TFMwPT0=
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: false
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

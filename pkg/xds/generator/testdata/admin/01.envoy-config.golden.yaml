@@ -58,9 +58,6 @@ resources:
               name: kuma:envoy:admin
               routes:
               - match:
-                  headers:
-                  - exactMatch: Bearer token
-                    name: Authorization
                   prefix: /
                 route:
                   cluster: kuma:envoy:admin
@@ -76,6 +73,7 @@ resources:
                 inlineBytes: TFMwPT0=
               privateKey:
                 inlineBytes: TFMwPT0=
+          requireClientCertificate: false
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

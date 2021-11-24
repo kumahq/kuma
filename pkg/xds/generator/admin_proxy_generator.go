@@ -1,10 +1,6 @@
 package generator
 
 import (
-	"fmt"
-
-	"github.com/pkg/errors"
-
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -73,17 +69,11 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 		if proxy.Dataplane != nil {
 			for _, se := range staticTlsEndpointPaths {
 				se.ClusterName = envoyAdminClusterName
-
-				token, err := ctx.EnvoyAdminClient.GenerateAPIToken(proxy.Dataplane)
-				if err != nil {
-					return nil, errors.Wrapf(err, "unable to generate the API token")
-				}
-				se.Header = "Authorization"
-				se.HeaderExactMatch = fmt.Sprintf("Bearer %s", token)
 			}
 			filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 				Configure(envoy_listeners.MatchTransportProtocol("tls")).
-				Configure(envoy_listeners.StaticTlsEndpoints(envoy_names.GetAdminListenerName(), ctx.ControlPlane.AdminProxyKeyPair, staticTlsEndpointPaths)),
+				Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticTlsEndpointPaths)).
+				Configure(envoy_listeners.ServerSideMTLSWithCP(ctx, proxy.Metadata)),
 			))
 		}
 		listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
