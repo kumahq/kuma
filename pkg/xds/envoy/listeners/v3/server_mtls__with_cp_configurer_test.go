@@ -26,25 +26,16 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 		statsName        string
 		clusters         []envoy_common.Cluster
 		ctx              xds_context.Context
-		dpVersion        string
 		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			metadata := &core_xds.DataplaneMetadata{
-				Version: &mesh_proto.Version{
-					KumaDp: &mesh_proto.KumaDpVersion{
-						Version: given.dpVersion,
-					},
-				},
-			}
-
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(ServerSideMTLSWithCP(given.ctx, metadata)).
+					Configure(ServerSideMTLSWithCP(given.ctx)).
 					Configure(TcpProxy(given.statsName, given.clusters...)))).
 				Build()
 			// then
@@ -61,7 +52,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			dpVersion:       "1.4.0",
 			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
 				envoy_common.WithService("localhost:8080"),
 				envoy_common.WithWeight(200),
@@ -120,7 +110,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			dpVersion:       "1.4.0",
 			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
 				envoy_common.WithService("localhost:8080"),
 				envoy_common.WithWeight(200),
@@ -166,58 +155,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                     validationContextSdsSecretConfig:
                       name: cp_validation_ctx
                   requireClientCertificate: true
-            name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND`,
-		}),
-		Entry("mTLS with CP when Mesh mTLS is disabled with old version of Kuma DP", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
-			listenerAddress: "192.168.0.1",
-			listenerPort:    8080,
-			statsName:       "localhost:8080",
-			dpVersion:       "1.3.0",
-			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-				envoy_common.WithService("localhost:8080"),
-				envoy_common.WithWeight(200),
-			)},
-			ctx: xds_context.Context{
-				ControlPlane: &xds_context.ControlPlaneContext{
-					AdminProxyKeyPair: &tls.KeyPair{
-						CertPEM: []byte("cert"),
-						KeyPEM:  []byte("key"),
-					},
-				},
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-						Spec: &mesh_proto.Mesh{},
-					},
-				},
-			},
-			expected: `
-            address:
-              socketAddress:
-                address: 192.168.0.1
-                portValue: 8080
-            filterChains:
-            - filters:
-              - name: envoy.filters.network.tcp_proxy
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                  cluster: localhost:8080
-                  statPrefix: localhost_8080
-              transportSocket:
-                name: envoy.transport_sockets.tls
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-                  commonTlsContext:
-                    tlsCertificates:
-                    - certificateChain:
-                        inlineBytes: Y2VydA==
-                      privateKey:
-                        inlineBytes: a2V5
-                  requireClientCertificate: false
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND`,
 		}),

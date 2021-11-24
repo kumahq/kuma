@@ -46,10 +46,9 @@ func ServerSideMTLS(ctx xds_context.Context) FilterChainBuilderOpt {
 	})
 }
 
-func ServerSideMTLSWithCP(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) FilterChainBuilderOpt {
+func ServerSideMTLSWithCP(ctx xds_context.Context) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSWithCPConfigurer{
-		Ctx:      ctx,
-		Metadata: metadata,
+		Ctx: ctx,
 	})
 }
 
