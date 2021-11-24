@@ -114,6 +114,9 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 										Version: "1.16.0",
 										Build:   "hash/1.16.0/RELEASE",
 									},
+									OtherDependencies: map[string]string{
+										"coredns": "1.8.3",
+									},
 								},
 							},
 							{
@@ -136,6 +139,9 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									Envoy: &mesh_proto.EnvoyVersion{
 										Version: "1.16.1",
 										Build:   "hash/1.16.1/RELEASE",
+									},
+									OtherDependencies: map[string]string{
+										"coredns": "1.8.3",
 									},
 								},
 							},
@@ -205,6 +211,9 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 										Version: "1.16.0",
 										Build:   "hash/1.16.0/RELEASE",
 									},
+									OtherDependencies: map[string]string{
+										"coredns": "1.8.3",
+									},
 								},
 							},
 							{
@@ -227,6 +236,9 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									Envoy: &mesh_proto.EnvoyVersion{
 										Version: "1.16.1",
 										Build:   "hash/1.16.1/RELEASE",
+									},
+									OtherDependencies: map[string]string{
+										"coredns": "1.8.3",
 									},
 								},
 							},
@@ -299,6 +311,9 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 										Version: "1.16.0",
 										Build:   "hash/1.16.0/RELEASE",
 									},
+									OtherDependencies: map[string]string{
+										"coredns": "1.8.3",
+									},
 								},
 							},
 							{
@@ -321,6 +336,9 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									Envoy: &mesh_proto.EnvoyVersion{
 										Version: "1.16.1",
 										Build:   "hash/1.16.1/RELEASE",
+									},
+									OtherDependencies: map[string]string{
+										"coredns": "1.8.3",
 									},
 								},
 							},

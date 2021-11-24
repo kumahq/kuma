@@ -36,6 +36,8 @@ items:
           gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
           gitTag: v1.0.0
           version: 1.0.0
+        otherDependencies:
+          coredns: 1.8.3
     - connectTime: "2019-07-17T16:05:36.995Z"
       controlPlaneInstanceId: node-002
       id: "2"
@@ -52,6 +54,8 @@ items:
           gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
           gitTag: v1.0.2
           version: 1.0.2
+        otherDependencies:
+          coredns: 1.8.3
   mesh: default
   modificationTime: "2019-07-17T18:08:41Z"
   name: experiment
@@ -96,6 +100,8 @@ items:
           gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
           gitTag: v1.0.0
           version: 1.0.0
+        otherDependencies:
+          coredns: 1.8.3
     - connectTime: "2019-07-17T16:05:36.995Z"
       controlPlaneInstanceId: node-002
       id: "2"
@@ -112,6 +118,8 @@ items:
           gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
           gitTag: v1.0.2
           version: 1.0.2
+        otherDependencies:
+          coredns: 1.8.3
   mesh: default
   modificationTime: "2019-07-17T18:08:41Z"
   name: degraded-dp
@@ -153,6 +161,8 @@ items:
           gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
           gitTag: v1.0.0
           version: 1.0.0
+        otherDependencies:
+          coredns: 1.8.3
     - connectTime: "2019-07-17T16:05:36.995Z"
       controlPlaneInstanceId: node-002
       id: "2"
@@ -169,6 +179,8 @@ items:
           gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
           gitTag: v1.0.2
           version: 1.0.2
+        otherDependencies:
+          coredns: 1.8.3
   mesh: default
   modificationTime: "2019-07-17T18:08:41Z"
   name: offline-dp

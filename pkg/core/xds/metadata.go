@@ -2,6 +2,7 @@ package xds
 
 import (
 	"strconv"
+	"strings"
 
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -17,14 +18,14 @@ var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
 
 const (
 	// Supported Envoy node metadata fields.
-
-	fieldDataplaneAdminPort         = "dataplane.admin.port"
-	fieldDataplaneDNSPort           = "dataplane.dns.port"
-	fieldDataplaneDNSEmptyPort      = "dataplane.dns.empty.port"
-	fieldDataplaneDataplaneResource = "dataplane.resource"
-	fieldDynamicMetadata            = "dynamicMetadata"
-	fieldDataplaneProxyType         = "dataplane.proxyType"
-	fieldVersion                    = "version"
+	fieldDataplaneAdminPort             = "dataplane.admin.port"
+	fieldDataplaneDNSPort               = "dataplane.dns.port"
+	fieldDataplaneDNSEmptyPort          = "dataplane.dns.empty.port"
+	fieldDataplaneDataplaneResource     = "dataplane.resource"
+	fieldDynamicMetadata                = "dynamicMetadata"
+	fieldDataplaneProxyType             = "dataplane.proxyType"
+	fieldVersion                        = "version"
+	FieldPrefixOtherDependenciesVersion = "version.otherDependencies"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -144,13 +145,6 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 				"value", value)
 		}
 	}
-	if value := xdsMetadata.Fields[fieldDynamicMetadata]; value != nil {
-		dynamicMetadata := map[string]string{}
-		for field, val := range value.GetStructValue().GetFields() {
-			dynamicMetadata[field] = val.GetStringValue()
-		}
-		metadata.DynamicMetadata = dynamicMetadata
-	}
 
 	if value := xdsMetadata.Fields[fieldVersion]; value.GetStructValue() != nil {
 		version := &mesh_proto.Version{}
@@ -159,6 +153,20 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 		}
 		metadata.Version = version
 	}
+
+	if value := xdsMetadata.Fields[fieldDynamicMetadata]; value != nil {
+		dynamicMetadata := map[string]string{}
+		for field, val := range value.GetStructValue().GetFields() {
+			if strings.HasPrefix(field, FieldPrefixOtherDependenciesVersion) {
+				dependencyName := strings.TrimPrefix(field, FieldPrefixOtherDependenciesVersion+".")
+				metadata.Version.OtherDependencies[dependencyName] = val.GetStringValue()
+			} else {
+				dynamicMetadata[field] = val.GetStringValue()
+			}
+		}
+		metadata.DynamicMetadata = dynamicMetadata
+	}
+
 	return &metadata
 }
 

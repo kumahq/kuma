@@ -2,6 +2,7 @@ package inspect
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -80,6 +81,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 			"SUPPORTED CERT BACKENDS",
 			"KUMA-DP VERSION",
 			"ENVOY VERSION",
+			"OTHER DEPENDENCIES VERSIONS",
 			"NOTES",
 		},
 		NextRow: func() func() []string {
@@ -124,6 +126,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 
 				var kumaDpVersion string
 				var envoyVersion string
+				var otherDependenciesVersions []string
 				if lastSubscription.GetVersion() != nil {
 					if lastSubscription.Version.KumaDp != nil {
 						kumaDpVersion = lastSubscription.Version.KumaDp.Version
@@ -131,6 +134,17 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 					if lastSubscription.Version.Envoy != nil {
 						envoyVersion = lastSubscription.Version.Envoy.Version
 					}
+					for name, version := range lastSubscription.GetVersion().GetOtherDependencies() {
+						otherDependenciesVersions = append(
+							otherDependenciesVersions,
+							fmt.Sprintf("%s: %s", name, version),
+						)
+					}
+				}
+
+				otherDependenciesVersionsCell := strings.Join(otherDependenciesVersions, ", ")
+				if otherDependenciesVersionsCell == "" {
+					otherDependenciesVersionsCell = "-"
 				}
 
 				return []string{
@@ -149,6 +163,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 					supportedBackend,                     // SUPPORTED CERT BACKENDS
 					kumaDpVersion,                        // KUMA-DP VERSION
 					envoyVersion,                         // ENVOY VERSION
+					otherDependenciesVersionsCell,        // OTHER DEPENDENCIES VERSIONS
 					strings.Join(errs, ";"),              // NOTES
 				}
 			}

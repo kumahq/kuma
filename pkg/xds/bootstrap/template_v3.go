@@ -32,6 +32,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 						"version": parameters.EnvoyVersion,
 						"build":   parameters.EnvoyBuild,
 					},
+					"otherDependencies": map[string]interface{}{},
 				},
 			}),
 		},
