@@ -28,7 +28,21 @@ func (c *NoopCallbacks) OnStreamRequest(int64, *envoy_sd.DiscoveryRequest) error
 	return nil
 }
 
-func (c *NoopCallbacks) OnStreamResponse(int64, *envoy_sd.DiscoveryRequest, *envoy_sd.DiscoveryResponse) {
+func (c *NoopCallbacks) OnStreamResponse(context.Context, int64, *envoy_sd.DiscoveryRequest, *envoy_sd.DiscoveryResponse) {
+}
+
+func (c *NoopCallbacks) OnDeltaStreamOpen(ctx context.Context, i int64, s string) error {
+	return nil
+}
+
+func (c *NoopCallbacks) OnDeltaStreamClosed(i int64) {
+}
+
+func (c *NoopCallbacks) OnStreamDeltaRequest(i int64, request *envoy_sd.DeltaDiscoveryRequest) error {
+	return nil
+}
+
+func (c *NoopCallbacks) OnStreamDeltaResponse(i int64, request *envoy_sd.DeltaDiscoveryRequest, response *envoy_sd.DeltaDiscoveryResponse) {
 }
 
 var _ envoy_xds.Callbacks = &NoopCallbacks{}

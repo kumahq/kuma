@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
+	github.com/cncf/xds/go v0.0.0-20211011173535-cb28da3451f1
 	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.10-0.20210907150352-cf90f659a021
 	github.com/envoyproxy/protoc-gen-validate v0.6.2
@@ -93,8 +94,6 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
-	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
-	github.com/cncf/xds/go v0.0.0-20211011173535-cb28da3451f1 // indirect
 	github.com/containerd/cgroups v1.0.1 // indirect
 	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
@@ -220,6 +219,6 @@ replace github.com/prometheus/prometheus => ./vendored/github.com/prometheus/pro
 // To force Go tooling to update the Git hash of the branch you need to
 // work around the module caching system by doing this:
 //
-//	$ go mod edit -replace github.com/envoyproxy/go-control-plane=github.com/kumahq/go-control-plane@kuma-release-1.3
+//	$ go mod edit -replace github.com/envoyproxy/go-control-plane=github.com/kumahq/go-control-plane@channel-increased-capacity
 //	$ GOPRIVATE=github.com/kumahq/go-control-plane go mod tidy
-replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.9.9-0.20210914001841-ec3541a22836
+replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.9.10-0.20211022075049-d35edcf0813a

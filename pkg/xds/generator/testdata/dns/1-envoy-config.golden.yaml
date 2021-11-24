@@ -10,13 +10,14 @@ resources:
     listenerFilters:
     - name: envoy.filters.udp.dns_filter
       typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3alpha.DnsFilterConfig
+        '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3.DnsFilterConfig
         clientConfig:
+          dnsResolutionConfig:
+            resolvers:
+            - socketAddress:
+                address: 127.0.0.1
+                portValue: 53002
           maxPendingLookups: "256"
-          upstreamResolvers:
-          - socketAddress:
-              address: 127.0.0.1
-              portValue: 53002
         serverConfig:
           inlineDnsTable:
             knownSuffixes:

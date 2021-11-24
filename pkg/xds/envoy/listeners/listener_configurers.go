@@ -61,10 +61,11 @@ func FilterChain(builder *FilterChainBuilder) ListenerBuilderOpt {
 	)
 }
 
-func DNS(vips map[string][]string, emptyDnsPort uint32) ListenerBuilderOpt {
+func DNS(vips map[string][]string, emptyDnsPort uint32, envoyVersion *mesh_proto.EnvoyVersion) ListenerBuilderOpt {
 	return AddListenerConfigurer(&v3.DNSConfigurer{
 		VIPs:         vips,
 		EmptyDNSPort: emptyDnsPort,
+		EnvoyVersion: envoyVersion,
 	})
 }
 

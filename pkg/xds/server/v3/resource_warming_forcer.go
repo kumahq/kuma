@@ -1,6 +1,7 @@
 package v3
 
 import (
+	"context"
 	"sync"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -118,7 +119,7 @@ func (r *resourceWarmingForcer) forceNewEndpointsVersion(nodeID string) error {
 	endpoints := snapshot.Resources[types.Endpoint]
 	endpoints.Version = core.NewUUID()
 	snapshot.Resources[types.Endpoint] = endpoints
-	if err := r.cache.SetSnapshot(nodeID, snapshot); err != nil {
+	if err := r.cache.SetSnapshot(context.TODO(), nodeID, snapshot); err != nil {
 		return errors.Wrap(err, "could not set snapshot")
 	}
 	return nil

@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"

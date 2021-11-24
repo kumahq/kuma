@@ -5,6 +5,7 @@ import (
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -328,4 +329,39 @@ var _ = Describe("DataplaneHelpers", func() {
 			})
 		})
 	})
+
+	type testCase struct {
+		inputVersion    string
+		expectedVersion string
+		expectedLabel   string
+	}
+	DescribeTable("Envoy.ParseVersion",
+		func(given testCase) {
+			actualVersion, actualLabel := (&EnvoyVersion{
+				Version: given.inputVersion,
+			}).ParseVersion()
+			Expect(actualVersion).To(Equal(given.expectedVersion))
+			Expect(actualLabel).To(Equal(given.expectedLabel))
+		},
+		Entry("empty", testCase{
+			inputVersion:    "",
+			expectedVersion: "",
+			expectedLabel:   "",
+		}),
+		Entry("no label", testCase{
+			inputVersion:    "1.20.0",
+			expectedVersion: "1.20.0",
+			expectedLabel:   "",
+		}),
+		Entry("simple label", testCase{
+			inputVersion:    "1.20.0-dev",
+			expectedVersion: "1.20.0",
+			expectedLabel:   "dev",
+		}),
+		Entry("label with dashes", testCase{
+			inputVersion:    "1.20.0-super-dev",
+			expectedVersion: "1.20.0",
+			expectedLabel:   "super-dev",
+		}),
+	)
 })

@@ -42,10 +42,10 @@ func (chain CallbacksChain) OnStreamRequest(streamID int64, req *envoy_sd.Discov
 }
 
 // OnStreamResponse is called immediately prior to sending a response on a stream.
-func (chain CallbacksChain) OnStreamResponse(streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
+func (chain CallbacksChain) OnStreamResponse(ctx context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
 	for i := len(chain) - 1; i >= 0; i-- {
 		cb := chain[i]
-		cb.OnStreamResponse(streamID, req, resp)
+		cb.OnStreamResponse(ctx, streamID, req, resp)
 	}
 }
 
@@ -67,5 +67,39 @@ func (chain CallbacksChain) OnFetchResponse(req *envoy_sd.DiscoveryRequest, resp
 	for i := len(chain) - 1; i >= 0; i-- {
 		cb := chain[i]
 		cb.OnFetchResponse(req, resp)
+	}
+}
+
+func (chain CallbacksChain) OnDeltaStreamOpen(ctx context.Context, streamID int64, typeURL string) error {
+	for _, cb := range chain {
+		if err := cb.OnDeltaStreamOpen(ctx, streamID, typeURL); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (chain CallbacksChain) OnDeltaStreamClosed(streamID int64) {
+	for i := len(chain) - 1; i >= 0; i-- {
+		cb := chain[i]
+		cb.OnDeltaStreamClosed(streamID)
+	}
+}
+
+func (chain CallbacksChain) OnStreamDeltaRequest(streamID int64, request *envoy_sd.DeltaDiscoveryRequest) error {
+	for _, cb := range chain {
+		if err := cb.OnStreamDeltaRequest(streamID, request); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (chain CallbacksChain) OnStreamDeltaResponse(streamID int64, request *envoy_sd.DeltaDiscoveryRequest, response *envoy_sd.DeltaDiscoveryResponse) {
+	for i := len(chain) - 1; i >= 0; i-- {
+		cb := chain[i]
+		cb.OnStreamDeltaResponse(streamID, request, response)
 	}
 }

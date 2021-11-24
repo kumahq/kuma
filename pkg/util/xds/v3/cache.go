@@ -25,6 +25,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/log"
+	"github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
 )
 
 type Snapshot interface {
@@ -217,8 +218,12 @@ func superset(names map[string]bool, resources map[string]types.Resource) error 
 	return nil
 }
 
+func (cache *snapshotCache) CreateDeltaWatch(*envoy_cache.DeltaRequest, stream.StreamState, chan envoy_cache.DeltaResponse) (cancel func()) {
+	return nil
+}
+
 // CreateWatch returns a watch for an xDS request.
-func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request) (chan envoy_cache.Response, func()) {
+func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request, responseChan chan envoy_cache.Response) (cancel func()) {
 	nodeID := cache.hash.ID(request.Node)
 
 	cache.mu.Lock()
@@ -234,9 +239,6 @@ func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request) (chan envo
 	info.lastWatchRequestTime = time.Now()
 	info.mu.Unlock()
 
-	// allocate capacity 1 to allow one-time non-blocking use
-	value := make(chan envoy_cache.Response, 1)
-
 	snapshot, exists := cache.snapshots[nodeID]
 	version := ""
 	if exists {
@@ -251,15 +253,15 @@ func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request) (chan envo
 				request.TypeUrl, request.ResourceNames, nodeID, request.VersionInfo)
 		}
 		info.mu.Lock()
-		info.watches[watchID] = ResponseWatch{Request: request, Response: value}
+		info.watches[watchID] = ResponseWatch{Request: request, Response: responseChan}
 		info.mu.Unlock()
-		return value, cache.cancelWatch(nodeID, watchID)
+		return cache.cancelWatch(nodeID, watchID)
 	}
 
 	// otherwise, the watch may be responded immediately
-	cache.respond(request, value, snapshot.GetResources(request.TypeUrl), version)
+	cache.respond(request, responseChan, snapshot.GetResources(request.TypeUrl), version)
 
-	return value, nil
+	return nil
 }
 
 func (cache *snapshotCache) nextWatchID() int64 {
@@ -302,7 +304,7 @@ func (cache *snapshotCache) respond(request *envoy_cache.Request, value chan env
 }
 
 func createResponse(request *envoy_cache.Request, resources map[string]types.Resource, version string) envoy_cache.Response {
-	filtered := make([]types.ResourceWithTtl, 0, len(resources))
+	filtered := make([]types.ResourceWithTTL, 0, len(resources))
 
 	// Reply only with the requested resources. Envoy may ask each resource
 	// individually in a separate stream. It is ok to reply with the same version
@@ -311,12 +313,12 @@ func createResponse(request *envoy_cache.Request, resources map[string]types.Res
 		set := nameSet(request.ResourceNames)
 		for name, resource := range resources {
 			if set[name] {
-				filtered = append(filtered, types.ResourceWithTtl{Resource: resource})
+				filtered = append(filtered, types.ResourceWithTTL{Resource: resource})
 			}
 		}
 	} else {
 		for _, resource := range resources {
-			filtered = append(filtered, types.ResourceWithTtl{Resource: resource})
+			filtered = append(filtered, types.ResourceWithTTL{Resource: resource})
 		}
 	}
 
@@ -362,7 +364,8 @@ func (cache *snapshotCache) Fetch(ctx context.Context, request *envoy_cache.Requ
 
 // blockingFetch will wait until either the context is terminated or new resources become available
 func (cache *snapshotCache) blockingFetch(ctx context.Context, request *envoy_cache.Request) (envoy_cache.Response, error) {
-	watchChan, cancelFunc := cache.CreateWatch(request)
+	responseChan := make(chan envoy_cache.Response, 1)
+	cancelFunc := cache.CreateWatch(request, responseChan)
 	if cancelFunc != nil {
 		defer cancelFunc()
 	}
@@ -371,7 +374,7 @@ func (cache *snapshotCache) blockingFetch(ctx context.Context, request *envoy_ca
 	case <-ctx.Done():
 		// finished without an update
 		return nil, &types.SkipFetchError{}
-	case resp := <-watchChan:
+	case resp := <-responseChan:
 		return resp, nil
 	}
 }

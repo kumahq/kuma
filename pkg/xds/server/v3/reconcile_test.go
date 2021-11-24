@@ -48,7 +48,7 @@ var _ = Describe("Reconcile", func() {
 		snapshot := envoy_cache.Snapshot{
 			Resources: [envoy_types.UnknownType]envoy_cache.Resources{
 				envoy_types.Listener: {
-					Items: map[string]envoy_types.ResourceWithTtl{
+					Items: map[string]envoy_types.ResourceWithTTL{
 						"listener": {
 							Resource: &envoy_listener.Listener{
 								Address: &envoy_core.Address{
@@ -74,14 +74,14 @@ var _ = Describe("Reconcile", func() {
 					},
 				},
 				envoy_types.Route: {
-					Items: map[string]envoy_types.ResourceWithTtl{
+					Items: map[string]envoy_types.ResourceWithTTL{
 						"route": {
 							Resource: &envoy_route.RouteConfiguration{},
 						},
 					},
 				},
 				envoy_types.Cluster: {
-					Items: map[string]envoy_types.ResourceWithTtl{
+					Items: map[string]envoy_types.ResourceWithTTL{
 						"cluster": {
 							Resource: &envoy_cluster.Cluster{
 								Name:                 "cluster",
@@ -99,14 +99,14 @@ var _ = Describe("Reconcile", func() {
 					},
 				},
 				envoy_types.Endpoint: {
-					Items: map[string]envoy_types.ResourceWithTtl{
+					Items: map[string]envoy_types.ResourceWithTTL{
 						"cluster": {
 							Resource: &envoy_endpoint.ClusterLoadAssignment{ClusterName: "cluster"},
 						},
 					},
 				},
 				envoy_types.Secret: {
-					Items: map[string]envoy_types.ResourceWithTtl{
+					Items: map[string]envoy_types.ResourceWithTTL{
 						"secret": {
 							Resource: &envoy_auth.Secret{},
 						},
