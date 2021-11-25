@@ -42,40 +42,6 @@ resources:
                   cluster: kuma:envoy:admin
                   prefixRewrite: /ready
           statPrefix: kuma_envoy_admin
-    - filterChainMatch:
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          httpFilters:
-          - name: envoy.filters.http.router
-          routeConfig:
-            validateClusters: false
-            virtualHosts:
-            - domains:
-              - '*'
-              name: kuma:envoy:admin
-              routes:
-              - match:
-                  headers:
-                  - exactMatch: Bearer token
-                    name: Authorization
-                  prefix: /
-                route:
-                  cluster: kuma:envoy:admin
-                  prefixRewrite: /
-          statPrefix: kuma_envoy_admin
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          commonTlsContext:
-            tlsCertificates:
-            - certificateChain:
-                inlineBytes: TFMwPT0=
-              privateKey:
-                inlineBytes: TFMwPT0=
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

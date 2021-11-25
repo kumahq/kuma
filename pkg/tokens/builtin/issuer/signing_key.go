@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	DataplaneTokenPrefix        = "dataplane-token"
-	EnvoyAdminClientTokenPrefix = "envoy-admin-client-token"
+	DataplaneTokenPrefix = "dataplane-token"
 )
 
 func SigningKeyNotFound(meshName string) error {

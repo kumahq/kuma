@@ -83,15 +83,5 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 	} else {
 		log.Info("default Signing Key already exist", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName).Name)
 	}
-
-	created, err = ensureEnvoyAdminClientSigningKey(resManager, meshName)
-	if err != nil {
-		return errors.Wrap(err, "could not create default Envoy Admin Client Token Signing Key")
-	}
-	if created {
-		log.Info("default Signing Key created", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, meshName).Name)
-	} else {
-		log.Info("default Signing Key already exist", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, meshName).Name)
-	}
 	return nil
 }
