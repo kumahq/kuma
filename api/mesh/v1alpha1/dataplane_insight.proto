@@ -126,7 +126,7 @@ message Version {
   EnvoyVersion envoy = 2;
 
   // Versions of other dependencies, i.e. CoreDNS
-  map<string, string> otherDependencies = 3;
+  map<string, string> dependencies = 3;
 }
 
 // KumaDpVersion describes details of Kuma Dataplane version

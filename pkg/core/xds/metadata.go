@@ -18,19 +18,19 @@ var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
 
 const (
 	// Supported Envoy node metadata fields.
-	fieldDataplaneAdminPort             = "dataplane.admin.port"
-	fieldDataplaneDNSPort               = "dataplane.dns.port"
-	fieldDataplaneDNSEmptyPort          = "dataplane.dns.empty.port"
-	fieldDataplaneDataplaneResource     = "dataplane.resource"
-	fieldDynamicMetadata                = "dynamicMetadata"
-	fieldDataplaneProxyType             = "dataplane.proxyType"
-	fieldVersion                        = "version"
-	FieldPrefixOtherDependenciesVersion = "version.otherDependencies"
+	fieldDataplaneAdminPort         = "dataplane.admin.port"
+	fieldDataplaneDNSPort           = "dataplane.dns.port"
+	fieldDataplaneDNSEmptyPort      = "dataplane.dns.empty.port"
+	fieldDataplaneDataplaneResource = "dataplane.resource"
+	fieldDynamicMetadata            = "dynamicMetadata"
+	fieldDataplaneProxyType         = "dataplane.proxyType"
+	fieldVersion                    = "version"
+	FieldPrefixDependenciesVersion  = "version.dependencies"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
 //
-// This information might change from one dataplane run to another
+// This information might change from one dataplane run to another,
 // and therefore it cannot be a part of Dataplane resource.
 //
 // On start-up, a dataplane captures its effective configuration (that might come
@@ -157,9 +157,9 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	if value := xdsMetadata.Fields[fieldDynamicMetadata]; value != nil {
 		dynamicMetadata := map[string]string{}
 		for field, val := range value.GetStructValue().GetFields() {
-			if strings.HasPrefix(field, FieldPrefixOtherDependenciesVersion) {
-				dependencyName := strings.TrimPrefix(field, FieldPrefixOtherDependenciesVersion+".")
-				metadata.Version.OtherDependencies[dependencyName] = val.GetStringValue()
+			if strings.HasPrefix(field, FieldPrefixDependenciesVersion) {
+				dependencyName := strings.TrimPrefix(field, FieldPrefixDependenciesVersion+".")
+				metadata.Version.Dependencies[dependencyName] = val.GetStringValue()
 			} else {
 				dynamicMetadata[field] = val.GetStringValue()
 			}

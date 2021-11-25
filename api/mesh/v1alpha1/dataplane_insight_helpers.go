@@ -34,7 +34,7 @@ func NewVersion() *Version {
 			Version: "",
 			Build:   "",
 		},
-		OtherDependencies: map[string]string{},
+		Dependencies: map[string]string{},
 	}
 }
 

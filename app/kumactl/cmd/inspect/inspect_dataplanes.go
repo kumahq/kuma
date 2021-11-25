@@ -81,7 +81,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 			"SUPPORTED CERT BACKENDS",
 			"KUMA-DP VERSION",
 			"ENVOY VERSION",
-			"OTHER DEPENDENCIES VERSIONS",
+			"DEPENDENCIES VERSIONS",
 			"NOTES",
 		},
 		NextRow: func() func() []string {
@@ -126,7 +126,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 
 				var kumaDpVersion string
 				var envoyVersion string
-				var otherDependenciesVersions []string
+				var dependenciesVersions []string
 				if lastSubscription.GetVersion() != nil {
 					if lastSubscription.Version.KumaDp != nil {
 						kumaDpVersion = lastSubscription.Version.KumaDp.Version
@@ -134,17 +134,17 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 					if lastSubscription.Version.Envoy != nil {
 						envoyVersion = lastSubscription.Version.Envoy.Version
 					}
-					for name, version := range lastSubscription.GetVersion().GetOtherDependencies() {
-						otherDependenciesVersions = append(
-							otherDependenciesVersions,
+					for name, version := range lastSubscription.GetVersion().GetDependencies() {
+						dependenciesVersions = append(
+							dependenciesVersions,
 							fmt.Sprintf("%s: %s", name, version),
 						)
 					}
 				}
 
-				otherDependenciesVersionsCell := strings.Join(otherDependenciesVersions, ", ")
-				if otherDependenciesVersionsCell == "" {
-					otherDependenciesVersionsCell = "-"
+				dependenciesVersionsCell := strings.Join(dependenciesVersions, ", ")
+				if dependenciesVersionsCell == "" {
+					dependenciesVersionsCell = "-"
 				}
 
 				return []string{
@@ -163,7 +163,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 					supportedBackend,                     // SUPPORTED CERT BACKENDS
 					kumaDpVersion,                        // KUMA-DP VERSION
 					envoyVersion,                         // ENVOY VERSION
-					otherDependenciesVersionsCell,        // OTHER DEPENDENCIES VERSIONS
+					dependenciesVersionsCell,             // DEPENDENCIES VERSIONS
 					strings.Join(errs, ";"),              // NOTES
 				}
 			}

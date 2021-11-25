@@ -32,6 +32,7 @@ node:
   metadata:
     dataplane.proxyType: dataplane
     version:
+      dependencies: {}
       envoy:
         build: hash/1.15.0/RELEASE
         version: 1.15.0
@@ -40,7 +41,6 @@ node:
         gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
         gitTag: v0.0.1
         version: 0.0.1
-      otherDependencies: {}
 staticResources:
   clusters:
   - connectTimeout: 1s
