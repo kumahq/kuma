@@ -6,6 +6,8 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upcoming release
+
 ## Upgrade to `1.4.0`
 
 Starting with this version, the default API server authentication method is user
