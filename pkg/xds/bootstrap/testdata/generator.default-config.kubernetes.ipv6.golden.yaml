@@ -35,6 +35,7 @@ node:
     dataplane.admin.port: "1234"
     dataplane.proxyType: dataplane
     version:
+      dependencies: {}
       envoy:
         build: hash/1.15.0/RELEASE
         version: 1.15.0
