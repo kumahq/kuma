@@ -2,6 +2,7 @@ package reports
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
@@ -24,7 +25,7 @@ import (
 const (
 	pingInterval = 3600
 	pingHost     = "kong-hf.konghq.com"
-	pingPort     = 61831
+	pingPort     = 61832
 )
 
 var (
@@ -158,8 +159,9 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 		return err
 	}
 
-	conn, err := net.Dial("tcp", net.JoinHostPort(host,
-		strconv.FormatUint(uint64(port), 10)))
+	conf := &tls.Config{}
+	conn, err := tls.Dial("tcp", net.JoinHostPort(host,
+		strconv.FormatUint(uint64(port), 10)), conf)
 	if err != nil {
 		return err
 	}
