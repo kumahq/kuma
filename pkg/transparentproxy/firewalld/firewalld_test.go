@@ -1,8 +1,6 @@
 package firewalld
 
 import (
-	"path/filepath"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -22,7 +20,7 @@ var _ = Describe("firewalld", func() {
 			translator := NewFirewalldIptablesTranslator(true)
 			out, err := translator.StoreRules(given.iptablesRules)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(out).To(MatchGoldenXML(filepath.Join("testdata", given.goldenFile)))
+			Expect(out).To(MatchGoldenXML("testdata", given.goldenFile))
 		},
 		Entry("should generate xml", testCase{
 			iptablesRules: map[string][]string{
