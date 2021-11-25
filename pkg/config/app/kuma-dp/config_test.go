@@ -130,7 +130,7 @@ var _ = Describe("Config", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(matchers.MatchGoldenEqual("testdata", "invalid-config.golden.txt"))
+		Expect(err.Error() + "\n").To(matchers.MatchGoldenEqual("testdata", "invalid-config.golden.txt"))
 	})
 
 	DescribeTable("bad validation",
