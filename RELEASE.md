@@ -27,6 +27,8 @@ Below you can find the checklist of all the work that has to be performed when c
 To release a new version of Kuma follow these steps:
 
 - [ ] Update the `CHANGELOG.md`. Use `make changelog` as a helper.
+- [ ] Double-check that `UPGRADE.md` is updated with any task that maybe required.
+- [ ] In case of Envoy version change update the compatibility matrix.
 - [ ] Double-check that all the new changes have been documented on the [kuma.io website](https://github.com/kumahq/kuma-website) by opening up a documentation PR with the new content for the new version of Kuma.
 - [ ] Manually bump the `version` and `appVersion` of the Helm chart
 - [ ] Create a new Git tag for the release using the [make-release-tag.sh](./tools/release/make-release-tag.sh) script. This script takes 2 arguments, the name of the previous release tag and the name of the new release tag to create and create an annotated tag containing a summary of the commits in the release.
@@ -43,3 +45,4 @@ To release a new version of Kuma follow these steps:
 - [ ] Post the content on the Kong blog.
 - [ ] In preparation for the email newsletter announcement, include any reminder for upcoming community events like meetups or community calls to the content, and send the email to the Kuma newsletter.
 - [ ] Announce the release on the community channels like Slack and Twitter.
+- [ ] Add issues to upgrade to the latest version of each non dependabot dependency (most notably dependencies in the helm chart like grafana, loki, jaeger...)
