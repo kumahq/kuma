@@ -24,23 +24,23 @@ import (
 	"github.com/kumahq/kuma/pkg/version"
 )
 
-func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode, systemNamespace string) k8s_common.AdmissionValidator {
+func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode, cpServiceAccountName string) k8s_common.AdmissionValidator {
 	return &validatingHandler{
-		coreRegistry:    coreRegistry,
-		k8sRegistry:     k8sRegistry,
-		converter:       converter,
-		mode:            mode,
-		systemNamespace: systemNamespace,
+		coreRegistry:         coreRegistry,
+		k8sRegistry:          k8sRegistry,
+		converter:            converter,
+		mode:                 mode,
+		cpServiceAccountName: cpServiceAccountName,
 	}
 }
 
 type validatingHandler struct {
-	coreRegistry    core_registry.TypeRegistry
-	k8sRegistry     k8s_registry.TypeRegistry
-	converter       k8s_common.Converter
-	decoder         *admission.Decoder
-	mode            core.CpMode
-	systemNamespace string
+	coreRegistry         core_registry.TypeRegistry
+	k8sRegistry          k8s_registry.TypeRegistry
+	converter            k8s_common.Converter
+	decoder              *admission.Decoder
+	mode                 core.CpMode
+	cpServiceAccountName string
 }
 
 func (h *validatingHandler) InjectDecoder(d *admission.Decoder) error {
@@ -104,7 +104,7 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 
 // Note that this func does not validate ConfigMap and Secret since this webhook does not support those
 func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, userInfo authenticationv1.UserInfo, op v1.Operation) admission.Response {
-	if isKumaServiceAccount(userInfo, h.systemNamespace) {
+	if userInfo.Username == h.cpServiceAccountName {
 		// Assume this means sync from another zone. Not security; protecting user from self.
 		return admission.Allowed("")
 	}
@@ -147,15 +147,6 @@ func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode, op v
 			},
 		},
 	}
-}
-
-func isKumaServiceAccount(userInfo authenticationv1.UserInfo, systemNamespace string) bool {
-	elms := strings.Split(userInfo.Username, ":")
-	// system:serviceaccount:<namespace>:kuma-control-plane
-	if len(elms) == 4 && elms[2] == systemNamespace {
-		return true
-	}
-	return false
 }
 
 // validateResourceLocation validates if resources that suppose to be applied on Global are applied on Global and other way around
