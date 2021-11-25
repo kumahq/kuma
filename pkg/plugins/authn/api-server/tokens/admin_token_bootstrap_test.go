@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -19,9 +20,15 @@ var _ = Describe("Admin Token Bootstrap", func() {
 	It("should bootstrap admin token", func() {
 		// given
 		resManager := manager.NewResourceManager(memory.NewStore())
-		signingKeyManager := issuer.NewSigningKeyManager(resManager)
-		tokenIssuer := issuer.NewUserTokenIssuer(signingKeyManager)
-		tokenValidator := issuer.NewUserTokenValidator(issuer.NewSigningKeyAccessor(resManager), issuer.NewTokenRevocations(resManager))
+		signingKeyManager := core_tokens.NewSigningKeyManager(resManager, issuer.UserTokenSigningKeyPrefix)
+		tokenIssuer := issuer.NewUserTokenIssuer(core_tokens.NewTokenIssuer(signingKeyManager))
+		tokenValidator := issuer.NewUserTokenValidator(
+			core_tokens.NewValidator(
+				core_tokens.NewSigningKeyAccessor(resManager, issuer.UserTokenSigningKeyPrefix),
+				core_tokens.NewRevocations(resManager, issuer.UserTokenRevocationsGlobalSecretKey),
+			),
+		)
+
 		component := tokens.NewAdminTokenBootstrap(tokenIssuer, resManager, kuma_cp.DefaultConfig())
 		err := signingKeyManager.CreateDefaultSigningKey()
 		Expect(err).ToNot(HaveOccurred())

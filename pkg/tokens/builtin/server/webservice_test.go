@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	. "github.com/onsi/ginkgo"
@@ -15,6 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server"
@@ -28,12 +30,8 @@ type staticTokenIssuer struct {
 
 var _ issuer.DataplaneTokenIssuer = &staticTokenIssuer{}
 
-func (s *staticTokenIssuer) Generate(identity issuer.DataplaneIdentity) (issuer.Token, error) {
+func (s *staticTokenIssuer) Generate(identity issuer.DataplaneIdentity, validFor time.Duration) (tokens.Token, error) {
 	return s.resp, nil
-}
-
-func (s *staticTokenIssuer) Validate(token issuer.Token, meshName string) (issuer.DataplaneIdentity, error) {
-	return issuer.DataplaneIdentity{}, errors.New("not implemented")
 }
 
 type zoneIngressStaticTokenIssuer struct {
@@ -41,7 +39,7 @@ type zoneIngressStaticTokenIssuer struct {
 
 var _ zoneingress.TokenIssuer = &zoneIngressStaticTokenIssuer{}
 
-func (z *zoneIngressStaticTokenIssuer) Generate(identity zoneingress.Identity) (zoneingress.Token, error) {
+func (z *zoneIngressStaticTokenIssuer) Generate(identity zoneingress.Identity, validFor time.Duration) (zoneingress.Token, error) {
 	return fmt.Sprintf("token-for-%s", identity.Zone), nil
 }
 

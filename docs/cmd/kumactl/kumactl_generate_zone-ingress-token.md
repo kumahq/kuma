@@ -15,15 +15,16 @@ kumactl generate zone-ingress-token [flags]
 ```
 
 Generate token bound by zone
-$ kumactl generate zone-ingress-token --zone zone-1
+$ kumactl generate zone-ingress-token --zone zone-1 --valid-for 30d
 
 ```
 
 ### Options
 
 ```
-  -h, --help          help for zone-ingress-token
-      --zone string   name of the zone where ingress resides
+  -h, --help                 help for zone-ingress-token
+      --valid-for duration   how long the token will be valid (for example "24h") (default 87600h0m0s)
+      --zone string          name of the zone where ingress resides
 ```
 
 ### Options inherited from parent commands
