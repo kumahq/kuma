@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -189,6 +190,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				if err != nil {
 					return err
 				}
+
+				version, err := dnsServer.GetVersion()
+				if err != nil {
+					return err
+				}
+
+				opts.DynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
 
 				components = append(components, dnsServer)
 			}

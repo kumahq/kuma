@@ -28,6 +28,8 @@ items:
           responsesRejected: "1"
           responsesSent: "10"
       version:
+        dependencies:
+          coredns: 1.8.3
         envoy:
           build: hash/1.16.0/RELEASE
           version: 1.16.0
@@ -44,6 +46,8 @@ items:
           responsesRejected: "2"
           responsesSent: "20"
       version:
+        dependencies:
+          coredns: 1.8.3
         envoy:
           build: hash/1.16.1/RELEASE
           version: 1.16.1
@@ -88,6 +92,8 @@ items:
           responsesRejected: "1"
           responsesSent: "10"
       version:
+        dependencies:
+          coredns: 1.8.3
         envoy:
           build: hash/1.16.0/RELEASE
           version: 1.16.0
@@ -104,6 +110,8 @@ items:
           responsesRejected: "2"
           responsesSent: "20"
       version:
+        dependencies:
+          coredns: 1.8.3
         envoy:
           build: hash/1.16.1/RELEASE
           version: 1.16.1
@@ -145,6 +153,8 @@ items:
           responsesRejected: "1"
           responsesSent: "10"
       version:
+        dependencies:
+          coredns: 1.8.3
         envoy:
           build: hash/1.16.0/RELEASE
           version: 1.16.0
@@ -161,6 +171,8 @@ items:
           responsesRejected: "2"
           responsesSent: "20"
       version:
+        dependencies:
+          coredns: 1.8.3
         envoy:
           build: hash/1.16.1/RELEASE
           version: 1.16.1

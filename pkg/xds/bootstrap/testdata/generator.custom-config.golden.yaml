@@ -69,6 +69,7 @@ node:
     dynamicMetadata:
       test: value
     version:
+      dependencies: {}
       envoy:
         build: hash/1.15.0/RELEASE
         version: 1.15.0
