@@ -16,6 +16,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			Port: 5443,
 		},
 		ControlPlaneServiceName: "kuma-control-plane",
+		ServiceAccountName:      "system:serviceaccount:kuma-system:kuma-control-plane",
 		Injector: Injector{
 			CNIEnabled:           false,
 			VirtualProbesEnabled: true,
@@ -87,6 +88,8 @@ type KubernetesRuntimeConfig struct {
 	// marshaled objects will be stored in the cache. If equal to 0s then
 	// cache is turned off
 	MarshalingCacheExpirationTime time.Duration `yaml:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
+	// Name of Service Account that is used to run the Control Plane
+	ServiceAccountName string `yaml:"serviceAccountName,omitempty" envconfig:"kuma_runtime_kubernetes_service_account_name"`
 	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
 	ControlPlaneServiceName string `yaml:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
 }

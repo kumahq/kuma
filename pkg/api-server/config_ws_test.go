@@ -187,6 +187,7 @@ var _ = Describe("Config WS", func() {
 				"port": 5443
 			  },
 			  "controlPlaneServiceName": "kuma-control-plane",
+			  "serviceAccountName": "system:serviceaccount:kuma-system:kuma-control-plane",
 			  "injector": {
 				"caCertFile": "",
 				"builtinDNS": {
