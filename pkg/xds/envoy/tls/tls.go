@@ -7,6 +7,7 @@ import (
 const (
 	MeshCaResource       = "mesh_ca"
 	IdentityCertResource = "identity_cert"
+	CpValidationCtx      = "cp_validation_ctx"
 )
 
 // KumaALPNProtocols are set for UpstreamTlsContext to show that mTLS is created by mesh.

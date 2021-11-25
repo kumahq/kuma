@@ -100,7 +100,17 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
-	builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(builder.ResourceManager(), builder.Config()))
+	envoyAdminClient, err := admin.NewEnvoyAdminClient(
+		builder.ResourceManager(),
+		builder.CaManagers(),
+		builder.Config().DpServer.TlsCertFile,
+		builder.Config().DpServer.TlsKeyFile,
+		builder.Config().Runtime.Kubernetes.Injector.SidecarContainer.AdminPort,
+	)
+	if err != nil {
+		return nil, err
+	}
+	builder.WithEnvoyAdminClient(envoyAdminClient)
 	builder.WithAPIManager(customization.NewAPIList())
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
