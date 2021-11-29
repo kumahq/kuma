@@ -173,6 +173,9 @@ func (c *ControlPlane) Sanitize() {
 }
 
 func (c *ControlPlane) Validate() (errs error) {
+	if _, err := url.Parse(c.URL); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Url is not valid"))
+	}
 	if err := c.Retry.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Retry is not valid"))
 	}

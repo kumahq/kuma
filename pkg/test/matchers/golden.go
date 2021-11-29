@@ -2,6 +2,7 @@ package matchers
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -10,34 +11,34 @@ import (
 	"github.com/kumahq/kuma/pkg/test/golden"
 )
 
-func MatchGoldenYAML(goldenFilePath string) types.GomegaMatcher {
-	return MatchGolden(gomega.MatchYAML, goldenFilePath)
+func MatchGoldenYAML(goldenFilePath ...string) types.GomegaMatcher {
+	return MatchGolden(gomega.MatchYAML, goldenFilePath...)
 }
 
-func MatchGoldenJSON(goldenFilePath string) types.GomegaMatcher {
-	return MatchGolden(gomega.MatchJSON, goldenFilePath)
+func MatchGoldenJSON(goldenFilePath ...string) types.GomegaMatcher {
+	return MatchGolden(gomega.MatchJSON, goldenFilePath...)
 }
 
-func MatchGoldenXML(goldenFilePath string) types.GomegaMatcher {
-	return MatchGolden(gomega.MatchXML, goldenFilePath)
+func MatchGoldenXML(goldenFilePath ...string) types.GomegaMatcher {
+	return MatchGolden(gomega.MatchXML, goldenFilePath...)
 }
 
-func MatchGoldenEqual(goldenFilePath string) types.GomegaMatcher {
+func MatchGoldenEqual(goldenFilePath ...string) types.GomegaMatcher {
 	return MatchGolden(func(expected interface{}) types.GomegaMatcher {
 		if expectedBytes, ok := expected.([]byte); ok {
 			expected = string(expectedBytes)
 		}
 		return gomega.Equal(expected)
-	}, goldenFilePath)
+	}, goldenFilePath...)
 }
 
 type MatcherFn = func(expected interface{}) types.GomegaMatcher
 
 // MatchGolden matches Golden file overriding it with actual content if UPDATE_GOLDEN_FILES is set to true
-func MatchGolden(matcherFn MatcherFn, goldenFilePath string) types.GomegaMatcher {
+func MatchGolden(matcherFn MatcherFn, goldenFilePath ...string) types.GomegaMatcher {
 	return &GoldenYAMLMatcher{
 		MatcherFactory: matcherFn,
-		GoldenFilePath: goldenFilePath,
+		GoldenFilePath: filepath.Join(goldenFilePath...),
 	}
 }
 

@@ -253,7 +253,7 @@ var _ = Describe("kumactl inspect zones", func() {
 				err := rootCmd.Execute()
 				// then
 				Expect(err).ToNot(HaveOccurred())
-				Expect(buf.String()).To(matchers.MatchGoldenEqual(filepath.Join("testdata", given.goldenFile)))
+				Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", given.goldenFile))
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
