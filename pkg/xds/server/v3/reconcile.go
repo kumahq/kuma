@@ -90,11 +90,9 @@ func validateResource(r envoy_types.Resource) error {
 }
 
 func autoVersion(old envoy_cache.Snapshot, new envoy_cache.Snapshot) (envoy_cache.Snapshot, bool) {
-	new.Resources[envoy_types.Listener] = reuseVersion(old.Resources[envoy_types.Listener], new.Resources[envoy_types.Listener])
-	new.Resources[envoy_types.Route] = reuseVersion(old.Resources[envoy_types.Route], new.Resources[envoy_types.Route])
-	new.Resources[envoy_types.Cluster] = reuseVersion(old.Resources[envoy_types.Cluster], new.Resources[envoy_types.Cluster])
-	new.Resources[envoy_types.Endpoint] = reuseVersion(old.Resources[envoy_types.Endpoint], new.Resources[envoy_types.Endpoint])
-	new.Resources[envoy_types.Secret] = reuseVersion(old.Resources[envoy_types.Secret], new.Resources[envoy_types.Secret])
+	for resourceType, resources := range old.Resources {
+		new.Resources[resourceType] = reuseVersion(resources, new.Resources[resourceType])
+	}
 
 	for resourceType, resource := range new.Resources {
 		if old.Resources[resourceType].Version != resource.Version {
@@ -151,17 +149,13 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 	}
 
 	version := "" // empty value is a sign to other components to generate the version automatically
-	out := envoy_cache.Snapshot{
-		Resources: [envoy_types.UnknownType]envoy_cache.Resources{
-			envoy_types.Endpoint: envoy_cache.NewResources(version, rs.ListOf(envoy_resource.EndpointType).Payloads()),
-			envoy_types.Cluster:  envoy_cache.NewResources(version, rs.ListOf(envoy_resource.ClusterType).Payloads()),
-			envoy_types.Route:    envoy_cache.NewResources(version, rs.ListOf(envoy_resource.RouteType).Payloads()),
-			envoy_types.Listener: envoy_cache.NewResources(version, rs.ListOf(envoy_resource.ListenerType).Payloads()),
-			envoy_types.Secret:   envoy_cache.NewResources(version, rs.ListOf(envoy_resource.SecretType).Payloads()),
-		},
+	resources := map[envoy_resource.Type][]envoy_types.Resource{}
+
+	for _, resourceType := range rs.ResourceTypes() {
+		resources[resourceType] = append(resources[resourceType], rs.ListOf(resourceType).Payloads()...)
 	}
 
-	return out, nil
+	return envoy_cache.NewSnapshot(version, resources)
 }
 
 type snapshotCacher interface {
