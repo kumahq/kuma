@@ -214,7 +214,7 @@ messages as follows:
 Here is a template of what your commit message should look like:
 
 ```
-<type>(<scope>) <subject>
+<type>(<scope>): <subject>
 <BLANK LINE>
 <body>
 <BLANK LINE>
@@ -281,7 +281,7 @@ related GitHub issues, Pull Requests, fixed bug reports, etc...
 Here are a few examples of good commit messages to take inspiration from:
 
 ```
-fix(admin) send HTTP 405 on unsupported method
+fix(admin): send HTTP 405 on unsupported method
 
 The appropriate status code when the request method is not supported
 on an endpoint it 405. We previously used to send HTTP 404, which
