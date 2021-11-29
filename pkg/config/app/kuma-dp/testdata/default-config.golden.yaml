@@ -6,14 +6,14 @@ controlPlane:
   caCert: ""
   caCertFile: ""
 dataplane:
-  drainTime: 30s
   proxyType: dataplane
+  drainTime: 30s
 dataplaneRuntime:
   binaryPath: envoy
 dns:
-  coreDnsBinaryPath: coredns
-  coreDnsEmptyPort: 15055
-  coreDnsPort: 15053
   enabled: true
+  coreDnsPort: 15053
+  coreDnsEmptyPort: 15055
   envoyDnsPort: 15054
+  coreDnsBinaryPath: coredns
   prometheusPort: 19153

@@ -145,7 +145,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(outbuf.String()).To(MatchGoldenEqual(filepath.Join("testdata", resourceTable)))
+			Expect(outbuf.String()).To(MatchGoldenEqual("testdata", resourceTable))
 		},
 		entries...,
 	)
@@ -168,7 +168,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(outbuf.String()).To(MatchGoldenEqual(filepath.Join("testdata", resourceJSON)))
+			Expect(outbuf.String()).To(MatchGoldenEqual("testdata", resourceJSON))
 		},
 		entries...,
 	)
@@ -188,7 +188,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(outbuf.String()).To(MatchGoldenEqual(filepath.Join("testdata", resourceYAML)))
+			Expect(outbuf.String()).To(MatchGoldenEqual("testdata", resourceYAML))
 		},
 		entries...,
 	)

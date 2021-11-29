@@ -2,7 +2,6 @@ package completion_test
 
 import (
 	"bytes"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -44,7 +43,7 @@ var _ = Describe("kumactl completion", func() {
 
 			// and
 			actual := stdout.Bytes()
-			Expect(actual).To(MatchGoldenEqual(filepath.Join("testdata", given.goldenFile)))
+			Expect(actual).To(MatchGoldenEqual("testdata", given.goldenFile))
 		},
 		Entry("should generate bash completion code", testCase{
 			extraArgs: []string{

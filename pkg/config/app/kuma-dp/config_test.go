@@ -1,18 +1,19 @@
 package kumadp_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var _ = Describe("Config", func() {
@@ -114,15 +115,10 @@ var _ = Describe("Config", func() {
 
 		// when
 		actual, err := config.ToYAML(&cfg)
-		// then
-		Expect(err).ToNot(HaveOccurred())
 
-		// when
-		expected, err := os.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(actual).To(MatchYAML(expected))
+		Expect(actual).To(matchers.MatchGoldenYAML("testdata", "default-config.golden.yaml"))
 	})
 
 	It("should have validators", func() {
@@ -133,19 +129,30 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		fmt.Println(err.Error())
-		Expect(err.Error()).To(Equal(`Invalid configuration: .ControlPlane is not valid: .Retry is not valid: .Backoff must be a positive duration; .Dataplane is not valid: .ProxyType is not valid: not-a-proxy is not a valid proxy type; .Mesh must be non-empty; .Name must be non-empty; .DrainTime must be positive; .DataplaneRuntime is not valid: .BinaryPath must be non-empty`))
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error() + "\n").To(matchers.MatchGoldenEqual("testdata", "invalid-config.golden.txt"))
 	})
 
-	It("should ensure the proxy type is supported", func() {
-		// given
-		cfg := kuma_dp.Config{}
+	DescribeTable("bad validation",
+		func(fn func(*kuma_dp.Config)) {
+			// given
+			cfg := kuma_dp.Config{}
 
-		Expect(config.Load(filepath.Join("testdata", "valid-config.input.yaml"), &cfg)).Should(Succeed())
+			Expect(config.Load(filepath.Join("testdata", "valid-config.input.yaml"), &cfg)).Should(Succeed())
 
-		// when
-		cfg.Dataplane.ProxyType = string("gateway")
-		Expect(cfg.Validate()).ShouldNot(Succeed())
-	})
+			// when (apply a modification)
+			fn(&cfg)
+
+			// then
+			Expect(cfg.Validate()).ShouldNot(Succeed())
+
+		},
+		Entry("unsupported proxy type", func(cfg *kuma_dp.Config) {
+			cfg.Dataplane.ProxyType = "gateway"
+		}),
+		Entry("invalid cp url", func(cfg *kuma_dp.Config) {
+			cfg.ControlPlane.URL = ":333"
+		}),
+	)
 
 })
