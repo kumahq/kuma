@@ -1,22 +1,6 @@
 resources:
 - name: backend.kuma-system
   resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend.kuma-system
-    endpoints:
-    - lbEndpoints:
-      - endpoint:
-          address:
-            socketAddress:
-              address: 192.168.0.1
-              portValue: 8082
-        loadBalancingWeight: 1
-- name: db-_0_
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: db
-- name: backend.kuma-system
-  resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: backend_kuma-system
     connectTimeout: 10s
@@ -46,6 +30,22 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
+- name: backend.kuma-system
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend.kuma-system
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.1
+              portValue: 8082
+        loadBalancingWeight: 1
+- name: db-_0_
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: db
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
