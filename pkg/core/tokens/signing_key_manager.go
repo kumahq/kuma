@@ -49,14 +49,17 @@ func (s *signingKeyManager) GetLatestSigningKey() (*rsa.PrivateKey, int, error) 
 	if err := s.manager.List(context.Background(), &resources); err != nil {
 		return nil, 0, errors.Wrap(err, "could not retrieve signing key from secret manager")
 	}
+	return latestSigningKey(&resources, s.signingKeyPrefix, model.NoMesh)
+}
 
-	var signingKey *system.GlobalSecretResource
+func latestSigningKey(list model.ResourceList, prefix string, mesh string) (*rsa.PrivateKey, int, error) {
+	var signingKey model.Resource
 	highestSerialNumber := -1
-	for _, resource := range resources.Items {
-		if !strings.HasPrefix(resource.Meta.GetName(), s.signingKeyPrefix) {
+	for _, resource := range list.GetItems() {
+		if !strings.HasPrefix(resource.GetMeta().GetName(), prefix) {
 			continue
 		}
-		serialNumber, _ := signingKeySerialNumber(resource.Meta.GetName(), s.signingKeyPrefix)
+		serialNumber, _ := signingKeySerialNumber(resource.GetMeta().GetName(), prefix)
 		if serialNumber > highestSerialNumber {
 			signingKey = resource
 			highestSerialNumber = serialNumber
@@ -64,13 +67,18 @@ func (s *signingKeyManager) GetLatestSigningKey() (*rsa.PrivateKey, int, error) 
 	}
 
 	if signingKey == nil {
-		return nil, 0, &SigningKeyNotFound{SerialNumber: DefaultSerialNumber, Prefix: s.signingKeyPrefix}
+		return nil, 0, &SigningKeyNotFound{
+			SerialNumber: DefaultSerialNumber,
+			Prefix: prefix,
+			Mesh: mesh,
+		}
 	}
 
-	key, err := keyBytesToRsaKey(signingKey.Spec.GetData().GetValue())
+	key, err := keyBytesToRsaKey(signingKey.GetSpec().(*system_proto.Secret).GetData().GetValue())
 	if err != nil {
 		return nil, 0, err
 	}
+
 	return key, highestSerialNumber, nil
 }
 

@@ -3,7 +3,6 @@ package tokens
 import (
 	"context"
 	"crypto/rsa"
-	"strings"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
@@ -38,33 +37,7 @@ func (s *meshedSigningKeyManager) GetLatestSigningKey() (*rsa.PrivateKey, int, e
 	if err := s.manager.List(context.Background(), &resources, store.ListByMesh(s.mesh)); err != nil {
 		return nil, 0, errors.Wrap(err, "could not retrieve signing key from secret manager")
 	}
-
-	var signingKey *system.SecretResource
-	highestSerialNumber := -1
-	for _, resource := range resources.Items {
-		if !strings.HasPrefix(resource.Meta.GetName(), s.signingKeyPrefix) {
-			continue
-		}
-		serialNumber, _ := signingKeySerialNumber(resource.Meta.GetName(), s.signingKeyPrefix)
-		if serialNumber > highestSerialNumber {
-			signingKey = resource
-			highestSerialNumber = serialNumber
-		}
-	}
-
-	if signingKey == nil {
-		return nil, 0, &SigningKeyNotFound{
-			SerialNumber: DefaultSerialNumber,
-			Prefix:       s.signingKeyPrefix,
-			Mesh:         s.mesh,
-		}
-	}
-
-	key, err := keyBytesToRsaKey(signingKey.Spec.GetData().GetValue())
-	if err != nil {
-		return nil, 0, err
-	}
-	return key, highestSerialNumber, nil
+	return latestSigningKey(&resources, s.signingKeyPrefix, s.mesh)
 }
 
 func (s *meshedSigningKeyManager) CreateDefaultSigningKey() error {

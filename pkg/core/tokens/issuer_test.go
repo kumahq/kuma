@@ -97,7 +97,7 @@ var _ = Describe("Token issuer", func() {
 			id := &TestClaims{}
 
 			// when
-			token1, err := issuer.Generate(id, time.Second*60)
+			token1, err := issuer.Generate(id, time.Minute)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -109,7 +109,7 @@ var _ = Describe("Token issuer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and a new token is generated
-			token2, err := issuer.Generate(id, time.Second*60)
+			token2, err := issuer.Generate(id, time.Minute)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then all tokens are valid because 2 signing keys are present in the system
@@ -134,11 +134,11 @@ var _ = Describe("Token issuer", func() {
 		It("should validate out expired tokens", func() {
 			// given
 			id := &TestClaims{}
-			token, err := issuer.Generate(id, 60*time.Second)
+			token, err := issuer.Generate(id, time.Minute)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			now = now.Add(60*time.Second + 1*time.Second)
+			now = now.Add(time.Minute + 1*time.Second)
 			err = validator.ParseWithValidation(token, id)
 
 			// then
@@ -149,7 +149,7 @@ var _ = Describe("Token issuer", func() {
 			// given valid token
 			id := &TestClaims{}
 
-			token, err := issuer.Generate(id, 60*time.Second)
+			token, err := issuer.Generate(id, time.Minute)
 			Expect(err).ToNot(HaveOccurred())
 			err = validator.ParseWithValidation(token, id)
 			Expect(err).ToNot(HaveOccurred())
@@ -194,7 +194,7 @@ var _ = Describe("Token issuer", func() {
 			// given valid token
 			id := &TestClaims{}
 
-			token, err := issuer.Generate(id, 60*time.Second)
+			token, err := issuer.Generate(id, time.Minute)
 			Expect(err).ToNot(HaveOccurred())
 			err = validator.ParseWithValidation(token, id)
 			Expect(err).ToNot(HaveOccurred())
