@@ -114,13 +114,13 @@ format to use or the appropriate code style.
 Once you have read them, and you are ready to submit your Pull Request, be sure
 to verify a few things:
 
-- Your work was based on the appropriate branch (`master` vs. `feature/latest`), 
+- Your work was based on the appropriate branch (`master` vs. `feature/latest`),
   and you are opening your Pull Request against the appropriate one
 - Your commit history is clean: changes are atomic and the git message format
   was respected
 - Rebase your work on top of the base branch (seek help online on how to use
   `git rebase`; this is important to ensure your commit history is clean and
-   linear)
+  linear)
 - The tests are passing: run `make test`, `make test/kuma-cp`,
   `make test/kuma-dp`, or whichever make target under `test/` is appropriate
   for your change
@@ -202,8 +202,10 @@ also help you respect this mantra (see the below section).
 
 #### Commit message format
 
-To maintain a healthy Git history, we ask of you that you write your commit
-messages as follows:
+We follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+for commit messages and PR titles.
+
+A quick overview on commit messages:
 
 - The tense of your message must be **present**
 - Your message must be prefixed by a type, and a scope
@@ -221,24 +223,13 @@ Here is a template of what your commit message should look like:
 <footer>
 ```
 
+The exact details of the format can be found in the [conventional commits
+specification](https://www.conventionalcommits.org/en/v1.0.0/#specification).
+
 ##### Type
 
-The type of your commit indicates what type of change this commit is about. The
-accepted types are:
-
-- **feat**: A new feature
-- **fix**: A bug fix
-- **hotfix**: An urgent bug fix during a release process
-- **tests**: A change that is purely related to the test suite only (fixing
-  a test, adding a test, improving its reliability, etc...)
-- **docs**: Changes to the README.md, this file, or other such documents
-- **style**: Changes that do not affect the meaning of the code (white-space
-  trimming, formatting, etc...)
-- **perf**: A code change that significantly improves performance
-- **refactor**: A code change that neither fixes a bug nor adds a feature, and
-  is too big to be considered just `perf`
-- **chore**: Maintenance changes related to code cleaning that isn't
-  considered part of a refactor, build process updates, or dependency bumps
+Allowed types are enforced via `commitlint`. The list can be found at the
+[`config-conventional` repository](https://github.com/conventional-changelog/commitlint/tree/master/%40commitlint/config-conventional#type-enum).
 
 ##### Scope
 
