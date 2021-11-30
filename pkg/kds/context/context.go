@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"strings"
 
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -48,7 +49,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			return false
 		}
 		if resType == system.GlobalSecretType {
-			return zoneingress.IsSigningKeyResource(model.MetaToResourceKey(r.GetMeta()))
+			return strings.HasPrefix(r.GetMeta().GetName(), zoneingress.ZoneIngressSigningKeyPrefix)
 		}
 		if resType != mesh.DataplaneType && resType != mesh.ZoneIngressType {
 			return true

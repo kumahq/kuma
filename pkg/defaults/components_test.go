@@ -5,20 +5,15 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_component "github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	"github.com/kumahq/kuma/pkg/defaults"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
@@ -101,55 +96,6 @@ var _ = Describe("Defaults Component", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = manager.Get(context.Background(), core_mesh.NewMeshResource(), core_store.GetByKey("default", "default"))
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
-		})
-	})
-
-	Describe("zone ingress signing key creation", func() {
-
-		var component core_component.Component
-		var manager core_manager.ResourceManager
-
-		BeforeEach(func() {
-			cfg := &kuma_cp.Defaults{}
-			store := resources_memory.NewStore()
-			defaultManager := core_manager.NewResourceManager(store)
-			customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
-			customManagers[system.GlobalSecretType] = secret_manager.NewGlobalSecretManager(store, cipher.None())
-			manager = core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-			component = defaults.NewDefaultsComponent(cfg, core.Standalone, core.UniversalEnvironment, manager, store)
-		})
-
-		It("should create zone ingress signing key and default mesh", func() {
-			// when
-			err := component.Start(nil)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), system.NewGlobalSecretResource(), core_store.GetByKey("zone-ingress-token-signing-key", core_model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), core_mesh.NewMeshResource(), core_store.GetByKey(core_model.DefaultMesh, core_model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should not override already created signing key", func() {
-			// given
-			signingKey := &system.GlobalSecretResource{
-				Spec: &system_proto.Secret{
-					Data: wrapperspb.Bytes([]byte("hello")),
-				},
-			}
-			err := manager.Create(context.Background(), signingKey, core_store.CreateByKey("zone-ingress-token-signing-key", core_model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			err = component.Start(nil)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			actual := system.NewGlobalSecretResource()
-			err = manager.Get(context.Background(), actual, core_store.GetByKey("zone-ingress-token-signing-key", core_model.NoMesh))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual.Spec.GetData().GetValue()).To(Equal([]byte("hello")))
 		})
 	})
 })

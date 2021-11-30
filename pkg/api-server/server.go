@@ -127,25 +127,15 @@ func NewApiServer(
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
 	container.Add(configWs)
-
 	container.Add(versionsWs())
-
-	zonesWs := zonesWs(resManager)
-	container.Add(zonesWs)
+	container.Add(zonesWs(resManager))
+	container.Add(dataplaneTokenWs(resManager, access.DataplaneTokenAccess))
 
 	container.Filter(cors.Filter)
 
 	newApiServer := &ApiServer{
 		mux:    container.ServeMux,
 		config: *serverConfig,
-	}
-
-	dpWs, err := dataplaneTokenWs(resManager, access.DataplaneTokenAccess)
-	if err != nil {
-		return nil, err
-	}
-	if dpWs != nil {
-		container.Add(dpWs)
 	}
 
 	// Handle the GUI
@@ -227,16 +217,10 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 }
 
-func dataplaneTokenWs(resManager manager.ResourceManager, access tokens_access.DataplaneTokenAccess) (*restful.WebService, error) {
-	dpIssuer, err := builtin.NewDataplaneTokenIssuer(resManager)
-	if err != nil {
-		return nil, err
-	}
-	zoneIngressIssuer, err := builtin.NewZoneIngressTokenIssuer(resManager)
-	if err != nil {
-		return nil, err
-	}
-	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer, access), nil
+func dataplaneTokenWs(resManager manager.ResourceManager, access tokens_access.DataplaneTokenAccess) *restful.WebService {
+	dpIssuer := builtin.NewDataplaneTokenIssuer(resManager)
+	zoneIngressIssuer := builtin.NewZoneIngressTokenIssuer(resManager)
+	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer, access)
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {

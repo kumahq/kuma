@@ -1,27 +1,27 @@
-package issuer
+package tokens
 
 import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
-var log = core.Log.WithName("plugins").WithName("authn").WithName("api-server").WithName("tokens")
-
 type defaultSigningKeyComponent struct {
 	signingKeyManager SigningKeyManager
+	log               logr.Logger
 }
 
 var _ component.Component = &defaultSigningKeyComponent{}
 
-func NewDefaultSigningKeyComponent(signingKeyManager SigningKeyManager) component.Component {
+func NewDefaultSigningKeyComponent(signingKeyManager SigningKeyManager, log logr.Logger) component.Component {
 	return &defaultSigningKeyComponent{
 		signingKeyManager: signingKeyManager,
+		log:               log,
 	}
 }
 
@@ -34,7 +34,7 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 		if err := doWithRetry(ctx, d.createDefaultSigningKeyIfNotExist); err != nil {
 			// Retry this operation since on Kubernetes, secrets are validated.
 			// This code can execute before the control plane is ready therefore hooks can fail.
-			errChan <- errors.Wrap(err, "could not create the default user token's signing key")
+			errChan <- errors.Wrap(err, "could not create the default signing key")
 		}
 	}()
 	select {
@@ -45,21 +45,21 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *defaultSigningKeyComponent) createDefaultSigningKeyIfNotExist() error {
-	_, _, err := d.signingKeyManager.GetLatestSigningKey()
+func (d *defaultSigningKeyComponent) createDefaultSigningKeyIfNotExist(ctx context.Context) error {
+	_, _, err := d.signingKeyManager.GetLatestSigningKey(ctx)
 	if err == nil {
-		log.V(1).Info("user token's signing key already exists. Skip creating.")
+		d.log.V(1).Info("signing key already exists. Skip creating.")
 		return nil
 	}
 	if _, ok := err.(*SigningKeyNotFound); !ok {
 		return err
 	}
-	log.Info("trying to create user token's signing key")
-	if err := d.signingKeyManager.CreateDefaultSigningKey(); err != nil {
-		log.V(1).Info("could not create user token's signing key", "err", err)
+	d.log.Info("trying to create signing key")
+	if err := d.signingKeyManager.CreateDefaultSigningKey(ctx); err != nil {
+		d.log.V(1).Info("could not create signing key", "err", err)
 		return err
 	}
-	log.Info("default user token's signing key created")
+	d.log.Info("default signing key created")
 	return nil
 }
 
@@ -67,10 +67,10 @@ func (d *defaultSigningKeyComponent) NeedLeaderElection() bool {
 	return true
 }
 
-func doWithRetry(ctx context.Context, fn func() error) error {
+func doWithRetry(ctx context.Context, fn func(context.Context) error) error {
 	backoff, _ := retry.NewConstant(5 * time.Second)
 	backoff = retry.WithMaxDuration(10*time.Minute, backoff) // if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
 	return retry.Do(ctx, backoff, func(ctx context.Context) error {
-		return retry.RetryableError(fn()) // retry all errors
+		return retry.RetryableError(fn(ctx)) // retry all errors
 	})
 }

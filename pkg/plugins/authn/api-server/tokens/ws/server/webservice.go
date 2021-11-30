@@ -73,7 +73,7 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 		return
 	}
 
-	token, err := d.issuer.Generate(user.User{
+	token, err := d.issuer.Generate(request.Request.Context(), user.User{
 		Name:   idReq.Name,
 		Groups: idReq.Groups,
 	}, validFor)

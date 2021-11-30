@@ -1,6 +1,8 @@
 package zone
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -107,7 +109,7 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 			}
 			if rs.GetItemType() == system.GlobalSecretType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					return r.GetMeta().GetName() == zoneingress.SigningKeyResourceKey().Name
+					return strings.HasPrefix(r.GetMeta().GetName(), zoneingress.ZoneIngressSigningKeyPrefix)
 				}))
 			}
 			return syncer.Sync(rs)

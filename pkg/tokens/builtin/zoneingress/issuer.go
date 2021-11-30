@@ -1,8 +1,10 @@
 package zoneingress
 
 import (
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/pkg/errors"
+	"context"
+	"time"
+
+	"github.com/kumahq/kuma/pkg/core/tokens"
 )
 
 type Token = string
@@ -15,77 +17,24 @@ type Identity struct {
 // Issued token can be bound by zone name.
 // See pkg/sds/auth/universal/authenticator.go to check algorithm for authentication
 type TokenIssuer interface {
-	Generate(identity Identity) (Token, error)
-	Validate(token Token) (Identity, error)
+	Generate(ctx context.Context, identity Identity, validFor time.Duration) (tokens.Token, error)
 }
-
-type claims struct {
-	Zone string
-	jwt.RegisteredClaims
-}
-
-type SigningKeyAccessor func() ([]byte, error)
 
 var _ TokenIssuer = &jwtTokenIssuer{}
 
-func NewTokenIssuer(signingKeyAccessor SigningKeyAccessor) TokenIssuer {
-	return &jwtTokenIssuer{signingKeyAccessor}
+func NewTokenIssuer(issuer tokens.Issuer) TokenIssuer {
+	return &jwtTokenIssuer{
+		issuer: issuer,
+	}
 }
 
 type jwtTokenIssuer struct {
-	signingKeyAccessor SigningKeyAccessor
+	issuer tokens.Issuer
 }
 
-func (j *jwtTokenIssuer) signingKey() ([]byte, error) {
-	signingKey, err := j.signingKeyAccessor()
-	if err != nil {
-		return nil, err
+func (j *jwtTokenIssuer) Generate(ctx context.Context, identity Identity, validFor time.Duration) (Token, error) {
+	claims := &zoneIngressClaims{
+		Zone: identity.Zone,
 	}
-	if len(signingKey) == 0 {
-		return nil, SigningKeyNotFound()
-	}
-	return signingKey, nil
-}
-
-func (j *jwtTokenIssuer) Generate(identity Identity) (Token, error) {
-	signingKey, err := j.signingKey()
-	if err != nil {
-		return "", err
-	}
-
-	c := claims{
-		Zone:             identity.Zone,
-		RegisteredClaims: jwt.RegisteredClaims{},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
-	tokenString, err := token.SignedString(signingKey)
-	if err != nil {
-		return "", errors.Wrap(err, "could not sign a token")
-	}
-	return tokenString, nil
-}
-
-func (j *jwtTokenIssuer) Validate(rawToken Token) (Identity, error) {
-	signingKey, err := j.signingKey()
-	if err != nil {
-		return Identity{}, err
-	}
-
-	c := &claims{}
-
-	token, err := jwt.ParseWithClaims(rawToken, c, func(*jwt.Token) (interface{}, error) {
-		return signingKey, nil
-	})
-	if err != nil {
-		return Identity{}, errors.Wrap(err, "could not parse token")
-	}
-	if !token.Valid {
-		return Identity{}, errors.New("token is not valid")
-	}
-
-	id := Identity{
-		Zone: c.Zone,
-	}
-	return id, nil
+	return j.issuer.Generate(ctx, claims, validFor)
 }

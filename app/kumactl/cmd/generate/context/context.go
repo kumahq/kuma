@@ -1,6 +1,8 @@
 package context
 
-import "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+import (
+	"github.com/kumahq/kuma/pkg/core/tokens"
+)
 
 type GenerateContext struct {
 	NewSigningKey func() ([]byte, error)
@@ -8,6 +10,6 @@ type GenerateContext struct {
 
 func DefaultGenerateContext() GenerateContext {
 	return GenerateContext{
-		NewSigningKey: issuer.NewSigningKey,
+		NewSigningKey: tokens.NewSigningKey,
 	}
 }

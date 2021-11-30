@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -20,7 +21,7 @@ func NewDataplaneTokenClient(client util_http.Client) DataplaneTokenClient {
 }
 
 type DataplaneTokenClient interface {
-	Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error)
+	Generate(name string, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error)
 }
 
 type httpDataplaneTokenClient struct {
@@ -29,12 +30,13 @@ type httpDataplaneTokenClient struct {
 
 var _ DataplaneTokenClient = &httpDataplaneTokenClient{}
 
-func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error) {
+func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error) {
 	tokenReq := &types.DataplaneTokenRequest{
-		Name: name,
-		Mesh: mesh,
-		Tags: tags,
-		Type: dpType,
+		Name:     name,
+		Mesh:     mesh,
+		Tags:     tags,
+		Type:     dpType,
+		ValidFor: validFor.String(),
 	}
 	reqBytes, err := json.Marshal(tokenReq)
 	if err != nil {
