@@ -47,5 +47,5 @@ endif
 
 .PHONY: clean/envoy
 clean/envoy:
-	rm -rf ${SOURCE_DIR}; \
+	rm -rf ${SOURCE_DIR}
 	rm -rf build/artifacts-${GOOS}-${GOARCH}/envoy/
