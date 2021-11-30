@@ -115,6 +115,10 @@ func IsIPv6() bool {
 	return envBool(envIPv6)
 }
 
+func IsK3D() bool {
+	return envBool("K3D")
+}
+
 // GetKumactlBin returns the path to the kumactl program.
 func GetKumactlBin() string {
 	if path := os.Getenv("KUMACTLBIN"); path != "" {
