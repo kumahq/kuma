@@ -12,8 +12,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
+	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 func HandleError(response *restful.Response, err error, title string) {
@@ -32,7 +32,7 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleMaxPageSizeExceeded(title, err, response)
 	case err == api_server_types.InvalidPageSize:
 		handleInvalidPageSize(title, response)
-	case issuer.IsSigningKeyNotFoundErr(err):
+	case tokens.IsSigningKeyNotFound(err):
 		handleSigningKeyNotFound(err, response)
 	case errors.Is(err, &access.AccessDeniedError{}):
 		var accessErr *access.AccessDeniedError

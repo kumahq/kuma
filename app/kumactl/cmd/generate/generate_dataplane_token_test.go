@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -26,7 +27,7 @@ type staticDataplaneTokenGenerator struct {
 
 var _ tokens.DataplaneTokenClient = &staticDataplaneTokenGenerator{}
 
-func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error) {
+func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error) {
 	if s.err != nil {
 		return "", s.err
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
@@ -79,9 +80,10 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		return errors.Wrap(err, "could not create default Dataplane Token Signing Key")
 	}
 	if created {
-		log.Info("default Signing Key created", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName).Name)
+		resKey := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultSerialNumber, meshName)
+		log.Info("default Dataplane Token Signing Key created", "mesh", meshName, "name", resKey.Name)
 	} else {
-		log.Info("default Signing Key already exist", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName).Name)
+		log.Info("Dataplane Token Signing Key already exists", "mesh", meshName)
 	}
 	return nil
 }
