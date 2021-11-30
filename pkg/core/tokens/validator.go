@@ -32,10 +32,14 @@ func (j *jwtTokenValidator) ParseWithValidation(rawToken Token, claims Claims) e
 		if err != nil {
 			return nil, err
 		}
-		if token.Method.Alg() == jwt.SigningMethodHS256.Name {
+		switch token.Method.Alg() {
+		case jwt.SigningMethodHS256.Name:
 			return j.keyAccessor.GetLegacyKey(serialNumber)
+		case jwt.SigningMethodRS256.Name:
+			return j.keyAccessor.GetPublicKey(serialNumber)
+		default:
+			return nil, errors.Errorf("unknown token alg. Allowed algs are %s and %s", jwt.SigningMethodHS256.Name, jwt.SigningMethodRS256.Name)
 		}
-		return j.keyAccessor.GetPublicKey(serialNumber)
 	})
 	if err != nil {
 		if verr, ok := err.(*jwt.ValidationError); ok { // jwt.ValidationError does not implement Unwrap() to just use errors.As

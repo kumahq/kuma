@@ -31,7 +31,7 @@ func FromPEMBytes(b []byte) (*rsa.PrivateKey, error) {
 	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }
 
-func IsRsaPEMBytes(b []byte) bool {
+func IsPEMBytes(b []byte) bool {
 	block, _ := pem.Decode(b)
 	return block != nil && block.Type == rsaBlockType
 }

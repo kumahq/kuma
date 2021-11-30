@@ -53,12 +53,13 @@ func (s *signingKeyManager) GetLatestSigningKey() (*rsa.PrivateKey, int, error) 
 	var signingKey *system.GlobalSecretResource
 	highestSerialNumber := -1
 	for _, resource := range resources.Items {
-		if strings.HasPrefix(resource.Meta.GetName(), s.signingKeyPrefix) {
-			serialNumber, _ := signingKeySerialNumber(resource.Meta.GetName(), s.signingKeyPrefix)
-			if serialNumber > highestSerialNumber {
-				signingKey = resource
-				highestSerialNumber = serialNumber
-			}
+		if !strings.HasPrefix(resource.Meta.GetName(), s.signingKeyPrefix) {
+			continue
+		}
+		serialNumber, _ := signingKeySerialNumber(resource.Meta.GetName(), s.signingKeyPrefix)
+		if serialNumber > highestSerialNumber {
+			signingKey = resource
+			highestSerialNumber = serialNumber
 		}
 	}
 
@@ -80,7 +81,7 @@ func (s *signingKeyManager) CreateDefaultSigningKey() error {
 func (s *signingKeyManager) CreateSigningKey(serialNumber int) error {
 	key, err := NewSigningKey()
 	if err != nil {
-		return errors.Wrap(err, "could not construct signing key")
+		return err
 	}
 
 	secret := system.NewGlobalSecretResource()
@@ -89,8 +90,5 @@ func (s *signingKeyManager) CreateSigningKey(serialNumber int) error {
 			Value: key,
 		},
 	}
-	if err := s.manager.Create(context.Background(), secret, store.CreateBy(SigningKeyResourceKey(s.signingKeyPrefix, serialNumber, model.NoMesh))); err != nil {
-		return errors.Wrap(err, "could not create signing key")
-	}
-	return nil
+	return s.manager.Create(context.Background(), secret, store.CreateBy(SigningKeyResourceKey(s.signingKeyPrefix, serialNumber, model.NoMesh)))
 }

@@ -48,12 +48,12 @@ func (s *SigningKeyNotFound) Error() string {
 }
 
 func IsSigningKeyNotFound(err error) bool {
-	_, ok := err.(*SigningKeyNotFound)
-	return ok
+	target := &SigningKeyNotFound{}
+	return errors.As(err, &target)
 }
 
 func keyBytesToRsaKey(keyBytes []byte) (*rsa.PrivateKey, error) {
-	if util_rsa.IsRsaPEMBytes(keyBytes) {
+	if util_rsa.IsPEMBytes(keyBytes) {
 		key, err := util_rsa.FromPEMBytes(keyBytes)
 		if err != nil {
 			return nil, err

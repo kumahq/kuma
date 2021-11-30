@@ -83,7 +83,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		resKey := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultSerialNumber, meshName)
 		log.Info("default Dataplane Token Signing Key created", "mesh", meshName, "name", resKey.Name)
 	} else {
-		log.Info("Dataplane Token Signing Key already exist", "mesh", meshName)
+		log.Info("Dataplane Token Signing Key already exists", "mesh", meshName)
 	}
 	return nil
 }

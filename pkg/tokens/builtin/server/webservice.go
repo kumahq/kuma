@@ -66,6 +66,12 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 	validForErr, validFor := validateValidFor(idReq.ValidFor)
 	verr.Add(validForErr)
 
+	if idReq.Type != "" {
+		if err := mesh_proto.ProxyType(idReq.Type).IsValid(); err != nil {
+			verr.AddViolation("type", err.Error())
+		}
+	}
+
 	if verr.HasViolations() {
 		errors.HandleError(response, verr.OrNil(), "Invalid request")
 		return

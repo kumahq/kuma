@@ -21,7 +21,7 @@ var _ SigningKeyAccessor = &meshedSigningKeyAccessor{}
 
 // NewMeshedSigningKeyAccessor builds SigningKeyAccessor that is bound to a Mesh.
 // Some tokens like Dataplane Token are bound to a mesh.
-// In this case, singing key is also stored as a Secret in the Mesh, not as GlobalSecret.
+// In this case, the singing key is also stored as a Secret in the Mesh, not as GlobalSecret.
 func NewMeshedSigningKeyAccessor(resManager manager.ResourceManager, signingKeyPrefix string, mesh string) SigningKeyAccessor {
 	return &meshedSigningKeyAccessor{
 		resManager:       resManager,

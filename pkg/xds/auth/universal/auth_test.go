@@ -261,6 +261,6 @@ var _ = Describe("Authentication flow", func() {
 		}, 24*time.Hour)
 
 		// then
-		Expect(err.Error()).To(Equal(`there is no signing key with serial number 1. Secret of name "dataplane-token-signing-key-demo-2-1" in mesh "demo-2" is not found. If signing key was rotated, regenerate the token`))
+		Expect(err.Error()).To(ContainSubstring(`there is no signing key`))
 	})
 })
