@@ -88,7 +88,13 @@ func KICKubernetes() {
 	// IPv6 curently not supported by Kong Ingress Controller
 	// https://github.com/Kong/kubernetes-ingress-controller/issues/1017
 	if IsIPv6() {
-		fmt.Println("Test not supported on API v2 or IPv6")
+		fmt.Println("Test not supported on IPv6")
+		return
+	}
+	if !IsK3D() {
+		// KIC 2.0 when started with service type LoadBalancer requires external IP to be provisioned before it's healthy.
+		// KIND cannot provision external IP, K3D can.
+		fmt.Println("Test not supported on KIND")
 		return
 	}
 
