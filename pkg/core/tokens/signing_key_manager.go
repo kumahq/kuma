@@ -25,9 +25,9 @@ const (
 // "user-token-signing-key" has a serial number of 0
 // The latest key is  a key with a higher serial number (number at the end of the name)
 type SigningKeyManager interface {
-	GetLatestSigningKey() (*rsa.PrivateKey, int, error)
-	CreateDefaultSigningKey() error
-	CreateSigningKey(serialNumber int) error
+	GetLatestSigningKey(context.Context) (*rsa.PrivateKey, int, error)
+	CreateDefaultSigningKey(context.Context) error
+	CreateSigningKey(ctx context.Context, serialNumber int) error
 }
 
 func NewSigningKeyManager(manager manager.ResourceManager, signingKeyPrefix string) SigningKeyManager {
@@ -44,9 +44,9 @@ type signingKeyManager struct {
 
 var _ SigningKeyManager = &signingKeyManager{}
 
-func (s *signingKeyManager) GetLatestSigningKey() (*rsa.PrivateKey, int, error) {
+func (s *signingKeyManager) GetLatestSigningKey(ctx context.Context) (*rsa.PrivateKey, int, error) {
 	resources := system.GlobalSecretResourceList{}
-	if err := s.manager.List(context.Background(), &resources); err != nil {
+	if err := s.manager.List(ctx, &resources); err != nil {
 		return nil, 0, errors.Wrap(err, "could not retrieve signing key from secret manager")
 	}
 	return latestSigningKey(&resources, s.signingKeyPrefix, model.NoMesh)
@@ -69,8 +69,8 @@ func latestSigningKey(list model.ResourceList, prefix string, mesh string) (*rsa
 	if signingKey == nil {
 		return nil, 0, &SigningKeyNotFound{
 			SerialNumber: DefaultSerialNumber,
-			Prefix: prefix,
-			Mesh: mesh,
+			Prefix:       prefix,
+			Mesh:         mesh,
 		}
 	}
 
@@ -82,11 +82,11 @@ func latestSigningKey(list model.ResourceList, prefix string, mesh string) (*rsa
 	return key, highestSerialNumber, nil
 }
 
-func (s *signingKeyManager) CreateDefaultSigningKey() error {
-	return s.CreateSigningKey(DefaultSerialNumber)
+func (s *signingKeyManager) CreateDefaultSigningKey(ctx context.Context) error {
+	return s.CreateSigningKey(ctx, DefaultSerialNumber)
 }
 
-func (s *signingKeyManager) CreateSigningKey(serialNumber int) error {
+func (s *signingKeyManager) CreateSigningKey(ctx context.Context, serialNumber int) error {
 	key, err := NewSigningKey()
 	if err != nil {
 		return err
@@ -98,5 +98,5 @@ func (s *signingKeyManager) CreateSigningKey(serialNumber int) error {
 			Value: key,
 		},
 	}
-	return s.manager.Create(context.Background(), secret, store.CreateBy(SigningKeyResourceKey(s.signingKeyPrefix, serialNumber, model.NoMesh)))
+	return s.manager.Create(ctx, secret, store.CreateBy(SigningKeyResourceKey(s.signingKeyPrefix, serialNumber, model.NoMesh)))
 }

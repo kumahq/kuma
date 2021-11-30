@@ -1,12 +1,14 @@
 package issuer
 
 import (
+	"context"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 )
 
 type Validator interface {
-	Validate(token core_tokens.Token, meshName string) (DataplaneIdentity, error)
+	Validate(ctx context.Context, token core_tokens.Token, meshName string) (DataplaneIdentity, error)
 }
 
 type jwtValidator struct {
@@ -21,9 +23,9 @@ func NewValidator(validators func(string) core_tokens.Validator) Validator {
 	}
 }
 
-func (j *jwtValidator) Validate(token core_tokens.Token, meshName string) (DataplaneIdentity, error) {
+func (j *jwtValidator) Validate(ctx context.Context, token core_tokens.Token, meshName string) (DataplaneIdentity, error) {
 	claims := &DataplaneClaims{}
-	if err := j.validators(meshName).ParseWithValidation(token, claims); err != nil {
+	if err := j.validators(meshName).ParseWithValidation(ctx, token, claims); err != nil {
 		return DataplaneIdentity{}, err
 	}
 	return DataplaneIdentity{

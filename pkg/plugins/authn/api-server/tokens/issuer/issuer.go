@@ -1,6 +1,7 @@
 package issuer
 
 import (
+	"context"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/tokens"
@@ -8,7 +9,7 @@ import (
 )
 
 type UserTokenIssuer interface {
-	Generate(identity user.User, validFor time.Duration) (tokens.Token, error)
+	Generate(ctx context.Context, identity user.User, validFor time.Duration) (tokens.Token, error)
 }
 
 type jwtTokenIssuer struct {
@@ -23,9 +24,9 @@ func NewUserTokenIssuer(issuer tokens.Issuer) UserTokenIssuer {
 
 var _ UserTokenIssuer = &jwtTokenIssuer{}
 
-func (j *jwtTokenIssuer) Generate(identity user.User, validFor time.Duration) (tokens.Token, error) {
+func (j *jwtTokenIssuer) Generate(ctx context.Context, identity user.User, validFor time.Duration) (tokens.Token, error) {
 	c := userClaims{
 		User: identity,
 	}
-	return j.issuer.Generate(&c, validFor)
+	return j.issuer.Generate(ctx, &c, validFor)
 }

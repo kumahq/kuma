@@ -23,7 +23,7 @@ func UserTokenAuthenticator(validator issuer.UserTokenValidator) authn.Authentic
 			authnHeader != "" &&
 			strings.HasPrefix(authnHeader, bearerPrefix) {
 			token := strings.TrimPrefix(authnHeader, bearerPrefix)
-			u, err := validator.Validate(token)
+			u, err := validator.Validate(request.Request.Context(), token)
 			if err != nil {
 				rest_errors.HandleError(response, &rest_errors.Unauthenticated{}, "Invalid authentication data")
 				log.Info("authentication rejected", "reason", err.Error())

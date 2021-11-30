@@ -1,6 +1,7 @@
 package tokens
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -9,7 +10,7 @@ import (
 
 type Validator interface {
 	// ParseWithValidation parses token and fills data in provided Claims.
-	ParseWithValidation(token Token, claims Claims) error
+	ParseWithValidation(ctx context.Context, token Token, claims Claims) error
 }
 
 type jwtTokenValidator struct {
@@ -26,7 +27,7 @@ func NewValidator(keyAccessor SigningKeyAccessor, revocations Revocations) Valid
 
 var _ Validator = &jwtTokenValidator{}
 
-func (j *jwtTokenValidator) ParseWithValidation(rawToken Token, claims Claims) error {
+func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken Token, claims Claims) error {
 	token, err := jwt.ParseWithClaims(rawToken, claims, func(token *jwt.Token) (interface{}, error) {
 		serialNumber, err := tokenSerialNumber(token, claims)
 		if err != nil {
@@ -34,9 +35,9 @@ func (j *jwtTokenValidator) ParseWithValidation(rawToken Token, claims Claims) e
 		}
 		switch token.Method.Alg() {
 		case jwt.SigningMethodHS256.Name:
-			return j.keyAccessor.GetLegacyKey(serialNumber)
+			return j.keyAccessor.GetLegacyKey(ctx, serialNumber)
 		case jwt.SigningMethodRS256.Name:
-			return j.keyAccessor.GetPublicKey(serialNumber)
+			return j.keyAccessor.GetPublicKey(ctx, serialNumber)
 		default:
 			return nil, errors.Errorf("unknown token alg. Allowed algs are %s and %s", jwt.SigningMethodHS256.Name, jwt.SigningMethodRS256.Name)
 		}
@@ -53,7 +54,7 @@ func (j *jwtTokenValidator) ParseWithValidation(rawToken Token, claims Claims) e
 		return errors.New("token is not valid")
 	}
 
-	revoked, err := j.revocations.IsRevoked(claims.ID())
+	revoked, err := j.revocations.IsRevoked(ctx, claims.ID())
 	if err != nil {
 		return errors.Wrap(err, "could not check if the token is revoked")
 	}

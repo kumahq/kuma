@@ -45,8 +45,8 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *defaultSigningKeyComponent) createDefaultSigningKeyIfNotExist() error {
-	_, _, err := d.signingKeyManager.GetLatestSigningKey()
+func (d *defaultSigningKeyComponent) createDefaultSigningKeyIfNotExist(ctx context.Context) error {
+	_, _, err := d.signingKeyManager.GetLatestSigningKey(ctx)
 	if err == nil {
 		d.log.V(1).Info("signing key already exists. Skip creating.")
 		return nil
@@ -55,7 +55,7 @@ func (d *defaultSigningKeyComponent) createDefaultSigningKeyIfNotExist() error {
 		return err
 	}
 	d.log.Info("trying to create signing key")
-	if err := d.signingKeyManager.CreateDefaultSigningKey(); err != nil {
+	if err := d.signingKeyManager.CreateDefaultSigningKey(ctx); err != nil {
 		d.log.V(1).Info("could not create signing key", "err", err)
 		return err
 	}
@@ -67,10 +67,10 @@ func (d *defaultSigningKeyComponent) NeedLeaderElection() bool {
 	return true
 }
 
-func doWithRetry(ctx context.Context, fn func() error) error {
+func doWithRetry(ctx context.Context, fn func(context.Context) error) error {
 	backoff, _ := retry.NewConstant(5 * time.Second)
 	backoff = retry.WithMaxDuration(10*time.Minute, backoff) // if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
 	return retry.Do(ctx, backoff, func(ctx context.Context) error {
-		return retry.RetryableError(fn()) // retry all errors
+		return retry.RetryableError(fn(ctx)) // retry all errors
 	})
 }

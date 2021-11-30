@@ -87,7 +87,7 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 		return
 	}
 
-	token, err := d.issuer.Generate(issuer.DataplaneIdentity{
+	token, err := d.issuer.Generate(request.Request.Context(), issuer.DataplaneIdentity{
 		Mesh: idReq.Mesh,
 		Name: idReq.Name,
 		Type: mesh_proto.ProxyType(idReq.Type),
@@ -143,7 +143,7 @@ func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Requ
 		return
 	}
 
-	token, err := d.zoneIngressIssuer.Generate(zoneingress.Identity{
+	token, err := d.zoneIngressIssuer.Generate(request.Request.Context(), zoneingress.Identity{
 		Zone: idReq.Zone,
 	}, validFor)
 	if err != nil {

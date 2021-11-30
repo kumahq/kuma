@@ -63,8 +63,10 @@ var _ = Describe("Token issuer", func() {
 	var signingKeyManager tokens.SigningKeyManager
 
 	now := time.Now()
+	var ctx context.Context
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		core.Now = func() time.Time {
 			return now
 		}
@@ -89,7 +91,7 @@ var _ = Describe("Token issuer", func() {
 				tokens.NewRevocations(secretManager, TokenRevocationsGlobalSecretKey),
 			)
 
-			Expect(signingKeyManager.CreateDefaultSigningKey()).To(Succeed())
+			Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 		})
 
 		It("should support rotation", func() {
@@ -97,49 +99,49 @@ var _ = Describe("Token issuer", func() {
 			id := &TestClaims{}
 
 			// when
-			token1, err := issuer.Generate(id, time.Minute)
+			token1, err := issuer.Generate(ctx, id, time.Minute)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			err = validator.ParseWithValidation(token1, id)
+			err = validator.ParseWithValidation(ctx, token1, id)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when new signing key with higher serial number is created
-			err = signingKeyManager.CreateSigningKey(2)
+			err = signingKeyManager.CreateSigningKey(ctx, 2)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and a new token is generated
-			token2, err := issuer.Generate(id, time.Minute)
+			token2, err := issuer.Generate(ctx, id, time.Minute)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then all tokens are valid because 2 signing keys are present in the system
-			err = validator.ParseWithValidation(token1, id)
+			err = validator.ParseWithValidation(ctx, token1, id)
 			Expect(err).ToNot(HaveOccurred())
-			err = validator.ParseWithValidation(token2, id)
+			err = validator.ParseWithValidation(ctx, token2, id)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when first signing key is deleted
-			err = store.Delete(context.Background(), system.NewGlobalSecretResource(), core_store.DeleteBy(tokens.SigningKeyResourceKey(TestTokenSigningKeyPrefix, tokens.DefaultSerialNumber, core_model.NoMesh)))
+			err = store.Delete(ctx, system.NewGlobalSecretResource(), core_store.DeleteBy(tokens.SigningKeyResourceKey(TestTokenSigningKeyPrefix, tokens.DefaultSerialNumber, core_model.NoMesh)))
 			Expect(err).ToNot(HaveOccurred())
 
 			// then old tokens are no longer valid
-			err = validator.ParseWithValidation(token1, id)
+			err = validator.ParseWithValidation(ctx, token1, id)
 			Expect(err).To(MatchError(`there is no signing key with serial number 1. GlobalSecret of name "test-token-signing-key-1" is not found. If signing key was rotated, regenerate the token`))
 
 			// and new token is valid because new signing key is present
-			err = validator.ParseWithValidation(token2, id)
+			err = validator.ParseWithValidation(ctx, token2, id)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should validate out expired tokens", func() {
 			// given
 			id := &TestClaims{}
-			token, err := issuer.Generate(id, time.Minute)
+			token, err := issuer.Generate(ctx, id, time.Minute)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
 			now = now.Add(time.Minute + 1*time.Second)
-			err = validator.ParseWithValidation(token, id)
+			err = validator.ParseWithValidation(ctx, token, id)
 
 			// then
 			Expect(err.Error()).To(ContainSubstring("could not parse token: token is expired"))
@@ -149,9 +151,9 @@ var _ = Describe("Token issuer", func() {
 			// given valid token
 			id := &TestClaims{}
 
-			token, err := issuer.Generate(id, time.Minute)
+			token, err := issuer.Generate(ctx, id, time.Minute)
 			Expect(err).ToNot(HaveOccurred())
-			err = validator.ParseWithValidation(token, id)
+			err = validator.ParseWithValidation(ctx, token, id)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when id of the token is added to revocation list
@@ -166,11 +168,11 @@ var _ = Describe("Token issuer", func() {
 					},
 				},
 			}
-			err = store.Create(context.Background(), sec, core_store.CreateBy(TokenRevocationsGlobalSecretKey))
+			err = store.Create(ctx, sec, core_store.CreateBy(TokenRevocationsGlobalSecretKey))
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			err = validator.ParseWithValidation(token, id)
+			err = validator.ParseWithValidation(ctx, token, id)
 			Expect(err).To(MatchError("token is revoked"))
 		})
 	})
@@ -186,17 +188,17 @@ var _ = Describe("Token issuer", func() {
 				tokens.NewRevocations(secretManager, TokenRevocationsSecretKey(core_model.DefaultMesh)),
 			)
 
-			Expect(secretManager.Create(context.Background(), mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))).To(Succeed())
-			Expect(signingKeyManager.CreateDefaultSigningKey()).To(Succeed())
+			Expect(secretManager.Create(ctx, mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))).To(Succeed())
+			Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 		})
 
 		It("should revoke token", func() {
 			// given valid token
 			id := &TestClaims{}
 
-			token, err := issuer.Generate(id, time.Minute)
+			token, err := issuer.Generate(ctx, id, time.Minute)
 			Expect(err).ToNot(HaveOccurred())
-			err = validator.ParseWithValidation(token, id)
+			err = validator.ParseWithValidation(ctx, token, id)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when id of the token is added to revocation list
@@ -215,7 +217,7 @@ var _ = Describe("Token issuer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			err = validator.ParseWithValidation(token, id)
+			err = validator.ParseWithValidation(ctx, token, id)
 			Expect(err).To(MatchError("token is revoked"))
 		})
 	})

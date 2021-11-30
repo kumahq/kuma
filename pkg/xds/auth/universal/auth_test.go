@@ -26,6 +26,7 @@ var _ = Describe("Authentication flow", func() {
 	var issuer builtin_issuer.DataplaneTokenIssuer
 	var authenticator auth.Authenticator
 	var resStore core_store.ResourceStore
+	var ctx context.Context
 
 	dpRes := core_mesh.DataplaneResource{
 		Meta: &test_model.ResourceMeta{
@@ -79,6 +80,7 @@ var _ = Describe("Authentication flow", func() {
 	}
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		resStore = memory.NewStore()
 		resManager := manager.NewResourceManager(resStore)
 
@@ -92,9 +94,9 @@ var _ = Describe("Authentication flow", func() {
 		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneIngressValidator, "zone-1")
 
 		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
-		Expect(signingKeyManager.CreateDefaultSigningKey()).To(Succeed())
+		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("demo"), "demo")
-		Expect(signingKeyManager.CreateDefaultSigningKey()).To(Succeed())
+		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
 		err := resStore.Create(context.Background(), &dpRes, core_store.CreateByKey("dp-1", "default"))
 		Expect(err).ToNot(HaveOccurred())
@@ -108,7 +110,7 @@ var _ = Describe("Authentication flow", func() {
 	DescribeTable("should correctly authenticate dataplane",
 		func(given testCase) {
 			// when
-			credential, err := issuer.Generate(given.id, 24*time.Hour)
+			credential, err := issuer.Generate(ctx, given.id, 24*time.Hour)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -156,7 +158,7 @@ var _ = Describe("Authentication flow", func() {
 	DescribeTable("should fail auth",
 		func(given testCase) {
 			// when
-			token, err := issuer.Generate(given.id, 24*time.Hour)
+			token, err := issuer.Generate(ctx, given.id, 24*time.Hour)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -256,7 +258,7 @@ var _ = Describe("Authentication flow", func() {
 
 	It("should throw an error when signing key is not found", func() {
 		// when
-		_, err := issuer.Generate(builtin_issuer.DataplaneIdentity{
+		_, err := issuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
 			Mesh: "demo-2",
 		}, 24*time.Hour)
 

@@ -1,6 +1,7 @@
 package ws_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -44,7 +45,7 @@ var _ = Describe("Auth Tokens WS", func() {
 			),
 		)
 
-		Expect(signingKeyManager.CreateDefaultSigningKey()).To(Succeed())
+		Expect(signingKeyManager.CreateDefaultSigningKey(context.Background())).To(Succeed())
 		ws := server.NewWebService(tokenIssuer, &noopGenerateUserTokenAccess{})
 
 		container := restful.NewContainer()
@@ -68,7 +69,7 @@ var _ = Describe("Auth Tokens WS", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		u, err := userTokenValidator.Validate(token)
+		u, err := userTokenValidator.Validate(context.Background(), token)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(u.Name).To(Equal("john.doe@example.com"))
 		Expect(u.Groups).To(Equal([]string{"team-a"}))

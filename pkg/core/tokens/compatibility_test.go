@@ -28,8 +28,10 @@ var _ = Describe("Compatibility with old ASN.1 format", func() {
 	var resManager manager.ResourceManager
 
 	var legacySigningKey []byte
+	var ctx context.Context
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		resManager = manager.NewResourceManager(memory.NewStore())
 		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, TestTokenSigningKeyPrefix, model.DefaultMesh)
 		issuer = tokens.NewTokenIssuer(signingKeyManager)
@@ -38,7 +40,7 @@ var _ = Describe("Compatibility with old ASN.1 format", func() {
 			tokens.NewRevocations(resManager, TokenRevocationsGlobalSecretKey),
 		)
 
-		Expect(resManager.Create(context.Background(), mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
+		Expect(resManager.Create(ctx, mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
 
 		// setup ASN.1 signing key (created in Kuma 1.3.x)
 		key, err := util_rsa.GenerateKey(util_rsa.DefaultKeySize)
@@ -48,7 +50,7 @@ var _ = Describe("Compatibility with old ASN.1 format", func() {
 		secret.Spec.Data = &wrapperspb.BytesValue{
 			Value: legacySigningKey,
 		}
-		Expect(resManager.Create(context.Background(), secret, core_store.CreateByKey(TestTokenSigningKeyPrefix, model.DefaultMesh))).To(Succeed())
+		Expect(resManager.Create(ctx, secret, core_store.CreateByKey(TestTokenSigningKeyPrefix, model.DefaultMesh))).To(Succeed())
 	})
 
 	It("support old tokens without KID, no expiration and and signed with HMAC256 instead of RSA256", func() {
@@ -59,7 +61,7 @@ var _ = Describe("Compatibility with old ASN.1 format", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = validator.ParseWithValidation(tokenString, &TestClaims{})
+		err = validator.ParseWithValidation(ctx, tokenString, &TestClaims{})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -67,11 +69,11 @@ var _ = Describe("Compatibility with old ASN.1 format", func() {
 
 	It("support new tokens with ASN.1 signing key", func() {
 		// given
-		token, err := issuer.Generate(&TestClaims{}, time.Hour)
+		token, err := issuer.Generate(ctx, &TestClaims{}, time.Hour)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = validator.ParseWithValidation(token, &TestClaims{})
+		err = validator.ParseWithValidation(ctx, token, &TestClaims{})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -85,26 +87,26 @@ var _ = Describe("Compatibility with old ASN.1 format", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when new PEM-encoded signing key is created
-		err = signingKeyManager.CreateSigningKey(1)
+		err = signingKeyManager.CreateSigningKey(ctx, 1)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then old token is valid
-		Expect(validator.ParseWithValidation(tokenString, &TestClaims{})).To(Succeed())
+		Expect(validator.ParseWithValidation(ctx, tokenString, &TestClaims{})).To(Succeed())
 
 		// when
-		newToken, err := issuer.Generate(&TestClaims{}, time.Hour)
+		newToken, err := issuer.Generate(ctx, &TestClaims{}, time.Hour)
 
 		// then new token is valid
 		Expect(err).ToNot(HaveOccurred())
-		Expect(validator.ParseWithValidation(newToken, &TestClaims{})).To(Succeed())
+		Expect(validator.ParseWithValidation(ctx, newToken, &TestClaims{})).To(Succeed())
 
 		// when old ASN.1 signing key is deleted
 		Expect(resManager.Delete(context.Background(), system.NewSecretResource(), core_store.DeleteByKey(TestTokenSigningKeyPrefix, model.DefaultMesh))).To(Succeed())
 
 		// then old token is not valid
-		Expect(validator.ParseWithValidation(tokenString, &TestClaims{})).ToNot(Succeed())
+		Expect(validator.ParseWithValidation(ctx, tokenString, &TestClaims{})).ToNot(Succeed())
 
 		// and new token is still valid
-		Expect(validator.ParseWithValidation(newToken, &TestClaims{})).To(Succeed())
+		Expect(validator.ParseWithValidation(ctx, newToken, &TestClaims{})).To(Succeed())
 	})
 })

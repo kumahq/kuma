@@ -17,10 +17,10 @@ import (
 // In that case, we could provide only public key to the CP via static configuration.
 // So we can easily do this by providing separate implementation for this interface.
 type SigningKeyAccessor interface {
-	GetPublicKey(serialNumber int) (*rsa.PublicKey, error)
+	GetPublicKey(ctx context.Context, serialNumber int) (*rsa.PublicKey, error)
 	// GetLegacyKey returns legacy key. In pre 1.4.x version of Kuma, we used symmetric HMAC256 method of signing DP keys.
 	// In that case, we have to retrieve private key even for verification.
-	GetLegacyKey(serialNumber int) ([]byte, error)
+	GetLegacyKey(ctx context.Context, serialNumber int) ([]byte, error)
 }
 
 type signingKeyAccessor struct {
@@ -37,8 +37,8 @@ func NewSigningKeyAccessor(resManager manager.ResourceManager, signingKeyPrefix 
 	}
 }
 
-func (s *signingKeyAccessor) GetPublicKey(serialNumber int) (*rsa.PublicKey, error) {
-	keyBytes, err := s.getKeyBytes(serialNumber)
+func (s *signingKeyAccessor) GetPublicKey(ctx context.Context, serialNumber int) (*rsa.PublicKey, error) {
+	keyBytes, err := s.getKeyBytes(ctx, serialNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -49,9 +49,9 @@ func (s *signingKeyAccessor) GetPublicKey(serialNumber int) (*rsa.PublicKey, err
 	return &key.PublicKey, nil
 }
 
-func (s *signingKeyAccessor) getKeyBytes(serialNumber int) ([]byte, error) {
+func (s *signingKeyAccessor) getKeyBytes(ctx context.Context, serialNumber int) ([]byte, error) {
 	resource := system.NewGlobalSecretResource()
-	if err := s.resManager.Get(context.Background(), resource, store.GetBy(SigningKeyResourceKey(s.signingKeyPrefix, serialNumber, model.NoMesh))); err != nil {
+	if err := s.resManager.Get(ctx, resource, store.GetBy(SigningKeyResourceKey(s.signingKeyPrefix, serialNumber, model.NoMesh))); err != nil {
 		if store.IsResourceNotFound(err) {
 			return nil, &SigningKeyNotFound{
 				SerialNumber: serialNumber,
@@ -63,6 +63,6 @@ func (s *signingKeyAccessor) getKeyBytes(serialNumber int) ([]byte, error) {
 	return resource.Spec.GetData().GetValue(), nil
 }
 
-func (s *signingKeyAccessor) GetLegacyKey(serialNumber int) ([]byte, error) {
-	return s.getKeyBytes(serialNumber)
+func (s *signingKeyAccessor) GetLegacyKey(ctx context.Context, serialNumber int) ([]byte, error) {
+	return s.getKeyBytes(ctx, serialNumber)
 }

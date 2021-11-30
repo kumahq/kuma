@@ -1,11 +1,13 @@
 package zoneingress
 
 import (
+	"context"
+
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 )
 
 type Validator interface {
-	Validate(token Token) (Identity, error)
+	Validate(ctx context.Context, token Token) (Identity, error)
 }
 
 type jwtValidator struct {
@@ -20,9 +22,9 @@ func NewValidator(validator core_tokens.Validator) Validator {
 	}
 }
 
-func (j *jwtValidator) Validate(token Token) (Identity, error) {
+func (j *jwtValidator) Validate(ctx context.Context, token Token) (Identity, error) {
 	claims := &zoneIngressClaims{}
-	if err := j.validator.ParseWithValidation(token, claims); err != nil {
+	if err := j.validator.ParseWithValidation(ctx, token, claims); err != nil {
 		return Identity{}, err
 	}
 	return Identity{

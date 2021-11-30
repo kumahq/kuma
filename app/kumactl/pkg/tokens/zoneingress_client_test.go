@@ -1,6 +1,7 @@
 package tokens_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +24,7 @@ type zoneIngressStaticTokenIssuer struct {
 
 var _ zoneingress.TokenIssuer = &zoneIngressStaticTokenIssuer{}
 
-func (z *zoneIngressStaticTokenIssuer) Generate(identity zoneingress.Identity, validFor time.Duration) (zoneingress.Token, error) {
+func (z *zoneIngressStaticTokenIssuer) Generate(ctx context.Context, identity zoneingress.Identity, validFor time.Duration) (zoneingress.Token, error) {
 	return fmt.Sprintf("token-for-%s", identity.Zone), nil
 }
 

@@ -50,7 +50,7 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, resource mode
 }
 
 func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
-	dpIdentity, err := u.dataplaneValidator.Validate(credential, dataplane.Meta.GetMesh())
+	dpIdentity, err := u.dataplaneValidator.Validate(ctx, credential, dataplane.Meta.GetMesh())
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 }
 
 func (u *universalAuthenticator) authZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
-	identity, err := u.zoneIngressValidator.Validate(credential)
+	identity, err := u.zoneIngressValidator.Validate(ctx, credential)
 	if err != nil {
 		return err
 	}

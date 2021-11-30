@@ -1,6 +1,7 @@
 package zoneingress
 
 import (
+	"context"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/tokens"
@@ -16,7 +17,7 @@ type Identity struct {
 // Issued token can be bound by zone name.
 // See pkg/sds/auth/universal/authenticator.go to check algorithm for authentication
 type TokenIssuer interface {
-	Generate(identity Identity, validFor time.Duration) (tokens.Token, error)
+	Generate(ctx context.Context, identity Identity, validFor time.Duration) (tokens.Token, error)
 }
 
 var _ TokenIssuer = &jwtTokenIssuer{}
@@ -31,9 +32,9 @@ type jwtTokenIssuer struct {
 	issuer tokens.Issuer
 }
 
-func (j *jwtTokenIssuer) Generate(identity Identity, validFor time.Duration) (Token, error) {
+func (j *jwtTokenIssuer) Generate(ctx context.Context, identity Identity, validFor time.Duration) (Token, error) {
 	claims := &zoneIngressClaims{
 		Zone: identity.Zone,
 	}
-	return j.issuer.Generate(claims, validFor)
+	return j.issuer.Generate(ctx, claims, validFor)
 }

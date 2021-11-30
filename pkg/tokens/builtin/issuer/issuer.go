@@ -1,6 +1,7 @@
 package issuer
 
 import (
+	"context"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -11,7 +12,7 @@ import (
 // DataplaneTokenIssuer issues Dataplane Tokens used then for proving identity of the dataplanes.
 // Issued token can be bound by name, mesh or tags so you can pick your level of security.
 type DataplaneTokenIssuer interface {
-	Generate(identity DataplaneIdentity, validFor time.Duration) (tokens.Token, error)
+	Generate(ctx context.Context, identity DataplaneIdentity, validFor time.Duration) (tokens.Token, error)
 }
 
 func NewDataplaneTokenIssuer(issuers func(string) tokens.Issuer) DataplaneTokenIssuer {
@@ -26,7 +27,7 @@ type jwtTokenIssuer struct {
 	issuers func(string) tokens.Issuer
 }
 
-func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity, validFor time.Duration) (tokens.Token, error) {
+func (i *jwtTokenIssuer) Generate(ctx context.Context, identity DataplaneIdentity, validFor time.Duration) (tokens.Token, error) {
 	tags := map[string][]string{}
 	for tagName := range identity.Tags {
 		tags[tagName] = identity.Tags.Values(tagName)
@@ -40,5 +41,5 @@ func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity, validFor time.Dura
 		RegisteredClaims: jwt.RegisteredClaims{},
 	}
 
-	return i.issuers(identity.Mesh).Generate(claims, validFor)
+	return i.issuers(identity.Mesh).Generate(ctx, claims, validFor)
 }
