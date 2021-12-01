@@ -165,6 +165,13 @@ Routes:
                   googleRe2: {}
                   regex: .*sh
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
               - name: regex-query-match-3804d7b8516d7323
@@ -177,6 +184,13 @@ Routes:
               stringMatch:
                 exact: application/json
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
               - name: exact-query-match-cc1370f58a3b5330
@@ -189,6 +203,13 @@ Routes:
               stringMatch:
                 exact: gibberish
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
               - name: exact-query-match-cc1370f58a3b5330

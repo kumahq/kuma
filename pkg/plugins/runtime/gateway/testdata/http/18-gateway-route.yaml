@@ -108,6 +108,13 @@ Routes:
         - match:
             prefix: /
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
               - name: external-httpbin-2528f53d03636b9d

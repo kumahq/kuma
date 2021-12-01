@@ -4,7 +4,10 @@ import (
 	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -41,7 +44,6 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 		)
 	}
 
-	// TODO(jpeach) match the Retry policy for this virtual host.
 	// TODO(jpeach) match the FaultInjection policy for this virtual host.
 
 	// TODO(jpeach) apply additional virtual host configuration.
@@ -60,6 +62,14 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 
 			route.RouteActionRedirect(e.Action.Redirect),
 			route.RouteActionForward(e.Action.Forward),
+		)
+
+		// Generate a retry policy for this route, if there is one.
+		routeBuilder.Configure(
+			retryRouteConfigurers(
+				route.InferForwardingProtocol(e.Action.Forward),
+				retryPolicyFor(e.Action.Forward),
+			)...,
 		)
 
 		for _, m := range e.Match.ExactHeader {
@@ -109,4 +119,109 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 	info.Resources.RouteConfiguration.Configure(envoy_routes.VirtualHost(vh))
 
 	return resources.Get(), nil
+}
+
+// retryRouteConfigurers returns the set of route configurers needed to implement the retry policy (if there is one).
+func retryRouteConfigurers(protocol core_mesh.Protocol, retry *core_mesh.RetryResource) []route.RouteConfigurer {
+	if retry == nil {
+		return nil
+	}
+
+	methodStrings := func(methods []mesh_proto.HttpMethod) []string {
+		var names []string
+		for _, m := range methods {
+			if m != mesh_proto.HttpMethod_NONE {
+				names = append(names, m.String())
+			}
+		}
+		return names
+	}
+
+	grpcConditionStrings := func(conditions []mesh_proto.Retry_Conf_Grpc_RetryOn) []string {
+		var names []string
+		for _, c := range conditions {
+			names = append(names, c.String())
+		}
+		return names
+	}
+
+	configurers := []route.RouteConfigurer{
+		route.RouteActionRetryDefault(protocol),
+	}
+
+	switch protocol {
+	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+		conf := retry.Spec.GetConf().GetHttp()
+		configurers = append(configurers,
+			route.RouteActionRetryOnStatus(conf.GetRetriableStatusCodes()...),
+			route.RouteActionRetryMethods(methodStrings(conf.GetRetriableMethods())...),
+			route.RouteActionRetryTimeout(conf.GetPerTryTimeout().AsDuration()),
+			route.RouteActionRetryCount(conf.GetNumRetries().GetValue()),
+			route.RouteActionRetryBackoff(
+				conf.GetBackOff().GetBaseInterval().AsDuration(),
+				conf.GetBackOff().GetMaxInterval().AsDuration()),
+		)
+	case core_mesh.ProtocolGRPC:
+		conf := retry.Spec.GetConf().GetGrpc()
+		configurers = append(configurers,
+			route.RouteActionRetryOnConditions(grpcConditionStrings(conf.GetRetryOn())...),
+			route.RouteActionRetryTimeout(conf.GetPerTryTimeout().AsDuration()),
+			route.RouteActionRetryCount(conf.GetNumRetries().GetValue()),
+			route.RouteActionRetryBackoff(
+				conf.GetBackOff().GetBaseInterval().AsDuration(),
+				conf.GetBackOff().GetMaxInterval().AsDuration()),
+		)
+	}
+
+	return configurers
+}
+
+// retryPolicyFor returns the retry policy for the given forwarding
+// action. This is conceptually a bit subtle because a forwarding target
+// can have multiple destinations, each of which is a distinct service.
+// However, there are some relatively obvious rules that we can use to
+// determine policy.
+//
+// 1. If all the destinations are the same service, use that policy.
+// 2. If there are multiple destinations, prefer a wildcard policy.
+// 3. Everything else being equal, older policies are preferred.
+func retryPolicyFor(destinations []route.Destination) *core_mesh.RetryResource {
+	seenNames := map[string]bool{}
+	servicePolicies := map[string][]model.Resource{}
+
+	// Index all the retry policies by service name.
+	for _, d := range destinations {
+		p, ok := d.Policies[core_mesh.RetryType]
+		if !ok {
+			continue
+		}
+
+		if seenNames[p.GetMeta().GetName()] {
+			continue
+		}
+
+		svc := d.Destination[mesh_proto.ServiceTag]
+		servicePolicies[svc] = append(servicePolicies[svc], p)
+		seenNames[p.GetMeta().GetName()] = true
+	}
+
+	var candidates []model.Resource
+
+	// If we are forwarding to multiple services, no one service
+	// would be the most specific match, so we should choose the
+	// wildcard policy. Otherwise, we can just take the oldest of
+	// all the matches, since there's no better way to discriminate.
+	candidates = append(candidates, servicePolicies[mesh_proto.MatchAllTag]...)
+	if len(candidates) == 0 {
+		for _, p := range servicePolicies {
+			candidates = append(candidates, p...)
+		}
+	}
+
+	oldest := match.OldestPolicy(candidates)
+	if retry, ok := oldest.(*core_mesh.RetryResource); ok {
+		return retry
+	}
+
+	return nil // TODO(jpeach) default retry policy
 }
