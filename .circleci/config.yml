@@ -160,7 +160,7 @@ executors:
       GO111MODULE: "on"
 
   mac:
-    resource_class: large
+    resource_class: medium
     macos:
       xcode: "12.5.1"
     environment:
