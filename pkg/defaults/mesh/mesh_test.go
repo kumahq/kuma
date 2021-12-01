@@ -48,10 +48,6 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		// and Dataplane Token Signing Key for the mesh exists
 		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, model.DefaultMesh)))
 		Expect(err).ToNot(HaveOccurred())
-
-		// and Envoy Admin Client Signing Key for the mesh exists
-		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, model.DefaultMesh)))
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should ignore subsequent calls to EnsureDefaultMeshResources", func() {
@@ -73,8 +69,6 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		err = resManager.Get(context.Background(), core_mesh.NewRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
 		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, model.DefaultMesh)))
-		Expect(err).ToNot(HaveOccurred())
-		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, model.DefaultMesh)))
 		Expect(err).ToNot(HaveOccurred())
 	})
 })

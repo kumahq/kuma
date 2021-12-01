@@ -9,7 +9,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -41,16 +40,14 @@ func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpoin
 	})
 }
 
-func StaticTlsEndpoints(virtualHostName string, keyPair *tls.KeyPair, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.StaticEndpointsConfigurer{
-		VirtualHostName: virtualHostName,
-		Paths:           paths,
-		KeyPair:         keyPair,
+func ServerSideMTLS(ctx xds_context.Context) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
+		Ctx: ctx,
 	})
 }
 
-func ServerSideMTLS(ctx xds_context.Context) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
+func ServerSideMTLSWithCP(ctx xds_context.Context) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(&v3.ServerSideMTLSWithCPConfigurer{
 		Ctx: ctx,
 	})
 }

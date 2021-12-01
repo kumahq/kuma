@@ -13,6 +13,7 @@ import (
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, error) {
@@ -103,6 +104,25 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 			},
 		},
 		StaticResources: &envoy_bootstrap_v3.Bootstrap_StaticResources{
+			Secrets: []*envoy_tls.Secret{
+				{
+					Name: tls.CpValidationCtx,
+					Type: &envoy_tls.Secret_ValidationContext{
+						ValidationContext: &envoy_tls.CertificateValidationContext{
+							MatchSubjectAltNames: []*envoy_type_matcher_v3.StringMatcher{
+								{
+									MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: parameters.XdsHost},
+								},
+							},
+							TrustedCa: &envoy_core_v3.DataSource{
+								Specifier: &envoy_core_v3.DataSource_InlineBytes{
+									InlineBytes: parameters.CertBytes,
+								},
+							},
+						},
+					},
+				},
+			},
 			Clusters: []*envoy_cluster_v3.Cluster{
 				{
 					// TODO does timeout and keepAlive make sense on this as it uses unix domain sockets?
@@ -185,23 +205,12 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 					TlsParams: &envoy_tls.TlsParameters{
 						TlsMinimumProtocolVersion: envoy_tls.TlsParameters_TLSv1_2,
 					},
-					ValidationContextType: &envoy_tls.CommonTlsContext_ValidationContext{
-						ValidationContext: &envoy_tls.CertificateValidationContext{
-							MatchSubjectAltNames: []*envoy_type_matcher_v3.StringMatcher{
-								{
-									MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: parameters.XdsHost},
-								},
-							},
+					ValidationContextType: &envoy_tls.CommonTlsContext_ValidationContextSdsSecretConfig{
+						ValidationContextSdsSecretConfig: &envoy_tls.SdsSecretConfig{
+							Name: tls.CpValidationCtx,
 						},
 					},
 				},
-			}
-			if parameters.CertBytes != nil {
-				transport.CommonTlsContext.GetValidationContext().TrustedCa = &envoy_core_v3.DataSource{
-					Specifier: &envoy_core_v3.DataSource_InlineBytes{
-						InlineBytes: parameters.CertBytes,
-					},
-				}
 			}
 			any, err := util_proto.MarshalAnyDeterministic(transport)
 			if err != nil {
