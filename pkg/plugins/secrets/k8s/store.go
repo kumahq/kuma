@@ -91,7 +91,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 }
 func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs ...core_store.DeleteOptionsFunc) error {
 	opts := core_store.NewDeleteOptions(fs...)
-	if err := s.Get(context.Background(), r, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
+	if err := s.Get(ctx, r, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
 		return errors.Wrap(err, "failed to delete k8s secret")
 	}
 

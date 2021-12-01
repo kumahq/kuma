@@ -100,7 +100,7 @@ func (s *secretManager) Delete(ctx context.Context, resource model.Resource, fs 
 func (s *secretManager) DeleteAll(ctx context.Context, secrets model.ResourceList, fs ...core_store.DeleteAllOptionsFunc) error {
 	list := &secret_model.SecretResourceList{}
 	opts := core_store.NewDeleteAllOptions(fs...)
-	if err := s.secretStore.List(context.Background(), list, core_store.ListByMesh(opts.Mesh)); err != nil {
+	if err := s.secretStore.List(ctx, list, core_store.ListByMesh(opts.Mesh)); err != nil {
 		return err
 	}
 	for _, item := range list.Items {

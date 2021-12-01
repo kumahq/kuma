@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -28,13 +29,14 @@ type PodConverter struct {
 }
 
 func (p *PodConverter) PodToDataplane(
+	ctx context.Context,
 	dataplane *mesh_k8s.Dataplane,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
 	dataplane.Mesh = util_k8s.MeshFor(pod)
-	dataplaneProto, err := p.DataplaneFor(pod, services, others)
+	dataplaneProto, err := p.DataplaneFor(ctx, pod, services, others)
 	if err != nil {
 		return err
 	}
@@ -46,13 +48,13 @@ func (p *PodConverter) PodToDataplane(
 	return nil
 }
 
-func (p *PodConverter) PodToIngress(zoneIngress *mesh_k8s.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
+func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
 	zoneIngressProto := &mesh_proto.ZoneIngress{}
 	if err := util_proto.FromMap(zoneIngress.Spec, zoneIngressProto); err != nil {
 		return err
 	}
 	// Pass the current dataplane so we won't override available services in Ingress section
-	if err := p.IngressFor(zoneIngressProto, pod, services); err != nil {
+	if err := p.IngressFor(ctx, zoneIngressProto, pod, services); err != nil {
 		return err
 	}
 	spec, err := util_proto.ToMap(zoneIngressProto)
@@ -64,6 +66,7 @@ func (p *PodConverter) PodToIngress(zoneIngress *mesh_k8s.ZoneIngress, pod *kube
 }
 
 func (p *PodConverter) DataplaneFor(
+	ctx context.Context,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
@@ -127,7 +130,7 @@ func (p *PodConverter) DataplaneFor(
 		dataplane.Networking.Inbound = ifaces
 	}
 
-	ofaces, err := p.OutboundInterfacesFor(pod, others)
+	ofaces, err := p.OutboundInterfacesFor(ctx, pod, others)
 	if err != nil {
 		return nil, err
 	}
