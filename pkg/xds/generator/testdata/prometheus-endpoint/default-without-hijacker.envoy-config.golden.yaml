@@ -1,4 +1,19 @@
 resources:
+- name: kuma:metrics:hijacker
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: kuma_metrics_hijacker
+    connectTimeout: 10s
+    loadAssignment:
+      clusterName: kuma:metrics:hijacker
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-mh-backend-01-demo.sock
+    name: kuma:metrics:hijacker
+    type: STATIC
 - name: kuma:metrics:prometheus
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -23,8 +38,8 @@ resources:
               - match:
                   prefix: /non-standard-path
                 route:
-                  cluster: kuma:envoy:admin
-                  prefixRewrite: /stats/prometheus
+                  cluster: kuma:metrics:hijacker
+                  prefixRewrite: /
           statPrefix: kuma_metrics_prometheus
     name: kuma:metrics:prometheus
     trafficDirection: INBOUND
