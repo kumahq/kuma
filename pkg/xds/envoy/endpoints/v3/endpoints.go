@@ -5,103 +5,51 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	proto_wrappers "google.golang.org/protobuf/types/known/wrapperspb"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/util/proto"
 	envoy "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
-
-func CreateStaticEndpoint(clusterName string, address string, port uint32) *envoy_endpoint.ClusterLoadAssignment {
-	return &envoy_endpoint.ClusterLoadAssignment{
-		ClusterName: clusterName,
-		Endpoints: []*envoy_endpoint.LocalityLbEndpoints{{
-			LbEndpoints: []*envoy_endpoint.LbEndpoint{{
-				HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
-					Endpoint: &envoy_endpoint.Endpoint{
-						Address: &envoy_core.Address{
-							Address: &envoy_core.Address_SocketAddress{
-								SocketAddress: &envoy_core.SocketAddress{
-									Protocol: envoy_core.SocketAddress_TCP,
-									Address:  address,
-									PortSpecifier: &envoy_core.SocketAddress_PortValue{
-										PortValue: port,
-									},
-								},
-							},
-						},
-					},
-				},
-			}},
-		}},
-	}
-}
-
-func UpgradeClusterTlsUpstream(address string) *envoy_core.TransportSocket {
-	tlsContext := &envoy_tls.UpstreamTlsContext{
-		AllowRenegotiation: true,
-		Sni:                address,
-	}
-
-	pbst, err := proto.MarshalAnyDeterministic(tlsContext)
-	if err != nil {
-		return nil
-	}
-	return &envoy_core.TransportSocket{
-		Name: "envoy.transport_sockets.tls",
-		ConfigType: &envoy_core.TransportSocket_TypedConfig{
-			TypedConfig: pbst,
-		},
-	}
-}
-
-func CreateStaticEndpointUnixSocket(clusterName string, path string) *envoy_endpoint.ClusterLoadAssignment {
-	return &envoy_endpoint.ClusterLoadAssignment{
-		ClusterName: clusterName,
-		Endpoints: []*envoy_endpoint.LocalityLbEndpoints{{
-			LbEndpoints: []*envoy_endpoint.LbEndpoint{{
-				HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
-					Endpoint: &envoy_endpoint.Endpoint{
-						Address: &envoy_core.Address{
-							Address: &envoy_core.Address_Pipe{
-								Pipe: &envoy_core.Pipe{
-									Path: path,
-								},
-							},
-						},
-					},
-				},
-			}},
-		}},
-	}
-}
 
 func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoint) *envoy_endpoint.ClusterLoadAssignment {
 	localityLbEndpoints := LocalityLbEndpointsMap{}
 
 	for _, ep := range endpoints {
-		lbEndpoints := localityLbEndpoints.Get(ep)
-		lbEndpoints.LbEndpoints = append(lbEndpoints.LbEndpoints, &envoy_endpoint.LbEndpoint{
-			LoadBalancingWeight: &proto_wrappers.UInt32Value{
-				Value: ep.Weight,
-			},
+		var address *envoy_core.Address
+		if ep.UnixDomainPath != "" {
+			address = &envoy_core.Address{
+				Address: &envoy_core.Address_Pipe{
+					Pipe: &envoy_core.Pipe{
+						Path: ep.UnixDomainPath,
+					},
+				},
+			}
+		} else {
+			address = &envoy_core.Address{
+				Address: &envoy_core.Address_SocketAddress{
+					SocketAddress: &envoy_core.SocketAddress{
+						Protocol: envoy_core.SocketAddress_TCP,
+						Address:  ep.Target,
+						PortSpecifier: &envoy_core.SocketAddress_PortValue{
+							PortValue: ep.Port,
+						},
+					},
+				},
+			}
+		}
+		lbEndpoint := &envoy_endpoint.LbEndpoint{
 			Metadata: envoy.EndpointMetadata(ep.Tags),
 			HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
 				Endpoint: &envoy_endpoint.Endpoint{
-					Address: &envoy_core.Address{
-						Address: &envoy_core.Address_SocketAddress{
-							SocketAddress: &envoy_core.SocketAddress{
-								Protocol: envoy_core.SocketAddress_TCP,
-								Address:  ep.Target,
-								PortSpecifier: &envoy_core.SocketAddress_PortValue{
-									PortValue: ep.Port,
-								},
-							},
-						},
-					},
+					Address: address,
 				}},
-		})
+		}
+		if ep.Weight > 0 {
+			lbEndpoint.LoadBalancingWeight = &proto_wrappers.UInt32Value{
+				Value: ep.Weight,
+			}
+		}
+		localityLbEndpoints.append(ep, lbEndpoint)
 	}
 
 	for _, lbEndpoints := range localityLbEndpoints {
@@ -111,25 +59,13 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 
 	return &envoy_endpoint.ClusterLoadAssignment{
 		ClusterName: clusterName,
-		Endpoints:   localityLbEndpoints.AsSlice(),
+		Endpoints:   localityLbEndpoints.asSlice(),
 	}
-}
-
-func sortLbEndpoints(lbEndpoints []*envoy_endpoint.LbEndpoint) {
-	sort.Slice(lbEndpoints, func(i, j int) bool {
-		left, right := lbEndpoints[i], lbEndpoints[j]
-		leftAddr := left.GetEndpoint().GetAddress().GetSocketAddress().GetAddress()
-		rightAddr := right.GetEndpoint().GetAddress().GetSocketAddress().GetAddress()
-		if leftAddr == rightAddr {
-			return left.GetEndpoint().GetAddress().GetSocketAddress().GetPortValue() < right.GetEndpoint().GetAddress().GetSocketAddress().GetPortValue()
-		}
-		return leftAddr < rightAddr
-	})
 }
 
 type LocalityLbEndpointsMap map[string]*envoy_endpoint.LocalityLbEndpoints
 
-func (l LocalityLbEndpointsMap) Get(ep core_xds.Endpoint) *envoy_endpoint.LocalityLbEndpoints {
+func (l LocalityLbEndpointsMap) append(ep core_xds.Endpoint, endpoint *envoy_endpoint.LbEndpoint) {
 	key := ep.LocalityString()
 	if _, ok := l[key]; !ok {
 		var locality *envoy_core.Locality
@@ -147,14 +83,14 @@ func (l LocalityLbEndpointsMap) Get(ep core_xds.Endpoint) *envoy_endpoint.Locali
 			Priority:    priority,
 		}
 	}
-
-	return l[key]
+	l[key].LbEndpoints = append(l[key].LbEndpoints, endpoint)
 }
 
-func (l LocalityLbEndpointsMap) AsSlice() []*envoy_endpoint.LocalityLbEndpoints {
-	slice := make([]*envoy_endpoint.LocalityLbEndpoints, 0)
+func (l LocalityLbEndpointsMap) asSlice() []*envoy_endpoint.LocalityLbEndpoints {
+	slice := make([]*envoy_endpoint.LocalityLbEndpoints, 0, len(l))
 
 	for _, lle := range l {
+		sortLbEndpoints(lle.LbEndpoints)
 		slice = append(slice, lle)
 	}
 
@@ -166,4 +102,16 @@ func (l LocalityLbEndpointsMap) AsSlice() []*envoy_endpoint.LocalityLbEndpoints 
 	})
 
 	return slice
+}
+
+func sortLbEndpoints(lbEndpoints []*envoy_endpoint.LbEndpoint) {
+	sort.Slice(lbEndpoints, func(i, j int) bool {
+		left, right := lbEndpoints[i], lbEndpoints[j]
+		leftAddr := left.GetEndpoint().GetAddress().GetSocketAddress().GetAddress()
+		rightAddr := right.GetEndpoint().GetAddress().GetSocketAddress().GetAddress()
+		if leftAddr == rightAddr {
+			return left.GetEndpoint().GetAddress().GetSocketAddress().GetPortValue() < right.GetEndpoint().GetAddress().GetSocketAddress().GetPortValue()
+		}
+		return leftAddr < rightAddr
+	})
 }

@@ -260,9 +260,6 @@ conf:
 
 	Context("when targeting an external service", func() {
 		BeforeEach(func() {
-			if IsIPv6() {
-				Skip("Skipping these tests because of: https://github.com/kumahq/kuma/issues/3096")
-			}
 			opt := append(KumaUniversalDeployOpts, WithVerbose())
 			SetupCluster(NewClusterSetup().
 				Install(Kuma(config_core.Standalone, opt...)).

@@ -159,7 +159,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 	return buildClusterResource(
 		dest,
 		newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
-			clusters.StrictDNSCluster(dest.Destination[mesh_proto.ServiceTag], endpoints, info.Dataplane.IsIPv6()),
+			clusters.ProvidedEndpointCluster(dest.Destination[mesh_proto.ServiceTag], info.Dataplane.IsIPv6(), endpoints...),
 			clusters.ClientSideTLS(endpoints),
 		),
 	)

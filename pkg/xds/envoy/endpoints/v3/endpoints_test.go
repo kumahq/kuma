@@ -12,30 +12,6 @@ import (
 
 var _ = Describe("Endpoints", func() {
 
-	Describe("CreateStaticEndpoint()", func() {
-		It("should generate 'static' Endpoints", func() {
-			// given
-			expected := `
-            clusterName: localhost:8080
-            endpoints:
-            - lbEndpoints:
-              - endpoint:
-                  address:
-                    socketAddress:
-                      address: 127.0.0.1
-                      portValue: 8080
-`
-			// when
-			resource := CreateStaticEndpoint("localhost:8080", "127.0.0.1", 8080)
-
-			// then
-			actual, err := util_proto.ToYAML(resource)
-
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
-		})
-	})
-
 	Describe("ClusterLoadAssignment()", func() {
 		type testCase struct {
 			cluster   string
