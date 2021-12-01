@@ -195,8 +195,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 			if service.HasExternalService() {
 				edsClusterBuilder.
-					Configure(envoy_clusters.StrictDNSCluster(cluster.Name(), proxy.Routing.OutboundTargets[serviceName],
-						proxy.Dataplane.IsIPv6())).
+					Configure(envoy_clusters.ProvidedEndpointCluster(cluster.Name(), proxy.Dataplane.IsIPv6(), proxy.Routing.OutboundTargets[serviceName]...)).
 					Configure(envoy_clusters.ClientSideTLS(proxy.Routing.OutboundTargets[serviceName]))
 				switch protocol {
 				case core_mesh.ProtocolHTTP:

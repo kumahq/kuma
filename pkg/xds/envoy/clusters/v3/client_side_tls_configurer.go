@@ -20,7 +20,7 @@ var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 
 func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	for _, ep := range c.Endpoints {
-		if ep.ExternalService.TLSEnabled {
+		if ep.ExternalService != nil && ep.ExternalService.TLSEnabled {
 			sni := ep.ExternalService.ServerName
 			if ep.ExternalService.ServerName == "" && govalidator.IsDNSName(ep.Target) {
 				// SNI can only be a hostname, not IP

@@ -71,6 +71,34 @@ var _ = Describe("TracingProxyGenerator", func() {
 			// and output matches golden files
 			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "tracing", given.expected)))
 		},
+		Entry("should create cluster for Datadog", testCase{
+			proxy: &core_xds.Proxy{
+				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
+					},
+				},
+				APIVersion: envoy_common.APIV3,
+				Policies: core_xds.MatchedPolicies{
+					TracingBackend: &mesh_proto.TracingBackend{
+						Name: "datadog",
+						Type: mesh_proto.TracingDatadogType,
+						Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
+							Address: "localhost",
+							Port:    2304,
+						}),
+					},
+				},
+			},
+			expected: "datadog.envoy-config.golden.yaml",
+		}),
 		Entry("should create cluster for Zipkin", testCase{
 			proxy: &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
