@@ -3,7 +3,6 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
-    dnsLookupFamily: V4_ONLY
     loadAssignment:
       clusterName: es2-_0_
       endpoints:
@@ -21,7 +20,7 @@ resources:
               envoy.transport_socket_match:
                 kuma.io/protocol: http2
     name: es2-_0_
-    type: STRICT_DNS
+    type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions

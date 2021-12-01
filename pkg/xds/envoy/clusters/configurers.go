@@ -7,7 +7,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
-	endpoints_v3 "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 )
 
 func OutlierDetection(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBuilderOpt {
@@ -53,25 +52,25 @@ func ClientSideTLS(endpoints []core_xds.Endpoint) ClusterBuilderOpt {
 	})
 }
 
-func DNSCluster(name string, address string, port uint32, isHttps bool) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.DnsClusterConfigurer{
-			Name:    name,
-			Address: address,
-			Port:    port,
-			IsHttps: isHttps,
-		})
-		config.AddV3(&v3.AltStatNameConfigurer{})
-		config.AddV3(&v3.TimeoutConfigurer{})
-	})
-}
-
 func EdsCluster(name string) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.EdsClusterConfigurer{
 			Name: name,
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
+	})
+}
+
+// ProvidedEndpointCluster sets the cluster with the defined endpoints, this is useful when endpoints are not discovered using EDS so we don't use EdsCluster
+func ProvidedEndpointCluster(name string, hasIPv6 bool, endpoints ...core_xds.Endpoint) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV3(&v3.ProvidedEndpointClusterConfigurer{
+			Name:      name,
+			Endpoints: endpoints,
+			HasIPv6:   hasIPv6,
+		})
+		config.AddV3(&v3.AltStatNameConfigurer{})
+		config.AddV3(&v3.TimeoutConfigurer{})
 	})
 }
 
@@ -140,39 +139,6 @@ func PassThroughCluster(name string) ClusterBuilderOpt {
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
 		config.AddV3(&v3.TimeoutConfigurer{})
-	})
-}
-
-func StaticCluster(name string, address string, port uint32) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.StaticClusterConfigurer{
-			Name:           name,
-			LoadAssignment: endpoints_v3.CreateStaticEndpoint(name, address, port),
-		})
-		config.AddV3(&v3.AltStatNameConfigurer{})
-		config.AddV3(&v3.TimeoutConfigurer{})
-	})
-}
-
-func StaticClusterUnixSocket(name string, path string) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.StaticClusterConfigurer{
-			Name:           name,
-			LoadAssignment: endpoints_v3.CreateStaticEndpointUnixSocket(name, path),
-		})
-		config.AddV3(&v3.AltStatNameConfigurer{})
-		config.AddV3(&v3.TimeoutConfigurer{})
-	})
-}
-
-func StrictDNSCluster(name string, endpoints []core_xds.Endpoint, hasIPv6 bool) ClusterBuilderOpt {
-	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
-		config.AddV3(&v3.StrictDNSClusterConfigurer{
-			Name:      name,
-			Endpoints: endpoints,
-			HasIPv6:   hasIPv6,
-		})
-		config.AddV3(&v3.AltStatNameConfigurer{})
 	})
 }
 

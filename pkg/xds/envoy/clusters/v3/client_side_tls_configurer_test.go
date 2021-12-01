@@ -64,7 +64,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             name: envoy.transport_sockets.tls
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-              commonTlsContext: {}
               sni: httpbin.org
         type: EDS
 `}),
@@ -96,7 +95,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             name: envoy.transport_sockets.tls
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-              commonTlsContext: {}
         type: EDS
 `}),
 		Entry("cluster with mTLS and certs", testCase{
