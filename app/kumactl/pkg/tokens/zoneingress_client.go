@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -20,7 +21,7 @@ func NewZoneIngressTokenClient(client util_http.Client) ZoneIngressTokenClient {
 }
 
 type ZoneIngressTokenClient interface {
-	Generate(zone string) (string, error)
+	Generate(zone string, validFor time.Duration) (string, error)
 }
 
 type httpZoneIngressTokenClient struct {
@@ -29,9 +30,10 @@ type httpZoneIngressTokenClient struct {
 
 var _ ZoneIngressTokenClient = &httpZoneIngressTokenClient{}
 
-func (h *httpZoneIngressTokenClient) Generate(zone string) (string, error) {
+func (h *httpZoneIngressTokenClient) Generate(zone string, validFor time.Duration) (string, error) {
 	tokenReq := &types.ZoneIngressTokenRequest{
-		Zone: zone,
+		Zone:     zone,
+		ValidFor: validFor.String(),
 	}
 	reqBytes, err := json.Marshal(tokenReq)
 	if err != nil {

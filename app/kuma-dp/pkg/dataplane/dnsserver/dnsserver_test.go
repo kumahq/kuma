@@ -177,7 +177,7 @@ var _ = Describe("DNS Server", func() {
 			cfg := kuma_dp.Config{
 				DNS: kuma_dp.DNS{
 					Enabled:           true,
-					CoreDNSBinaryPath: filepath.Join("testdata"),
+					CoreDNSBinaryPath: "testdata",
 					ConfigDir:         configDir,
 				},
 			}

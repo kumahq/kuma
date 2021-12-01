@@ -1,7 +1,9 @@
-FROM frolvlad/alpine-glibc:alpine-3.14_glibc-2.33
+FROM frolvlad/alpine-glibc:alpine-3.15_glibc-2.33
+
+ARG ENVOY_VERSION
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
-ADD $KUMA_ROOT/build/artifacts-linux-amd64/envoy/envoy /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/envoy/envoy-$ENVOY_VERSION-alpine /usr/bin/envoy
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/coredns/coredns /usr/bin
 
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE \

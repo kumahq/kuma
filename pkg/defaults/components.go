@@ -16,12 +16,20 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/tokens"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
 var log = core.Log.WithName("defaults")
 
 func Setup(runtime runtime.Runtime) error {
 	defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
+
+	signingKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
+	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(signingKeyManager, log)); err != nil {
+		return err
+	}
+
 	return runtime.Add(defaultsComponent)
 }
 
@@ -70,16 +78,6 @@ func (d *defaultsComponent) Start(stop <-chan struct{}) error {
 			}
 		}()
 	}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := doWithRetry(ctx, d.createZoneIngressSigningKeyIfNotExist); err != nil {
-			// Retry this operation since on Kubernetes Mesh needs to be validated and set default values.
-			// This code can execute before the control plane is ready therefore hooks can fail.
-			errChan <- errors.Wrap(err, "could not create the default Control Plane Token's Signing Key")
-		}
-	}()
 
 	done := make(chan struct{})
 	go func() {

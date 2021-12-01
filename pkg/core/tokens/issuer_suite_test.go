@@ -1,4 +1,4 @@
-package issuer_test
+package tokens_test
 
 import (
 	"testing"

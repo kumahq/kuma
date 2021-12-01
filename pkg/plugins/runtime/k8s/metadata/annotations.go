@@ -19,7 +19,8 @@ const (
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
 
 	// KumaGatewayAnnotation allows to mark Gateway pod,
-	// inbound listeners won't be generated in that case
+	// inbound listeners won't be generated in that case.
+	// It can be used to mark a pod as providing a builtin gateway.
 	KumaGatewayAnnotation = "kuma.io/gateway"
 
 	// KumaIngressAnnotation allows to mark pod with Kuma Ingress
@@ -85,6 +86,12 @@ const (
 // Annotations related to the gateway
 const (
 	IngressServiceUpstream = "ingress.kubernetes.io/service-upstream"
+)
+
+const (
+	// Used with the KumaGatewayAnnotation to mark a pod as providing a builtin
+	// gateway.
+	AnnotationBuiltin = "builtin"
 )
 
 const (

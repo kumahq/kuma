@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -25,7 +26,7 @@ type staticZoneIngressTokenGenerator struct {
 
 var _ tokens.ZoneIngressTokenClient = &staticZoneIngressTokenGenerator{}
 
-func (s *staticZoneIngressTokenGenerator) Generate(zone string) (string, error) {
+func (s *staticZoneIngressTokenGenerator) Generate(zone string, validFor time.Duration) (string, error) {
 	if s.err != nil {
 		return "", s.err
 	}

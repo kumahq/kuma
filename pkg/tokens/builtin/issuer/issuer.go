@@ -1,72 +1,39 @@
 package issuer
 
 import (
+	"context"
+	"time"
+
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/tokens"
 )
-
-type Token = string
-
-type DataplaneIdentity struct {
-	Name string
-	Mesh string
-	Tags mesh_proto.MultiValueTagSet
-	Type mesh_proto.ProxyType
-}
 
 // DataplaneTokenIssuer issues Dataplane Tokens used then for proving identity of the dataplanes.
 // Issued token can be bound by name, mesh or tags so you can pick your level of security.
-// See pkg/sds/auth/universal/authenticator.go to check algorithm for authentication
 type DataplaneTokenIssuer interface {
-	Generate(identity DataplaneIdentity) (Token, error)
-	Validate(token Token, meshName string) (DataplaneIdentity, error)
+	Generate(ctx context.Context, identity DataplaneIdentity, validFor time.Duration) (tokens.Token, error)
 }
 
-type claims struct {
-	Name string
-	Mesh string
-	Tags map[string][]string
-	Type string
-	jwt.RegisteredClaims
-}
-
-type SigningKeyAccessor func(meshName string) ([]byte, error)
-
-func NewDataplaneTokenIssuer(signingKeyAccessor SigningKeyAccessor) DataplaneTokenIssuer {
-	return &jwtTokenIssuer{signingKeyAccessor}
+func NewDataplaneTokenIssuer(issuers func(string) tokens.Issuer) DataplaneTokenIssuer {
+	return &jwtTokenIssuer{
+		issuers: issuers,
+	}
 }
 
 var _ DataplaneTokenIssuer = &jwtTokenIssuer{}
 
 type jwtTokenIssuer struct {
-	signingKeyAccessor SigningKeyAccessor
+	issuers func(string) tokens.Issuer
 }
 
-func (i *jwtTokenIssuer) signingKey(meshName string) ([]byte, error) {
-	signingKey, err := i.signingKeyAccessor(meshName)
-	if err != nil {
-		return nil, err
-	}
-	if len(signingKey) == 0 {
-		return nil, SigningKeyNotFound(meshName)
-	}
-	return signingKey, nil
-}
-
-func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (Token, error) {
-	signingKey, err := i.signingKey(identity.Mesh)
-	if err != nil {
-		return "", err
-	}
-
+func (i *jwtTokenIssuer) Generate(ctx context.Context, identity DataplaneIdentity, validFor time.Duration) (tokens.Token, error) {
 	tags := map[string][]string{}
 	for tagName := range identity.Tags {
 		tags[tagName] = identity.Tags.Values(tagName)
 	}
 
-	c := claims{
+	claims := &DataplaneClaims{
 		Name:             identity.Name,
 		Mesh:             identity.Mesh,
 		Tags:             tags,
@@ -74,37 +41,5 @@ func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (Token, error) {
 		RegisteredClaims: jwt.RegisteredClaims{},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
-	tokenString, err := token.SignedString(signingKey)
-	if err != nil {
-		return "", errors.Wrap(err, "could not sign a token")
-	}
-	return tokenString, nil
-}
-
-func (i *jwtTokenIssuer) Validate(rawToken Token, meshName string) (DataplaneIdentity, error) {
-	signingKey, err := i.signingKey(meshName)
-	if err != nil {
-		return DataplaneIdentity{}, err
-	}
-
-	c := &claims{}
-
-	token, err := jwt.ParseWithClaims(rawToken, c, func(*jwt.Token) (interface{}, error) {
-		return signingKey, nil
-	})
-	if err != nil {
-		return DataplaneIdentity{}, errors.Wrap(err, "could not parse token")
-	}
-	if !token.Valid {
-		return DataplaneIdentity{}, errors.New("token is not valid")
-	}
-
-	id := DataplaneIdentity{
-		Mesh: c.Mesh,
-		Name: c.Name,
-		Tags: mesh_proto.MultiValueTagSetFrom(c.Tags),
-		Type: mesh_proto.ProxyType(c.Type),
-	}
-	return id, nil
+	return i.issuers(identity.Mesh).Generate(ctx, claims, validFor)
 }

@@ -41,8 +41,8 @@ docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp ## Dev: Build 
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
 
 .PHONY: docker/build/kuma-dp
-docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/coredns/coredns ## Dev: Build `kuma-dp` Docker image using existing artifact
-	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
+docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/coredns/coredns build/artifacts-linux-amd64/envoy/envoy ## Dev: Build `kuma-dp` Docker image using existing artifact
+	docker build -t $(KUMA_DP_DOCKER_IMAGE) --build-arg ENVOY_VERSION=${ENVOY_VERSION} -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
 .PHONY: docker/build/kumactl
 docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl ## Dev: Build `kumactl` Docker image using existing artifact
@@ -58,8 +58,8 @@ docker/build/kuma-prometheus-sd: build/artifacts-linux-amd64/kuma-prometheus-sd/
 
 .PHONY: docker/build/kuma-universal
 docker/build/kuma-universal: ## Dev: Build `kuma-universal` Docker image using existing artifact
-docker/build/kuma-universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/kumactl/kumactl build/artifacts-linux-amd64/test-server/test-server
-	docker build -t kuma-universal -f test/dockerfiles/Dockerfile.universal .
+docker/build/kuma-universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/kumactl/kumactl build/artifacts-linux-amd64/test-server/test-server build/artifacts-linux-amd64/envoy/envoy
+	docker build -t kuma-universal --build-arg ENVOY_VERSION=${ENVOY_VERSION}  -f test/dockerfiles/Dockerfile.universal .
 	docker tag kuma-universal $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
 .PHONY: image/kuma-cp

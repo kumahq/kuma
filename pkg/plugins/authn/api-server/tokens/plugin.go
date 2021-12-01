@@ -6,6 +6,7 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	config_access "github.com/kumahq/kuma/pkg/config/access"
 	"github.com/kumahq/kuma/pkg/core/plugins"
+	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/access"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/server"
@@ -32,8 +33,10 @@ func init() {
 
 func (c plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenticator, error) {
 	validator := issuer.NewUserTokenValidator(
-		issuer.NewSigningKeyAccessor(context.ResourceManager()),
-		issuer.NewTokenRevocations(context.ResourceManager()),
+		core_tokens.NewValidator(
+			core_tokens.NewSigningKeyAccessor(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix),
+			core_tokens.NewRevocations(context.ResourceManager(), issuer.UserTokenRevocationsGlobalSecretKey),
+		),
 	)
 	return UserTokenAuthenticator(validator), nil
 }
@@ -43,14 +46,16 @@ func (c plugin) BeforeBootstrap(*plugins.MutablePluginContext, plugins.PluginCon
 }
 
 func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plugins.PluginConfig) error {
-	if err := context.ComponentManager().Add(issuer.NewDefaultSigningKeyComponent(issuer.NewSigningKeyManager(context.ResourceManager()))); err != nil {
+	signingKeyManager := core_tokens.NewSigningKeyManager(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix)
+	component := core_tokens.NewDefaultSigningKeyComponent(signingKeyManager, log)
+	if err := context.ComponentManager().Add(component); err != nil {
 		return err
 	}
 	accessFn, ok := AccessStrategies[context.Config().Access.Type]
 	if !ok {
 		return errors.Errorf("no Access strategy for type %q", context.Config().Access.Type)
 	}
-	tokenIssuer := issuer.NewUserTokenIssuer(issuer.NewSigningKeyManager(context.ResourceManager()))
+	tokenIssuer := issuer.NewUserTokenIssuer(core_tokens.NewTokenIssuer(signingKeyManager))
 	if context.Config().ApiServer.Authn.Tokens.BootstrapAdminToken {
 		if err := context.ComponentManager().Add(NewAdminTokenBootstrap(tokenIssuer, context.ResourceManager(), context.Config())); err != nil {
 			return err

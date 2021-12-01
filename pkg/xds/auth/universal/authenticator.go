@@ -13,11 +13,11 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
-func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer, zoneIngressIssuer zoneingress.TokenIssuer, zone string) auth.Authenticator {
+func NewAuthenticator(dataplaneValidator builtin_issuer.Validator, zoneIngressValidator zoneingress.Validator, zone string) auth.Authenticator {
 	return &universalAuthenticator{
-		issuer:            issuer,
-		zoneIngressIssuer: zoneIngressIssuer,
-		zone:              zone,
+		dataplaneValidator:   dataplaneValidator,
+		zoneIngressValidator: zoneIngressValidator,
+		zone:                 zone,
 	}
 }
 
@@ -31,9 +31,9 @@ func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer, zoneIngressIss
 // with inbounds: 1) kuma.io/service:web 2) kuma.io/service:web-api, you need token for both values kuma.io/service=web,web-api
 // Dataplane also needs to have all tags defined in the token
 type universalAuthenticator struct {
-	issuer            builtin_issuer.DataplaneTokenIssuer
-	zoneIngressIssuer zoneingress.TokenIssuer
-	zone              string
+	dataplaneValidator   builtin_issuer.Validator
+	zoneIngressValidator zoneingress.Validator
+	zone                 string
 }
 
 var _ auth.Authenticator = &universalAuthenticator{}
@@ -50,7 +50,7 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, resource mode
 }
 
 func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
-	dpIdentity, err := u.issuer.Validate(credential, dataplane.Meta.GetMesh())
+	dpIdentity, err := u.dataplaneValidator.Validate(ctx, credential, dataplane.Meta.GetMesh())
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 }
 
 func (u *universalAuthenticator) authZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
-	identity, err := u.zoneIngressIssuer.Validate(credential)
+	identity, err := u.zoneIngressValidator.Validate(ctx, credential)
 	if err != nil {
 		return err
 	}

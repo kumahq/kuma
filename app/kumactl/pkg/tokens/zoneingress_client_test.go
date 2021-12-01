@@ -1,14 +1,15 @@
 package tokens_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
@@ -23,12 +24,8 @@ type zoneIngressStaticTokenIssuer struct {
 
 var _ zoneingress.TokenIssuer = &zoneIngressStaticTokenIssuer{}
 
-func (z *zoneIngressStaticTokenIssuer) Generate(identity zoneingress.Identity) (zoneingress.Token, error) {
+func (z *zoneIngressStaticTokenIssuer) Generate(ctx context.Context, identity zoneingress.Identity, validFor time.Duration) (zoneingress.Token, error) {
 	return fmt.Sprintf("token-for-%s", identity.Zone), nil
-}
-
-func (z *zoneIngressStaticTokenIssuer) Validate(token zoneingress.Token) (zoneingress.Identity, error) {
-	return zoneingress.Identity{}, errors.New("not implemented")
 }
 
 var _ = Describe("Zone Ingress Tokens Client", func() {
@@ -55,12 +52,12 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 
 		// wait for server
 		Eventually(func() error {
-			_, err := client.Generate("my-zone-1")
+			_, err := client.Generate("my-zone-1", 24*time.Hour)
 			return err
 		}, "5s", "100ms").ShouldNot(HaveOccurred())
 
 		// when
-		token, err := client.Generate("my-zone-1")
+		token, err := client.Generate("my-zone-1", 24*time.Hour)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -86,7 +83,7 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = client.Generate("my-zone-2")
+		_, err = client.Generate("my-zone-2", 24*time.Hour)
 
 		// then
 		Expect(err).To(MatchError("(500): Internal Server Error"))

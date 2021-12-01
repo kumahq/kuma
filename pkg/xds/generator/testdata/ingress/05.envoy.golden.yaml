@@ -1,10 +1,6 @@
 resources:
 - name: backend
   resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend
-- name: backend
-  resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     edsClusterConfig:
@@ -19,6 +15,10 @@ resources:
         - mesh
     name: backend
     type: EDS
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend
 - name: inbound:10.0.0.1:10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
