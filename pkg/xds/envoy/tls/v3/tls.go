@@ -86,19 +86,26 @@ func NewSecretConfigSource(secretName string) *envoy_tls.SdsSecretConfig {
 }
 
 func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool, hostname string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
-	var tlsCertificates []*envoy_tls.TlsCertificate
+	tlsContext := &envoy_tls.UpstreamTlsContext{
+		AllowRenegotiation: allowRenegotiation,
+		Sni:                sni,
+	}
 	if cert != nil && key != nil {
-		tlsCertificates = []*envoy_tls.TlsCertificate{
-			{
-				CertificateChain: dataSourceFromBytes(cert),
-				PrivateKey:       dataSourceFromBytes(key),
+		tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{
+			TlsCertificates: []*envoy_tls.TlsCertificate{
+				{
+					CertificateChain: dataSourceFromBytes(cert),
+					PrivateKey:       dataSourceFromBytes(key),
+				},
 			},
 		}
 	}
 
-	var validationContextType *envoy_tls.CommonTlsContext_ValidationContext
 	if ca != nil {
-		validationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
+		if tlsContext.CommonTlsContext == nil {
+			tlsContext.CommonTlsContext = &envoy_tls.CommonTlsContext{}
+		}
+		tlsContext.CommonTlsContext.ValidationContextType = &envoy_tls.CommonTlsContext_ValidationContext{
 			ValidationContext: &envoy_tls.CertificateValidationContext{
 				TrustedCa: dataSourceFromBytes(ca),
 				MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{
@@ -111,15 +118,7 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 			},
 		}
 	}
-
-	return &envoy_tls.UpstreamTlsContext{
-		AllowRenegotiation: allowRenegotiation,
-		Sni:                sni,
-		CommonTlsContext: &envoy_tls.CommonTlsContext{
-			TlsCertificates:       tlsCertificates,
-			ValidationContextType: validationContextType,
-		},
-	}, nil
+	return tlsContext, nil
 }
 
 func dataSourceFromBytes(bytes []byte) *envoy_core.DataSource {

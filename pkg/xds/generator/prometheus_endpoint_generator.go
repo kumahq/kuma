@@ -62,8 +62,11 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	const statsPath = "/"
 	metricsHijackerClusterName := envoy_names.GetMetricsHijackerClusterName()
 	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-		Configure(envoy_clusters.StaticClusterUnixSocket(metricsHijackerClusterName,
-			envoy_common.MetricsHijackerSocketName(proxy.Dataplane.Meta.GetName(), proxy.Dataplane.Meta.GetMesh()))).
+		Configure(envoy_clusters.ProvidedEndpointCluster(metricsHijackerClusterName, proxy.Dataplane.IsIPv6(),
+			core_xds.Endpoint{
+				UnixDomainPath: envoy_common.MetricsHijackerSocketName(proxy.Dataplane.Meta.GetName(), proxy.Dataplane.Meta.GetMesh()),
+			},
+		)).
 		Build()
 	if err != nil {
 		return nil, err

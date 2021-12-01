@@ -1,18 +1,18 @@
 resources:
-- name: tracing:zipkin
+- name: tracing:datadog
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: tracing_zipkin
+    altStatName: tracing_datadog
     connectTimeout: 10s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
-      clusterName: tracing:zipkin
+      clusterName: tracing:datadog
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
               socketAddress:
-                address: zipkin.us
-                portValue: 9090
-    name: tracing:zipkin
+                address: localhost
+                portValue: 2304
+    name: tracing:datadog
     type: STRICT_DNS
