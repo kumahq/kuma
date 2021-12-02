@@ -1,6 +1,13 @@
 name: "Lint PRs"
 
-on: pull_request
+on:
+  pull_request:
+    types:
+      - edited
+      - opened
+      - reopened
+      - synchronized
+
 
 jobs:
   # This job checks all PR commits and the PR title using
