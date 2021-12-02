@@ -18,6 +18,10 @@ jobs:
       - uses: actions/setup-node@v2
       - run: npm install -g @commitlint/cli @commitlint/config-conventional
       - name: "Check commits"
+        # We don't care about the commits because we squash merge, but if
+        # there's only one the default merge commit message is the single commit
+        # message
+        if: github.event.pull_request.commits == 1
         run: |
           commitlint --config .github/commitlint.config.js --from="origin/${{ github.event.pull_request.base.ref }}"
       - name: "Check PR title"
