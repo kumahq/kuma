@@ -124,7 +124,8 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	for key, value := range tags {
-		if value == "" {
+		// we don't want to convert labels like kuma.io/sidecar-injection: enabled into tag
+		if strings.HasPrefix(key, "kuma.io/") || value == "" {
 			delete(tags, key)
 		}
 	}

@@ -216,7 +216,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: %s
-  annotations:
+  labels:
     kuma.io/sidecar-injection: "enabled"
 `, namespace))
 }
