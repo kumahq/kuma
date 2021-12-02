@@ -2,12 +2,15 @@ package route
 
 import (
 	"net/http"
+	"strings"
+	"time"
 
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
@@ -335,6 +338,149 @@ func RouteActionForward(destinations []Destination) RouteConfigurer {
 						TotalWeight: util_proto.UInt32(total),
 					}},
 			},
+		}
+
+		return nil
+	})
+}
+
+// RouteActionRetryDefault initializes the retry policy with defaults appropriate for the protocol.
+func RouteActionRetryDefault(protocol core_mesh.Protocol) RouteConfigurer {
+	// The retry policy only supports HTTP and GRPC.
+	switch protocol {
+	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+	default:
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		route := r.GetRoute()
+		if route == nil {
+			return nil
+		}
+
+		p := &envoy_config_route.RetryPolicy{}
+
+		switch protocol {
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+			p.RetryOn = envoy_listeners.HttpRetryOnDefault
+		case core_mesh.ProtocolGRPC:
+			p.RetryOn = envoy_listeners.GrpcRetryOnDefault
+		}
+
+		route.RetryPolicy = p
+		return nil
+	})
+}
+
+// RouteActionRetryTimeout sets the per-try retry timeout.
+func RouteActionRetryTimeout(perTryTimeout time.Duration) RouteConfigurer {
+	if perTryTimeout == 0 {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if p := r.GetRoute().GetRetryPolicy(); p != nil {
+			p.PerTryTimeout = util_proto.Duration(perTryTimeout)
+		}
+
+		return nil
+	})
+}
+
+// RouteActionRetryCount sets the number of retries to attempt.
+func RouteActionRetryCount(numRetries uint32) RouteConfigurer {
+	if numRetries == 0 {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if p := r.GetRoute().GetRetryPolicy(); p != nil {
+			p.NumRetries = util_proto.UInt32(numRetries)
+		}
+
+		return nil
+	})
+}
+
+// RouteActionRetryBackoff sets the backoff policy for retries.
+func RouteActionRetryBackoff(interval time.Duration, max time.Duration) RouteConfigurer {
+	// the base interval is required, but Envoy will default the max.
+	if interval == 0 {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if p := r.GetRoute().GetRetryPolicy(); p != nil {
+			p.RetryBackOff = &envoy_config_route.RetryPolicy_RetryBackOff{
+				BaseInterval: util_proto.Duration(interval),
+			}
+
+			if max > 0 {
+				p.RetryBackOff.MaxInterval = util_proto.Duration(max)
+			}
+		}
+
+		return nil
+	})
+}
+
+// RouteActionRetryMethods sets the HTTP methods that should trigger retries.
+func RouteActionRetryMethods(httpMethod ...string) RouteConfigurer {
+	if len(httpMethod) == 0 {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		p := r.GetRoute().GetRetryPolicy()
+		if p != nil {
+			return nil
+		}
+
+		for _, m := range httpMethod {
+			p.RetriableRequestHeaders = append(p.RetriableRequestHeaders,
+				&envoy_config_route.HeaderMatcher{
+					Name: ":method",
+					HeaderMatchSpecifier: &envoy_config_route.HeaderMatcher_ExactMatch{
+						ExactMatch: m,
+					},
+				})
+		}
+
+		return nil
+	})
+}
+
+// RouteActionRetryOnStatus sets the HTTP status codes for triggering retries.
+func RouteActionRetryOnStatus(httpStatus ...uint32) RouteConfigurer {
+	if len(httpStatus) == 0 {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if p := r.GetRoute().GetRetryPolicy(); p != nil {
+			p.RetryOn = envoy_listeners.HttpRetryOnRetriableStatusCodes
+			p.RetriableStatusCodes = make([]uint32, len(httpStatus))
+			copy(p.RetriableStatusCodes, httpStatus)
+		}
+
+		return nil
+	})
+}
+
+// RouteActionRetryOnConditions sets the Envoy condition names for triggering retries.
+func RouteActionRetryOnConditions(conditionNames ...string) RouteConfigurer {
+	if len(conditionNames) == 0 {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if p := r.GetRoute().GetRetryPolicy(); p != nil {
+			var conditions []string
+			for _, c := range conditionNames {
+				conditions = append(conditions, strings.ReplaceAll(c, "_", "-"))
+			}
+			p.RetryOn = strings.Join(conditions, ",")
 		}
 
 		return nil

@@ -1,24 +1,36 @@
 Clusters:
   Resources:
-    echo-service-07fd732a85aa6a99:
-      connectTimeout: 10s
+    echo-service-5a416c39037aa8f6:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
           ads: {}
           resourceApiVersion: V3
-      name: echo-service-07fd732a85aa6a99
+      name: echo-service-5a416c39037aa8f6
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
       type: EDS
       typedExtensionProtocolOptions:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
           '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
           commonHttpProtocolOptions:
-            idleTimeout: 0s
+            idleTimeout: 3600s
           explicitHttpConfig:
             httpProtocolOptions: {}
 Endpoints:
   Resources:
-    echo-service-07fd732a85aa6a99:
-      clusterName: echo-service-07fd732a85aa6a99
+    echo-service-5a416c39037aa8f6:
+      clusterName: echo-service-5a416c39037aa8f6
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -99,9 +111,16 @@ Routes:
         - match:
             path: /
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
-              - name: echo-service-07fd732a85aa6a99
+              - name: echo-service-5a416c39037aa8f6
                 weight: 1
               totalWeight: 1
       - domains:
@@ -111,9 +130,16 @@ Routes:
         - match:
             path: /
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
-              - name: echo-service-07fd732a85aa6a99
+              - name: echo-service-5a416c39037aa8f6
                 weight: 1
               totalWeight: 1
       - domains:
@@ -123,9 +149,16 @@ Routes:
         - match:
             path: /
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
-              - name: echo-service-07fd732a85aa6a99
+              - name: echo-service-5a416c39037aa8f6
                 weight: 1
               totalWeight: 1
       - domains:

@@ -1,6 +1,8 @@
 package match
 
 import (
+	"sort"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/policy"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -40,4 +42,21 @@ func ConnectionPoliciesBySource(
 	}
 
 	return matches
+}
+
+// OldestPolicy returns the resource that has the earliest creation time.
+func OldestPolicy(policies []model.Resource) model.Resource {
+	if len(policies) == 0 {
+		return nil
+	}
+
+	// Copy to avoid reordering the input argument.
+	sorted := make([]model.Resource, len(policies))
+	copy(sorted, policies)
+
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].GetMeta().GetCreationTime().Before(sorted[j].GetMeta().GetCreationTime())
+	})
+
+	return sorted[0]
 }

@@ -341,11 +341,21 @@ func RedistributeWildcardRoutes(
 		}
 
 		for _, n := range names {
+			host, ok := hostsByName[n]
+
+			// When generating a new implicit virtualhost,
+			// initialize it by shallow copying from the
+			// wildcard source.
+			if !ok {
+				host = wild
+				host.Routes = nil
+			}
+
 			// Note that if we already have a virtualhost for this
 			// name, and add the route to it, it might be a duplicate.
-			host := hostsByName[n]
-			host.Hostname = n
 			host.Routes = append(host.Routes, r)
+			host.Hostname = n
+
 			hostsByName[n] = host
 		}
 	}

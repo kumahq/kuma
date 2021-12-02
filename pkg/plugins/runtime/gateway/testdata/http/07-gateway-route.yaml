@@ -111,6 +111,13 @@ Routes:
         - match:
             path: /api
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
               - name: echo-service-5a416c39037aa8f6
@@ -119,6 +126,13 @@ Routes:
         - match:
             prefix: /api/
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
             weightedClusters:
               clusters:
               - name: echo-service-5a416c39037aa8f6
