@@ -55,7 +55,7 @@ func (s *configManager) Delete(ctx context.Context, config *config_model.ConfigR
 func (s *configManager) DeleteAll(ctx context.Context, fs ...core_store.DeleteAllOptionsFunc) error {
 	list := &config_model.ConfigResourceList{}
 	opts := core_store.NewDeleteAllOptions(fs...)
-	if err := s.configStore.List(context.Background(), list, core_store.ListByMesh(opts.Mesh)); err != nil {
+	if err := s.configStore.List(ctx, list, core_store.ListByMesh(opts.Mesh)); err != nil {
 		return err
 	}
 	for _, item := range list.Items {

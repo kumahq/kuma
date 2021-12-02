@@ -15,6 +15,7 @@ import (
 )
 
 func (p *PodConverter) OutboundInterfacesFor(
+	ctx context.Context,
 	pod *kube_core.Pod,
 	others []*mesh_k8s.Dataplane,
 ) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
@@ -32,7 +33,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 
 	endpoints := endpointsByService(dataplanes)
 	for _, serviceTag := range endpoints.Services() {
-		service, port, err := p.k8sService(serviceTag)
+		service, port, err := p.k8sService(ctx, serviceTag)
 		if err != nil {
 			converterLog.Error(err, "could not get K8S Service for service tag")
 			continue // one invalid Dataplane definition should not break the entire mesh
@@ -80,7 +81,7 @@ func isServiceLess(port uint32) bool {
 	return port == mesh_proto.TCPPortReserved
 }
 
-func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32, error) {
+func (p *PodConverter) k8sService(ctx context.Context, serviceTag string) (*kube_core.Service, uint32, error) {
 	name, ns, port, err := parseService(serviceTag)
 	if err != nil {
 		return nil, 0, errors.Wrapf(err, "failed to parse `service` host %q as FQDN", serviceTag)
@@ -91,7 +92,7 @@ func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32
 
 	svc := &kube_core.Service{}
 	svcKey := kube_client.ObjectKey{Namespace: ns, Name: name}
-	if err := p.ServiceGetter.Get(context.Background(), svcKey, svc); err != nil {
+	if err := p.ServiceGetter.Get(ctx, svcKey, svc); err != nil {
 		return nil, 0, errors.Wrapf(err, "failed to get Service %q", svcKey)
 	}
 	return svc, port, nil

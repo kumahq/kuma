@@ -104,7 +104,7 @@ func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, sys
 	}
 
 	// We are listing secrets by our custom "type", therefore we need to add index by this field into cache
-	err = kubeCache.IndexField(context.Background(), &kube_core.Secret{}, "type", func(object kube_client.Object) []string {
+	err = kubeCache.IndexField(appCtx, &kube_core.Secret{}, "type", func(object kube_client.Object) []string {
 		secret := object.(*kube_core.Secret)
 		return []string{string(secret.Type)}
 	})

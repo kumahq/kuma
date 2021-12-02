@@ -91,7 +91,7 @@ func (s *globalSecretManager) Delete(ctx context.Context, resource model.Resourc
 
 func (s *globalSecretManager) DeleteAll(ctx context.Context, secrets model.ResourceList, fs ...core_store.DeleteAllOptionsFunc) error {
 	list := &secret_model.SecretResourceList{}
-	if err := s.secretStore.List(context.Background(), list); err != nil {
+	if err := s.secretStore.List(ctx, list); err != nil {
 		return err
 	}
 	for _, item := range list.Items {

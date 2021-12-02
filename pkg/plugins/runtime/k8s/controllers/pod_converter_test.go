@@ -134,7 +134,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(dataplane, pod, services, otherDataplanes)
+			err = converter.PodToDataplane(context.Background(), dataplane, pod, services, otherDataplanes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -266,7 +266,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			ingress := &mesh_k8s.ZoneIngress{}
-			err = converter.PodToIngress(ingress, pod, services)
+			err = converter.PodToIngress(context.Background(), ingress, pod, services)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -331,7 +331,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(dataplane, pod, services, nil)
+				err = converter.PodToDataplane(context.Background(), dataplane, pod, services, nil)
 
 				// then
 				Expect(err).To(HaveOccurred())
