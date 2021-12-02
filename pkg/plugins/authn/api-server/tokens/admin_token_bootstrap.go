@@ -93,7 +93,7 @@ func (a *adminTokenBootstrap) generateAdminToken(ctx context.Context) (string, e
 	backoff = retry.WithMaxDuration(10*time.Minute, backoff)
 	var token string
 	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
-		t, err := a.issuer.Generate(user.Admin, 24*365*10*time.Hour)
+		t, err := a.issuer.Generate(ctx, user.Admin, 24*365*10*time.Hour)
 		if err != nil {
 			return retry.RetryableError(err)
 		}

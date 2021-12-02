@@ -1,6 +1,7 @@
 package ws_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -10,10 +11,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/ws/client"
@@ -35,13 +35,18 @@ var _ = Describe("Auth Tokens WS", func() {
 	var userTokenValidator issuer.UserTokenValidator
 
 	BeforeEach(func() {
-		store := memory.NewStore()
-		manager := secret_manager.NewGlobalSecretManager(secret_store.NewSecretStore(store), cipher.None())
-		signingKeyManager := issuer.NewSigningKeyManager(manager)
-		userTokenValidator = issuer.NewUserTokenValidator(issuer.NewSigningKeyAccessor(manager), issuer.NewTokenRevocations(manager))
+		resManager := manager.NewResourceManager(memory.NewStore())
+		signingKeyManager := core_tokens.NewSigningKeyManager(resManager, issuer.UserTokenSigningKeyPrefix)
+		tokenIssuer := issuer.NewUserTokenIssuer(core_tokens.NewTokenIssuer(signingKeyManager))
+		userTokenValidator = issuer.NewUserTokenValidator(
+			core_tokens.NewValidator(
+				core_tokens.NewSigningKeyAccessor(resManager, issuer.UserTokenSigningKeyPrefix),
+				core_tokens.NewRevocations(resManager, issuer.UserTokenRevocationsGlobalSecretKey),
+			),
+		)
 
-		Expect(signingKeyManager.CreateDefaultSigningKey()).To(Succeed())
-		ws := server.NewWebService(issuer.NewUserTokenIssuer(signingKeyManager), &noopGenerateUserTokenAccess{})
+		Expect(signingKeyManager.CreateDefaultSigningKey(context.Background())).To(Succeed())
+		ws := server.NewWebService(tokenIssuer, &noopGenerateUserTokenAccess{})
 
 		container := restful.NewContainer()
 		container.Add(ws)
@@ -64,7 +69,7 @@ var _ = Describe("Auth Tokens WS", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		u, err := userTokenValidator.Validate(token)
+		u, err := userTokenValidator.Validate(context.Background(), token)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(u.Name).To(Equal("john.doe@example.com"))
 		Expect(u.Groups).To(Equal([]string{"team-a"}))
