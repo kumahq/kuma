@@ -104,7 +104,7 @@ func CpCompatibilityMultizoneKubernetes() {
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, zoneDeployOptsFuncs...)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
+			Install(NamespaceWithSidecarInjectionOnAnnotation(TestNamespace)).
 			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
 
