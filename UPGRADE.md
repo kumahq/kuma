@@ -11,7 +11,7 @@ does not have any particular instructions.
 ### Kubernetes
 
 Please migrate your `kuma.io/sidecar-injection` annotations to labels.
-The new version still supports annotation, but to have a guarantee that application can only start with sidecar, you must use label instead of annotation. 
+The new version still supports annotation, but to have a guarantee that applications can only start with sidecar, you must use label instead of annotation. 
 
 ## Upgrade to `1.4.0`
 

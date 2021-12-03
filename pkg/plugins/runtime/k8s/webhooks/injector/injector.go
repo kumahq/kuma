@@ -147,16 +147,6 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 		}
 		return enabled, nil
 	}
-	enabled, exist, err = metadata.Annotations(ns.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
-	if err != nil {
-		return false, err
-	}
-	if exist {
-		if !enabled {
-			log.V(1).Info("namespace has kuma.io/sidecar-injection: disabled label")
-		}
-		return enabled, nil
-	}
 
 	// support annotations for backwards compatibility
 	annotationWarningMsg := "WARNING: you are using kuma.io/sidecar-injection as annotation. Please migrate it to label to have strong guarantee that application can only start with sidecar"
@@ -171,6 +161,19 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 		}
 		return enabled, nil
 	}
+
+	enabled, exist, err = metadata.Annotations(ns.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+	if err != nil {
+		return false, err
+	}
+	if exist {
+		if !enabled {
+			log.V(1).Info("namespace has kuma.io/sidecar-injection: disabled label")
+		}
+		return enabled, nil
+	}
+
+	// support annotations for backwards compatibility
 	enabled, exist, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return false, err

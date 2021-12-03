@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
@@ -124,9 +125,12 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	for key, value := range tags {
-		// we don't want to convert labels like
-		// kuma.io/sidecar-injection, kuma.io/service, k8s.kuma.io/namespace etc.
-		if strings.Contains(key, "kuma.io/") || value == "" {
+		if key == metadata.KumaSidecarInjectionAnnotation || value == "" {
+			delete(tags, key)
+		} else if metadata.IsReservedPrefix(key) {
+			// we don't want to convert labels like
+			// kuma.io/sidecar-injection, kuma.io/service, k8s.kuma.io/namespace etc.
+			converterLog.Info("ignoring label when converting labels to tags, because it uses reserved Kuma prefix", "label", key, "pod", pod.Name)
 			delete(tags, key)
 		}
 	}
