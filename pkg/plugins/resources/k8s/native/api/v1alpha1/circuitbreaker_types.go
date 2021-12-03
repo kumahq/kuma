@@ -17,9 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
 // CircuitBreaker is the Schema for the circuitbreaker API.
@@ -30,7 +29,7 @@ type CircuitBreaker struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec model.RawMessage `json:"spec,omitempty"`
+	Spec *mesh_proto.CircuitBreaker `json:"spec,omitempty"`
 }
 
 // CircuitBreakerList contains a list of CircuitBreaker.
