@@ -24,14 +24,6 @@ func (pt *Mesh) SetMesh(mesh string) {
 	pt.Name = mesh
 }
 
-func (pt *Mesh) GetSpec() map[string]interface{} {
-	return pt.Spec
-}
-
-func (pt *Mesh) SetSpec(spec map[string]interface{}) {
-	pt.Spec = spec
-}
-
 func (pt *Mesh) Scope() model.Scope {
 	return model.ScopeCluster
 }

@@ -17,9 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
 // Mesh is the Schema for the Mesh API.
@@ -29,7 +28,7 @@ type Mesh struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec model.RawMessage `json:"spec,omitempty"`
+	Spec *mesh_proto.Mesh `json:"spec,omitempty"`
 }
 
 // MeshList contains a list of Mesh.

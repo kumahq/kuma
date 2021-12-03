@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/golang/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -24,12 +25,12 @@ func (cb *CircuitBreaker) SetMesh(mesh string) {
 	cb.Mesh = mesh
 }
 
-func (cb *CircuitBreaker) GetSpec() map[string]interface{} {
+func (cb *CircuitBreaker) GetSpec() proto.Message {
 	return cb.Spec
 }
 
-func (cb *CircuitBreaker) SetSpec(spec map[string]interface{}) {
-	cb.Spec = spec
+func (cb *CircuitBreaker) SetSpec(spec proto.Message) {
+	cb.Spec = proto.Clone(spec).(*mesh_proto.CircuitBreaker)
 }
 
 func (cb *CircuitBreaker) Scope() model.Scope {
