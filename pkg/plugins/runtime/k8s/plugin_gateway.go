@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -16,6 +18,20 @@ import (
 	gatewayapi_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi"
 )
 
+func crdsPresent(mgr kube_ctrl.Manager) bool {
+	gk := schema.GroupKind{
+		Group: gatewayapi.SchemeGroupVersion.Group,
+		Kind:  "Gateway",
+	}
+
+	mappings, _ := mgr.GetClient().RESTMapper().RESTMappings(
+		gk,
+		gatewayapi.SchemeGroupVersion.Version,
+	)
+
+	return len(mappings) > 0
+}
+
 func addGatewayReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	// If we haven't registered our type, we're not reconciling gatewayapi
 	// objects.
@@ -24,6 +40,11 @@ func addGatewayReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conver
 		if errors.As(err, &unknownTypeError) {
 			return nil
 		}
+	}
+
+	if !crdsPresent(mgr) {
+		log.Info("Gateway API CRDs not registered")
+		return nil
 	}
 
 	cpURL := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
