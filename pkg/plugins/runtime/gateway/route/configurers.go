@@ -487,6 +487,21 @@ func RouteActionRetryOnConditions(conditionNames ...string) RouteConfigurer {
 	})
 }
 
+// RouteActionRequestTimeout sets the total timeout for an upstream request.
+func RouteActionRequestTimeout(timeout time.Duration) RouteConfigurer {
+	if timeout == 0 {
+		return RouteConfigureFunc(nil)
+	}
+
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if p := r.GetRoute(); p != nil {
+			p.Timeout = util_proto.Duration(timeout)
+		}
+
+		return nil
+	})
+}
+
 // VirtualHostRoute creates an option to add the route builder to a
 // virtual host. On execution, the builder will build the route and append
 // it to the virtual host. Since Envoy evaluates route matches in order,
