@@ -25,6 +25,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | controlPlane.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
 | controlPlane.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
+| controlPlane.affinity | object | `{}` | Affinity placement rule for the Kuma Control Plane pods |
 | controlPlane.injectorFailurePolicy | string | `"Ignore"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
 | controlPlane.service.name | string | `nil` | Optionally override of the Kuma Control Plane Service's name |
 | controlPlane.service.type | string | `"ClusterIP"` | Service type of the Kuma Control Plane |
@@ -70,6 +71,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
 | ingress.annotations | object | `{}` | Additional deployment annotation |
 | ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
+| ingress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kubectl.image.registry | string | `"bitnami"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
