@@ -167,6 +167,7 @@ var _ = Describe("Global Sync", func() {
 	It("should have up to date list of provided types", func() {
 		excludeTypes := map[model.ResourceType]bool{
 			mesh.DataplaneInsightType:  true,
+			mesh.DataplaneType:         true,
 			mesh.DataplaneOverviewType: true,
 			mesh.ServiceOverviewType:   true,
 			sample.TrafficRouteType:    true,

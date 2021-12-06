@@ -402,17 +402,6 @@ func (d *Dataplane) GetIdentifyingService() string {
 	return ServiceUnknown
 }
 
-// IsIngress returns true if this Dataplane specifies an ingress
-// configuration.
-//
-// Deprecated: use ZoneIngress instead.
-func (d *Dataplane) IsIngress() bool {
-	if d.GetNetworking() == nil {
-		return false
-	}
-	return d.GetNetworking().GetIngress() != nil
-}
-
 func (d *Dataplane) IsDelegatedGateway() bool {
 	return d.GetNetworking().GetGateway() != nil &&
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED
@@ -421,31 +410,6 @@ func (d *Dataplane) IsDelegatedGateway() bool {
 func (d *Dataplane) IsBuiltinGateway() bool {
 	return d.GetNetworking().GetGateway() != nil &&
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
-}
-
-func (d *Dataplane) HasPublicAddress() bool {
-	if !d.IsIngress() {
-		return false
-	}
-	return d.Networking.Ingress.PublicAddress != "" && d.Networking.Ingress.PublicPort != 0
-}
-
-func (d *Dataplane) HasAvailableServices() bool {
-	if !d.IsIngress() {
-		return false
-	}
-	return len(d.Networking.Ingress.AvailableServices) != 0
-}
-
-func (d *Dataplane) IsZoneIngress(localZone string) bool {
-	if !d.IsIngress() {
-		return false
-	}
-	zone, ok := d.Networking.Inbound[0].Tags[ZoneTag]
-	if !ok {
-		return false
-	}
-	return zone != localZone
 }
 
 func (t MultiValueTagSet) String() string {

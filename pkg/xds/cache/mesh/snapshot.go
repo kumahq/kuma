@@ -46,17 +46,10 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 		switch typ {
 		case core_mesh.DataplaneType:
 			dataplanes := &core_mesh.DataplaneResourceList{}
-			if err := rm.List(ctx, dataplanes); err != nil {
+			if err := rm.List(ctx, dataplanes, core_store.ListByMesh(meshName)); err != nil {
 				return nil, err
 			}
-			// backwards compatibility
-			meshedDpsAndIngresses := &core_mesh.DataplaneResourceList{}
-			for _, d := range dataplanes.Items {
-				if d.GetMeta().GetMesh() == meshName || d.Spec.IsIngress() {
-					_ = meshedDpsAndIngresses.AddItem(d)
-				}
-			}
-			snapshot.resources[typ] = meshedDpsAndIngresses
+			snapshot.resources[typ] = dataplanes
 		case core_mesh.ZoneIngressType:
 			zoneIngresses := &core_mesh.ZoneIngressResourceList{}
 			if err := rm.List(ctx, zoneIngresses); err != nil {
@@ -140,7 +133,6 @@ func (m *meshSnapshot) hashResource(r core_model.Resource) string {
 				v.GetMeta().GetName(),
 				v.GetMeta().GetVersion(),
 				m.hashResolvedIPs(v.Spec.GetNetworking().GetAddress()),
-				m.hashResolvedIPs(v.Spec.GetNetworking().GetIngress().GetPublicAddress()),
 			}, ":")
 	case *core_mesh.ZoneIngressResource:
 		return strings.Join(

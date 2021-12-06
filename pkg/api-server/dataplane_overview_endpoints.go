@@ -204,22 +204,12 @@ func genFilter(request *restful.Request) (store.ListFilterFunc, error) {
 		return nil, err
 	}
 
-	ingressMode, err := modeFromParameter(request, "ingress")
-	if err != nil {
-		return nil, err
-	}
-
 	tags := parseTags(request.QueryParameters("tag"))
 
 	return func(rs core_model.Resource) bool {
 		gatewayFilter := modeToFilter(gatewayMode)
-		ingressFilter := modeToFilter(ingressMode)
 		dataplane := rs.(*mesh.DataplaneResource)
 		if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
-			return false
-		}
-
-		if !ingressFilter(dataplane.Spec.GetNetworking().GetIngress()) {
 			return false
 		}
 

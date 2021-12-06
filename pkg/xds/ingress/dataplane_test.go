@@ -162,38 +162,33 @@ var _ = Describe("Ingress Dataplane", func() {
 		ctx := context.Background()
 		mgr := &fakeResourceManager{}
 
-		ing, err := core_mesh.NewZoneIngressResourceFromDataplane(&core_mesh.DataplaneResource{
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-						Port: 10001,
-					}},
-					Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-						AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
-							{
-								Instances: 1,
-								Tags: map[string]string{
-									"service": "backend",
-									"version": "v1",
-									"region":  "eu",
-								},
-								Mesh: "mesh1",
-							},
-							{
-								Instances: 2,
-								Tags: map[string]string{
-									"service": "web",
-									"version": "v2",
-									"region":  "us",
-								},
-								Mesh: "mesh1",
-							},
+		ing := &core_mesh.ZoneIngressResource{
+			Spec: &mesh_proto.ZoneIngress{
+				Networking: &mesh_proto.ZoneIngress_Networking{
+					Port: 10001,
+				},
+				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+					{
+						Instances: 1,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v1",
+							"region":  "eu",
 						},
+						Mesh: "mesh1",
+					},
+					{
+						Instances: 2,
+						Tags: map[string]string{
+							"service": "web",
+							"version": "v2",
+							"region":  "us",
+						},
+						Mesh: "mesh1",
 					},
 				},
 			},
-		})
-		Expect(err).ToNot(HaveOccurred())
+		}
 
 		others := []*core_mesh.DataplaneResource{
 			{
@@ -245,7 +240,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 		}
-		err = ingress.UpdateAvailableServices(ctx, mgr, ing, others)
+		err := ingress.UpdateAvailableServices(ctx, mgr, ing, others)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mgr.updCounter).To(Equal(0))
 	})

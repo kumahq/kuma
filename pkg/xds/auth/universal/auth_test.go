@@ -58,27 +58,6 @@ var _ = Describe("Authentication flow", func() {
 		},
 	}
 
-	ingressDp := core_mesh.DataplaneResource{
-		Meta: &test_model.ResourceMeta{
-			Name: "ingress-1",
-			Mesh: "default",
-		},
-		Spec: &mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{
-				Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{
-						Port:        8080,
-						ServicePort: 8081,
-						Tags: map[string]string{
-							"kuma.io/service": "ingress",
-						},
-					},
-				},
-			},
-		},
-	}
-
 	BeforeEach(func() {
 		ctx = context.Background()
 		resStore = memory.NewStore()
@@ -145,13 +124,6 @@ var _ = Describe("Authentication flow", func() {
 				},
 			},
 			dpRes: &dpRes,
-		}),
-		Entry("should auth with ingress token", testCase{
-			id: builtin_issuer.DataplaneIdentity{
-				Mesh: "default",
-				Type: mesh_proto.IngressProxyType,
-			},
-			dpRes: &ingressDp,
 		}),
 	)
 
@@ -222,29 +194,6 @@ var _ = Describe("Authentication flow", func() {
 			},
 			dpRes: &dpRes,
 			err:   `which is not allowed with this token. Allowed values in token are ["web"]`, // web and web-api order is not stable
-		}),
-		Entry("regular dataplane and ingress type", testCase{
-			id: builtin_issuer.DataplaneIdentity{
-				Mesh: "default",
-				Type: mesh_proto.IngressProxyType,
-			},
-			dpRes: &dpRes,
-			err:   `dataplane is of type Dataplane but token allows only for the "ingress" type`,
-		}),
-		Entry("ingress dataplane and dataplane type", testCase{
-			id: builtin_issuer.DataplaneIdentity{
-				Mesh: "default",
-				Type: mesh_proto.DataplaneProxyType,
-			},
-			dpRes: &ingressDp,
-			err:   `dataplane is of type Ingress but token allows only for the "dataplane" type`,
-		}),
-		Entry("ingress dataplane and dataplane type (but not explicitly specified)", testCase{
-			id: builtin_issuer.DataplaneIdentity{
-				Mesh: "default",
-			},
-			dpRes: &ingressDp,
-			err:   `dataplane is of type Ingress but token allows only for the "dataplane" type`,
 		}),
 	)
 

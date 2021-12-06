@@ -187,7 +187,7 @@ func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.
 			converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
-		if dataplane.Mesh == mesh || dp.Spec.IsIngress() {
+		if dataplane.Mesh == mesh {
 			otherDataplanes = append(otherDataplanes, &dataplane)
 		}
 	}
