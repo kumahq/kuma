@@ -8,6 +8,11 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Universal
+
+We removed support for old Ingress (`Dataplane#networking.ingress`) from pre 1.2 days.
+If you are still using it, please migrate to `ZoneIngress` first (see `Upgrade to 1.2.0` section).
+
 ## Upgrade to `1.4.0`
 
 Starting with this version, the default API server authentication method is user
