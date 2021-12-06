@@ -143,7 +143,7 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 	}
 	if exist {
 		if !enabled {
-			log.V(1).Info("pod has kuma.io/sidecar-injection: disabled label")
+			log.V(1).Info(`pod has "kuma.io/sidecar-injection: disabled" label`)
 		}
 		return enabled, nil
 	}
@@ -157,7 +157,7 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 	if exist {
 		log.Info(annotationWarningMsg, "pod", pod.Name, "namespace", ns.Name)
 		if !enabled {
-			log.V(1).Info("pod has kuma.io/sidecar-injection: disabled annotation")
+			log.V(1).Info(`pod has "kuma.io/sidecar-injection: disabled" annotation`)
 		}
 		return enabled, nil
 	}
@@ -168,7 +168,7 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 	}
 	if exist {
 		if !enabled {
-			log.V(1).Info("namespace has kuma.io/sidecar-injection: disabled label")
+			log.V(1).Info(`namespace has "kuma.io/sidecar-injection: disabled" label`)
 		}
 		return enabled, nil
 	}
@@ -181,7 +181,7 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 	if exist {
 		log.Info(annotationWarningMsg, "namespace", ns.Name)
 		if !enabled {
-			log.V(1).Info("namespace has kuma.io/sidecar-injection: disabled annotation")
+			log.V(1).Info(`namespace has "kuma.io/sidecar-injection: disabled" annotation`)
 		}
 		return enabled, nil
 	}

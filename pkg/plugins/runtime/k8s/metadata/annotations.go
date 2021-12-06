@@ -70,12 +70,6 @@ const (
 	KumaTrafficExcludeOutboundPorts = "traffic.kuma.io/exclude-outbound-ports"
 )
 
-func IsReservedPrefix(annotation string) bool {
-	return strings.HasPrefix(annotation, "kuma.io/") ||
-		strings.HasPrefix(annotation, "traffic.kuma.io/") ||
-		strings.HasPrefix(annotation, "prometheus.metrics.kuma.io/")
-}
-
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
 	KumaSidecarInjectedAnnotation                  = "kuma.io/sidecar-injected"

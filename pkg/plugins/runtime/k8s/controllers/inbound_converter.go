@@ -127,7 +127,7 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	for key, value := range tags {
 		if key == metadata.KumaSidecarInjectionAnnotation || value == "" {
 			delete(tags, key)
-		} else if metadata.IsReservedPrefix(key) {
+		} else if strings.Contains(key, "kuma.io/") {
 			// we don't want to convert labels like
 			// kuma.io/sidecar-injection, kuma.io/service, k8s.kuma.io/namespace etc.
 			converterLog.Info("ignoring label when converting labels to tags, because it uses reserved Kuma prefix", "label", key, "pod", pod.Name)
