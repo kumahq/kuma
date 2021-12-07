@@ -80,6 +80,6 @@ diagnostics:
   serverPort: %%d
 `,
 			admissionServerPort,
-			filepath.Join("testdata"))
+			"testdata")
 	}), "")
 })

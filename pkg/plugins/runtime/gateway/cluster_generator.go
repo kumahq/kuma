@@ -15,7 +15,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -108,14 +107,9 @@ func (c *ClusterGenerator) generateMeshCluster(
 	info *GatewayResourceInfo,
 	dest *route.Destination,
 ) (*core_xds.Resource, error) {
-	protocol := generator.InferServiceProtocol([]core_xds.Endpoint{{
+	protocol := route.InferServiceProtocol([]core_xds.Endpoint{{
 		Tags: dest.Destination,
 	}})
-
-	// HTTP is a better default than "unknown".
-	if protocol == core_mesh.ProtocolUnknown {
-		protocol = core_mesh.ProtocolHTTP
-	}
 
 	builder := newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
 		clusters.EdsCluster(dest.Destination[mesh_proto.ServiceTag]),
@@ -149,17 +143,12 @@ func (c *ClusterGenerator) generateExternalCluster(
 		endpoints = append(endpoints, *ep)
 	}
 
-	protocol := generator.InferServiceProtocol(endpoints)
-
-	// HTTP is a better default than "unknown".
-	if protocol == core_mesh.ProtocolUnknown {
-		protocol = core_mesh.ProtocolHTTP
-	}
+	protocol := route.InferServiceProtocol(endpoints)
 
 	return buildClusterResource(
 		dest,
 		newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
-			clusters.StrictDNSCluster(dest.Destination[mesh_proto.ServiceTag], endpoints, info.Dataplane.IsIPv6()),
+			clusters.ProvidedEndpointCluster(dest.Destination[mesh_proto.ServiceTag], info.Dataplane.IsIPv6(), endpoints...),
 			clusters.ClientSideTLS(endpoints),
 		),
 	)

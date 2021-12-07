@@ -208,7 +208,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, others); err != nil {
+		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
@@ -240,7 +240,7 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 		Mesh: model.NoMesh,
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ingress, func() error {
-		if err := r.PodConverter.PodToIngress(ingress, pod, services); err != nil {
+		if err := r.PodConverter.PodToIngress(ctx, ingress, pod, services); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Ingress")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, ingress, r.Scheme); err != nil {

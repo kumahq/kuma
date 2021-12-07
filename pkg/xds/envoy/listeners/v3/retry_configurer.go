@@ -17,7 +17,7 @@ const (
 		"refused-stream"
 	HttpRetryOnRetriableStatusCodes = "connect-failure,refused-stream," +
 		"retriable-status-codes"
-	GrpcRetryOnAll = "cancelled,connect-failure," +
+	GrpcRetryOnDefault = "cancelled,connect-failure," +
 		"gateway-error,refused-stream,reset,resource-exhausted,unavailable"
 )
 
@@ -34,7 +34,7 @@ func genGrpcRetryPolicy(
 	}
 
 	policy := envoy_route.RetryPolicy{
-		RetryOn:       GrpcRetryOnAll,
+		RetryOn:       GrpcRetryOnDefault,
 		PerTryTimeout: conf.PerTryTimeout,
 	}
 

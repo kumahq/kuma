@@ -342,6 +342,14 @@ Routes:
         - match:
             prefix: /
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 20s
             weightedClusters:
               clusters:
               - name: echo-service-dbfe9218dfa3ba0c
@@ -360,6 +368,14 @@ Routes:
         - match:
             prefix: /
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 30s
             weightedClusters:
               clusters:
               - name: echo-service-cff7b41a9764f367
@@ -378,6 +394,14 @@ Routes:
         - match:
             prefix: /
           route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 10s
             weightedClusters:
               clusters:
               - name: echo-service-b5c2b60cba392c4e

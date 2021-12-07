@@ -1,11 +1,11 @@
 linters:
   enable:
     - bodyclose
+    - contextcheck
     - gci
     - gocritic
     - gofmt
     - gomodguard
-    - govet
     - importas
     - misspell
     - unconvert

@@ -67,6 +67,7 @@ type Locality struct {
 // Endpoint holds routing-related information about a single endpoint.
 type Endpoint struct {
 	Target          string
+	UnixDomainPath  string
 	Port            uint32
 	Tags            map[string]string
 	Weight          uint32

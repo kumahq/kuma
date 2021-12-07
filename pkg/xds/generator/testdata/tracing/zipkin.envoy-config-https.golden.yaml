@@ -4,6 +4,7 @@ resources:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: tracing_zipkin
     connectTimeout: 10s
+    dnsLookupFamily: V4_ONLY
     loadAssignment:
       clusterName: tracing:zipkin
       endpoints:
@@ -14,10 +15,13 @@ resources:
                 address: zipkin.us
                 portValue: 9090
     name: tracing:zipkin
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        allowRenegotiation: true
-        sni: zipkin.us
+    transportSocketMatches:
+    - match: {}
+      name: zipkin.us
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          allowRenegotiation: true
+          sni: zipkin.us
     type: STRICT_DNS
