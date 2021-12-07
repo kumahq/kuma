@@ -389,12 +389,14 @@ var _ = Describe("PodReconciler", func() {
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
+                k8s.kuma.io/namespace: demo
             - health: {} 
               port: 6060
               tags:
                 app: sample
                 kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
+                k8s.kuma.io/namespace: demo
 `))
 	})
 
@@ -463,12 +465,14 @@ var _ = Describe("PodReconciler", func() {
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
+                k8s.kuma.io/namespace: demo
             - health: {} 
               port: 6060
               tags:
                 app: sample
                 kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
+                k8s.kuma.io/namespace: demo
 `))
 	})
 

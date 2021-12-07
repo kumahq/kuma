@@ -12,6 +12,8 @@ import (
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
+const NamespaceTag = "k8s.kuma.io/namespace"
+
 func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service) (ifaces []*mesh_proto.Dataplane_Networking_Inbound) {
 	for _, svcPort := range service.Spec.Ports {
 		if svcPort.Protocol != "" && svcPort.Protocol != kube_core.ProtocolTCP {
@@ -131,6 +133,7 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	if tags == nil {
 		tags = make(map[string]string)
 	}
+	tags[NamespaceTag] = pod.Namespace
 	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTagFor(svc, svcPort)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
@@ -174,6 +177,7 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod) map[string]string {
 	if tags == nil {
 		tags = make(map[string]string)
 	}
+	tags[NamespaceTag] = pod.Namespace
 	tags[mesh_proto.ServiceTag] = fmt.Sprintf("%s_%s_svc", nameFromPod(pod), pod.Namespace)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
