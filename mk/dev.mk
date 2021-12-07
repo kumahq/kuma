@@ -196,15 +196,15 @@ dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
 .PHONY: dev/install/k3d
 dev/install/k3d: ## Bootstrap: Install K3D (K3s in Docker)
 	# see https://raw.githubusercontent.com/rancher/k3d/main/install.sh
-	@if [ -e $(K3D_PATH) ]; then echo "K3d $$( $(K3D_PATH) version ) is already installed at $(K3D_PATH)" ; fi
-	@if [ ! -e $(K3D_PATH) ]; then \
-		echo "Installing Kind $(CI_K3D_VERSION) ..." \
+	@if [ ! -e $(K3D_PATH) ] || [ `$(K3D_PATH) version | head -1 | awk '{ print $$3 }'` != "$(CI_K3D_VERSION)" ]; then \
+		echo "Installing K3d $(CI_K3D_VERSION) ..." \
 		&& set -x \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& $(CURL_DOWNLOAD) https://raw.githubusercontent.com/rancher/k3d/main/install.sh | \
 		        TAG=$(CI_K3D_VERSION) USE_SUDO="false" K3D_INSTALL_DIR="$(CI_TOOLS_DIR)" bash \
 		&& set +x \
-		&& echo "K3d $(CI_K3D_VERSION) has been installed at $(K3D_PATH)" ; fi
+		&& echo "K3d $(CI_K3D_VERSION) has been installed at $(K3D_PATH)" ; \
+	else echo "K3d $$( $(K3D_PATH) version ) is already installed at $(K3D_PATH)"; fi
 
 
 .PHONY: dev/install/minikube
