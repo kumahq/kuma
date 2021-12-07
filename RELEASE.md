@@ -34,6 +34,7 @@ To release a new version of Kuma follow these steps:
 - [ ] Create a new Git tag for the release using the [make-release-tag.sh](./tools/release/make-release-tag.sh) script. This script takes 2 arguments, the name of the previous release tag and the name of the new release tag to create and create an annotated tag containing a summary of the commits in the release.
 - [ ] Push the Git tag. This will trigger the release job on CI.
 - [ ] Make sure the new binaries are available in [Bintray](https://bintray.com/kong/kuma).
+- [ ] Publish new grafana dashboards if necessary
 - [ ] Download the new Kuma version and double-check that it works with the demo app. Check that is works both in `universal` and `kubernetes` modes.
 - [ ] Merge PR to website repository.
 - [ ] Create a new [Github release](https://github.com/kumahq/kuma/releases) and create a link to both the changelog and to the assets download.
