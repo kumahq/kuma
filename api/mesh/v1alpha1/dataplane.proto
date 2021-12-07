@@ -25,6 +25,8 @@ message Dataplane {
     // Public IP on which the dataplane is accessible in the network.
     string address = 5;
 
+    reserved 6; // Formerly ingress mode message, see #3435
+
     // In some situation, dataplane resides in a private network and not
     // reachable via 'address'. advertisedAddress is configured with public
     // routable address for such dataplane so that other dataplanes in the mesh
