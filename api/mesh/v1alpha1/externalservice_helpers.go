@@ -5,15 +5,15 @@ import (
 	"strconv"
 
 	"github.com/golang/protobuf/proto"
-	proto_util "github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func (m *ExternalService) UnmarshalJSON(data []byte) error {
-	return proto_util.FromJSON(data, m)
+	return util_proto.FromJSON(data, m)
 }
 
 func (m *ExternalService) MarshalJSON() ([]byte, error) {
-	return proto_util.ToJSON(m)
+	return util_proto.ToJSON(m)
 }
 func (t *ExternalService) DeepCopyInto(out *ExternalService) {
 	proto.Merge(out, t)
