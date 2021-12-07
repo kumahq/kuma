@@ -1,16 +1,11 @@
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images
-KUMA_VERSION ?= mem-prof-fix-2
-#KUMA_VERSION ?= master
+KUMA_VERSION ?= master
 
-# XXX
-#DOCKER_REGISTRY ?= docker.io/kumahq
-DOCKER_REGISTRY ?= 151743893450.dkr.ecr.us-east-2.amazonaws.com
+DOCKER_REGISTRY ?= docker.io/kumahq
 DOCKER_USERNAME ?=
 DOCKER_API_KEY ?=
 
-# XXX
-#KUMACTL_INSTALL_USE_LOCAL_IMAGES?=true
-KUMACTL_INSTALL_USE_LOCAL_IMAGES?=false
+KUMACTL_INSTALL_USE_LOCAL_IMAGES?=true
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
 	DOCKER_REGISTRY = kumahq
 endif
@@ -190,27 +185,24 @@ docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
 
 .PHONY: image/kuma-cp/push
 image/kuma-cp/push: image/kuma-cp
-	#docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
 	docker tag $(KUMA_CP_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-cp:$(KUMA_VERSION)
 	docker push $(DOCKER_REGISTRY)/kuma-cp:$(KUMA_VERSION)
+	docker logout $(DOCKER_REGISTRY)
 
 .PHONY: image/kuma-dp/push
 image/kuma-dp/push: image/kuma-dp
-	#docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
 	docker tag $(KUMA_DP_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-dp:$(KUMA_VERSION)
 	docker push $(DOCKER_REGISTRY)/kuma-dp:$(KUMA_VERSION)
-
-.PHONY: image/kuma-init/push
-image/kuma-init/push: image/kuma-init
-	#docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
-	docker tag $(KUMA_INIT_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-init:$(KUMA_VERSION)
-	docker push $(DOCKER_REGISTRY)/kuma-init:$(KUMA_VERSION)
+	docker logout $(DOCKER_REGISTRY)
 
 .PHONY: image/kumactl/push
 image/kumactl/push: image/kumactl
-	#docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
 	docker tag $(KUMACTL_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kumactl:$(KUMA_VERSION)
 	docker push $(DOCKER_REGISTRY)/kumactl:$(KUMA_VERSION)
+	docker logout $(DOCKER_REGISTRY)
 
 .PHONY: images/push
 images/push: image/kuma-cp/push image/kuma-dp/push image/kumactl/push
