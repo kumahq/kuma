@@ -8,7 +8,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/kumahq/kuma/api/generic"
-	proto_util "github.com/kumahq/kuma/pkg/util/proto"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -22,11 +21,11 @@ func NewSubscriptionStatus() *KDSSubscriptionStatus {
 }
 
 func (m *ZoneInsight) UnmarshalJSON(data []byte) error {
-	return proto_util.FromJSON(data, m)
+	return util_proto.FromJSON(data, m)
 }
 
 func (m *ZoneInsight) MarshalJSON() ([]byte, error) {
-	return proto_util.ToJSON(m)
+	return util_proto.ToJSON(m)
 }
 func (t *ZoneInsight) DeepCopyInto(out *ZoneInsight) {
 	proto.Merge(out, t)
