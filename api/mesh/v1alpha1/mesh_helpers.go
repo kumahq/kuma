@@ -23,3 +23,12 @@ func (m *Mesh) MarshalJSON() ([]byte, error) {
 func (t *Mesh) DeepCopyInto(out *Mesh) {
 	proto.Merge(out, t)
 }
+
+func (t *Mesh) DeepCopy() *Mesh {
+	if t == nil {
+		return nil
+	}
+	out := new(Mesh)
+	t.DeepCopyInto(out)
+	return out
+}

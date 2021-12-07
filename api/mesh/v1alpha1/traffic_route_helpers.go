@@ -5,8 +5,29 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
+	proto_util "github.com/kumahq/kuma/pkg/util/proto"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
+
+func (m *TrafficRoute) UnmarshalJSON(data []byte) error {
+	return proto_util.FromJSON(data, m)
+}
+
+func (m *TrafficRoute) MarshalJSON() ([]byte, error) {
+	return proto_util.ToJSON(m)
+}
+func (t *TrafficRoute) DeepCopyInto(out *TrafficRoute) {
+	proto.Merge(out, t)
+}
+func (t *TrafficRoute) DeepCopy() *TrafficRoute {
+	if t == nil {
+		return nil
+	}
+	out := new(TrafficRoute)
+	t.DeepCopyInto(out)
+	return out
+}
 
 // GetSplitWithDestination returns unified list of split regardless if split or destination is used
 // Destination is a syntax sugar over single split with weight of 1.

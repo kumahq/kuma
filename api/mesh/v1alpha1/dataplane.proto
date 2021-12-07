@@ -18,6 +18,7 @@ message Dataplane {
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).kds.send_to_global = true;
   option (kuma.mesh.resource).ws.name = "dataplane";
+  option (kuma.mesh.resource).scope_namespace = true;
 
   // Networking describes inbound and outbound interfaces of a dataplane.
   message Networking {

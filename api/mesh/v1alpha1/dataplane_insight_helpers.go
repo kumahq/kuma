@@ -4,9 +4,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/generic"
+	proto_util "github.com/kumahq/kuma/pkg/util/proto"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -45,6 +47,25 @@ func (x *EnvoyVersion) ParseVersion() (version, label string) {
 	} else {
 		return x.Version, ""
 	}
+}
+
+func (m *DataplaneInsight) UnmarshalJSON(data []byte) error {
+	return proto_util.FromJSON(data, m)
+}
+
+func (m *DataplaneInsight) MarshalJSON() ([]byte, error) {
+	return proto_util.ToJSON(m)
+}
+func (t *DataplaneInsight) DeepCopyInto(out *DataplaneInsight) {
+	proto.Merge(out, t)
+}
+func (t *DataplaneInsight) DeepCopy() *DataplaneInsight {
+	if t == nil {
+		return nil
+	}
+	out := new(DataplaneInsight)
+	t.DeepCopyInto(out)
+	return out
 }
 
 func (x *DataplaneInsight) IsOnline() bool {

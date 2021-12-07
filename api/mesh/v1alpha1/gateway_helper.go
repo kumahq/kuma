@@ -5,21 +5,21 @@ import (
 	proto_util "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func (m *CircuitBreaker) UnmarshalJSON(data []byte) error {
+func (m *Gateway) UnmarshalJSON(data []byte) error {
 	return proto_util.FromJSON(data, m)
 }
 
-func (m *CircuitBreaker) MarshalJSON() ([]byte, error) {
+func (m *Gateway) MarshalJSON() ([]byte, error) {
 	return proto_util.ToJSON(m)
 }
-func (t *CircuitBreaker) DeepCopyInto(out *CircuitBreaker) {
+func (t *Gateway) DeepCopyInto(out *Gateway) {
 	proto.Merge(out, t)
 }
-func (t *CircuitBreaker) DeepCopy() *CircuitBreaker {
+func (t *Gateway) DeepCopy() *Gateway {
 	if t == nil {
 		return nil
 	}
-	out := new(CircuitBreaker)
+	out := new(Gateway)
 	t.DeepCopyInto(out)
 	return out
 }

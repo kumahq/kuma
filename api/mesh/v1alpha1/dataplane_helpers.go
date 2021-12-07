@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
+	proto_util "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/pkg/errors"
 )
 
@@ -39,6 +41,25 @@ const (
 	DataplaneProxyType ProxyType = "dataplane"
 	IngressProxyType   ProxyType = "ingress"
 )
+
+func (m *Dataplane) UnmarshalJSON(data []byte) error {
+	return proto_util.FromJSON(data, m)
+}
+
+func (m *Dataplane) MarshalJSON() ([]byte, error) {
+	return proto_util.ToJSON(m)
+}
+func (t *Dataplane) DeepCopyInto(out *Dataplane) {
+	proto.Merge(out, t)
+}
+func (t *Dataplane) DeepCopy() *Dataplane {
+	if t == nil {
+		return nil
+	}
+	out := new(Dataplane)
+	t.DeepCopyInto(out)
+	return out
+}
 
 func (t ProxyType) IsValid() error {
 	switch t {

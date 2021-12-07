@@ -3,13 +3,34 @@ package v1alpha1
 import (
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/generic"
+	proto_util "github.com/kumahq/kuma/pkg/util/proto"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ generic.Insight = &ZoneIngressInsight{}
+
+func (m *ZoneIngressInsight) UnmarshalJSON(data []byte) error {
+	return proto_util.FromJSON(data, m)
+}
+
+func (m *ZoneIngressInsight) MarshalJSON() ([]byte, error) {
+	return proto_util.ToJSON(m)
+}
+func (t *ZoneIngressInsight) DeepCopyInto(out *ZoneIngressInsight) {
+	proto.Merge(out, t)
+}
+func (t *ZoneIngressInsight) DeepCopy() *ZoneIngressInsight {
+	if t == nil {
+		return nil
+	}
+	out := new(ZoneIngressInsight)
+	t.DeepCopyInto(out)
+	return out
+}
 
 func (x *ZoneIngressInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
 	for i, s := range x.GetSubscriptions() {

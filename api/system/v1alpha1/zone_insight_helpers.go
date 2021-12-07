@@ -6,7 +6,9 @@ import (
 	"github.com/pkg/errors"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/kumahq/kuma/api/generic"
+	proto_util "github.com/kumahq/kuma/pkg/util/proto"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -17,6 +19,25 @@ func NewSubscriptionStatus() *KDSSubscriptionStatus {
 		Total: &KDSServiceStats{},
 		Stat:  map[string]*KDSServiceStats{},
 	}
+}
+
+func (m *ZoneInsight) UnmarshalJSON(data []byte) error {
+	return proto_util.FromJSON(data, m)
+}
+
+func (m *ZoneInsight) MarshalJSON() ([]byte, error) {
+	return proto_util.ToJSON(m)
+}
+func (t *ZoneInsight) DeepCopyInto(out *ZoneInsight) {
+	proto.Merge(out, t)
+}
+func (t *ZoneInsight) DeepCopy() *ZoneInsight {
+	if t == nil {
+		return nil
+	}
+	out := new(ZoneInsight)
+	t.DeepCopyInto(out)
+	return out
 }
 
 func (x *ZoneInsight) GetSubscription(id string) (int, *KDSSubscription) {
