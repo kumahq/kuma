@@ -56,7 +56,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	resource := core_mesh.NewGatewayRouteResource()
 
 	if err := manager.Upsert(r.ResourceManager, model.ResourceKey{Mesh: mesh, Name: coreName}, resource, func(resource model.Resource) error {
-		spec, err := r.gapiToKumaRoute(httpRoute.Namespace, httpRoute)
+		spec, err := r.gapiToKumaRoute(ctx, mesh, httpRoute.Namespace, httpRoute)
 		if err != nil {
 			return errors.Wrap(err, "error generating GatewayRoute")
 		}
@@ -68,7 +68,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	var err error
 
-	resource.Spec, err = r.gapiToKumaRoute(httpRoute.Namespace, httpRoute)
+	resource.Spec, err = r.gapiToKumaRoute(ctx, mesh, httpRoute.Namespace, httpRoute)
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
@@ -78,7 +78,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	return kube_ctrl.Result{}, errors.Wrap(err, "could not update GatewayRoute resource")
 }
 
-func (r *HTTPRouteReconciler) gapiToKumaRoute(namespace string, route *gatewayapi.HTTPRoute) (*mesh_proto.GatewayRoute, error) {
+func (r *HTTPRouteReconciler) gapiToKumaRoute(ctx context.Context, mesh string, namespace string, route *gatewayapi.HTTPRoute) (*mesh_proto.GatewayRoute, error) {
 	var selectors []*mesh_proto.Selector
 
 	// Convert GAPI parent refs into Kuma tag matchers
@@ -114,7 +114,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoute(namespace string, route *gatewayap
 		for _, backend := range rule.BackendRefs {
 			ref := backend.BackendObjectReference
 
-			destination, err := gapiToKumaRef(namespace, ref)
+			destination, err := r.gapiToKumaRef(ctx, mesh, namespace, ref)
 			if err != nil {
 				return nil, err
 			}
@@ -140,7 +140,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoute(namespace string, route *gatewayap
 		var filters []*mesh_proto.GatewayRoute_HttpRoute_Filter
 
 		for _, filter := range rule.Filters {
-			kumaFilter, err := gapiToKumaFilter(namespace, filter)
+			kumaFilter, err := r.gapiToKumaFilter(ctx, mesh, namespace, filter)
 			if err != nil {
 				return nil, err
 			}

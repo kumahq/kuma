@@ -1,12 +1,15 @@
 package gatewayapi
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -17,7 +20,7 @@ func k8sToKumaHeader(header gatewayapi.HTTPHeader) *mesh_proto.GatewayRoute_Http
 	}
 }
 
-func gapiToKumaRef(objectNamespace string, ref gatewayapi.BackendObjectReference) (map[string]string, error) {
+func (r *HTTPRouteReconciler) gapiToKumaRef(ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference) (map[string]string, error) {
 	// References to Services are required by GAPI to include a port
 	// TODO remove when https://github.com/kubernetes-sigs/gateway-api/pull/944
 	// is in master
@@ -25,18 +28,37 @@ func gapiToKumaRef(objectNamespace string, ref gatewayapi.BackendObjectReference
 		return nil, errors.New("backend reference must include port")
 	}
 
-	if *ref.Kind != "Service" {
-		return nil, errors.New("backend reference must be a Service") // TODO setappropriate status on gateway
+	switch *ref.Kind {
+	case "Service":
+		namespace := objectNamespace
+		if ref.Namespace != nil {
+			namespace = string(*ref.Namespace)
+		}
+
+		return map[string]string{
+			mesh_proto.ServiceTag: fmt.Sprintf("%s_%s_svc_%d", ref.Name, namespace, *ref.Port),
+		}, nil
+	case "ExternalService":
+		if *ref.Group != "kuma.io" {
+			break
+		}
+
+		name := string(ref.Name)
+
+		resource := core_mesh.NewExternalServiceResource()
+		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(name, mesh)); err != nil {
+			// TODO this shouldn't be a fatal error
+			return nil, fmt.Errorf("backend reference references a non-existent ExternalService %s", name)
+		}
+
+		service := resource.Spec.GetService()
+
+		return map[string]string{
+			mesh_proto.ServiceTag: service,
+		}, nil
 	}
 
-	namespace := objectNamespace
-	if ref.Namespace != nil {
-		namespace = string(*ref.Namespace)
-	}
-
-	return map[string]string{
-		mesh_proto.ServiceTag: fmt.Sprintf("%s_%s_svc_%d", ref.Name, namespace, *ref.Port),
-	}, nil
+	return nil, errors.New("backend reference must be a Service or an externalservice.kuma.io") // TODO setappropriate status on gateway
 }
 
 func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.GatewayRoute_HttpRoute_Match, error) {
@@ -102,7 +124,7 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.GatewayRoute_
 	return kumaMatch, nil
 }
 
-func gapiToKumaFilter(namespace string, filter gatewayapi.HTTPRouteFilter) (*mesh_proto.GatewayRoute_HttpRoute_Filter, error) {
+func (r *HTTPRouteReconciler) gapiToKumaFilter(ctx context.Context, mesh string, namespace string, filter gatewayapi.HTTPRouteFilter) (*mesh_proto.GatewayRoute_HttpRoute_Filter, error) {
 	var kumaFilter mesh_proto.GatewayRoute_HttpRoute_Filter
 
 	switch filter.Type {
@@ -127,7 +149,7 @@ func gapiToKumaFilter(namespace string, filter gatewayapi.HTTPRouteFilter) (*mes
 	case gatewayapi.HTTPRouteFilterRequestMirror:
 		filter := filter.RequestMirror
 
-		destinationRef, err := gapiToKumaRef(namespace, filter.BackendRef)
+		destinationRef, err := r.gapiToKumaRef(ctx, mesh, namespace, filter.BackendRef)
 		if err != nil {
 			return nil, err
 		}
