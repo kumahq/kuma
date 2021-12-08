@@ -911,7 +911,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 243da0d686658ca26902677cd16971d2ec72fe4453dbb0b09c09ea96b423d4ce
-        checksum/tls-secrets: 4d6f0e89dd8efed9a9eb2523670c3224b440db9ef34d41cce63ec46dd8ab5b41
+        checksum/tls-secrets: 12e245aa8f7469c6fcbc3fc3c91c376d33ecc6298869b68332d21c56aa5c38d4
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -1119,9 +1119,53 @@ webhooks:
     
       
     sideEffects: None
-  - name: kuma-injector.kuma.io
+  - name: namespace-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
     failurePolicy: Crash
+    namespaceSelector:
+      matchLabels:
+        kuma.io/sidecar-injection: enabled
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma
+        name: kuma-ctrl-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
+  - name: pods-kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Crash
+    objectSelector:
+      matchLabels:
+        kuma.io/sidecar-injection: enabled
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma
+        name: kuma-ctrl-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
+  - name: kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore 
     clientConfig:
       caBundle: XYZ
       service:

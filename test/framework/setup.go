@@ -216,6 +216,20 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: %s
+  labels:
+    kuma.io/sidecar-injection: "enabled"
+`, namespace))
+}
+
+// NamespaceWithSidecarInjectionOnAnnotation creates namespace with sidecar-injection annotation
+// Since we still support annotations for backwards compatibility, we should also test it.
+// Use NamespaceWithSidecarInjection unless you want to explicitly check backwards compatibility.
+func NamespaceWithSidecarInjectionOnAnnotation(namespace string) InstallFunc {
+	return YamlK8s(fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
   annotations:
     kuma.io/sidecar-injection: "enabled"
 `, namespace))
