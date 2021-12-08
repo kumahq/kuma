@@ -251,6 +251,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: api-service-19fcb7995aa98119
@@ -266,6 +267,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: api-service-19fcb7995aa98119
@@ -286,6 +288,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: echo-service-eb4ea372d99abf73

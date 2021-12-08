@@ -127,6 +127,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: external-httpbin-374dddb882a5e651

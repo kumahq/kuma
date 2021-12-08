@@ -1338,7 +1338,7 @@ workflows:
         <<: *release_workflow_filters
         requires:
           - go_cache
-        target: test test/release
+        target: test
     - release:
         <<: *release_workflow_filters
         requires:

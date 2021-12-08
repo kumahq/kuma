@@ -172,6 +172,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: regex-query-match-3804d7b8516d7323
@@ -191,6 +192,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: exact-query-match-cc1370f58a3b5330
@@ -210,6 +212,7 @@ Routes:
                 baseInterval: 0.025s
                 maxInterval: 0.250s
               retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
             weightedClusters:
               clusters:
               - name: exact-query-match-cc1370f58a3b5330
