@@ -3,10 +3,11 @@ package xds
 import (
 	"reflect"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 func ValidateMatchedPoliciesType(t reflect.Type) error {

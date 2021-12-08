@@ -155,9 +155,9 @@ var _ = Describe("Matcher", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// should match because kong->backend rule
-		Expect(log["backend"]).To(Equal(backendFile2))
+		Expect(log["backend"].Spec.Conf.Backend).To(Equal(backendFile2.Name))
 		// should match because *->* rule and default backend file1
-		Expect(log["web"]).To(Equal(backendFile1))
+		Expect(log["web"].Spec.Conf.Backend).To(Equal(backendFile1.Name))
 		// should match implicit pass through because service *->* rule and default backend file1
 		Expect(log[core_mesh.PassThroughService]).To(Equal(backendFile1))
 	})

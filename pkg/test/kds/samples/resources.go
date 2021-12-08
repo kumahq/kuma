@@ -313,7 +313,7 @@ var (
 		Conf: &mesh_proto.RateLimit_Conf{
 			Http: &mesh_proto.RateLimit_Conf_Http{
 				Requests: 100,
-				Interval: util_proto.Duration(1*time.Minute),
+				Interval: util_proto.Duration(1 * time.Minute),
 			},
 		},
 	}
