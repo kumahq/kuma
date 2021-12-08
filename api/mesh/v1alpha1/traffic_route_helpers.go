@@ -7,7 +7,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func (m *TrafficRoute) UnmarshalJSON(data []byte) error {
