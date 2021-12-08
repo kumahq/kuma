@@ -139,12 +139,6 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 	return errs
 }
 
-var ingressOpts = store.ListOptionsFunc(func(options *store.ListOptions) {
-	options.FilterFunc = func(rs model.Resource) bool {
-		return rs.GetSpec().(*mesh_proto.Dataplane).IsIngress()
-	}
-})
-
 func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, serviceVipEnabled bool, mesh string) (*vips.VirtualOutboundMeshView, error) {
 	outboundSet := vips.NewEmptyVirtualOutboundView()
 	ctx := context.Background()
@@ -159,28 +153,12 @@ func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, serviceVip
 	}
 	var errs error
 	for _, dp := range dataplanes.Items {
-		if dp.Spec.IsIngress() {
-			continue
-		}
 		for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
 			if serviceVipEnabled {
 				errs = multierr.Append(errs, addDefault(outboundSet, inbound.GetService(), 0))
 			}
 			for _, vob := range Match(virtualOutbounds.Items, inbound.Tags) {
 				addFromVirtualOutbound(outboundSet, vob, inbound.Tags, dp.Descriptor().Name, dp.Meta.GetName())
-			}
-		}
-	}
-
-	// backwards compatibility with ingress mesh
-	legacyIngresses := core_mesh.DataplaneResourceList{}
-	if err := rm.List(ctx, &legacyIngresses, store.ListByMesh("default"), ingressOpts); err != nil {
-		return nil, err
-	}
-	for _, dp := range legacyIngresses.Items {
-		for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
-			if service.Mesh == mesh && serviceVipEnabled {
-				errs = multierr.Append(errs, addDefault(outboundSet, service.GetTags()[mesh_proto.ServiceTag], 0))
 			}
 		}
 	}

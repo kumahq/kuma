@@ -43,7 +43,7 @@ func BuildEdsEndpointMap(
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, dataplanes, zone, mesh)
+	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zone, mesh)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
@@ -74,9 +74,6 @@ func BuildEdsEndpointMap(
 //    * ingress-zone2-2 - weight: 3
 func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, endpointWeight uint32) {
 	for _, dataplane := range dataplanes {
-		if dataplane.Spec.IsIngress() {
-			continue
-		}
 		for _, inbound := range dataplane.Spec.GetNetworking().GetHealthyInbounds() {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
@@ -96,12 +93,10 @@ func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*core_me
 func fillIngressOutbounds(
 	outbound core_xds.EndpointMap,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
-	dataplanes []*core_mesh.DataplaneResource,
 	zone string,
 	mesh *core_mesh.MeshResource,
 ) uint32 {
 	ingressInstances := map[string]bool{}
-
 	for _, zi := range zoneIngresses {
 		if !zi.IsRemoteIngress(zone) {
 			continue
@@ -118,6 +113,7 @@ func fillIngressOutbounds(
 		if ingressInstances[ingressCoordinates] {
 			continue // many Ingress instances can be placed in front of one load balancer (all instances can have the same public address and port). In this case we only need one Instance avoiding creating unnecessary duplicated endpoints
 		}
+		ingressInstances[ingressCoordinates] = true
 		for _, service := range zi.Spec.GetAvailableServices() {
 			if service.Mesh != mesh.GetMeta().GetName() {
 				continue
@@ -126,43 +122,6 @@ func fillIngressOutbounds(
 			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
 				Target:   zi.Spec.GetNetworking().GetAdvertisedAddress(),
 				Port:     zi.Spec.GetNetworking().GetAdvertisedPort(),
-				Tags:     service.Tags,
-				Weight:   service.Instances,
-				Locality: localityFromTags(mesh, priorityRemote, service.Tags),
-			})
-		}
-	}
-
-	// backwards compatibility
-	for _, dataplane := range dataplanes {
-		if !dataplane.Spec.IsIngress() {
-			continue
-		}
-		if !dataplane.Spec.IsZoneIngress(zone) {
-			continue // we only need Ingress for other zones, we don't want to direct request to the same zone through Ingress
-		}
-		if !mesh.MTLSEnabled() {
-			// Ingress routes the request by TLS SNI, therefore for cross cluster communication MTLS is required
-			// We ignore Ingress from endpoints if MTLS is disabled, otherwise we would fail anyway.
-			continue
-		}
-		if !dataplane.Spec.HasPublicAddress() {
-			continue // Dataplane is not reachable yet from other clusters. This may happen when Ingress Service is pending waiting on External IP on Kubernetes.
-		}
-		ingressCoordinates := net.JoinHostPort(dataplane.Spec.Networking.Ingress.PublicAddress,
-			strconv.FormatUint(uint64(dataplane.Spec.Networking.Ingress.PublicPort), 10))
-		if ingressInstances[ingressCoordinates] {
-			continue // many Ingress instances can be placed in front of one load balancer (all instances can have the same public address and port). In this case we only need one Instance avoiding creating unnecessary duplicated endpoints
-		}
-		ingressInstances[ingressCoordinates] = true
-		for _, service := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
-			if service.Mesh != mesh.GetMeta().GetName() {
-				continue
-			}
-			serviceName := service.Tags[mesh_proto.ServiceTag]
-			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-				Target:   dataplane.Spec.Networking.Ingress.PublicAddress,
-				Port:     dataplane.Spec.Networking.Ingress.PublicPort,
 				Tags:     service.Tags,
 				Weight:   service.Instances,
 				Locality: localityFromTags(mesh, priorityRemote, service.Tags),

@@ -92,11 +92,6 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 					util.AddSuffixToNames(rs.GetItems(), "default")
 				}
 			}
-			if rs.GetItemType() == mesh.DataplaneType {
-				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					return r.(*mesh.DataplaneResource).Spec.IsZoneIngress(localZone)
-				}))
-			}
 			if rs.GetItemType() == mesh.ZoneIngressType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return r.(*mesh.ZoneIngressResource).IsRemoteIngress(localZone)

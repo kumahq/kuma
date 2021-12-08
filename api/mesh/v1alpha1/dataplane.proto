@@ -16,43 +16,16 @@ message Dataplane {
   option (kuma.mesh.resource).name = "DataplaneResource";
   option (kuma.mesh.resource).type = "Dataplane";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).kds.send_to_global = true;
   option (kuma.mesh.resource).ws.name = "dataplane";
 
   // Networking describes inbound and outbound interfaces of a dataplane.
   message Networking {
 
-    // Ingress allows us to configure dataplane in the Ingress mode. In this
-    // mode, dataplane has only inbound interfaces (outbound and gateway
-    // prohibited). Every inbound interface matches with services that reside in
-    // that cluster.
-    message Ingress {
-      // AvailableService contains tags that represent unique subset of
-      // endpoints
-      message AvailableService {
-        // tags of the service
-        map<string, string> tags = 1;
-        // number of instances available for given tags
-        uint32 instances = 2;
-        // mesh of the instances available for given tags
-        string mesh = 3;
-      }
-      repeated AvailableService availableServices = 1;
-
-      // PublicAddress defines IP or DNS name on which Ingress is accessible to
-      // other Kuma clusters.
-      string publicAddress = 2;
-      // PublicPort defines port on which Ingress is accessible to other Kuma
-      // clusters.
-      uint32 publicPort = 3;
-    }
-
-    // Ingress if not nil, dataplane will be work in the Ingress mode
-    Ingress ingress = 6;
-
     // Public IP on which the dataplane is accessible in the network.
     string address = 5;
+
+    reserved 6; // Formerly ingress mode message, see #3435
 
     // In some situation, dataplane resides in a private network and not
     // reachable via 'address'. advertisedAddress is configured with public

@@ -244,6 +244,7 @@ var _ = Describe("TrafficRoute", func() {
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
 			dataplanes       []*core_mesh.DataplaneResource
+			zoneIngresses    []*core_mesh.ZoneIngressResource
 			externalServices []*core_mesh.ExternalServiceResource
 			mesh             *core_mesh.MeshResource
 			expected         core_xds.EndpointMap
@@ -251,7 +252,7 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.mesh, "zone-1", given.dataplanes, nil, given.externalServices, dataSourceLoader)
+				endpoints := BuildEndpointMap(given.mesh, "zone-1", given.dataplanes, given.zoneIngresses, given.externalServices, dataSourceLoader)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -277,89 +278,73 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
+				},
+				zoneIngresses: []*core_mesh.ZoneIngressResource{
 					{
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "10.20.1.2",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags: map[string]string{mesh_proto.ServiceTag: "ingress", mesh_proto.ZoneTag: "zone-2"},
-										Port: 10001,
-									},
+						Spec: &mesh_proto.ZoneIngress{
+							Zone: "zone-2",
+							Networking: &mesh_proto.ZoneIngress_Networking{
+								Address:           "10.20.1.2",
+								Port:              10001,
+								AdvertisedAddress: "192.168.0.100",
+								AdvertisedPort:    12345,
+							},
+							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+								{
+									Instances: 2,
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 								},
-								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-									PublicAddress: "192.168.0.100",
-									PublicPort:    12345,
-									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
-										{
-											Instances: 2,
-											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
-										},
-										{
-											Instances: 3,
-											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
-										},
-									},
+								{
+									Instances: 3,
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
 								},
 							},
 						},
 					},
 					{
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "10.20.1.3", // another instance of the same ingress will be ignored
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags: map[string]string{mesh_proto.ServiceTag: "ingress", mesh_proto.ZoneTag: "zone-2"},
-										Port: 10001,
-									},
+						Spec: &mesh_proto.ZoneIngress{
+							Zone: "zone-2",
+							Networking: &mesh_proto.ZoneIngress_Networking{
+								Address:           "10.20.1.3", // another instance of the same ingress will be ignored
+								Port:              10001,
+								AdvertisedAddress: "192.168.0.100",
+								AdvertisedPort:    12345,
+							},
+							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+								{
+									Instances: 2,
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 								},
-								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-									PublicAddress: "192.168.0.100",
-									PublicPort:    12345,
-									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
-										{
-											Instances: 2,
-											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
-										},
-										{
-											Instances: 3,
-											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
-										},
-									},
+								{
+									Instances: 3,
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
 								},
 							},
 						},
 					},
 					{
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "10.20.1.4",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags: map[string]string{mesh_proto.ServiceTag: "ingress", mesh_proto.ZoneTag: "zone-2"},
-										Port: 10001,
-									},
+						Spec: &mesh_proto.ZoneIngress{
+							Zone: "zone-2",
+							Networking: &mesh_proto.ZoneIngress_Networking{
+								Address:           "10.20.1.4",
+								Port:              10001,
+								AdvertisedAddress: "192.168.0.101",
+								AdvertisedPort:    12345,
+							},
+							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+								{
+									Instances: 2,
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 								},
-								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-									PublicAddress: "192.168.0.101", // instance of the ingress with different public coordinates
-									PublicPort:    12345,
-									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
-										{
-											Instances: 2,
-											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
-										},
-										{
-											Instances: 3,
-											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
-										},
-									},
+								{
+									Instances: 3,
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
 								},
 							},
 						},
@@ -424,31 +409,27 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
+				},
+				zoneIngresses: []*core_mesh.ZoneIngressResource{
 					{
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "10.20.1.2",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags: map[string]string{mesh_proto.ServiceTag: "ingress", mesh_proto.ZoneTag: "zone-2"},
-										Port: 10001,
-									},
+						Spec: &mesh_proto.ZoneIngress{
+							Zone: "zone-2",
+							Networking: &mesh_proto.ZoneIngress_Networking{
+								Address:           "10.20.1.2",
+								Port:              10001,
+								AdvertisedAddress: "192.168.0.100",
+								AdvertisedPort:    12345,
+							},
+							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+								{
+									Instances: 2,
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 								},
-								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-									PublicAddress: "192.168.0.100",
-									PublicPort:    12345,
-									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
-										{
-											Instances: 2,
-											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
-										},
-										{
-											Instances: 3,
-											Mesh:      nonDefaultMesh,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
-										},
-									},
+								{
+									Instances: 3,
+									Mesh:      nonDefaultMesh,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
 								},
 							},
 						},
@@ -492,29 +473,25 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
+				},
+				zoneIngresses: []*core_mesh.ZoneIngressResource{
 					{
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
+						Spec: &mesh_proto.ZoneIngress{
+							Zone: "zone-2",
+							Networking: &mesh_proto.ZoneIngress_Networking{
 								Address: "10.20.1.2",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags: map[string]string{mesh_proto.ServiceTag: "ingress", mesh_proto.ZoneTag: "zone-2"},
-										Port: 10001,
-									},
+								Port:    10001,
+							},
+							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+								{
+									Instances: 2,
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
 								},
-								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
-										{
-											Instances: 2,
-											Mesh:      defaultMeshName,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
-										},
-										{
-											Instances: 3,
-											Mesh:      nonDefaultMesh,
-											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
-										},
-									},
+								{
+									Instances: 3,
+									Mesh:      nonDefaultMesh,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
 								},
 							},
 						},

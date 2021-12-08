@@ -11,29 +11,21 @@ import (
 
 var _ = Describe("Ingress BuildDestinationMap", func() {
 	It("should generate destination map by ingress", func() {
-		ingress, err := mesh.NewZoneIngressResourceFromDataplane(&mesh.DataplaneResource{
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-						Port: 10001,
-					}},
-					Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-						AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
-							{
-								Tags: map[string]string{"kuma.io/service": "backend", "version": "v1", "region": "us"},
-							},
-							{
-								Tags: map[string]string{"kuma.io/service": "backend"},
-							},
-							{
-								Tags: map[string]string{"kuma.io/service": "web", "version": "v2", "region": "eu"},
-							},
-						},
+		ingress := &mesh.ZoneIngressResource{
+			Spec: &mesh_proto.ZoneIngress{
+				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+					{
+						Tags: map[string]string{"kuma.io/service": "backend", "version": "v1", "region": "us"},
+					},
+					{
+						Tags: map[string]string{"kuma.io/service": "backend"},
+					},
+					{
+						Tags: map[string]string{"kuma.io/service": "web", "version": "v2", "region": "eu"},
 					},
 				},
 			},
-		})
-		Expect(err).ToNot(HaveOccurred())
+		}
 
 		actual := BuildDestinationMap(ingress)
 		expected := xds.DestinationMap{

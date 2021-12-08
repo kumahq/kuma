@@ -364,7 +364,6 @@ var _ = Describe("Dataplane classification", func() {
 			}
 			Expect(dp.IsDelegatedGateway()).To(BeFalse())
 			Expect(dp.IsBuiltinGateway()).To(BeFalse())
-			Expect(dp.IsIngress()).To(BeFalse())
 		})
 	})
 
@@ -377,7 +376,6 @@ var _ = Describe("Dataplane classification", func() {
 			}
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
 			Expect(gw.IsBuiltinGateway()).To(BeFalse())
-			Expect(gw.IsIngress()).To(BeFalse())
 		})
 	})
 
@@ -392,7 +390,6 @@ var _ = Describe("Dataplane classification", func() {
 			}
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
 			Expect(gw.IsBuiltinGateway()).To(BeFalse())
-			Expect(gw.IsIngress()).To(BeFalse())
 		})
 	})
 
@@ -407,20 +404,6 @@ var _ = Describe("Dataplane classification", func() {
 			}
 			Expect(gw.IsDelegatedGateway()).To(BeFalse())
 			Expect(gw.IsBuiltinGateway()).To(BeTrue())
-			Expect(gw.IsIngress()).To(BeFalse())
-		})
-	})
-
-	Describe("with ingress networking", func() {
-		It("should be an ingress gateway", func() {
-			in := Dataplane{
-				Networking: &Dataplane_Networking{
-					Ingress: &Dataplane_Networking_Ingress{},
-				},
-			}
-			Expect(in.IsDelegatedGateway()).To(BeFalse())
-			Expect(in.IsBuiltinGateway()).To(BeFalse())
-			Expect(in.IsIngress()).To(BeTrue())
 		})
 	})
 })

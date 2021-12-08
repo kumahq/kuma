@@ -202,7 +202,7 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:       false,
 	AdminOnly:      false,
 	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromZoneToGlobal | model.FromGlobalToZone,
+	KDSFlags:       model.FromZoneToGlobal,
 	WsPath:         "dataplanes",
 	KumactlArg:     "dataplane",
 	KumactlListArg: "dataplanes",

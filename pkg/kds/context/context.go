@@ -54,7 +54,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 		if resType != mesh.DataplaneType && resType != mesh.ZoneIngressType {
 			return true
 		}
-		if resType == mesh.DataplaneType && !r.(*mesh.DataplaneResource).Spec.IsIngress() {
+		if resType == mesh.DataplaneType {
 			return false
 		}
 		if clusterID == util.ZoneTag(r) {
