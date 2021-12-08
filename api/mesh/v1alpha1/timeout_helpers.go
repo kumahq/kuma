@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	proto_util "github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func (x *Timeout_Conf) GetConnectTimeoutOrDefault(defaultConnectTimeout time.Duration) time.Duration {
@@ -19,11 +19,11 @@ func (x *Timeout_Conf) GetConnectTimeoutOrDefault(defaultConnectTimeout time.Dur
 }
 
 func (m *Timeout) UnmarshalJSON(data []byte) error {
-	return proto_util.FromJSON(data, m)
+	return util_proto.FromJSON(data, m)
 }
 
 func (m *Timeout) MarshalJSON() ([]byte, error) {
-	return proto_util.ToJSON(m)
+	return util_proto.ToJSON(m)
 }
 func (t *Timeout) DeepCopyInto(out *Timeout) {
 	proto.Merge(out, t)

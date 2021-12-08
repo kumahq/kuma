@@ -7,18 +7,17 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/generic"
-	proto_util "github.com/kumahq/kuma/pkg/util/proto"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ generic.Insight = &ZoneIngressInsight{}
 
 func (m *ZoneIngressInsight) UnmarshalJSON(data []byte) error {
-	return proto_util.FromJSON(data, m)
+	return util_proto.FromJSON(data, m)
 }
 
 func (m *ZoneIngressInsight) MarshalJSON() ([]byte, error) {
-	return proto_util.ToJSON(m)
+	return util_proto.ToJSON(m)
 }
 func (t *ZoneIngressInsight) DeepCopyInto(out *ZoneIngressInsight) {
 	proto.Merge(out, t)
