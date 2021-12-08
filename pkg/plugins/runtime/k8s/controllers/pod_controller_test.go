@@ -389,6 +389,8 @@ var _ = Describe("PodReconciler", func() {
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
+                k8s.kuma.io/service-name: example
+                k8s.kuma.io/service-port: "80"
                 k8s.kuma.io/namespace: demo
             - health: {} 
               port: 6060
@@ -396,6 +398,8 @@ var _ = Describe("PodReconciler", func() {
                 app: sample
                 kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
+                k8s.kuma.io/service-name: example
+                k8s.kuma.io/service-port: "6061"
                 k8s.kuma.io/namespace: demo
 `))
 	})
@@ -465,6 +469,8 @@ var _ = Describe("PodReconciler", func() {
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
+                k8s.kuma.io/service-name: example
+                k8s.kuma.io/service-port: "80"
                 k8s.kuma.io/namespace: demo
             - health: {} 
               port: 6060
@@ -472,6 +478,8 @@ var _ = Describe("PodReconciler", func() {
                 app: sample
                 kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
+                k8s.kuma.io/service-name: example
+                k8s.kuma.io/service-port: "6061"
                 k8s.kuma.io/namespace: demo
 `))
 	})

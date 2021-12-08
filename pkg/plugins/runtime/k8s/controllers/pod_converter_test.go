@@ -411,9 +411,11 @@ var _ = Describe("InboundTagsForService(..)", func() {
 			isGateway: false,
 			podLabels: nil,
 			expected: map[string]string{
-				"kuma.io/service":       "example_demo_svc_80",
-				"kuma.io/protocol":      "tcp", // we want Kuma's default behavior to be explicit to a user
-				"k8s.kuma.io/namespace": "test",
+				"kuma.io/service":          "example_demo_svc_80",
+				"kuma.io/protocol":         "tcp", // we want Kuma's default behavior to be explicit to a user
+				"k8s.kuma.io/service-name": "example",
+				"k8s.kuma.io/service-port": "80",
+				"k8s.kuma.io/namespace":    "test",
 			},
 		}),
 		Entry("Pod with labels", testCase{
@@ -423,11 +425,13 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"version": "0.1",
 			},
 			expected: map[string]string{
-				"app":                   "example",
-				"version":               "0.1",
-				"kuma.io/service":       "example_demo_svc_80",
-				"kuma.io/protocol":      "tcp", // we want Kuma's default behavior to be explicit to a user
-				"k8s.kuma.io/namespace": "test",
+				"app":                      "example",
+				"version":                  "0.1",
+				"kuma.io/service":          "example_demo_svc_80",
+				"kuma.io/protocol":         "tcp", // we want Kuma's default behavior to be explicit to a user
+				"k8s.kuma.io/service-name": "example",
+				"k8s.kuma.io/service-port": "80",
+				"k8s.kuma.io/namespace":    "test",
 			},
 		}),
 		Entry("Pod with `service` label", testCase{
@@ -438,11 +442,13 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"version":         "0.1",
 			},
 			expected: map[string]string{
-				"app":                   "example",
-				"version":               "0.1",
-				"kuma.io/service":       "example_demo_svc_80",
-				"kuma.io/protocol":      "tcp", // we want Kuma's default behavior to be explicit to a user
-				"k8s.kuma.io/namespace": "test",
+				"app":                      "example",
+				"version":                  "0.1",
+				"kuma.io/service":          "example_demo_svc_80",
+				"kuma.io/protocol":         "tcp", // we want Kuma's default behavior to be explicit to a user
+				"k8s.kuma.io/service-name": "example",
+				"k8s.kuma.io/service-port": "80",
+				"k8s.kuma.io/namespace":    "test",
 			},
 		}),
 		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and an unknown value", testCase{
@@ -455,11 +461,13 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"80.service.kuma.io/protocol": "not-yet-supported-protocol",
 			},
 			expected: map[string]string{
-				"app":                   "example",
-				"version":               "0.1",
-				"kuma.io/service":       "example_demo_svc_80",
-				"kuma.io/protocol":      "not-yet-supported-protocol", // we want Kuma's behavior to be straightforward to a user (just copy annotation value "as is")
-				"k8s.kuma.io/namespace": "test",
+				"app":                      "example",
+				"version":                  "0.1",
+				"kuma.io/service":          "example_demo_svc_80",
+				"kuma.io/protocol":         "not-yet-supported-protocol", // we want Kuma's behavior to be straightforward to a user (just copy annotation value "as is")
+				"k8s.kuma.io/service-name": "example",
+				"k8s.kuma.io/service-port": "80",
+				"k8s.kuma.io/namespace":    "test",
 			},
 		}),
 		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and a known value", testCase{
@@ -472,11 +480,13 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"80.service.kuma.io/protocol": "http",
 			},
 			expected: map[string]string{
-				"app":                   "example",
-				"version":               "0.1",
-				"kuma.io/service":       "example_demo_svc_80",
-				"kuma.io/protocol":      "http",
-				"k8s.kuma.io/namespace": "test",
+				"app":                      "example",
+				"version":                  "0.1",
+				"kuma.io/service":          "example_demo_svc_80",
+				"kuma.io/protocol":         "http",
+				"k8s.kuma.io/service-name": "example",
+				"k8s.kuma.io/service-port": "80",
+				"k8s.kuma.io/namespace":    "test",
 			},
 		}),
 		Entry("Service with appProtocol and a known value", testCase{
@@ -487,11 +497,13 @@ var _ = Describe("InboundTagsForService(..)", func() {
 			},
 			appProtocol: utilpointer.StringPtr("http"),
 			expected: map[string]string{
-				"app":                   "example",
-				"version":               "0.1",
-				"kuma.io/service":       "example_demo_svc_80",
-				"kuma.io/protocol":      "http",
-				"k8s.kuma.io/namespace": "test",
+				"app":                      "example",
+				"version":                  "0.1",
+				"kuma.io/service":          "example_demo_svc_80",
+				"kuma.io/protocol":         "http",
+				"k8s.kuma.io/service-name": "example",
+				"k8s.kuma.io/service-port": "80",
+				"k8s.kuma.io/namespace":    "test",
 			},
 		}),
 		Entry("Inject a zone tag if Zone is set", testCase{
@@ -502,12 +514,14 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"version": "0.1",
 			},
 			expected: map[string]string{
-				"app":                   "example",
-				"version":               "0.1",
-				mesh_proto.ServiceTag:   "example_demo_svc_80",
-				mesh_proto.ZoneTag:      "zone-1",
-				mesh_proto.ProtocolTag:  "tcp",
-				"k8s.kuma.io/namespace": "test",
+				"app":                      "example",
+				"version":                  "0.1",
+				mesh_proto.ServiceTag:      "example_demo_svc_80",
+				mesh_proto.ZoneTag:         "zone-1",
+				mesh_proto.ProtocolTag:     "tcp",
+				"k8s.kuma.io/service-name": "example",
+				"k8s.kuma.io/service-port": "80",
+				"k8s.kuma.io/namespace":    "test",
 			},
 		}),
 		Entry("Pod with empty labels", testCase{
@@ -517,10 +531,12 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"version": "",
 			},
 			expected: map[string]string{
-				"app":                   "example",
-				"kuma.io/service":       "example_demo_svc_80",
-				"kuma.io/protocol":      "tcp",
-				"k8s.kuma.io/namespace": "test",
+				"app":                      "example",
+				"kuma.io/service":          "example_demo_svc_80",
+				"kuma.io/protocol":         "tcp",
+				"k8s.kuma.io/service-name": "example",
+				"k8s.kuma.io/service-port": "80",
+				"k8s.kuma.io/namespace":    "test",
 			},
 		}),
 	)
