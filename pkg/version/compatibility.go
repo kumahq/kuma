@@ -69,7 +69,7 @@ var CompatibilityMatrix = Compatibility{
 func (c Compatibility) DataplaneConstraints(version string) (*DataplaneCompatibility, error) {
 	v, err := semver.NewVersion(version)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not build a constraint %s", version)
+		return nil, errors.Wrapf(err, "could not build a constraint for Kuma version %s", version)
 	}
 
 	var matchedCompat []DataplaneCompatibility

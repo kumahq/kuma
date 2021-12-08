@@ -19,6 +19,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/tls"
@@ -273,15 +274,19 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 	builder.Configure(
 		envoy_listeners.DefaultCompressorFilter(),
 		envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service),
-		// TODO(jpeach) Logging policy doesn't work at all. The logging backend is
-		// selected by matching against outbound service names, and gateway dataplanes
-		// don't have any of those.
+		// In mesh proxies, the access log is configured on the outbound
+		// listener, which is why we index the Logs slice by destination
+		// service name.  A Gateway listener by definition forwards traffic
+		// to multiple destinations, so rather than making up some arbitrary
+		// rules about which destination service we should accept here, we
+		// match the log policy for the generic pass through service. This
+		// will be the only policy available for a Dataplane with no outbounds.
 		envoy_listeners.HttpAccessLog(
 			ctx.Mesh.Resource.Meta.GetName(),
 			envoy.TrafficDirectionInbound,
-			service, // Source service is the gateway service.
-			"*",     // Destination service could be anywhere, depending on the routes.
-			ctx.Mesh.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[service]),
+			service,                // Source service is the gateway service.
+			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
+			ctx.Mesh.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
 			info.Proxy,
 		),
 	)

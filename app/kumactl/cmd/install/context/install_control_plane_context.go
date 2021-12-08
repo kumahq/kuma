@@ -71,7 +71,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			ControlPlane_image_tag:                  kuma_version.Build.GitTag,
 			ControlPlane_service_name:               "kuma-control-plane",
 			ControlPlane_envVars:                    map[string]string{},
-			ControlPlane_injectorFailurePolicy:      "Ignore",
+			ControlPlane_injectorFailurePolicy:      "Fail",
 			DataPlane_image_registry:                "docker.io/kumahq",
 			DataPlane_image_repository:              "kuma-dp",
 			DataPlane_image_tag:                     kuma_version.Build.GitTag,
