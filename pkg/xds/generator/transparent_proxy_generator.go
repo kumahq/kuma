@@ -78,7 +78,14 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 		Configure(envoy_listeners.OutboundListener(outboundName, allIP, redirectPortOutbound, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxy(outboundName, envoy_common.NewCluster(envoy_common.WithService(outboundName)))).
-			Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, "external", proxy.Policies.Logs[core_mesh.PassThroughService], proxy)))).
+			Configure(envoy_listeners.NetworkAccessLog(
+				meshName,
+				envoy_common.TrafficDirectionUnspecified,
+				sourceService,
+				"external",
+				ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+				proxy,
+			)))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {

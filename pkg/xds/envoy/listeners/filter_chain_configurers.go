@@ -86,13 +86,13 @@ func TcpProxyWithMetadata(statsName string, clusters ...envoy_common.Cluster) Fi
 	})
 }
 
-func FaultInjection(faultInjections ...*mesh_proto.FaultInjection) FilterChainBuilderOpt {
+func FaultInjection(faultInjections ...*core_mesh.FaultInjectionResource) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.FaultInjectionConfigurer{
 		FaultInjections: faultInjections,
 	})
 }
 
-func RateLimit(rateLimits []*mesh_proto.RateLimit) FilterChainBuilderOpt {
+func RateLimit(rateLimits []*core_mesh.RateLimitResource) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.RateLimitConfigurer{
 		RateLimits: rateLimits,
 	})

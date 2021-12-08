@@ -272,7 +272,7 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 	// Tracing and logging have to be configured after the HttpConnectionManager is enabled.
 	builder.Configure(
 		envoy_listeners.DefaultCompressorFilter(),
-		envoy_listeners.Tracing(info.Proxy.Policies.TracingBackend, service),
+		envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service),
 		// TODO(jpeach) Logging policy doesn't work at all. The logging backend is
 		// selected by matching against outbound service names, and gateway dataplanes
 		// don't have any of those.
@@ -281,7 +281,7 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 			envoy.TrafficDirectionInbound,
 			service, // Source service is the gateway service.
 			"*",     // Destination service could be anywhere, depending on the routes.
-			info.Proxy.Policies.Logs[service],
+			ctx.Mesh.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[service]),
 			info.Proxy,
 		),
 	)

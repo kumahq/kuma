@@ -58,7 +58,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 
 		routes, err := g.buildInboundRoutes(
 			envoy_common.NewCluster(envoy_common.WithService(localClusterName)),
-			proxy.Policies.RateLimits.Inbound[endpoint])
+			proxy.Policies.RateLimitsInbound[endpoint])
 		if err != nil {
 			return nil, err
 		}
@@ -74,16 +74,16 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
-					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits.Inbound[endpoint])).
-					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, service)).
+					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
+					Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service)).
 					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
 			case core_mesh.ProtocolGRPC:
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
 					Configure(envoy_listeners.GrpcStats()).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
-					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits.Inbound[endpoint])).
-					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, service)).
+					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
+					Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service)).
 					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
 			case core_mesh.ProtocolKafka:
 				filterChainBuilder.
@@ -100,7 +100,8 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 					Configure(envoy_listeners.ServerSideMTLS(ctx))
 			}
 			return filterChainBuilder.
-				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]))
+				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(),
+					proxy.Policies.TrafficPermissions[endpoint]))
 		}
 
 		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
@@ -144,16 +145,16 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 	return resources, nil
 }
 
-func (g *InboundProxyGenerator) buildInboundRoutes(cluster envoy_common.Cluster, rateLimits []*mesh_proto.RateLimit) (envoy_common.Routes, error) {
+func (g *InboundProxyGenerator) buildInboundRoutes(cluster envoy_common.Cluster, rateLimits []*core_mesh.RateLimitResource) (envoy_common.Routes, error) {
 	routes := envoy_common.Routes{}
 
 	// Iterate over that RateLimits and generate the relevant Routes.
 	// We do assume that the rateLimits resource is sorted, so the most
 	// specific source matches come first.
 	for _, rateLimit := range rateLimits {
-		if rateLimit.GetConf().GetHttp() != nil {
+		if rateLimit.Spec.GetConf().GetHttp() != nil {
 			route := envoy_common.NewRouteFromCluster(cluster)
-			if len(rateLimit.GetSources()) > 0 {
+			if len(rateLimit.Spec.GetSources()) > 0 {
 				if route.Match == nil {
 					route.Match = &mesh_proto.TrafficRoute_Http_Match{}
 				}
@@ -163,7 +164,7 @@ func (g *InboundProxyGenerator) buildInboundRoutes(cluster envoy_common.Cluster,
 				}
 
 				var selectorRegexs []string
-				for _, selector := range rateLimit.SourceTags() {
+				for _, selector := range rateLimit.Spec.SourceTags() {
 					selectorRegexs = append(selectorRegexs, tags.MatchingRegex(selector))
 				}
 				regexOR := tags.RegexOR(selectorRegexs...)
@@ -175,7 +176,7 @@ func (g *InboundProxyGenerator) buildInboundRoutes(cluster envoy_common.Cluster,
 				}
 			}
 
-			route.RateLimit = rateLimit
+			route.RateLimit = rateLimit.Spec
 
 			routes = append(routes, route)
 		}

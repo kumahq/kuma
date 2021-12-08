@@ -1,6 +1,7 @@
 package context
 
 import (
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -30,6 +31,20 @@ type MeshContext struct {
 	Resource   *core_mesh.MeshResource
 	Dataplanes *core_mesh.DataplaneResourceList
 	Hash       string
+}
+
+func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
+	if tt == nil {
+		return nil
+	}
+	return mc.Resource.GetTracingBackend(tt.Spec.GetConf().GetBackend())
+}
+
+func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh_proto.LoggingBackend {
+	if tl == nil {
+		return nil
+	}
+	return mc.Resource.GetLoggingBackend(tl.Spec.GetConf().GetBackend())
 }
 
 func BuildControlPlaneContext(

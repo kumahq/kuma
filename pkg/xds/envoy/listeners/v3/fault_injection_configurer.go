@@ -7,6 +7,7 @@ import (
 	envoy_http_fault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -15,7 +16,7 @@ import (
 )
 
 type FaultInjectionConfigurer struct {
-	FaultInjections []*mesh_proto.FaultInjection
+	FaultInjections []*core_mesh.FaultInjectionResource
 }
 
 func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -26,14 +27,14 @@ func (f *FaultInjectionConfigurer) Configure(filterChain *envoy_listener.FilterC
 	// specific source matches come first.
 	for _, fi := range f.FaultInjections {
 		config := &envoy_http_fault.HTTPFault{
-			Delay: convertDelay(fi.Conf.GetDelay()),
-			Abort: convertAbort(fi.Conf.GetAbort()),
+			Delay: convertDelay(fi.Spec.Conf.GetDelay()),
+			Abort: convertAbort(fi.Spec.Conf.GetAbort()),
 			Headers: []*envoy_route.HeaderMatcher{
-				createHeaders(fi.SourceTags()),
+				createHeaders(fi.Spec.SourceTags()),
 			},
 		}
 
-		rrl, err := convertResponseRateLimit(fi.Conf.GetResponseBandwidth())
+		rrl, err := convertResponseRateLimit(fi.Spec.Conf.GetResponseBandwidth())
 		if err != nil {
 			return err
 		}
