@@ -375,7 +375,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 			// given
 			pod := &kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "test",
+					Namespace: "demo",
 					Labels:    given.podLabels,
 				},
 			}
@@ -415,7 +415,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"kuma.io/protocol":         "tcp", // we want Kuma's default behavior to be explicit to a user
 				"k8s.kuma.io/service-name": "example",
 				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "test",
+				"k8s.kuma.io/namespace":    "demo",
 			},
 		}),
 		Entry("Pod with labels", testCase{
@@ -431,7 +431,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"kuma.io/protocol":         "tcp", // we want Kuma's default behavior to be explicit to a user
 				"k8s.kuma.io/service-name": "example",
 				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "test",
+				"k8s.kuma.io/namespace":    "demo",
 			},
 		}),
 		Entry("Pod with `service` label", testCase{
@@ -448,7 +448,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"kuma.io/protocol":         "tcp", // we want Kuma's default behavior to be explicit to a user
 				"k8s.kuma.io/service-name": "example",
 				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "test",
+				"k8s.kuma.io/namespace":    "demo",
 			},
 		}),
 		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and an unknown value", testCase{
@@ -467,7 +467,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"kuma.io/protocol":         "not-yet-supported-protocol", // we want Kuma's behavior to be straightforward to a user (just copy annotation value "as is")
 				"k8s.kuma.io/service-name": "example",
 				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "test",
+				"k8s.kuma.io/namespace":    "demo",
 			},
 		}),
 		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and a known value", testCase{
@@ -486,7 +486,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"kuma.io/protocol":         "http",
 				"k8s.kuma.io/service-name": "example",
 				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "test",
+				"k8s.kuma.io/namespace":    "demo",
 			},
 		}),
 		Entry("Service with appProtocol and a known value", testCase{
@@ -503,7 +503,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"kuma.io/protocol":         "http",
 				"k8s.kuma.io/service-name": "example",
 				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "test",
+				"k8s.kuma.io/namespace":    "demo",
 			},
 		}),
 		Entry("Inject a zone tag if Zone is set", testCase{
@@ -521,7 +521,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				mesh_proto.ProtocolTag:     "tcp",
 				"k8s.kuma.io/service-name": "example",
 				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "test",
+				"k8s.kuma.io/namespace":    "demo",
 			},
 		}),
 		Entry("Pod with empty labels", testCase{
@@ -536,7 +536,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"kuma.io/protocol":         "tcp",
 				"k8s.kuma.io/service-name": "example",
 				"k8s.kuma.io/service-port": "80",
-				"k8s.kuma.io/namespace":    "test",
+				"k8s.kuma.io/namespace":    "demo",
 			},
 		}),
 	)
