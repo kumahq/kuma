@@ -2,31 +2,34 @@ package k8s
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/operator-framework/operator-lib/leader"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kumahq/kuma/pkg/core"
-	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}
@@ -40,7 +43,10 @@ func init() {
 }
 
 func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
-	scheme := kube_runtime.NewScheme()
+	scheme, err := NewScheme()
+	if err != nil {
+		return err
+	}
 	config := kube_ctrl.GetConfigOrDie()
 	mgr, err := kube_ctrl.NewManager(
 		config,
@@ -48,24 +54,27 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 			Scheme:   scheme,
 			NewCache: kuma_kube_cache.New,
 			// Admission WebHook Server
-			Host:                    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
-			Port:                    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
-			CertDir:                 b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
-			LeaderElection:          true,
-			LeaderElectionID:        "kuma-cp-leader",
-			LeaderElectionNamespace: b.Config().Store.Kubernetes.SystemNamespace,
+			Host:           b.Config().Runtime.Kubernetes.AdmissionServer.Address,
+			Port:           int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
+			CertDir:        b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
+			LeaderElection: false,
+
+			// Disable metrics bind address as we serve metrics some other way.
+			MetricsBindAddress: "0",
 		},
 	)
 	if err != nil {
 		return err
 	}
 
-	secretClient, err := secretClient(b.Config().Store.Kubernetes.SystemNamespace, config, scheme, mgr.GetRESTMapper(), b.ShutdownCh())
+	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
+
+	secretClient, err := createSecretClient(b.AppCtx(), scheme, systemNamespace, config, mgr.GetRESTMapper())
 	if err != nil {
 		return err
 	}
 
-	b.WithComponentManager(&kubeComponentManager{mgr})
+	b.WithComponentManager(&kubeComponentManager{mgr, systemNamespace, nil})
 	b.WithExtensions(k8s_extensions.NewManagerContext(b.Extensions(), mgr))
 	b.WithExtensions(k8s_extensions.NewSecretClientContext(b.Extensions(), secretClient))
 	if expTime := b.Config().Runtime.Kubernetes.MarshalingCacheExpirationTime; expTime > 0 {
@@ -82,9 +91,9 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 // If we try to use regular cached client for Secrets then we will see following error: E1126 10:42:52.097662       1 reflector.go:178] pkg/mod/k8s.io/client-go@v0.18.9/tools/cache/reflector.go:125: Failed to list *v1.Secret: secrets is forbidden: User "system:serviceaccount:kuma-system:kuma-control-plane" cannot list resource "secrets" in API group "" at the cluster scope
 // We cannot specify this Namespace parameter for the main cache in ControllerManager because it affect all the resources, therefore we need separate client with cache for Secrets.
 // The alternative was to use non-cached client, but it had performance problems.
-func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runtime.Scheme, restMapper meta.RESTMapper, closeCh <-chan struct{}) (kube_client.Client, error) {
+func createSecretClient(appCtx context.Context, scheme *kube_runtime.Scheme, systemNamespace string, config *rest.Config, restMapper meta.RESTMapper) (kube_client.Client, error) {
 	resyncPeriod := 10 * time.Hour // default resyncPeriod in Kubernetes
-	kubeCache, err := kuma_kube_cache.New(config, cache.Options{
+	kubeCache, err := cache.New(config, cache.Options{
 		Scheme:    scheme,
 		Mapper:    restMapper,
 		Resync:    &resyncPeriod,
@@ -93,13 +102,9 @@ func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runt
 	if err != nil {
 		return nil, err
 	}
-	// Add kube core scheme first, otherwise cache won't start
-	if err := kube_core.AddToScheme(scheme); err != nil {
-		return nil, errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
-	}
 
 	// We are listing secrets by our custom "type", therefore we need to add index by this field into cache
-	err = kubeCache.IndexField(context.Background(), &kube_core.Secret{}, "type", func(object kube_runtime.Object) []string {
+	err = kubeCache.IndexField(appCtx, &kube_core.Secret{}, "type", func(object kube_client.Object) []string {
 		secret := object.(*kube_core.Secret)
 		return []string{string(secret.Type)}
 	})
@@ -110,19 +115,22 @@ func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runt
 	// According to ControllerManager code, cache needs to start before all the Runnables (our Components)
 	// So we need separate go routine to start a cache and then wait for cache
 	go func() {
-		if err := kubeCache.Start(closeCh); err != nil {
+		if err := kubeCache.Start(appCtx); err != nil {
 			// According to implementations, there is no case when error is returned. It just for the Runnable contract.
 			log.Error(err, "could not start the secret k8s cache")
 		}
 	}()
 
-	if ok := kubeCache.WaitForCacheSync(closeCh); !ok {
+	if ok := kubeCache.WaitForCacheSync(appCtx); !ok {
 		// ControllerManager ignores case when WaitForCacheSync returns false.
 		// It might be a better idea to return an error and stop the Control Plane altogether, but sticking to return error for now.
 		core.Log.Error(errors.New("could not sync secret cache"), "failed to wait for cache")
 	}
 
-	return kube_manager.DefaultNewClient(kubeCache, config, kube_client.Options{Scheme: scheme, Mapper: restMapper})
+	return cluster.DefaultNewClient(kubeCache, config, kube_client.Options{
+		Scheme: scheme,
+		Mapper: restMapper,
+	})
 }
 
 func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
@@ -140,9 +148,142 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 
 type kubeComponentManager struct {
 	kube_ctrl.Manager
+	oldLeaderElectionNamespace string
+	leaderComponents           []component.Component
 }
 
 var _ component.Manager = &kubeComponentManager{}
+
+type leaderAnnotation struct {
+	HolderIdentity       string `json:"holderIdentity"`
+	LeaseDurationSeconds int    `json:"leaseDurationSeconds"`
+	AcquireTime          string `json:"acquireTime"`
+	RenewTime            string `json:"renewTime"`
+	LeaderTransitions    int    `json:"leaderTransistions"`
+}
+
+var blockerHolderId = "cp-leader-lock-transition"
+var oldLeaderConfigMapName = "kuma-cp-leader"
+
+func makeOldLockAnnotation() string {
+	nowStr := time.Now().Format(time.RFC3339)
+	annot := &leaderAnnotation{
+		HolderIdentity:       blockerHolderId,
+		LeaseDurationSeconds: 99999999999999999,
+		AcquireTime:          nowStr,
+		RenewTime:            nowStr,
+		LeaderTransitions:    0,
+	}
+
+	annotJson, _ := json.Marshal(annot)
+	return string(annotJson)
+}
+
+// Previous versions of kuma-cp used a timeout lock for leader election. We now
+// keep the election for the lifetime of the pod. This function forces any previous
+// style leader to see itself as having lost its election, and locks out any
+// further old leaders.
+//
+// Only call this after acquiring new-style leader election, so as to only contend
+// with old leaders over old locks.
+func (cm *kubeComponentManager) forceTakeOldLock(ctx context.Context) error {
+	log.Info("checking for deprecated leader locks")
+	client := cm.Manager.GetClient()
+	ns := cm.oldLeaderElectionNamespace
+
+	pod := &kube_core.Pod{}
+	if err := client.Get(ctx, kube_client.ObjectKey{
+		Namespace: ns,
+		Name:      os.Getenv("POD_NAME"),
+	}, pod); err != nil {
+		log.Error(err, "unable to retrieve this pod")
+		return err
+	}
+
+	owner := &metav1.OwnerReference{
+		APIVersion: "v1",
+		Kind:       "Pod",
+		Name:       pod.ObjectMeta.Name,
+		UID:        pod.ObjectMeta.UID,
+	}
+
+	var mustWait = false
+
+	for {
+		newLock := &kube_core.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            oldLeaderConfigMapName,
+				Namespace:       ns,
+				OwnerReferences: []metav1.OwnerReference{*owner},
+				Annotations: map[string]string{
+					"control-plane.alpha.kubernetes.io/leader": makeOldLockAnnotation(),
+				},
+			},
+		}
+
+		// Numerous potential races between new and old CP leader in this loop. Just keep
+		// trying to grab the lock until it succeeds. Since the old leader will
+		// politely die when we acquire lock, and we are relentless, we will eventually
+		// prevail.
+
+		err := client.Create(ctx, newLock)
+		switch {
+		case err == nil:
+			// Acquired old lock.
+			if mustWait {
+				log.Info("waiting 30 seconds for old leader to terminate")
+				time.Sleep(30 * time.Second)
+			}
+			return nil
+		case apierrors.IsAlreadyExists(err):
+			log.Info("existing deprecated lock found; stealing")
+			mustWait = true
+
+			existing := &kube_core.ConfigMap{}
+			key := kube_client.ObjectKey{Namespace: ns, Name: oldLeaderConfigMapName}
+			err = client.Get(ctx, key, existing)
+			if err != nil {
+				log.Error(err, "error reading old lock; trying again")
+				break
+			}
+
+			err := client.Delete(ctx, existing)
+			if err != nil {
+				log.Error(err, "error deleting old lock; trying again")
+			}
+		default:
+			log.Error(err, "error creating ConfigMap; trying again")
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		defer cancel()
+		<-done
+	}()
+
+	go func() {
+		if err := leader.Become(ctx, "cp-leader"); err != nil {
+			log.Error(err, "leader lock failure")
+			os.Exit(1)
+		}
+		// This CP will now be leader. But first, destroy deprecated leader lock,
+		// forcing any old leaders to restart as non-leaders.
+		if err := cm.forceTakeOldLock(ctx); err != nil {
+			log.Error(err, "error attempting to clean up deprecated lock")
+			os.Exit(1)
+		}
+		for _, c := range cm.leaderComponents {
+			if err := cm.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
+				log.Error(err, "add component error")
+			}
+		}
+	}()
+	return cm.Manager.Start(ctx)
+}
 
 // Extra check that component.Component implements LeaderElectionRunnable so the leader election works so we won't break leader election on K8S when refactoring component.Component
 var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-chan struct{}) error {
@@ -151,9 +292,27 @@ var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-cha
 
 func (k *kubeComponentManager) Add(components ...component.Component) error {
 	for _, c := range components {
-		if err := k.Manager.Add(c); err != nil {
+		if c.NeedLeaderElection() {
+			k.leaderComponents = append(k.leaderComponents, c)
+		} else if err := k.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
+
+// This adaptor is required unless component.Component takes a context as input
+type componentRunnableAdaptor struct {
+	component.Component
+}
+
+func (c componentRunnableAdaptor) Start(ctx context.Context) error {
+	return c.Component.Start(ctx.Done())
+}
+
+func (c componentRunnableAdaptor) NeedLeaderElection() bool {
+	return c.Component.NeedLeaderElection()
+}
+
+var _ kube_manager.LeaderElectionRunnable = &componentRunnableAdaptor{}
+var _ kube_manager.Runnable = &componentRunnableAdaptor{}

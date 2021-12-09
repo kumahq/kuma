@@ -7,13 +7,17 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
-func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer) auth.Authenticator {
+func NewAuthenticator(dataplaneValidator builtin_issuer.Validator, zoneIngressValidator zoneingress.Validator, zone string) auth.Authenticator {
 	return &universalAuthenticator{
-		issuer: issuer,
+		dataplaneValidator:   dataplaneValidator,
+		zoneIngressValidator: zoneIngressValidator,
+		zone:                 zone,
 	}
 }
 
@@ -27,11 +31,26 @@ func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer) auth.Authentic
 // with inbounds: 1) kuma.io/service:web 2) kuma.io/service:web-api, you need token for both values kuma.io/service=web,web-api
 // Dataplane also needs to have all tags defined in the token
 type universalAuthenticator struct {
-	issuer builtin_issuer.DataplaneTokenIssuer
+	dataplaneValidator   builtin_issuer.Validator
+	zoneIngressValidator zoneingress.Validator
+	zone                 string
 }
 
-func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
-	dpIdentity, err := u.issuer.Validate(credential, dataplane.Meta.GetMesh())
+var _ auth.Authenticator = &universalAuthenticator{}
+
+func (u *universalAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
+	switch resource := resource.(type) {
+	case *core_mesh.DataplaneResource:
+		return u.authDataplane(ctx, resource, credential)
+	case *core_mesh.ZoneIngressResource:
+		return u.authZoneIngress(ctx, resource, credential)
+	default:
+		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+	}
+}
+
+func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
+	dpIdentity, err := u.dataplaneValidator.Validate(ctx, credential, dataplane.Meta.GetMesh())
 	if err != nil {
 		return err
 	}
@@ -42,25 +61,21 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *co
 	if dpIdentity.Mesh != "" && dataplane.Meta.GetMesh() != dpIdentity.Mesh {
 		return errors.Errorf("proxy mesh from requestor: %s is different than in token: %s", dataplane.Meta.GetMesh(), dpIdentity.Mesh)
 	}
-	if err := validateType(dataplane, dpIdentity.Type); err != nil {
-		return err
-	}
 	if err := validateTags(dpIdentity.Tags, dataplane.Spec.TagSet()); err != nil {
 		return err
 	}
 	return nil
 }
 
-func validateType(dataplane *core_mesh.DataplaneResource, dpType builtin_issuer.DpType) error {
-	if dpType == "" { // if dp type is not explicitly specified  we assume it's dataplane so we force Ingress token
-		dpType = builtin_issuer.DpTypeDataplane
+func (u *universalAuthenticator) authZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
+	identity, err := u.zoneIngressValidator.Validate(ctx, credential)
+	if err != nil {
+		return err
 	}
-	if dataplane.Spec.IsIngress() && dpType != builtin_issuer.DpTypeIngress {
-		return errors.Errorf("dataplane is of type Ingress but token allows only for the %q type", dpType)
+	if u.zone != identity.Zone {
+		return errors.Errorf("zone ingress zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
 	}
-	if !dataplane.Spec.IsIngress() && dpType == builtin_issuer.DpTypeIngress {
-		return errors.Errorf("dataplane is of type Dataplane but token allows only for the %q type", dpType)
-	}
+
 	return nil
 }
 

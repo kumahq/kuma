@@ -1,9 +1,10 @@
 package api_server_test
 
 import (
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"path"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,6 +12,7 @@ import (
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var _ = Describe("Versions WS", func() {
@@ -28,83 +30,17 @@ var _ = Describe("Versions WS", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}()
 
-		// wait for the server
+		// when
+		var resp *http.Response
 		Eventually(func() error {
-			_, err := http.Get(fmt.Sprintf("http://%s/versions", apiServer.Address()))
+			r, err := http.Get(fmt.Sprintf("http://%s/versions", apiServer.Address()))
+			resp = r
 			return err
 		}, "3s").ShouldNot(HaveOccurred())
 
-		// when
-		resp, err := http.Get(fmt.Sprintf("http://%s/versions", apiServer.Address()))
-		Expect(err).ToNot(HaveOccurred())
-
 		// then
-		var data struct {
-			KumaDp map[string]struct {
-				Envoy string
-			}
-		}
-
-		Expect(json.NewDecoder(resp.Body).Decode(&data)).ToNot(HaveOccurred())
-
-		// 1.0.0
-		Expect(data).ToNot(BeNil())
-		Expect(data.KumaDp).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.0"]).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.0"].Envoy).To(Equal("1.16.0"))
-
-		// 1.0.1
-		Expect(data).ToNot(BeNil())
-		Expect(data.KumaDp).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.1"]).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.1"].Envoy).To(Equal("1.16.0"))
-
-		// 1.0.2
-		Expect(data).ToNot(BeNil())
-		Expect(data.KumaDp).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.2"]).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.2"].Envoy).To(Equal("1.16.1"))
-
-		// 1.0.3
-		Expect(data).ToNot(BeNil())
-		Expect(data.KumaDp).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.3"]).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.3"].Envoy).To(Equal("1.16.1"))
-
-		// 1.0.4
-		Expect(data).ToNot(BeNil())
-		Expect(data.KumaDp).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.4"]).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.4"].Envoy).To(Equal("1.16.1"))
-
-		// 1.0.5
-		Expect(data).ToNot(BeNil())
-		Expect(data.KumaDp).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.5"]).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.5"].Envoy).To(Equal("1.16.2"))
-
-		// 1.0.6
-		Expect(data).ToNot(BeNil())
-		Expect(data.KumaDp).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.6"]).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.6"].Envoy).To(Equal("1.16.2"))
-
-		// 1.0.7
-		Expect(data).ToNot(BeNil())
-		Expect(data.KumaDp).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.7"]).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.7"].Envoy).To(Equal("1.16.2"))
-
-		// 1.0.8
-		Expect(data).ToNot(BeNil())
-		Expect(data.KumaDp).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.8"]).ToNot(BeNil())
-		Expect(data.KumaDp["1.0.8"].Envoy).To(Equal("1.16.2"))
-
-		// ^1.1.0
-		Expect(data).ToNot(BeNil())
-		Expect(data.KumaDp).ToNot(BeNil())
-		Expect(data.KumaDp["^1.1.0"]).ToNot(BeNil())
-		Expect(data.KumaDp["^1.1.0"].Envoy).To(Equal("~1.17.0"))
+		bytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "versions.json")))
 	})
 })

@@ -39,29 +39,22 @@ func NewPostgresLeaderElector(lockClient *pglock.Client) component.LeaderElector
 }
 
 func (p *postgresLeaderElector) Start(stop <-chan struct{}) {
-	log.Info("Starting leader election")
+	log.Info("starting Leader Elector")
 	ctx, cancelFn := context.WithCancel(context.Background())
 	go func() {
 		<-stop
-		log.Info("Stopping Leader Elector")
+		log.Info("stopping Leader Elector")
 		cancelFn()
 	}()
 
 	for {
-		log.Info("Waiting for lock")
+		log.Info("waiting for lock")
 		err := p.lockClient.Do(ctx, kumaLockName, func(ctx context.Context, lock *pglock.Lock) error {
-			p.setLeader(true)
-			for _, callback := range p.callbacks {
-				callback.OnStartedLeading()
-			}
+			p.leaderAcquired()
 			<-ctx.Done()
-			p.setLeader(false)
-			for _, callback := range p.callbacks {
-				callback.OnStoppedLeading()
-			}
+			p.leaderLost()
 			return nil
 		})
-		p.setLeader(false)
 		// in case of error (ex. connection to postgres is dropped) we want to retry the lock with some backoff
 		// returning error here would shut down the CP
 		if err != nil {
@@ -74,6 +67,20 @@ func (p *postgresLeaderElector) Start(stop <-chan struct{}) {
 		time.Sleep(backoffTime)
 	}
 	log.Info("Leader Elector stopped")
+}
+
+func (p *postgresLeaderElector) leaderAcquired() {
+	p.setLeader(true)
+	for _, callback := range p.callbacks {
+		callback.OnStartedLeading()
+	}
+}
+
+func (p *postgresLeaderElector) leaderLost() {
+	p.setLeader(false)
+	for _, callback := range p.callbacks {
+		callback.OnStoppedLeading()
+	}
 }
 
 func (p *postgresLeaderElector) AddCallbacks(callbacks component.LeaderCallbacks) {

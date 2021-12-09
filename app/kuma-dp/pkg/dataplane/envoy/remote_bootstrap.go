@@ -6,9 +6,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	net_url "net/url"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -42,17 +43,17 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	if bootstrapUrl.Scheme == "https" {
 		if cfg.ControlPlane.CaCert != "" {
 			certPool := x509.NewCertPool()
 			if ok := certPool.AppendCertsFromPEM([]byte(cfg.ControlPlane.CaCert)); !ok {
-				return nil, "", errors.New("could not add certificate")
+				return nil, errors.New("could not add certificate")
 			}
 			b.client.Transport = &http.Transport{
 				TLSClientConfig: &tls.Config{
@@ -66,14 +67,13 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params Bootst
 
 	backoff, err := retry.NewConstant(cfg.ControlPlane.Retry.Backoff)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "could not create retry backoff")
+		return nil, errors.Wrap(err, "could not create retry backoff")
 	}
 	backoff = retry.WithMaxDuration(cfg.ControlPlane.Retry.MaxDuration, backoff)
 	var respBytes []byte
-	var version types.BootstrapVersion
 	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")
-		respBytes, version, err = b.requestForBootstrap(bootstrapUrl, cfg, params)
+		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg, params)
 		if err == nil {
 			return nil
 		}
@@ -90,26 +90,26 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params Bootst
 		return retry.RetryableError(err)
 	})
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	return respBytes, version, nil
+	return respBytes, nil
 }
 
-func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
 	url.Path = "/bootstrap"
 	var dataplaneResource string
 	if params.Dataplane != nil {
 		dpJSON, err := json.Marshal(params.Dataplane)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		dataplaneResource = string(dpJSON)
 	}
 	token := ""
 	if cfg.DataplaneRuntime.TokenPath != "" {
-		tokenData, err := ioutil.ReadFile(cfg.DataplaneRuntime.TokenPath)
+		tokenData, err := os.ReadFile(cfg.DataplaneRuntime.TokenPath)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		token = string(tokenData)
 	}
@@ -117,14 +117,15 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		token = cfg.DataplaneRuntime.Token
 	}
 	request := types.BootstrapRequest{
-		Mesh: cfg.Dataplane.Mesh,
-		Name: cfg.Dataplane.Name,
+		Mesh:      cfg.Dataplane.Mesh,
+		Name:      cfg.Dataplane.Name,
+		ProxyType: cfg.Dataplane.ProxyType,
 		// if not set in config, the 0 will be sent which will result in providing default admin port
 		// that is set in the control plane bootstrap params
 		AdminPort:         cfg.Dataplane.AdminPort.Lowest(),
 		DataplaneToken:    token,
 		DataplaneResource: dataplaneResource,
-		BootstrapVersion:  params.BootstrapVersion,
+		BootstrapVersion:  types.BootstrapV3, // set BootstrapVersion to be compatible with old Kuma CPs
 		CaCert:            cfg.ControlPlane.CaCert,
 		Version: types.Version{
 			KumaDp: types.KumaDpVersion{
@@ -144,32 +145,32 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "could not marshal request to json")
+		return nil, errors.Wrap(err, "could not marshal request to json")
 	}
 	resp, err := b.client.Post(url.String(), "application/json", bytes.NewReader(jsonBytes))
 	if err != nil {
-		return nil, "", errors.Wrap(err, "request to bootstrap server failed")
+		return nil, errors.Wrap(err, "request to bootstrap server failed")
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, "", errors.Wrapf(err, "Unable to read the response with status code: %d. Make sure you are using https URL", resp.StatusCode)
+			return nil, errors.Wrapf(err, "Unable to read the response with status code: %d. Make sure you are using https URL", resp.StatusCode)
 		}
 		if resp.StatusCode == http.StatusNotFound && len(bodyBytes) == 0 {
-			return nil, "", DpNotFoundErr
+			return nil, DpNotFoundErr
 		}
 		if resp.StatusCode == http.StatusNotFound && string(bodyBytes) == "404: Page Not Found" { // response body of Go HTTP Server when hit for invalid endpoint
-			return nil, "", errors.New("There is no /bootstrap endpoint for provided CP address. Double check if the address passed to the CP has a DP Server port (5678 by default), not HTTP API (5681 by default)")
+			return nil, errors.New("There is no /bootstrap endpoint for provided CP address. Double check if the address passed to the CP has a DP Server port (5678 by default), not HTTP API (5681 by default)")
 		}
 		if resp.StatusCode/100 == 4 {
-			return nil, "", InvalidRequestErr(string(bodyBytes))
+			return nil, InvalidRequestErr(string(bodyBytes))
 		}
-		return nil, "", errors.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "could not read the body of the response")
+		return nil, errors.Wrap(err, "could not read the body of the response")
 	}
-	return respBytes, types.BootstrapVersion(resp.Header.Get(types.BootstrapVersionHeader)), nil
+	return respBytes, nil
 }

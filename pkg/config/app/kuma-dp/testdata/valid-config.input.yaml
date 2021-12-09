@@ -8,6 +8,7 @@ dataplane:
   name: example
   adminPort: 2345
   drainTime: 60s
+  proxyType: ingress
 dataplaneRuntime:
   binaryPath: envoy.sh
   configDir: /var/run/envoy

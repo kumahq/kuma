@@ -3,38 +3,27 @@ package controllers_test
 import (
 	"path/filepath"
 	"testing"
-
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	kube_core "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	meshv1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8scnicncfio "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var k8sClient client.Client
 var testEnv *envtest.Environment
-var k8sClientScheme = runtime.NewScheme()
+var k8sClientScheme *runtime.Scheme
 
 func TestAPIs(t *testing.T) {
-	RegisterFailHandler(Fail)
-
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Namespace Controller Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	test.RunSpecs(t, "Namespace Controller Suite")
 }
 
-var _ = BeforeSuite(func(done Done) {
-	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
-
+var _ = BeforeSuite(test.Within(time.Minute, func() {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "..", "resources", "k8s", "native", "config", "crd", "bases")},
@@ -44,13 +33,7 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	err = meshv1alpha1.AddToScheme(k8sClientScheme)
-	Expect(err).NotTo(HaveOccurred())
-	err = kube_core.AddToScheme(k8sClientScheme)
-	Expect(err).NotTo(HaveOccurred())
-	err = k8scnicncfio.AddToScheme(k8sClientScheme)
-	Expect(err).NotTo(HaveOccurred())
-	err = apiextensionsv1.AddToScheme(k8sClientScheme)
+	k8sClientScheme, err = k8s.NewScheme()
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
@@ -58,9 +41,7 @@ var _ = BeforeSuite(func(done Done) {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: k8sClientScheme})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(k8sClient).ToNot(BeNil())
-
-	close(done)
-}, 60)
+}))
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")

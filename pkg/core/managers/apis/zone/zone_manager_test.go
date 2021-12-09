@@ -51,6 +51,6 @@ var _ = Describe("Zone Manager", func() {
 
 		err = zoneManager.Delete(context.Background(), zone, store.DeleteByKey("zone-1", model.NoMesh))
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("zone: unable to delete Zone, Remote CP is still connected, please shut it down first"))
+		Expect(err.Error()).To(ContainSubstring("zone: unable to delete Zone, Zone CP is still connected, please shut it down first"))
 	})
 })

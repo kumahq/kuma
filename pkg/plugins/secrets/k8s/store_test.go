@@ -4,24 +4,21 @@ import (
 	"context"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/plugins/secrets/k8s"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("KubernetesStore", func() {
@@ -32,40 +29,40 @@ var _ = Describe("KubernetesStore", func() {
 	const noMesh = ""
 
 	var backend = struct {
-		ParseYAML       func(yaml string) runtime.Object
-		Create          func(obj runtime.Object)
-		Get             func(obj runtime.Object, ns, name string)
-		AssertNotExists func(obj runtime.Object, ns, name string)
-		Delete          func(obj runtime.Object)
+		ParseYAML       func(yaml string) client.Object
+		Create          func(obj client.Object)
+		Get             func(obj client.Object, ns, name string)
+		AssertNotExists func(obj client.Object, ns, name string)
+		Delete          func(obj client.Object)
 	}{
-		ParseYAML: func(text string) runtime.Object {
+		ParseYAML: func(text string) client.Object {
 			// setup
 			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
 			// when
 			obj, _, err := decoder.Decode([]byte(text), nil, nil)
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			return obj
+			return obj.(client.Object)
 		},
-		Create: func(obj runtime.Object) {
+		Create: func(obj client.Object) {
 			// when
 			err := k8sClient.Create(context.Background(), obj)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		},
-		Get: func(obj runtime.Object, ns, name string) {
+		Get: func(obj client.Object, ns, name string) {
 			// when
 			err := k8sClient.Get(context.Background(), client.ObjectKey{Namespace: ns, Name: name}, obj)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		},
-		AssertNotExists: func(obj runtime.Object, ns, name string) {
+		AssertNotExists: func(obj client.Object, ns, name string) {
 			// when
 			err := k8sClient.Get(context.Background(), client.ObjectKey{Namespace: ns, Name: name}, obj)
 			// then
 			Expect(apierrs.IsNotFound(err)).To(BeTrue())
 		},
-		Delete: func(obj runtime.Object) {
+		Delete: func(obj client.Object) {
 			// when
 			err := k8sClient.Delete(context.Background(), obj)
 			// then
@@ -74,7 +71,7 @@ var _ = Describe("KubernetesStore", func() {
 	}
 
 	BeforeEach(func() {
-		ns = string(uuid.NewUUID())
+		ns = core.NewUUID()
 
 		err := k8sClient.Create(context.Background(), &kube_core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{Name: ns},
@@ -88,11 +85,9 @@ var _ = Describe("KubernetesStore", func() {
 	Describe("Create()", func() {
 		It("should create a new secret", func() {
 			// given
-			secret := &secret_model.SecretResource{
+			secret := &core_system.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: &wrappers.BytesValue{
-						Value: []byte("example"),
-					},
+					Data: util_proto.Bytes([]byte("example")),
 				},
 			}
 			expected := backend.ParseYAML(`
@@ -129,11 +124,9 @@ var _ = Describe("KubernetesStore", func() {
 
 		It("should create a new global secret", func() {
 			// given
-			secret := &secret_model.GlobalSecretResource{
+			secret := &core_system.GlobalSecretResource{
 				Spec: &system_proto.Secret{
-					Data: &wrappers.BytesValue{
-						Value: []byte("example"),
-					},
+					Data: util_proto.Bytes([]byte("example")),
 				},
 			}
 			expected := backend.ParseYAML(`
@@ -170,13 +163,13 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&kube_core.Secret{}, "ignored", name)
 
 			// when
-			err := s.Create(context.Background(), secret_model.NewSecretResource(), store.CreateByKey(name, noMesh))
+			err := s.Create(context.Background(), core_system.NewSecretResource(), store.CreateByKey(name, noMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = s.Create(context.Background(), secret_model.NewSecretResource(), store.CreateByKey(name, noMesh))
+			err = s.Create(context.Background(), core_system.NewSecretResource(), store.CreateByKey(name, noMesh))
 
 			// then
 			Expect(err).To(MatchError(store.ErrorResourceAlreadyExists(core_system.SecretType, name, noMesh)))
@@ -209,7 +202,7 @@ var _ = Describe("KubernetesStore", func() {
 `).(*kube_core.Secret)
 
 			// given
-			secret := secret_model.NewSecretResource()
+			secret := core_system.NewSecretResource()
 
 			// when
 			err := s.Get(context.Background(), secret, store.GetByKey(name, "demo"))
@@ -261,7 +254,7 @@ var _ = Describe("KubernetesStore", func() {
 `).(*kube_core.Secret)
 
 			// given
-			secret := secret_model.NewGlobalSecretResource()
+			secret := core_system.NewGlobalSecretResource()
 
 			// when
 			err := s.Get(context.Background(), secret, store.GetByKey(name, noMesh))
@@ -305,7 +298,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// given
-			secret := secret_model.NewSecretResource()
+			secret := core_system.NewSecretResource()
 
 			// when
 			err := s.Get(context.Background(), secret, store.GetByKey(name, "demo"))
@@ -336,7 +329,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// given
-			secret1 := secret_model.NewSecretResource()
+			secret1 := core_system.NewSecretResource()
 
 			// when
 			err := s.Get(context.Background(), secret1, store.GetByKey(name, "demo"))
@@ -344,7 +337,7 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
-			secret2 := secret_model.NewSecretResource()
+			secret2 := core_system.NewSecretResource()
 
 			// when
 			err = s.Get(context.Background(), secret2, store.GetByKey(name, "demo"))
@@ -353,9 +346,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			secret1.Spec = &system_proto.Secret{
-				Data: &wrappers.BytesValue{
-					Value: []byte("example"),
-				},
+				Data: util_proto.Bytes([]byte("example")),
 			}
 			err = s.Update(context.Background(), secret1)
 			// then
@@ -363,9 +354,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			secret2.Spec = &system_proto.Secret{
-				Data: &wrappers.BytesValue{
-					Value: []byte("another"),
-				},
+				Data: util_proto.Bytes([]byte("another")),
 			}
 			err = s.Update(context.Background(), secret2)
 			// then
@@ -379,7 +368,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&kube_core.Secret{}, ns, name)
 
 			// when
-			err := s.Get(context.Background(), secret_model.NewSecretResource(), store.GetByKey(name, "demo"))
+			err := s.Get(context.Background(), core_system.NewSecretResource(), store.GetByKey(name, "demo"))
 
 			// then
 			Expect(err).To(MatchError(store.ErrorResourceNotFound(core_system.SecretType, name, "demo")))
@@ -402,7 +391,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(expected)
 
 			// given
-			actual := secret_model.NewSecretResource()
+			actual := core_system.NewSecretResource()
 
 			// when
 			err := s.Get(context.Background(), actual, store.GetByKey(name, "demo"))
@@ -431,7 +420,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(expected)
 
 			// given
-			actual := secret_model.NewGlobalSecretResource()
+			actual := core_system.NewGlobalSecretResource()
 
 			// when
 			err := s.Get(context.Background(), actual, store.GetByKey(name, noMesh))
@@ -460,7 +449,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(expected)
 
 			// given
-			actual := secret_model.NewSecretResource()
+			actual := core_system.NewSecretResource()
 
 			// when
 			err := s.Get(context.Background(), actual, store.GetByKey(name, "default"))
@@ -490,7 +479,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(expected)
 
 			// given
-			actual := secret_model.NewGlobalSecretResource()
+			actual := core_system.NewGlobalSecretResource()
 
 			// when
 			err := s.Get(context.Background(), actual, store.GetByKey(name, "default"))
@@ -520,7 +509,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(expected)
 
 			// given
-			actual := secret_model.NewSecretResource()
+			actual := core_system.NewSecretResource()
 
 			// when
 			err := s.Get(context.Background(), actual, store.GetByKey(name, "default"))
@@ -551,7 +540,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(expected)
 
 			// given
-			actual := secret_model.NewSecretResource()
+			actual := core_system.NewSecretResource()
 
 			// when
 			err := s.Get(context.Background(), actual, store.GetByKey(name, "another-mesh"))
@@ -578,7 +567,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// when
-			err := s.Delete(context.Background(), secret_model.NewSecretResource(), store.DeleteByKey(name, "demo"))
+			err := s.Delete(context.Background(), core_system.NewSecretResource(), store.DeleteByKey(name, "demo"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -599,7 +588,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// when
-			err := s.Delete(context.Background(), secret_model.NewGlobalSecretResource(), store.DeleteByKey(name, noMesh))
+			err := s.Delete(context.Background(), core_system.NewGlobalSecretResource(), store.DeleteByKey(name, noMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -620,7 +609,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// when
-			err := s.Delete(context.Background(), secret_model.NewSecretResource(), store.DeleteByKey(name, noMesh))
+			err := s.Delete(context.Background(), core_system.NewSecretResource(), store.DeleteByKey(name, noMesh))
 
 			// then
 			Expect(err).To(MatchError(`failed to delete k8s secret: Resource not found: type="Secret" name="demo" mesh=""`))
@@ -639,7 +628,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// when
-			err := s.Delete(context.Background(), secret_model.NewGlobalSecretResource(), store.DeleteByKey(name, "default"))
+			err := s.Delete(context.Background(), core_system.NewGlobalSecretResource(), store.DeleteByKey(name, "default"))
 
 			// then
 			Expect(err).To(MatchError(`failed to delete k8s secret: Resource not found: type="GlobalSecret" name="demo" mesh="default"`))
@@ -649,7 +638,7 @@ var _ = Describe("KubernetesStore", func() {
 	Describe("List()", func() {
 		It("should return an empty list if there are no matching resources", func() {
 			// given
-			secrets := &secret_model.SecretResourceList{}
+			secrets := &core_system.SecretResourceList{}
 
 			// when
 			err := s.List(context.Background(), secrets, store.ListByMesh("ignored"))
@@ -720,7 +709,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			It("should return a list of secrets in all meshes", func() {
 				// given
-				secrets := &secret_model.SecretResourceList{}
+				secrets := &core_system.SecretResourceList{}
 
 				// when
 				err := s.List(context.Background(), secrets)
@@ -731,7 +720,7 @@ var _ = Describe("KubernetesStore", func() {
 				Expect(secrets.Items).To(HaveLen(2))
 
 				// when
-				items := map[string]*secret_model.SecretResource{
+				items := map[string]*core_system.SecretResource{
 					secrets.Items[0].Meta.GetName(): secrets.Items[0],
 					secrets.Items[1].Meta.GetName(): secrets.Items[1],
 				}
@@ -743,7 +732,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			It("should return a list of secrets in given mesh", func() {
 				// given
-				secrets := &secret_model.SecretResourceList{}
+				secrets := &core_system.SecretResourceList{}
 
 				// when
 				err := s.List(context.Background(), secrets, store.ListByMesh("default"))
@@ -756,7 +745,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			It("should return a list of global secrets", func() {
 				// given
-				secrets := &secret_model.GlobalSecretResourceList{}
+				secrets := &core_system.GlobalSecretResourceList{}
 
 				// when
 				err := s.List(context.Background(), secrets)

@@ -3,12 +3,12 @@ package plugins
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/events"
-
+	"github.com/kumahq/kuma/pkg/api-server/authn"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/events"
 )
 
 type Plugin interface{}
@@ -62,4 +62,10 @@ type RuntimePlugin interface {
 type CaPlugin interface {
 	Plugin
 	NewCaManager(PluginContext, PluginConfig) (core_ca.Manager, error)
+}
+
+// AuthnAPIServerPlugin is responsible for providing authenticator for API Server.
+type AuthnAPIServerPlugin interface {
+	Plugin
+	NewAuthenticator(PluginContext) (authn.Authenticator, error)
 }

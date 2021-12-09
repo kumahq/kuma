@@ -3,18 +3,39 @@ package install
 import (
 	"net/url"
 
-	"k8s.io/client-go/rest"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/rest"
 
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
-
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config/core"
+	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 )
+
+type componentVersion struct {
+	args    *install_context.InstallControlPlaneArgs
+	version string
+}
+
+func (cv *componentVersion) String() string {
+	return cv.version
+}
+
+func (cv *componentVersion) Set(v string) error {
+	cv.version = v
+	cv.args.Cni_image_tag = v
+	cv.args.ControlPlane_image_tag = v
+	cv.args.DataPlane_image_tag = v
+	cv.args.DataPlane_initImage_tag = v
+	return nil
+}
+
+func (cv *componentVersion) Type() string {
+	return "string"
+}
 
 func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Command {
 	args := ctx.Args
@@ -23,7 +44,7 @@ func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Com
 	cmd := &cobra.Command{
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
-		Long: `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.
+		Long: `Install Kuma Control Plane on Kubernetes in its own namespace.
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateArgs(args); err != nil {
@@ -31,7 +52,7 @@ This command requires that the KUBECONFIG environment is set`,
 			}
 
 			if useNodePort && args.ControlPlane_mode == core.Global {
-				args.ControlPlane_globalRemoteSyncService_type = "NodePort"
+				args.ControlPlane_globalZoneSyncService_type = "NodePort"
 			}
 
 			if ingressUseNodePort {
@@ -41,7 +62,7 @@ This command requires that the KUBECONFIG environment is set`,
 			var kubeClientConfig *rest.Config
 			if !args.WithoutKubernetesConnection {
 				var err error
-				kubeClientConfig, err = k8s.DefaultClientConfig()
+				kubeClientConfig, err = k8s.DefaultClientConfig("", "")
 				if err != nil {
 					return errors.Wrap(err, "could not detect Kubernetes configuration")
 				}
@@ -51,6 +72,13 @@ This command requires that the KUBECONFIG environment is set`,
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
 			}
+
+			scheme, err := bootstrap_k8s.NewScheme()
+			if err != nil {
+				return err
+			}
+
+			templateFiles = filterHelmTemplates(scheme, templateFiles)
 
 			renderedFiles, err := renderHelmFiles(templateFiles, args, args.Namespace, ctx.HELMValuesPrefix, kubeClientConfig)
 			if err != nil {
@@ -71,8 +99,14 @@ This command requires that the KUBECONFIG environment is set`,
 			return nil
 		},
 	}
+	componentVersion := componentVersion{
+		args: &args,
+	}
 	// flags
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install Kuma Control Plane to")
+
+	cmd.Flags().Var(&componentVersion, "version", "version of Kuma Control Plane components")
+
 	cmd.Flags().StringVar(&args.ControlPlane_image_pullPolicy, "image-pull-policy", args.ControlPlane_image_pullPolicy, "image pull policy that applies to all components of the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.ControlPlane_image_registry, "control-plane-registry", args.ControlPlane_image_registry, "registry for the image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlane_image_repository, "control-plane-repository", args.ControlPlane_image_repository, "repository for the image of the Kuma Control Plane component")
@@ -83,8 +117,8 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.ControlPlane_tls_apiServer_secret, "tls-api-server-secret", args.ControlPlane_tls_apiServer_secret, "Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS")
 	cmd.Flags().StringVar(&args.ControlPlane_tls_apiServer_clientCertsSecret, "tls-api-server-client-certs-secret", args.ControlPlane_tls_apiServer_clientCertsSecret, "Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS")
 	cmd.Flags().StringVar(&args.ControlPlane_tls_kdsGlobalServer_secret, "tls-kds-global-server-secret", args.ControlPlane_tls_kdsGlobalServer_secret, "Secret that contains tls.crt, key.crt for protecting cross cluster communication")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_kdsRemoteClient_secret, "tls-kds-remote-client-secret", args.ControlPlane_tls_kdsRemoteClient_secret, "Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification")
-	cmd.Flags().StringVar(&args.ControlPlane_injectorFailurePolicy, "injector-failure-policy", args.ControlPlane_injectorFailurePolicy, "failue policy of the mutating web hook implemented by the Kuma Injector component")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_kdsZoneClient_secret, "tls-kds-zone-client-secret", args.ControlPlane_tls_kdsZoneClient_secret, "Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification")
+	cmd.Flags().StringVar(&args.ControlPlane_injectorFailurePolicy, "injector-failure-policy", args.ControlPlane_injectorFailurePolicy, "failure policy of the mutating web hook implemented by the Kuma Injector component")
 	cmd.Flags().StringToStringVar(&args.ControlPlane_envVars, "env-var", args.ControlPlane_envVars, "environment variables that will be passed to the control plane")
 	cmd.Flags().StringVar(&args.DataPlane_image_registry, "dataplane-registry", args.DataPlane_image_registry, "registry for the image of the Kuma DataPlane component")
 	cmd.Flags().StringVar(&args.DataPlane_image_repository, "dataplane-repository", args.DataPlane_image_repository, "repository for the image of the Kuma DataPlane component")
@@ -101,7 +135,7 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.Cni_image_registry, "cni-registry", args.Cni_image_registry, "registry for the image of the Kuma CNI component")
 	cmd.Flags().StringVar(&args.Cni_image_repository, "cni-repository", args.Cni_image_repository, "repository for the image of the Kuma CNI component")
 	cmd.Flags().StringVar(&args.Cni_image_tag, "cni-version", args.Cni_image_tag, "version of the image of the Kuma CNI component")
-	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
+	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "zone", "global"))
 	cmd.Flags().StringVar(&args.ControlPlane_zone, "zone", args.ControlPlane_zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
 	cmd.Flags().BoolVar(&args.Ingress_enabled, "ingress-enabled", args.Ingress_enabled, "install Kuma with an Ingress deployment, using the Data Plane image")
@@ -115,15 +149,15 @@ func validateArgs(args install_context.InstallControlPlaneArgs) error {
 	if err := core.ValidateCpMode(args.ControlPlane_mode); err != nil {
 		return err
 	}
-	if args.ControlPlane_mode == core.Remote && args.ControlPlane_zone == "" {
-		return errors.New("--zone is mandatory with `remote` mode")
+	if args.ControlPlane_mode == core.Zone && args.ControlPlane_zone == "" {
+		return errors.New("--zone is mandatory with `zone` mode")
 	}
-	if args.ControlPlane_mode == core.Remote && args.ControlPlane_kdsGlobalAddress == "" {
-		return errors.New("--kds-global-address is mandatory with `remote` mode")
+	if args.ControlPlane_mode == core.Zone && args.ControlPlane_kdsGlobalAddress == "" {
+		return errors.New("--kds-global-address is mandatory with `zone` mode")
 	}
 	if args.ControlPlane_kdsGlobalAddress != "" {
-		if args.ControlPlane_mode != core.Remote {
-			return errors.New("--kds-global-address can only be used when --mode=remote")
+		if args.ControlPlane_mode != core.Zone {
+			return errors.New("--kds-global-address can only be used when --mode=zone")
 		}
 		u, err := url.Parse(args.ControlPlane_kdsGlobalAddress)
 		if err != nil {

@@ -2,19 +2,17 @@ package bootstrap
 
 import (
 	"net"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ config.Config = &BootstrapServerConfig{}
 
 type BootstrapServerConfig struct {
-	// The version of Envoy API (available: "v2", "v3")
-	APIVersion envoy_common.APIVersion `yaml:"apiVersion" envconfig:"kuma_bootstrap_server_api_version"`
 	// Parameters of bootstrap configuration
 	Params *BootstrapParamsConfig `yaml:"params"`
 }
@@ -27,18 +25,12 @@ func (b *BootstrapServerConfig) Validate() error {
 	if err := b.Params.Validate(); err != nil {
 		return errors.Wrap(err, "Params validation failed")
 	}
-	switch b.APIVersion {
-	case envoy_common.APIV2, envoy_common.APIV3:
-	default:
-		return errors.Errorf("APIVersion has invalid value. Available values: %q, %q", envoy_common.APIV2, envoy_common.APIV3)
-	}
 	return nil
 }
 
 func DefaultBootstrapServerConfig() *BootstrapServerConfig {
 	return &BootstrapServerConfig{
-		APIVersion: envoy_common.APIV3,
-		Params:     DefaultBootstrapParamsConfig(),
+		Params: DefaultBootstrapParamsConfig(),
 	}
 }
 
@@ -88,9 +80,9 @@ func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 	return &BootstrapParamsConfig{
 		AdminAddress:       "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
 		AdminPort:          0,           // by default, turn off Admin interface of Envoy
-		AdminAccessLogPath: "/dev/null",
-		XdsHost:            "", // by default it is the same host as the one used by kuma-dp to connect to the control plane
-		XdsPort:            0,  // by default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
+		AdminAccessLogPath: os.DevNull,
+		XdsHost:            "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
+		XdsPort:            0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
 		XdsConnectTimeout:  1 * time.Second,
 	}
 }

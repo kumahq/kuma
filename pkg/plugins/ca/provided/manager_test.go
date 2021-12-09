@@ -4,15 +4,15 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/ghodss/yaml"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -180,7 +180,7 @@ var _ = Describe("Provided CA", func() {
 	Context("GetRootCert", func() {
 		It("should load return root certs", func() {
 			// given
-			expectedCert, err := ioutil.ReadFile(filepath.Join("testdata", "ca.pem"))
+			expectedCert, err := os.ReadFile(filepath.Join("testdata", "ca.pem"))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when

@@ -7,10 +7,9 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
@@ -23,10 +22,7 @@ var (
 			Match: mesh_proto.MatchAnyService(),
 		}},
 		Conf: &mesh_proto.TrafficRoute_Conf{
-			Split: []*mesh_proto.TrafficRoute_Split{{
-				Weight:      100,
-				Destination: mesh_proto.MatchAnyService(),
-			}},
+			Destination: mesh_proto.MatchAnyService(),
 			LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 				LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
 			},

@@ -3,7 +3,6 @@ package inspect_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
@@ -14,16 +13,14 @@ import (
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -48,6 +45,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 					string(mesh.TrafficPermissionType): {Total: 7},
 					string(mesh.ProxyTemplateType):     {Total: 8},
 					string(mesh.ExternalServiceType):   {Total: 9},
+					string(mesh.RateLimitType):         {Total: 10},
 				},
 			},
 		},
@@ -69,6 +67,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 					string(mesh.TrafficPermissionType): {Total: 70},
 					string(mesh.ProxyTemplateType):     {Total: 80},
 					string(mesh.ExternalServiceType):   {Total: 90},
+					string(mesh.RateLimitType):         {Total: 100},
 				},
 			},
 		},
@@ -76,28 +75,20 @@ var _ = Describe("kumactl inspect meshes", func() {
 
 	Describe("InspectMeshesCmd", func() {
 
-		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
 		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
 
 		BeforeEach(func() {
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return rootTime },
-					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
-				},
-			}
-
 			store = memory_resources.NewStore()
 			for _, cb := range meshInsightResources {
 				err := store.Create(context.Background(), cb, core_store.CreateBy(core_model.MetaToResourceKey(cb.GetMeta())))
 				Expect(err).ToNot(HaveOccurred())
 			}
+
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store)
+			Expect(err).ToNot(HaveOccurred())
 
 			rootCmd = cmd.NewRootCmd(rootCtx)
 			buf = &bytes.Buffer{}
@@ -121,13 +112,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 				err := rootCmd.Execute()
 				// then
 				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(buf.String()).To(given.matcher(expected))
+				Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", given.goldenFile))
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",

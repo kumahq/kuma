@@ -247,7 +247,7 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
 
    **Answer:** yes, a match by the exact value has more weight than match by '*'
 
-   D. How to order matches by differnt tags ? E.g.,
+   D. How to order matches by different tags ? E.g.,
 
    ```yaml
    type: TrafficRoute

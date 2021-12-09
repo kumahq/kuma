@@ -3,18 +3,13 @@ package v3_test
 import (
 	"time"
 
+	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
+	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
-
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/wrappers"
-
-	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
-	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -24,9 +19,9 @@ var _ = Describe("ParseFormat()", func() {
 
 		commonProperties := &accesslog_data.AccessLogCommon{
 			StartTime:                  util_proto.MustTimestampProto(time.Unix(1582062737, 987654321)),
-			TimeToLastRxByte:           ptypes.DurationProto(57000 * time.Microsecond),
-			TimeToFirstUpstreamRxByte:  ptypes.DurationProto(102000 * time.Microsecond),
-			TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+			TimeToLastRxByte:           util_proto.Duration(57000 * time.Microsecond),
+			TimeToFirstUpstreamRxByte:  util_proto.Duration(102000 * time.Microsecond),
+			TimeToLastDownstreamTxByte: util_proto.Duration(123000 * time.Microsecond),
 			ResponseFlags: &accesslog_data.ResponseFlags{
 				UpstreamConnectionFailure:  true,
 				UpstreamRetryLimitExceeded: true,
@@ -63,9 +58,8 @@ var _ = Describe("ParseFormat()", func() {
 				},
 				TlsSessionId: "b10662bf6bd4e6a068f0910d3d60c50f000355840fea4ce6844626b61c973901",
 				TlsVersion:   accesslog_data.TLSProperties_TLSv1_2,
-				TlsCipherSuite: &wrappers.UInt32Value{
-					Value: uint32(TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305),
-				},
+				TlsCipherSuite: util_proto.UInt32(
+					uint32(TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305)),
 			},
 		}
 
@@ -79,9 +73,7 @@ var _ = Describe("ParseFormat()", func() {
 				RequestBodyBytes: 234,
 			},
 			Response: &accesslog_data.HTTPResponseProperties{
-				ResponseCode: &wrappers.UInt32Value{
-					Value: 200,
-				},
+				ResponseCode:        util_proto.UInt32(200),
 				ResponseCodeDetails: "response code details",
 				ResponseHeaders: map[string]string{
 					"server":       "Tomcat",
@@ -168,17 +160,17 @@ var _ = Describe("ParseFormat()", func() {
 			Entry("%PROTOCOL%", testCase{
 				format:       `%PROTOCOL%`,
 				expectedHTTP: `HTTP/1.1`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESPONSE_CODE%", testCase{
 				format:       `%RESPONSE_CODE%`,
 				expectedHTTP: `200`,
-				expectedTCP:  `0`, // replicate Envoy's behaviour
+				expectedTCP:  `0`, // replicate Envoy's behavior
 			}),
 			Entry("%RESPONSE_CODE_DETAILS%", testCase{
 				format:       `%RESPONSE_CODE_DETAILS%`,
 				expectedHTTP: `response code details`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%BYTES_SENT%", testCase{
 				format:       `%BYTES_SENT%`,
@@ -188,17 +180,17 @@ var _ = Describe("ParseFormat()", func() {
 			Entry("%REQUEST_DURATION%", testCase{
 				format:       `%REQUEST_DURATION%`,
 				expectedHTTP: `57`, // time in millis
-				expectedTCP:  `-`,  // replicate Envoy's behaviour
+				expectedTCP:  `-`,  // replicate Envoy's behavior
 			}),
 			Entry("%RESPONSE_DURATION%", testCase{
 				format:       `%RESPONSE_DURATION%`,
 				expectedHTTP: `102`, // time in millis
-				expectedTCP:  `-`,   // replicate Envoy's behaviour
+				expectedTCP:  `-`,   // replicate Envoy's behavior
 			}),
 			Entry("%RESPONSE_TX_DURATION%", testCase{
 				format:       `%RESPONSE_TX_DURATION%`,
 				expectedHTTP: `21`, // time in millis
-				expectedTCP:  `-`,  // replicate Envoy's behaviour
+				expectedTCP:  `-`,  // replicate Envoy's behavior
 			}),
 			Entry("%UPSTREAM_TRANSPORT_FAILURE_REASON%", testCase{
 				format:       `%UPSTREAM_TRANSPORT_FAILURE_REASON%`,
@@ -217,153 +209,153 @@ var _ = Describe("ParseFormat()", func() {
 			}),
 			Entry("%REQ()%", testCase{ // apparently, Envoy allows both `Header` and `AltHeader` to be empty
 				format:       `%REQ()%`,
-				expectedHTTP: `-`, // replicate Envoy's behaviour
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedHTTP: `-`, // replicate Envoy's behavior
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%REQ():10%", testCase{ // apparently, Envoy allows both `Header` and `AltHeader` to be empty
 				format:       `%REQ():10%`,
-				expectedHTTP: `-`, // replicate Envoy's behaviour
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedHTTP: `-`, // replicate Envoy's behavior
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%REQ(:authority)%", testCase{ // pseudo header
 				format:       `%REQ(:authority)%`,
 				expectedHTTP: `backend.internal:8080`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%REQ(:authority):7%", testCase{ // max length
 				format:       `%REQ(:authority):7%`,
 				expectedHTTP: `backend`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%REQ(x-missing-header?:authority)%", testCase{ // altHeader
 				format:       `%REQ(x-missing-header?:authority)%`,
 				expectedHTTP: `backend.internal:8080`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%REQ(x-missing-header?:authority):7%", testCase{ // altHeader w/ maxLen
 				format:       `%REQ(x-missing-header?:authority):7%`,
 				expectedHTTP: `backend`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%REQ(x-missing-header?:AUTHORITY):7%", testCase{ // uppercase altHeader w/ maxLen
 				format:       `%REQ(x-missing-header?:AUTHORITY):7%`,
 				expectedHTTP: `backend`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%REQ(:authority?:path)%", testCase{ // header over altHeader
 				format:       `%REQ(:authority?:path)%`,
 				expectedHTTP: `backend.internal:8080`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%REQ(:authority?:path):7%", testCase{ // header over altHeader w/ maxLen
 				format:       `%REQ(:authority?:path):7%`,
 				expectedHTTP: `backend`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%REQ(:AUTHORITY?:path):7%", testCase{ // uppercase header over altHeader w/ maxLen
 				format:       `%REQ(:AUTHORITY?:path):7%`,
 				expectedHTTP: `backend`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESP()%", testCase{ // apparently, Envoy allows both `Header` and `AltHeader` to be empty
 				format:       `%RESP()%`,
-				expectedHTTP: `-`, // replicate Envoy's behaviour
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedHTTP: `-`, // replicate Envoy's behavior
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESP():10%", testCase{ // apparently, Envoy allows both `Header` and `AltHeader` to be empty
 				format:       `%RESP():10%`,
-				expectedHTTP: `-`, // replicate Envoy's behaviour
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedHTTP: `-`, // replicate Envoy's behavior
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESP(server)%", testCase{ // pseudo header
 				format:       `%RESP(server)%`,
 				expectedHTTP: `Tomcat`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESP(server):3%", testCase{ // max length
 				format:       `%RESP(server):3%`,
 				expectedHTTP: `Tom`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESP(x-missing-header?server)%", testCase{ // altHeader
 				format:       `%RESP(x-missing-header?server)%`,
 				expectedHTTP: `Tomcat`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESP(x-missing-header?server):3%", testCase{ // altHeader w/ maxLen
 				format:       `%RESP(x-missing-header?server):3%`,
 				expectedHTTP: `Tom`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESP(x-missing-header?SERVER):3%", testCase{ // uppercase altHeader w/ maxLen
 				format:       `%RESP(x-missing-header?SERVER):3%`,
 				expectedHTTP: `Tom`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESP(server?content-type)%", testCase{ // header over altHeader
 				format:       `%RESP(server?:content-type)%`,
 				expectedHTTP: `Tomcat`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESP(server?content-type):3%", testCase{ // header over altHeader w/ maxLen
 				format:       `%RESP(server?content-type):3%`,
 				expectedHTTP: `Tom`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%RESP(SERVER?content-type):3%", testCase{ // uppercase header over altHeader w/ maxLen
 				format:       `%RESP(SERVER?content-type):3%`,
 				expectedHTTP: `Tom`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%TRAILER()%", testCase{ // apparently, Envoy allows both `Header` and `AltHeader` to be empty
 				format:       `%TRAILER()%`,
-				expectedHTTP: `-`, // replicate Envoy's behaviour
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedHTTP: `-`, // replicate Envoy's behavior
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%TRAILER():10%", testCase{ // apparently, Envoy allows both `Header` and `AltHeader` to be empty
 				format:       `%TRAILER():10%`,
-				expectedHTTP: `-`, // replicate Envoy's behaviour
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedHTTP: `-`, // replicate Envoy's behavior
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%TRAILER(grpc-status)%", testCase{ // pseudo header
 				format:       `%TRAILER(grpc-status)%`,
 				expectedHTTP: `14`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%TRAILER(grpc-status):1%", testCase{ // max length
 				format:       `%TRAILER(grpc-status):1%`,
 				expectedHTTP: `1`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%TRAILER(x-missing-header?grpc-status)%", testCase{ // altHeader
 				format:       `%TRAILER(x-missing-header?grpc-status)%`,
 				expectedHTTP: `14`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%TRAILER(x-missing-header?grpc-status):1%", testCase{ // altHeader w/ maxLen
 				format:       `%TRAILER(x-missing-header?grpc-status):1%`,
 				expectedHTTP: `1`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%TRAILER(x-missing-header?GRPC-STATUS):1%", testCase{ // uppercase altHeader w/ maxLen
 				format:       `%TRAILER(x-missing-header?GRPC-STATUS):1%`,
 				expectedHTTP: `1`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%TRAILER(grpc-status?grpc-message)%", testCase{ // header over altHeader
 				format:       `%TRAILER(grpc-status?:grpc-message)%`,
 				expectedHTTP: `14`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%TRAILER(grpc-status?grpc-message):1%", testCase{ // header over altHeader w/ maxLen
 				format:       `%TRAILER(grpc-status?grpc-message):1%`,
 				expectedHTTP: `1`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%TRAILER(GRPC-STATUS?grpc-message):1%", testCase{ // uppercase header over altHeader w/ maxLen
 				format:       `%TRAILER(GRPC-STATUS?grpc-message):1%`,
 				expectedHTTP: `1`,
-				expectedTCP:  `-`, // replicate Envoy's behaviour
+				expectedTCP:  `-`, // replicate Envoy's behavior
 			}),
 			Entry("%DYNAMIC_METADATA()%", testCase{ // apparently, Envoy allows both `FilterNamespace` and `Path` to be empty
 				format:       `%DYNAMIC_METADATA()%`,

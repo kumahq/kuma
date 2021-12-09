@@ -1,15 +1,15 @@
 package clusters
 
 import (
+	"github.com/asaskevich/govalidator"
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
-
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
-	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
+	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
 type ClientSideTLSConfigurer struct {
@@ -20,12 +20,21 @@ var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 
 func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	for _, ep := range c.Endpoints {
-		if ep.ExternalService.TLSEnabled {
+		if ep.ExternalService != nil && ep.ExternalService.TLSEnabled {
+			sni := ep.ExternalService.ServerName
+			if ep.ExternalService.ServerName == "" && govalidator.IsDNSName(ep.Target) {
+				// SNI can only be a hostname, not IP
+				sni = ep.Target
+			}
+
 			tlsContext, err := envoy_tls.UpstreamTlsContextOutsideMesh(
 				ep.ExternalService.CaCert,
 				ep.ExternalService.ClientCert,
 				ep.ExternalService.ClientKey,
-				ep.Target)
+				ep.ExternalService.AllowRenegotiation,
+				ep.Target,
+				sni,
+			)
 			if err != nil {
 				return err
 			}
@@ -44,7 +53,7 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 
 			cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
 				Name: ep.Target,
-				Match: &pstruct.Struct{
+				Match: &structpb.Struct{
 					Fields: envoy_metadata.MetadataFields(ep.Tags),
 				},
 				TransportSocket: transportSocket,

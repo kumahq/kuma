@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package dnsserver
@@ -5,16 +6,17 @@ package dnsserver
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("DNS Server", func() {
@@ -23,7 +25,7 @@ var _ = Describe("DNS Server", func() {
 
 	BeforeEach(func() {
 		var err error
-		configDir, err = ioutil.TempDir("", "")
+		configDir, err = os.MkdirTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
@@ -55,7 +57,7 @@ var _ = Describe("DNS Server", func() {
 	})
 
 	Describe("Run(..)", func() {
-		It("should generate bootstrap config file and start Envoy", func(done Done) {
+		It("should generate bootstrap config file and start Envoy", test.Within(10*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				DNS: kuma_dp.DNS{
@@ -113,13 +115,16 @@ var _ = Describe("DNS Server", func() {
 
 			By("verifying the contents DNS Server config file")
 			// when
-			actual, err := ioutil.ReadFile(expectedConfigFile)
+			actual, err := os.ReadFile(expectedConfigFile)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(string(actual)).To(Equal(`.:16001 {
     forward . 127.0.0.1:16002
-    alternate NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
+    # We want all requests to be sent to the Envoy DNS Filter, unsuccessful responses should be forwarded to the original DNS server.
+    # For example: requests other than A, AAAA and SRV will return NOTIMP when hitting the envoy filter and should be sent to the original DNS server.
+    # Codes from: https://github.com/miekg/dns/blob/master/msg.go#L138
+    alternate NOTIMP,FORMERR,NXDOMAIN,SERVFAIL,REFUSED . /etc/resolv.conf
     prometheus localhost:16003
     errors
 }
@@ -129,11 +134,9 @@ var _ = Describe("DNS Server", func() {
       rcode NXDOMAIN
     }
 }`))
-			// complete
-			close(done)
-		}, 10)
+		}))
 
-		It("should return an error if DNS Server crashes", func(done Done) {
+		It("should return an error if DNS Server crashes", test.Within(10*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				DNS: kuma_dp.DNS{
@@ -167,17 +170,14 @@ var _ = Describe("DNS Server", func() {
 			exitError := err.(*exec.ExitError)
 			// then
 			Expect(exitError.ProcessState.ExitCode()).To(Equal(1))
+		}))
 
-			// complete
-			close(done)
-		}, 10)
-
-		It("should return an error if DNS Server binary path is not found", func(done Done) {
+		It("should return an error if DNS Server binary path is not found", test.Within(10*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				DNS: kuma_dp.DNS{
 					Enabled:           true,
-					CoreDNSBinaryPath: filepath.Join("testdata"),
+					CoreDNSBinaryPath: "testdata",
 					ConfigDir:         configDir,
 				},
 			}
@@ -193,9 +193,6 @@ var _ = Describe("DNS Server", func() {
 			Expect(dnsServer).To(BeNil())
 			// and
 			Expect(err.Error()).To(ContainSubstring("could not find binary in any of the following paths"))
-
-			// complete
-			close(done)
-		}, 10)
+		}))
 	})
 })

@@ -19,18 +19,17 @@ package v1alpha1
 import (
 	"path/filepath"
 	"testing"
-
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var cfg *rest.Config
@@ -38,16 +37,10 @@ var k8sClient client.Client
 var testEnv *envtest.Environment
 
 func TestAPIs(t *testing.T) {
-	RegisterFailHandler(Fail)
-
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"v1alpha1 Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	test.RunSpecs(t, "v1alpha1 Suite")
 }
 
-var _ = BeforeSuite(func(done Done) {
-	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
-
+var _ = BeforeSuite(test.Within(time.Minute, func() {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
@@ -63,12 +56,31 @@ var _ = BeforeSuite(func(done Done) {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(k8sClient).ToNot(BeNil())
-
-	close(done)
-}, 60)
+}))
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
+})
+
+var _ = Describe("RawMessage", func() {
+	It("should deep copy", func() {
+		r1 := model.RawMessage(
+			map[string]interface{}{
+				"int": int64(2),
+				"str": "one",
+				"map": map[string]interface{}{
+					"true":  true,
+					"false": false,
+				},
+			},
+		)
+
+		r2 := r1.DeepCopy()
+		Expect(r1).To(Equal(r2))
+
+		r1["int"] = int64(32)
+		Expect(r1).ToNot(Equal(r2))
+	})
 })

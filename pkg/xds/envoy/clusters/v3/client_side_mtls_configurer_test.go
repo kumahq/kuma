@@ -1,16 +1,12 @@
 package clusters_test
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -25,7 +21,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		clientService string
 		tags          []envoy.Tags
 		ctx           xds_context.Context
-		metadata      *core_xds.DataplaneMetadata
 		expected      string
 	}
 
@@ -34,8 +29,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			// when
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
-				Configure(clusters.ClientSideMTLS(given.ctx, given.metadata, given.clientService, given.tags)).
-				Configure(clusters.Timeout(mesh_core.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
+				Configure(clusters.ClientSideMTLS(given.ctx, given.clientService, true, given.tags)).
+				Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
 				Build()
 
 			// then
@@ -49,14 +44,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			clusterName:   "testCluster",
 			clientService: "backend",
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-control-plane:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("CERTIFICATE"),
-				},
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
@@ -87,6 +76,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
                 commonTlsContext:
+                  alpnProtocols:
+                  - kuma
                   combinedValidationContext:
                     defaultValidationContext:
                       matchSubjectAltNames:
@@ -94,22 +85,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                     validationContextSdsSecretConfig:
                       name: mesh_ca
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - envoyGrpc:
-                            clusterName: ads_cluster
-                        transportApiVersion: V3
+                      ads: {}
                       resourceApiVersion: V3
             type: EDS`,
 		}),
@@ -117,14 +98,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			clusterName:   "testCluster",
 			clientService: "backend",
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-control-plane:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("CERTIFICATE"),
-				},
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
@@ -168,6 +143,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
                   commonTlsContext:
+                    alpnProtocols:
+                    - kuma
                     combinedValidationContext:
                       defaultValidationContext:
                         matchSubjectAltNames:
@@ -175,22 +152,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                       validationContextSdsSecretConfig:
                         name: mesh_ca
                         sdsConfig:
-                          apiConfigSource:
-                            apiType: GRPC
-                            grpcServices:
-                            - envoyGrpc:
-                                clusterName: ads_cluster
-                            transportApiVersion: V3
+                          ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   sni: backend{cluster=1,mesh=default}
             - match:
@@ -201,6 +168,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
                   commonTlsContext:
+                    alpnProtocols:
+                    - kuma
                     combinedValidationContext:
                       defaultValidationContext:
                         matchSubjectAltNames:
@@ -208,22 +177,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                       validationContextSdsSecretConfig:
                         name: mesh_ca
                         sdsConfig:
-                          apiConfigSource:
-                            apiType: GRPC
-                            grpcServices:
-                            - envoyGrpc:
-                                clusterName: ads_cluster
-                            transportApiVersion: V3
+                          ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - envoyGrpc:
-                              clusterName: ads_cluster
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   sni: backend{cluster=2,mesh=default}
             type: EDS`,
@@ -232,14 +191,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			clusterName:   "testCluster",
 			clientService: "backend",
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-control-plane:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("CERTIFICATE"),
-				},
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
@@ -256,9 +209,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
 						},
 					},
 				},
-			},
-			metadata: &core_xds.DataplaneMetadata{
-				DataplaneTokenPath: "/var/secret/token",
 			},
 			tags: []envoy.Tags{
 				{
@@ -278,6 +228,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
                 commonTlsContext:
+                  alpnProtocols:
+                  - kuma
                   combinedValidationContext:
                     defaultValidationContext:
                       matchSubjectAltNames:
@@ -285,48 +237,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                     validationContextSdsSecretConfig:
                       name: mesh_ca
                       sdsConfig:
-                        apiConfigSource:
-                          apiType: GRPC
-                          grpcServices:
-                          - googleGrpc:
-                              callCredentials:
-                              - fromPlugin:
-                                  name: envoy.grpc_credentials.file_based_metadata
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
-                                    secretData:
-                                      filename: /var/secret/token
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-control-plane:5677
-                          transportApiVersion: V3
+                        ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                        - googleGrpc:
-                            callCredentials:
-                            - fromPlugin:
-                                name: envoy.grpc_credentials.file_based_metadata
-                                typedConfig:
-                                  '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
-                                  secretData:
-                                    filename: /var/secret/token
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: Q0VSVElGSUNBVEU=
-                            credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                            statPrefix: sds_identity_cert
-                            targetUri: kuma-control-plane:5677
-                        transportApiVersion: V3
+                      ads: {}
                       resourceApiVersion: V3
                 sni: backend{mesh=default,version=v1}
             type: EDS`,

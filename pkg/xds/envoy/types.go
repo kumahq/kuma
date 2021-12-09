@@ -5,19 +5,111 @@ import (
 	"sort"
 	"strings"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/pkg/errors"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
-type ClusterSubset struct {
-	ClusterName       string
-	Weight            uint32
-	Tags              Tags
-	IsExternalService bool
-	Lb                *mesh_proto.TrafficRoute_LoadBalancer
-	Timeout           *mesh_proto.Timeout_Conf
+type Cluster struct {
+	service           string
+	name              string
+	weight            uint32
+	tags              Tags
+	isExternalService bool
+	lb                *mesh_proto.TrafficRoute_LoadBalancer
+	timeout           *core_mesh.TimeoutResource
+}
+
+func (c *Cluster) Service() string                           { return c.service }
+func (c *Cluster) Name() string                              { return c.name }
+func (c *Cluster) Weight() uint32                            { return c.weight }
+func (c *Cluster) Tags() Tags                                { return c.tags }
+func (c *Cluster) IsExternalService() bool                   { return c.isExternalService }
+func (c *Cluster) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
+func (c *Cluster) Timeout() *core_mesh.TimeoutResource       { return c.timeout }
+func (c *Cluster) Hash() string                              { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
+
+func (c *Cluster) SetName(name string) {
+	c.name = name
+}
+
+type NewClusterOpt interface {
+	apply(cluster *Cluster)
+}
+
+type newClusterOptFunc func(cluster *Cluster)
+
+func (f newClusterOptFunc) apply(cluster *Cluster) {
+	f(cluster)
+}
+
+func NewCluster(opts ...NewClusterOpt) Cluster {
+	c := Cluster{}
+	for _, opt := range opts {
+		opt.apply(&c)
+	}
+	if err := c.validate(); err != nil {
+		panic(err)
+	}
+	return c
+}
+
+func (c *Cluster) validate() error {
+	if c.service == "" || c.name == "" {
+		fmt.Println(c)
+		return errors.New("either WithService() or WithName() should be called")
+	}
+	return nil
+}
+
+func WithService(service string) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.service = service
+		if len(cluster.name) == 0 {
+			cluster.name = service
+		}
+	})
+}
+
+func WithName(name string) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.name = name
+		if len(cluster.service) == 0 {
+			cluster.service = name
+		}
+	})
+}
+
+func WithWeight(weight uint32) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.weight = weight
+	})
+}
+
+func WithTags(tags Tags) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.tags = tags
+	})
+}
+
+func WithTimeout(timeout *core_mesh.TimeoutResource) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.timeout = timeout
+	})
+}
+
+func WithLB(lb *mesh_proto.TrafficRoute_LoadBalancer) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.lb = lb
+	})
+}
+
+func WithExternalService(isExternalService bool) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.isExternalService = isExternalService
+	})
 }
 
 type Tags map[string]string
@@ -189,45 +281,43 @@ func TagKeySlice(tags []Tags) TagKeysSlice {
 	return r
 }
 
-type Cluster struct {
-	subsets            []ClusterSubset
+type Service struct {
+	name               string
+	clusters           []Cluster
 	hasExternalService bool
-	lb                 *mesh_proto.TrafficRoute_LoadBalancer
-	timeout            *mesh_proto.Timeout_Conf
+	tlsReady           bool
 }
 
-func (c *Cluster) Add(subset ClusterSubset) {
-	c.subsets = append(c.subsets, subset)
-	if subset.IsExternalService {
+func (c *Service) Add(cluster Cluster) {
+	c.clusters = append(c.clusters, cluster)
+	if cluster.IsExternalService() {
 		c.hasExternalService = true
 	}
-	c.lb = subset.Lb
-	c.timeout = subset.Timeout
 }
 
-func (c *Cluster) Tags() []Tags {
+func (c *Service) Tags() []Tags {
 	var result []Tags
-	for _, info := range c.subsets {
-		result = append(result, info.Tags)
+	for _, cluster := range c.clusters {
+		result = append(result, cluster.Tags())
 	}
 	return result
 }
 
-func (c *Cluster) HasExternalService() bool {
+func (c *Service) HasExternalService() bool {
 	return c.hasExternalService
 }
 
-func (c *Cluster) Subsets() []ClusterSubset {
-	return c.subsets
+func (c *Service) Clusters() []Cluster {
+	return c.clusters
 }
 
-func (c *Cluster) Timeout() *mesh_proto.Timeout_Conf {
-	return c.timeout
+func (c *Service) TLSReady() bool {
+	return c.tlsReady
 }
 
-type Clusters map[string]*Cluster
+type Services map[string]*Service
 
-func (c Clusters) ClusterNames() []string {
+func (c Services) Sorted() []string {
 	var keys []string
 	for key := range c {
 		keys = append(keys, key)
@@ -236,25 +326,32 @@ func (c Clusters) ClusterNames() []string {
 	return keys
 }
 
-func (c Clusters) Add(infos ...ClusterSubset) {
-	for _, info := range infos {
-		if c[info.ClusterName] == nil {
-			c[info.ClusterName] = &Cluster{}
-		}
-		c[info.ClusterName].Add(info)
+type ServicesAccumulator struct {
+	tlsReadiness map[string]bool
+	services     map[string]*Service
+}
+
+func NewServicesAccumulator(tlsReadiness map[string]bool) ServicesAccumulator {
+	return ServicesAccumulator{
+		tlsReadiness: tlsReadiness,
+		services:     map[string]*Service{},
 	}
 }
 
-func (c Clusters) Get(name string) *Cluster {
-	return c[name]
+func (sa ServicesAccumulator) Services() Services {
+	return sa.services
 }
 
-func (c Clusters) Tags(name string) []Tags {
-	return c[name].Tags()
-}
-
-func (c Clusters) Lb(name string) *mesh_proto.TrafficRoute_LoadBalancer {
-	return c[name].lb
+func (sa ServicesAccumulator) Add(clusters ...Cluster) {
+	for _, c := range clusters {
+		if sa.services[c.Service()] == nil {
+			sa.services[c.Service()] = &Service{
+				tlsReady: sa.tlsReadiness[c.Service()],
+				name:     c.Service(),
+			}
+		}
+		sa.services[c.Service()].Add(c)
+	}
 }
 
 type NamedResource interface {

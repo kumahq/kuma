@@ -2,7 +2,7 @@ package uninstall_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 
@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl install tracing", func() {
@@ -31,7 +31,7 @@ var _ = Describe("kumactl install tracing", func() {
 	DescribeTable("should install transparent proxy",
 		func(given testCase) {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs(append([]string{"uninstall", "transparent-proxy", "--dry-run"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
@@ -41,10 +41,10 @@ var _ = Describe("kumactl install tracing", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(stderr.Bytes()).To(BeNil())
+			Expect(stderr.String()).To(BeEmpty())
 
 			// when
-			regex, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+			regex, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

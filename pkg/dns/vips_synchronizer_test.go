@@ -3,6 +3,9 @@ package dns_test
 import (
 	"context"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -13,9 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("DNS sync", func() {
@@ -32,7 +32,7 @@ var _ = Describe("DNS sync", func() {
 		cfgManager := config_manager.NewConfigManager(memory)
 		dnsResolver = resolver.NewDNSResolver("mesh")
 
-		vipAllocator, err := dns.NewVIPsAllocator(resManager, cfgManager, "240.0.0.0/24", dnsResolver)
+		vipAllocator, err := dns.NewVIPsAllocator(resManager, cfgManager, true, "240.0.0.0/24", dnsResolver)
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			Expect(vipAllocator.Start(stop)).ToNot(HaveOccurred())
@@ -78,65 +78,57 @@ var _ = Describe("DNS sync", func() {
 		It("should sync web to DNS resolver and to the follower", func() {
 			// then service "web" is synchronized to DNS Resolver
 			Eventually(func() error {
-				_, err := dnsResolver.ForwardLookup("web")
+				_, err := dnsResolver.ForwardLookupFQDN("web.mesh")
 				return err
 			}, "5s").ShouldNot(HaveOccurred())
-			ip, _ := dnsResolver.ForwardLookup("web")
+			ip, _ := dnsResolver.ForwardLookupFQDN("web.mesh")
 			Expect(ip).Should(HavePrefix("240.0.0"))
 
 			// and replicated to a follower
 			Eventually(func() error {
-				_, err := dnsResolverFollower.ForwardLookup("web")
+				_, err := dnsResolverFollower.ForwardLookupFQDN("web.mesh")
 				return err
 			}, "5s").ShouldNot(HaveOccurred())
-			ip2, _ := dnsResolverFollower.ForwardLookup("web")
+			ip2, _ := dnsResolverFollower.ForwardLookupFQDN("web.mesh")
 			Expect(ip).To(Equal(ip2))
 		})
 
 		It("should sync another service", func() {
 			// when "backend" service is up
-			backendDp := core_mesh.DataplaneResource{
-				Spec: &mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{
+			zoneIngress := core_mesh.ZoneIngressResource{
+				Spec: &mesh_proto.ZoneIngress{
+					Zone: "zone-2",
+					Networking: &mesh_proto.ZoneIngress_Networking{
 						Address: "192.168.0.1",
-						Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-							AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
-								{
-									Mesh: "default",
-									Tags: map[string]string{
-										"kuma.io/service": "backend",
-									},
-								},
-							},
-						},
-						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{
-								Port: 1234,
-								Tags: map[string]string{
-									mesh_proto.ZoneTag: "zone-2",
-								},
+						Port:    1234,
+					},
+					AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+						{
+							Mesh: "default",
+							Tags: map[string]string{
+								"kuma.io/service": "backend",
 							},
 						},
 					},
 				},
 			}
-			err := resManager.Create(context.Background(), &backendDp, core_store.CreateByKey("dp-2", "default"))
+			err := resManager.Create(context.Background(), &zoneIngress, core_store.CreateByKey("zone-2-ingress", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// then service "backend" is synchronized to DNS Resolver
 			Eventually(func() error {
-				_, err := dnsResolver.ForwardLookup("backend")
+				_, err := dnsResolver.ForwardLookupFQDN("backend.mesh")
 				return err
 			}, "5s").ShouldNot(HaveOccurred())
-			ip, _ := dnsResolver.ForwardLookup("backend")
+			ip, _ := dnsResolver.ForwardLookupFQDN("backend.mesh")
 			Expect(ip).Should(HavePrefix("240.0.0"))
 
 			// and replicated to a follower
 			Eventually(func() error {
-				_, err := dnsResolverFollower.ForwardLookup("backend")
+				_, err := dnsResolverFollower.ForwardLookupFQDN("backend.mesh")
 				return err
 			}, "5s").ShouldNot(HaveOccurred())
-			ip2, _ := dnsResolverFollower.ForwardLookup("backend")
+			ip2, _ := dnsResolverFollower.ForwardLookupFQDN("backend.mesh")
 			Expect(ip).To(Equal(ip2))
 		})
 
@@ -147,13 +139,13 @@ var _ = Describe("DNS sync", func() {
 
 			// then service "web" is removed from DNS Resolver
 			Eventually(func() error {
-				_, err := dnsResolver.ForwardLookup("web")
+				_, err := dnsResolver.ForwardLookupFQDN("web.mesh")
 				return err
 			}, "5s").Should(MatchError("service [web] not found in domain [mesh]."))
 
 			// and replicated to a follower
 			Eventually(func() error {
-				_, err := dnsResolverFollower.ForwardLookup("web")
+				_, err := dnsResolverFollower.ForwardLookupFQDN("web.mesh")
 				return err
 			}, "5s").Should(MatchError("service [web] not found in domain [mesh]."))
 		})

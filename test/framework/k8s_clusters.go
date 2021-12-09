@@ -5,10 +5,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/config/core"
 )
 
 type K8sClusters struct {
@@ -16,6 +17,8 @@ type K8sClusters struct {
 	clusters map[string]*K8sCluster
 	verbose  bool
 }
+
+var _ Clusters = &K8sClusters{}
 
 func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	if len(clusterNames) < 1 || len(clusterNames) > maxClusters {
@@ -62,6 +65,10 @@ func (cs *K8sClusters) WithTimeout(timeout time.Duration) Cluster {
 	return cs
 }
 
+func (c *K8sClusters) Verbose() bool {
+	return c.verbose
+}
+
 func (cs *K8sClusters) WithRetries(retries int) Cluster {
 	for _, c := range cs.clusters {
 		c.WithRetries(retries)
@@ -101,9 +108,9 @@ func (cs *K8sClusters) GetCluster(name string) Cluster {
 	return c
 }
 
-func (cs *K8sClusters) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
+func (cs *K8sClusters) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
 	for name, c := range cs.clusters {
-		if err := c.DeployKuma(mode, fs...); err != nil {
+		if err := c.DeployKuma(mode, opt...); err != nil {
 			return errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
 		}
 	}
@@ -111,9 +118,9 @@ func (cs *K8sClusters) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	return nil
 }
 
-func (cs *K8sClusters) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
+func (cs *K8sClusters) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error {
 	for name, c := range cs.clusters {
-		if err := c.UpgradeKuma(mode, fs...); err != nil {
+		if err := c.UpgradeKuma(mode, opt...); err != nil {
 			return errors.Wrapf(err, "Upgrade Kuma on %s failed: %v", name, err)
 		}
 	}
@@ -135,11 +142,11 @@ func (cs *K8sClusters) VerifyKuma() error {
 	return nil
 }
 
-func (cs *K8sClusters) DeleteKuma(opts ...DeployOptionsFunc) error {
+func (cs *K8sClusters) DeleteKuma(opt ...KumaDeploymentOption) error {
 	failed := []string{}
 
 	for name, c := range cs.clusters {
-		if err := c.DeleteKuma(opts...); err != nil {
+		if err := c.DeleteKuma(opt...); err != nil {
 			fmt.Printf("Delete Kuma on %s failed", name)
 			failed = append(failed, name)
 		}
@@ -181,9 +188,9 @@ func (c *K8sClusters) GetKumactlOptions() *KumactlOptions {
 	return nil
 }
 
-func (cs *K8sClusters) DeployApp(fs ...DeployOptionsFunc) error {
+func (cs *K8sClusters) DeployApp(opt ...AppDeploymentOption) error {
 	for name, c := range cs.clusters {
-		if err := c.DeployApp(fs...); err != nil {
+		if err := c.DeployApp(opt...); err != nil {
 			return errors.Wrapf(err, "unable to deploy on %s", name)
 		}
 	}
@@ -223,6 +230,15 @@ func (cs *K8sClusters) Deploy(deployment Deployment) error {
 	for name, c := range cs.clusters {
 		if err := c.Deploy(deployment); err != nil {
 			return errors.Wrapf(err, "deployment %s failed on %s cluster", deployment.Name(), name)
+		}
+	}
+	return nil
+}
+
+func (cs *K8sClusters) DeleteDeployment(deploymentName string) error {
+	for name, c := range cs.clusters {
+		if err := c.DeleteDeployment(deploymentName); err != nil {
+			return errors.Wrapf(err, "delete deployment %s failed on %s cluster", deploymentName, name)
 		}
 	}
 	return nil

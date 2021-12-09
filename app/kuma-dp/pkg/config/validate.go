@@ -1,10 +1,10 @@
 package config
 
 import (
-	"io/ioutil"
+	"os"
 	"unicode"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 
 	util_files "github.com/kumahq/kuma/pkg/util/files"
@@ -22,7 +22,7 @@ func ValidateTokenPath(path string) error {
 		return errors.Errorf("token under file %s is empty", path)
 	}
 
-	rawToken, err := ioutil.ReadFile(path)
+	rawToken, err := os.ReadFile(path)
 	if err != nil {
 		return errors.Wrapf(err, "could not read the token in the file %s", path)
 	}

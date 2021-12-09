@@ -3,9 +3,9 @@ package clusters
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -15,10 +15,10 @@ import (
 )
 
 type ClientSideMTLSConfigurer struct {
-	Ctx           xds_context.Context
-	Metadata      *core_xds.DataplaneMetadata
-	ClientService string
-	Tags          []envoy.Tags
+	Ctx              xds_context.Context
+	UpstreamService  string
+	Tags             []envoy.Tags
+	UpstreamTLSReady bool
 }
 
 var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
@@ -27,6 +27,11 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 	if !c.Ctx.Mesh.Resource.MTLSEnabled() {
 		return nil
 	}
+	if c.Ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE &&
+		!c.UpstreamTLSReady {
+		return nil
+	}
+
 	mesh := c.Ctx.Mesh.Resource.GetMeta().GetName()
 	// there might be a situation when there are multiple sam tags passed here for example two outbound listeners with the same tags, therefore we need to distinguish between them.
 	distinctTags := envoy.DistinctTags(c.Tags)
@@ -52,7 +57,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 			}
 			cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
 				Name: sni,
-				Match: &pstruct.Struct{
+				Match: &structpb.Struct{
 					Fields: envoy_metadata.MetadataFields(tags),
 				},
 				TransportSocket: transportSocket,
@@ -63,7 +68,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 }
 
 func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_core.TransportSocket, error) {
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.Ctx, c.Metadata, c.ClientService, sni)
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.Ctx, c.UpstreamService, sni)
 	if err != nil {
 		return nil, err
 	}

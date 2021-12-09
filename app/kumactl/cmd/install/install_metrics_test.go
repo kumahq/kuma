@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/util/test"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -41,7 +42,7 @@ var _ = Describe("kumactl install metrics", func() {
 		func(given testCase) {
 			// given
 			rootCtx := kumactl_cmd.DefaultRootContext()
-			rootCtx.InstallMetricsContext.TemplateArgs.KumaPrometheusSdVersion = "0.0.1"
+			rootCtx.Runtime.NewAPIServerClient = test.GetMockNewAPIServerClient()
 			rootCmd := cmd.NewRootCmd(rootCtx)
 			rootCmd.SetArgs(append([]string{"install", "metrics"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
@@ -52,7 +53,7 @@ var _ = Describe("kumactl install metrics", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr.Bytes()).To(BeNil())
+			Expect(stderr.String()).To(BeEmpty())
 
 			// and output matches golden files
 			actual := stdout.Bytes()
@@ -66,8 +67,6 @@ var _ = Describe("kumactl install metrics", func() {
 			extraArgs: []string{
 				"--namespace", "kuma",
 				"--mesh", "mesh-1",
-				"--kuma-prometheus-sd-image", "kuma-ci/kuma-prometheus-sd",
-				"--kuma-prometheus-sd-version", "greatest",
 				"--kuma-cp-address", "http://kuma.local:5681",
 			},
 			goldenFile: "install-metrics.overrides.golden.yaml",

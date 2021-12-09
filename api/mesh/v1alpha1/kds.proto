@@ -5,19 +5,12 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "google/protobuf/timestamp.proto";
-import "envoy/api/v2/discovery.proto";
+import "envoy/service/discovery/v3/discovery.proto";
 import "google/protobuf/any.proto";
 
 service KumaDiscoveryService {
-
-  rpc DeltaKumaResources(stream envoy.api.v2.DeltaDiscoveryRequest)
-      returns (stream envoy.api.v2.DeltaDiscoveryResponse);
-
-  rpc StreamKumaResources(stream envoy.api.v2.DiscoveryRequest)
-      returns (stream envoy.api.v2.DiscoveryResponse);
-
-  rpc FetchKumaResources(envoy.api.v2.DiscoveryRequest)
-      returns (envoy.api.v2.DiscoveryResponse);
+  rpc StreamKumaResources(stream envoy.service.discovery.v3.DiscoveryRequest)
+      returns (stream envoy.service.discovery.v3.DiscoveryResponse);
 }
 
 message KumaResource {

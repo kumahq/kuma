@@ -1,20 +1,15 @@
 package universal
 
 import (
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
 func TrafficPermissionUniversal() {
 	var universalCluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
 
 	meshDefaulMtlsOn := `
 type: Mesh
@@ -27,26 +22,22 @@ mtls:
 `
 
 	E2EBeforeSuite(func() {
-		core.SetLogger = func(l logr.Logger) {}
-		logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
-
 		universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
-		deployOptsFuncs = []DeployOptionsFunc{}
 
 		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(config_core.Standalone, KumaUniversalDeployOpts...)).
 			Install(YamlUniversal(meshDefaulMtlsOn)).
 			Setup(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = universalCluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal(AppModeEchoServer, "default", "universal-1", echoServerToken)(universalCluster)
+		err = TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -84,13 +75,13 @@ destinations:
 	})
 
 	E2EAfterSuite(func() {
-		Expect(universalCluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(universalCluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
 		Expect(universalCluster.DismissCluster()).To(Succeed())
 	})
 
 	trafficAllowed := func() {
 		stdout, _, err := universalCluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+			"curl", "-v", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	}
@@ -98,7 +89,7 @@ destinations:
 	trafficBlocked := func() {
 		Eventually(func() error {
 			_, _, err := universalCluster.Exec("", "", "demo-client",
-				"curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+				"curl", "-v", "--fail", "test-server.mesh")
 			return err
 		}, "30s", "1s").Should(HaveOccurred())
 	}
@@ -136,7 +127,7 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 `
 		err := YamlUniversal(yaml)(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -186,7 +177,7 @@ sources:
 destinations:
   - match:
       team: server-owners
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 `
 		err := YamlUniversal(yaml)(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -209,7 +200,7 @@ sources:
       kuma.io/service: non-existent-demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 `
 		err := YamlUniversal(yaml)(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -227,7 +218,7 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 `
 		err = YamlUniversal(yaml)(universalCluster)
 		Expect(err).ToNot(HaveOccurred())

@@ -2,7 +2,6 @@ package firewalld
 
 import (
 	"encoding/xml"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strconv"
@@ -93,7 +92,7 @@ func (fit *FirewalldIptablesTranslator) getPersistentDirect() (*Direct, error) {
 		}
 	}
 
-	data, err := ioutil.ReadFile(fit.directlXMLPath)
+	data, err := os.ReadFile(fit.directlXMLPath)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +107,7 @@ func (fit *FirewalldIptablesTranslator) getPersistentDirect() (*Direct, error) {
 
 func (fit *FirewalldIptablesTranslator) store(direct *Direct) (string, error) {
 	if !fit.dryRun {
-		err := ioutil.WriteFile(fit.directlXMLPath, direct.Bytes(), 0644) // -rw-r--r--.  1 root root  191 Mar 18 07:58 direct.xml
+		err := os.WriteFile(fit.directlXMLPath, direct.Bytes(), 0644) // -rw-r--r--.  1 root root  191 Mar 18 07:58 direct.xml
 		if err != nil {
 			return "", err
 		}

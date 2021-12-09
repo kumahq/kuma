@@ -5,6 +5,9 @@ import (
 	"sync"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -12,11 +15,9 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 type countingResourcesManager struct {
@@ -121,6 +122,26 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(hits + hitWaits).To(Equal(100.0))
 	})
 
+	It("should not cache Get() not found", func() {
+		// when fetched resources multiple times
+		fetch := func() {
+			_ = cachedManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("non-existing", "default"))
+		}
+
+		var wg sync.WaitGroup
+		for i := 0; i < 100; i++ {
+			wg.Add(1)
+			go func() {
+				fetch()
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		// then real manager should be called every time
+		Expect(countingManager.getQueries).To(Equal(100))
+	})
+
 	It("should cache List() queries", func() {
 		// when fetched resources multiple times
 		fetch := func() core_mesh.DataplaneResourceList {
@@ -166,7 +187,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(hits + hitWaits).To(Equal(100.0))
 	})
 
-	It("should let concurrent List() queries for different types and meshes", func(done Done) {
+	It("should let concurrent List() queries for different types and meshes", test.Within(5*time.Second, func() {
 		// given ongoing TrafficLog from mesh slow that takes a lot of time to complete
 		go func() {
 			fetched := core_mesh.TrafficLogResourceList{}
@@ -187,7 +208,5 @@ var _ = Describe("Cached Resource Manager", func() {
 
 		// then first request does not block request for other type
 		Expect(err).ToNot(HaveOccurred())
-
-		close(done)
-	}, 5)
+	}))
 })

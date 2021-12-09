@@ -1,17 +1,16 @@
 package v3_test
 
 import (
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	modifications "github.com/kumahq/kuma/pkg/xds/generator/modifications/v3"
-
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("HTTP Filter modifications", func() {
@@ -507,7 +506,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                       httpFilters:
                       - name: envoy.filters.http.router
                         typedConfig:
-                          '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+                          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                           startChildSpan: true
                       - name: envoy.filters.http.gzip
                       statPrefix: localhost_8080
@@ -521,7 +520,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                      name: envoy.filters.http.router
                    value: |
                      typedConfig:
-                       '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                        dynamicStats: false
 `,
 			},
@@ -542,7 +541,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                       httpFilters:
                       - name: envoy.filters.http.router
                         typedConfig:
-                          '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+                          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                           startChildSpan: true
                           dynamicStats: false
                       - name: envoy.filters.http.gzip

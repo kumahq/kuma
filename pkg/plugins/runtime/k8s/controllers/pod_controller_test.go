@@ -6,21 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
-	"github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-
-	"github.com/kumahq/kuma/pkg/core"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -32,7 +17,17 @@ import (
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/config/manager"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/log"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 var _ = Describe("PodReconciler", func() {
@@ -41,8 +36,7 @@ var _ = Describe("PodReconciler", func() {
 	var reconciler kube_reconcile.Reconciler
 
 	BeforeEach(func() {
-		kubeClient = kube_client_fake.NewFakeClientWithScheme(
-			k8sClientScheme,
+		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
@@ -189,7 +183,31 @@ var _ = Describe("PodReconciler", func() {
 						"app": "sample",
 					},
 				},
-			})
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "ignored-service",
+					Annotations: map[string]string{
+						metadata.KumaIgnoreAnnotation: metadata.AnnotationTrue,
+					},
+				},
+				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.1",
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 85,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+						},
+					},
+					Selector: map[string]string{
+						"app": "sample",
+					},
+				},
+			}).Build()
 
 		reconciler = &PodReconciler{
 			Client:            kubeClient,
@@ -209,7 +227,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -231,7 +249,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -254,7 +272,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		_, err := reconciler.Reconcile(req)
+		_, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).To(HaveOccurred())
@@ -268,7 +286,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		_, err := reconciler.Reconcile(req)
+		_, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -281,7 +299,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -304,7 +322,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -327,7 +345,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -399,7 +417,7 @@ var _ = Describe("PodReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -506,9 +524,8 @@ var _ = Describe("PodReconciler", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		mapper := &ExternalServiceToPodsMapper{
-			Client: kubeClient,
-		}
+		l := log.NewLogger(log.InfoLevel)
+		mapper := ExternalServiceToPodsMapper(l, kubeClient)
 		es := &mesh_k8s.ExternalService{
 			Mesh: "mesh-1",
 			ObjectMeta: kube_meta.ObjectMeta{
@@ -524,12 +541,58 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 		}
-		requests := mapper.Map(handler.MapObject{Object: es})
+		requests := mapper(es)
 		requestsStr := []string{}
 		for _, r := range requests {
 			requestsStr = append(requestsStr, r.Name)
 		}
 		Expect(requestsStr).To(HaveLen(2))
 		Expect(requestsStr).To(ConsistOf("dp-1", "dp-2"))
+	})
+
+	It("should delete old dataplane-based Ingress and create new Zone Ingress", func() {
+		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			Mesh: "mesh-1",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "kuma-system",
+				Name:      "pod-ingress",
+				OwnerReferences: []kube_meta.OwnerReference{{
+					Controller: utilpointer.BoolPtr(true),
+					Kind:       "Pod",
+					Name:       "pod-ingress",
+				}},
+			},
+			Spec: map[string]interface{}{
+				"networking": map[string]interface{}{
+					"ingress": map[string]interface{}{},
+				},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "kuma-system", Name: "pod-ingress"},
+		}
+
+		// when
+		_, err = reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		zoneIngresses := &mesh_k8s.ZoneIngressList{}
+		err = kubeClient.List(context.Background(), zoneIngresses)
+		// and
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(zoneIngresses.Items).To(HaveLen(1))
+
+		dataplanes := &mesh_k8s.DataplaneList{}
+		err = kubeClient.List(context.Background(), dataplanes)
+		// and
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(dataplanes.Items).To(HaveLen(0))
 	})
 })

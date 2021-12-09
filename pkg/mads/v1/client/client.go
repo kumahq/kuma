@@ -6,19 +6,17 @@ import (
 	"fmt"
 	"net/url"
 
-	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
-
-	"github.com/golang/protobuf/ptypes"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
+	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type Client struct {
@@ -126,7 +124,7 @@ func (s *Stream) WaitForAssignments() ([]*observability_v1.MonitoringAssignment,
 	assignments := make([]*observability_v1.MonitoringAssignment, len(resp.Resources))
 	for i := range resp.Resources {
 		assignment := &observability_v1.MonitoringAssignment{}
-		if err := ptypes.UnmarshalAny(resp.Resources[i], assignment); err != nil {
+		if err := util_proto.UnmarshalAnyTo(resp.Resources[i], assignment); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal MADS response: %v", resp)
 		}
 		assignments[i] = assignment

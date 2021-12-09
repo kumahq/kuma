@@ -1,0 +1,699 @@
+resources:
+- name: localhost:8080
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: localhost_8080
+    connectTimeout: 10s
+    loadAssignment:
+      clusterName: localhost:8080
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 8080
+    name: localhost:8080
+    type: STATIC
+- name: localhost:8443
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: localhost_8443
+    connectTimeout: 10s
+    loadAssignment:
+      clusterName: localhost:8443
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 8443
+    name: localhost:8443
+    type: STATIC
+- name: inbound:192.168.0.1:443
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 443
+    filterChains:
+    - filterChainMatch:
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: inbound_192_168_0_1_443.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:8443
+          statPrefix: localhost_8443
+    - filterChainMatch:
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: inbound_192_168_0_1_443.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:8443
+          statPrefix: localhost_8443
+    - filterChainMatch:
+        applicationProtocols:
+        - kuma
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: inbound_192_168_0_1_443.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:8443
+          statPrefix: localhost_8443
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - prefix: spiffe://default/
+              validationContextSdsSecretConfig:
+                name: mesh_ca
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: inbound:192.168.0.1:443
+    trafficDirection: INBOUND
+- name: inbound:192.168.0.1:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 80
+    filterChains:
+    - filterChainMatch:
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              tp-1:
+                permissions:
+                - any: true
+                principals:
+                - andIds:
+                    ids:
+                    - authenticated:
+                        principalName:
+                          exact: kuma://version/1.0
+                    - authenticated:
+                        principalName:
+                          exact: spiffe://default/web1
+          statPrefix: inbound_192_168_0_1_80.
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          forwardClientCertDetails: SANITIZE_SET
+          httpFilters:
+          - name: envoy.filters.http.fault
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+              delay:
+                fixedDelay: 5s
+                percentage:
+                  numerator: 50
+              headers:
+              - name: x-kuma-tags
+                safeRegexMatch:
+                  googleRe2: {}
+                  regex: .*&kuma.io/service=[^&]*frontend[,&].*
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: inbound:backend1
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend1
+              routes:
+              - match:
+                  headers:
+                  - name: x-kuma-tags
+                    safeRegexMatch:
+                      googleRe2: {}
+                      regex: .*&kuma.io/service=[^&]*frontend[,&].*
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
+                    statPrefix: rate_limit
+                    tokenBucket:
+                      fillInterval: 10s
+                      maxTokens: 200
+                      tokensPerFill: 200
+              - match:
+                  headers:
+                  - name: x-kuma-tags
+                    safeRegexMatch:
+                      googleRe2: {}
+                      regex: .*&kuma.io/service=.*
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
+                    responseHeadersToAdd:
+                    - append: false
+                      header:
+                        key: x-rate-limited
+                        value: "true"
+                    statPrefix: rate_limit
+                    status:
+                      code: NotFound
+                    tokenBucket:
+                      fillInterval: 2s
+                      maxTokens: 100
+                      tokensPerFill: 100
+              - match:
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+          setCurrentClientCertDetails:
+            uri: true
+          statPrefix: localhost_8080
+    - filterChainMatch:
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              tp-1:
+                permissions:
+                - any: true
+                principals:
+                - andIds:
+                    ids:
+                    - authenticated:
+                        principalName:
+                          exact: kuma://version/1.0
+                    - authenticated:
+                        principalName:
+                          exact: spiffe://default/web1
+          statPrefix: inbound_192_168_0_1_80.
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          forwardClientCertDetails: SANITIZE_SET
+          httpFilters:
+          - name: envoy.filters.http.fault
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+              delay:
+                fixedDelay: 5s
+                percentage:
+                  numerator: 50
+              headers:
+              - name: x-kuma-tags
+                safeRegexMatch:
+                  googleRe2: {}
+                  regex: .*&kuma.io/service=[^&]*frontend[,&].*
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: inbound:backend1
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend1
+              routes:
+              - match:
+                  headers:
+                  - name: x-kuma-tags
+                    safeRegexMatch:
+                      googleRe2: {}
+                      regex: .*&kuma.io/service=[^&]*frontend[,&].*
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
+                    statPrefix: rate_limit
+                    tokenBucket:
+                      fillInterval: 10s
+                      maxTokens: 200
+                      tokensPerFill: 200
+              - match:
+                  headers:
+                  - name: x-kuma-tags
+                    safeRegexMatch:
+                      googleRe2: {}
+                      regex: .*&kuma.io/service=.*
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
+                    responseHeadersToAdd:
+                    - append: false
+                      header:
+                        key: x-rate-limited
+                        value: "true"
+                    statPrefix: rate_limit
+                    status:
+                      code: NotFound
+                    tokenBucket:
+                      fillInterval: 2s
+                      maxTokens: 100
+                      tokensPerFill: 100
+              - match:
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+          setCurrentClientCertDetails:
+            uri: true
+          statPrefix: localhost_8080
+    - filterChainMatch:
+        applicationProtocols:
+        - kuma
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              tp-1:
+                permissions:
+                - any: true
+                principals:
+                - andIds:
+                    ids:
+                    - authenticated:
+                        principalName:
+                          exact: kuma://version/1.0
+                    - authenticated:
+                        principalName:
+                          exact: spiffe://default/web1
+          statPrefix: inbound_192_168_0_1_80.
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          forwardClientCertDetails: SANITIZE_SET
+          httpFilters:
+          - name: envoy.filters.http.fault
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+              delay:
+                fixedDelay: 5s
+                percentage:
+                  numerator: 50
+              headers:
+              - name: x-kuma-tags
+                safeRegexMatch:
+                  googleRe2: {}
+                  regex: .*&kuma.io/service=[^&]*frontend[,&].*
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: inbound:backend1
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend1
+              routes:
+              - match:
+                  headers:
+                  - name: x-kuma-tags
+                    safeRegexMatch:
+                      googleRe2: {}
+                      regex: .*&kuma.io/service=[^&]*frontend[,&].*
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
+                    statPrefix: rate_limit
+                    tokenBucket:
+                      fillInterval: 10s
+                      maxTokens: 200
+                      tokensPerFill: 200
+              - match:
+                  headers:
+                  - name: x-kuma-tags
+                    safeRegexMatch:
+                      googleRe2: {}
+                      regex: .*&kuma.io/service=.*
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
+                    responseHeadersToAdd:
+                    - append: false
+                      header:
+                        key: x-rate-limited
+                        value: "true"
+                    statPrefix: rate_limit
+                    status:
+                      code: NotFound
+                    tokenBucket:
+                      fillInterval: 2s
+                      maxTokens: 100
+                      tokensPerFill: 100
+              - match:
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+          setCurrentClientCertDetails:
+            uri: true
+          statPrefix: localhost_8080
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - prefix: spiffe://default/
+              validationContextSdsSecretConfig:
+                name: mesh_ca
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: inbound:192.168.0.1:80
+    trafficDirection: INBOUND
+- name: inbound:192.168.0.2:443
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.2
+        portValue: 443
+    filterChains:
+    - filterChainMatch:
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: inbound_192_168_0_2_443.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:8443
+          statPrefix: localhost_8443
+    - filterChainMatch:
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: inbound_192_168_0_2_443.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:8443
+          statPrefix: localhost_8443
+    - filterChainMatch:
+        applicationProtocols:
+        - kuma
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: inbound_192_168_0_2_443.
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:8443
+          statPrefix: localhost_8443
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - prefix: spiffe://default/
+              validationContextSdsSecretConfig:
+                name: mesh_ca
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: inbound:192.168.0.2:443
+    trafficDirection: INBOUND
+- name: inbound:192.168.0.2:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.2
+        portValue: 80
+    filterChains:
+    - filterChainMatch:
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: inbound_192_168_0_2_80.
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          forwardClientCertDetails: SANITIZE_SET
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: inbound:backend3
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend3
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+          setCurrentClientCertDetails:
+            uri: true
+          statPrefix: localhost_8080
+    - filterChainMatch:
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: inbound_192_168_0_2_80.
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          forwardClientCertDetails: SANITIZE_SET
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: inbound:backend3
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend3
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+          setCurrentClientCertDetails:
+            uri: true
+          statPrefix: localhost_8080
+    - filterChainMatch:
+        applicationProtocols:
+        - kuma
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: inbound_192_168_0_2_80.
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          forwardClientCertDetails: SANITIZE_SET
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: inbound:backend3
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend3
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+          setCurrentClientCertDetails:
+            uri: true
+          statPrefix: localhost_8080
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - prefix: spiffe://default/
+              validationContextSdsSecretConfig:
+                name: mesh_ca
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: inbound:192.168.0.2:80
+    trafficDirection: INBOUND

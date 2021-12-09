@@ -28,7 +28,6 @@ const (
 	defaultKumactlConfig         = "${HOME}/.kumactl/%s-config"
 	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-%s-config"
 
-	envKUMACTLBIN  = "KUMACTLBIN"
 	envK8SCLUSTERS = "K8SCLUSTERS"
 	envAPIVersion  = "API_VERSION"
 	envIPv6        = "IPV6"
@@ -46,12 +45,15 @@ const (
 	cidrIPv6              = "fd00:fd00::/64"
 )
 
+var HelmRepo = "kuma/kuma"
 var HelmChartPath = "../../../deployments/charts/kuma"
 var HelmSubChartPrefix = ""
 
 var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
-var KumaGlobalRemoteSyncServiceName = "kuma-global-remote-sync"
+var KumaGlobalZoneSyncServiceName = "kuma-global-zone-sync"
+var DefaultTracingNamespace = "kuma-tracing"
+var DefaultGatewayNamespace = "kuma-gateway"
 
 var CNIApp = "kuma-cni"
 var CNINamespace = "kube-system"
@@ -60,3 +62,7 @@ var KumaImageRegistry = "kumahq"
 var KumaCPImageRepo = "kuma-cp"
 var KumaDPImageRepo = "kuma-dp"
 var KumaInitImageRepo = "kuma-init"
+
+var KumaUniversalDeployOpts []KumaDeploymentOption
+var KumaK8sDeployOpts []KumaDeploymentOption
+var KumaZoneK8sDeployOpts []KumaDeploymentOption

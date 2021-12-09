@@ -1,16 +1,12 @@
 package clusters_test
 
 import (
-	"time"
-
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -20,7 +16,7 @@ var _ = Describe("CircuitBreakerConfigurer", func() {
 
 	type testCase struct {
 		clusterName    string
-		circuitBreaker *mesh_core.CircuitBreakerResource
+		circuitBreaker *core_mesh.CircuitBreakerResource
 		expected       string
 	}
 
@@ -30,7 +26,7 @@ var _ = Describe("CircuitBreakerConfigurer", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
 				Configure(clusters.CircuitBreaker(given.circuitBreaker)).
-				Configure(clusters.Timeout(mesh_core.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
+				Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
 				Build()
 
 			// then
@@ -41,14 +37,14 @@ var _ = Describe("CircuitBreakerConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("CircuitBreaker with thresholds", testCase{
-			circuitBreaker: &mesh_core.CircuitBreakerResource{
+			circuitBreaker: &core_mesh.CircuitBreakerResource{
 				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Thresholds: &mesh_proto.CircuitBreaker_Conf_Thresholds{
-							MaxConnections:     &wrappers.UInt32Value{Value: 2},
-							MaxPendingRequests: &wrappers.UInt32Value{Value: 3},
-							MaxRequests:        &wrappers.UInt32Value{Value: 4},
-							MaxRetries:         &wrappers.UInt32Value{Value: 5},
+							MaxConnections:     util_proto.UInt32(2),
+							MaxPendingRequests: util_proto.UInt32(3),
+							MaxRequests:        util_proto.UInt32(4),
+							MaxRetries:         util_proto.UInt32(5),
 						},
 					},
 				},

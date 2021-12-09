@@ -1,6 +1,7 @@
 package externalservice
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/docker"
@@ -20,17 +21,24 @@ type universalDeployment struct {
 	ports     map[string]string
 	name      string
 	cert      string
-	args      []string
+	commands  []Command
 	app       *framework.SshApp
+	verbose   bool
 }
 
 var _ Deployment = &universalDeployment{}
 
-var UniversalAppEchoServer = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
-var UniversalAppHttpsEchoServer = []string{"ncat",
+var UniversalAppEchoServer = ExternalServiceCommand(80, "Echo 80")
+var UniversalAppEchoServer81 = ExternalServiceCommand(81, "Echo 81")
+var UniversalAppHttpsEchoServer = Command([]string{"ncat",
 	"-lk", "-p", "443",
 	"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",
-	"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"}
+	"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"})
+
+var ExternalServiceCommand = func(port uint32, message string) Command {
+	return []string{"ncat", "-lk", "-p", fmt.Sprintf("%d", port), "--sh-exec",
+		fmt.Sprintf("'echo \"HTTP/1.1 200 OK\n\n%s\n\"'", message)}
+}
 
 func (u *universalDeployment) Name() string {
 	return DeploymentName + u.name
@@ -47,7 +55,7 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 		EnvironmentVariables: []string{},
 		OtherOptions:         append([]string{"--name", cluster.Name() + "_" + u.Name(), "--network", "kind"}, u.publishPortsForDocker()...),
 	}
-	container, err := docker.RunAndGetIDE(cluster.GetTesting(), framework.KumaUniversalImage, &dockerOpts)
+	container, err := docker.RunAndGetIDE(cluster.GetTesting(), framework.GetUniversalImage(), &dockerOpts)
 	if err != nil {
 		return err
 	}
@@ -65,32 +73,32 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 	u.ip = ip
 	u.container = container
 
-	verbose := false
 	port := u.ports["22"]
 	env := []string{}
 
 	// ceritficates
-	cert, key, err := framework.CreateCertsFor([]string{"localhost", ip, name})
+	cert, key, err := framework.CreateCertsFor("localhost", ip, name)
 	if err != nil {
 		return err
 	}
 
-	err = framework.NewSshApp(verbose, port, env, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
+	err = framework.NewSshApp(u.verbose, port, env, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
-	err = framework.NewSshApp(verbose, port, env, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
+	err = framework.NewSshApp(u.verbose, port, env, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
 	u.cert = cert
-	u.app = framework.NewSshApp(verbose, port, env, u.args)
-
-	err = u.app.Start()
-	if err != nil {
-		return err
+	for _, arg := range u.commands {
+		u.app = framework.NewSshApp(u.verbose, port, env, arg)
+		err = u.app.Start()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

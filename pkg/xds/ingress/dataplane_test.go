@@ -4,19 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	model2 "github.com/kumahq/kuma/pkg/test/resources/model"
-
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	model2 "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 )
@@ -34,19 +32,21 @@ func (f *fakeResourceManager) Update(context.Context, model.Resource, ...store.U
 var _ = Describe("Ingress Dataplane", func() {
 
 	type testCase struct {
-		dataplanes []string
+		dataplanes map[string][]string
 		expected   string
 	}
 	DescribeTable("should generate ingress based on other dataplanes",
 		func(given testCase) {
 			dataplanes := []*core_mesh.DataplaneResource{}
 
-			for i, dp := range given.dataplanes {
-				dpRes := core_mesh.NewDataplaneResource()
-				err := util_proto.FromYAML([]byte(dp), dpRes.Spec)
-				Expect(err).ToNot(HaveOccurred())
-				dpRes.SetMeta(&model2.ResourceMeta{Name: fmt.Sprintf("dp-%d", i), Mesh: "default"})
-				dataplanes = append(dataplanes, dpRes)
+			for mesh, dps := range given.dataplanes {
+				for i, dp := range dps {
+					dpRes := core_mesh.NewDataplaneResource()
+					err := util_proto.FromYAML([]byte(dp), dpRes.Spec)
+					Expect(err).ToNot(HaveOccurred())
+					dpRes.SetMeta(&model2.ResourceMeta{Name: fmt.Sprintf("dp-%d", i), Mesh: mesh})
+					dataplanes = append(dataplanes, dpRes)
+				}
 			}
 
 			actual := ingress.GetIngressAvailableServices(dataplanes)
@@ -55,40 +55,42 @@ var _ = Describe("Ingress Dataplane", func() {
 			Expect(actualYAML).To(MatchYAML(given.expected))
 		},
 		Entry("base", testCase{
-			dataplanes: []string{
-				`
-            networking:
-              inbound:
-                - address: 127.0.0.1
-                  port: 1010
-                  servicePort: 2020
-                  tags:
-                    service: backend
-                    version: "1"
-                    region: eu
+			dataplanes: map[string][]string{
+				"default": {
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        service: backend
+                        version: "1"
+                        region: eu
 `,
-				`
-            networking:
-              inbound:
-                - address: 127.0.0.1
-                  port: 1010
-                  servicePort: 2020
-                  tags:
-                    service: backend
-                    version: "2"
-                    region: us
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        service: backend
+                        version: "2"
+                        region: us
 `,
-				`
-            networking:
-              inbound:
-                - address: 127.0.0.1
-                  port: 1010
-                  servicePort: 2020
-                  tags:
-                    service: backend
-                    version: "2"
-                    region: us
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        service: backend
+                        version: "2"
+                        region: us
 `,
+				},
 			},
 			expected: `
             - instances: 1
@@ -105,36 +107,84 @@ var _ = Describe("Ingress Dataplane", func() {
                 version: "2"
 `,
 		}),
+		Entry("multi-mesh", testCase{
+			dataplanes: map[string][]string{
+				"mesh1": {
+					`
+            networking:
+              inbound:
+                - address: 127.0.0.1
+                  port: 1010
+                  servicePort: 2020
+                  tags:
+                    service: b1
+`,
+					`
+            networking:
+              inbound:
+                - address: 127.0.0.1
+                  port: 1010
+                  servicePort: 2020
+                  tags:
+                    service: b2
+`,
+				},
+				"mesh2": {
+					`
+            networking:
+              inbound:
+                - address: 127.0.0.1
+                  port: 1010
+                  servicePort: 2020
+                  tags:
+                    service: b1
+`,
+				},
+			},
+			expected: `
+            - instances: 1
+              mesh: mesh1
+              tags:
+                service: b1
+            - instances: 1
+              mesh: mesh1
+              tags:
+                service: b2
+            - instances: 1
+              mesh: mesh2
+              tags:
+                service: b1
+`,
+		}),
 	)
 
 	It("should not update store if ingress haven't changed", func() {
 		ctx := context.Background()
 		mgr := &fakeResourceManager{}
 
-		ing := &core_mesh.DataplaneResource{
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-						AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
-							{
-								Instances: 1,
-								Tags: map[string]string{
-									"service": "backend",
-									"version": "v1",
-									"region":  "eu",
-								},
-								Mesh: "mesh1",
-							},
-							{
-								Instances: 2,
-								Tags: map[string]string{
-									"service": "web",
-									"version": "v2",
-									"region":  "us",
-								},
-								Mesh: "mesh1",
-							},
+		ing := &core_mesh.ZoneIngressResource{
+			Spec: &mesh_proto.ZoneIngress{
+				Networking: &mesh_proto.ZoneIngress_Networking{
+					Port: 10001,
+				},
+				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+					{
+						Instances: 1,
+						Tags: map[string]string{
+							"service": "backend",
+							"version": "v1",
+							"region":  "eu",
 						},
+						Mesh: "mesh1",
+					},
+					{
+						Instances: 2,
+						Tags: map[string]string{
+							"service": "web",
+							"version": "v2",
+							"region":  "us",
+						},
+						Mesh: "mesh1",
 					},
 				},
 			},
@@ -246,7 +296,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 		}
-		expectedAvailableServices := []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+		expectedAvailableServices := []*mesh_proto.ZoneIngress_AvailableService{
 			{
 				Instances: 1,
 				Tags: map[string]string{
@@ -315,7 +365,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 		}
-		expectedAvailableServices := []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+		expectedAvailableServices := []*mesh_proto.ZoneIngress_AvailableService{
 			{
 				Instances: 1,
 				Tags: map[string]string{

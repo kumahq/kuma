@@ -1,16 +1,17 @@
 package util_test
 
 import (
+	"time"
+
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/ghodss/yaml"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 var _ = Describe("Util", func() {
@@ -35,7 +36,7 @@ var _ = Describe("Util", func() {
 			}
 
 			// when
-			predicate := MatchServiceThatSelectsPod(pod)
+			predicate := util.MatchServiceThatSelectsPod(pod)
 			// then
 			Expect(predicate(svc)).To(BeTrue())
 		})
@@ -60,25 +61,37 @@ var _ = Describe("Util", func() {
 			}
 
 			// when
-			predicate := MatchServiceThatSelectsPod(pod)
+			predicate := util.MatchServiceThatSelectsPod(pod)
 			// then
 			Expect(predicate(svc)).To(BeFalse())
 		})
 	})
 
-	Describe("FindServices", func() {
-		It("should match Services by a predicate", func() {
-			// given
-			pod := &kube_core.Pod{
+	exampleTime := time.Date(2020, 01, 01, 01, 12, 00, 00, time.UTC)
+	DescribeTable("FindServices",
+		func(pod *kube_core.Pod, svcs *kube_core.ServiceList, matchSvcNames []string) {
+			// when
+			matchingServices := util.FindServices(svcs, util.AnySelector(), util.MatchServiceThatSelectsPod(pod))
+			// then
+			Expect(matchingServices).To(WithTransform(func(svcs []*kube_core.Service) []string {
+				var res []string
+				for i := range svcs {
+					res = append(res, svcs[i].Name)
+				}
+				return res
+			}, Equal(matchSvcNames)))
+		},
+		Entry("should match services by a predicate",
+			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Labels: map[string]string{
 						"app":               "demo-app",
 						"pod-template-hash": "7cbbd658d5",
 					},
 				},
-			}
+			},
 			// and
-			svcs := &kube_core.ServiceList{
+			&kube_core.ServiceList{
 				Items: []kube_core.Service{
 					{
 						ObjectMeta: kube_meta.ObjectMeta{
@@ -108,22 +121,112 @@ var _ = Describe("Util", func() {
 						Spec: kube_core.ServiceSpec{},
 					},
 				},
-			}
+			},
+			[]string{"demo-app"},
+		),
+		Entry("should match multiple services in order",
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Labels: map[string]string{
+						"app":               "demo-app",
+						"pod-template-hash": "7cbbd658d5",
+					},
+				},
+			},
+			// and
+			&kube_core.ServiceList{
+				Items: []kube_core.Service{
+					{
+						ObjectMeta: kube_meta.ObjectMeta{
+							CreationTimestamp: kube_meta.NewTime(exampleTime),
+							Name:              "demo-app2",
+						},
+						Spec: kube_core.ServiceSpec{
+							Selector: map[string]string{
+								"app": "demo-app",
+							},
+						},
+					},
+					{
+						ObjectMeta: kube_meta.ObjectMeta{
+							CreationTimestamp: kube_meta.NewTime(exampleTime),
+							Name:              "demo-app",
+						},
+						Spec: kube_core.ServiceSpec{
+							Selector: map[string]string{
+								"app": "demo-app",
+							},
+						},
+					},
+					{
+						ObjectMeta: kube_meta.ObjectMeta{
+							CreationTimestamp: kube_meta.NewTime(exampleTime.Add(-time.Hour)),
+							Name:              "nginx",
+						},
+						Spec: kube_core.ServiceSpec{
+							Selector: map[string]string{
+								"app": "demo-app",
+							},
+						},
+					},
+					{
+						ObjectMeta: kube_meta.ObjectMeta{
+							CreationTimestamp: kube_meta.NewTime(exampleTime),
+							Name:              "kubernetes",
+							Namespace:         "default",
+						},
+						Spec: kube_core.ServiceSpec{},
+					},
+				},
+			},
+			[]string{"demo-app", "demo-app2", "nginx"},
+		),
+	)
 
-			// when
-			matchingServices := FindServices(svcs, AnySelector(), MatchServiceThatSelectsPod(pod))
-			// then
-			Expect(matchingServices).To(HaveLen(1))
-			Expect(matchingServices).To(ConsistOf(&svcs.Items[0]))
-		})
+	Describe("MeshFor(..)", func() {
+
+		type testCase struct {
+			podAnnotations map[string]string
+			expected       string
+		}
+
+		DescribeTable("should use value of `kuma.io/mesh` annotation on a Pod or fallback to the `default` Mesh",
+			func(given testCase) {
+				// given
+				pod := &kube_core.Pod{
+					ObjectMeta: kube_meta.ObjectMeta{
+						Annotations: given.podAnnotations,
+					},
+				}
+
+				// then
+				Expect(util.MeshFor(pod)).To(Equal(given.expected))
+			},
+			Entry("Pod without annotations", testCase{
+				podAnnotations: nil,
+				expected:       "default",
+			}),
+			Entry("Pod with empty `kuma.io/mesh` annotation", testCase{
+				podAnnotations: map[string]string{
+					"kuma.io/mesh": "",
+				},
+				expected: "default",
+			}),
+			Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
+				podAnnotations: map[string]string{
+					"kuma.io/mesh": "demo",
+				},
+				expected: "demo",
+			}),
+		)
 	})
 
 	Describe("CopyStringMap", func() {
 		It("should return nil if input is nil", func() {
-			Expect(CopyStringMap(nil)).To(BeNil())
+			Expect(util.CopyStringMap(nil)).To(BeNil())
 		})
 		It("should return empty map if input is empty map", func() {
-			Expect(CopyStringMap(map[string]string{})).To(Equal(map[string]string{}))
+			Expect(util.CopyStringMap(map[string]string{})).To(Equal(map[string]string{}))
 		})
 		It("should return a copy if input map is not empty", func() {
 			// given
@@ -133,7 +236,7 @@ var _ = Describe("Util", func() {
 			}
 
 			// when
-			copy := CopyStringMap(original)
+			copy := util.CopyStringMap(original)
 			// then
 			Expect(copy).To(Equal(original))
 			Expect(copy).ToNot(BeIdenticalTo(original))
@@ -165,7 +268,7 @@ var _ = Describe("Util", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, _, err := FindPort(&pod, &svcPort)
+					actual, _, err := util.FindPort(&pod, &svcPort)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					// and
@@ -346,7 +449,7 @@ var _ = Describe("Util", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, _, err := FindPort(&pod, &svcPort)
+					actual, _, err := util.FindPort(&pod, &svcPort)
 					// then
 					Expect(err).To(HaveOccurred())
 					// and
@@ -454,6 +557,32 @@ var _ = Describe("Util", func() {
 					expectedErr: `no suitable port for manifest: 8648e081-576d-4a23-861b-8f2d94d28d34`,
 				}),
 			)
+		})
+	})
+	Describe("ServiceTagFor", func() {
+		It("should use Service FQDN", func() {
+			// given
+			svc := &kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example",
+				},
+				Spec: kube_core.ServiceSpec{
+					Ports: []kube_core.ServicePort{
+						{
+							Name: "http",
+							Port: 80,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+						},
+					},
+				},
+			}
+
+			// then
+			Expect(util.ServiceTagFor(svc, &svc.Spec.Ports[0])).To(Equal("example_demo_svc_80"))
 		})
 	})
 })

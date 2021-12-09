@@ -1,30 +1,34 @@
 package callbacks_test
 
 import (
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/kumahq/kuma/pkg/core/xds"
-	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("Dataplane Metadata Tracker", func() {
 
 	tracker := NewDataplaneMetadataTracker()
-	callbacks := util_xds_v2.AdaptCallbacks(tracker)
+	callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
-	req := v2.DiscoveryRequest{
+	dpKey := core_model.ResourceKey{
+		Mesh: "default",
+		Name: "example",
+	}
+	req := envoy_sd.DiscoveryRequest{
 		Node: &envoy_core.Node{
 			Id: "default.example",
-			Metadata: &pstruct.Struct{
-				Fields: map[string]*pstruct.Value{
-					"dataplaneTokenPath": &pstruct.Value{
-						Kind: &pstruct.Value_StringValue{
-							StringValue: "/tmp/token",
+			Metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"dataplane.dns.port": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: "9090",
 						},
 					},
 				},
@@ -41,17 +45,17 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		metadata := tracker.Metadata(streamId)
+		metadata := tracker.Metadata(dpKey)
 
 		// then
-		Expect(metadata.GetDataplaneTokenPath()).To(Equal("/tmp/token"))
+		Expect(metadata.GetDNSPort()).To(Equal(uint32(9090)))
 
 		// when
-		tracker.OnStreamClosed(streamId)
+		callbacks.OnStreamClosed(streamId)
 
 		// then metadata should be deleted
-		metadata = tracker.Metadata(streamId)
-		Expect(metadata).To(Equal(&xds.DataplaneMetadata{}))
+		metadata = tracker.Metadata(dpKey)
+		Expect(metadata).To(BeNil())
 	})
 
 	It("should track metadata with empty Node in consecutive DiscoveryRequests", func() {
@@ -62,15 +66,15 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = callbacks.OnStreamRequest(streamId, &v2.DiscoveryRequest{})
+		err = callbacks.OnStreamRequest(streamId, &envoy_sd.DiscoveryRequest{})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		metadata := tracker.Metadata(streamId)
+		metadata := tracker.Metadata(dpKey)
 
 		// then
-		Expect(metadata.GetDataplaneTokenPath()).To(Equal("/tmp/token"))
+		Expect(metadata.GetDNSPort()).To(Equal(uint32(9090)))
 	})
 })

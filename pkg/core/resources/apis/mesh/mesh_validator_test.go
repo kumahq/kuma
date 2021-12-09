@@ -116,6 +116,8 @@ var _ = Describe("Mesh", func() {
                     type: builtin`,
 				expected: `
                 violations:
+                - field: mtls.backends
+                  message: cannot have more than 1 backends
                 - field: mtls.backends[1].name
                   message: '"backend-1" name is already used for another backend'`,
 			}),
@@ -404,7 +406,7 @@ var _ = Describe("Mesh", func() {
                 - field: logging.backends[0].type
                   message: 'unknown backend type. Available backends: "tcp", "file"'
                 - field: tracing.backends[0].type
-                  message: 'unknown backend type. Available backends: "zipkin"'
+                  message: 'unknown backend type. Available backends: "zipkin", "datadog"'
                 - field: metrics.backends[0].type
                   message: 'unknown backend type. Available backends: "prometheus"'`,
 			}),

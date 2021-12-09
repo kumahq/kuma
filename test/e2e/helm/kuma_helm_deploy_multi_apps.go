@@ -6,16 +6,14 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/gruntwork-io/terratest/modules/random"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
 func AppDeploymentWithHelmChart() {
@@ -38,7 +36,7 @@ metadata:
 `
 
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		c, err := NewK8sClusterWithTimeout(
@@ -54,17 +52,15 @@ metadata:
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
-		deployOptsFuncs = []DeployOptionsFunc{
+		deployOptsFuncs = append(deployOptsFuncs,
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
 			WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
 			WithCPReplicas(3),         // test HA capability
-			WithCNI(),
-		}
+			WithCNI())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
-			Install(KumaDNS()).
 			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -72,7 +68,7 @@ metadata:
 		err = NewClusterSetup().
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
-			Install(EchoServerK8s("default")).
+			Install(testserver.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -104,13 +100,19 @@ metadata:
 
 		Eventually(func() (string, error) {
 			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server")
+				"curl", "-v", "-m", "3", "--fail", "test-server")
 			return stderr, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
 		Eventually(func() (string, error) {
 			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_80.mesh")
+				"curl", "-v", "-m", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
+			return stderr, err
+		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
+
+		Eventually(func() (string, error) { // should access a service with . instead of _
+			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "test-server.kuma-test.svc.80.mesh")
 			return stderr, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 	})

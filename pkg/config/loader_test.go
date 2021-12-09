@@ -1,7 +1,6 @@
 package config_test
 
 import (
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/test/testenvconfig"
 )
 
@@ -24,7 +22,7 @@ var _ = Describe("Config loader", func() {
 
 	BeforeEach(func() {
 		os.Clearenv()
-		file, err := ioutil.TempFile("", "*")
+		file, err := os.CreateTemp("", "*")
 		Expect(err).ToNot(HaveOccurred())
 		configFile = file
 	})
@@ -48,7 +46,7 @@ var _ = Describe("Config loader", func() {
 	DescribeTable("should load config",
 		func(given testCase) {
 			// given file with sample config
-			file, err := ioutil.TempFile("", "*")
+			file, err := os.CreateTemp("", "*")
 			Expect(err).ToNot(HaveOccurred())
 			_, err = file.WriteString(given.yamlFileConfig)
 			Expect(err).ToNot(HaveOccurred())
@@ -83,7 +81,6 @@ var _ = Describe("Config loader", func() {
 			}
 
 			// then
-			Expect(cfg.BootstrapServer.APIVersion).To(Equal(envoy.APIV3))
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
@@ -101,6 +98,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
+			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MinReconnectInterval).To(Equal(44 * time.Second))
 			Expect(cfg.Store.Postgres.MaxReconnectInterval).To(Equal(55 * time.Second))
 
@@ -126,19 +124,22 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.HTTPS.Port).To(Equal(uint32(15682)))
 			Expect(cfg.ApiServer.HTTPS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.ApiServer.HTTPS.TlsKeyFile).To(Equal("/key"))
-			Expect(cfg.ApiServer.Auth.AllowFromLocalhost).To(Equal(false))
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
+			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(Equal(false))
+			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
+			Expect(cfg.ApiServer.Authn.Tokens.BootstrapAdminToken).To(BeFalse())
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
 			// nolint: staticcheck
 			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
 			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(2222)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
-			Expect(cfg.MonitoringAssignmentServer.FetchTimeout).To(Equal(45 * time.Second))
+			Expect(cfg.MonitoringAssignmentServer.DefaultFetchTimeout).To(Equal(45 * time.Second))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(HaveLen(1))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(ContainElements("v1"))
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
+			Expect(cfg.Runtime.Kubernetes.ServiceAccountName).To(Equal("custom-sa"))
 
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -188,19 +189,20 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
 
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
-			Expect(cfg.Mode).To(Equal(config_core.Remote))
-			Expect(cfg.Multizone.Remote.Zone).To(Equal("zone-1"))
+			Expect(cfg.Mode).To(Equal(config_core.Zone))
+			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 
-			Expect(cfg.Multizone.Global.PollTimeout).To(Equal(750 * time.Millisecond))
 			Expect(cfg.Multizone.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
 			Expect(cfg.Multizone.Global.KDS.RefreshInterval).To(Equal(time.Second * 2))
 			Expect(cfg.Multizone.Global.KDS.ZoneInsightFlushInterval).To(Equal(time.Second * 5))
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
-			Expect(cfg.Multizone.Remote.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
-			Expect(cfg.Multizone.Remote.Zone).To(Equal("zone-1"))
-			Expect(cfg.Multizone.Remote.KDS.RootCAFile).To(Equal("/rootCa"))
-			Expect(cfg.Multizone.Remote.KDS.RefreshInterval).To(Equal(9 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
+			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
+			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
+			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
+			Expect(cfg.Multizone.Zone.KDS.RefreshInterval).To(Equal(9 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.MaxMsgSize).To(Equal(uint32(2)))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 
@@ -210,6 +212,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DNSServer.Domain).To(Equal("test-domain"))
 			Expect(cfg.DNSServer.Port).To(Equal(uint32(15653)))
 			Expect(cfg.DNSServer.CIDR).To(Equal("127.1.0.0/16"))
+			Expect(cfg.DNSServer.ServiceVipEnabled).To(BeFalse())
 
 			Expect(cfg.XdsServer.DataplaneStatusFlushInterval).To(Equal(7 * time.Second))
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval).To(Equal(21 * time.Second))
@@ -217,10 +220,12 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Metrics.Zone.Enabled).To(BeFalse())
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
+			Expect(cfg.Metrics.Zone.IdleTimeout).To(Equal(2 * time.Minute))
 			Expect(cfg.Metrics.Mesh.MinResyncTimeout).To(Equal(35 * time.Second))
 			Expect(cfg.Metrics.Mesh.MaxResyncTimeout).To(Equal(27 * time.Second))
 			Expect(cfg.Metrics.Dataplane.Enabled).To(BeFalse())
 			Expect(cfg.Metrics.Dataplane.SubscriptionLimit).To(Equal(47))
+			Expect(cfg.Metrics.Dataplane.IdleTimeout).To(Equal(1 * time.Minute))
 
 			Expect(cfg.DpServer.TlsCertFile).To(Equal("/test/path"))
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
@@ -235,7 +240,13 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
 			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
-			Expect(cfg.SdsServer.DataplaneConfigurationRefreshInterval).To(Equal(11 * time.Second))
+			Expect(cfg.Access.Type).To(Equal("custom-rbac"))
+			Expect(cfg.Access.Static.AdminResources.Users).To(Equal([]string{"ar-admin1", "ar-admin2"}))
+			Expect(cfg.Access.Static.AdminResources.Groups).To(Equal([]string{"ar-group1", "ar-group2"}))
+			Expect(cfg.Access.Static.GenerateDPToken.Users).To(Equal([]string{"dp-admin1", "dp-admin2"}))
+			Expect(cfg.Access.Static.GenerateDPToken.Groups).To(Equal([]string{"dp-group1", "dp-group2"}))
+			Expect(cfg.Access.Static.GenerateUserToken.Users).To(Equal([]string{"ut-admin1", "ut-admin2"}))
+			Expect(cfg.Access.Static.GenerateUserToken.Groups).To(Equal([]string{"ut-group1", "ut-group2"}))
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -251,6 +262,7 @@ store:
     dbName: kuma
     connectionTimeout: 10
     maxOpenConnections: 300
+    maxIdleConnections: 300
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
     tls:
@@ -267,7 +279,6 @@ store:
     conflictRetryBaseBackoff: 4s
     conflictRetryMaxTimes: 10
 bootstrapServer:
-  apiVersion: v3
   params:
     adminPort: 1234
     adminAccessLogPath: /access/log/test
@@ -288,7 +299,11 @@ apiServer:
     tlsKeyFile: "/key" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
   auth:
     clientCertsDir: "/certs" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-    allowFromLocalhost: false # ENV: KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST
+  authn:
+    type: custom-authn
+    localhostIsAdmin: false
+    tokens:
+      bootstrapAdminToken: false
   readOnly: true
   corsAllowedDomains:
     - https://kuma
@@ -296,13 +311,14 @@ apiServer:
 monitoringAssignmentServer:
   grpcPort: 3333
   port: 2222
-  fetchTimeout: 45s
+  defaultFetchTimeout: 45s
   apiVersions: [v1]
   assignmentRefreshInterval: 12s
 runtime:
   universal:
     dataplaneCleanupAge: 1h
   kubernetes:
+    serviceAccountName: custom-sa
     controlPlaneServiceName: custom-control-plane
     admissionServer:
       address: 127.0.0.2
@@ -369,26 +385,28 @@ general:
   workDir: /custom/work/dir
 guiServer:
   apiServerUrl: http://localhost:1234
-mode: remote
+mode: zone
 multizone:
   global:
-    pollTimeout: 750ms
     kds:
       grpcPort: 1234
       refreshInterval: 2s
       zoneInsightFlushInterval: 5s
       tlsCertFile: /cert
       tlsKeyFile: /key
-  remote:
+      maxMsgSize: 1
+  zone:
     globalAddress: "grpc://1.1.1.1:5685"
-    zone: "zone-1"
+    name: "zone-1"
     kds:
       refreshInterval: 9s
       rootCaFile: /rootCa
+      maxMsgSize: 2
 dnsServer:
   domain: test-domain
   port: 15653
   CIDR: 127.1.0.0/16
+  serviceVipEnabled: false
 defaults:
   skipMeshCreation: true
 diagnostics:
@@ -402,12 +420,14 @@ metrics:
   zone:
     enabled: false
     subscriptionLimit: 23
+    idleTimeout: 2m
   mesh:
     minResyncTimeout: 35s
     maxResyncTimeout: 27s
   dataplane:
     subscriptionLimit: 47
     enabled: false
+    idleTimeout: 1m
 dpServer:
   tlsCertFile: /test/path
   tlsKeyFile: /test/path/key
@@ -424,13 +444,22 @@ dpServer:
       noTrafficInterval: 7s
       healthyThreshold: 8
       unhealthyThreshold: 9
-sdsServer:
-  dataplaneConfigurationRefreshInterval: 11s
+access:
+  type: custom-rbac
+  static:
+    adminResources:
+      users: ["ar-admin1", "ar-admin2"]
+      groups: ["ar-group1", "ar-group2"]
+    generateDpToken:
+      users: ["dp-admin1", "dp-admin2"]
+      groups: ["dp-group1", "dp-group2"]
+    generateUserToken:
+      users: ["ut-admin1", "ut-admin2"]
+      groups: ["ut-group1", "ut-group2"]
 `,
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
-				"KUMA_BOOTSTRAP_SERVER_API_VERSION":                                                        "v3",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                                                  "1234",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                                                    "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                                                    "4321",
@@ -446,6 +475,7 @@ sdsServer:
 				"KUMA_STORE_POSTGRES_DB_NAME":                                                              "kuma",
 				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":                                                   "10",
 				"KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS":                                                 "300",
+				"KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS":                                                 "300",
 				"KUMA_STORE_POSTGRES_TLS_MODE":                                                             "verifyFull",
 				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                                                        "/path/to/cert",
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                                                         "/path/to/key",
@@ -467,14 +497,17 @@ sdsServer:
 				"KUMA_API_SERVER_HTTPS_TLS_CERT_FILE":                                                      "/cert",
 				"KUMA_API_SERVER_HTTPS_TLS_KEY_FILE":                                                       "/key",
 				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
-				"KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST":                                                "false",
+				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
+				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
+				"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN":                                       "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                                              "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
-				"KUMA_MONITORING_ASSIGNMENT_SERVER_FETCH_TIMEOUT":                                          "45s",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS":                                           "v1",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":                            "12s",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
+				"KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME":                                             "custom-sa",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":                                         "127.0.0.2",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                                            "9443",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR":                                        "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
@@ -521,16 +554,18 @@ sdsServer:
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
 				"KUMA_DNS_SERVER_PORT":                                                                     "15653",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",
-				"KUMA_MODE":                                                                                "remote",
-				"KUMA_MULTIZONE_GLOBAL_POLL_TIMEOUT":                                                       "750ms",
+				"KUMA_DNS_SERVER_SERVICE_VIP_ENABLED":                                                      "false",
+				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
 				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                                               "2s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE":                                                  "/cert",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE":                                                   "/key",
-				"KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS":                                                     "grpc://1.1.1.1:5685",
-				"KUMA_MULTIZONE_REMOTE_ZONE":                                                               "zone-1",
-				"KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE":                                                   "/rootCa",
-				"KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL":                                               "9s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE":                                                   "1",
+				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
+				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
+				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
+				"KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL":                                                 "9s",
+				"KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE":                                                     "2",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
@@ -540,10 +575,12 @@ sdsServer:
 				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
 				"KUMA_METRICS_ZONE_ENABLED":                                                                "false",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
+				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
 				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "27s",
 				"KUMA_METRICS_DATAPLANE_ENABLED":                                                           "false",
 				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "35s",
 				"KUMA_METRICS_DATAPLANE_SUBSCRIPTION_LIMIT":                                                "47",
+				"KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT":                                                      "1m",
 				"KUMA_DP_SERVER_TLS_CERT_FILE":                                                             "/test/path",
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
 				"KUMA_DP_SERVER_AUTH_TYPE":                                                                 "dpToken",
@@ -556,7 +593,13 @@ sdsServer:
 				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
 				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
 				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
-				"KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "11s",
+				"KUMA_ACCESS_TYPE":                                                                         "custom-rbac",
+				"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_USERS":                                                 "ar-admin1,ar-admin2",
+				"KUMA_ACCESS_STATIC_ADMIN_RESOURCES_GROUPS":                                                "ar-group1,ar-group2",
+				"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_USERS":                                               "dp-admin1,dp-admin2",
+				"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS":                                              "dp-group1,dp-group2",
+				"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS":                                             "ut-admin1,ut-admin2",
+				"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS":                                            "ut-group1,ut-group2",
 			},
 			yamlFileConfig: "",
 		}),
@@ -564,7 +607,7 @@ sdsServer:
 
 	It("should override via env var", func() {
 		// given file with sample cfg
-		file, err := ioutil.TempFile("", "*")
+		file, err := os.CreateTemp("", "*")
 		Expect(err).ToNot(HaveOccurred())
 		_, err = file.WriteString("environment: kubernetes")
 		Expect(err).ToNot(HaveOccurred())

@@ -12,7 +12,6 @@ import (
 
 func ExternalServiceHostHeader() {
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
 
 	externalService := `
 type: ExternalService
@@ -29,10 +28,9 @@ networking:
 
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		deployOptsFuncs = []DeployOptionsFunc{}
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
 			Install(YamlUniversal(externalService)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -40,7 +38,7 @@ networking:
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
+		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "dp-demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken, WithTransparentProxy(true))(cluster)
@@ -51,7 +49,7 @@ networking:
 		if ShouldSkipCleanup() {
 			return
 		}
-		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(cluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 

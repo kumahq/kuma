@@ -14,11 +14,11 @@ import (
 
 func UniversalTransparentProxyDeployment() {
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs []KumaDeploymentOption
 
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
@@ -32,7 +32,9 @@ func UniversalTransparentProxyDeployment() {
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken, WithTransparentProxy(true))(cluster)
+		err = TestServerUniversal("test-server", "default", echoServerToken,
+			WithArgs([]string{"echo", "--instance", "universal"}),
+			WithServiceName("echo-server_kuma-test_svc_8080"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())

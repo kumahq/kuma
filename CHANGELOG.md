@@ -1,5 +1,334 @@
 # CHANGELOG
 
+## [1.4.0]
+> Released on 2021/11/22
+
+Changes:
+* chore(*) scripts for build, publish and fetch Envoy binaries [#3110](https://github.com//kumahq/kuma/pull/3110) [#3182](https://github.com//kumahq/kuma/pull/3182)
+* chore(kuma-cp) upgrade gui to new version [#3178](https://github.com//kumahq/kuma/pull/3178) [#3179](https://github.com//kumahq/kuma/pull/3179)
+* chore(kuma-cp) Use go structs instead of gotemplate for bootstrap [#3156](https://github.com//kumahq/kuma/pull/3156) [#3173](https://github.com//kumahq/kuma/pull/3173)
+* chore(deps): bump github.com/slok/go-http-metrics from 0.9.0 to 0.10.0 [#3170](https://github.com//kumahq/kuma/pull/3170)
+* Disable reporting by default [#3070](https://github.com//kumahq/kuma/pull/3070) [#3159](https://github.com//kumahq/kuma/pull/3159)
+* chore(kumactl) remove install CRDs filter function [#3139](https://github.com//kumahq/kuma/pull/3139)
+* feat(kuma-dp) Add conf to disable service vip [#3143](https://github.com//kumahq/kuma/pull/3143)
+* chore(kuma-cp) update some TODO comments [#3141](https://github.com//kumahq/kuma/pull/3141)
+* feat(kuma-cp) Add kuma.io/ignore annotation [#3142](https://github.com//kumahq/kuma/pull/3142)
+* fix(kuma-dp) match gateway cluster names in the hijacker [#3106](https://github.com//kumahq/kuma/pull/3106)
+* feat: add ECDSA certificate generator support [#3093](https://github.com//kumahq/kuma/pull/3093)
+* feat: add more global resources to GlobalInsights [#3094](https://github.com//kumahq/kuma/pull/3094)
+* feat: allow creating secrets for the not yet existing mesh [#3076](https://github.com//kumahq/kuma/pull/3076)
+  👍contributed by cloudwiz
+* feat: don't add v6 in DNS when v6 is disabled [#3089](https://github.com//kumahq/kuma/pull/3089)
+* fix: explicitly disable dns in env when disabled in injector [#3077](https://github.com//kumahq/kuma/pull/3077)
+* feat: added support for https tracing endpoint [#3057](https://github.com//kumahq/kuma/pull/3057)
+  👍contributed by sudeeptoroy
+* fix: normalize generating TLS certificates [#3027](https://github.com//kumahq/kuma/pull/3027)
+* fix: zero downtime when enabling permissive mTLS [#3019](https://github.com//kumahq/kuma/pull/3019)
+* feat: add deprecation notice for kuma-prometheus-sd [#2994](https://github.com//kumahq/kuma/pull/2994)
+* feat: add GlobalInsights api endpoint [#3018](https://github.com//kumahq/kuma/pull/3018)
+* fix: duplicate TLS certificate usage [#3008](https://github.com//kumahq/kuma/pull/3008)
+* chore: add command argument count parameters [#3010](https://github.com//kumahq/kuma/pull/3010)
+* feat: aggregate dp stats by type in MeshInsight [#2999](https://github.com//kumahq/kuma/pull/2999)
+* chore: delete CLI flag '--bootstrap-version' [#2965](https://github.com//kumahq/kuma/pull/2965)
+* feat: show the effective Dataplane address [#2977](https://github.com//kumahq/kuma/pull/2977)
+* feat: aggregate services in MeshInsight [#2974](https://github.com//kumahq/kuma/pull/2974)
+* fix: allow only one healthcheck [#2972](https://github.com//kumahq/kuma/pull/2972)
+* feat: give CA managers all backends at once [#2956](https://github.com//kumahq/kuma/pull/2956)
+* chore: normalize timeout configurer API [#2934](https://github.com//kumahq/kuma/pull/2934)
+* fix: locality-aware lb for external-services [#2903](https://github.com//kumahq/kuma/pull/2903)
+* feat: add install control-plane --version flag for all components [#2904](https://github.com//kumahq/kuma/pull/2904)
+* feat: add zone selector to Kuma Mesh dashboard [#2860](https://github.com//kumahq/kuma/pull/2860)
+* fix: possible to delete resources on Zone CP [#2665](https://github.com//kumahq/kuma/pull/2665)
+* fix: make cluster names contextually unique [#3098](https://github.com//kumahq/kuma/pull/3098)
+* feat: automatically enable gzip content on gateways [#3104](https://github.com//kumahq/kuma/pull/3104)
+* feat: add Gateway TLS termination support [#3044](https://github.com//kumahq/kuma/pull/3044)
+* feat: add gateway support for external services [#2990](https://github.com//kumahq/kuma/pull/2990)
+* fix: enable secrets support for Gateway resources [#2953](https://github.com//kumahq/kuma/pull/2953)
+* feat: initial connection policy support for Gateway [#2933](https://github.com//kumahq/kuma/pull/2933)
+* feat: add access to generate zone ingress token [#3075](https://github.com//kumahq/kuma/pull/3075)
+* feat: user token with RSA256 [#2992](https://github.com//kumahq/kuma/pull/2992)
+* feat: prefix system users and groups with mesh-system [#3013](https://github.com//kumahq/kuma/pull/3013)
+* feat: localhost is not an admin on kubernetes [#3003](https://github.com//kumahq/kuma/pull/3003)
+* feat: user token enabled by default [#2941](https://github.com//kumahq/kuma/pull/2941)
+* feat: Admin User Token bootstrap [#2923](https://github.com//kumahq/kuma/pull/2923)
+* chore: refactor access control for individual access [#2983](https://github.com//kumahq/kuma/pull/2983)
+* feat: support plugin based authentication including user tokens [#2895](https://github.com//kumahq/kuma/pull/2895)
+* feat: User Token for API Server authentication [#2892](https://github.com//kumahq/kuma/pull/2892)
+* chore: refactor authz and authn to plugins [#2837](https://github.com//kumahq/kuma/pull/2837)
+* chore(kuma-cp) upgrade gui to new version [#3148](https://github.com//kumahq/kuma/pull/3148)
+* chore(*) upgrade to Go 1.17.3 [#3147](https://github.com//kumahq/kuma/pull/3147)
+* chore(deps): bump github.com/operator-framework/operator-lib [#3158](https://github.com//kumahq/kuma/pull/3158)
+* chore(deps): bump github.com/gruntwork-io/terratest [#3130](https://github.com//kumahq/kuma/pull/3130)
+* chore: update helm and controller-runtime [#2764](https://github.com//kumahq/kuma/pull/2764)
+* chore: bump github.com/lib/pq from 1.10.3 to 1.10.4 [#3131](https://github.com//kumahq/kuma/pull/3131)
+* chore: bump google.golang.org/grpc from 1.41.0 to 1.42.0 [#3101](https://github.com//kumahq/kuma/pull/3101)
+* chore: bump github.com/prometheus/common from 0.31.1 to 0.32.1 [#3006](https://github.com//kumahq/kuma/pull/3006)
+* chore: bump github.com/envoyproxy/protoc-gen-validate [#3007](https://github.com//kumahq/kuma/pull/3007)
+* chore: bump github.com/google/uuid from 1.2.0 to 1.3.0 [#2839](https://github.com//kumahq/kuma/pull/2839)
+* chore: bump sigs.k8s.io/controller-runtime from 0.10.2 to 0.10.3 [#3132](https://github.com//kumahq/kuma/pull/3132)
+* chore: bump k8s.io/client-go from 0.22.2 to 0.22.3 [#3061](https://github.com//kumahq/kuma/pull/3061)
+* chore: bump k8s.io/apiextensions-apiserver from 0.22.2 to 0.22.3 [#3059](https://github.com//kumahq/kuma/pull/3059)
+* chore: bump k8s.io/api from 0.22.2 to 0.22.3 [#3058](https://github.com//kumahq/kuma/pull/3058)
+* chore: bump github.com/golang-migrate/migrate/v4 [#2970](https://github.com//kumahq/kuma/pull/2970)
+* chore: bump helm.sh/helm/v3 from 3.6.1 to 3.7.1 [#2968](https://github.com//kumahq/kuma/pull/2968)
+* chore: bump github.com/miekg/dns from 1.0.14 to 1.1.43 in /pkg/transparentproxy/istio [#2752](https://github.com//kumahq/kuma/pull/2752)
+
+## [1.3.1]
+> Released on 2021/10/06
+
+Changes:
+
+* fix: disable zone [#2884](https://github.com//kumahq/kuma/pull/2884)
+* fix: limit number of postgres connection by default [#2866](https://github.com//kumahq/kuma/pull/2866)
+* feat: add zone selector to Kuma Service to Service dashboard [#2876](https://github.com//kumahq/kuma/pull/2876)
+* feat: add zone selector to Kuma Service dashboard [#2865](https://github.com//kumahq/kuma/pull/2865)
+* feat: add zone selector to Kuma Dataplane dashboard [#2864](https://github.com//kumahq/kuma/pull/2864)
+* fix: fix duplicates in dataplane list in Kuma Services dashboard [#2845](https://github.com//kumahq/kuma/pull/2845)
+* chore: migrate install resources from rbac API v1beta1 to v1 [#2875](https://github.com//kumahq/kuma/pull/2875)
+* fix: fault injection matching [#2757](https://github.com//kumahq/kuma/pull/2757)
+* fix: delete kuma.io/region and kuma.io/sub-zone [#2824](https://github.com//kumahq/kuma/pull/2824)
+* feat: print control plane version with version cmd [#2834](https://github.com//kumahq/kuma/pull/2834)
+* fix: Only warn about version compatibility where it makes sense [#2828](https://github.com//kumahq/kuma/pull/2828)
+* perf: remove insight update rate limit burst [#2825](https://github.com//kumahq/kuma/pull/2825)
+* perf: apply ratelimit to service insights [#2815](https://github.com//kumahq/kuma/pull/2815)
+* feat: adds support for specifying specific IP for cloud provider load balancers for ingress service [#2779](https://github.com//kumahq/kuma/pull/2779)
+  👍contributed by @jamesdbloom
+* fix: send tool output to stdout [#2787](https://github.com//kumahq/kuma/pull/2787)
+* fix: switch to a Kuma fork of go-control-plane [#2771](https://github.com//kumahq/kuma/pull/2771)
+* chore: parametrize label on the deployment [#2765](https://github.com//kumahq/kuma/pull/2765)
+* perf: set Node only on first DiscoveryRequest [#2741](https://github.com//kumahq/kuma/pull/2741)
+* feat: verify ServiceAccountToken bound to a Pod [#2745](https://github.com//kumahq/kuma/pull/2745)
+* feat: internal dns should resolve AAAA records [#2760](https://github.com//kumahq/kuma/pull/2760)
+* fix: Add FORMERR and NOTIMP in alternate default coredns conf [#2756](https://github.com//kumahq/kuma/pull/2756)
+* fix: virtual probes with query [#2706](https://github.com//kumahq/kuma/pull/2706)
+* fix: Avoid calling `Send()` from different goroutines [#2573](https://github.com//kumahq/kuma/pull/2573)
+* feat: automatically set proxy concurrency [#2691](https://github.com//kumahq/kuma/pull/2691)
+* feat: Improve builtin grafana setup to have traces and logs linked [#2716](https://github.com//kumahq/kuma/pull/2716)
+* fix: Show gateway services in service-insights [#2711](https://github.com//kumahq/kuma/pull/2711)
+* fix: Correct bad merging of duration [#2700](https://github.com//kumahq/kuma/pull/2700)
+* fix: Ensure outbounds are set when migrating from old to new [#2698](https://github.com//kumahq/kuma/pull/2698)
+* fix: get rid of regex for parsing IPs [#2681](https://github.com//kumahq/kuma/pull/2681)
+* feat: add CP config to ZoneInsights [#2661](https://github.com//kumahq/kuma/pull/2661)
+* feat: generate GatewayRoute clusters [#2819](https://github.com//kumahq/kuma/pull/2819)
+* feat: add GatewayRoute route generation [#2782](https://github.com//kumahq/kuma/pull/2782)
+* feat: match gateway routes [#2758](https://github.com//kumahq/kuma/pull/2758)
+* feat: initial gateway TrafficRoute support [#2547](https://github.com//kumahq/kuma/pull/2547)
+* feat: add a GatewayRoute resource [#2591](https://github.com//kumahq/kuma/pull/2591)
+* chore: update base image for kuma-dp [#2881](https://github.com//kumahq/kuma/pull/2881)
+* chore: change Go JWT version to fix  security vunerability [#2844](https://github.com//kumahq/kuma/pull/2844)
+* chore: bump go.uber.org/zap from 1.17.0 to 1.19.1 [#2768](https://github.com//kumahq/kuma/pull/2768)
+* chore: bump google.golang.org/grpc from 1.38.0 to 1.40.0 [#2737](https://github.com//kumahq/kuma/pull/2737)
+* chore: bump github.com/miekg/dns from 1.1.42 to 1.1.43 [#2769](https://github.com//kumahq/kuma/pull/2769)
+* chore: upgrade github.com/spf13/cobra [#2732](https://github.com//kumahq/kuma/pull/2732)
+* chore: bump alpine in /tools/releases/dockerfiles [#2705](https://github.com//kumahq/kuma/pull/2705)
+* chore: bump github.com/onsi/gomega from 1.13.0 to 1.16.0 [#2657](https://github.com//kumahq/kuma/pull/2657)
+* chore: update envoy to 1.18.4 [#2667](https://github.com//kumahq/kuma/pull/2667)
+
+## [1.3.0]
+> Released on 2021/08/25
+
+Changes:
+* feat: remove provided ca cert validation [#2663](https://github.com/kumahq/kuma/pull/2663)
+ 👍contributed by Nikita Pande (@nikita15p)
+* feat: Use kuma-sd in kumactl install metrics [#2654](https://github.com/kumahq/kuma/pull/2654)
+* feat: Add new datasource to kumactl install metrics [#2640](https://github.com/kumahq/kuma/pull/2640)
+* fix: remove extra endline in traffic log default template [#2514](https://github.com//kumahq/kuma/pull/2514)
+* fix: TLSInspector is causing tcp healthcheck failures [#2639](https://github.com//kumahq/kuma/pull/2639)
+* feat: Add rate-limit to outbound interfaces [#2435](https://github.com//kumahq/kuma/pull/2435)
+* fix: print a newline with transparent proxy setup message [#2634](https://github.com//kumahq/kuma/pull/2634)
+* chore: bump alpine in /tools/releases/dockerfiles [#2531](https://github.com//kumahq/kuma/pull/2531)
+* chore: annotate required fields in proto files [#2556](https://github.com//kumahq/kuma/pull/2556)
+* chore: remove MADS v1alpha1 [#2632](https://github.com//kumahq/kuma/pull/2632)
+* chore: parametrize kuma tracing in ZipkinCollectorURL [#2635](https://github.com//kumahq/kuma/pull/2635)
+* chore: Add the number of services to usage stats [#2628](https://github.com//kumahq/kuma/pull/2628)
+* feat: Add the permissive mTLS mode [#2579](https://github.com//kumahq/kuma/pull/2579)
+* chore: open CAProvider and MeshValidator for extensions [#2618](https://github.com//kumahq/kuma/pull/2618)
+* feat: Add entity for virtual-outbound [#2576](https://github.com//kumahq/kuma/pull/2576)
+* fix: Don't set zap.Development() in debug log [#2608](https://github.com//kumahq/kuma/pull/2608)
+* chore(kuma-cp) upgrade gui to new version [#2611](https://github.com//kumahq/kuma/pull/2611), [#2452](https://github.com//kumahq/kuma/pull/2452), [#2554](https://github.com//kumahq/kuma/pull/2554), [#2528](https://github.com//kumahq/kuma/pull/2528), [#2497](https://github.com//kumahq/kuma/pull/2497), [#2490](https://github.com//kumahq/kuma/pull/2490), [#2481](https://github.com//kumahq/kuma/pull/2481)
+* feat: Build kuma on Windows [#2597](https://github.com//kumahq/kuma/pull/2597), [#2606](https://github.com//kumahq/kuma/pull/2606), [#2559](https://github.com//kumahq/kuma/pull/2559)
+* feat: Add CA backend stats in Dataplane and Mesh Insights [#2562](https://github.com//kumahq/kuma/pull/2562)
+* fix: missing key for kv in reports logging [#2598](https://github.com//kumahq/kuma/pull/2598)
+* chore: split listener configurers across source files [#2592](https://github.com//kumahq/kuma/pull/2592)
+* feat: add simple HTTP connection configurers [#2593](https://github.com//kumahq/kuma/pull/2593)
+* feat: add virtual host domain name configurer [#2590](https://github.com//kumahq/kuma/pull/2590)
+* feat: return instance and cluster IDs in kuma-cp API statuses [#2589](https://github.com//kumahq/kuma/pull/2589)
+* tests: allow kuma-specific const to be overridden [#2582](https://github.com//kumahq/kuma/pull/2582)
+* feat: Intermediate CA support [#2575](https://github.com//kumahq/kuma/pull/2575)
+* fix: Avoid nil dereferencing in dp validator [#2578](https://github.com//kumahq/kuma/pull/2578)
+* chore: consistently use utils package for protobuf wrappers [#2570](https://github.com//kumahq/kuma/pull/2570)
+* fix: subscription finalizer, rev 2 [#2526](https://github.com//kumahq/kuma/pull/2526)
+* tests: fix flaky test for locality aware loadbalancing [#2564](https://github.com//kumahq/kuma/pull/2564)
+* fix: DP tracking lock consistency fix [#2567](https://github.com//kumahq/kuma/pull/2567)
+* chore: Certificates over ADS [#2558](https://github.com//kumahq/kuma/pull/2558)
+* chore: migrate DiscoveryRequest/Response in KDS to V3 [#2541](https://github.com//kumahq/kuma/pull/2541)
+* feat: Rewrite dns persistence to allow virtual-outbound to be added [#2484](https://github.com//kumahq/kuma/pull/2484)
+* fix: deleted default policy is created on Kuma CP restart [#2507](https://github.com//kumahq/kuma/pull/2507)
+* chore: Move kumactl logging arguments to where they can be parameterized [#2544](https://github.com//kumahq/kuma/pull/2544)
+* chore: add route and virtual host configuration helpers [#2517](https://github.com//kumahq/kuma/pull/2517)
+* chore: fix kumactl generate dataplane proxy-type flag deprecation message [#2522](https://github.com//kumahq/kuma/pull/2522)
+ 👍contributed by Tharun Rajendran
+* chore: Simplify resource-gen.go by generating `ResourceDescriptor` [#2511](https://github.com//kumahq/kuma/pull/2511)
+* chore: Replace netcat with test server [#2510](https://github.com//kumahq/kuma/pull/2510)
+* feat: configure SNI on ExternalService [#2467](https://github.com//kumahq/kuma/pull/2467)
+* chore: add importas to golangci-lint [#2516](https://github.com//kumahq/kuma/pull/2516)
+ 👍contributed by Tharun Rajendran
+* chore: add to resource-gen.go generation of kds options [#2487](https://github.com//kumahq/kuma/pull/2487)
+* chore: add to resource-gen.go generation of kumactl options  [#2469](https://github.com//kumahq/kuma/pull/2469)
+* fix: add owner when create ZoneIngressInsight [#2456](https://github.com//kumahq/kuma/pull/2456)
+* fix: hijacker merge labels [#2476](https://github.com//kumahq/kuma/pull/2476)
+* chore: improve resource-gen by auto generating ws code [#2466](https://github.com//kumahq/kuma/pull/2466)
+* fix: clarify invalid resource type message [#2473](https://github.com//kumahq/kuma/pull/2473)
+* fix: implement TextMarshaler for JSON keys [#2475](https://github.com//kumahq/kuma/pull/2475)
+* chore: simplify resourceWsDefinition and server init [#2477](https://github.com//kumahq/kuma/pull/2477)
+* fix: Stop adding outbounds to dp for vips [#2421](https://github.com//kumahq/kuma/pull/2421)
+* chore(*) make port validation consistent [#2448](https://github.com//kumahq/kuma/pull/2448)
+
+## [1.2.3]
+> Released on 2021/07/29
+ 
+Changes:
+* fix(kumactl) warn about fail to check the CP version [#2438](https://github.com//kumahq/kuma/pull/2438)
+* fix(kuma-cp) handle missing connection info [#2439](https://github.com//kumahq/kuma/pull/2439)
+* chore(xds) rename logger to have consistent naming style [#2375](https://github.com//kumahq/kuma/pull/2375)
+  👍contributed by burntcarrot
+* fix(kuma-cp) set better keep-alive for bootstrap [#2432](https://github.com//kumahq/kuma/pull/2432)
+* fix(kuma-dp) validate the DP proxy type [#2186](https://github.com//kumahq/kuma/pull/2186)
+* fix(kuma-cp) use the typed config for TLS Inspector [#2373](https://github.com//kumahq/kuma/pull/2373)
+
+## [1.2.2]
+> Released on 2021/07/16
+
+Changes:
+* feat: add datadog traffic tracing [#2269](https://github.com//kumahq/kuma/pull/2247)
+* refactor: add kumactl install tracing context [#2343](https://github.com//kumahq/kuma/pull/2343)
+* chore: improve kumactl install transparent-proxy flags description, add extra validation [#2352](https://github.com//kumahq/kuma/pull/2352)
+* fix: broken SDS auth and XDS generation on rapid DP restarts [#2342](https://github.com//kumahq/kuma/pull/2342)
+* fix: allow verbose log levels [#2351](https://github.com//kumahq/kuma/pull/2351)
+* chore: use resource types for DataplaneInsight tracking [#2324](https://github.com//kumahq/kuma/pull/2324)
+* chore: improve resource manager initialization readability [#2316](https://github.com//kumahq/kuma/pull/2316)
+* chore: upgrade gui to new version [#2340](https://github.com//kumahq/kuma/pull/2340), [#2325](https://github.com//kumahq/kuma/pull/2325), [#2315](https://github.com//kumahq/kuma/pull/2315)
+* fix: allocate a new VIP for ExternalService host [#2302](https://github.com//kumahq/kuma/pull/2302)
+* fix: stop components on leader election lost [#2318](https://github.com//kumahq/kuma/pull/2318)
+* chore: generate system resource wrappers [#2282](https://github.com//kumahq/kuma/pull/2282), [#2311](https://github.com//kumahq/kuma/pull/2311)
+* chore: remove access log V2 [#2301](https://github.com//kumahq/kuma/pull/2301)
+* chore: generate DeepCopy interfaces [#2222](https://github.com//kumahq/kuma/pull/2222)
+* chore: disable log sampling [#2273](https://github.com//kumahq/kuma/pull/2273)
+* chore: upgrade Protocol Buffers [#2244](https://github.com//kumahq/kuma/pull/2244)
+* chore: change default number of insights subscriptions [#2266](https://github.com//kumahq/kuma/pull/2266)
+* chore: make the authentication interface type oblivious [#2271](https://github.com//kumahq/kuma/pull/2271)
+* fix: fix hds disabled on dpserver [#2268](https://github.com//kumahq/kuma/pull/2268)
+ 👍contributed by Bastien Chatelard
+* chore: refactor xDS metadata to store a generic resource [#2264](https://github.com//kumahq/kuma/pull/2264)
+* feat: change KDS max message limit [#2265](https://github.com//kumahq/kuma/pull/2265)
+
+## [1.2.1]
+> Released on  2021/06/30
+
+Changes:
+* fix: Dataplane/ZoneIngress/Zone status problem when control plane forcefully exits [#2246](https://github.com//kumahq/kuma/pull/2246)
+* chore: reduce memory usage by reducing cache key size [#2214](https://github.com//kumahq/kuma/pull/2214) [#2230](https://github.com//kumahq/kuma/pull/2230) 
+  👍contributed by nhamlh
+* fix: ZoneIngress always shows up as 'offline' [#2209](https://github.com//kumahq/kuma/pull/2209)
+* feat: dataplane use advertise address to add a routable ip if address is not public ip [#2116](https://github.com//kumahq/kuma/pull/2116)
+  👍contributed by sudeeptoroy
+* fix: builtin DNS resolve alias with dots [#2208](https://github.com//kumahq/kuma/pull/2208)
+* feat: add SNI to TLSed ExternalServices [#2211](https://github.com//kumahq/kuma/pull/2211)
+* fix: fix race condition in cache [#2202](https://github.com//kumahq/kuma/pull/2202)
+  👍contributed by nhamlh
+* fix: supported versions of Kuma DP in the GUI [#2193](https://github.com//kumahq/kuma/pull/2193)
+
+## [1.2.0]
+> Released on  2021/06/17
+
+Changes:
+
+* feat: Introduce ZoneIngress [#2147](https://github.com//kumahq/kuma/pull/2147) [#2169](https://github.com//kumahq/kuma/pull/2169)
+* feat: enable dataplane dns by default [#2152](https://github.com//kumahq/kuma/pull/2152)
+* feat: add --verbose flag to kuma-init [#2156](https://github.com//kumahq/kuma/pull/2156)
+* feat: log rotation [#2100](https://github.com//kumahq/kuma/pull/2100)
+  👍contributed by @nikita15p
+* feat: mads, allow specifying fetch-timeout via query param [#2148](https://github.com//kumahq/kuma/pull/2148)
+  👍contributed by @austince
+* feat: mads, add support for HTTP long polling [#2121](https://github.com//kumahq/kuma/pull/2121)
+  👍contributed by @austince
+* feat(mads) implement v1 API [#1753](https://github.com//kumahq/kuma/pull/1753)
+  👍contributed by @austince
+* feat: add RateLimit policy [#2083](https://github.com//kumahq/kuma/pull/2083)
+* feat: TrafficRoute L7  [#2013](https://github.com//kumahq/kuma/pull/2013)
+  [#2042](https://github.com//kumahq/kuma/pull/2042) [#2062](https://github.com//kumahq/kuma/pull/2062)
+  [#2072](https://github.com//kumahq/kuma/pull/2072) [#2168](https://github.com//kumahq/kuma/pull/2168)
+
+* feat: allow renegotiation for TLS in ExternalServices [#2135](https://github.com//kumahq/kuma/pull/2135)
+* feat: pass header when communicating with CP [#2049](https://github.com//kumahq/kuma/pull/2049)
+  👍contributed by sudeeptoroy
+* feat: change default traffic route policy [#2075](https://github.com//kumahq/kuma/pull/2075)
+* feat: command to install kong enterprise ingress [#1999](https://github.com//kumahq/kuma/pull/1999)
+* feat: add postgres max idle connections configuration [#2020](https://github.com//kumahq/kuma/pull/2020)
+  👍contributed by @nikita15p
+* feat: add kumactl --no-config flag [#2048](https://github.com//kumahq/kuma/pull/2048)
+* feat: nodeselector across all pods with HELM [#2012](https://github.com//kumahq/kuma/pull/2012)
+* feat: enable forwarding XFCC header [#1941](https://github.com//kumahq/kuma/pull/1941)
+  👍contributed by @jewertow
+* feat: TrafficPermission for ExternalServices [#1957](https://github.com//kumahq/kuma/pull/1957)
+* feat: metrics hijacker [#1899](https://github.com//kumahq/kuma/pull/1899)
+* feat: extend CircuitBreaker [#1655](https://github.com//kumahq/kuma/pull/1655)
+* chore: remove API V2 [#2119](https://github.com//kumahq/kuma/pull/2119)
+* chore: bump webhooks version [#2126](https://github.com//kumahq/kuma/pull/2126)
+* chore: drop deprecated Envoy options [#2143](https://github.com//kumahq/kuma/pull/2143)
+* chore: dockerfiles, add a user for kuma-cp [#2129](https://github.com//kumahq/kuma/pull/2129)
+* chore: bump cni version to 0.0.9 [#2137](https://github.com//kumahq/kuma/pull/2137)
+* chore: rename remote cp to zone cp [#2125](https://github.com//kumahq/kuma/pull/2125)
+* chore: bump versions of logging, metrics, tracing [#2178](https://github.com//kumahq/kuma/pull/2178)
+* chore: parametrize bitnami/kubectl [#2151](https://github.com//kumahq/kuma/pull/2151)
+* chore: backwards compatible metrics [#2173](https://github.com//kumahq/kuma/pull/2173)
+* chore: upgrade Envoy version to 1.18.3 [#2145](https://github.com//kumahq/kuma/pull/2145)
+* chore updated go-control-plane [#2082](https://github.com//kumahq/kuma/pull/2082)
+  👍contributed by @sudeeptoroy
+* chore: fix misspelled words [#1984](https://github.com//kumahq/kuma/pull/1984)
+  👍contributed by @tharun208
+* chore: upgrade GUI [#2157](https://github.com//kumahq/kuma/pull/2157)
+* chore namespace source names for v1 API [#1896](https://github.com//kumahq/kuma/pull/1896)
+  👍contributed by @austince
+* chore: use cmux for MADS server [#1887](https://github.com//kumahq/kuma/pull/1887)
+* chore: Add internal support for outbound UDP listeners [#1618](https://github.com//kumahq/kuma/pull/1618)
+  👍contributed by @lahabana
+* chore: Avoid generating duplicate subsets in ingress
+  👍contributed by @lahabana
+* chore: upgrade to apiextensions.k8s.io/v1 [#1108](https://github.com//kumahq/kuma/pull/1108)
+  👍contributed by @austince
+* fix: Clear snapshots from cache on disconnect [#2172](https://github.com//kumahq/kuma/pull/2172)
+  👍contributed by @lahabana
+* fix: use service account name to identify sync [#2127](https://github.com//kumahq/kuma/pull/2127)
+* fix: raise the regex program size limit [#2139](https://github.com//kumahq/kuma/pull/2139)
+* fix: pass query parameters through the metrics hijacker [#2124](https://github.com//kumahq/kuma/pull/2124)
+* fix: matching endpoints by tags [#2096](https://github.com//kumahq/kuma/pull/2096)
+* fix: manage and warn on control plane file limits [#2057](https://github.com//kumahq/kuma/pull/2057) [#2106](https://github.com//kumahq/kuma/pull/2106)
+* fix: fix transparent-proxy for GCP/GKE [#2051](https://github.com//kumahq/kuma/pull/2051)
+* fix: set death signal on child processes [#2045](https://github.com//kumahq/kuma/pull/2045)
+* fix: TrafficRoute in multizone issue [#1979](https://github.com//kumahq/kuma/pull/1979)
+
+## [1.1.6]
+> Released on  2021/05/13
+
+Changes:
+* feat: expose reuse_connection in healthchecks [#1952](https://github.com//kumahq/kuma/pull/1952)
+* feat: allow tcp/http healthchecks together [#1951](https://github.com//kumahq/kuma/pull/1951)
+* feat: kumactl option to install gateway types [#1950](https://github.com//kumahq/kuma/pull/1950)
+* feat: kumactl option to install kuma demo app [#1932](https://github.com//kumahq/kuma/pull/1932)
+* feat: kumactl option to install Kong ingress [#1929](https://github.com//kumahq/kuma/pull/1929)
+* feat: support all tags in traffic permission [#1902](https://github.com//kumahq/kuma/pull/1902)
+* fix: gateway status was always reporting offline [#1946](https://github.com//kumahq/kuma/pull/1946)
+* fix: don't cache failed calls [#1894](https://github.com//kumahq/kuma/pull/1894)
+  👍contributed by @lahabana
+* chore: add hostname when sending traces to the collector [#1962](https://github.com//kumahq/kuma/pull/1962)
+* docs: prepare api docs generation [#1741](https://github.com//kumahq/kuma/pull/1741)
+* test: azure aks and e2e improvements for the CI [#1880](https://github.com//kumahq/kuma/pull/1880)
+  [#1871](https://github.com//kumahq/kuma/pull/1871)
+  [#1933](https://github.com//kumahq/kuma/pull/1933)
+  [#1953](https://github.com//kumahq/kuma/pull/1953)
+  [#1972](https://github.com//kumahq/kuma/pull/1972)
+
 ## [1.1.5]
 > Released on  2021/04/28
 
@@ -17,7 +346,7 @@ Changes:
 > Released on  2021/04/19
 
 Changes:
-* chore(*) force all DNS traffic capture [#1842](https://github.com//kumahq/kuma/pull/1842)
+* chore: force all DNS traffic capture [#1842](https://github.com//kumahq/kuma/pull/1842)
 
 ## [1.1.3]
 > Released on  2021/04/16
@@ -38,7 +367,7 @@ Changes:
 * feat: new Grafana charts for golden signals and L7 metrics [#1739](https://github.com//kumahq/kuma/pull/1739) [#1786](https://github.com//kumahq/kuma/pull/1786)
 * chore: verify e2e tests run in EKS [#1684](https://github.com//kumahq/kuma/pull/1684)  [#1685](https://github.com//kumahq/kuma/pull/1685) [#1744](https://github.com//kumahq/kuma/pull/1744)
 * chore: upgrade CRDS to apiextensions.k8s.io/v1 [#1108](https://github.com//kumahq/kuma/pull/1108)
-* fix(*) helm cp service annotations [#1767](https://github.com//kumahq/kuma/pull/1767)
+* fix: helm cp service annotations [#1767](https://github.com//kumahq/kuma/pull/1767)
   👍contributed by nbrink91
 * fix: gui fixes [#1773](https://github.com//kumahq/kuma/pull/1773)
 * fix: KDS may delete ConfigMaps on Control Plane restarts [#1769](https://github.com//kumahq/kuma/pull/1769)
@@ -201,7 +530,7 @@ Changes:
   👍contributed by @lennartquerter
 * fix: rename field dpVersion to kumaDp in version schema [#1287](https://github.com//kumahq/kuma/pull/1287)
   👍contributed by @jewertow
-* fix(*) FaultInjection will not validate source protocol [#1315](https://github.com//kumahq/kuma/pull/1315)
+* fix: FaultInjection will not validate source protocol [#1315](https://github.com//kumahq/kuma/pull/1315)
 * chore: Automatic readme generation for chart [#1209](https://github.com//kumahq/kuma/pull/1209)
   👍contributed by @tharun208
 * chore: generate filterChainMatchers based on TrafficRoutes [#1294](https://github.com//kumahq/kuma/pull/1294)
@@ -262,7 +591,7 @@ Changes:
 ⚠️ warning: breaking change
 * feat: locality aware load balancing [#1111](https://github.com//kumahq/kuma/pull/1111) 
 * feat: add ExternalService  [#1025](https://github.com//kumahq/kuma/pull/1025) [#1058](https://github.com//kumahq/kuma/pull/1058) [#1062](https://github.com//kumahq/kuma/pull/1062) [#1080](https://github.com//kumahq/kuma/pull/1080) [#1094](https://github.com//kumahq/kuma/pull/1094) 
-* feat: add kafka protocol suport [#1121](https://github.com//kumahq/kuma/pull/1121)
+* feat: add kafka protocol support [#1121](https://github.com//kumahq/kuma/pull/1121)
 * feat: exclude injection from pods that match labels [#1072](https://github.com//kumahq/kuma/pull/1072)
 * feat: create default resources for Mesh [#1141](https://github.com//kumahq/kuma/pull/1141) [#1149](https://github.com/kumahq/kuma/pull/1149) [#1154](https://github.com//kumahq/kuma/pull/1154) [#1155](https://github.com//kumahq/kuma/pull/1155) 
 ⚠️ warning: breaking change
@@ -436,7 +765,7 @@ Changes:
 * feat: added total weight for route configurer [#905](https://github.com//kumahq/kuma/pull/905) 
  👍contributed by @tharun208
 
-* fix: suport dry run [#906](https://github.com//kumahq/kuma/pull/906) 
+* fix: support dry run [#906](https://github.com//kumahq/kuma/pull/906)
 
 * fix: reduce size of access log address [#894](https://github.com//kumahq/kuma/pull/894) 
  👍contributed by @xbauquet 
@@ -451,7 +780,7 @@ Changes:
 *  fix: Add the permissions to create and patch events [#884](https://github.com//kumahq/kuma/pull/884) 
  👍contributed by @andrew-teirney
 
-*  feat(kumactl) add install loki for log aggregation [#820](https://github.com//kumahq/kuma/pull/820) 
+*  feat: add install loki for log aggregation [#820](https://github.com//kumahq/kuma/pull/820) 
  👍contributed by @xbauquet
 
 Breaking changes:

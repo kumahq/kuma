@@ -1,57 +1,50 @@
 package callbacks
 
 import (
+	"context"
 	"sync"
 
-	"github.com/kumahq/kuma/pkg/core/xds"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 type DataplaneMetadataTracker struct {
-	util_xds.NoopCallbacks
-	mutex             sync.RWMutex
-	metadataForStream map[int64]*xds.DataplaneMetadata
+	sync.RWMutex
+	metadataForDp map[core_model.ResourceKey]*core_xds.DataplaneMetadata
 }
+
+var _ DataplaneCallbacks = &DataplaneMetadataTracker{}
 
 func NewDataplaneMetadataTracker() *DataplaneMetadataTracker {
 	return &DataplaneMetadataTracker{
-		mutex:             sync.RWMutex{},
-		metadataForStream: map[int64]*xds.DataplaneMetadata{},
+		metadataForDp: map[core_model.ResourceKey]*core_xds.DataplaneMetadata{},
 	}
 }
 
-func (d *DataplaneMetadataTracker) Metadata(streamId int64) *xds.DataplaneMetadata {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-	metadata, found := d.metadataForStream[streamId]
-	if found {
-		return metadata
-	} else {
-		return &xds.DataplaneMetadata{}
-	}
+func (d *DataplaneMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.DataplaneMetadata {
+	d.RLock()
+	defer d.RUnlock()
+	return d.metadataForDp[dpKey]
 }
 
-var _ util_xds.Callbacks = &DataplaneMetadataTracker{}
-
-func (d *DataplaneMetadataTracker) OnStreamClosed(stream int64) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	delete(d.metadataForStream, stream)
-}
-
-func (d *DataplaneMetadataTracker) OnStreamRequest(stream int64, req util_xds.DiscoveryRequest) error {
-	if req.NodeId() == "" {
-		// from https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#ack-nack-and-versioning:
-		// Only the first request on a stream is guaranteed to carry the node identifier.
-		// The subsequent discovery requests on the same stream may carry an empty node identifier.
-		// This holds true regardless of the acceptance of the discovery responses on the same stream.
-		// The node identifier should always be identical if present more than once on the stream.
-		// It is sufficient to only check the first message for the node identifier as a result.
-		return nil
-	}
-
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-	d.metadataForStream[stream] = xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
+func (d *DataplaneMetadataTracker) OnProxyReconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, metadata core_xds.DataplaneMetadata) error {
+	d.storeMetadata(dpKey, metadata)
 	return nil
+}
+
+func (d *DataplaneMetadataTracker) OnProxyConnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, metadata core_xds.DataplaneMetadata) error {
+	d.storeMetadata(dpKey, metadata)
+	return nil
+}
+
+func (d *DataplaneMetadataTracker) storeMetadata(dpKey core_model.ResourceKey, metadata core_xds.DataplaneMetadata) {
+	d.Lock()
+	defer d.Unlock()
+	d.metadataForDp[dpKey] = &metadata
+}
+
+func (d *DataplaneMetadataTracker) OnProxyDisconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey) {
+	d.Lock()
+	defer d.Unlock()
+	delete(d.metadataForDp, dpKey)
 }

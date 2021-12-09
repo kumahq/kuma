@@ -8,10 +8,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -26,7 +27,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 	plainCtx := xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{},
 		Mesh: xds_context.MeshContext{
-			Resource: &mesh_core.MeshResource{
+			Resource: &core_mesh.MeshResource{
 				Meta: meta,
 				Spec: &mesh_proto.Mesh{},
 			},
@@ -34,14 +35,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 	}
 
 	mtlsCtx := xds_context.Context{
-		ConnectionInfo: xds_context.ConnectionInfo{
-			Authority: "kuma-system:5677",
-		},
 		ControlPlane: &xds_context.ControlPlaneContext{
-			SdsTlsCert: []byte("12345"),
+			Secrets: &xds.TestSecrets{},
 		},
 		Mesh: xds_context.MeshContext{
-			Resource: &mesh_core.MeshResource{
+			Resource: &core_mesh.MeshResource{
 				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "builtin",
@@ -158,8 +156,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 			}
 			proxy := &model.Proxy{
-				Id: model.ProxyId{Name: "side-car", Mesh: "default"},
-				Dataplane: &mesh_core.DataplaneResource{
+				Id: *model.BuildProxyId("default", "side-car"),
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name:    "dp-1",
 						Mesh:    given.ctx.Mesh.Resource.Meta.GetName(),
@@ -167,19 +165,26 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
+				ServiceTLSReadiness: map[string]bool{
+					"api-http":  true,
+					"api-tcp":   true,
+					"api-http2": true,
+					"api-grpc":  true,
+					"backend":   true,
+					"db":        true,
+					"es":        true,
+					"es2":       true,
+				},
 				APIVersion: envoy_common.APIV3,
 				Routing: model.Routing{
 					TrafficRoutes: model.RouteMap{
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 40001,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("api-http"),
-									}},
+									Destination: mesh_proto.MatchService("api-http"),
 									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
 									},
@@ -189,13 +194,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 40002,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("api-tcp"),
-									}},
+									Destination: mesh_proto.MatchService("api-tcp"),
 									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 										LbType: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest_{
 											LeastRequest: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest{
@@ -209,13 +211,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 40003,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("api-http2"),
-									}},
+									Destination: mesh_proto.MatchService("api-http2"),
 									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RingHash_{
 											RingHash: &mesh_proto.TrafficRoute_LoadBalancer_RingHash{
@@ -231,13 +230,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 40004,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("api-grpc"),
-									}},
+									Destination: mesh_proto.MatchService("api-grpc"),
 									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 										LbType: &mesh_proto.TrafficRoute_LoadBalancer_Random_{},
 									},
@@ -247,13 +243,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 18080,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("backend"),
-									}},
+									Destination: mesh_proto.MatchService("backend"),
 									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 										LbType: &mesh_proto.TrafficRoute_LoadBalancer_Maglev_{},
 									},
@@ -263,17 +256,18 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 54321,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      10,
+										Weight:      util_proto.UInt32(10),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "master"},
 									}, {
-										Weight:      90,
+										Weight:      util_proto.UInt32(90),
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "replica"},
 									}, {
-										Weight:      0, // should be excluded from Envoy configuration
+										Weight: util_proto.UInt32(0),
+										// should be excluded from Envoy configuration
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "canary"},
 									}},
 								},
@@ -282,26 +276,20 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 18081,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      1,
-										Destination: mesh_proto.TagSelector{"kuma.io/service": "es", "kuma.io/protocol": "http"},
-									}},
+									Destination: mesh_proto.TagSelector{"kuma.io/service": "es", "kuma.io/protocol": "http"},
 								},
 							},
 						},
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 18082,
-						}: &mesh_core.TrafficRouteResource{
+						}: &core_mesh.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      1,
-										Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
-									}},
+									Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
 								},
 							},
 						},
@@ -330,7 +318,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						},
 					},
 					CircuitBreakers: model.CircuitBreakerMap{
-						"api-http": &mesh_core.CircuitBreakerResource{
+						"api-http": &core_mesh.CircuitBreakerResource{
 							Spec: &mesh_proto.CircuitBreaker{
 								Conf: &mesh_proto.CircuitBreaker_Conf{
 									Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
@@ -514,8 +502,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			},
 		}
 		proxy := &model.Proxy{
-			Id: model.ProxyId{Name: "side-car", Mesh: "default"},
-			Dataplane: &mesh_core.DataplaneResource{
+			Id: *model.BuildProxyId("default", "side-car"),
+			Dataplane: &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Version: "1",
 				},
@@ -527,26 +515,20 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 18080,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchService("backend.kuma-system"),
-								}},
+								Destination: mesh_proto.MatchService("backend.kuma-system"),
 							},
 						},
 					},
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 54321,
-					}: &mesh_core.TrafficRouteResource{
+					}: &core_mesh.TrafficRouteResource{
 						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},
-								}},
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},
 							}},
 					},
 				},

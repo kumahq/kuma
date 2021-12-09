@@ -1,12 +1,7 @@
-package mesh
+package mesh_test
 
 import (
 	"context"
-
-	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -14,18 +9,23 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secrets_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	ca_builtin "github.com/kumahq/kuma/pkg/plugins/ca/builtin"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_resources "github.com/kumahq/kuma/pkg/test/resources"
-
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -47,8 +47,8 @@ var _ = Describe("Mesh Manager", func() {
 		}
 
 		manager := manager.NewResourceManager(resStore)
-		validator := MeshValidator{CaManagers: caManagers, Store: resStore}
-		resManager = NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
+		validator := mesh.NewMeshValidator(caManagers, resStore)
+		resManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
 	})
 
 	Describe("Create()", func() {
@@ -67,10 +67,6 @@ var _ = Describe("Mesh Manager", func() {
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
 							{
 								Name: "builtin-1",
-								Type: "builtin",
-							},
-							{
-								Name: "builtin-2",
 								Type: "builtin",
 							},
 						},
@@ -110,11 +106,8 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and Dataplane Token Signing Key for the mesh exists
-			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName)))
-			Expect(err).ToNot(HaveOccurred())
-
-			// and Envoy Admin Client Signing Key for the mesh exists
-			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, meshName)))
+			key := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultSerialNumber, meshName)
+			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(key))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -201,10 +194,6 @@ var _ = Describe("Mesh Manager", func() {
 								Name: "ca-1",
 								Type: "provided",
 							},
-							{
-								Name: "ca-2",
-								Type: "provided",
-							},
 						},
 					},
 				},
@@ -212,7 +201,7 @@ var _ = Describe("Mesh Manager", func() {
 			err := resManager.Create(context.Background(), &mesh, store.CreateBy(resKey))
 
 			// then
-			Expect(err).To(MatchError("mtls.backends[0].config.cert: has to be defined; mtls.backends[0].config.key: has to be defined; mtls.backends[1].config.cert: has to be defined; mtls.backends[1].config.key: has to be defined"))
+			Expect(err).To(MatchError("mtls.backends[0].conf.cert: has to be defined; mtls.backends[0].conf.key: has to be defined"))
 		})
 	})
 
@@ -240,7 +229,7 @@ var _ = Describe("Mesh Manager", func() {
 			secrets = &system.SecretResourceList{}
 			err = secretManager.List(context.Background(), secrets, store.ListByMesh("demo-2"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(secrets.Items).To(HaveLen(2)) // two default signing keys
+			Expect(secrets.Items).To(HaveLen(1)) // default signing key
 		})
 
 		It("should not delete Mesh if there are Dataplanes attached", func() {
@@ -291,10 +280,6 @@ var _ = Describe("Mesh Manager", func() {
 								Name: "builtin-1",
 								Type: "builtin",
 							},
-							{
-								Name: "builtin-2",
-								Type: "builtin",
-							},
 						},
 					},
 				},
@@ -305,6 +290,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to change CA
+			mesh.Spec.Mtls.Backends[0].Name = "builtin-2"
 			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
 			err = resManager.Update(context.Background(), &mesh)
 
@@ -337,10 +323,6 @@ var _ = Describe("Mesh Manager", func() {
 								Name: "builtin-1",
 								Type: "builtin",
 							},
-							{
-								Name: "builtin-2",
-								Type: "builtin",
-							},
 						},
 					},
 				},
@@ -351,6 +333,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to enable mTLS change CA
+			mesh.Spec.Mtls.Backends[0].Name = "builtin-2"
 			mesh.Spec.Mtls.EnabledBackend = "builtin-2"
 			err = resManager.Update(context.Background(), &mesh)
 

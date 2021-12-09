@@ -4,23 +4,25 @@ import (
 	"path/filepath"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
-	"github.com/kumahq/kuma/pkg/api-server/definitions"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestWs(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "API Server Customization")
+	test.RunSpecs(t, "API Server Customization")
 }
 
 func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, enableGUI bool, metrics core_metrics.Metrics, wsManager customization.APIManager) *api_server.ApiServer {
@@ -39,15 +41,26 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		config.Auth.ClientCertsDir = filepath.Join("..", "..", "..", "test", "certs", "client")
 	}
 
-	defs := definitions.All
-	resources := manager.NewResourceManager(store)
-
 	if wsManager == nil {
 		wsManager = customization.NewAPIList()
 	}
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, wsManager, defs, &cfg, enableGUI, metrics)
+	apiServer, err := api_server.NewApiServer(
+		manager.NewResourceManager(store),
+		wsManager,
+		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
+		&cfg,
+		enableGUI,
+		metrics,
+		func() string { return "instance-id" },
+		func() string { return "cluster-id" },
+		certs.ClientCertAuthenticator,
+		runtime.Access{
+			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
+			DataplaneTokenAccess: nil,
+		},
+	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

@@ -6,11 +6,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
-
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("HttpConnectionManagerConfigurer", func() {
@@ -30,7 +28,7 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
-					Configure(HttpConnectionManager(given.statsName)))).
+					Configure(HttpConnectionManager(given.statsName, true)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -58,6 +56,9 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
               - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  forwardClientCertDetails: SANITIZE_SET
+                  setCurrentClientCertDetails:
+                    uri: true
                   statPrefix: localhost_8080
                   httpFilters:
                   - name: envoy.filters.http.router

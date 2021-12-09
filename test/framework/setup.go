@@ -1,22 +1,57 @@
 package framework
 
 import (
+	"bytes"
 	"fmt"
 	"time"
 
-	"github.com/gruntwork-io/terratest/modules/logger"
-	"github.com/gruntwork-io/terratest/modules/testing"
-
-	"github.com/kumahq/kuma/pkg/tls"
-
-	"github.com/go-errors/errors"
-
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
+	"github.com/kumahq/kuma/pkg/tls"
 )
 
 type InstallFunc func(cluster Cluster) error
+
+var Serializer *k8sjson.Serializer
+
+func init() {
+	K8sScheme, err := bootstrap_k8s.NewScheme()
+	if err != nil {
+		panic(err)
+	}
+
+	Serializer = k8sjson.NewSerializerWithOptions(
+		k8sjson.DefaultMetaFactory, K8sScheme, K8sScheme,
+		k8sjson.SerializerOptions{
+			Yaml:   true,
+			Pretty: true,
+			Strict: true,
+		},
+	)
+}
+
+func YamlK8sObject(obj runtime.Object) InstallFunc {
+	return func(cluster Cluster) error {
+		b := bytes.Buffer{}
+		err := Serializer.Encode(obj, &b)
+		if err != nil {
+			return err
+		}
+		_, err = retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
+			func() (s string, err error) {
+				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), b.String())
+			})
+		return err
+	}
+}
 
 func YamlK8s(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
@@ -49,15 +84,10 @@ func YamlPathK8s(path string) InstallFunc {
 	}
 }
 
-func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
+func Kuma(mode core.CpMode, opt ...KumaDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		fs = append(fs, func(options *deployOptions) {
-			if !options.isipv6 {
-				options.isipv6 = IsIPv6()
-			}
-		})
-		err := cluster.DeployKuma(mode, fs...)
-		return err
+		opt = append(opt, WithIPv6(IsIPv6()))
+		return cluster.DeployKuma(mode, opt...)
 	}
 }
 
@@ -78,7 +108,7 @@ func WaitService(namespace, service string) InstallFunc {
 func WaitNumPods(num int, app string) InstallFunc {
 	return func(c Cluster) error {
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(),
-			kube_meta.ListOptions{
+			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
 			}, num, DefaultRetries, DefaultTimeout)
 		return nil
@@ -88,7 +118,7 @@ func WaitNumPods(num int, app string) InstallFunc {
 func WaitPodsAvailable(namespace, app string) InstallFunc {
 	return func(c Cluster) error {
 		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
-			kube_meta.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
+			metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
 		if err != nil {
 			return err
 		}
@@ -102,177 +132,13 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 	}
 }
 
-func WaitUntilPodCompleteE(t testing.TestingT, options *k8s.KubectlOptions, podName string, retries int, sleepBetweenRetries time.Duration) error {
-	statusMsg := fmt.Sprintf("Wait for pod %s to be provisioned.", podName)
-	message, err := retry.DoWithRetryE(
-		t,
-		statusMsg,
-		retries,
-		sleepBetweenRetries,
-		func() (string, error) {
-			pod, err := k8s.GetPodE(t, options, podName)
-			if err != nil {
-				return "", err
-			}
-			for _, cs := range pod.Status.ContainerStatuses {
-				if cs.State.Terminated == nil || cs.State.Terminated.ExitCode != 0 {
-					return "", errors.Errorf("Pod is not complete yet")
-				}
-			}
-			return "Pod is now complete", nil
-		},
-	)
-	if err != nil {
-		logger.Logf(t, "Timedout waiting for Pod to be completed: %s", err)
-		return err
-	}
-	logger.Logf(t, message)
-	return nil
-}
-
-func WaitPodsComplete(namespace, app string) InstallFunc {
+func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 	return func(c Cluster) error {
-		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
-			kube_meta.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
-		if err != nil {
-			return err
-		}
-		for _, p := range pods {
-			err := WaitUntilPodCompleteE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), DefaultRetries, DefaultTimeout)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+		return k8s.WaitUntilJobSucceedE(c.GetTesting(), c.GetKubectlOptions(namespace), app, DefaultRetries, DefaultTimeout)
 	}
 }
 
-func WaitPodsNotAvailable(namespace, app string) InstallFunc {
-	return func(c Cluster) error {
-		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
-			kube_meta.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
-		if err != nil {
-			return err
-		}
-
-		for _, p := range pods {
-			_, _ = retry.DoWithRetryE(
-				c.GetTesting(),
-				"Wait pod deletion",
-				DefaultRetries,
-				DefaultTimeout,
-				func() (string, error) {
-					pod, err := k8s.GetPodE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName())
-					if err == nil {
-						return "", err
-					}
-					if !k8s.IsPodAvailable(pod) {
-						return "Pod is not available", nil
-					}
-					return "", errors.Errorf("Pod is still available")
-				},
-			)
-		}
-		return nil
-	}
-}
-
-func EchoServerK8s(mesh string) InstallFunc {
-	const name = "echo-server"
-	service := `
-apiVersion: v1
-kind: Service
-metadata:
-  name: echo-server
-  namespace: kuma-test
-  annotations:
-    80.service.kuma.io/protocol: http
-spec:
-  ports:
-    - port: 80
-      name: http
-  selector:
-    app: echo-server
-`
-	deployment := `
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: echo-server
-  namespace: kuma-test
-  labels:
-    app: echo-server
-spec:
-  strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: echo-server
-  template:
-    metadata:
-      annotations:
-        kuma.io/mesh: %s
-      labels:
-        app: echo-server
-    spec:
-      containers:
-        - name: echo-server
-          image: %s
-          imagePullPolicy: IfNotPresent
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 3
-            periodSeconds: 3
-          ports:
-            - containerPort: 80
-          command: [ "ncat" ]
-          args:
-            - -lk
-            - -p
-            - "80"
-            - --sh-exec
-            - '/usr/bin/printf "HTTP/1.1 200 OK\n\n Echo\n"'
-          resources:
-            limits:
-              cpu: 50m
-              memory: 128Mi
-
-`
-	return Combine(
-		YamlK8s(service),
-		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage())),
-		WaitService(TestNamespace, name),
-		WaitNumPods(1, name),
-		WaitPodsAvailable(TestNamespace, name),
-	)
-}
-
-func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc) InstallFunc {
-	return func(cluster Cluster) error {
-		opts := newDeployOpt(fs...)
-		args := []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo " + echo + "\n\"'"}
-		appYaml := ""
-		if opts.protocol == "" {
-			opts.protocol = "http"
-		}
-		switch {
-		case opts.transparent:
-			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", "8080", redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
-		case opts.serviceProbe:
-			appYaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, mesh, "8080", "80", "8080", opts.protocol)
-		default:
-			appYaml = fmt.Sprintf(EchoServerDataplane, mesh, "8080", "80", "8080", opts.protocol)
-		}
-		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeEchoServer), WithToken(token), WithArgs(args), WithYaml(appYaml))
-		return cluster.DeployApp(fs...)
-	}
-}
-
-func IngressUniversal(mesh, token string) InstallFunc {
+func IngressUniversal(token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
 		isipv6 := IsIPv6()
@@ -291,8 +157,8 @@ func IngressUniversal(mesh, token string) InstallFunc {
 		uniCluster.apps[AppIngress] = app
 
 		publicAddress := uniCluster.apps[AppIngress].ip
-		dpyaml := fmt.Sprintf(IngressDataplane, mesh, publicAddress, kdsPort, kdsPort)
-		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token, false)
+		dpyaml := fmt.Sprintf(ZoneIngress, publicAddress, kdsPort, kdsPort)
+		return uniCluster.CreateZoneIngress(app, "ingress", app.ip, dpyaml, token, false)
 	}
 }
 
@@ -344,60 +210,159 @@ spec:
 	)
 }
 
-func DemoClientJobK8s(mesh, destination string) InstallFunc {
-	const name = "demo-job-client"
-	deployment := `
-apiVersion: batch/v1
-kind: Job
+func NamespaceWithSidecarInjection(namespace string) InstallFunc {
+	return YamlK8s(fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
 metadata:
-  name: demo-job-client
-  namespace: kuma-test
+  name: %s
   labels:
-    app: demo-job-client
-spec:
-  template:
-    metadata:
-      annotations:
-        kuma.io/mesh: %s
-      labels:
-        app: demo-job-client
-    spec:
-      containers:
-      - name: demo-job-client
-        image: %s
-        imagePullPolicy: IfNotPresent
-        command: [ "curl" ]
-        args:
-          - -v
-          - -m
-          - "3"
-          - --fail
-          - %s
-      restartPolicy: OnFailure
-`
+    kuma.io/sidecar-injection: "enabled"
+`, namespace))
+}
+
+// NamespaceWithSidecarInjectionOnAnnotation creates namespace with sidecar-injection annotation
+// Since we still support annotations for backwards compatibility, we should also test it.
+// Use NamespaceWithSidecarInjection unless you want to explicitly check backwards compatibility.
+func NamespaceWithSidecarInjectionOnAnnotation(namespace string) InstallFunc {
+	return YamlK8s(fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+  annotations:
+    kuma.io/sidecar-injection: "enabled"
+`, namespace))
+}
+
+func DemoClientJobK8s(namespace, mesh, destination string) InstallFunc {
+	const name = "demo-job-client"
+	job := &batchv1.Job{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Job",
+			APIVersion: batchv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    map[string]string{"app": name},
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{"kuma.io/mesh": mesh},
+					Labels:      map[string]string{"app": name},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:            name,
+							Image:           GetUniversalImage(),
+							ImagePullPolicy: "IfNotPresent",
+							Command:         []string{"curl"},
+							Args:            []string{"-v", "-m", "3", "--fail", destination},
+						},
+					},
+					RestartPolicy: "OnFailure",
+				},
+			},
+		},
+	}
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage(), destination)),
-		WaitNumPods(1, name),
-		WaitPodsComplete(TestNamespace, name),
+		YamlK8sObject(job),
+		WaitUntilJobSucceed(namespace, name),
 	)
 }
 
-func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
+func DemoClientUniversal(name, mesh, token string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		opts := newDeployOpt(fs...)
+		var opts appDeploymentOptions
+		opts.apply(opt...)
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := ""
 		if opts.transparent {
-			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 		} else {
 			if opts.serviceProbe {
-				appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", "80", "8080")
+				appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, "80", "8080")
 			} else {
-				appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", "80", "8080")
+				appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, "80", "8080")
 			}
 		}
-		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token), WithArgs(args), WithYaml(appYaml))
-		return cluster.DeployApp(fs...)
+
+		opt = append(opt,
+			WithName(name),
+			WithMesh(mesh),
+			WithAppname(AppModeDemoClient),
+			WithToken(token),
+			WithArgs(args),
+			WithYaml(appYaml),
+			WithIPv6(IsIPv6()))
+		return cluster.DeployApp(opt...)
+	}
+}
+
+func TestServerUniversal(name, mesh, token string, opt ...AppDeploymentOption) InstallFunc {
+	return func(cluster Cluster) error {
+		var opts appDeploymentOptions
+		opts.apply(opt...)
+		if len(opts.protocol) == 0 {
+			opts.protocol = "http"
+		}
+		if opts.serviceVersion == "" {
+			opts.serviceVersion = "v1"
+		}
+		args := []string{"test-server"}
+		if len(opts.appArgs) > 0 {
+			args = append(args, opts.appArgs...)
+		}
+		if opts.serviceName == "" {
+			opts.serviceName = "test-server"
+		}
+		if opts.serviceInstance == "" {
+			opts.serviceInstance = "1"
+		}
+
+		serviceProbe := ""
+		if opts.serviceProbe {
+			serviceProbe =
+				`    serviceProbe:
+      tcp: {}`
+		}
+
+		args = append(args, "--port", "8080")
+		appYaml := fmt.Sprintf(`
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address:  {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    tags:
+      kuma.io/service: %s
+      kuma.io/protocol: %s
+      version: %s
+      instance: '%s'
+      team: server-owners
+%s
+  transparentProxying:
+    redirectPortInbound: %s
+    redirectPortInboundV6: %s
+    redirectPortOutbound: %s
+`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+
+		opt = append(opt,
+			WithName(name),
+			WithMesh(mesh),
+			WithAppname("test-server"),
+			WithTransparentProxy(true), // test server is always meant to be used with transparent proxy
+			WithToken(token),
+			WithArgs(args),
+			WithYaml(appYaml),
+			WithIPv6(IsIPv6()))
+		return cluster.DeployApp(opt...)
 	}
 }
 
@@ -435,8 +400,8 @@ func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
 }
 
-func CreateCertsFor(names []string) (cert, key string, err error) {
-	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, names...)
+func CreateCertsFor(names ...string) (cert, key string, err error) {
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, names...)
 	if err != nil {
 		return "", "", err
 	}

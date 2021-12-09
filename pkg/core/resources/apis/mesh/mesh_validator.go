@@ -5,13 +5,15 @@ import (
 	"net"
 	"net/url"
 
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v2"
+	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
+
+var AllowedMTLSBackends = 1
 
 func (m *MeshResource) Validate() error {
 	var verr validators.ValidationError
@@ -27,6 +29,10 @@ func validateMtls(mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
 	if mtls == nil {
 		return verr
 	}
+	if len(mtls.GetBackends()) > AllowedMTLSBackends {
+		verr.AddViolationAt(validators.RootedAt("backends"), fmt.Sprintf("cannot have more than %d backends", AllowedMTLSBackends))
+	}
+
 	usedNames := map[string]bool{}
 	for i, backend := range mtls.GetBackends() {
 		if usedNames[backend.Name] {
@@ -139,15 +145,33 @@ func validateTracingBackend(backend *mesh_proto.TracingBackend) validators.Valid
 	if backend.Name == "" {
 		verr.AddViolation("name", "cannot be empty")
 	}
-	if backend.GetType() != mesh_proto.TracingZipkinType {
-		verr.AddViolation("type", fmt.Sprintf("unknown backend type. Available backends: %q", mesh_proto.TracingZipkinType))
-	}
 	if backend.Sampling.GetValue() < 0.0 || backend.Sampling.GetValue() > 100.0 {
 		verr.AddViolation("sampling", "has to be in [0.0 - 100.0] range")
 	}
-	if backend.GetType() == mesh_proto.TracingZipkinType {
+	switch backend.GetType() {
+	case mesh_proto.TracingZipkinType:
 		verr.AddError("config", validateZipkin(backend.Conf))
+	case mesh_proto.TracingDatadogType:
+		verr.AddError("config", validateDatadog(backend.Conf))
+	default:
+		verr.AddViolation("type", fmt.Sprintf("unknown backend type. Available backends: %q, %q", mesh_proto.TracingZipkinType, mesh_proto.TracingDatadogType))
 	}
+	return verr
+}
+
+func validateDatadog(cfgStr *structpb.Struct) validators.ValidationError {
+	var verr validators.ValidationError
+	cfg := mesh_proto.DatadogTracingBackendConfig{}
+	if err := proto.ToTyped(cfgStr, &cfg); err != nil {
+		verr.AddViolation("", fmt.Sprintf("could not parse config: %s", err.Error()))
+		return verr
+	}
+
+	if cfg.Address == "" {
+		verr.AddViolation("address", "cannot be empty")
+	}
+
+	verr.Add(ValidatePort(validators.RootedAt("port"), cfg.GetPort()))
 	return verr
 }
 

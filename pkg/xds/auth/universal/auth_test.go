@@ -2,6 +2,7 @@ package universal_test
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -9,22 +10,23 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 	"github.com/kumahq/kuma/pkg/xds/auth/universal"
 )
 
 var _ = Describe("Authentication flow", func() {
-	var privateKey = []byte("testPrivateKey")
-
-	issuer := builtin_issuer.NewDataplaneTokenIssuer(func(string) ([]byte, error) {
-		return privateKey, nil
-	})
+	var issuer builtin_issuer.DataplaneTokenIssuer
 	var authenticator auth.Authenticator
 	var resStore core_store.ResourceStore
+	var ctx context.Context
 
 	dpRes := core_mesh.DataplaneResource{
 		Meta: &test_model.ResourceMeta{
@@ -56,30 +58,24 @@ var _ = Describe("Authentication flow", func() {
 		},
 	}
 
-	ingressDp := core_mesh.DataplaneResource{
-		Meta: &test_model.ResourceMeta{
-			Mesh: "ingress-1",
-			Name: "default",
-		},
-		Spec: &mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{
-				Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{
-						Port:        8080,
-						ServicePort: 8081,
-						Tags: map[string]string{
-							"kuma.io/service": "ingress",
-						},
-					},
-				},
-			},
-		},
-	}
-
 	BeforeEach(func() {
+		ctx = context.Background()
 		resStore = memory.NewStore()
-		authenticator = universal.NewAuthenticator(issuer)
+		resManager := manager.NewResourceManager(resStore)
+
+		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("default", model.NoMesh))).To(Succeed())
+		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("demo", model.NoMesh))).To(Succeed())
+		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("demo-2", model.NoMesh))).To(Succeed())
+
+		dataplaneValidator := builtin.NewDataplaneTokenValidator(resManager)
+		zoneIngressValidator := builtin.NewZoneIngressTokenValidator(resManager)
+		issuer = builtin.NewDataplaneTokenIssuer(resManager)
+		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneIngressValidator, "zone-1")
+
+		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
+		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
+		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("demo"), "demo")
+		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
 		err := resStore.Create(context.Background(), &dpRes, core_store.CreateByKey("dp-1", "default"))
 		Expect(err).ToNot(HaveOccurred())
@@ -93,7 +89,7 @@ var _ = Describe("Authentication flow", func() {
 	DescribeTable("should correctly authenticate dataplane",
 		func(given testCase) {
 			// when
-			credential, err := issuer.Generate(given.id)
+			credential, err := issuer.Generate(ctx, given.id, 24*time.Hour)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -129,18 +125,12 @@ var _ = Describe("Authentication flow", func() {
 			},
 			dpRes: &dpRes,
 		}),
-		Entry("should auth with ingress token", testCase{
-			id: builtin_issuer.DataplaneIdentity{
-				Type: builtin_issuer.DpTypeIngress,
-			},
-			dpRes: &ingressDp,
-		}),
 	)
 
 	DescribeTable("should fail auth",
 		func(given testCase) {
 			// when
-			token, err := issuer.Generate(given.id)
+			token, err := issuer.Generate(ctx, given.id, 24*time.Hour)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -166,10 +156,11 @@ var _ = Describe("Authentication flow", func() {
 				Name: "dp-1",
 			},
 			dpRes: &dpRes,
-			err:   "proxy mesh from requestor: default is different than in token: demo",
+			err:   "could not parse token: crypto/rsa: verification error",
 		}),
 		Entry("on token with different tags", testCase{
 			id: builtin_issuer.DataplaneIdentity{
+				Mesh: "default",
 				Tags: map[string]map[string]bool{
 					"kuma.io/service": {
 						"backend": true,
@@ -181,6 +172,7 @@ var _ = Describe("Authentication flow", func() {
 		}),
 		Entry("on token with tag that is absent in dataplane", testCase{
 			id: builtin_issuer.DataplaneIdentity{
+				Mesh: "default",
 				Tags: map[string]map[string]bool{
 					"kuma.io/zone": {
 						"east": true,
@@ -192,6 +184,7 @@ var _ = Describe("Authentication flow", func() {
 		}),
 		Entry("on token with missing one tag value", testCase{
 			id: builtin_issuer.DataplaneIdentity{
+				Mesh: "default",
 				Tags: map[string]map[string]bool{
 					"kuma.io/service": {
 						"web": true,
@@ -201,25 +194,6 @@ var _ = Describe("Authentication flow", func() {
 			},
 			dpRes: &dpRes,
 			err:   `which is not allowed with this token. Allowed values in token are ["web"]`, // web and web-api order is not stable
-		}),
-		Entry("regular dataplane and ingress type", testCase{
-			id: builtin_issuer.DataplaneIdentity{
-				Type: builtin_issuer.DpTypeIngress,
-			},
-			dpRes: &dpRes,
-			err:   `dataplane is of type Dataplane but token allows only for the "ingress" type`,
-		}),
-		Entry("ingress dataplane and dataplane type", testCase{
-			id: builtin_issuer.DataplaneIdentity{
-				Type: builtin_issuer.DpTypeDataplane,
-			},
-			dpRes: &ingressDp,
-			err:   `dataplane is of type Ingress but token allows only for the "dataplane" type`,
-		}),
-		Entry("ingress dataplane and dataplane type (but not explicitly specified)", testCase{
-			id:    builtin_issuer.DataplaneIdentity{},
-			dpRes: &ingressDp,
-			err:   `dataplane is of type Ingress but token allows only for the "dataplane" type`,
 		}),
 	)
 
@@ -232,17 +206,12 @@ var _ = Describe("Authentication flow", func() {
 	})
 
 	It("should throw an error when signing key is not found", func() {
-		// given
-		issuer := builtin_issuer.NewDataplaneTokenIssuer(func(string) ([]byte, error) {
-			return nil, nil
-		})
-
 		// when
-		_, err := issuer.Generate(builtin_issuer.DataplaneIdentity{
-			Mesh: "demo",
-		})
+		_, err := issuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
+			Mesh: "demo-2",
+		}, 24*time.Hour)
 
 		// then
-		Expect(err).To(MatchError(`there is no Signing Key in the Control Plane for Mesh "demo". Make sure the Mesh exist. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens.`))
+		Expect(err.Error()).To(ContainSubstring(`there is no signing key`))
 	})
 })

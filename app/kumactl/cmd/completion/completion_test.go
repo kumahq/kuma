@@ -2,14 +2,13 @@ package completion_test
 
 import (
 	"bytes"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl completion", func() {
@@ -30,7 +29,7 @@ var _ = Describe("kumactl completion", func() {
 	DescribeTable("should generate completion code",
 		func(given testCase) {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs(append([]string{"completion"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
@@ -40,11 +39,11 @@ var _ = Describe("kumactl completion", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr.Bytes()).To(BeNil())
+			Expect(stderr.String()).To(BeEmpty())
 
 			// and
 			actual := stdout.Bytes()
-			Expect(actual).To(MatchGoldenEqual(filepath.Join("testdata", given.goldenFile)))
+			Expect(actual).To(MatchGoldenEqual("testdata", given.goldenFile))
 		},
 		Entry("should generate bash completion code", testCase{
 			extraArgs: []string{

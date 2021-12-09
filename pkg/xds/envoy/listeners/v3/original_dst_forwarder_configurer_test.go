@@ -6,11 +6,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("OriginalDstForwarderConfigurer", func() {
@@ -21,7 +19,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 		listenerPort     uint32
 		listenerProtocol core_xds.SocketAddressProtocol
 		statsName        string
-		clusters         []envoy_common.ClusterSubset
+		clusters         []envoy_common.Cluster
 		expected         string
 	}
 
@@ -48,7 +46,10 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 			listenerAddress: "0.0.0.0",
 			listenerPort:    12345,
 			statsName:       "pass_through",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "pass_through", Weight: 200}},
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("pass_through"),
+				envoy_common.WithWeight(200),
+			)},
 			expected: `
             name: catch_all
             trafficDirection: OUTBOUND

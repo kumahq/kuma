@@ -1,21 +1,19 @@
 package cache
 
 import (
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/pkg/errors"
 
 	v1 "github.com/kumahq/kuma/pkg/mads/v1"
-
-	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 // NewSnapshot creates a snapshot from response types and a version.
 func NewSnapshot(version string, assignments map[string]envoy_types.Resource) *Snapshot {
-	withTtl := make(map[string]envoy_types.ResourceWithTtl, len(assignments))
+	withTtl := make(map[string]envoy_types.ResourceWithTTL, len(assignments))
 	for name, res := range assignments {
-		withTtl[name] = envoy_types.ResourceWithTtl{
+		withTtl[name] = envoy_types.ResourceWithTTL{
 			Resource: res,
 		}
 	}
@@ -63,7 +61,7 @@ func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
 	return withoutTtl
 }
 
-func (s *Snapshot) GetResourcesAndTtl(typ string) map[string]envoy_types.ResourceWithTtl {
+func (s *Snapshot) GetResourcesAndTtl(typ string) map[string]envoy_types.ResourceWithTTL {
 	if s == nil {
 		return nil
 	}

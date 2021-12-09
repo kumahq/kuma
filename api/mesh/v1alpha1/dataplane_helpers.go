@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"encoding"
 	"fmt"
 	"net"
 	"reflect"
@@ -17,9 +18,7 @@ const (
 	ServiceUnknown = "unknown"
 
 	// Locality related tags
-	RegionTag  = "kuma.io/region"
-	ZoneTag    = "kuma.io/zone"
-	SubZoneTag = "kuma.io/sub-zone"
+	ZoneTag = "kuma.io/zone"
 
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
@@ -30,31 +29,39 @@ const (
 	// External service tag
 	ExternalServiceTag = "kuma.io/external-service-name"
 
-	RegularDpType DpType = "regular"
-	IngressDpType DpType = "ingress"
-	GatewayDpType DpType = "gateway"
-
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
 )
 
-type DpType string
+type ProxyType string
 
-func (d *Dataplane) DpType() DpType {
-	if d.IsIngress() {
-		return IngressDpType
+const (
+	DataplaneProxyType ProxyType = "dataplane"
+	IngressProxyType   ProxyType = "ingress"
+)
+
+func (t ProxyType) IsValid() error {
+	switch t {
+	case DataplaneProxyType, IngressProxyType:
+		return nil
 	}
-	if d.GetNetworking().GetGateway() != nil {
-		return GatewayDpType
-	}
-	return RegularDpType
+	return errors.Errorf("%s is not a valid proxy type", t)
 }
 
 type InboundInterface struct {
-	DataplaneIP   string
-	DataplanePort uint32
-	WorkloadIP    string
-	WorkloadPort  uint32
+	DataplaneAdvertisedIP string
+	DataplaneIP           string
+	DataplanePort         uint32
+	WorkloadIP            string
+	WorkloadPort          uint32
+}
+
+// We need to implement TextMarshaler because InboundInterface is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = InboundInterface{}
+
+func (i InboundInterface) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
 }
 
 func (i InboundInterface) String() string {
@@ -68,6 +75,14 @@ func (i *InboundInterface) IsServiceLess() bool {
 type OutboundInterface struct {
 	DataplaneIP   string
 	DataplanePort uint32
+}
+
+// We need to implement TextMarshaler because OutboundInterface is used
+// as a key for maps that are JSON encoded for logging.
+var _ encoding.TextMarshaler = OutboundInterface{}
+
+func (i OutboundInterface) MarshalText() ([]byte, error) {
+	return []byte(i.String()), nil
 }
 
 func (i OutboundInterface) String() string {
@@ -128,6 +143,11 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		iface.DataplaneIP = inbound.Address
 	} else {
 		iface.DataplaneIP = n.Address
+	}
+	if n.AdvertisedAddress != "" {
+		iface.DataplaneAdvertisedIP = n.AdvertisedAddress
+	} else {
+		iface.DataplaneAdvertisedIP = iface.DataplaneIP
 	}
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress
@@ -252,10 +272,6 @@ func (s TagSelector) Rank() (r TagSelectorRank) {
 
 func (s TagSelector) Equal(other TagSelector) bool {
 	return len(s) == 0 && len(other) == 0 || len(s) == len(other) && reflect.DeepEqual(s, other)
-}
-
-func MatchAll() TagSelector {
-	return nil
 }
 
 func MatchAnyService() TagSelector {
@@ -386,36 +402,14 @@ func (d *Dataplane) GetIdentifyingService() string {
 	return ServiceUnknown
 }
 
-func (d *Dataplane) IsIngress() bool {
-	if d.GetNetworking() == nil {
-		return false
-	}
-	return d.Networking.Ingress != nil
+func (d *Dataplane) IsDelegatedGateway() bool {
+	return d.GetNetworking().GetGateway() != nil &&
+		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED
 }
 
-func (d *Dataplane) HasPublicAddress() bool {
-	if d.Networking.Ingress == nil {
-		return false
-	}
-	return d.Networking.Ingress.PublicAddress != "" && d.Networking.Ingress.PublicPort != 0
-}
-
-func (d *Dataplane) HasAvailableServices() bool {
-	if !d.IsIngress() {
-		return false
-	}
-	return len(d.Networking.Ingress.AvailableServices) != 0
-}
-
-func (d *Dataplane) IsRemoteIngress(localZone string) bool {
-	if !d.IsIngress() {
-		return false
-	}
-	zone, ok := d.Networking.Inbound[0].Tags[ZoneTag]
-	if !ok {
-		return false
-	}
-	return zone != localZone
+func (d *Dataplane) IsBuiltinGateway() bool {
+	return d.GetNetworking().GetGateway() != nil &&
+		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
 }
 
 func (t MultiValueTagSet) String() string {

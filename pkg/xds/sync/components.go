@@ -5,6 +5,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	"github.com/kumahq/kuma/pkg/core/permissions"
+	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -26,8 +27,11 @@ func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker Datap
 		PermissionMatcher:     permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		LogsMatcher:           logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		FaultInjectionMatcher: faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
-		Zone:                  rt.Config().Multizone.Remote.Zone,
-		apiVersion:            apiVersion,
+		RateLimitMatcher:      ratelimits.RateLimitMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
+		Zone:                  rt.Config().Multizone.Zone.Name,
+		APIVersion:            apiVersion,
+		ConfigManager:         rt.ConfigManager(),
+		TopLevelDomain:        rt.Config().DNSServer.Domain,
 	}
 }
 
@@ -44,7 +48,6 @@ func defaultIngressProxyBuilder(rt core_runtime.Runtime, metadataTracker Datapla
 func DefaultDataplaneWatchdogFactory(
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
-	connectionInfoTracker ConnectionInfoTracker,
 	dataplaneReconciler SnapshotReconciler,
 	ingressReconciler SnapshotReconciler,
 	xdsMetrics *xds_metrics.Metrics,
@@ -54,16 +57,17 @@ func DefaultDataplaneWatchdogFactory(
 ) (DataplaneWatchdogFactory, error) {
 	dataplaneProxyBuilder := defaultDataplaneProxyBuilder(rt, metadataTracker, apiVersion)
 	ingressProxyBuilder := defaultIngressProxyBuilder(rt, metadataTracker, apiVersion)
-	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, connectionInfoTracker, rt.ReadOnlyResourceManager(), rt.LookupIP(), rt.EnvoyAdminClient())
+	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, rt.ReadOnlyResourceManager(), rt.LookupIP(), rt.EnvoyAdminClient())
 
 	deps := DataplaneWatchdogDependencies{
-		resManager:            rt.ResourceManager(),
 		dataplaneProxyBuilder: dataplaneProxyBuilder,
 		dataplaneReconciler:   dataplaneReconciler,
 		ingressProxyBuilder:   ingressProxyBuilder,
 		ingressReconciler:     ingressReconciler,
 		xdsContextBuilder:     xdsContextBuilder,
 		meshCache:             meshSnapshotCache,
+		metadataTracker:       metadataTracker,
+		secrets:               envoyCpCtx.Secrets,
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,

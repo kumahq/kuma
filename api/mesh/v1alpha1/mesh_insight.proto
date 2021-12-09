@@ -4,10 +4,19 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "google/protobuf/timestamp.proto";
 
 // MeshInsight defines the observed state of a Mesh.
 message MeshInsight {
+
+  option (kuma.mesh.resource).name = "MeshInsightResource";
+  option (kuma.mesh.resource).type = "MeshInsight";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).ws.name = "mesh-insight";
+  option (kuma.mesh.resource).ws.read_only = true;
 
   // last_sync is a time of the last synchronization
   google.protobuf.Timestamp last_sync = 1;
@@ -31,8 +40,33 @@ message MeshInsight {
     // Dataplane stats grouped by KumaDP version
     map<string, DataplaneStat> kumaDp = 1;
 
-    // Dataplan stats grouped by Envoy version
+    // Dataplane stats grouped by Envoy version
     map<string, DataplaneStat> envoy = 2;
   }
   DpVersions dpVersions = 4;
+
+  message MTLS {
+    // Dataplanes grouped by issued backends.
+    map<string, DataplaneStat> issuedBackends = 1;
+    // Dataplanes grouped by supported backends.
+    map<string, DataplaneStat> supportedBackends = 2;
+  }
+
+  // mTLS statistics
+  MTLS mTLS = 5;
+
+  // ServiceStat defines statistics of mesh services
+  message ServiceStat {
+    uint32 total = 1;
+    uint32 internal = 2;
+    uint32 external = 3;
+  }
+  ServiceStat services = 6;
+
+  // DataplanesByType defines statistics splitted by dataplane types
+  message DataplanesByType {
+    DataplaneStat standard = 1;
+    DataplaneStat gateway = 2;
+  }
+  DataplanesByType dataplanesByType = 7;
 }

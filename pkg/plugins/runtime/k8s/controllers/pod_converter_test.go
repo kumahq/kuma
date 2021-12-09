@@ -4,31 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	utilpointer "k8s.io/utils/pointer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 )
 
 var _ = Describe("PodToDataplane(..)", func() {
@@ -93,7 +88,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// given
 			// pod
 			pod := &kube_core.Pod{}
-			bytes, err := ioutil.ReadFile(filepath.Join("testdata", given.pod))
+			bytes, err := os.ReadFile(filepath.Join("testdata", given.pod))
 			Expect(err).ToNot(HaveOccurred())
 			err = yaml.Unmarshal(bytes, pod)
 			Expect(err).ToNot(HaveOccurred())
@@ -101,7 +96,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// services for pod
 			services := []*kube_core.Service{}
 			if given.servicesForPod != "" {
-				bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.servicesForPod))
+				bytes, err = os.ReadFile(filepath.Join("testdata", given.servicesForPod))
 				Expect(err).ToNot(HaveOccurred())
 				YAMLs := util_yaml.SplitYAML(string(bytes))
 				services, err = ParseServices(YAMLs)
@@ -111,7 +106,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// other services
 			var serviceGetter kube_client.Reader
 			if given.otherServices != "" {
-				bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.otherServices))
+				bytes, err = os.ReadFile(filepath.Join("testdata", given.otherServices))
 				Expect(err).ToNot(HaveOccurred())
 				YAMLs := util_yaml.SplitYAML(string(bytes))
 				services, err := ParseServices(YAMLs)
@@ -124,7 +119,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// other dataplanes
 			var otherDataplanes []*mesh_k8s.Dataplane
 			if given.otherDataplanes != "" {
-				bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.otherDataplanes))
+				bytes, err = os.ReadFile(filepath.Join("testdata", given.otherDataplanes))
 				Expect(err).ToNot(HaveOccurred())
 				YAMLs := util_yaml.SplitYAML(string(bytes))
 				otherDataplanes, err = ParseDataplanes(YAMLs)
@@ -139,14 +134,14 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, vips.List{})
+			err = converter.PodToDataplane(context.Background(), dataplane, pod, services, otherDataplanes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			actual, err := json.Marshal(dataplane)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.dataplane))
+			expected, err := os.ReadFile(filepath.Join("testdata", given.dataplane))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(expected))
 		},
@@ -243,13 +238,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// given
 			// pod
 			pod := &kube_core.Pod{}
-			bytes, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.pod))
+			bytes, err := os.ReadFile(filepath.Join("testdata", "ingress", given.pod))
 			Expect(err).ToNot(HaveOccurred())
 			err = yaml.Unmarshal(bytes, pod)
 			Expect(err).ToNot(HaveOccurred())
 
 			// services for pod
-			bytes, err = ioutil.ReadFile(filepath.Join("testdata", "ingress", given.servicesForPod))
+			bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.servicesForPod))
 			Expect(err).ToNot(HaveOccurred())
 			YAMLs := util_yaml.SplitYAML(string(bytes))
 			services, err := ParseServices(YAMLs)
@@ -258,7 +253,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			// node
 			var nodeGetter kube_client.Reader
 			if given.node != "" {
-				bytes, err = ioutil.ReadFile(filepath.Join("testdata", "ingress", given.node))
+				bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.node))
 				Expect(err).ToNot(HaveOccurred())
 				nodeGetter = fakeNodeReader(bytes)
 			}
@@ -270,17 +265,15 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			// when
-			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToIngress(dataplane, pod, services)
+			ingress := &mesh_k8s.ZoneIngress{}
+			err = converter.PodToIngress(context.Background(), ingress, pod, services)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			actual, err := json.Marshal(dataplane)
+			actual, err := yaml.Marshal(ingress)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.dataplane))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.dataplane)))
 		},
 		Entry("01. Ingress with load balancer service and hostname", testCase{ // AWS use case
 			pod:            "01.pod.yaml",
@@ -338,7 +331,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, vips.List{})
+				err = converter.PodToDataplane(context.Background(), dataplane, pod, services, nil)
 
 				// then
 				Expect(err).To(HaveOccurred())
@@ -367,44 +360,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}),
 		)
 	})
-})
-
-var _ = Describe("MeshFor(..)", func() {
-
-	type testCase struct {
-		podAnnotations map[string]string
-		expected       string
-	}
-
-	DescribeTable("should use value of `kuma.io/mesh` annotation on a Pod or fallback to the `default` Mesh",
-		func(given testCase) {
-			// given
-			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Annotations: given.podAnnotations,
-				},
-			}
-
-			// then
-			Expect(MeshFor(pod)).To(Equal(given.expected))
-		},
-		Entry("Pod without annotations", testCase{
-			podAnnotations: nil,
-			expected:       "default",
-		}),
-		Entry("Pod with empty `kuma.io/mesh` annotation", testCase{
-			podAnnotations: map[string]string{
-				"kuma.io/mesh": "",
-			},
-			expected: "default",
-		}),
-		Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
-			podAnnotations: map[string]string{
-				"kuma.io/mesh": "demo",
-			},
-			expected: "demo",
-		}),
-	)
 })
 
 var _ = Describe("InboundTagsForService(..)", func() {
@@ -459,7 +414,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 			podLabels: nil,
 			expected: map[string]string{
 				"kuma.io/service":  "example_demo_svc_80",
-				"kuma.io/protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
+				"kuma.io/protocol": "tcp", // we want Kuma's default behavior to be explicit to a user
 			},
 		}),
 		Entry("Pod with labels", testCase{
@@ -472,7 +427,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"app":              "example",
 				"version":          "0.1",
 				"kuma.io/service":  "example_demo_svc_80",
-				"kuma.io/protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
+				"kuma.io/protocol": "tcp", // we want Kuma's default behavior to be explicit to a user
 			},
 		}),
 		Entry("Pod with `service` label", testCase{
@@ -486,7 +441,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"app":              "example",
 				"version":          "0.1",
 				"kuma.io/service":  "example_demo_svc_80",
-				"kuma.io/protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
+				"kuma.io/protocol": "tcp", // we want Kuma's default behavior to be explicit to a user
 			},
 		}),
 		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and an unknown value", testCase{
@@ -502,7 +457,7 @@ var _ = Describe("InboundTagsForService(..)", func() {
 				"app":              "example",
 				"version":          "0.1",
 				"kuma.io/service":  "example_demo_svc_80",
-				"kuma.io/protocol": "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
+				"kuma.io/protocol": "not-yet-supported-protocol", // we want Kuma's behavior to be straightforward to a user (just copy annotation value "as is")
 			},
 		}),
 		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and a known value", testCase{
@@ -565,33 +520,6 @@ var _ = Describe("InboundTagsForService(..)", func() {
 	)
 })
 
-var _ = Describe("ServiceTagFor(..)", func() {
-	It("should use Service FQDN", func() {
-		// given
-		svc := &kube_core.Service{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "example",
-			},
-			Spec: kube_core.ServiceSpec{
-				Ports: []kube_core.ServicePort{
-					{
-						Name: "http",
-						Port: 80,
-						TargetPort: kube_intstr.IntOrString{
-							Type:   kube_intstr.Int,
-							IntVal: 8080,
-						},
-					},
-				},
-			},
-		}
-
-		// then
-		Expect(ServiceTagFor(svc, &svc.Spec.Ports[0])).To(Equal("example_demo_svc_80"))
-	})
-})
-
 var _ = Describe("ProtocolTagFor(..)", func() {
 
 	type testCase struct {
@@ -629,11 +557,11 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 		},
 		Entry("no appProtocol", testCase{
 			appProtocol: nil,
-			expected:    "tcp", // we want Kuma's default behaviour to be explicit to a user
+			expected:    "tcp", // we want Kuma's default behavior to be explicit to a user
 		}),
 		Entry("appProtocol has an empty value", testCase{
 			appProtocol: utilpointer.StringPtr(""),
-			expected:    "tcp", // we want Kuma's default behaviour to be explicit to a user
+			expected:    "tcp", // we want Kuma's default behavior to be explicit to a user
 		}),
 		Entry("no appProtocol but with `<port>.service.kuma.io/protocol` annotation", testCase{
 			appProtocol: nil,
@@ -644,11 +572,11 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 		}),
 		Entry("appProtocol has an unknown value", testCase{
 			appProtocol: utilpointer.StringPtr("not-yet-supported-protocol"),
-			expected:    "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy appProtocol value "as is")
+			expected:    "not-yet-supported-protocol", // we want Kuma's behavior to be straightforward to a user (just copy appProtocol value "as is")
 		}),
 		Entry("appProtocol has a non-lowercase value", testCase{
 			appProtocol: utilpointer.StringPtr("HtTp"),
-			expected:    "HtTp", // we want Kuma's behaviour to be straightforward to a user (just copy appProtocol value "as is")
+			expected:    "HtTp", // we want Kuma's behavior to be straightforward to a user (just copy appProtocol value "as is")
 		}),
 		Entry("appProtocol has a known value: http", testCase{
 			appProtocol: utilpointer.StringPtr("http"),
@@ -682,7 +610,7 @@ func newFakeServiceReader(services []*kube_core.Service) (fakeServiceReader, err
 
 var _ kube_client.Reader = fakeServiceReader{}
 
-func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_runtime.Object) error {
+func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
 	data, ok := r[fmt.Sprintf("%s/%s", key.Namespace, key.Name)]
 	if !ok {
 		return errors.New("not found")
@@ -690,17 +618,17 @@ func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, o
 	return yaml.Unmarshal([]byte(data), obj)
 }
 
-func (f fakeServiceReader) List(ctx context.Context, list kube_runtime.Object, opts ...kube_client.ListOption) error {
+func (f fakeServiceReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
 	return errors.New("not implemented")
 }
 
 type fakeNodeReader string
 
-func (r fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_runtime.Object) error {
+func (r fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_client.Object) error {
 	return errors.New("not implemented")
 }
 
-func (f fakeNodeReader) List(ctx context.Context, list kube_runtime.Object, opts ...kube_client.ListOption) error {
+func (f fakeNodeReader) List(ctx context.Context, list kube_client.ObjectList, opts ...kube_client.ListOption) error {
 	node := kube_core.Node{}
 	err := yaml.Unmarshal([]byte(f), &node)
 	if err != nil {

@@ -39,28 +39,26 @@ selectors:
 `
 
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
-		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
 			Install(tracing.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)(cluster)
+		err = TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "universal1"}))(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)(cluster)
+		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -68,7 +66,7 @@ selectors:
 		if ShouldSkipCleanup() {
 			return
 		}
-		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(cluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
@@ -81,7 +79,7 @@ selectors:
 
 		retry.DoWithRetry(cluster.GetTesting(), "check traced services", DefaultRetries, DefaultTimeout, func() (string, error) {
 			// when client sends requests to server
-			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			if err != nil {
 				return "", err
 			}
@@ -92,7 +90,7 @@ selectors:
 				return "", err
 			}
 
-			expectedServices := []string{"demo-client", "echo-server_kuma-test_svc_8080", "jaeger-query"}
+			expectedServices := []string{"demo-client", "jaeger-query", "test-server"}
 			if !reflect.DeepEqual(services, expectedServices) {
 				return "", errors.Errorf("services not traced. Expected %q, got %q", expectedServices, services)
 			}

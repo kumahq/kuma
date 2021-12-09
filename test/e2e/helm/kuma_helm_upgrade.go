@@ -6,19 +6,22 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/random"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
+var OldChart = "0.4.5"
+var UpstreamImageRegistry = "kumahq"
+
+var InitCluster = func(cluster Cluster) {}
+
 func UpgradingWithHelmChart() {
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs = KumaK8sDeployOpts
 
 	AfterEach(func() {
 		if ShouldSkipCleanup() {
@@ -44,20 +47,21 @@ func UpgradingWithHelmChart() {
 			Expect(err).ToNot(HaveOccurred())
 
 			cluster = c.WithRetries(60)
+			InitCluster(cluster)
 
 			releaseName := fmt.Sprintf(
 				"kuma-%s",
 				strings.ToLower(random.UniqueId()),
 			)
 
-			deployOptsFuncs = []DeployOptionsFunc{
+			deployOptsFuncs = append(deployOptsFuncs,
+				WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
 				WithInstallationMode(HelmInstallationMode),
-				WithHelmChartPath("kuma/kuma"),
+				WithHelmChartPath(HelmRepo),
 				WithHelmReleaseName(releaseName),
 				WithHelmChartVersion(given.initialChartVersion),
 				WithoutHelmOpt("global.image.tag"),
-				WithoutHelmOpt("global.image.registry"),
-			}
+				WithHelmOpt("global.image.registry", UpstreamImageRegistry))
 
 			err = NewClusterSetup().
 				Install(Kuma(core.Standalone, deployOptsFuncs...)).
@@ -68,18 +72,14 @@ func UpgradingWithHelmChart() {
 
 			k8sCluster := cluster.(*K8sCluster)
 
-			upgradeOptsFuncs := []DeployOptionsFunc{
-				WithHelmReleaseName(releaseName),
-			}
+			upgradeOptsFuncs := append(KumaK8sDeployOpts,
+				WithHelmReleaseName(releaseName))
 
 			err = k8sCluster.UpgradeKuma(core.Standalone, upgradeOptsFuncs...)
 			Expect(err).ToNot(HaveOccurred())
 		},
-		Entry("should successfully upgrade from chart v0.4.4", testCase{
-			initialChartVersion: "0.4.4",
-		}),
-		Entry("should successfully upgrade from chart v0.4.5", testCase{
-			initialChartVersion: "0.4.5",
+		Entry("should successfully upgrade from chart v"+OldChart, testCase{
+			initialChartVersion: OldChart,
 		}),
 	)
 }

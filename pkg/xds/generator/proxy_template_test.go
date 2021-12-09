@@ -1,7 +1,7 @@
 package generator_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -9,10 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -34,14 +35,11 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 					ProxyTemplate: given.template,
 				}
 				ctx := xds_context.Context{
-					ConnectionInfo: xds_context.ConnectionInfo{
-						Authority: "kuma-system:5677",
-					},
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsTlsCert: []byte("12345"),
+						Secrets: &xds.TestSecrets{},
 					},
 					Mesh: xds_context.MeshContext{
-						Resource: &mesh_core.MeshResource{
+						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
@@ -60,8 +58,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 			},
 			Entry("should fail when raw xDS resource is not valid", testCase{
 				proxy: &model.Proxy{
-					Id: model.ProxyId{Name: "demo.backend-01"},
-					Dataplane: &mesh_core.DataplaneResource{
+					Id: *model.BuildProxyId("", "demo.backend-01"),
+					Dataplane: &core_mesh.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Name:    "backend-01",
 							Mesh:    "demo",
@@ -88,7 +86,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				template: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
 						Imports: []string{
-							mesh_core.ProfileDefaultProxy,
+							core_mesh.ProfileDefaultProxy,
 						},
 						Resources: []*mesh_proto.ProxyTemplateRawResource{{
 							Name:     "raw-name",
@@ -114,7 +112,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 			func(given testCase) {
 				// setup
 				proxyTemplate := mesh_proto.ProxyTemplate{}
-				ptBytes, err := ioutil.ReadFile(filepath.Join("testdata", "template-proxy", given.proxyTemplateFile))
+				ptBytes, err := os.ReadFile(filepath.Join("testdata", "template-proxy", given.proxyTemplateFile))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(util_proto.FromYAML(ptBytes, &proxyTemplate)).To(Succeed())
 				gen := &generator.ProxyTemplateGenerator{
@@ -123,14 +121,11 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 
 				// given
 				ctx := xds_context.Context{
-					ConnectionInfo: xds_context.ConnectionInfo{
-						Authority: "kuma-system:5677",
-					},
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsTlsCert: []byte("12345"),
+						Secrets: &xds.TestSecrets{},
 					},
 					Mesh: xds_context.MeshContext{
-						Resource: &mesh_core.MeshResource{
+						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
@@ -152,8 +147,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				dataplane := &mesh_proto.Dataplane{}
 				Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 				proxy := &model.Proxy{
-					Id: model.ProxyId{Name: "demo.backend-01"},
-					Dataplane: &mesh_core.DataplaneResource{
+					Id: *model.BuildProxyId("", "demo.backend-01"),
+					Dataplane: &core_mesh.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Name:    "backend-01",
 							Mesh:    "demo",
@@ -196,6 +191,20 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 `,
 				proxyTemplateFile: "1-proxy-template.input.yaml",
 				expected:          "1-envoy-config.golden.yaml",
+			}),
+			Entry("should support merging non entire seconds durations", testCase{
+				dataplane: `
+                networking:
+                  transparentProxying:
+                    redirectPortOutbound: 15001
+                    redirectPortInbound: 15006
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 80
+                      servicePort: 8080
+`,
+				proxyTemplateFile: "2-proxy-template.input.yaml",
+				expected:          "2-envoy-config.golden.yaml",
 			}),
 		)
 

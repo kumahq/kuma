@@ -2,16 +2,15 @@ package v3_test
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	modifications "github.com/kumahq/kuma/pkg/xds/generator/modifications/v3"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Listener modifications", func() {
@@ -71,7 +70,7 @@ var _ = Describe("Listener modifications", func() {
                      - filters:
                        - name: envoy.filters.network.tcp_proxy
                          typedConfig:
-                           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                            cluster: localhost:8080
                            statPrefix: localhost_8080`,
 			},
@@ -88,7 +87,7 @@ var _ = Describe("Listener modifications", func() {
                 - filters:
                   - name: envoy.filters.network.tcp_proxy
                     typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
                       cluster: localhost:8080
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080

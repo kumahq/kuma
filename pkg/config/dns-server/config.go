@@ -15,6 +15,8 @@ type DNSServerConfig struct {
 	Port uint32 `yaml:"port" envconfig:"kuma_dns_server_port"`
 	// CIDR used to allocate virtual IPs from
 	CIDR string `yaml:"CIDR" envconfig:"kuma_dns_server_cidr"`
+	// ServiceVipEnabled will create a service "<kuma.io/service>.mesh" dns entry for every service.
+	ServiceVipEnabled bool `yaml:"serviceVipEnabled" envconfig:"kuma_dns_server_service_vip_enabled"`
 }
 
 func (g *DNSServerConfig) Sanitize() {
@@ -35,8 +37,9 @@ var _ config.Config = &DNSServerConfig{}
 
 func DefaultDNSServerConfig() *DNSServerConfig {
 	return &DNSServerConfig{
-		Domain: "mesh",
-		Port:   5653,
-		CIDR:   "240.0.0.0/4",
+		ServiceVipEnabled: true,
+		Domain:            "mesh",
+		Port:              5653,
+		CIDR:              "240.0.0.0/4",
 	}
 }

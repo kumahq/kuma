@@ -3,17 +3,16 @@ package generator_test
 import (
 	"path/filepath"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	model "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -40,10 +39,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			// and
 			Expect(rs).To(BeNil())
 		},
-		Entry("both Mesh and Datalane have no Prometheus configuration", testCase{
+		Entry("both Mesh and Dataplane have no Prometheus configuration", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
@@ -51,9 +50,9 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				},
 			},
-			proxy: &model.Proxy{
-				Id: model.ProxyId{Name: "demo.backend-01"},
-				Dataplane: &mesh_core.DataplaneResource{
+			proxy: &core_xds.Proxy{
+				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
@@ -63,10 +62,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				APIVersion: envoy_common.APIV3,
 			},
 		}),
-		Entry("Datalane has Prometheus configuration while Mesh doesn't", testCase{
+		Entry("Dataplane has Prometheus configuration while Mesh doesn't", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
@@ -74,10 +73,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				},
 			},
-			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+			proxy: &core_xds.Proxy{
+				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
@@ -95,10 +94,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 		}),
-		Entry("both Mesh and Datalane do have Prometheus configuration but dataplane metadata is unknown", testCase{
+		Entry("both Mesh and Dataplane do have Prometheus configuration but dataplane metadata is unknown", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
@@ -120,10 +119,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				},
 			},
-			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+			proxy: &core_xds.Proxy{
+				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
@@ -142,10 +141,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				Metadata: nil, // dataplane metadata is unknown
 			},
 		}),
-		Entry("both Mesh and Datalane do have Prometheus configuration but Admin API is not enabled on that dataplane", testCase{
+		Entry("both Mesh and Dataplane do have Prometheus configuration but Admin API is not enabled on that dataplane", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
@@ -167,10 +166,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				},
 			},
-			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+			proxy: &core_xds.Proxy{
+				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
@@ -216,7 +215,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		Entry("should support a Dataplane without custom metrics configuration", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
@@ -230,7 +229,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port:     1234,
 											Path:     "/non-standard-path",
-											SkipMTLS: &wrappers.BoolValue{Value: false},
+											SkipMTLS: util_proto.Bool(false),
 											Tags: map[string]string{
 												"kuma.io/service": "dataplane-metrics",
 											},
@@ -242,10 +241,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				},
 			},
-			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+			proxy: &core_xds.Proxy{
+				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
@@ -258,14 +257,73 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort: 9902,
+					Version: &mesh_proto.Version{
+						KumaDp: &mesh_proto.KumaDpVersion{
+							Version: "1.2.0",
+						},
+					},
 				},
 			},
 			expected: "default.envoy-config.golden.yaml",
 		}),
+		Entry("should support a Dataplane without metrics hijacker", testCase{
+			ctx: xds_context.Context{
+				Mesh: xds_context.MeshContext{
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
+						Spec: &mesh_proto.Mesh{
+							Metrics: &mesh_proto.Metrics{
+								EnabledBackend: "prometheus-1",
+								Backends: []*mesh_proto.MetricsBackend{
+									{
+										Name: "prometheus-1",
+										Type: mesh_proto.MetricsPrometheusType,
+										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
+											Port:     1234,
+											Path:     "/non-standard-path",
+											SkipMTLS: util_proto.Bool(false),
+											Tags: map[string]string{
+												"kuma.io/service": "dataplane-metrics",
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			proxy: &core_xds.Proxy{
+				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
+				APIVersion: envoy_common.APIV3,
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
+					},
+				},
+				Metadata: &core_xds.DataplaneMetadata{
+					AdminPort: 9902,
+					Version: &mesh_proto.Version{
+						KumaDp: &mesh_proto.KumaDpVersion{
+							Version: "1.1.6",
+						},
+					},
+				},
+			},
+			expected: "default-without-hijacker.envoy-config.golden.yaml",
+		}),
 		Entry("should support a Dataplane with custom metrics configuration", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
@@ -287,10 +345,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				},
 			},
-			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+			proxy: &core_xds.Proxy{
+				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
@@ -311,20 +369,22 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort: 9902,
+					Version: &mesh_proto.Version{
+						KumaDp: &mesh_proto.KumaDpVersion{
+							Version: "1.2.0",
+						},
+					},
 				},
 			},
 			expected: "custom.envoy-config.golden.yaml",
 		}),
 		Entry("should support a Dataplane with mTLS on", testCase{
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-system:5677",
-				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("12345"),
+					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
@@ -347,7 +407,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port:     1234,
 											Path:     "/non-standard-path",
-											SkipMTLS: &wrappers.BoolValue{Value: false},
+											SkipMTLS: util_proto.Bool(false),
 											Tags: map[string]string{
 												"kuma.io/service": "dataplane-metrics",
 											},
@@ -359,10 +419,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				},
 			},
-			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+			proxy: &core_xds.Proxy{
+				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
@@ -375,20 +435,22 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort: 9902,
+					Version: &mesh_proto.Version{
+						KumaDp: &mesh_proto.KumaDpVersion{
+							Version: "1.2.0",
+						},
+					},
 				},
 			},
 			expected: "default-mtls.envoy-config.golden.yaml",
 		}),
 		Entry("should support a Dataplane with mTLS on (skipMTLS not explicitly defined)", testCase{
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-system:5677",
-				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("12345"),
+					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
@@ -422,10 +484,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				},
 			},
-			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+			proxy: &core_xds.Proxy{
+				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
@@ -438,20 +500,20 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort: 9902,
+					Version: &mesh_proto.Version{
+						KumaDp: &mesh_proto.KumaDpVersion{
+							Version: "1.2.0",
+						},
+					},
 				},
 			},
 			expected: "default-mtls.envoy-config.golden.yaml",
 		}),
 		Entry("should support a Dataplane with mTLS on but skipMTLS true", testCase{
 			ctx: xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-system:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("12345"),
-				},
+				ControlPlane: &xds_context.ControlPlaneContext{},
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
@@ -474,7 +536,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 										Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port:     1234,
 											Path:     "/non-standard-path",
-											SkipMTLS: &wrappers.BoolValue{Value: true},
+											SkipMTLS: util_proto.Bool(true),
 											Tags: map[string]string{
 												"kuma.io/service": "dataplane-metrics",
 											},
@@ -486,10 +548,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				},
 			},
-			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+			proxy: &core_xds.Proxy{
+				Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
 						Mesh: "demo",
@@ -502,6 +564,11 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort: 9902,
+					Version: &mesh_proto.Version{
+						KumaDp: &mesh_proto.KumaDpVersion{
+							Version: "1.2.0",
+						},
+					},
 				},
 			},
 			expected: "default.envoy-config.golden.yaml",
@@ -519,7 +586,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				// given
 				ctx := xds_context.Context{
 					Mesh: xds_context.MeshContext{
-						Resource: &mesh_core.MeshResource{
+						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
@@ -541,10 +608,10 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						},
 					},
 				}
-				proxy := &model.Proxy{
-					Id:         model.ProxyId{Name: "demo.backend-01"},
+				proxy := &core_xds.Proxy{
+					Id:         *core_xds.BuildProxyId("", "demo.backend-01"),
 					APIVersion: envoy_common.APIV3,
-					Dataplane: &mesh_core.DataplaneResource{
+					Dataplane: &core_mesh.DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "backend-01",
 							Mesh: "demo",

@@ -1,22 +1,25 @@
 package install_test
 
 import (
-	"io/ioutil"
+	"os"
+
+	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/pkg/test/golden"
-
-	. "github.com/onsi/gomega"
 )
 
 func ExpectMatchesGoldenFiles(actual []byte, goldenFilePath string) {
 	actualManifests := data.SplitYAML(data.File{Data: actual})
 
 	if golden.UpdateGoldenFiles() {
-		err := ioutil.WriteFile(goldenFilePath, actual, 0664)
+		if actual[len(actual)-1] != '\n' {
+			actual = append(actual, '\n')
+		}
+		err := os.WriteFile(goldenFilePath, actual, 0664)
 		Expect(err).ToNot(HaveOccurred())
 	}
-	expected, err := ioutil.ReadFile(goldenFilePath)
+	expected, err := os.ReadFile(goldenFilePath)
 	Expect(err).ToNot(HaveOccurred())
 	expectedManifests := data.SplitYAML(data.File{Data: expected})
 

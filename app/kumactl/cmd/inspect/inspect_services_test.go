@@ -3,7 +3,7 @@ package inspect_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -14,16 +14,14 @@ import (
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 type testServiceOverviewClient struct {
@@ -44,7 +42,6 @@ var _ resources.ServiceOverviewClient = &testServiceOverviewClient{}
 
 var _ = Describe("kumactl inspect services", func() {
 
-	var rootCtx *kumactl_cmd.RootContext
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
 	rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
@@ -83,17 +80,13 @@ var _ = Describe("kumactl inspect services", func() {
 	}
 
 	BeforeEach(func() {
-		rootCtx = &kumactl_cmd.RootContext{
-			Runtime: kumactl_cmd.RootRuntime{
-				Now: func() time.Time { return rootTime },
-				NewServiceOverviewClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (resources.ServiceOverviewClient, error) {
-					return &testServiceOverviewClient{
-						total:     uint32(len(serviceOverviewResources)),
-						overviews: serviceOverviewResources,
-					}, nil
-				},
-				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
-			},
+		rootCtx, err := test_kumactl.MakeRootContext(rootTime, nil)
+		Expect(err).ToNot(HaveOccurred())
+		rootCtx.Runtime.NewServiceOverviewClient = func(util_http.Client) resources.ServiceOverviewClient {
+			return &testServiceOverviewClient{
+				total:     uint32(len(serviceOverviewResources)),
+				overviews: serviceOverviewResources,
+			}
 		}
 
 		rootCmd = cmd.NewRootCmd(rootCtx)
@@ -120,7 +113,7 @@ var _ = Describe("kumactl inspect services", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+			expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

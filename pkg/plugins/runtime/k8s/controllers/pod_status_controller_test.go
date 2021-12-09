@@ -1,19 +1,10 @@
 package controllers_test
 
 import (
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	"github.com/kumahq/kuma/pkg/test/runtime"
+	"context"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-
-	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-
-	"github.com/kumahq/kuma/pkg/core"
-
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -21,6 +12,13 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/pkg/test/runtime"
 )
 
 var _ = Describe("PodStatusReconciler", func() {
@@ -30,8 +28,7 @@ var _ = Describe("PodStatusReconciler", func() {
 	var postQuitCalled int
 
 	BeforeEach(func() {
-		kubeClient = kube_client_fake.NewFakeClientWithScheme(
-			k8sClientScheme,
+		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
@@ -172,7 +169,7 @@ var _ = Describe("PodStatusReconciler", func() {
 					Name:      "pod-with-kuma-sidecar-workload-terminated",
 				},
 			},
-		)
+		).Build()
 
 		postQuitCalled = 0
 		reconciler = &PodStatusReconciler{
@@ -194,7 +191,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -210,7 +207,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -226,7 +223,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -242,7 +239,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -258,7 +255,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -274,7 +271,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
@@ -290,7 +287,7 @@ var _ = Describe("PodStatusReconciler", func() {
 		}
 
 		// when
-		result, err := reconciler.Reconcile(req)
+		result, err := reconciler.Reconcile(context.Background(), req)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and

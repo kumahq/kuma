@@ -4,23 +4,19 @@ import (
 	"context"
 	"os"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-
-	"io/ioutil"
-
-	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("DataSource Loader", func() {
@@ -38,9 +34,7 @@ var _ = Describe("DataSource Loader", func() {
 			// given
 			secretResource := system.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: &wrappers.BytesValue{
-						Value: []byte("abc"),
-					},
+					Data: util_proto.Bytes([]byte("abc")),
 				},
 			}
 			err := secretManager.Create(context.Background(), &secretResource, store.CreateByKey("test-secret", "default"))
@@ -74,9 +68,9 @@ var _ = Describe("DataSource Loader", func() {
 	Context("File", func() {
 		It("should load from file", func() {
 			// given
-			file, err := ioutil.TempFile("", "")
+			file, err := os.CreateTemp("", "")
 			Expect(err).ToNot(HaveOccurred())
-			err = ioutil.WriteFile(file.Name(), []byte("abc"), os.ModeAppend)
+			err = os.WriteFile(file.Name(), []byte("abc"), os.ModeAppend)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -109,9 +103,7 @@ var _ = Describe("DataSource Loader", func() {
 			// when
 			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
 				Type: &system_proto.DataSource_Inline{
-					Inline: &wrappers.BytesValue{
-						Value: []byte("abc"),
-					},
+					Inline: util_proto.Bytes([]byte("abc")),
 				},
 			})
 

@@ -3,8 +3,6 @@ package generator
 import (
 	"sort"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
@@ -14,6 +12,7 @@ import (
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 const (
@@ -31,7 +30,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 
 	destinationsPerService := i.destinations(proxy.Routing.TrafficRouteList)
 
-	listener, err := i.generateLDS(proxy.Dataplane, destinationsPerService, proxy.APIVersion)
+	listener, err := i.generateLDS(proxy, proxy.ZoneIngress, destinationsPerService, proxy.APIVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -65,24 +64,24 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 // This approach has a limitation: additional tags on outbound in Universal mode won't work across different zones.
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
 func (i IngressGenerator) generateLDS(
-	ingress *core_mesh.DataplaneResource,
+	proxy *model.Proxy,
+	ingress *core_mesh.ZoneIngressResource,
 	destinationsPerService map[string][]envoy_common.Tags,
 	apiVersion envoy_common.APIVersion,
 ) (envoy_common.NamedResource, error) {
-	inbound := ingress.Spec.Networking.Inbound[0]
-	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), inbound.Port)
+	inboundListenerName := envoy_names.GetInboundListenerName(proxy.ZoneIngress.Spec.GetNetworking().GetAddress(), proxy.ZoneIngress.Spec.GetNetworking().GetPort())
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(apiVersion).
-		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port, model.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), ingress.Spec.GetNetworking().GetPort(), model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TLSInspector())
 
-	if !ingress.Spec.HasAvailableServices() {
+	if len(proxy.ZoneIngress.Spec.AvailableServices) == 0 {
 		inboundListenerBuilder = inboundListenerBuilder.
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion)))
 	}
 
 	sniUsed := map[string]bool{}
 
-	for _, inbound := range ingress.Spec.GetNetworking().GetIngress().GetAvailableServices() {
+	for _, inbound := range proxy.ZoneIngress.Spec.GetAvailableServices() {
 		service := inbound.Tags[mesh_proto.ServiceTag]
 		destinations := destinationsPerService[service]
 		destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
@@ -96,13 +95,16 @@ func (i IngressGenerator) generateLDS(
 				continue
 			}
 			sniUsed[sni] = true
-			inboundListenerBuilder = inboundListenerBuilder.
-				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion).
-					Configure(envoy_listeners.FilterChainMatch("tls", sni)).
-					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
-						ClusterName: service,
-						Tags:        meshDestination.WithoutTags(mesh_proto.ServiceTag),
-					}))))
+			inboundListenerBuilder = inboundListenerBuilder.Configure(envoy_listeners.FilterChain(
+				envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
+					envoy_listeners.MatchTransportProtocol("tls"),
+					envoy_listeners.MatchServerNames(sni),
+					envoy_listeners.TcpProxyWithMetadata(service, envoy_common.NewCluster(
+						envoy_common.WithService(service),
+						envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
+					)),
+				),
+			))
 		}
 	}
 
@@ -112,9 +114,15 @@ func (i IngressGenerator) generateLDS(
 func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList) map[string][]envoy_common.Tags {
 	destinations := map[string][]envoy_common.Tags{}
 	for _, tr := range trs.Items {
-		for _, split := range tr.Spec.Conf.Split {
+		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
 			service := split.Destination[mesh_proto.ServiceTag]
 			destinations[service] = append(destinations[service], split.Destination)
+		}
+		for _, http := range tr.Spec.Conf.Http {
+			for _, split := range http.GetSplitWithDestination() {
+				service := split.Destination[mesh_proto.ServiceTag]
+				destinations[service] = append(destinations[service], split.Destination)
+			}
 		}
 	}
 	return destinations

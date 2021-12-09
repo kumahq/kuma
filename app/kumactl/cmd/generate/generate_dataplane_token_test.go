@@ -4,19 +4,21 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type staticDataplaneTokenGenerator struct {
@@ -25,7 +27,7 @@ type staticDataplaneTokenGenerator struct {
 
 var _ tokens.DataplaneTokenClient = &staticDataplaneTokenGenerator{}
 
-func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error) {
+func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error) {
 	if s.err != nil {
 		return "", s.err
 	}
@@ -33,7 +35,6 @@ func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags 
 }
 
 var _ = Describe("kumactl generate dataplane-token", func() {
-
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
 	var generator *staticDataplaneTokenGenerator
@@ -43,16 +44,22 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		generator = &staticDataplaneTokenGenerator{}
 		ctx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewDataplaneTokenClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error) {
-					return generator, nil
+				Registry: registry.NewTypeRegistry(),
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+					return nil, nil
 				},
-				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+				NewDataplaneTokenClient: func(util_http.Client) tokens.DataplaneTokenClient {
+					return generator
+				},
+				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
 		}
 
 		rootCmd = cmd.NewRootCmd(ctx)
+
 		buf = &bytes.Buffer{}
 		rootCmd.SetOut(buf)
+		rootCmd.SetErr(buf)
 	})
 
 	type testCase struct {
@@ -76,7 +83,7 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 			result: "token-for-example-default--",
 		}),
 		Entry("for all arguments", testCase{
-			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--name=example", "--type=dataplane", "--tag", "kuma.io/service=web"},
+			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--name=example", "--proxy-type=dataplane", "--tag", "kuma.io/service=web"},
 			result: "token-for-example-demo-kuma.io/service=web-dataplane",
 		}),
 	)

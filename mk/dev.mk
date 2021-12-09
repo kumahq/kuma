@@ -1,20 +1,27 @@
-PROTOC_VERSION := 3.14.0
+GINKGO_VERSION := v1.16.5
+GOLANGCI_LINT_VERSION := v1.43.0
+GOLANG_PROTOBUF_VERSION := v1.5.2
+HELM_DOCS_VERSION := 1.5.0
+KUSTOMIZE_VERSION := v4.4.1
 PROTOC_PGV_VERSION := v0.4.1
-GOLANG_PROTOBUF_VERSION := v1.4.3
-GOLANGCI_LINT_VERSION := v1.37.1
-GINKGO_VERSION := v1.14.2
-HELM_DOCS_VERSION := 1.4.0
-GOIMPORTS_VERSION := v0.1.0
+PROTOC_VERSION := 3.14.0
+UDPA_LATEST_VERSION := main
+GOOGLEAPIS_LATEST_VERSION := master
+KUMADOC_VERSION := v0.1.7
+DATAPLANE_API_LATEST_VERSION := main
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
-CI_MINIKUBE_VERSION ?= v1.18.1
+CI_MINIKUBE_VERSION ?= v1.24.0
 CI_KUBECTL_VERSION ?= v1.18.14
-CI_TOOLS_IMAGE ?= circleci/golang:1.16.3
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
 export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
+
+# The e2e tests depend on Kind kubeconfigs being in this directory,
+# so this is location should not be changed by developers.
+KUBECONFIG_DIR := $(HOME)/.kube
 
 PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
 PROTOBUF_WKT_DIR := $(CI_TOOLS_DIR)/protobuf.d
@@ -49,21 +56,37 @@ ifeq ($(UNAME_ARCH), aarch64)
 	HELM_DOCS_ARCH=arm64
 endif
 
+CURL_PATH ?= curl
+CURL_DOWNLOAD := $(CURL_PATH) --location --fail --progress-bar
+
 .PHONY: dev/tools
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
 
 .PHONY: dev/tools/all
 dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/protoc-gen-go dev/install/protoc-gen-validate \
+	dev/install/protoc-gen-kumadoc \
 	dev/install/ginkgo \
-	dev/install/kubebuilder dev/install/kustomize \
 	dev/install/kubectl \
-	dev/install/kind dev/install/k3d \
+	dev/install/kubebuilder \
+	dev/install/kustomize \
+	dev/install/kind \
+	dev/install/k3d \
 	dev/install/minikube \
 	dev/install/golangci-lint \
-	dev/install/goimports \
 	dev/install/helm3 \
-	dev/install/helm-docs
+	dev/install/helm-docs \
+	dev/install/data-plane-api
+
+.PHONY: dev/install/protoc-gen-kumadoc
+dev/install/protoc-gen-kumadoc:
+	go install github.com/kumahq/protoc-gen-kumadoc@$(KUMADOC_VERSION)
+
+.PHONY: dev/install/data-plane-api
+dev/install/data-plane-api:
+	go get github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
+	go get github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
+	go get github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
 
 .PHONY: dev/install/protoc
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
@@ -71,7 +94,8 @@ dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 	@if [ ! -e $(PROTOC_PATH) ]; then \
 		echo "Installing Protoc $(PROTOC_VERSION) ..." \
 		&& set -x \
-		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
+		&& mkdir -p /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
+		&& $(CURL_DOWNLOAD) -o /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
 		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip bin/protoc -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& cp /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH)/bin/protoc $(PROTOC_PATH) \
@@ -86,7 +110,8 @@ dev/install/protobuf-wellknown-types:: ## Bootstrap: Install Protobuf well-known
 	@if [ ! -e $(PROTOBUF_WKT_DIR) ]; then \
 		echo "Installing Protobuf well-known types $(PROTOC_VERSION) ..." \
 		&& set -x \
-		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
+		&& mkdir -p /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
+		&& $(CURL_DOWNLOAD) -o /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
 		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip 'include/*' -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& mkdir -p $(PROTOBUF_WKT_DIR) \
 		&& cp -r /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH)/include $(PROTOBUF_WKT_DIR) \
@@ -118,7 +143,7 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and k
 	@if [ ! -e $(KUBEBUILDER_PATH) ]; then \
 		echo "Installing Kubebuilder $(CI_KUBEBUILDER_VERSION) ..." \
 		&& set -x \
-		&& curl -L https://go.kubebuilder.io/dl/$(CI_KUBEBUILDER_VERSION)/$(GOOS)/$(GOARCH) | tar -xz -C /tmp/ \
+		&& $(CURL_DOWNLOAD) https://github.com/kubernetes-sigs/kubebuilder/releases/download/v$(CI_KUBEBUILDER_VERSION)/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH).tar.gz | tar -xz -C /tmp/ \
 		&& mkdir -p $(KUBEBUILDER_DIR) \
 		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH)/* $(KUBEBUILDER_DIR) \
 		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH) \
@@ -128,15 +153,14 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and k
 
 .PHONY: dev/install/kustomize
 dev/install/kustomize: ## Bootstrap: Install Kustomize
-	# see https://book.kubebuilder.io/quick-start.html#installation
+	# see https://kubectl.docs.kubernetes.io/installation/kustomize/binaries/
 	@if [ -e $(KUSTOMIZE_PATH) ]; then echo "Kustomize $$( $(KUSTOMIZE_PATH) version ) is already installed at $(KUSTOMIZE_PATH)" ; fi
 	@if [ ! -e $(KUSTOMIZE_PATH) ]; then \
-		echo "Installing Kustomize latest ..." \
+		echo "Installing Kustomize $(KUSTOMIZE_VERSION) ..." \
 		&& set -x \
-		&& curl -Lo kustomize https://go.kubebuilder.io/kustomize/$(GOOS)/$(GOARCH) \
-		&& chmod +x kustomize \
 		&& mkdir -p $(KUBEBUILDER_DIR)/bin \
-		&& mv kustomize $(KUBEBUILDER_DIR)/bin/ \
+		&& $(CURL_DOWNLOAD) https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F$(KUSTOMIZE_VERSION)/kustomize_$(KUSTOMIZE_VERSION)_$(GOOS)_$(GOARCH).tar.gz | tar -xz -C $(KUBEBUILDER_DIR)/bin \
+		&& chmod +x $(KUBEBUILDER_DIR)/bin/kustomize \
 		&& ln -s $(KUBEBUILDER_DIR)/bin/kustomize $(KUSTOMIZE_PATH) \
 		&& set +x \
 		&& echo "Kustomize latest has been installed at $(KUSTOMIZE_PATH)" ; fi
@@ -148,7 +172,7 @@ dev/install/kubectl: ## Bootstrap: Install kubectl
 	@if [ ! -e $(KUBECTL_PATH) ]; then \
 		echo "Installing Kubectl $(CI_KUBECTL_VERSION) ..." \
 		&& set -x \
-		&& curl -LO https://storage.googleapis.com/kubernetes-release/release/$(CI_KUBECTL_VERSION)/bin/$(GOOS)/$(GOARCH)/kubectl \
+		&& $(CURL_DOWNLOAD) -O https://storage.googleapis.com/kubernetes-release/release/$(CI_KUBECTL_VERSION)/bin/$(GOOS)/$(GOARCH)/kubectl \
 		&& chmod +x kubectl \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv kubectl $(KUBECTL_PATH) \
@@ -162,7 +186,7 @@ dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
 	@if [ ! -e $(KIND_PATH) ]; then \
 		echo "Installing Kind $(CI_KIND_VERSION) ..." \
 		&& set -x \
-		&& curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/$(CI_KIND_VERSION)/kind-$(GOOS)-$(GOARCH) \
+		&& $(CURL_DOWNLOAD) -o kind https://github.com/kubernetes-sigs/kind/releases/download/$(CI_KIND_VERSION)/kind-$(GOOS)-$(GOARCH) \
 		&& chmod +x kind \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv kind $(KIND_PATH) \
@@ -177,7 +201,7 @@ dev/install/k3d: ## Bootstrap: Install K3D (K3s in Docker)
 		echo "Installing Kind $(CI_K3D_VERSION) ..." \
 		&& set -x \
 		&& mkdir -p $(CI_TOOLS_DIR) \
-		&& curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | \
+		&& $(CURL_DOWNLOAD) https://raw.githubusercontent.com/rancher/k3d/main/install.sh | \
 		        TAG=$(CI_K3D_VERSION) USE_SUDO="false" K3D_INSTALL_DIR="$(CI_TOOLS_DIR)" bash \
 		&& set +x \
 		&& echo "K3d $(CI_K3D_VERSION) has been installed at $(K3D_PATH)" ; fi
@@ -190,7 +214,7 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 	@if [ ! -e $(MINIKUBE_PATH) ]; then \
 		echo "Installing Minikube $(CI_MINIKUBE_VERSION) ..." \
 		&& set -x \
-		&& curl -Lo minikube https://storage.googleapis.com/minikube/releases/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
+		&& $(CURL_DOWNLOAD) -o minikube https://github.com/kubernetes/minikube/releases/download/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
 		&& chmod +x minikube \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv minikube $(MINIKUBE_PATH) \
@@ -199,15 +223,12 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 
 .PHONY: dev/install/golangci-lint
 dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
-
-.PHONY: dev/install/goimports
-dev/install/goimports: ## Bootstrap: Install goimports
-	go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
+	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
 
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
-	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | \
+		env HELM_INSTALL_DIR=$(CI_TOOLS_DIR) USE_SUDO=false bash
 
 .PHONY: dev/install/helm-docs
 dev/install/helm-docs: ## Bootstrap: Install helm-docs
@@ -215,7 +236,7 @@ dev/install/helm-docs: ## Bootstrap: Install helm-docs
 	@if [ ! -e $(HELM_DOCS_PATH) ]; then \
 		echo "Installing helm-docs ...." \
 		&& set -x \
-		&& curl -Lo helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz https://github.com/norwoodj/helm-docs/releases/download/v$(HELM_DOCS_VERSION)/helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
+		&& $(CURL_DOWNLOAD) -o helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz https://github.com/norwoodj/helm-docs/releases/download/v$(HELM_DOCS_VERSION)/helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
 		&& tar -xf helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz helm-docs \
 		&& rm helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
 		&& chmod +x helm-docs \
@@ -236,3 +257,28 @@ changelog:
 		--start refs/heads/$(GEN_CHANGELOG_START_TAG) \
 		--branch refs/heads/$(GEN_CHANGELOG_BRANCH) > $(GEN_CHANGELOG_MD)
 	@echo "The generated changelog is in $(GEN_CHANGELOG_MD)"
+
+$(KUBECONFIG_DIR):
+	@mkdir -p $(KUBECONFIG_DIR)
+
+# kubectl always writes the current context into the first config file. When
+# debugging, it's common to switch contexts and we don't want to edit the Kind
+# config files (because then the integration tests have the wrong current
+# context). So we create this as a place for kubectl to write the interactive
+# current context.
+$(KUBECONFIG_DIR)/kind-kuma-current: $(KUBECONFIG_DIR)
+	@touch $@
+
+# Generate a .envrc that prepends e2e test suite configs to whatever
+# KUBECONFIG currently has, and stores CI tooling in .tools.
+.PHONY: dev/enrc
+dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
+	@echo 'export CI_TOOLS_DIR=$$(expand_path .tools)' > .envrc
+	@for c in $(patsubst %,$(KUBECONFIG_DIR)/kind-%-config,kuma $(K8SCLUSTERS)) $(KUBECONFIG_DIR)/kind-kuma-current ; do \
+		echo "path_add KUBECONFIG $$c" ; \
+	done >> .envrc
+	@echo 'export KUBECONFIG' >> .envrc
+	@for prog in $(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES) ; do \
+		echo "PATH_add $(BUILD_ARTIFACTS_DIR)/$$prog" ; \
+	done >> .envrc
+	@direnv allow

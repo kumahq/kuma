@@ -15,13 +15,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kumahq/kuma/pkg/core"
-	kuma_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-
-	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
-
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/events"
+	kuma_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -151,7 +149,7 @@ func (k *listener) createListerWatcher(gvk schema.GroupVersionKind) (cache.Liste
 	if err != nil {
 		return nil, err
 	}
-	client, err := apiutil.RESTClientForGVK(gvk, k.mgr.GetConfig(), serializer.NewCodecFactory(k.mgr.GetScheme()))
+	client, err := apiutil.RESTClientForGVK(gvk, false, k.mgr.GetConfig(), serializer.NewCodecFactory(k.mgr.GetScheme()))
 	if err != nil {
 		return nil, err
 	}

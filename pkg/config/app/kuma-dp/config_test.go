@@ -1,18 +1,19 @@
 package kumadp_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var _ = Describe("Config", func() {
@@ -60,6 +61,7 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_NAME":                                    "example",
 				"KUMA_DATAPLANE_ADMIN_PORT":                              "2345",
 				"KUMA_DATAPLANE_DRAIN_TIME":                              "60s",
+				"KUMA_DATAPLANE_PROXY_TYPE":                              "ingress",
 				"KUMA_DATAPLANE_RUNTIME_BINARY_PATH":                     "envoy.sh",
 				"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":                      "/var/run/envoy",
 				"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH":                      "/tmp/token",
@@ -113,15 +115,10 @@ var _ = Describe("Config", func() {
 
 		// when
 		actual, err := config.ToYAML(&cfg)
-		// then
-		Expect(err).ToNot(HaveOccurred())
 
-		// when
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(actual).To(MatchYAML(expected))
+		Expect(actual).To(matchers.MatchGoldenYAML("testdata", "default-config.golden.yaml"))
 	})
 
 	It("should have validators", func() {
@@ -132,6 +129,30 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err.Error()).To(Equal(`Invalid configuration: .ControlPlane is not valid: .Retry is not valid: .Backoff must be a positive duration; .Dataplane is not valid: .Mesh must be non-empty; .Name must be non-empty; .DrainTime must be positive; .DataplaneRuntime is not valid: .BinaryPath must be non-empty`))
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error() + "\n").To(matchers.MatchGoldenEqual("testdata", "invalid-config.golden.txt"))
 	})
+
+	DescribeTable("bad validation",
+		func(fn func(*kuma_dp.Config)) {
+			// given
+			cfg := kuma_dp.Config{}
+
+			Expect(config.Load(filepath.Join("testdata", "valid-config.input.yaml"), &cfg)).Should(Succeed())
+
+			// when (apply a modification)
+			fn(&cfg)
+
+			// then
+			Expect(cfg.Validate()).ShouldNot(Succeed())
+
+		},
+		Entry("unsupported proxy type", func(cfg *kuma_dp.Config) {
+			cfg.Dataplane.ProxyType = "gateway"
+		}),
+		Entry("invalid cp url", func(cfg *kuma_dp.Config) {
+			cfg.ControlPlane.URL = ":333"
+		}),
+	)
+
 })

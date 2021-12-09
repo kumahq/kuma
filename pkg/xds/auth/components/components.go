@@ -2,7 +2,6 @@ package components
 
 import (
 	"github.com/pkg/errors"
-	kube_auth "k8s.io/api/authentication/v1"
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -18,18 +17,13 @@ func NewKubeAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
 	if !ok {
 		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
-	if err := kube_auth.AddToScheme(mgr.GetScheme()); err != nil {
-		return nil, errors.Wrapf(err, "could not add %q to scheme", kube_auth.SchemeGroupVersion)
-	}
 	return k8s_auth.New(mgr.GetClient()), nil
 }
 
 func NewUniversalAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
-	issuer, err := builtin.NewDataplaneTokenIssuer(rt.ReadOnlyResourceManager())
-	if err != nil {
-		return nil, err
-	}
-	return universal_auth.NewAuthenticator(issuer), nil
+	dataplaneValidator := builtin.NewDataplaneTokenValidator(rt.ResourceManager())
+	zoneIngressValidator := builtin.NewZoneIngressTokenValidator(rt.ResourceManager())
+	return universal_auth.NewAuthenticator(dataplaneValidator, zoneIngressValidator, rt.Config().Multizone.Zone.Name), nil
 }
 
 func DefaultAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {

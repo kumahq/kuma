@@ -1,7 +1,11 @@
 package framework
 
 import (
+	"fmt"
 	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -76,7 +80,7 @@ func GetUniversalImage() string {
 		return os.Getenv("KUMA_UNIVERSAL_IMAGE")
 	}
 
-	return "kuma-universal"
+	return KumaUniversalImage
 }
 
 func GetApiVersion() string {
@@ -85,10 +89,6 @@ func GetApiVersion() string {
 
 func HasApiVersion() bool {
 	return envIsPresent(envAPIVersion)
-}
-
-func IsApiV2() bool {
-	return GetApiVersion() == "v2"
 }
 
 func GetHelmChartPath() string {
@@ -103,24 +103,29 @@ func GetCniConfName() string {
 	return os.Getenv("KUMA_CNI_CONF_NAME")
 }
 
-func HasCniConfName() bool {
-	return envIsPresent("KUMA_CNI_CONF_NAME")
-}
-
 func UseLoadBalancer() bool {
 	return envBool("KUMA_USE_LOAD_BALANCER")
 }
 
-func IsInEKS() bool {
-	return envBool("KUMA_IN_EKS")
+func UseHostnameInsteadOfIP() bool {
+	return envBool("KUMA_USE_HOSTNAME_INSTEAD_OF_IP")
 }
 
 func IsIPv6() bool {
 	return envBool(envIPv6)
 }
 
+func IsK3D() bool {
+	return envBool("K3D")
+}
+
+// GetKumactlBin returns the path to the kumactl program.
 func GetKumactlBin() string {
-	return os.Getenv(envKUMACTLBIN)
+	if path := os.Getenv("KUMACTLBIN"); path != "" {
+		return path
+	}
+
+	return path.Join(BuildArtifactsDir(), "kumactl", "kumactl")
 }
 
 func IsK8sClustersStarted() bool {
@@ -136,4 +141,20 @@ func envIsPresent(env string) bool {
 func envBool(env string) bool {
 	value, found := os.LookupEnv(env)
 	return found && strings.ToLower(value) == "true"
+}
+
+// BuildArtifactsDir returns the path for Kuma build artifacts.
+func BuildArtifactsDir() string {
+	// runtime.Caller returns the absolute path to this file on the
+	// local filesystem. From there, we can walk up to the directory
+	// tree to where we know the build artifacts are.
+	_, file, _, _ := runtime.Caller(0)
+
+	return path.Join(
+		filepath.Dir(file),
+		"..",
+		"..",
+		"build",
+		fmt.Sprintf("artifacts-%s-%s", runtime.GOOS, runtime.GOARCH),
+	)
 }

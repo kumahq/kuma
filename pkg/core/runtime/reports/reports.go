@@ -2,6 +2,7 @@ package reports
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
@@ -10,14 +11,13 @@ import (
 	"sync"
 	"time"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -25,7 +25,7 @@ import (
 const (
 	pingInterval = 3600
 	pingHost     = "kong-hf.konghq.com"
-	pingPort     = 61831
+	pingPort     = 61832
 )
 
 var (
@@ -46,7 +46,7 @@ type reportsBuffer struct {
 func fetchDataplanes(rt core_runtime.Runtime) (*mesh.DataplaneResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(context.Background(), &dataplanes); err != nil {
-		return nil, errors.Wrap(err, "Could not fetch dataplanes")
+		return nil, errors.Wrap(err, "could not fetch dataplanes")
 	}
 
 	return &dataplanes, nil
@@ -55,7 +55,7 @@ func fetchDataplanes(rt core_runtime.Runtime) (*mesh.DataplaneResourceList, erro
 func fetchMeshes(rt core_runtime.Runtime) (*mesh.MeshResourceList, error) {
 	meshes := mesh.MeshResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(context.Background(), &meshes); err != nil {
-		return nil, errors.Wrap(err, "Could not fetch meshes")
+		return nil, errors.Wrap(err, "could not fetch meshes")
 	}
 
 	return &meshes, nil
@@ -64,10 +64,26 @@ func fetchMeshes(rt core_runtime.Runtime) (*mesh.MeshResourceList, error) {
 func fetchZones(rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
 	zones := system.ZoneResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(context.Background(), &zones); err != nil {
-		return nil, errors.Wrap(err, "Could not fetch zones")
+		return nil, errors.Wrap(err, "could not fetch zones")
+	}
+	return &zones, nil
+}
+
+func fetchNumOfServices(rt core_runtime.Runtime) (int, int, error) {
+	insights := mesh.ServiceInsightResourceList{}
+	if err := rt.ReadOnlyResourceManager().List(context.Background(), &insights); err != nil {
+		return 0, 0, errors.Wrap(err, "could not fetch service insights")
+	}
+	internalServices := 0
+	for _, insight := range insights.Items {
+		internalServices += len(insight.Spec.Services)
 	}
 
-	return &zones, nil
+	externalServicesList := mesh.ExternalServiceResourceList{}
+	if err := rt.ReadOnlyResourceManager().List(context.Background(), &externalServicesList); err != nil {
+		return 0, 0, errors.Wrap(err, "could not fetch external services")
+	}
+	return internalServices, len(externalServicesList.Items), nil
 }
 
 func (b *reportsBuffer) marshall() (string, error) {
@@ -121,6 +137,14 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 		}
 		b.mutable["zones_total"] = strconv.Itoa(len(zones.Items))
 	}
+
+	internalServices, externalServices, err := fetchNumOfServices(rt)
+	if err != nil {
+		return err
+	}
+	b.mutable["internal_services"] = strconv.Itoa(internalServices)
+	b.mutable["external_services"] = strconv.Itoa(externalServices)
+	b.mutable["services_total"] = strconv.Itoa(internalServices + externalServices)
 	return nil
 }
 
@@ -135,8 +159,9 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 		return err
 	}
 
-	conn, err := net.Dial("tcp", net.JoinHostPort(host,
-		strconv.FormatUint(uint64(port), 10)))
+	conf := &tls.Config{}
+	conn, err := tls.Dial("tcp", net.JoinHostPort(host,
+		strconv.FormatUint(uint64(port), 10)), conf)
 	if err != nil {
 		return err
 	}
@@ -176,12 +201,12 @@ func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer) {
 	go func() {
 		err := buffer.dispatch(rt, pingHost, pingPort, "start")
 		if err != nil {
-			log.V(2).Info("Failed sending usage info", err)
+			log.V(2).Info("failed sending usage info", "cause", err.Error())
 		}
 		for range time.Tick(time.Second * pingInterval) {
 			err := buffer.dispatch(rt, pingHost, pingPort, "ping")
 			if err != nil {
-				log.V(2).Info("Failed sending usage info", err)
+				log.V(2).Info("failed sending usage info", "cause", err.Error())
 			}
 		}
 	}()

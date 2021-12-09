@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"strings"
 
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -13,16 +14,17 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
 var log = core.Log.WithName("kds")
 
 type Context struct {
-	RemoteClientCtx       context.Context
-	GlobalServerCallbacks []mux.Callbacks
-	GlobalProvidedFilter  reconcile.ResourceFilter
-	RemoteProvidedFilter  reconcile.ResourceFilter
-	// Configs contains the names of system.ConfigResource that will be transferred from Global to Remote
+	ZoneClientCtx        context.Context
+	GlobalProvidedFilter reconcile.ResourceFilter
+	ZoneProvidedFilter   reconcile.ResourceFilter
+	GlobalServerFilters  []mux.Filter
+	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
 	Configs map[string]bool
 }
 
@@ -31,9 +33,9 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 		config_manager.ClusterIdConfigKey: true,
 	}
 	return &Context{
-		RemoteClientCtx:      context.Background(),
+		ZoneClientCtx:        context.Background(),
 		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
-		RemoteProvidedFilter: RemoteProvidedFilter(zone),
+		ZoneProvidedFilter:   ZoneProvidedFilter(zone),
 		Configs:              configs,
 	}
 }
@@ -42,13 +44,17 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 // excludes Dataplanes and Ingresses from 'clusterID' cluster
 func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
 	return func(clusterID string, r model.Resource) bool {
-		if r.GetType() == system.ConfigType && !configs[r.GetMeta().GetName()] {
+		resType := r.Descriptor().Name
+		if resType == system.ConfigType && !configs[r.GetMeta().GetName()] {
 			return false
 		}
-		if r.GetType() != mesh.DataplaneType {
+		if resType == system.GlobalSecretType {
+			return strings.HasPrefix(r.GetMeta().GetName(), zoneingress.ZoneIngressSigningKeyPrefix)
+		}
+		if resType != mesh.DataplaneType && resType != mesh.ZoneIngressType {
 			return true
 		}
-		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
+		if resType == mesh.DataplaneType {
 			return false
 		}
 		if clusterID == util.ZoneTag(r) {
@@ -66,12 +72,22 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 	}
 }
 
-// RemoteProvidedFilter filter Resources provided by Remote, specifically Ingresses that belongs to another zones
-func RemoteProvidedFilter(clusterName string) reconcile.ResourceFilter {
+// ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses that belongs to another zones
+func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
 	return func(_ string, r model.Resource) bool {
-		if r.GetType() == mesh.DataplaneType {
+		resType := r.Descriptor().Name
+		if resType == mesh.DataplaneType {
 			return clusterName == util.ZoneTag(r)
 		}
-		return r.GetType() == mesh.DataplaneInsightType
+		if resType == mesh.DataplaneInsightType {
+			return true
+		}
+		if resType == mesh.ZoneIngressType && !r.(*mesh.ZoneIngressResource).IsRemoteIngress(clusterName) {
+			return true
+		}
+		if resType == mesh.ZoneIngressInsightType {
+			return true
+		}
+		return false
 	}
 }

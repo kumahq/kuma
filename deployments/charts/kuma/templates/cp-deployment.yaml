@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
-    app: kuma-control-plane
+    app: {{ include "kuma.name" . }}-control-plane
 spec:
   replicas: {{ .Values.controlPlane.replicas }}
   strategy:
@@ -15,7 +15,7 @@ spec:
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}
-      app: kuma-control-plane
+      app: {{ include "kuma.name" . }}-control-plane
   template:
     metadata:
       annotations:
@@ -23,8 +23,25 @@ spec:
         checksum/tls-secrets: {{ include (print $.Template.BasePath "/cp-webhooks-and-secrets.yaml") . | sha256sum }}
       labels:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
-        app: kuma-control-plane
+        app: {{ include "kuma.name" . }}-control-plane
     spec:
+      {{- with .Values.controlPlane.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - {{ include "kuma.name" . }}-control-plane
+              topologyKey: kubernetes.io/hostname
+      {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
       {{- with .Values.controlPlane.nodeSelector }}
       nodeSelector:
@@ -54,6 +71,10 @@ spec:
                   name: {{ $element.Secret }}
                   key: {{ $element.Key }}
           {{- end }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           args:
             - run
             - --log-level={{ .Values.controlPlane.logLevel }}
@@ -109,7 +130,7 @@ spec:
               mountPath: /var/run/secrets/kuma.io/kds-server-tls-cert
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.kdsRemoteClient.secretName }}
+          {{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
@@ -139,10 +160,10 @@ spec:
           secret:
             secretName: {{ .Values.controlPlane.tls.kdsGlobalServer.secretName }}
         {{- end }}
-        {{- if .Values.controlPlane.tls.kdsRemoteClient.secretName }}
+        {{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
         - name: kds-client-tls-cert
           secret:
-            secretName: {{ .Values.controlPlane.tls.kdsRemoteClient.secretName }}
+            secretName: {{ .Values.controlPlane.tls.kdsZoneClient.secretName }}
         {{- end }}
         - name: {{ include "kuma.name" . }}-control-plane-config
           configMap:

@@ -21,7 +21,6 @@ spec:
     metadata:
       annotations:
         kuma.io/ingress: enabled
-        kuma.io/mesh: {{ .Values.ingress.mesh }}
         {{- if .Values.ingress.annotations }}
         {{- range $key, $value := .Values.ingress.annotations }}
         {{ $key }}: {{ $value | quote }}
@@ -31,7 +30,28 @@ spec:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
         app: kuma-ingress
     spec:
+      {{- with .Values.ingress.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - kuma-ingress
+              topologyKey: kubernetes.io/hostname
+      {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-ingress
+      {{- with .Values.ingress.nodeSelector }}
+      nodeSelector:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: ingress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
@@ -49,8 +69,6 @@ spec:
               value: "https://{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
               value: /var/run/secrets/kuma.io/tls-cert/ca.crt
-            - name: KUMA_DATAPLANE_MESH
-              value: {{ .Values.ingress.mesh }}
             - name: KUMA_DATAPLANE_NAME
               value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_ADMIN_PORT
@@ -59,6 +77,8 @@ spec:
               value: {{ .Values.ingress.drainTime }}
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            - name: KUMA_DATAPLANE_PROXY_TYPE
+              value: "ingress"
           args:
             - run
             - --log-level=info

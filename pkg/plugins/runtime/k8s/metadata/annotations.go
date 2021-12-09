@@ -19,7 +19,8 @@ const (
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
 
 	// KumaGatewayAnnotation allows to mark Gateway pod,
-	// inbound listeners won't be generated in that case
+	// inbound listeners won't be generated in that case.
+	// It can be used to mark a pod as providing a builtin gateway.
 	KumaGatewayAnnotation = "kuma.io/gateway"
 
 	// KumaIngressAnnotation allows to mark pod with Kuma Ingress
@@ -49,6 +50,12 @@ const (
 	// Example value: TEST1=1;TEST2=2
 	KumaSidecarEnvVarsAnnotation = "kuma.io/sidecar-env-vars"
 
+	// KumaSidecarConcurrencyAnnotation is an integer value that explicitly sets the Envoy proxy concurrency
+	// in the Kuma sidecar. Setting this annotation overrides the default injection behavior of deriving the
+	// concurrency from the sidecar container resource limits. A value of 0 tells Envoy to try to use all the
+	// visible CPUs.
+	KumaSidecarConcurrencyAnnotation = "kuma.io/sidecar-proxy-concurrency"
+
 	// KumaMetricsPrometheusPort allows to override `Mesh`-wide default port
 	KumaMetricsPrometheusPort = "prometheus.metrics.kuma.io/port"
 
@@ -66,6 +73,8 @@ const (
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
 	KumaSidecarInjectedAnnotation                  = "kuma.io/sidecar-injected"
+	KumaIgnoreAnnotation                           = "kuma.io/ignore"
+	KumaSidecarUID                                 = "kuma.io/sidecar-uid"
 	KumaTransparentProxyingAnnotation              = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingInboundPortAnnotation   = "kuma.io/transparent-proxying-inbound-port"
 	KumaTransparentProxyingInboundPortAnnotationV6 = "kuma.io/transparent-proxying-inbound-v6-port"
@@ -77,6 +86,12 @@ const (
 // Annotations related to the gateway
 const (
 	IngressServiceUpstream = "ingress.kubernetes.io/service-upstream"
+)
+
+const (
+	// Used with the KumaGatewayAnnotation to mark a pod as providing a builtin
+	// gateway.
+	AnnotationBuiltin = "builtin"
 )
 
 const (

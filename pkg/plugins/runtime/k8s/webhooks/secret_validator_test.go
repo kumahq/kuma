@@ -5,20 +5,18 @@ import (
 	"fmt"
 
 	"github.com/ghodss/yaml"
-
-	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	core_validators "github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
-
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+	admissionv1 "k8s.io/api/admission/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
+	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	core_validators "github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("ServiceValidator", func() {
@@ -69,7 +67,7 @@ var _ = Describe("ServiceValidator", func() {
 				Client:    k8sClient,
 				Validator: &testSecretValidator{},
 			}
-			admissionReview := admissionv1beta1.AdmissionReview{}
+			admissionReview := admissionv1.AdmissionReview{}
 			err := yaml.Unmarshal([]byte(given.request), &admissionReview)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -178,7 +176,7 @@ var _ = Describe("ServiceValidator", func() {
             uid: ""
 `,
 		}),
-		Entry("should not allow Secret with mesh that does not exist", testCase{
+		Entry("should allow Secret with mesh that does not exist", testCase{
 			request: `
             apiVersion: admission.k8s.io/v1
             kind: AdmissionReview
@@ -204,21 +202,11 @@ var _ = Describe("ServiceValidator", func() {
               operation: CREATE
 `,
 			expected: `
-            allowed: false
-            status:
-              code: 422
-              details:
-                causes:
-                - field: metadata.labels["kuma.io/mesh"]
-                  message: mesh does not exist
-                  reason: FieldValueInvalid
-                kind: Secret
-                name: sec-1
-              message: 'metadata.labels["kuma.io/mesh"]: mesh does not exist'
-              metadata: {}
-              reason: Invalid
-              status: Failure
-            uid: ""
+              allowed: true
+              status:
+                code: 200
+                metadata: {}
+              uid: ""
 `,
 		}),
 		Entry("should not allow switching mesh in Secret", testCase{

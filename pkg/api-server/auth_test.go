@@ -2,9 +2,10 @@ package api_server_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -12,6 +13,7 @@ import (
 
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/tls"
 	http2 "github.com/kumahq/kuma/pkg/util/http"
@@ -38,6 +40,7 @@ var _ = Describe("Auth test", func() {
 		cfg := config.DefaultApiServerConfig()
 		cfg.HTTPS.TlsCertFile = certPath
 		cfg.HTTPS.TlsKeyFile = keyPath
+		cfg.Authn.Type = certs.PluginName
 		cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 		apiServer := createTestApiServer(resourceStore, cfg, true, metrics)
 		httpsPort = cfg.HTTPS.Port
@@ -108,10 +111,10 @@ var _ = Describe("Auth test", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(403))
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
-		Expect(string(body)).To(Equal("Access Denied. To access this endpoint you need to do it either from the same machine or by configuring HTTPS on API Server and providing valid certificates"))
+		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""}`))
 	})
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
@@ -121,24 +124,24 @@ var _ = Describe("Auth test", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(403))
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
-		Expect(string(body)).To(Equal("Access Denied. To access this endpoint you need to do it either from the same machine or by configuring HTTPS on API Server and providing valid certificates"))
+		Expect(string(body)).To(MatchJSON(`{"title": "Access Denied", "details": "user \"mesh-system:anonymous/mesh-system:unauthenticated\" cannot access the resource of type \"Secret\""}`))
 	})
 })
 
 // we need to autogenerate cert dynamically for the external IP so the HTTPS client can validate san
 func createCertsForIP(ip string) (certPath string, keyPath string) {
-	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, "localhost", ip)
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, tls.DefaultKeyType, "localhost", ip)
 	Expect(err).ToNot(HaveOccurred())
-	dir, err := ioutil.TempDir("", "temp-certs")
+	dir, err := os.MkdirTemp("", "temp-certs")
 	Expect(err).ToNot(HaveOccurred())
 	certPath = dir + "/cert.pem"
 	keyPath = dir + "/cert.key"
-	err = ioutil.WriteFile(certPath, keyPair.CertPEM, 0600)
+	err = os.WriteFile(certPath, keyPair.CertPEM, 0600)
 	Expect(err).ToNot(HaveOccurred())
-	err = ioutil.WriteFile(keyPath, keyPair.KeyPEM, 0600)
+	err = os.WriteFile(keyPath, keyPair.KeyPEM, 0600)
 	Expect(err).ToNot(HaveOccurred())
 	return
 }

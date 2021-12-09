@@ -10,12 +10,10 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-
-	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/pkg/errors"
-
 	"github.com/gruntwork-io/terratest/modules/docker"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/pkg/errors"
 
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
@@ -29,7 +27,7 @@ const (
 	AppModeHttpsEchoServer = "https-echo-server"
 	sshPort                = "22"
 
-	IngressDataplane = `
+	IngressDataplaneOldType = `
 type: Dataplane
 mesh: %s
 name: dp-ingress
@@ -43,6 +41,16 @@ networking:
     tags:
       kuma.io/service: ingress
 `
+	ZoneIngress = `
+type: ZoneIngress
+name: ingress
+networking:
+  address: {{ address }}
+  advertisedAddress: %s
+  advertisedPort: %d
+  port: %d
+`
+
 	EchoServerDataplane = `
 type: Dataplane
 mesh: %s
@@ -53,9 +61,10 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/service: %s
       kuma.io/protocol: %s
       team: server-owners
+      version: %s
 `
 
 	EchoServerDataplaneWithServiceProbe = `
@@ -70,9 +79,10 @@ networking:
     serviceProbe:
       tcp: {}
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/service: %s
       kuma.io/protocol: %s
       team: server-owners
+      version: %s
 `
 
 	EchoServerDataplaneTransparentProxy = `
@@ -85,9 +95,10 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
-      kuma.io/protocol: http
+      kuma.io/service: %s
+      kuma.io/protocol: %s
       team: server-owners
+      version: %s
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
@@ -105,7 +116,7 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: demo-client
+      kuma.io/service: %s
       team: client-owners
   outbound:
   - port: 4000
@@ -131,7 +142,7 @@ networking:
     serviceProbe:
       tcp: {}
     tags:
-      kuma.io/service: demo-client
+      kuma.io/service: %s
       team: client-owners
   outbound:
   - port: 4000
@@ -154,7 +165,7 @@ networking:
   inbound:
   - port: %s
     tags:
-      kuma.io/service: demo-client
+      kuma.io/service: %s
       team: client-owners
   transparentProxying:
     redirectPortInbound: %s
@@ -218,8 +229,8 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 		// Here we make sure the IPv6 address is not allocated to the container unless explicitly requested.
 		opts.OtherOptions = append(opts.OtherOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
 	}
-	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
-	container, err := docker.RunAndGetIDE(t, KumaUniversalImage, &opts)
+	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker(isipv6)...)
+	container, err := docker.RunAndGetIDE(t, GetUniversalImage(), &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +246,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 			return "Success", nil
 		})
 
-	fmt.Printf("Node IP %s\n", app.ip)
+	Logf("Node IP %s", app.ip)
 
 	return app, nil
 }
@@ -251,11 +262,26 @@ func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
 	}
 }
 
-func (s *UniversalApp) publishPortsForDocker() (args []string) {
+func (s *UniversalApp) publishPortsForDocker(isipv6 bool) (args []string) {
+	// If we aren't using IPv6 in the container then we only want to listen on
+	// IPv4 interfaces to prevent resolving 'localhost' to the IPv6 address of
+	// the container and having the container not respond.
+	ip := "0.0.0.0:"
+	if isipv6 {
+		ip = ""
+	}
 	for port, pubPort := range s.ports {
-		args = append(args, "--publish="+pubPort+":"+port)
+		args = append(args, "--publish="+ip+pubPort+":"+port)
 	}
 	return
+}
+
+func (s *UniversalApp) GetPublicPort(port string) string {
+	return s.ports[port]
+}
+
+func (s *UniversalApp) GetIP() string {
+	return s.ip
 }
 
 func (s *UniversalApp) Stop() error {
@@ -351,14 +377,9 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	return nil
 }
 
-func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, builtindns bool) {
+func (s *UniversalApp) CreateDP(token, cpAddress, name, mesh, ip, dpyaml string, builtindns, ingress bool, concurrency int) {
 	// create the token file on the app container
-	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
-	if err != nil {
-		panic(err)
-	}
-
-	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + dpyaml + "\"", ">", "/kuma/dpyaml-" + appname}).Run()
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + name}).Run()
 	if err != nil {
 		panic(err)
 	}
@@ -368,16 +389,50 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, bu
 		"runuser", "-u", "kuma-dp", "--",
 		"/usr/bin/kuma-dp", "run",
 		"--cp-address=" + cpAddress,
-		"--dataplane-token-file=/kuma/token-" + appname,
-		"--dataplane-file=/kuma/dpyaml-" + appname,
-		"--dataplane-var", "name=" + appname,
-		"--dataplane-var", "address=" + ip,
+		"--dataplane-token-file=/kuma/token-" + name,
 		"--binary-path", "/usr/local/bin/envoy",
 	}
+
+	if dpyaml != "" {
+		err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + dpyaml + "\"", ">", "/kuma/dpyaml-" + name}).Run()
+		if err != nil {
+			panic(err)
+		}
+		args = append(args,
+			"--dataplane-file=/kuma/dpyaml-"+name,
+			"--dataplane-var", "name="+name,
+			"--dataplane-var", "address="+ip)
+	} else {
+		args = append(args,
+			"--name="+name,
+			"--mesh="+mesh)
+	}
+
+	if concurrency > 0 {
+		args = append(args, "--concurrency", strconv.Itoa(concurrency))
+	}
+
 	if builtindns {
 		args = append(args, "--dns-enabled")
 	}
+	if ingress {
+		args = append(args, "--proxy-type=ingress")
+	}
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, args)
+}
+
+// iptablesChainExists tests whether iptables believes the given chainName
+// has been created in the table given by tableName. If we can't run
+// the iptables command, the chain is assumed to exist (for backwards
+// compatibility) though subsequent commands that depend on it may
+// still fail.
+func (s *UniversalApp) iptablesChainExists(tableName string, chainName string) bool {
+	app := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"iptables", "-t", tableName, "-L", chainName,
+	})
+
+	err := app.Run()
+	return err == nil
 }
 
 func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool) {
@@ -391,7 +446,13 @@ func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool) {
 		args = append(args,
 			"--skip-resolv-conf",
 			"--redirect-dns",
-			"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT")
+		)
+
+		if s.iptablesChainExists("nat", "DOCKER_OUTPUT") {
+			args = append(args,
+				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
+			)
+		}
 	}
 
 	app := NewSshApp(s.verbose, s.ports[sshPort], []string{}, args)
@@ -429,6 +490,7 @@ func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 
 type SshApp struct {
 	cmd    *exec.Cmd
+	stdin  bytes.Buffer
 	stdout bytes.Buffer
 	stderr bytes.Buffer
 	port   string
@@ -440,6 +502,7 @@ func NewSshApp(verbose bool, port string, env []string, args []string) *SshApp {
 	}
 	app.cmd = app.SshCmd(env, args)
 
+	inWriters := []io.Reader{&app.stdin}
 	outWriters := []io.Writer{&app.stdout}
 	errWriters := []io.Writer{&app.stderr}
 	if verbose {
@@ -448,16 +511,17 @@ func NewSshApp(verbose bool, port string, env []string, args []string) *SshApp {
 	}
 	app.cmd.Stdout = io.MultiWriter(outWriters...)
 	app.cmd.Stderr = io.MultiWriter(errWriters...)
+	app.cmd.Stdin = io.MultiReader(inWriters...)
 	return app
 }
 
 func (s *SshApp) Run() error {
-	fmt.Printf("Running %v\n", s.cmd)
+	Logf("Running %v", s.cmd)
 	return s.cmd.Run()
 }
 
 func (s *SshApp) Start() error {
-	fmt.Printf("Starting %v\n", s.cmd)
+	Logf("Starting %v", s.cmd)
 	return s.cmd.Start()
 }
 

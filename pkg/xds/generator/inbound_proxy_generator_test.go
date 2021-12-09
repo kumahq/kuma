@@ -1,20 +1,20 @@
 package generator_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
+	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -26,6 +26,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 	type testCase struct {
 		dataplaneFile string
 		expected      string
+		mode          mesh_proto.CertificateAuthorityBackend_Mode
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -33,14 +34,11 @@ var _ = Describe("InboundProxyGenerator", func() {
 			// setup
 			gen := &generator.InboundProxyGenerator{}
 			ctx := xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-system:5677",
-				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("12345"),
+					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
@@ -51,6 +49,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 									{
 										Name: "builtin",
 										Type: "builtin",
+										Mode: given.mode,
 									},
 								},
 							},
@@ -60,12 +59,12 @@ var _ = Describe("InboundProxyGenerator", func() {
 			}
 
 			dataplane := mesh_proto.Dataplane{}
-			dpBytes, err := ioutil.ReadFile(filepath.Join("testdata", "inbound-proxy", given.dataplaneFile))
+			dpBytes, err := os.ReadFile(filepath.Join("testdata", "inbound-proxy", given.dataplaneFile))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 			proxy := &model.Proxy{
-				Id: model.ProxyId{Name: "side-car"},
-				Dataplane: &mesh_core.DataplaneResource{
+				Id: *model.BuildProxyId("", "side-car"),
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",
 					},
@@ -76,11 +75,12 @@ var _ = Describe("InboundProxyGenerator", func() {
 
 					TrafficPermissions: model.TrafficPermissionMap{
 						mesh_proto.InboundInterface{
-							DataplaneIP:   "192.168.0.1",
-							DataplanePort: 80,
-							WorkloadIP:    "127.0.0.1",
-							WorkloadPort:  8080,
-						}: &mesh_core.TrafficPermissionResource{
+							DataplaneAdvertisedIP: "192.168.0.1",
+							DataplaneIP:           "192.168.0.1",
+							DataplanePort:         80,
+							WorkloadIP:            "127.0.0.1",
+							WorkloadPort:          8080,
+						}: &core_mesh.TrafficPermissionResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "tp-1",
 								Mesh: "default",
@@ -107,11 +107,12 @@ var _ = Describe("InboundProxyGenerator", func() {
 					},
 					FaultInjections: model.FaultInjectionMap{
 						mesh_proto.InboundInterface{
-							DataplaneIP:   "192.168.0.1",
-							DataplanePort: 80,
-							WorkloadIP:    "127.0.0.1",
-							WorkloadPort:  8080,
-						}: &mesh_proto.FaultInjection{
+							DataplaneAdvertisedIP: "192.168.0.1",
+							DataplaneIP:           "192.168.0.1",
+							DataplanePort:         80,
+							WorkloadIP:            "127.0.0.1",
+							WorkloadPort:          8080,
+						}: []*mesh_proto.FaultInjection{{
 							Sources: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
@@ -128,8 +129,74 @@ var _ = Describe("InboundProxyGenerator", func() {
 							},
 							Conf: &mesh_proto.FaultInjection_Conf{
 								Delay: &mesh_proto.FaultInjection_Conf_Delay{
-									Percentage: &wrappers.DoubleValue{Value: 50},
-									Value:      &duration.Duration{Seconds: 5},
+									Percentage: util_proto.Double(50),
+									Value:      util_proto.Duration(time.Second * 5),
+								},
+							},
+						}},
+					},
+					RateLimits: model.RateLimitsMap{
+						Inbound: model.InboundRateLimitsMap{
+							mesh_proto.InboundInterface{
+								DataplaneAdvertisedIP: "192.168.0.1",
+								DataplaneIP:           "192.168.0.1",
+								DataplanePort:         80,
+								WorkloadIP:            "127.0.0.1",
+								WorkloadPort:          8080,
+							}: []*mesh_proto.RateLimit{
+								{
+									Sources: []*mesh_proto.Selector{
+										{
+											Match: map[string]string{
+												"kuma.io/service": "frontend",
+											},
+										},
+									},
+									Destinations: []*mesh_proto.Selector{
+										{
+											Match: map[string]string{
+												"kuma.io/service": "backend1",
+											},
+										},
+									},
+									Conf: &mesh_proto.RateLimit_Conf{
+										Http: &mesh_proto.RateLimit_Conf_Http{
+											Requests: 200,
+											Interval: util_proto.Duration(time.Second * 10),
+										},
+									},
+								},
+								{
+									Sources: []*mesh_proto.Selector{
+										{
+											Match: map[string]string{
+												"kuma.io/service": "*",
+											},
+										},
+									},
+									Destinations: []*mesh_proto.Selector{
+										{
+											Match: map[string]string{
+												"kuma.io/service": "backend1",
+											},
+										},
+									},
+									Conf: &mesh_proto.RateLimit_Conf{
+										Http: &mesh_proto.RateLimit_Conf_Http{
+											Requests: 100,
+											Interval: util_proto.Duration(time.Second * 2),
+											OnRateLimit: &mesh_proto.RateLimit_Conf_Http_OnRateLimit{
+												Status: util_proto.UInt32(404),
+												Headers: []*mesh_proto.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
+													{
+														Key:    "x-rate-limited",
+														Value:  "true",
+														Append: util_proto.Bool(false),
+													},
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -171,6 +238,16 @@ var _ = Describe("InboundProxyGenerator", func() {
 		Entry("04. transparent_proxying=true, ip_addresses=2, ports=2", testCase{
 			dataplaneFile: "4-dataplane.input.yaml",
 			expected:      "4-envoy-config.golden.yaml",
+		}),
+		Entry("05. transparent_proxying=false, ip_addresses=2, ports=2, mode=permissive", testCase{
+			dataplaneFile: "5-dataplane.input.yaml",
+			expected:      "5-envoy-config.golden.yaml",
+			mode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE,
+		}),
+		Entry("06. transparent_proxying=true, ip_addresses=2, ports=2, mode=permissive", testCase{
+			dataplaneFile: "6-dataplane.input.yaml",
+			expected:      "6-envoy-config.golden.yaml",
+			mode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE,
 		}),
 	)
 })

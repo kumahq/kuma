@@ -2,10 +2,15 @@ package util
 
 import (
 	"fmt"
+	"sort"
 
 	kube_core "k8s.io/api/core/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 type ServicePredicate func(*kube_core.Service) bool
@@ -30,18 +35,41 @@ func AnySelector() ServicePredicate {
 	}
 }
 
+func Not(predicate ServicePredicate) ServicePredicate {
+	return func(svc *kube_core.Service) bool {
+		return !predicate(svc)
+	}
+}
+
+func Ignored() ServicePredicate {
+	return func(svc *kube_core.Service) bool {
+		if svc.Annotations == nil {
+			return false
+		}
+		ignore, _, _ := metadata.Annotations(svc.Annotations).GetBool(metadata.KumaIgnoreAnnotation)
+		return ignore
+	}
+}
+
 func FindServices(svcs *kube_core.ServiceList, predicates ...ServicePredicate) []*kube_core.Service {
 	matching := make([]*kube_core.Service, 0)
 	for i := range svcs.Items {
 		svc := &svcs.Items[i]
 		allMatched := true
 		for _, predicate := range predicates {
-			allMatched = allMatched && predicate(svc)
+			if !predicate(svc) {
+				allMatched = false
+				break
+			}
 		}
 		if allMatched {
 			matching = append(matching, svc)
 		}
 	}
+	// Sort by name so that inbound order is similar across zones regardless of the order services got created.
+	sort.Slice(matching, func(i, j int) bool {
+		return matching[i].Name < matching[j].Name
+	})
 	return matching
 }
 
@@ -105,4 +133,23 @@ func CopyStringMap(in map[string]string) map[string]string {
 		out[key] = value
 	}
 	return out
+}
+
+func MeshFor(obj kube_meta.Object) string {
+	mesh, exist := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation)
+	if !exist || mesh == "" {
+		return model.DefaultMesh
+	}
+
+	return mesh
+}
+
+// ServiceTagFor returns the canonical service name for a Kubernetes service,
+// optionally with a specific port.
+func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
+	port := ""
+	if svcPort != nil {
+		port = fmt.Sprintf("_%d", svcPort.Port)
+	}
+	return fmt.Sprintf("%s_%s_svc%s", svc.Name, svc.Namespace, port)
 }

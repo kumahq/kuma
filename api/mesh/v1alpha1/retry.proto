@@ -4,7 +4,9 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "mesh/v1alpha1/selector.proto";
+import "mesh/v1alpha1/http_method.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -18,18 +20,27 @@ option (doc.config) = {
 };
 
 message Retry {
+
+  option (kuma.mesh.resource).name = "RetryResource";
+  option (kuma.mesh.resource).type = "Retry";
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "retry";
+  option (kuma.mesh.resource).ws.plural = "retries";
+
   // List of selectors to match dataplanes that retry policy should be
   // configured for
-  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector sources = 1
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
 
   // List of selectors to match services that need to be health checked.
   repeated Selector destinations = 2
-      [ (validate.rules).repeated .min_items = 1 ];
+      [ (validate.rules).repeated .min_items = 1, (doc.required) = true ];
 
   message Conf {
     message BackOff {
       //  +required
-      google.protobuf.Duration base_interval = 1;
+      google.protobuf.Duration base_interval = 1 [ (doc.required) = true ];
       //  +optional
       google.protobuf.Duration max_interval = 2;
     }
@@ -46,6 +57,9 @@ message Retry {
 
       //  +optional
       repeated uint32 retriable_status_codes = 5;
+
+      //  +optional
+      repeated HttpMethod retriable_methods = 6;
     }
 
     message Tcp {
@@ -81,5 +95,5 @@ message Retry {
   }
 
   //  +required
-  Conf conf = 3;
+  Conf conf = 3 [ (doc.required) = true ];
 }

@@ -4,28 +4,28 @@ import (
 	"context"
 	"sync"
 
+	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
-	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
-
-	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-	"github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/events"
-	"github.com/kumahq/kuma/pkg/metrics"
-
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-
-	"github.com/kumahq/kuma/pkg/core/ca"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core/ca"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/events"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
+	"github.com/kumahq/kuma/pkg/metrics"
+	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 // Runtime represents initialized application state.
@@ -60,9 +60,19 @@ type RuntimeContext interface {
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
 	XDSHooks() *xds_hooks.Hooks
+	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
-	ShutdownCh() <-chan struct{}
+	MeshValidator() core_managers.MeshValidator
+	APIServerAuthenticator() authn.Authenticator
+	Access() Access
+	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
+	AppContext() context.Context
+}
+
+type Access struct {
+	ResourceAccess       resources_access.ResourceAccess
+	DataplaneTokenAccess tokens_access.DataplaneTokenAccess
 }
 
 var _ Runtime = &runtime{}
@@ -101,27 +111,31 @@ func (i *runtimeInfo) GetClusterId() string {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg        kuma_cp.Config
-	rm         core_manager.ResourceManager
-	rs         core_store.ResourceStore
-	ss         store.SecretStore
-	cs         core_store.ResourceStore
-	rom        core_manager.ReadOnlyResourceManager
-	cam        ca.Managers
-	dsl        datasource.Loader
-	ext        context.Context
-	dns        resolver.DNSResolver
-	configm    config_manager.ConfigManager
-	leadInfo   component.LeaderInfo
-	lif        lookup.LookupIPFunc
-	eac        admin.EnvoyAdminClient
-	metrics    metrics.Metrics
-	erf        events.ListenerFactory
-	apim       api_server.APIInstaller
-	xdsh       *xds_hooks.Hooks
-	dps        *dp_server.DpServer
-	kdsctx     *kds_context.Context
-	shutdownCh <-chan struct{}
+	cfg      kuma_cp.Config
+	rm       core_manager.ResourceManager
+	rs       core_store.ResourceStore
+	ss       store.SecretStore
+	cs       core_store.ResourceStore
+	rom      core_manager.ReadOnlyResourceManager
+	cam      ca.Managers
+	dsl      datasource.Loader
+	ext      context.Context
+	dns      resolver.DNSResolver
+	configm  config_manager.ConfigManager
+	leadInfo component.LeaderInfo
+	lif      lookup.LookupIPFunc
+	eac      admin.EnvoyAdminClient
+	metrics  metrics.Metrics
+	erf      events.ListenerFactory
+	apim     api_server.APIInstaller
+	xdsh     *xds_hooks.Hooks
+	cap      secrets.CaProvider
+	dps      *dp_server.DpServer
+	kdsctx   *kds_context.Context
+	mv       core_managers.MeshValidator
+	au       authn.Authenticator
+	acc      Access
+	appCtx   context.Context
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -195,6 +209,10 @@ func (rc *runtimeContext) DpServer() *dp_server.DpServer {
 	return rc.dps
 }
 
+func (rc *runtimeContext) CAProvider() secrets.CaProvider {
+	return rc.cap
+}
+
 func (rc *runtimeContext) XDSHooks() *xds_hooks.Hooks {
 	return rc.xdsh
 }
@@ -203,6 +221,18 @@ func (rc *runtimeContext) KDSContext() *kds_context.Context {
 	return rc.kdsctx
 }
 
-func (rc *runtimeContext) ShutdownCh() <-chan struct{} {
-	return rc.shutdownCh
+func (rc *runtimeContext) MeshValidator() core_managers.MeshValidator {
+	return rc.mv
+}
+
+func (rc *runtimeContext) APIServerAuthenticator() authn.Authenticator {
+	return rc.au
+}
+
+func (rc *runtimeContext) Access() Access {
+	return rc.acc
+}
+
+func (rc *runtimeContext) AppContext() context.Context {
+	return rc.appCtx
 }

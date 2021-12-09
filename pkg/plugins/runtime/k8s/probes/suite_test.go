@@ -3,15 +3,9 @@ package probes
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestProbes(t *testing.T) {
-	RegisterFailHandler(Fail)
-
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Probe Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	test.RunSpecs(t, "Probe Suite")
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/ca"
 	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
 	"github.com/kumahq/kuma/pkg/core/datasource"
-	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -79,7 +79,7 @@ func (p *providedCaManager) getCa(ctx context.Context, mesh string, backend *mes
 	return pair, nil
 }
 
-func (p *providedCaManager) Ensure(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
+func (p *providedCaManager) EnsureBackends(ctx context.Context, mesh string, backend []*mesh_proto.CertificateAuthorityBackend) error {
 	return nil // Cert and Key are created by user and pointed in the configuration which is validated first
 }
 
@@ -114,7 +114,7 @@ func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh stri
 
 	var opts []ca_issuer.CertOptsFn
 	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
-		duration, err := mesh_helper.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		duration, err := core_mesh.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
 		if err != nil {
 			return ca.KeyPair{}, err
 		}

@@ -5,11 +5,10 @@ import (
 	"net"
 	"time"
 
-	"google.golang.org/grpc/keepalive"
-
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -25,8 +24,12 @@ const (
 )
 
 var (
-	muxServerLog = core.Log.WithName("mux-server")
+	muxServerLog = core.Log.WithName("kds-mux-server")
 )
+
+type Filter interface {
+	InterceptSession(session Session) error
+}
 
 type Callbacks interface {
 	OnSessionStarted(session Session) error
@@ -39,7 +42,8 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 
 type server struct {
 	config    multizone.KdsServerConfig
-	callbacks []Callbacks
+	callbacks Callbacks
+	filters   []Filter
 	metrics   core_metrics.Metrics
 }
 
@@ -47,9 +51,10 @@ var (
 	_ component.Component = &server{}
 )
 
-func NewServer(callbacks []Callbacks, config multizone.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
+func NewServer(callbacks Callbacks, filters []Filter, config multizone.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
 	return &server{
 		callbacks: callbacks,
+		filters:   filters,
 		config:    config,
 		metrics:   metrics,
 	}
@@ -66,6 +71,8 @@ func (s *server) Start(stop <-chan struct{}) error {
 			MinTime:             grpcKeepAliveTime,
 			PermitWithoutStream: true,
 		}),
+		grpc.MaxRecvMsgSize(int(s.config.MaxMsgSize)),
+		grpc.MaxSendMsgSize(int(s.config.MaxMsgSize)),
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	useTLS := s.config.TlsCertFile != ""
@@ -119,18 +126,20 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 	}
 	clientID := md["client-id"][0]
 	log := muxServerLog.WithValues("client-id", clientID)
-	log.Info("initializing Kuma Discovery Service (KDS) stream for global-remote sync of resources")
-	stop := make(chan struct{})
-	session := NewSession(clientID, stream, stop)
-	defer close(stop)
-	for _, callbacks := range s.callbacks {
-		if err := callbacks.OnSessionStarted(session); err != nil {
-			log.Info("closing KDS stream", "reason", err.Error())
+	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
+	session := NewSession(clientID, stream)
+	for _, filter := range s.filters {
+		if err := filter.InterceptSession(session); err != nil {
+			log.Error(err, "closing KDS stream following a callback error")
 			return err
 		}
 	}
-	<-stream.Context().Done()
-	log.Info("KDS stream is closed")
+	if err := s.callbacks.OnSessionStarted(session); err != nil {
+		log.Error(err, "closing KDS stream following a callback error")
+		return err
+	}
+	err := <-session.Error()
+	log.Info("KDS stream is closed", "reason", err.Error())
 	return nil
 }
 

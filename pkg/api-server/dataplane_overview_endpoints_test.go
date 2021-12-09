@@ -3,7 +3,7 @@ package api_server_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -14,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -50,19 +50,19 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey("mesh1", model.NoMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh1", model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	createDpWithInsights := func(name string, dp *v1alpha1.Dataplane) {
-		dpResource := mesh_core.DataplaneResource{
+		dpResource := core_mesh.DataplaneResource{
 			Spec: dp,
 		}
 		err := resourceStore.Create(context.Background(), &dpResource, store.CreateByKey(name, "mesh1"), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
-		insightResource := mesh_core.DataplaneInsightResource{
+		insightResource := core_mesh.DataplaneInsightResource{
 			Spec: &v1alpha1.DataplaneInsight{
 				Subscriptions: []*v1alpha1.DiscoverySubscription{
 					{
@@ -101,18 +101,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 							"service": "backend",
 							"version": "v1",
 						},
-					},
-				},
-			},
-		})
-
-		createDpWithInsights("dp-3", &v1alpha1.Dataplane{
-			Networking: &v1alpha1.Dataplane_Networking{
-				Address: "127.0.0.1",
-				Ingress: &v1alpha1.Dataplane_Networking_Ingress{},
-				Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
-					{
-						Port: 1234,
 					},
 				},
 			},
@@ -193,42 +181,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	}
 }`
 
-	dp3Json := `
-{
-	"type": "DataplaneOverview",
-	"name": "dp-3",
-	"mesh": "mesh1",
-	"creationTime": "2018-07-17T16:05:36.995Z",
-	"modificationTime": "2018-07-17T16:05:36.995Z",
-	"dataplane": {
-		"networking": {
-			"address": "127.0.0.1",
-			"ingress": {},
-			"inbound": [
-				{
-					"port": 1234
-				}
-			]
-		}
-	},
-	"dataplaneInsight": {
-		"subscriptions": [
-			{
-				"id": "stream-id-1",
-				"controlPlaneInstanceId": "cp-1",
-				"connectTime": "2019-07-01T00:00:00Z",
-				"status": {
-					"total": {},
-					"cds": {},
-					"eds": {},
-					"lds": {},
-					"rds": {}
-				}
-			}
-		]
-	}
-}`
-
 	Describe("On GET", func() {
 		It("should return an existing resource", func() {
 			// when
@@ -237,7 +189,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(200))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(dp1Json))
 		})
@@ -255,14 +207,14 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 				// then
 				Expect(response.StatusCode).To(Equal(200))
-				body, err := ioutil.ReadAll(response.Body)
+				body, err := io.ReadAll(response.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(string(body)).To(MatchJSON(tc.expectedJson))
 			},
 			Entry("should list all when no tag is provided", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights",
-				expectedJson: fmt.Sprintf(`{"total": 3, "items": [%s,%s,%s], "next": null}`, dp1Json, dp2Json, dp3Json),
+				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s,%s], "next": null}`, dp1Json, dp2Json),
 			}),
 			Entry("should list with only one matching tag", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend",
@@ -279,10 +231,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			Entry("should list only gateway dataplanes", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?gateway=true",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
-			}),
-			Entry("should list only ingress dataplanes", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?ingress=true",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp3Json),
 			}),
 		)
 	})

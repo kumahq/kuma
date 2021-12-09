@@ -1,11 +1,12 @@
+//go:build !windows
 // +build !windows
 
 package cmd
 
 import (
-	"bytes"
+	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -13,44 +14,32 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("run", func() {
 
-	var backupSetupSignalHandler func() <-chan struct{}
-
-	BeforeEach(func() {
-		backupSetupSignalHandler = core.SetupSignalHandler
-	})
-	AfterEach(func() {
-		core.SetupSignalHandler = backupSetupSignalHandler
-	})
-
-	var stopCh chan struct{}
-
-	BeforeEach(func() {
-		stopCh = make(chan struct{})
-
-		core.SetupSignalHandler = func() <-chan struct{} {
-			return stopCh
-		}
-	})
+	var cancel func()
+	var ctx context.Context
+	opts := kuma_cmd.RunCmdOpts{
+		SetupSignalHandler: func() context.Context {
+			return ctx
+		},
+	}
 
 	var tmpDir string
 
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
 		var err error
-		tmpDir, err = ioutil.TempDir("", "")
+		tmpDir, err = os.MkdirTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
@@ -105,15 +94,16 @@ var _ = Describe("run", func() {
 
 			// given
 			rootCtx := DefaultRootContext()
-			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, types.BootstrapVersion, error) {
-				respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
+			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, error) {
+				respBytes, err := os.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
-				return respBytes, "", nil
+				return respBytes, nil
 			}
-			cmd := NewRootCmd(rootCtx)
+			_, writer := io.Pipe()
+			cmd := NewRootCmd(opts, rootCtx)
 			cmd.SetArgs(append([]string{"run"}, given.args...))
-			cmd.SetOut(&bytes.Buffer{})
-			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetOut(writer)
+			cmd.SetErr(writer)
 
 			// when
 			By("starting the dataplane manager")
@@ -127,7 +117,7 @@ var _ = Describe("run", func() {
 			var pid int64
 			By("waiting for dataplane (Envoy) to get started")
 			Eventually(func() bool {
-				data, err := ioutil.ReadFile(pidFile)
+				data, err := os.ReadFile(pidFile)
 				if err != nil {
 					return false
 				}
@@ -139,13 +129,13 @@ var _ = Describe("run", func() {
 
 			By("verifying the arguments Envoy was launched with")
 			// when
-			cmdline, err := ioutil.ReadFile(cmdlineFile)
+			cmdline, err := os.ReadFile(cmdlineFile)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			actualArgs := strings.Split(string(cmdline), "\n")
 			Expect(actualArgs[0]).To(Equal("--version"))
-			Expect(actualArgs[1]).To(Equal("-c"))
+			Expect(actualArgs[1]).To(Equal("--config-path"))
 			actualConfigFile := actualArgs[2]
 			Expect(actualConfigFile).To(BeARegularFile())
 
@@ -155,8 +145,8 @@ var _ = Describe("run", func() {
 			}
 
 			// when
-			By("signalling the dataplane manager to stop")
-			close(stopCh)
+			By("signaling the dataplane manager to stop")
+			cancel()
 
 			// then
 			err = <-errCh
@@ -189,6 +179,7 @@ var _ = Describe("run", func() {
 					"KUMA_DATAPLANE_ADMIN_PORT":          fmt.Sprintf("%d", port),
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: KUMA_DATAPLANE_RUNTIME_CONFIG_DIR is not set in order to let `kuma-dp` to create a temporary directory
+					"KUMA_DNS_CORE_DNS_BINARY_PATH": filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				args:         []string{},
 				expectedFile: "",
@@ -203,6 +194,7 @@ var _ = Describe("run", func() {
 					"KUMA_DATAPLANE_ADMIN_PORT":          fmt.Sprintf("%d", port),
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":  tmpDir,
+					"KUMA_DNS_CORE_DNS_BINARY_PATH":      filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				args:         []string{},
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
@@ -218,6 +210,7 @@ var _ = Describe("run", func() {
 					"--admin-port", fmt.Sprintf("%d", port),
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
+					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: "",
 			}
@@ -232,6 +225,7 @@ var _ = Describe("run", func() {
 					"--admin-port", fmt.Sprintf("%d", port),
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--config-dir", tmpDir,
+					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
 			}
@@ -247,6 +241,7 @@ var _ = Describe("run", func() {
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--dataplane-token-file", filepath.Join("testdata", "token"),
 					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
+					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: "",
 			}
@@ -260,6 +255,7 @@ var _ = Describe("run", func() {
 					"KUMA_DATAPLANE_ADMIN_PORT":          "",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: KUMA_DATAPLANE_RUNTIME_CONFIG_DIR is not set in order to let `kuma-dp` to create a temporary directory
+					"KUMA_DNS_CORE_DNS_BINARY_PATH": filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				args:         []string{},
 				expectedFile: "",
@@ -275,6 +271,7 @@ var _ = Describe("run", func() {
 					"--admin-port", "",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
+					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: "",
 			}
@@ -290,6 +287,7 @@ var _ = Describe("run", func() {
 					"--dataplane-file", filepath.Join("testdata", "dataplane_template.yaml"),
 					"--dataplane-var", "name=example",
 					"--dataplane-var", "address=127.0.0.1",
+					"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 				},
 				expectedFile: "",
 			}
@@ -309,7 +307,7 @@ var _ = Describe("run", func() {
 		defer l.Close()
 
 		// given
-		cmd := NewRootCmd(DefaultRootContext())
+		cmd := NewRootCmd(opts, DefaultRootContext())
 		cmd.SetArgs([]string{
 			"run",
 			"--cp-address", "http://localhost:1234",
@@ -317,6 +315,7 @@ var _ = Describe("run", func() {
 			"--mesh", "default",
 			"--admin-port", fmt.Sprintf("%d", port),
 			"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+			"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 		})
 
 		// when
@@ -329,7 +328,7 @@ var _ = Describe("run", func() {
 
 	It("should fail when name and mesh is provided with dataplane definition", func() {
 		// given
-		cmd := NewRootCmd(DefaultRootContext())
+		cmd := NewRootCmd(opts, DefaultRootContext())
 		cmd.SetArgs([]string{
 			"run",
 			"--cp-address", "http://localhost:1234",
@@ -339,6 +338,7 @@ var _ = Describe("run", func() {
 			"--dataplane-var", "address=127.0.0.1",
 			"--name=xyz",
 			"--mesh=xyz",
+			"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
 		})
 
 		// when
@@ -346,6 +346,27 @@ var _ = Describe("run", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("--name and --mesh cannot be specified when dataplane definition is provided. Mesh and name will be read from the dataplane definition."))
+		Expect(err.Error()).To(ContainSubstring("--name and --mesh cannot be specified"))
 	})
+
+	It("should fail when the proxy type is unknown", func() {
+		// given
+		cmd := NewRootCmd(opts, DefaultRootContext())
+		cmd.SetArgs([]string{
+			"run",
+			"--cp-address", "http://localhost:1234",
+			"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+			"--dataplane-file", filepath.Join("testdata", "dataplane_template.yaml"),
+			"--dns-coredns-path", filepath.Join("testdata", "coredns-mock.sleep.sh"),
+			"--proxy-type", "phoney",
+		})
+
+		// when
+		err := cmd.Execute()
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("invalid proxy type"))
+	})
+
 })

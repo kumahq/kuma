@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -17,20 +18,20 @@ func UnmarshallToCore(bytes []byte) (model.Resource, error) {
 }
 
 func Unmarshall(bytes []byte) (*Resource, error) {
-	resMeta := ResourceMeta{}
-	if err := yaml.Unmarshal(bytes, &resMeta); err != nil {
-		return nil, err
+	meta := ResourceMeta{}
+	if err := yaml.Unmarshal(bytes, &meta); err != nil {
+		return nil, errors.Wrap(err, "invalid meta type")
 	}
-	resource, err := registry.Global().NewObject(model.ResourceType(resMeta.Type))
+	resource, err := registry.Global().NewObject(model.ResourceType(meta.Type))
 	if err != nil {
 		return nil, err
 	}
 	res := &Resource{
-		Meta: resMeta,
+		Meta: meta,
 		Spec: resource.GetSpec(),
 	}
 	if err := proto.FromYAML(bytes, res.Spec); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "invalid %s object %q", meta.Type, meta.Name)
 	}
 	return res, nil
 }

@@ -5,18 +5,17 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 const (
@@ -25,17 +24,17 @@ const (
 
 type SecretValidator struct {
 	Decoder   *admission.Decoder
-	Client    kube_client.Client
+	Client    kube_client.Reader
 	Validator secret_manager.SecretValidator
 }
 
 func (v *SecretValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	switch req.Operation {
-	case admissionv1beta1.Delete:
+	case admissionv1.Delete:
 		return v.handleDelete(ctx, req)
-	case admissionv1beta1.Create:
+	case admissionv1.Create:
 		fallthrough
-	case admissionv1beta1.Update:
+	case admissionv1.Update:
 		return v.handleUpdate(ctx, req)
 	}
 	return admission.Allowed("")
@@ -108,9 +107,7 @@ func (v *SecretValidator) validateMeshSecret(ctx context.Context, verr *validato
 		Name: meshOfSecret(secret),
 	}
 	if err := v.Client.Get(ctx, key, &mesh); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(meshLabel), "mesh does not exist")
-		} else {
+		if !kube_apierrs.IsNotFound(err) {
 			return errors.Wrap(err, "could not fetch mesh")
 		}
 	}

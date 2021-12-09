@@ -5,7 +5,7 @@ import (
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	_struct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/util/xds"
 )
@@ -13,6 +13,7 @@ import (
 // stream callbacks
 
 type adapterCallbacks struct {
+	NoopCallbacks
 	callbacks xds.Callbacks
 }
 
@@ -24,14 +25,6 @@ func AdaptCallbacks(callbacks xds.Callbacks) envoy_xds.Callbacks {
 }
 
 var _ envoy_xds.Callbacks = &adapterCallbacks{}
-
-func (a *adapterCallbacks) OnFetchRequest(ctx context.Context, request *envoy_sd.DiscoveryRequest) error {
-	panic("implement me")
-}
-
-func (a *adapterCallbacks) OnFetchResponse(request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
-	panic("implement me")
-}
 
 func (a *adapterCallbacks) OnStreamOpen(ctx context.Context, streamID int64, typeURL string) error {
 	return a.callbacks.OnStreamOpen(ctx, streamID, typeURL)
@@ -45,13 +38,14 @@ func (a *adapterCallbacks) OnStreamRequest(streamID int64, request *envoy_sd.Dis
 	return a.callbacks.OnStreamRequest(streamID, &discoveryRequest{request})
 }
 
-func (a *adapterCallbacks) OnStreamResponse(streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
+func (a *adapterCallbacks) OnStreamResponse(ctx context.Context, streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
 	a.callbacks.OnStreamResponse(streamID, &discoveryRequest{request}, &discoveryResponse{response})
 }
 
 // rest callbacks
 
 type adapterRestCallbacks struct {
+	NoopCallbacks
 	callbacks xds.RestCallbacks
 }
 
@@ -70,23 +64,10 @@ func (a *adapterRestCallbacks) OnFetchResponse(request *envoy_sd.DiscoveryReques
 	a.callbacks.OnFetchResponse(&discoveryRequest{request}, &discoveryResponse{response})
 }
 
-func (a *adapterRestCallbacks) OnStreamOpen(ctx context.Context, streamID int64, typeURL string) error {
-	return nil
-}
-
-func (a *adapterRestCallbacks) OnStreamClosed(streamID int64) {
-}
-
-func (a *adapterRestCallbacks) OnStreamRequest(streamID int64, request *envoy_sd.DiscoveryRequest) error {
-	return nil
-}
-
-func (a *adapterRestCallbacks) OnStreamResponse(streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
-}
-
 // Both rest and stream
 
 type adapterMultiCallbacks struct {
+	NoopCallbacks
 	callbacks xds.MultiCallbacks
 }
 
@@ -117,7 +98,7 @@ func (a *adapterMultiCallbacks) OnStreamRequest(streamID int64, request *envoy_s
 	return a.callbacks.OnStreamRequest(streamID, &discoveryRequest{request})
 }
 
-func (a *adapterMultiCallbacks) OnStreamResponse(streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
+func (a *adapterMultiCallbacks) OnStreamResponse(ctx context.Context, streamID int64, request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
 	a.callbacks.OnStreamResponse(streamID, &discoveryRequest{request}, &discoveryResponse{response})
 }
 
@@ -127,7 +108,7 @@ type discoveryRequest struct {
 	*envoy_sd.DiscoveryRequest
 }
 
-func (d *discoveryRequest) Metadata() *_struct.Struct {
+func (d *discoveryRequest) Metadata() *structpb.Struct {
 	return d.GetNode().GetMetadata()
 }
 

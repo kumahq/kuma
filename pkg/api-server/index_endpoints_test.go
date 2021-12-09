@@ -2,9 +2,10 @@ package api_server_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,6 +13,7 @@ import (
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -25,7 +27,7 @@ var _ = Describe("Index Endpoints", func() {
 		kuma_version.Build = backupBuildInfo
 	})
 
-	It("should return the version of Kuma Control Plane", func(done Done) {
+	It("should return the version of Kuma Control Plane", test.Within(5*time.Second, func() {
 		// given
 		kuma_version.Build = kuma_version.BuildInfo{
 			Version:   "1.2.3",
@@ -58,7 +60,7 @@ var _ = Describe("Index Endpoints", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
 		hostname, err := os.Hostname()
@@ -68,10 +70,11 @@ var _ = Describe("Index Endpoints", func() {
 		{
 			"hostname": "%s",
 			"tagline": "Kuma",
-			"version": "1.2.3"
+			"version": "1.2.3",
+			"instanceId": "instance-id",
+			"clusterId": "cluster-id"
 		}`, hostname)
 
 		Expect(body).To(MatchJSON(expected))
-		close(done)
-	}, 5)
+	}))
 })

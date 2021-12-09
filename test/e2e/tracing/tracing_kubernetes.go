@@ -13,15 +13,11 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/deployments/tracing"
 )
 
 func TracingK8S() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
-
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -64,22 +60,17 @@ spec:
 `
 
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		c, err := NewK8SCluster(NewTestingT(), Kuma1, Silent)
 		Expect(err).ToNot(HaveOccurred())
 		cluster = c
-		deployOptsFuncs = []DeployOptionsFunc{
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"),
-		}
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
-			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
-			Install(EchoServerK8s("default")).
+			Install(testserver.Install()).
 			Install(tracing.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -118,7 +109,7 @@ spec:
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				_, _, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "echo-server")
+					"curl", "-v", "-m", "3", "--fail", "test-server")
 				if err != nil {
 					return "", err
 				}
@@ -129,7 +120,7 @@ spec:
 					return "", err
 				}
 
-				expectedServices := []string{"demo-client_kuma-test_svc", "echo-server_kuma-test_svc_80", "jaeger-query"}
+				expectedServices := []string{"demo-client_kuma-test_svc", "jaeger-query", "test-server_kuma-test_svc_80"}
 				if !reflect.DeepEqual(services, expectedServices) {
 					return "", errors.Errorf("services not traced. Expected %q, got %q", expectedServices, services)
 				}

@@ -6,6 +6,7 @@ metadata:
     kuma.io/mesh: default
     kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123
     kuma.io/sidecar-injected: "true"
+    kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-inbound-v6-port: "15010"
@@ -28,6 +29,7 @@ spec:
   - args:
     - run
     - --log-level=info
+    - --concurrency=2
     env:
     - name: POD_NAME
       valueFrom:
@@ -78,6 +80,8 @@ spec:
       value: $(POD_NAME).$(POD_NAMESPACE)
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /some/other/path
+    - name: KUMA_DNS_ENABLED
+      value: "false"
     - name: NEW_ENV_VAR
       value: "123"
     - name: TEST_ENV_VAR
@@ -139,6 +143,7 @@ spec:
     - ""
     - --exclude-outbound-ports
     - ""
+    - --verbose
     - --skip-resolv-conf
     command:
     - /usr/bin/kumactl

@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-
-	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -36,12 +36,11 @@ name: %s
 `, mesh)
 	}
 
-	const iterations = 100
 	const defaultMesh = "default"
 	const nonDefaultMesh = "non-default"
 
-	var global, remote_1, remote_2 Cluster
-	var optsGlobal, optsRemote1, optsRemote2 []DeployOptionsFunc
+	var global, zone1, zone2 Cluster
+	var optsGlobal, optsZone1, optsZone2 = KumaUniversalDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -51,7 +50,6 @@ name: %s
 
 		// Global
 		global = clusters.GetCluster(Kuma5)
-		optsGlobal = []DeployOptionsFunc{}
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
 			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh, "false"))).
@@ -63,11 +61,9 @@ name: %s
 
 		globalCP := global.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "echo-server_kuma-test_svc_8080")
+		testServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// TODO: right now these tests are deliberately run WithHDS(false)
@@ -75,37 +71,39 @@ name: %s
 		// first 2-3 load balancer requests, it's fine but tests should be rewritten
 
 		// Cluster 1
-		remote_1 = clusters.GetCluster(Kuma3)
-		optsRemote1 = []DeployOptionsFunc{
+		zone1 = clusters.GetCluster(Kuma3)
+		optsZone1 = append(optsZone1,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithHDS(false),
-		}
+			WithHDS(false))
+		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote1...)).
-			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal1", echoServerToken, WithTransparentProxy(true))).
+			Install(Kuma(core.Zone, optsZone1...)).
+			Install(TestServerUniversal("test-server", nonDefaultMesh, testServerToken, WithArgs([]string{"echo", "--instance", "universal1"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
-			Setup(remote_1)
+			Install(IngressUniversal(ingressTokenKuma3)).
+			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_1.VerifyKuma()
+		err = zone1.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 2
-		remote_2 = clusters.GetCluster(Kuma4)
-		optsRemote2 = []DeployOptionsFunc{
+		zone2 = clusters.GetCluster(Kuma4)
+		optsZone2 = append(optsZone2,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithHDS(false),
-		}
+			WithHDS(false))
+		ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote2...)).
-			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal2", echoServerToken, WithTransparentProxy(true))).
+			Install(Kuma(core.Zone, optsZone2...)).
+			Install(TestServerUniversal("test-server", nonDefaultMesh, testServerToken, WithArgs([]string{"echo", "--instance", "universal2"}))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
-			Setup(remote_2)
+			Install(IngressUniversal(ingressTokenKuma4)).
+			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_2.VerifyKuma()
+		err = zone2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -113,14 +111,14 @@ name: %s
 		if ShouldSkipCleanup() {
 			return
 		}
-		err := remote_1.DeleteKuma(optsRemote1...)
+		err := zone1.DeleteKuma(optsZone1...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_1.DismissCluster()
+		err = zone1.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remote_2.DeleteKuma(optsRemote2...)
+		err = zone2.DeleteKuma(optsZone2...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_2.DismissCluster()
+		err = zone2.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.DeleteKuma(optsGlobal...)
@@ -130,11 +128,11 @@ name: %s
 	})
 
 	It("should access service locally and remotely", func() {
-		retry.DoWithRetry(remote_1.GetTesting(), "curl local service",
+		retry.DoWithRetry(zone1.GetTesting(), "curl local service",
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+				stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
+					"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 				if err != nil {
 					return "should retry", err
 				}
@@ -144,11 +142,11 @@ name: %s
 				return "should retry", errors.Errorf("should retry")
 			})
 
-		retry.DoWithRetry(remote_2.GetTesting(), "curl remote service",
+		retry.DoWithRetry(zone2.GetTesting(), "curl remote service",
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				stdout, _, err := remote_2.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+				stdout, _, err := zone2.ExecWithRetries("", "", "demo-client",
+					"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 				if err != nil {
 					return "should retry", err
 				}
@@ -159,48 +157,43 @@ name: %s
 			})
 	})
 
-	It("should distribute requests cross zones", func() {
-		// given services in zone1 and zone2 in a mesh with disabled Locality Aware Load Balancing
+	It("should access only local service if zone is disabled", func() {
+		// given zone 'kuma-4' enabled
+		// then we should receive responses from both test-server instances
+		Eventually(func() (map[string]int, error) {
+			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(2),
+				HaveKey(Equal(`universal1`)),
+				HaveKey(Equal(`universal2`)),
+			),
+		)
 
-		// when executing requests from zone 1
-		responses := 0
-		for i := 0; i < iterations; i++ {
-			stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			Expect(stdout).To(ContainSubstring("universal"))
+		// when disable zone 'kuma-4'
+		Expect(YamlUniversal(`
+name: kuma-4
+type: Zone
+enabled: false
+`)(global)).To(Succeed())
 
-			if strings.Contains(stdout, "universal1") {
-				responses++
+		// then 'kuma-4.ingress' is deleted from zone 'kuma-3'
+		Eventually(func() bool {
+			output, err := zone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
+			if err != nil {
+				return false
 			}
-		}
+			return !strings.Contains(output, "kuma-4.ingress")
+		}, "30s", "10ms").Should(BeTrue())
 
-		// then some requests are routed to the same zone and some are not
-		Expect(responses > iterations/8).To(BeTrue())
-		Expect(responses < iterations*7/8).To(BeTrue())
-	})
-
-	It("should use locality aware load balancing", func() {
-		// given services in zone1 and zone2 in a mesh with enabled Locality Aware Load Balancing
-		err := YamlUniversal(meshMTLSOn(nonDefaultMesh, "true"))(global)
-		Expect(err).ToNot(HaveOccurred())
-
-		// when executing requests from zone 2
-		responses := 0
-		for i := 0; i < iterations; i++ {
-			stdout, _, err := remote_2.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-			Expect(stdout).To(ContainSubstring("universal"))
-
-			if strings.Contains(stdout, "universal2") {
-				responses++
-			}
-		}
-
-		// then all the requests are routed to the same zone 2
-		Expect(responses).To(Equal(iterations))
+		// and then responses only from the local service instance
+		Eventually(func() (map[string]int, error) {
+			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(1),
+				HaveKey(Equal(`universal1`)),
+			),
+		)
 	})
 }

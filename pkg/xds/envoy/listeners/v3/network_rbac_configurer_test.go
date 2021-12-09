@@ -5,16 +5,13 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/xds"
-
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/xds"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("NetworkRbacConfigurer", func() {
@@ -25,9 +22,9 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 		listenerAddress  string
 		listenerPort     uint32
 		statsName        string
-		clusters         []envoy_common.ClusterSubset
+		clusters         []envoy_common.Cluster
 		rbacEnabled      bool
-		permission       *mesh_core.TrafficPermissionResource
+		permission       *core_mesh.TrafficPermissionResource
 		expected         string
 	}
 
@@ -54,9 +51,12 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
-			rbacEnabled:     true,
-			permission: &mesh_core.TrafficPermissionResource{
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("localhost:8080"),
+				envoy_common.WithWeight(200),
+			)},
+			rbacEnabled: true,
+			permission: &core_mesh.TrafficPermissionResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "tp-1",
 					Mesh: "default",
@@ -119,9 +119,12 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
-			rbacEnabled:     false,
-			permission: &mesh_core.TrafficPermissionResource{
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("localhost:8080"),
+				envoy_common.WithWeight(200),
+			)},
+			rbacEnabled: false,
+			permission: &core_mesh.TrafficPermissionResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "tp-1",
 					Mesh: "default",

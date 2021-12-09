@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "mesh/options.proto";
+import "mesh/v1alpha1/zone_ingress.proto";
+import "mesh/v1alpha1/zone_ingress_insight.proto";
+
+// ZoneIngressOverview defines the projected state of a ZoneIngress.
+message ZoneIngressOverview {
+
+  option (kuma.mesh.resource).name = "ZoneIngressOverviewResource";
+  option (kuma.mesh.resource).type = "ZoneIngressOverview";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).skip_registration = true;
+  option (kuma.mesh.resource).skip_validation = true;
+
+  ZoneIngress zone_ingress = 1;
+
+  ZoneIngressInsight zone_ingress_insight = 2;
+}

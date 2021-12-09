@@ -6,27 +6,16 @@ fmt: fmt/go fmt/proto ## Dev: Run various format tools
 .PHONY: fmt/go
 fmt/go: ## Dev: Run go fmt
 	go fmt $(GOFLAGS) ./...
-	@# apparently, it's not possible to simply use `go fmt ./pkg/plugins/resources/k8s/native/...`
-	$(MAKE) fmt -C pkg/plugins/resources/k8s/native
 
 .PHONY: fmt/proto
 fmt/proto: ## Dev: Run clang-format on .proto files
 	which $(CLANG_FORMAT_PATH) && find . -name '*.proto' | xargs -L 1 $(CLANG_FORMAT_PATH) -i || true
 
-.PHONY: vet
-vet: ## Dev: Run go vet
-	go vet $(GOFLAGS) ./...
-	@# for consistency with `fmt`
-	$(MAKE) vet -C pkg/plugins/resources/k8s/native
-
 .PHONY: tidy
 tidy:
 	@TOP=$(shell pwd) && \
-	for m in . ./api/ ./pkg/plugins/resources/k8s/native; do \
-		cd $$m ; \
-		rm go.sum ; \
-		go mod tidy ; \
-		cd $$TOP; \
+	for m in $$(find . -name go.mod) ; do \
+		( cd $$(dirname $$m) && go mod tidy ) ; \
 	done
 
 .PHONY: golangci-lint
@@ -41,10 +30,6 @@ helm-lint:
 		fi \
 	done
 
-.PHONY: imports
-imports: ## Dev: Runs goimports in order to organize imports
-	goimports -w -local github.com/kumahq/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendored/*'`
-
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
 	$(HELM_DOCS_PATH) -s="file" --chart-search-root=./deployments/charts
@@ -54,6 +39,5 @@ ginkgo/unfocus:
 	$(GOPATH_BIN_DIR)/ginkgo unfocus
 
 .PHONY: check
-check: generate fmt vet docs helm-lint golangci-lint imports tidy helm-docs ginkgo/unfocus ## Dev: Run code checks (go fmt, go vet, ...)
-	$(MAKE) generate manifests -C pkg/plugins/resources/k8s/native
+check: generate fmt docs helm-lint golangci-lint tidy helm-docs ginkgo/unfocus ## Dev: Run code checks (go fmt, go vet, ...)
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty

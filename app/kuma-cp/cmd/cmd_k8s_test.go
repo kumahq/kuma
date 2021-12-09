@@ -6,18 +6,18 @@ import (
 	"path/filepath"
 	"time"
 
-	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
+	kube_core "k8s.io/api/core/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/testing_frameworks/integration/addr"
+
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 // Disabling this one as there are potential issues due to https://github.com/kumahq/kuma/issues/1001
@@ -25,7 +25,7 @@ var _ = XDescribe("K8S CMD test", func() {
 	var k8sClient client.Client
 	var testEnv *envtest.Environment
 
-	BeforeEach(func(done Done) {
+	BeforeEach(test.Within(time.Minute, func() {
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
 			CRDDirectoryPaths:        []string{filepath.Join("..", "..", "..", "pkg", "plugins", "resources", "k8s", "native", "config", "crd", "bases")},
@@ -47,9 +47,7 @@ var _ = XDescribe("K8S CMD test", func() {
 		ctrl.GetConfigOrDie = func() *rest.Config {
 			return testEnv.Config
 		}
-
-		close(done)
-	}, 60)
+	}))
 
 	AfterEach(func() {
 		By("tearing down the test environment")
@@ -82,6 +80,6 @@ diagnostics:
   serverPort: %%d
 `,
 			admissionServerPort,
-			filepath.Join("testdata"))
+			"testdata")
 	}), "")
 })

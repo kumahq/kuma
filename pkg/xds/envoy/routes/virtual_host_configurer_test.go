@@ -5,48 +5,18 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 
+	type Opt = VirtualHostBuilderOpt
 	type testCase struct {
-		virtualHostName string
-		expected        string
+		opts     []Opt
+		expected string
 	}
-
-	Context("V2", func() {
-		DescribeTable("should generate proper Envoy config",
-			func(given testCase) {
-				// when
-				routeConfiguration, err := NewRouteConfigurationBuilder(envoy.APIV2).
-					Configure(VirtualHost(NewVirtualHostBuilder(envoy.APIV2).
-						Configure(CommonVirtualHost(given.virtualHostName)))).
-					Build()
-				// then
-				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				actual, err := util_proto.ToYAML(routeConfiguration)
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(actual).To(MatchYAML(given.expected))
-			},
-			Entry("basic virtual host", testCase{
-				virtualHostName: "backend",
-				expected: `
-            virtualHosts:
-            - domains:
-              - '*'
-              name: backend
-`,
-			}),
-		)
-	})
 
 	Context("V3", func() {
 		DescribeTable("should generate proper Envoy config",
@@ -54,7 +24,7 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 				// when
 				routeConfiguration, err := NewRouteConfigurationBuilder(envoy.APIV3).
 					Configure(VirtualHost(NewVirtualHostBuilder(envoy.APIV3).
-						Configure(CommonVirtualHost(given.virtualHostName)))).
+						Configure(given.opts...))).
 					Build()
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -67,7 +37,32 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("basic virtual host", testCase{
-				virtualHostName: "backend",
+				opts: []Opt{CommonVirtualHost("backend")},
+				expected: `
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend
+`,
+			}),
+			Entry("virtual host with domains", testCase{
+				opts: []Opt{
+					CommonVirtualHost("backend"),
+					DomainNames("foo.example.com", "bar.example.com"),
+				},
+				expected: `
+            virtualHosts:
+            - domains:
+              - foo.example.com
+              - bar.example.com
+              name: backend
+`,
+			}),
+			Entry("virtual host with empty domains", testCase{
+				opts: []Opt{
+					CommonVirtualHost("backend"),
+					DomainNames(),
+				},
 				expected: `
             virtualHosts:
             - domains:

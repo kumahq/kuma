@@ -5,57 +5,35 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
-
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-
 	"github.com/pkg/errors"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/kds/mux"
-	kds_server "github.com/kumahq/kuma/pkg/kds/server"
-
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/client"
+	"github.com/kumahq/kuma/pkg/kds/mux"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var (
-	kdsGlobalLog  = core.Log.WithName("kds-global")
-	ProvidedTypes = []model.ResourceType{
-		mesh.CircuitBreakerType,
-		mesh.DataplaneType,
-		mesh.ExternalServiceType,
-		mesh.FaultInjectionType,
-		mesh.HealthCheckType,
-		mesh.MeshType,
-		mesh.ProxyTemplateType,
-		mesh.RetryType,
-		mesh.TimeoutType,
-		mesh.TrafficLogType,
-		mesh.TrafficPermissionType,
-		mesh.TrafficRouteType,
-		mesh.TrafficTraceType,
-		system.SecretType,
-		system.ConfigType,
-	}
-	ConsumedTypes = []model.ResourceType{
-		mesh.DataplaneType,
-		mesh.DataplaneInsightType,
-	}
+	kdsGlobalLog = core.Log.WithName("kds-global")
 )
 
 func Setup(rt runtime.Runtime) (err error) {
-	kdsServer, err := kds_server.New(kdsGlobalLog, rt, ProvidedTypes,
+	reg := registry.Global()
+	kdsServer, err := kds_server.New(kdsGlobalLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal)),
 		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
 		rt.KDSContext().GlobalProvidedFilter, true)
 	if err != nil {
@@ -69,23 +47,26 @@ func Setup(rt runtime.Runtime) (err error) {
 		go func() {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
 				log.Error(err, "StreamKumaResources finished with an error")
+			} else {
+				log.V(1).Info("StreamKumaResources finished gracefully")
 			}
 		}()
-		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID())
+		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID(), "") // we only care about Zone CP config. Zone CP should not receive Global CP config.
 		if err := createZoneIfAbsent(session.PeerID(), rt.ResourceManager()); err != nil {
 			log.Error(err, "Global CP could not create a zone")
-			return errors.New("Global CP could not create a zone") // send back message without details. Remote CP will retry
+			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry
 		}
-		sink := client.NewKDSSink(log, ConsumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
+		sink := client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByGlobal)), kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
 		go func() {
-			if err := sink.Start(session.Done()); err != nil {
+			if err := sink.Receive(); err != nil {
 				log.Error(err, "KDSSink finished with an error")
+			} else {
+				log.V(1).Info("KDSSink finished gracefully")
 			}
 		}()
 		return nil
 	})
-	callbacks := append(rt.KDSContext().GlobalServerCallbacks, onSessionStarted)
-	return rt.Add(mux.NewServer(callbacks, *rt.Config().Multizone.Global.KDS, rt.Metrics()))
+	return rt.Add(mux.NewServer(onSessionStarted, rt.KDSContext().GlobalServerFilters, *rt.Config().Multizone.Global.KDS, rt.Metrics()))
 }
 
 func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
@@ -96,7 +77,7 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 		kdsGlobalLog.Info("creating Zone", "name", name)
 		zone := &system.ZoneResource{
 			Spec: &system_proto.Zone{
-				Enabled: &wrappers.BoolValue{Value: true},
+				Enabled: util_proto.Bool(true),
 			},
 		}
 		if err := resManager.Create(context.Background(), zone, store.CreateByKey(name, model.NoMesh)); err != nil {
@@ -121,18 +102,14 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 					util.AddSuffixToNames(rs.GetItems(), "default")
 				}
 			}
+			if rs.GetItemType() == core_mesh.ZoneIngressType {
+				for _, zi := range rs.(*core_mesh.ZoneIngressResourceList).Items {
+					zi.Spec.Zone = clusterName
+				}
+			}
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
 			}), sync_store.Zone(clusterName))
 		},
 	}
-}
-
-func ConsumesType(typ model.ResourceType) bool {
-	for _, consumedTyp := range ConsumedTypes {
-		if consumedTyp == typ {
-			return true
-		}
-	}
-	return false
 }

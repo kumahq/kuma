@@ -2,19 +2,18 @@ package api_server_test
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"time"
 
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/ghodss/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/core"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -57,7 +56,7 @@ var _ = Describe("HealthCheck Endpoints", func() {
 
 	BeforeEach(func() {
 		// when
-		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -103,7 +102,7 @@ var _ = Describe("HealthCheck Endpoints", func() {
 			// then
 			Expect(response.StatusCode).To(Equal(200))
 			// when
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

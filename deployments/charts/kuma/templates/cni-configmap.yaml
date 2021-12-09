@@ -11,7 +11,7 @@ data:
   cni_network_config: |-
     {
       "cniVersion": "0.3.1",
-      "name": "{{ include "kuma.name" . }}-cni",
+      "name": "kuma-cni",
       "type": "kuma-cni",
       "log_level": "{{ .Values.cni.logLevel }}",
       "kubernetes": {

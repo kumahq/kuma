@@ -1,7 +1,38 @@
 resources:
 - name: backend.kuma-system
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: backend_kuma-system
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: backend.kuma-system
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: db-_0_
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: db-_0_
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: backend.kuma-system
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: backend.kuma-system
     endpoints:
     - lbEndpoints:
@@ -11,39 +42,10 @@ resources:
               address: 192.168.0.1
               portValue: 8082
         loadBalancingWeight: 1
-- name: db
+- name: db-_0_
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: db
-- name: backend.kuma-system
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: backend_kuma-system
-    connectTimeout: 10s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    http2ProtocolOptions: {}
-    name: backend.kuma-system
-    type: EDS
-- name: db
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    http2ProtocolOptions: {}
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - version
-    name: db
-    type: EDS
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -72,11 +74,7 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: db
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                version: 3.2.0
+          cluster: db-_0_
           statPrefix: db_kuma-system
     name: outbound:127.0.0.1:54321
     trafficDirection: OUTBOUND

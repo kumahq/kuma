@@ -1,0 +1,13 @@
+networking:
+  outbound:
+    - port: 80
+      address: 240.0.0.0
+      tags:
+        kuma.io/service: backend_test-ns_svc_8080
+    - port: 80
+      address: 240.0.0.1
+      tags:
+        kuma.io/service: httpbin
+  transparentProxying:
+    redirectPortOutbound: 15001
+    redirectPortInbound: 15003

@@ -1,0 +1,10 @@
+type: Mesh
+name: tracing
+tracing:
+  defaultBackend: jaeger-collector
+  backends:
+  - name: jaeger-collector
+    type: zipkin
+    sampling: 100.0
+    conf:
+      url: http://jaeger-collector.kuma-tracing:9411/api/v2/spans

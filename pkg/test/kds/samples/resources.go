@@ -1,11 +1,11 @@
 package samples
 
 import (
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var (
@@ -54,8 +54,8 @@ var (
 		}},
 		Conf: &mesh_proto.FaultInjection_Conf{
 			Abort: &mesh_proto.FaultInjection_Conf_Abort{
-				Percentage: &wrappers.DoubleValue{Value: 90},
-				HttpStatus: &wrappers.UInt32Value{Value: 404},
+				Percentage: util_proto.Double(90),
+				HttpStatus: util_proto.UInt32(404),
 			},
 		},
 	}
@@ -80,22 +80,51 @@ var (
 			},
 		},
 	}
+	GatewayDataplane = &mesh_proto.Dataplane{
+		Networking: &mesh_proto.Dataplane_Networking{
+			Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+				Tags: map[string]string{
+					mesh_proto.ServiceTag: "gateway",
+				},
+				Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+			},
+			Address: "192.168.0.1",
+			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+				{
+					Port: 1213,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag:  "web",
+						mesh_proto.ProtocolTag: "http",
+					},
+				},
+			},
+		},
+	}
 	DataplaneInsight = &mesh_proto.DataplaneInsight{
 		MTLS: &mesh_proto.DataplaneInsight_MTLS{
 			CertificateRegenerations: 3,
 		},
 	}
-	Ingress = &mesh_proto.Dataplane{
-		Networking: &mesh_proto.Dataplane_Networking{
-			Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-				AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{{
-					Tags: map[string]string{
-						"service": "backend",
-					}},
-				},
-			},
-			Address: "192.168.0.1",
+	ServiceInsight = &mesh_proto.ServiceInsight{
+		Services: map[string]*mesh_proto.ServiceInsight_Service{},
+	}
+	ZoneIngress = &mesh_proto.ZoneIngress{
+		Networking: &mesh_proto.ZoneIngress_Networking{
+			Address:           "127.0.0.1",
+			Port:              80,
+			AdvertisedAddress: "192.168.0.1",
+			AdvertisedPort:    10001,
 		},
+		AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{{
+			Tags: map[string]string{
+				"service": "backend",
+			}},
+		},
+	}
+	ZoneIngressInsight = &mesh_proto.ZoneIngressInsight{
+		Subscriptions: []*mesh_proto.DiscoverySubscription{{
+			Id: "1",
+		}},
 	}
 	ExternalService = &mesh_proto.ExternalService{
 		Networking: &mesh_proto.ExternalService_Networking{
@@ -133,8 +162,8 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.HealthCheck_Conf{
-			Interval: &duration.Duration{Seconds: 5},
-			Timeout:  &duration.Duration{Seconds: 7},
+			Interval: util_proto.Duration(time.Second * 5),
+			Timeout:  util_proto.Duration(time.Second * 7),
 		},
 	}
 	TrafficLog = &mesh_proto.TrafficLog{
@@ -177,7 +206,7 @@ var (
 		}},
 		Conf: &mesh_proto.TrafficRoute_Conf{
 			Split: []*mesh_proto.TrafficRoute_Split{{
-				Weight: 10,
+				Weight: util_proto.UInt32(10),
 				Destination: map[string]string{
 					"version": "v2",
 				},
@@ -213,19 +242,11 @@ var (
 		}},
 		Conf: &mesh_proto.Retry_Conf{
 			Http: &mesh_proto.Retry_Conf_Http{
-				NumRetries: &wrappers.UInt32Value{
-					Value: 5,
-				},
-				PerTryTimeout: &duration.Duration{
-					Seconds: 200000000,
-				},
+				NumRetries:    util_proto.UInt32(5),
+				PerTryTimeout: util_proto.Duration(time.Second * 200000000),
 				BackOff: &mesh_proto.Retry_Conf_BackOff{
-					BaseInterval: &duration.Duration{
-						Nanos: 200000000,
-					},
-					MaxInterval: &duration.Duration{
-						Seconds: 1,
-					},
+					BaseInterval: util_proto.Duration(time.Nanosecond * 200000000),
+					MaxInterval:  util_proto.Duration(time.Second * 1),
 				},
 				RetriableStatusCodes: []uint32{500, 502},
 			},
@@ -243,37 +264,86 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.Timeout_Conf{
-
-			ConnectTimeout: &duration.Duration{
-				Seconds: 5,
-			},
+			ConnectTimeout: util_proto.Duration(time.Second * 5),
 			Tcp: &mesh_proto.Timeout_Conf_Tcp{
-				IdleTimeout: &duration.Duration{
-					Seconds: 5,
-				},
+				IdleTimeout: util_proto.Duration(time.Second * 5),
 			},
 			Http: &mesh_proto.Timeout_Conf_Http{
-				RequestTimeout: &duration.Duration{
-					Seconds: 5,
-				},
-				IdleTimeout: &duration.Duration{
-					Seconds: 5,
-				},
+				RequestTimeout: util_proto.Duration(time.Second * 5),
+				IdleTimeout:    util_proto.Duration(time.Second * 5),
 			},
 			Grpc: &mesh_proto.Timeout_Conf_Grpc{
-				StreamIdleTimeout: &duration.Duration{
-					Seconds: 5,
-				},
-				MaxStreamDuration: &duration.Duration{
-					Seconds: 5,
-				},
+				StreamIdleTimeout: util_proto.Duration(time.Second * 5),
+				MaxStreamDuration: util_proto.Duration(time.Second * 5),
 			},
 		},
 	}
 	Secret = &system_proto.Secret{
-		Data: &wrappers.BytesValue{Value: []byte("secret key")},
+		Data: util_proto.Bytes([]byte("secret key")),
+	}
+	GlobalSecret = &system_proto.Secret{
+		Data: util_proto.Bytes([]byte("global secret key")),
 	}
 	Config = &system_proto.Config{
 		Config: "sample config",
+	}
+	RateLimit = &mesh_proto.RateLimit{
+		Sources: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "*",
+			},
+		}},
+		Destinations: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "*",
+			},
+		}},
+	}
+	Gateway = &mesh_proto.Gateway{
+		Selectors: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "gateway",
+			},
+		}},
+		Tags: map[string]string{
+			"gateway-name": "philip",
+		},
+		Conf: &mesh_proto.Gateway_Conf{
+			Listeners: []*mesh_proto.Gateway_Listener{{
+				Hostname: "philip.example.com",
+				Port:     8080,
+				Protocol: mesh_proto.Gateway_Listener_HTTP,
+				Tags: map[string]string{
+					"port": "8080",
+				},
+			}},
+		},
+	}
+	GatewayRoute = &mesh_proto.GatewayRoute{
+		Selectors: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "gateway",
+			},
+		}},
+		Conf: &mesh_proto.GatewayRoute_Conf{
+			Route: &mesh_proto.GatewayRoute_Conf_Http{
+				Http: &mesh_proto.GatewayRoute_HttpRoute{},
+			},
+		},
+	}
+	VirtualOutbound = &mesh_proto.VirtualOutbound{
+		Selectors: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "virtual-outbound",
+			},
+		}},
+		Conf: &mesh_proto.VirtualOutbound_Conf{
+			Host: "{{.service}}.mesh",
+			Port: "{{.port}}",
+			Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
+				{Name: "port"},
+				{Name: "service", TagKey: "kuma.io/service"},
+			},
+		},
 	}
 )

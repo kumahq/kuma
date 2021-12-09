@@ -4,28 +4,26 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	errors_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	sample_api "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
-	"github.com/kumahq/kuma/pkg/test/resources/model"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	errors_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
-
+	sample_api "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("RemoteStore", func() {
@@ -44,14 +42,14 @@ var _ = Describe("RemoteStore", func() {
 				}
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bufio.NewReader(file)),
+					Body:       io.NopCloser(bufio.NewReader(file)),
 				}, nil
 			}),
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "traffic-routes"),
-				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
+				sample_core.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
+				mesh.MeshType:                core_rest.NewResourceApi(core_model.ScopeGlobal, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -62,14 +60,14 @@ var _ = Describe("RemoteStore", func() {
 			Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 				return &http.Response{
 					StatusCode: code,
-					Body:       ioutil.NopCloser(strings.NewReader(errorMsg)),
+					Body:       io.NopCloser(strings.NewReader(errorMsg)),
 				}, nil
 			}),
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "traffic-routes"),
-				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
+				sample_core.TrafficRouteType: core_rest.NewResourceApi(core_model.ScopeMesh, "traffic-routes"),
+				mesh.MeshType:                core_rest.NewResourceApi(core_model.ScopeMesh, "meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -161,7 +159,7 @@ var _ = Describe("RemoteStore", func() {
 			name := "res-1"
 			store := setupStore("create_update.json", func(req *http.Request) {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
-				bytes, err := ioutil.ReadAll(req.Body)
+				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(bytes).To(MatchJSON(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})
@@ -183,7 +181,7 @@ var _ = Describe("RemoteStore", func() {
 			meshName := "someMesh"
 			store := setupStore("create_update.json", func(req *http.Request) {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
-				bytes, err := ioutil.ReadAll(req.Body)
+				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(bytes).To(MatchJSON(`{"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})
@@ -237,7 +235,7 @@ var _ = Describe("RemoteStore", func() {
 			name := "res-1"
 			store := setupStore("create_update.json", func(req *http.Request) {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/traffic-routes/%s", name)))
-				bytes, err := ioutil.ReadAll(req.Body)
+				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(bytes).To(MatchJSON(`{"mesh":"default","name":"res-1","path":"/some-path","type":"SampleTrafficRoute","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})
@@ -263,7 +261,7 @@ var _ = Describe("RemoteStore", func() {
 			meshName := "someMesh"
 			store := setupStore("create_update.json", func(req *http.Request) {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
-				bytes, err := ioutil.ReadAll(req.Body)
+				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(bytes).To(MatchJSON(`{"name":"someMesh","mtls":{"enabledBackend":"builtin","backends":[{"name":"builtin","type":"builtin"}]},"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})

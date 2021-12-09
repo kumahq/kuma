@@ -5,11 +5,11 @@ import (
 	"net"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
+	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
-
-	"github.com/gruntwork-io/terratest/modules/testing"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type UniversalControlPlane struct {
@@ -53,6 +53,25 @@ func (c *UniversalControlPlane) GetGlobaStatusAPI() string {
 	panic("not implemented")
 }
 
+func (c *UniversalControlPlane) GetAPIServerAddress() string {
+	return "http://localhost:" + c.cluster.apps[AppModeCP].ports["5681"]
+}
+
+func (c *UniversalControlPlane) GetMetrics() (string, error) {
+	return retry.DoWithRetryE(c.t, "fetching CP metrics", DefaultRetries, DefaultTimeout, func() (string, error) {
+		sshApp := NewSshApp(c.verbose, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
+			"--fail", "--show-error",
+			"http://localhost:5680/metrics"})
+		if err := sshApp.Run(); err != nil {
+			return "", err
+		}
+		if sshApp.Err() != "" {
+			return "", errors.New(sshApp.Err())
+		}
+		return sshApp.Out(), nil
+	})
+}
+
 func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, error) {
 	dpType := ""
 	if service == "ingress" {
@@ -72,4 +91,29 @@ func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, e
 		}
 		return sshApp.Out(), nil
 	})
+}
+
+func (c *UniversalControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
+	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
+		sshApp := NewSshApp(c.verbose, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
+			"--fail", "--show-error",
+			"-H", "\"Content-Type: application/json\"",
+			"--data", fmt.Sprintf(`'{"zone": "%s"}'`, zone),
+			"http://localhost:5681/tokens/zone-ingress"})
+		if err := sshApp.Run(); err != nil {
+			return "", err
+		}
+		if sshApp.Err() != "" {
+			return "", errors.New(sshApp.Err())
+		}
+		return sshApp.Out(), nil
+	})
+}
+
+func (c *UniversalControlPlane) UpdateObject(
+	typeName string,
+	objectName string,
+	update func(object core_model.Resource) core_model.Resource,
+) error {
+	return c.kumactl.KumactlUpdateObject(typeName, objectName, update)
 }

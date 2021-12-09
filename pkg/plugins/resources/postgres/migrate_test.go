@@ -1,15 +1,13 @@
-// +build integration
-
 package postgres
 
 import (
-	"github.com/kumahq/kuma/pkg/config"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	test_postgres "github.com/kumahq/kuma/pkg/test/store/postgres"
 )
 
 var _ = Describe("Migrate", func() {
@@ -17,13 +15,9 @@ var _ = Describe("Migrate", func() {
 	var cfg postgres.PostgresStoreConfig
 
 	BeforeEach(func() {
-		// setup with random db
-		err := config.Load("", &cfg)
+		c, err := c.Config(test_postgres.WithRandomDb)
 		Expect(err).ToNot(HaveOccurred())
-
-		dbName, err := common_postgres.CreateRandomDb(cfg)
-		Expect(err).ToNot(HaveOccurred())
-		cfg.DbName = dbName
+		cfg = *c
 	})
 
 	It("should migrate DB", func() {

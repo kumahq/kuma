@@ -86,6 +86,84 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: proxytemplates.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: ProxyTemplate
+    plural: proxytemplates
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: ProxyTemplate is the Schema for the proxytemplates API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: ratelimits.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: RateLimit
+    plural: ratelimits
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: RateLimit is the Schema for the ratelimits API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: retries.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: Retry
+    plural: retries
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: Retry is the Schema for the retries API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -242,6 +320,84 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: virtualoutbounds.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: VirtualOutbound
+    plural: virtualoutbounds
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: VirtualOutbound is the Schema for the virtualoutbounds API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: dataplaneinsights.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: DataplaneInsight
+    plural: dataplaneinsights
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: DataplaneInsight is the Schema for the dataplane insights API
+          properties:
+            mesh:
+              type: string
+            status:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: zoneingressinsights.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: ZoneIngressInsight
+    plural: zoneingressinsights
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: ZoneIngressInsight is the Schema for the zone ingress insight API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -294,12 +450,12 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: dataplaneinsights.kuma.io
+  name: zoneingresses.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: DataplaneInsight
-    plural: dataplaneinsights
+    kind: ZoneIngress
+    plural: zoneingresses
   scope: Namespaced
   versions:
     - name: v1alpha1
@@ -307,11 +463,11 @@ spec:
       storage: true
       schema:
         openAPIV3Schema:
-          description: DataplaneInsight is the Schema for the dataplane insights API
+          description: ZoneIngress is the Schema for the zone ingress API
           properties:
             mesh:
               type: string
-            status:
+            spec:
               x-kubernetes-preserve-unknown-fields: true
               type: object
           type: object
@@ -359,6 +515,58 @@ spec:
       schema:
         openAPIV3Schema:
           description: FaultInjection is the Schema for the faultinjections API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: gatewayroutes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: GatewayRoute
+    plural: gatewayroutes
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: GatewayRoute is the Schema for the gatewayroutes API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
+  name: gateways.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: Gateway
+    plural: gateways
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: Gateway is the Schema for the gateway API
           properties:
             mesh:
               type: string
@@ -443,58 +651,6 @@ spec:
               type: object
           type: object
 ---
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  creationTimestamp: null
-  name: proxytemplates.kuma.io
-spec:
-  group: kuma.io
-  names:
-    kind: ProxyTemplate
-    plural: proxytemplates
-  scope: Cluster
-  versions:
-    - name: v1alpha1
-      served: true
-      storage: true
-      schema:
-        openAPIV3Schema:
-          description: ProxyTemplate is the Schema for the proxytemplates API
-          properties:
-            mesh:
-              type: string
-            spec:
-              x-kubernetes-preserve-unknown-fields: true
-              type: object
-          type: object
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  creationTimestamp: null
-  name: retries.kuma.io
-spec:
-  group: kuma.io
-  names:
-    kind: Retry
-    plural: retries
-  scope: Cluster
-  versions:
-    - name: v1alpha1
-      served: true
-      storage: true
-      schema:
-        openAPIV3Schema:
-          description: Retry is the Schema for the retries API
-          properties:
-            mesh:
-              type: string
-            spec:
-              x-kubernetes-preserve-unknown-fields: true
-              type: object
-          type: object
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -514,6 +670,25 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
   - apiGroups:
       - ""
     resources:
@@ -540,14 +715,31 @@ rules:
       - meshes
       - zones
       - zoneinsights
+      - zoneingresses
+      - zoneingressinsights
       - meshinsights
       - serviceinsights
       - proxytemplates
+      - ratelimits
       - trafficpermissions
       - trafficroutes
       - timeouts
       - retries
       - circuitbreakers
+      - virtualoutbounds
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - kuma.io
+    resources:
+      - gateways
+      - gatewayroutes
     verbs:
       - get
       - list
@@ -586,7 +778,7 @@ rules:
       - dataplanes/finalizers
     verbs:
       - "*"
-  # validate k8s token before issueing mTLS cert
+  # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
     resources:
@@ -714,13 +906,25 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: aba058a922cd9666fca01c85b865edb7db982affb7af5da8a06d5de26fe65df4
-        checksum/tls-secrets: 60818142de220e484f5886e6ebc63ade84e2f72a96d3e3dbb48c00cae5923f19
+        checksum/config: bd9040893dba92c246c9f15b8e5c5fdbbccabfeb97201a967595c7c13f24356c
+        checksum/tls-secrets: 5f337216840fad68c3d519633e8a1fb5c9f4fc6c4303497f65c0309135a00e21
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
         app: kuma-control-plane
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - kuma-control-plane
+              topologyKey: kubernetes.io/hostname
       serviceAccountName: kuma-control-plane
       nodeSelector:
         
@@ -731,6 +935,8 @@ spec:
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
           env:
+            - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
+              value: "false"
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
@@ -759,10 +965,16 @@ spec:
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-dp:0.0.1"
+            - name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
+              value: "system:serviceaccount:kuma-system:kuma-control-plane"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma-system"
             - name: KUMA_STORE_TYPE
               value: "kubernetes"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           args:
             - run
             - --log-level=info
@@ -801,7 +1013,7 @@ spec:
           configMap:
             name: kuma-control-plane-config
 ---
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: kuma-admission-mutating-webhook-configuration
@@ -812,6 +1024,7 @@ metadata:
     app.kubernetes.io/instance: kuma
 webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
@@ -831,6 +1044,7 @@ webhooks:
           - meshes
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
@@ -852,15 +1066,62 @@ webhooks:
           - healthchecks
           - retries
           - proxytemplates
+          - ratelimits
           - trafficlogs
           - trafficpermissions
           - trafficroutes
           - traffictraces
+          - virtualoutbounds
     
       
     sideEffects: None
+  - name: namespace-kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    namespaceSelector:
+      matchLabels:
+        kuma.io/sidecar-injection: enabled
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
+  - name: pods-kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    objectSelector:
+      matchLabels:
+        kuma.io/sidecar-injection: enabled
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
   - name: kuma-injector.kuma.io
-    failurePolicy: Ignore
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore 
     clientConfig:
       caBundle: XYZ
       service:
@@ -878,7 +1139,7 @@ webhooks:
           - pods
     sideEffects: None
 ---
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: kuma-validating-webhook-configuration
@@ -889,6 +1150,7 @@ metadata:
     app.kubernetes.io/instance: kuma
 webhooks:
   - name: validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
@@ -914,15 +1176,18 @@ webhooks:
           - retries
           - meshes
           - proxytemplates
+          - ratelimits
           - trafficlogs
           - trafficpermissions
           - trafficroutes
           - traffictraces
+          - virtualoutbounds
           - zones
     
       
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
     failurePolicy: Ignore
     clientConfig:
       caBundle: XYZ
@@ -942,6 +1207,7 @@ webhooks:
           - services
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
     namespaceSelector:
       matchLabels:
         kuma.io/system-namespace: "true"

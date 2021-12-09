@@ -7,14 +7,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8s_apixv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
-
-	k8s_apixv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
-
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
+	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 )
 
 func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
@@ -28,6 +27,13 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "Failed to read CRD files")
 			}
+
+			scheme, err := bootstrap_k8s.NewScheme()
+			if err != nil {
+				return err
+			}
+
+			wantCrdFiles = filterHelmTemplates(scheme, wantCrdFiles)
 
 			if !args.OnlyMissing {
 				singleFile := data.JoinYAML(wantCrdFiles)
@@ -44,7 +50,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 				return errors.Wrap(err, "Failed mapping CRD files with CRD names")
 			}
 
-			kubeClientConfig, err := k8s.DefaultClientConfig()
+			kubeClientConfig, err := k8s.DefaultClientConfig("", "")
 			if err != nil {
 				return errors.Wrap(err, "Could not detect Kubernetes configuration")
 			}
@@ -59,8 +65,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 				return errors.Wrap(err, "Failed obtaining CRDs from Kubernetes cluster")
 			}
 
-			installedCrds := ctx.FilterCrdNamesToInstall(getCrdNamesFromList(crds))
-			for _, installedCrdName := range installedCrds {
+			for _, installedCrdName := range getCrdNamesFromList(crds) {
 				delete(crdsToInstallMap, installedCrdName)
 			}
 

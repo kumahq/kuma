@@ -5,30 +5,29 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-
-	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
-	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
-
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/events"
-
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
+	"github.com/kumahq/kuma/pkg/api-server/authn"
+	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/events"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 // BuilderContext provides access to Builder's interim state.
@@ -48,40 +47,48 @@ type BuilderContext interface {
 	EventReaderFactory() events.ListenerFactory
 	APIManager() api_server.APIManager
 	XDSHooks() *xds_hooks.Hooks
+	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
+	MeshValidator() core_managers.MeshValidator
 	KDSContext() *kds_context.Context
+	APIServerAuthenticator() authn.Authenticator
+	Access() Access
 }
 
 var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg        kuma_cp.Config
-	cm         component.Manager
-	rs         core_store.ResourceStore
-	ss         store.SecretStore
-	cs         core_store.ResourceStore
-	rm         core_manager.CustomizableResourceManager
-	rom        core_manager.ReadOnlyResourceManager
-	cam        core_ca.Managers
-	dsl        datasource.Loader
-	ext        context.Context
-	dns        resolver.DNSResolver
-	configm    config_manager.ConfigManager
-	leadInfo   component.LeaderInfo
-	lif        lookup.LookupIPFunc
-	eac        admin.EnvoyAdminClient
-	metrics    metrics.Metrics
-	erf        events.ListenerFactory
-	apim       api_server.APIManager
-	xdsh       *xds_hooks.Hooks
-	dps        *dp_server.DpServer
-	kdsctx     *kds_context.Context
-	shutdownCh <-chan struct{}
+	cfg      kuma_cp.Config
+	cm       component.Manager
+	rs       core_store.ResourceStore
+	ss       store.SecretStore
+	cs       core_store.ResourceStore
+	rm       core_manager.CustomizableResourceManager
+	rom      core_manager.ReadOnlyResourceManager
+	cam      core_ca.Managers
+	dsl      datasource.Loader
+	ext      context.Context
+	dns      resolver.DNSResolver
+	configm  config_manager.ConfigManager
+	leadInfo component.LeaderInfo
+	lif      lookup.LookupIPFunc
+	eac      admin.EnvoyAdminClient
+	metrics  metrics.Metrics
+	erf      events.ListenerFactory
+	apim     api_server.APIManager
+	xdsh     *xds_hooks.Hooks
+	cap      secrets.CaProvider
+	dps      *dp_server.DpServer
+	kdsctx   *kds_context.Context
+	mv       core_managers.MeshValidator
+	au       authn.Authenticator
+	acc      Access
+	appCtx   context.Context
 	*runtimeInfo
 }
 
-func BuilderFor(cfg kuma_cp.Config, closeCh <-chan struct{}) (*Builder, error) {
+func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get hostname")
@@ -94,7 +101,7 @@ func BuilderFor(cfg kuma_cp.Config, closeCh <-chan struct{}) (*Builder, error) {
 		runtimeInfo: &runtimeInfo{
 			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
 		},
-		shutdownCh: closeCh,
+		appCtx: appCtx,
 	}, nil
 }
 
@@ -198,13 +205,33 @@ func (b *Builder) WithXDSHooks(xdsh *xds_hooks.Hooks) *Builder {
 	return b
 }
 
+func (b *Builder) WithCAProvider(cap secrets.CaProvider) *Builder {
+	b.cap = cap
+	return b
+}
+
 func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
 	b.dps = dps
 	return b
 }
 
+func (b *Builder) WithMeshValidator(mv core_managers.MeshValidator) *Builder {
+	b.mv = mv
+	return b
+}
+
 func (b *Builder) WithKDSContext(kdsctx *kds_context.Context) *Builder {
 	b.kdsctx = kdsctx
+	return b
+}
+
+func (b *Builder) WithAPIServerAuthenticator(au authn.Authenticator) *Builder {
+	b.au = au
+	return b
+}
+
+func (b *Builder) WithAccess(acc Access) *Builder {
+	b.acc = acc
 	return b
 }
 
@@ -251,35 +278,51 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.xdsh == nil {
 		return nil, errors.Errorf("XDSHooks has not been configured")
 	}
+	if b.cap == nil {
+		return nil, errors.Errorf("CAProvider has not been configured")
+	}
 	if b.dps == nil {
 		return nil, errors.Errorf("DpServer has not been configured")
 	}
 	if b.kdsctx == nil {
 		return nil, errors.Errorf("KDSContext has not been configured")
 	}
+	if b.mv == nil {
+		return nil, errors.Errorf("MeshValidator has not been configured")
+	}
+	if b.au == nil {
+		return nil, errors.Errorf("API Server Authenticator has not been configured")
+	}
+	if b.acc == (Access{}) {
+		return nil, errors.Errorf("Access has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
-			cfg:        b.cfg,
-			rm:         b.rm,
-			rom:        b.rom,
-			rs:         b.rs,
-			ss:         b.ss,
-			cam:        b.cam,
-			dsl:        b.dsl,
-			ext:        b.ext,
-			dns:        b.dns,
-			configm:    b.configm,
-			leadInfo:   b.leadInfo,
-			lif:        b.lif,
-			eac:        b.eac,
-			metrics:    b.metrics,
-			erf:        b.erf,
-			apim:       b.apim,
-			xdsh:       b.xdsh,
-			dps:        b.dps,
-			kdsctx:     b.kdsctx,
-			shutdownCh: b.shutdownCh,
+			cfg:      b.cfg,
+			rm:       b.rm,
+			rom:      b.rom,
+			rs:       b.rs,
+			ss:       b.ss,
+			cam:      b.cam,
+			dsl:      b.dsl,
+			ext:      b.ext,
+			dns:      b.dns,
+			configm:  b.configm,
+			leadInfo: b.leadInfo,
+			lif:      b.lif,
+			eac:      b.eac,
+			metrics:  b.metrics,
+			erf:      b.erf,
+			apim:     b.apim,
+			xdsh:     b.xdsh,
+			cap:      b.cap,
+			dps:      b.dps,
+			kdsctx:   b.kdsctx,
+			mv:       b.mv,
+			au:       b.au,
+			acc:      b.acc,
+			appCtx:   b.appCtx,
 		},
 		Manager: b.cm,
 	}, nil
@@ -339,12 +382,24 @@ func (b *Builder) APIManager() api_server.APIManager {
 func (b *Builder) XDSHooks() *xds_hooks.Hooks {
 	return b.xdsh
 }
+func (b *Builder) CAProvider() secrets.CaProvider {
+	return b.cap
+}
 func (b *Builder) DpServer() *dp_server.DpServer {
 	return b.dps
 }
 func (b *Builder) KDSContext() *kds_context.Context {
 	return b.kdsctx
 }
-func (b *Builder) ShutdownCh() <-chan struct{} {
-	return b.shutdownCh
+func (b *Builder) MeshValidator() core_managers.MeshValidator {
+	return b.mv
+}
+func (b *Builder) APIServerAuthenticator() authn.Authenticator {
+	return b.au
+}
+func (b *Builder) Access() Access {
+	return b.acc
+}
+func (b *Builder) AppCtx() context.Context {
+	return b.appCtx
 }

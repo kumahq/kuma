@@ -2,19 +2,17 @@ package config_test
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"unicode"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
 	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl config control-planes use", func() {
@@ -23,7 +21,7 @@ var _ = Describe("kumactl config control-planes use", func() {
 
 	BeforeEach(func() {
 		var err error
-		configFile, err = ioutil.TempFile("", "")
+		configFile, err = os.CreateTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
@@ -33,13 +31,19 @@ var _ = Describe("kumactl config control-planes use", func() {
 	})
 
 	var rootCmd *cobra.Command
-	var outbuf, errbuf *bytes.Buffer
+	var outbuf *bytes.Buffer
 
 	BeforeEach(func() {
-		rootCmd = cmd.DefaultRootCmd()
-		outbuf, errbuf = &bytes.Buffer{}, &bytes.Buffer{}
+		rootCmd = test.DefaultTestingRootCmd()
+
+		// Different versions of cobra might emit errors to stdout
+		// or stderr. It's too fragile to depend on precisely what
+		// it does, and that's not something that needs to be tested
+		// within Kuma anyway. So we just combine all the output
+		// and validate the aggregate.
+		outbuf = &bytes.Buffer{}
 		rootCmd.SetOut(outbuf)
-		rootCmd.SetErr(errbuf)
+		rootCmd.SetErr(outbuf)
 	})
 
 	Describe("error cases", func() {
@@ -53,10 +57,7 @@ var _ = Describe("kumactl config control-planes use", func() {
 			// then
 			Expect(err.Error()).To(MatchRegexp(requiredFlagNotSet("name")))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "name" not set
-`))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
+			Expect(outbuf.String()).To(ContainSubstring(`Error: required flag(s) "name" not set`))
 		})
 
 		It("should fail to switch to unknown Control Plane", func() {
@@ -69,10 +70,7 @@ var _ = Describe("kumactl config control-planes use", func() {
 			// then
 			Expect(err).To(MatchError(`there is no Control Plane with name "example"`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: there is no Control Plane with name "example"
-`))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
+			Expect(outbuf.String()).To(ContainSubstring(`Error: there is no Control Plane with name "example"`))
 		})
 	})
 
@@ -87,9 +85,9 @@ var _ = Describe("kumactl config control-planes use", func() {
 		DescribeTable("should switch to an existing Control Plane",
 			func(given testCase) {
 				// setup
-				initial, err := ioutil.ReadFile(filepath.Join("testdata", given.configFile))
+				initial, err := os.ReadFile(filepath.Join("testdata", given.configFile))
 				Expect(err).ToNot(HaveOccurred())
-				err = ioutil.WriteFile(configFile.Name(), initial, 0600)
+				err = os.WriteFile(configFile.Name(), initial, 0600)
 				Expect(err).ToNot(HaveOccurred())
 
 				// given
@@ -102,12 +100,12 @@ var _ = Describe("kumactl config control-planes use", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				actual, err := ioutil.ReadFile(configFile.Name())
+				actual, err := os.ReadFile(configFile.Name())
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -115,8 +113,6 @@ var _ = Describe("kumactl config control-planes use", func() {
 				Expect(actual).To(MatchYAML(expected))
 				// and
 				Expect(outbuf.String()).To(Equal(strings.TrimLeftFunc(given.expectedOut, unicode.IsSpace)))
-				// and
-				Expect(errbuf.Bytes()).To(BeEmpty())
 			},
 			Entry("should switch to existing Control Plane", testCase{
 				configFile: "config-control-planes-use.11.initial.yaml",

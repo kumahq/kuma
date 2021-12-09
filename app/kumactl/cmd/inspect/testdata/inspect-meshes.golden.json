@@ -27,6 +27,9 @@
         "ProxyTemplate": {
           "total": 8
         },
+        "RateLimit": {
+          "total": 10
+        },
         "TrafficLog": {
           "total": 3
         },
@@ -66,6 +69,9 @@
         },
         "ProxyTemplate": {
           "total": 80
+        },
+        "RateLimit": {
+          "total": 100
         },
         "TrafficLog": {
           "total": 30

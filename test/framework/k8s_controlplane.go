@@ -1,21 +1,28 @@
 package framework
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
-
-	"github.com/kumahq/kuma/pkg/config/core"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/yaml"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
@@ -26,15 +33,16 @@ type PortFwd struct {
 }
 
 type K8sControlPlane struct {
-	t          testing.TestingT
-	mode       core.CpMode
-	name       string
-	kubeconfig string
-	kumactl    *KumactlOptions
-	cluster    *K8sCluster
-	portFwd    PortFwd
-	verbose    bool
-	replicas   int
+	t                testing.TestingT
+	mode             core.CpMode
+	name             string
+	kubeconfig       string
+	kumactl          *KumactlOptions
+	cluster          *K8sCluster
+	portFwd          PortFwd
+	verbose          bool
+	replicas         int
+	localhostIsAdmin bool
 }
 
 func NewK8sControlPlane(
@@ -47,6 +55,7 @@ func NewK8sControlPlane(
 	hiPort uint32,
 	verbose bool,
 	replicas int,
+	localhostIsAdmin bool,
 ) *K8sControlPlane {
 	name := clusterName + "-" + mode
 	kumactl, _ := NewKumactlOptions(t, name, verbose)
@@ -60,8 +69,9 @@ func NewK8sControlPlane(
 		portFwd: PortFwd{
 			localAPIPort: loPort,
 		},
-		verbose:  verbose,
-		replicas: replicas,
+		verbose:          verbose,
+		replicas:         replicas,
+		localhostIsAdmin: localhostIsAdmin,
 	}
 }
 
@@ -114,7 +124,7 @@ func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
 	return k8s.ListServices(c.t,
 		c.GetKubectlOptions(KumaNamespace),
 		metav1.ListOptions{
-			FieldSelector: "metadata.name=" + KumaGlobalRemoteSyncServiceName,
+			FieldSelector: "metadata.name=" + KumaGlobalZoneSyncServiceName,
 		},
 	)
 }
@@ -148,7 +158,7 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
-	if c.mode == core.Remote {
+	if c.mode == core.Zone {
 		return nil
 	}
 
@@ -188,10 +198,25 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 	if err := c.PortForwardKumaCP(); err != nil {
 		return err
 	}
+	var token string
+	if !c.localhostIsAdmin {
+		t, err := c.retrieveAdminToken()
+		if err != nil {
+			return err
+		}
+		token = t
+	}
+	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token)
+}
 
-	kumacpURL := "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)
-
-	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
+func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
+	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
+		sec, err := k8s.GetSecretE(c.t, c.GetKubectlOptions(KumaNamespace), "admin-user-token")
+		if err != nil {
+			return "", err
+		}
+		return string(sec.Data["value"]), nil
+	})
 }
 
 func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
@@ -222,15 +247,21 @@ func (c *K8sControlPlane) InjectDNS(args ...string) error {
 		yaml)
 }
 
-// A naive implementation to find the URL where Remote CP exposes its API
+// A naive implementation to find the URL where Zone CP exposes its API
 func (c *K8sControlPlane) GetKDSServerAddress() string {
 	// As EKS and AWS generally returns dns records of load balancers instead of
 	//  IP addresses, accessing this data (hostname) was only tested there,
 	//  so the env var was created for that purpose
-	if UseLoadBalancer() && IsInEKS() {
+	if UseLoadBalancer() {
 		svc := c.GetKumaCPSvcs()[0]
 
-		return "grpcs://" + svc.Status.LoadBalancer.Ingress[0].Hostname + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
+		address := svc.Status.LoadBalancer.Ingress[0].IP
+
+		if UseHostnameInsteadOfIP() {
+			address = svc.Status.LoadBalancer.Ingress[0].Hostname
+		}
+
+		return "grpcs://" + address + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
 	}
 
 	pod := c.GetKumaCPPods()[0]
@@ -238,11 +269,27 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 		pod.Status.HostIP, strconv.FormatUint(uint64(kdsPort), 10))
 }
 
+func (c *K8sControlPlane) GetAPIServerAddress() string {
+	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)
+}
+
+func (c *K8sControlPlane) GetMetrics() (string, error) {
+	panic("not implemented")
+}
+
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
 	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
 }
 
 func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
+	var token string
+	if !c.localhostIsAdmin {
+		t, err := c.retrieveAdminToken()
+		if err != nil {
+			return "", err
+		}
+		token = t
+	}
 	dpType := ""
 	if service == "ingress" {
 		dpType = "ingress"
@@ -252,10 +299,98 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 		"POST",
 		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
 		[]byte(fmt.Sprintf(`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, dpType, service)),
-		map[string]string{"content-type": "application/json"},
+		map[string]string{
+			"content-type":  "application/json",
+			"authorization": "Bearer " + token,
+		},
 		200,
 		DefaultRetries,
 		DefaultTimeout,
 		&tls.Config{},
 	)
+}
+
+func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
+	var token string
+	if !c.localhostIsAdmin {
+		t, err := c.retrieveAdminToken()
+		if err != nil {
+			return "", err
+		}
+		token = t
+	}
+	return http_helper.HTTPDoWithRetryE(
+		c.t,
+		"POST",
+		fmt.Sprintf("http://localhost:%d/tokens/zone-ingress", c.portFwd.localAPIPort),
+		[]byte(fmt.Sprintf(`{"zone": "%s"}`, zone)),
+		map[string]string{
+			"content-type":  "application/json",
+			"authorization": "Bearer " + token,
+		},
+		200,
+		DefaultRetries,
+		DefaultTimeout,
+		&tls.Config{},
+	)
+}
+
+// UpdateObject fetches an object and updates it after the update function is applied to it.
+func (c *K8sControlPlane) UpdateObject(
+	typeName string,
+	objectName string,
+	update func(object runtime.Object) runtime.Object,
+) error {
+	scheme, err := bootstrap_k8s.NewScheme()
+	if err != nil {
+		return err
+	}
+
+	out, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", typeName, objectName, "-o", "yaml")
+	if err != nil {
+		return err
+	}
+
+	decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
+	into := map[string]interface{}{}
+
+	if err := decoder.Decode(&into); err != nil {
+		return err
+	}
+
+	u := unstructured.Unstructured{Object: into}
+	obj, err := scheme.New(u.GroupVersionKind())
+	if err != nil {
+		return err
+	}
+
+	if err := scheme.Convert(u, obj, nil); err != nil {
+		return nil
+	}
+
+	obj = update(obj)
+
+	codecs := serializer.NewCodecFactory(scheme)
+	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
+	if !ok {
+		return errors.Errorf("no serializer for %q", runtime.ContentTypeYAML)
+	}
+
+	encoder := codecs.EncoderForVersion(info.Serializer, obj.GetObjectKind().GroupVersionKind().GroupVersion())
+	yaml, err := runtime.Encode(encoder, obj)
+	if err != nil {
+		return err
+	}
+
+	KubectlReplaceFromStringE := func(t testing.TestingT, options *k8s.KubectlOptions, configData string) error {
+		tmpfile, err := k8s.StoreConfigToTempFileE(t, configData)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(tmpfile)
+
+		return k8s.RunKubectlE(t, options, "replace", "-f", tmpfile)
+	}
+
+	return KubectlReplaceFromStringE(c.t, c.GetKubectlOptions(), string(yaml))
 }

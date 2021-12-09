@@ -4,6 +4,7 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -12,39 +13,26 @@ import "validate/validate.proto";
 // Dataplane defines configuration of a side-car proxy.
 message Dataplane {
 
+  option (kuma.mesh.resource).name = "DataplaneResource";
+  option (kuma.mesh.resource).type = "Dataplane";
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_global = true;
+  option (kuma.mesh.resource).ws.name = "dataplane";
+
   // Networking describes inbound and outbound interfaces of a dataplane.
   message Networking {
 
-    // Ingress allows us to configure dataplane in the Ingress mode. In this
-    // mode, dataplane has only inbound interfaces (outbound and gateway
-    // prohibited). Every inbound interface matches with services that reside in
-    // that cluster.
-    message Ingress {
-      // AvailableService contains tags that represent unique subset of
-      // endpoints
-      message AvailableService {
-        // tags of the service
-        map<string, string> tags = 1;
-        // number of instances available for given tags
-        uint32 instances = 2;
-        // mesh of the instances available for given tags
-        string mesh = 3;
-      }
-      repeated AvailableService availableServices = 1;
-
-      // PublicAddress defines IP or DNS name on which Ingress is accessible to
-      // other Kuma clusters.
-      string publicAddress = 2;
-      // PublicPort defines port on which Ingress is accessible to other Kuma
-      // clusters.
-      uint32 publicPort = 3;
-    }
-
-    // Ingress if not nil, dataplane will be work in the Ingress mode
-    Ingress ingress = 6;
-
     // Public IP on which the dataplane is accessible in the network.
     string address = 5;
+
+    reserved 6; // Formerly ingress mode message, see #3435
+
+    // In some situation, dataplane resides in a private network and not
+    // reachable via 'address'. advertisedAddress is configured with public
+    // routable address for such dataplane so that other dataplanes in the mesh
+    // can connect to it over advertisedAddress and not via address
+    // Note: Envoy binds to the address not advertisedAddress
+    string advertisedAddress = 7;
 
     // Inbound describes a service implemented by the dataplane.
     message Inbound {
@@ -114,7 +102,8 @@ message Dataplane {
 
       // DEPRECATED: use networking.outbound[].tags
       // Service name.
-      string service = 2 [ (validate.rules).string.hostname = true ];
+      string service = 2
+          [ (validate.rules).string.hostname = true, deprecated = true ];
 
       // Tags
       map<string, string> tags = 5;
@@ -122,10 +111,24 @@ message Dataplane {
 
     // Gateway describes a service that ingress should not be proxied.
     message Gateway {
+      enum GatewayType {
+        // A DELEGATED gateway is a independently deployed proxy that
+        // receives inbound traffic that is not proxied by Kuma, and
+        // sends outbound traffic into the Kuma dataplane proxy.
+        DELEGATED = 0;
+        // The BUILTIN gateway type is experimental and unsupported.
+        BUILTIN = 1;
+      }
+
       // Tags associated with a gateway (e.g., Kong, Contour, etc) this
       // dataplane is deployed next to, e.g. service=gateway, env=prod.
       // `service` tag is mandatory.
       map<string, string> tags = 1 [ (validate.rules).map.min_pairs = 1 ];
+
+      // Type of gateway this dataplane manages. The default is a DELEGATED
+      // gateway, which is an external proxy. The BUILTIN gateway type causes
+      // the dataplane proxy itself to be configured as a gateway.
+      GatewayType type = 2;
     }
 
     // TransparentProxying describes configuration for transparent proxying.

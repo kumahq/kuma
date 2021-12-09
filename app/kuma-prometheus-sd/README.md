@@ -1,5 +1,11 @@
 # kuma-prometheus-sd
 
+## DEPRECATION NOTICE
+
+`kuma-prometheus-sd` has been deprecated in favor of
+the native [`kuma_sd`](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kuma_sd_config)
+that is builtin to Prometheus 2.29 and later.
+
 ## Overview
 
 `kuma-prometheus-sd` is an **adapter** that integrates `Prometheus` service discovery mechanism with [Kuma](https://kuma.io) Service Mesh.
@@ -9,7 +15,7 @@ Practically, it means that `Prometheus` will be retrieving a list of scrape targ
 **Direct integration** between `Kuma` Control Plane and `Prometheus` has the following **advantages**:
 * **consistent ease of use** of `Kuma` Service Mesh **in any environment**, be it `Kubernetes`, legacy datacenter, VMs, bare metal, etc
 * inherent **support for hybrid environments**
-* **dynamism of reconfiguration** that would not otherwise be possible even on `Kubernetes` (where `Prometheus` configuration would have to remain unchanged throught the entire lifecycle of a `Pod`)
+* **dynamism of reconfiguration** that would not otherwise be possible even on `Kubernetes` (where `Prometheus` configuration would have to remain unchanged throughout the entire lifecycle of a `Pod`)
 
 ## How it works
 

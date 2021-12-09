@@ -4,23 +4,20 @@ import (
 	"context"
 	"sync"
 
-	pstruct "github.com/golang/protobuf/ptypes/struct"
-
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/kds/util"
-	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
-
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
+	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
-	"github.com/golang/protobuf/proto"
-
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/kds"
+	"github.com/kumahq/kuma/pkg/kds/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 type StatusTracker interface {
@@ -47,7 +44,7 @@ func NewStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
 var _ StatusTracker = &statusTracker{}
 
 type statusTracker struct {
-	util_xds_v2.NoopCallbacks
+	util_xds_v3.NoopCallbacks
 	runtimeInfo      core_runtime.RuntimeInfo
 	createStatusSink ZoneInsightSinkFactoryFunc
 	mu               sync.RWMutex // protects access to the fields below
@@ -111,7 +108,7 @@ func (c *statusTracker) OnStreamClosed(streamID int64) {
 
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequest) error {
+func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy_sd.DiscoveryRequest) error {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 
@@ -141,13 +138,16 @@ func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequ
 			util.StatsOf(subscription.Status, model.ResourceType(req.TypeUrl)).ResponsesAcknowledged++
 		}
 	}
+	if subscription.Config == "" && req.Node.Metadata != nil && req.Node.Metadata.Fields[kds.MetadataFieldConfig] != nil {
+		subscription.Config = req.Node.Metadata.Fields[kds.MetadataFieldConfig].GetStringValue()
+	}
 
 	c.log.V(1).Info("OnStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)
 	return nil
 }
 
 // OnStreamResponse is called immediately prior to sending a response on a stream.
-func (c *statusTracker) OnStreamResponse(streamID int64, req *envoy.DiscoveryRequest, resp *envoy.DiscoveryResponse) {
+func (c *statusTracker) OnStreamResponse(_ context.Context, streamID int64, req *envoy_sd.DiscoveryRequest, resp *envoy_sd.DiscoveryResponse) {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 
@@ -182,11 +182,11 @@ func (s *streamState) Close() {
 	close(s.stop)
 }
 
-func readVersion(metadata *pstruct.Struct, version *system_proto.Version) error {
+func readVersion(metadata *structpb.Struct, version *system_proto.Version) error {
 	if metadata == nil {
 		return nil
 	}
-	rawVersion := metadata.Fields["version"].GetStructValue()
+	rawVersion := metadata.Fields[kds.MetadataFieldVersion].GetStructValue()
 	if rawVersion != nil {
 		err := util_proto.ToTyped(rawVersion, version)
 		if err != nil {

@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -98,7 +97,7 @@ func autoconfigureTLS(cfg *kuma_cp.Config) error {
 		return errors.Wrap(err, "could not get a hostname of the machine")
 	}
 	hosts := append([]string{hostname, "localhost"}, ips...)
-	cert, err := tls.NewSelfSignedCert("kuma-control-plane", tls.ServerCertType, hosts...)
+	cert, err := tls.NewSelfSignedCert("kuma-control-plane", tls.ServerCertType, tls.DefaultKeyType, hosts...)
 	if err != nil {
 		return errors.Wrap(err, "failed to auto-generate TLS certificate")
 	}
@@ -140,7 +139,7 @@ func tryReadKeyPair(dir workDir) (string, string, error) {
 		}
 	}()
 
-	certPEM, err := ioutil.ReadFile(crtFile.Name())
+	certPEM, err := os.ReadFile(crtFile.Name())
 	if err != nil {
 		return "", "", err
 	}
@@ -156,7 +155,7 @@ func tryReadKeyPair(dir workDir) (string, string, error) {
 			autoconfigureLog.Error(err, "failed to close TLS key file")
 		}
 	}()
-	keyPEM, err := ioutil.ReadFile(keyFile.Name())
+	keyPEM, err := os.ReadFile(keyFile.Name())
 	if err != nil {
 		return "", "", err
 	}
@@ -176,7 +175,7 @@ func saveKeyPair(pair tls.KeyPair, dir workDir) (string, string, error) {
 			autoconfigureLog.Error(err, "failed to close TLS cert file")
 		}
 	}()
-	if err := ioutil.WriteFile(crtFile.Name(), pair.CertPEM, os.ModeTemporary); err != nil {
+	if err := os.WriteFile(crtFile.Name(), pair.CertPEM, os.ModeTemporary); err != nil {
 		return "", "", errors.Wrapf(err, "failed to save TLS cert into a file %q", crtFile.Name())
 	}
 
@@ -189,7 +188,7 @@ func saveKeyPair(pair tls.KeyPair, dir workDir) (string, string, error) {
 			autoconfigureLog.Error(err, "failed to close TLS key file")
 		}
 	}()
-	if err := ioutil.WriteFile(keyFile.Name(), pair.KeyPEM, os.ModeTemporary); err != nil {
+	if err := os.WriteFile(keyFile.Name(), pair.KeyPEM, os.ModeTemporary); err != nil {
 		return "", "", errors.Wrapf(err, "failed to save TLS key into a file %q", keyFile.Name())
 	}
 

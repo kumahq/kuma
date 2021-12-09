@@ -15,8 +15,8 @@ const (
 	// The value has a format of a Kubernetes label name.
 	k8sNameComponent = "k8s.kuma.io/name"
 
-	// k8sSynced identifies that resource was synced
-	K8sSynced = "k8s.kuma.io/synced"
+	// K8sMeshDefaultsGenerated identifies that default resources for mesh were successfully generated
+	K8sMeshDefaultsGenerated = "k8s.kuma.io/mesh-defaults-generated"
 
 	// Kubernetes secret type to differentiate Kuma System secrets. Secret is bound to a mesh
 	MeshSecretType = "system.kuma.io/secret"

@@ -24,7 +24,7 @@
      Do these annotations support multiple values ?
 5. Support integration with Prometheus discovery on Universal
    * technically, it should be possible to configure Prometheus to discover targets for scraping sthrough integration of some kind with `Kuma Control Plane`, e.g.
-     * we could build a helper tool (to run as a cron job) that would extract scrape targets info out of `Kuma Control Plane` and put it into a file Prometheus could pick it up from (seems to be a [recommened approach](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#file_sd_config))
+     * we could build a helper tool (to run as a cron job) that would extract scrape targets info out of `Kuma Control Plane` and put it into a file Prometheus could pick it up from (seems to be a [recommend approach](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#file_sd_config))
      * we could contribute to Prometheus support for a discovery protocol convenient for Control Planes
      * `Kuma Control Plane` could implement a discovery protocol already supported by Prometheus (although, there is no obvious candidate)
 

@@ -3,6 +3,7 @@ package model
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Scope string
@@ -13,8 +14,8 @@ const (
 )
 
 type KubernetesObject interface {
-	runtime.Object
-	metav1.Object
+	client.Object
+
 	GetObjectMeta() *metav1.ObjectMeta
 	SetObjectMeta(*metav1.ObjectMeta)
 	GetMesh() string
@@ -25,7 +26,16 @@ type KubernetesObject interface {
 }
 
 type KubernetesList interface {
-	runtime.Object
+	client.ObjectList
+
 	GetItems() []KubernetesObject
 	GetContinue() string
+}
+
+// RawMessage is a carrier for an untyped JSON payload.
+type RawMessage map[string]interface{}
+
+// DeepCopy ...
+func (in RawMessage) DeepCopy() RawMessage {
+	return runtime.DeepCopyJSON(in)
 }

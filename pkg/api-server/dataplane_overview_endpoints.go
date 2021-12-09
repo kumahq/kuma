@@ -5,22 +5,23 @@ import (
 	"reflect"
 	"strings"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-
-	"github.com/kumahq/kuma/pkg/core/validators"
-
 	"github.com/emicklei/go-restful"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 type dataplaneOverviewEndpoints struct {
-	resManager manager.ResourceManager
+	resManager     manager.ResourceManager
+	resourceAccess access.ResourceAccess
 }
 
 func (r *dataplaneOverviewEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
@@ -45,6 +46,15 @@ func (r *dataplaneOverviewEndpoints) addListEndpoint(ws *restful.WebService, pat
 func (r *dataplaneOverviewEndpoints) inspectDataplane(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 	meshName := request.PathParameter("mesh")
+
+	if err := r.resourceAccess.ValidateGet(
+		core_model.ResourceKey{Mesh: meshName, Name: name},
+		mesh.NewDataplaneOverviewResource().Descriptor(),
+		user.FromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
 
 	overview, err := r.fetchOverview(request.Request.Context(), name, meshName)
 	if err != nil {
@@ -81,6 +91,15 @@ func (r *dataplaneOverviewEndpoints) fetchOverview(ctx context.Context, name str
 
 func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request, response *restful.Response) {
 	meshName := request.PathParameter("mesh")
+
+	if err := r.resourceAccess.ValidateList(
+		mesh.NewDataplaneOverviewResource().Descriptor(),
+		user.FromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(response, err, "Access Denied")
+		return
+	}
+
 	page, err := pagination(request)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
@@ -185,22 +204,12 @@ func genFilter(request *restful.Request) (store.ListFilterFunc, error) {
 		return nil, err
 	}
 
-	ingressMode, err := modeFromParameter(request, "ingress")
-	if err != nil {
-		return nil, err
-	}
-
 	tags := parseTags(request.QueryParameters("tag"))
 
 	return func(rs core_model.Resource) bool {
 		gatewayFilter := modeToFilter(gatewayMode)
-		ingressFilter := modeToFilter(ingressMode)
 		dataplane := rs.(*mesh.DataplaneResource)
 		if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
-			return false
-		}
-
-		if !ingressFilter(dataplane.Spec.GetNetworking().GetIngress()) {
 			return false
 		}
 

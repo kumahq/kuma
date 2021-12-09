@@ -10,20 +10,17 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
-
-	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
-
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/util/watchdog"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
+	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
+	"github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -99,13 +96,13 @@ func (t *tracker) OnStreamClosed(streamID xds.StreamID) {
 func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service_health.HealthCheckRequest) error {
 	t.metrics.RequestsReceivedMetric.Inc()
 
-	id, err := xds.ParseProxyIdFromString(req.GetNode().GetId())
+	proxyId, err := xds.ParseProxyIdFromString(req.GetNode().GetId())
 	if err != nil {
 		t.log.Error(err, "failed to parse Dataplane Id out of HealthCheckRequest", "streamid", streamID, "req", req)
 		return nil
 	}
 
-	dataplaneKey := core_model.ResourceKey{Mesh: id.Mesh, Name: id.Name}
+	dataplaneKey := proxyId.ToResourceKey()
 
 	t.Lock()
 	defer t.Unlock()
@@ -123,7 +120,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 		}
 		// kick off watchdog for that Dataplane
 		go t.newWatchdog(req.Node).Start(stopCh)
-		t.log.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", id, "dataplaneKey", dataplaneKey)
+		t.log.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
 	}
 	t.dpStreams[dataplaneKey] = streams
 	t.streamsAssociation[streamID] = dataplaneKey

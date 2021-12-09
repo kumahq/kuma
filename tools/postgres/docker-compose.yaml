@@ -1,7 +1,10 @@
 version: '3.5'
 services:
   db:
-    image: postgres
+    build:
+      context: .
+      args:
+        MODE: ${POSTGRES_MODE:-standard}
     restart: always
     environment:
       POSTGRES_USER: ${KUMA_STORE_POSTGRES_USER:-kuma}

@@ -3,20 +3,10 @@ package cla_test
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"net"
 	"path/filepath"
 	"sync"
 	"time"
-
-	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,8 +16,12 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type countingResourcesManager struct {
@@ -57,10 +51,6 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 	expiration := 2 * time.Second
 
 	BeforeEach(func() {
-		dataSourceLoader := datasource.NewDataSourceLoader(
-			secret_manager.NewSecretManager(
-				secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil))
-
 		s = memory.NewStore()
 		countingManager = &countingResourcesManager{store: s}
 		var err error
@@ -68,7 +58,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		metrics, err = core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 
-		claCache, err = cla.NewCache(countingManager, dataSourceLoader, "", expiration,
+		claCache, err = cla.NewCache(countingManager, "", expiration,
 			func(s string) ([]net.IP, error) {
 				return []net.IP{net.ParseIP(s)}, nil
 			}, metrics)
@@ -103,20 +93,22 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 	It("should cache Get() queries", func() {
 		By("getting CLA for the first time")
-		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
+		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
+		// 1 Get request:
+		// - GetMesh
 		Expect(countingManager.getQueries).To(Equal(1))
+		// 2 List request:
+		// - GetDataplanes
+		// - GetZoneIngresses
 		Expect(countingManager.listQueries).To(Equal(2))
 
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "cla.get.0.json"))
+		js, err := json.MarshalIndent(cla, "", "  ")
 		Expect(err).ToNot(HaveOccurred())
-
-		js, err := json.Marshal(cla)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(js).To(MatchJSON(string(expected)))
+		Expect(js).To(matchers.MatchGoldenJSON(filepath.Join("testdata", "cla.get.0.json")))
 
 		By("getting cached CLA")
-		_, err = claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
+		_, err = claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
 		Expect(countingManager.listQueries).To(Equal(2))
@@ -131,16 +123,14 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 		<-time.After(2 * time.Second)
 
-		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
+		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(2))
 		Expect(countingManager.listQueries).To(Equal(4))
 
-		expected, err = ioutil.ReadFile(filepath.Join("testdata", "cla.get.1.json"))
+		js, err = json.MarshalIndent(cla, "", "  ")
 		Expect(err).ToNot(HaveOccurred())
-		js, err = json.Marshal(cla)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(js).To(MatchJSON(expected))
+		Expect(js).To(matchers.MatchGoldenJSON(filepath.Join("testdata", "cla.get.1.json")))
 	})
 
 	It("should cache concurrent Get() requests", func() {
@@ -148,12 +138,12 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		for i := 0; i < 100; i++ {
 			wg.Add(1)
 			go func() {
-				cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
+				cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 				Expect(err).ToNot(HaveOccurred())
 
-				marshalled, err := json.Marshal(cla) // to imitate Read access to 'cla'
+				marshaled, err := json.Marshal(cla) // to imitate Read access to 'cla'
 				Expect(err).ToNot(HaveOccurred())
-				Expect(len(marshalled) > 0).To(BeTrue())
+				Expect(len(marshaled) > 0).To(BeTrue())
 				wg.Done()
 			}()
 		}
@@ -170,5 +160,62 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 			hits = h.Gauge.GetValue()
 		}
 		Expect(hitWaits + hits + 1).To(Equal(100.0))
+	})
+
+	It("should support clusters with the same names but different tags", func() {
+		err := s.Create(context.Background(), &core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.168.0.3",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+					Port: 1011, ServicePort: 2021,
+					Tags: map[string]string{
+						"kuma.io/service": "backend",
+						"version":         "v1",
+					},
+				}},
+			}},
+		}, core_store.CreateByKey("dp3", "mesh-0"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = s.Create(context.Background(), &core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.168.0.4",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+					Port: 1011, ServicePort: 2021,
+					Tags: map[string]string{
+						"kuma.io/service": "backend",
+						"version":         "v2",
+					},
+				}},
+			}},
+		}, core_store.CreateByKey("dp4", "mesh-0"))
+		Expect(err).ToNot(HaveOccurred())
+
+		clusterV1 := envoy_common.NewCluster(
+			envoy_common.WithService("backend"),
+			envoy_common.WithName("backend-_0_"),
+			envoy_common.WithTags(map[string]string{
+				"kuma.io/service": "backend",
+				"version":         "v1",
+			}),
+		)
+
+		clusterV2 := envoy_common.NewCluster(
+			envoy_common.WithService("backend"),
+			envoy_common.WithName("backend-_0_"),
+			envoy_common.WithTags(map[string]string{
+				"kuma.io/service": "backend",
+				"version":         "v2",
+			}),
+		)
+
+		cla1, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterV1, envoy_common.APIV3)
+		Expect(err).ToNot(HaveOccurred())
+
+		cla2, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterV2, envoy_common.APIV3)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(cla1).ToNot(Equal(cla2))
+
 	})
 })

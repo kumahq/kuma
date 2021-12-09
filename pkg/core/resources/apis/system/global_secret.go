@@ -25,18 +25,18 @@ func NewGlobalSecretResource() *GlobalSecretResource {
 	}
 }
 
-func (t *GlobalSecretResource) GetType() model.ResourceType {
-	return GlobalSecretType
-}
 func (t *GlobalSecretResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
+
 func (t *GlobalSecretResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
+
 func (t *GlobalSecretResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
+
 func (t *GlobalSecretResource) SetSpec(spec model.ResourceSpec) error {
 	value, ok := spec.(*system_proto.Secret)
 	if !ok {
@@ -46,11 +46,13 @@ func (t *GlobalSecretResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+
 func (t *GlobalSecretResource) Validate() error {
 	return nil
 }
-func (t *GlobalSecretResource) Scope() model.ResourceScope {
-	return model.ScopeGlobal
+
+func (t *GlobalSecretResource) Descriptor() model.ResourceTypeDescriptor {
+	return GlobalSecretResourceTypeDescriptor
 }
 
 var _ model.ResourceList = &GlobalSecretResourceList{}
@@ -67,12 +69,15 @@ func (l *GlobalSecretResourceList) GetItems() []model.Resource {
 	}
 	return res
 }
+
 func (l *GlobalSecretResourceList) GetItemType() model.ResourceType {
 	return GlobalSecretType
 }
+
 func (l *GlobalSecretResourceList) NewItem() model.Resource {
 	return NewGlobalSecretResource()
 }
+
 func (l *GlobalSecretResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*GlobalSecretResource); ok {
 		l.Items = append(l.Items, trr)
@@ -81,11 +86,25 @@ func (l *GlobalSecretResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*GlobalSecretResource)(nil), r)
 	}
 }
+
 func (l *GlobalSecretResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }
 
+var GlobalSecretResourceTypeDescriptor model.ResourceTypeDescriptor
+
 func init() {
-	registry.RegisterType(NewGlobalSecretResource())
-	registry.RegistryListType(&GlobalSecretResourceList{})
+	GlobalSecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
+		Name:           GlobalSecretType,
+		Resource:       NewGlobalSecretResource(),
+		ResourceList:   &GlobalSecretResourceList{},
+		ReadOnly:       false,
+		AdminOnly:      true,
+		Scope:          model.ScopeGlobal,
+		KDSFlags:       model.FromGlobalToZone,
+		WsPath:         "global-secrets",
+		KumactlArg:     "global-secret",
+		KumactlListArg: "global-secrets",
+	}
+	registry.RegisterType(GlobalSecretResourceTypeDescriptor)
 }

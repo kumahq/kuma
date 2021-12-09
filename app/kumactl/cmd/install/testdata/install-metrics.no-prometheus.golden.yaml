@@ -85,6 +85,9 @@ data:
     logs = /var/log/grafana
     plugins = /var/lib/grafana/plugins
     provisioning = /etc/grafana/provisioning
+    [plugins]
+    # Required until we have grafana sign our plugin.
+    allow_loading_unsigned_plugins = "kumahq-kuma-datasource"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -108,6 +111,7 @@ data:
     datasources:
       # <string, required> name of the datasource. Required
       - name: Prometheus
+        uid: prometheus
         # <string, required> datasource type. Required
         type: prometheus
         # <string, required> access mode. direct or proxy. Required
@@ -145,6 +149,35 @@ data:
         version: 1
         # <bool> allow users to edit datasources from the UI.
         editable: true
+      - name: Kuma
+        uid: kuma
+        editable: true
+        type: kumahq-kuma-datasource
+        url: http://kuma-control-plane.kuma-system:5681
+        jsonData:
+          prometheusDataSourceId: "1"
+      - name: Jaeger
+        type: jaeger
+        access: proxy
+        editable: true
+        uid: jaeger
+        url: http://jaeger-query.kuma-tracing
+        jsonData:
+          tracesToLogs:
+            datasourceUid: loki
+            tags: ["node_id"]
+      - name: Loki
+        type: loki
+        access: proxy
+        editable: true
+        uid: loki
+        url: http://loki.kuma-logging:3100
+        jsonData:
+          derivedFields:
+            - datasourceUid: jaeger
+              matcherRegex: '"([0-9a-f]{16})"'
+              name: "traceId"
+              url: '$${__value.raw}'
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -194,8 +227,8 @@ data:
       "editable": true,
       "gnetId": 11775,
       "graphTooltip": 0,
-      "id": 2,
-      "iteration": 1617908292172,
+      "id": 3,
+      "iteration": 1619601583109,
       "links": [],
       "panels": [
         {
@@ -283,7 +316,7 @@ data:
           "pluginVersion": "7.4.3",
           "targets": [
             {
-              "expr": "sum(envoy_server_live{dataplane=\"$dataplane\",mesh=\"$mesh\"} OR on() vector(0))",
+              "expr": "sum(envoy_server_live{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"} OR on() vector(0))",
               "interval": "",
               "intervalFactor": 1,
               "legendFormat": "",
@@ -366,7 +399,7 @@ data:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "envoy_server_uptime{dataplane=\"$dataplane\",mesh=\"$mesh\"}",
+              "expr": "envoy_server_uptime{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
               "refId": "A"
             }
           ],
@@ -455,7 +488,7 @@ data:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "envoy_server_memory_heap_size{dataplane=\"$dataplane\",mesh=\"$mesh\"}",
+              "expr": "envoy_server_memory_heap_size{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
               "refId": "A"
             }
           ],
@@ -544,7 +577,7 @@ data:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "envoy_server_memory_allocated{dataplane=\"$dataplane\",mesh=\"$mesh\"}",
+              "expr": "envoy_server_memory_allocated{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
               "refId": "A"
             }
           ],
@@ -613,7 +646,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "envoy_control_plane_connected_state{dataplane=\"$dataplane\",mesh=\"$mesh\"}",
+              "expr": "envoy_control_plane_connected_state{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
               "legendFormat": "Connected",
               "refId": "A"
             }
@@ -719,7 +752,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "envoy_cluster_upstream_cx_active{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}",
+                  "expr": "envoy_cluster_upstream_cx_active{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
                 }
@@ -816,7 +849,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
                 }
@@ -913,7 +946,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
                 }
@@ -1008,7 +1041,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "irate(envoy_cluster_upstream_cx_tx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",mesh=\"$mesh\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_cx_tx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
                 }
@@ -1103,7 +1136,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "irate(envoy_cluster_upstream_cx_rx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",mesh=\"$mesh\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_cx_rx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name=~\"localhost.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
                 }
@@ -1201,22 +1234,22 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "irate(envoy_rbac_allowed{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m])",
+                  "expr": "irate(envoy_rbac_allowed{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
                   "legendFormat": "Allowed - {{listener}}",
                   "refId": "A"
                 },
                 {
-                  "expr": "irate(envoy_rbac_shadow_allowed{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m])",
+                  "expr": "irate(envoy_rbac_shadow_allowed{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
                   "legendFormat": "Shadow allowed - {{listener}}",
                   "refId": "D"
                 },
                 {
-                  "expr": "irate(envoy_rbac_denied{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m])",
+                  "expr": "irate(envoy_rbac_denied{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
                   "legendFormat": "Denied - {{listener}}",
                   "refId": "B"
                 },
                 {
-                  "expr": "irate(envoy_rbac_shadow_denied{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m])",
+                  "expr": "irate(envoy_rbac_shadow_denied{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
                   "legendFormat": "Shadow denied - {{listener}}",
                   "refId": "C"
                 }
@@ -1315,44 +1348,44 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
                   "hide": true,
                   "legendFormat": "connection destroyed by the client - {{envoy_cluster_name}}",
                   "refId": "A"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_cx_connect_timeout{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_cx_connect_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
                   "legendFormat": "connection timeout - {{envoy_cluster_name}}",
                   "refId": "B"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
                   "hide": true,
                   "legendFormat": "connection destroyed by local Envoy - {{envoy_cluster_name}}",
                   "refId": "C"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_rq_pending_failure_eject{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_rq_pending_failure_eject{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
                   "legendFormat": "pending failure ejection - {{envoy_cluster_name}}",
                   "refId": "D"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
                   "legendFormat": "pending overflow - {{envoy_cluster_name}}",
                   "refId": "E"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_rq_timeout{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_rq_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
                   "legendFormat": "request timeout - {{envoy_cluster_name}}",
                   "refId": "F"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_rq_rx_reset{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_rq_rx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
                   "legendFormat": "response reset by the client - {{envoy_cluster_name}}",
                   "refId": "G"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_rq_tx_reset{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_rq_tx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost.*\"}[1m])",
                   "legendFormat": "request reset by local Envoy - {{envoy_cluster_name}}",
                   "refId": "H"
                 }
@@ -1464,7 +1497,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "envoy_cluster_upstream_cx_active{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}",
+                  "expr": "envoy_cluster_upstream_cx_active{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}",
                   "interval": "",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
@@ -1563,7 +1596,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
                 }
@@ -1660,7 +1693,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
                 }
@@ -1757,7 +1790,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "irate(envoy_cluster_upstream_cx_rx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",mesh=\"$mesh\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_cx_rx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
                 }
@@ -1854,7 +1887,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "irate(envoy_cluster_upstream_cx_tx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",mesh=\"$mesh\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_cx_tx_bytes_total{dataplane=\"$dataplane\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
                 }
@@ -1952,7 +1985,7 @@ data:
               ],
               "targets": [
                 {
-                  "expr": "envoy_cluster_ssl_handshake{dataplane=\"$dataplane\",mesh=\"$mesh\"} > 0",
+                  "expr": "envoy_cluster_ssl_handshake{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"} > 0",
                   "format": "time_series",
                   "interval": "",
                   "legendFormat": "{{envoy_cluster_name}}",
@@ -2018,44 +2051,44 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
                   "hide": true,
                   "legendFormat": "destroyed by remote Envoy - {{envoy_cluster_name}}",
                   "refId": "A"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_cx_connect_timeout{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_cx_connect_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
                   "legendFormat": "connection timeout - {{envoy_cluster_name}}",
                   "refId": "B"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
                   "hide": true,
                   "legendFormat": "destroyed by local Envoy - {{envoy_cluster_name}}",
                   "refId": "C"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_rq_pending_failure_eject{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_rq_pending_failure_eject{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
                   "legendFormat": "pending failure ejection - {{envoy_cluster_name}}",
                   "refId": "D"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
                   "legendFormat": "pending overflow - {{envoy_cluster_name}}",
                   "refId": "E"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_rq_timeout{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_rq_timeout{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
                   "legendFormat": "request timeout - {{envoy_cluster_name}}",
                   "refId": "F"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_rq_rx_reset{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_rq_rx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
                   "legendFormat": "request reset by other Envoy - {{envoy_cluster_name}}",
                   "refId": "G"
                 },
                 {
-                  "expr": "irate(envoy_cluster_upstream_rq_tx_reset{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
+                  "expr": "irate(envoy_cluster_upstream_rq_tx_reset{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}[1m])",
                   "legendFormat": "response reset by local Envoy - {{envoy_cluster_name}}",
                   "refId": "H"
                 }
@@ -2167,21 +2200,21 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
+              "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p99",
               "refId": "B"
             },
             {
-              "expr": "sum(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
+              "expr": "sum(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p95",
               "refId": "A"
             },
             {
-              "expr": "sum(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
+              "expr": "sum(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p50",
@@ -2279,14 +2312,14 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\",dataplane=\"$dataplane\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Incoming",
               "refId": "B"
             },
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",dataplane=\"$dataplane\",envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\",envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing",
@@ -2384,14 +2417,14 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name=~\"localhost_.*\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name=~\"localhost_.*\"}[1m])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "Incoming {{envoy_response_code_class}}xx",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{kuma_io_zone=~\"$zone\",mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing {{envoy_response_code_class}}xx",
@@ -2504,7 +2537,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "envoy_cluster_health_check_healthy{dataplane=\"$dataplane\",mesh=\"$mesh\"}",
+                  "expr": "envoy_cluster_health_check_healthy{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "A"
                 }
@@ -2604,7 +2637,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "envoy_cluster_membership_total{dataplane=\"$dataplane\",mesh=\"$mesh\"} - envoy_cluster_health_check_healthy{dataplane=\"$dataplane\",mesh=\"$mesh\"}",
+                  "expr": "envoy_cluster_membership_total{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"} - envoy_cluster_health_check_healthy{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}",
                   "legendFormat": "{{envoy_cluster_name}}",
                   "refId": "B"
                 }
@@ -2716,20 +2749,20 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "interval": "",
                   "legendFormat": "Connection overflow",
                   "refId": "A"
                 },
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "hide": false,
                   "interval": "",
                   "legendFormat": "Pending request overflow",
                   "refId": "B"
                 },
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "hide": false,
                   "interval": "",
                   "legendFormat": "Retry overflow",
@@ -2829,7 +2862,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{dataplane=\"$dataplane\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{dataplane=\"$dataplane\",mesh=\"$mesh\"})",
+                  "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{dataplane=\"$dataplane\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"})",
                   "interval": "",
                   "legendFormat": "Healthy destinations",
                   "refId": "A"
@@ -2920,14 +2953,37 @@ data:
             "useTags": false
           },
           {
+            "allFormat": "wildcard",
+            "allValue": null,
+            "current": {},
+            "datasource": "Prometheus",
+            "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Zone",
+            "multi": true,
+            "name": "zone",
+            "options": [],
+            "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "tagValuesQuery": "",
+            "tags": [],
+            "tagsQuery": "",
+            "type": "query",
+            "useTags": false
+          },
+          {
             "allValue": null,
             "current": {
-              "selected": false,
-              "text": "kuma-demo-backend-v0-56db47c579-qql6t.kuma-demo",
-              "value": "kuma-demo-backend-v0-56db47c579-qql6t.kuma-demo"
+              "selected": true,
+              "text": "kuma-demo-backend-v0-56db47c579-pjztb.kuma-demo",
+              "value": "kuma-demo-backend-v0-56db47c579-pjztb.kuma-demo"
             },
             "datasource": "Prometheus",
-            "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, dataplane)",
+            "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, dataplane)",
             "description": null,
             "error": null,
             "hide": 0,
@@ -2937,7 +2993,7 @@ data:
             "name": "dataplane",
             "options": [],
             "query": {
-              "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, dataplane)",
+              "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, dataplane)",
               "refId": "Prometheus-dataplane-Variable-Query"
             },
             "refresh": 1,
@@ -2995,6 +3051,12 @@ data:
             "hide": true,
             "iconColor": "rgba(0, 211, 255, 1)",
             "name": "Annotations & Alerts",
+            "target": {
+              "limit": 100,
+              "matchAny": false,
+              "tags": [],
+              "type": "dashboard"
+            },
             "type": "dashboard"
           }
         ]
@@ -3016,6 +3078,45 @@ data:
             "x": 0,
             "y": 0
           },
+          "id": 30,
+          "panels": [],
+          "title": "Service Map",
+          "type": "row"
+        },
+        {
+          "datasource": "Kuma",
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "id": 32,
+          "interval": "1m",
+          "targets": [
+            {
+              "hide": false,
+              "mesh": "$mesh",
+              "queryType": "mesh-graph",
+              "refId": "A"
+            }
+          ],
+          "title": "Service Map",
+          "type": "nodeGraph"
+        },
+        {
+          "collapsed": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 15
+          },
           "id": 23,
           "panels": [],
           "title": "HTTP",
@@ -3027,19 +3128,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 1
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 25,
@@ -3059,7 +3154,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3069,7 +3164,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m]))) by (kuma_io_service)",
+              "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\"}[1m]))) by (kuma_io_service)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{ kuma_io_service }}",
@@ -3125,19 +3220,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 1
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 26,
@@ -3157,7 +3246,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3167,7 +3256,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])) by (kuma_io_service)",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\"}[1m])) by (kuma_io_service)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{ kuma_io_service }}",
@@ -3223,19 +3312,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 1
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 28,
@@ -3255,7 +3338,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3265,7 +3348,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\", envoy_cluster_name=~\"localhost_.*\", envoy_response_code_class=~\"4|5\"}[1m])) by (kuma_io_service,envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_cluster_name=~\"localhost_.*\", envoy_response_code_class=~\"4|5\"}[1m])) by (kuma_io_service,envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "{{ kuma_io_service}} {{ envoy_response_code_class }}xx",
@@ -3318,11 +3401,15 @@ data:
         {
           "collapsed": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 10
+            "y": 25
           },
           "id": 16,
           "panels": [],
@@ -3338,7 +3425,6 @@ data:
           "description": "Data is only available if HealthCheck policy is applied.",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -3349,7 +3435,7 @@ data:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 11
+            "y": 26
           },
           "hiddenSeries": false,
           "id": 9,
@@ -3369,7 +3455,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3379,7 +3465,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "((sum(rate(envoy_cluster_health_check_success{mesh=\"$mesh\"}[1m])) / sum(rate(envoy_cluster_health_check_attempt{mesh=\"$mesh\"}[1m]))))",
+              "expr": "((sum(rate(envoy_cluster_health_check_success{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m])) / sum(rate(envoy_cluster_health_check_attempt{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))))",
               "legendFormat": "Success rate",
               "refId": "A"
             }
@@ -3428,11 +3514,15 @@ data:
         {
           "collapsed": false,
           "datasource": null,
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 18
+            "y": 33
           },
           "id": 19,
           "panels": [],
@@ -3446,19 +3536,13 @@ data:
           "dashes": false,
           "datasource": null,
           "description": "Total times that the cluster’s connection circuit breaker overflowed",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 34
           },
           "hiddenSeries": false,
           "id": 21,
@@ -3478,7 +3562,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3488,20 +3572,20 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "interval": "",
               "legendFormat": "Connection overflow",
               "refId": "A"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Pending request overflow",
               "refId": "B"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Retry overflow",
@@ -3560,7 +3644,6 @@ data:
           "description": "Data is only available if HealthCheck policy is applied. Note that passive health checks are executed on healthy instances marked by active health checks.",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -3571,7 +3654,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 34
           },
           "hiddenSeries": false,
           "id": 17,
@@ -3591,7 +3674,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3601,7 +3684,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{mesh=\"$mesh\"})",
+              "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}) / sum(envoy_cluster_membership_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
               "interval": "",
               "legendFormat": "Healthy destinations",
               "refId": "A"
@@ -3651,11 +3734,15 @@ data:
         {
           "collapsed": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 42
           },
           "id": 12,
           "panels": [],
@@ -3670,7 +3757,6 @@ data:
           "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -3681,7 +3767,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 43
           },
           "hiddenSeries": false,
           "id": 2,
@@ -3703,7 +3789,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3724,13 +3810,13 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "count(envoy_server_live{mesh=\"$mesh\"}) - sum(envoy_server_live{mesh=\"$mesh\"})",
+              "expr": "count(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}) - sum(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
               "hide": false,
               "legendFormat": "Off",
               "refId": "B"
             },
             {
-              "expr": "sum(envoy_server_live{mesh=\"$mesh\"})",
+              "expr": "sum(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
               "hide": false,
               "legendFormat": "Live",
               "refId": "A"
@@ -3788,7 +3874,6 @@ data:
           "description": "Note that if Control Plane does not sent FIN segment, Dataplanes can still think that connection is up waiting for new update even that Control Plane is down.",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -3799,7 +3884,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 43
           },
           "hiddenSeries": false,
           "id": 3,
@@ -3821,7 +3906,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3842,12 +3927,12 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "count(envoy_server_live{mesh=\"$mesh\"}) - sum(envoy_control_plane_connected_state{mesh=\"$mesh\"})",
+              "expr": "count(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}) - sum(envoy_control_plane_connected_state{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
               "legendFormat": "Disconnected",
               "refId": "B"
             },
             {
-              "expr": "sum(envoy_control_plane_connected_state{mesh=\"$mesh\"})",
+              "expr": "sum(envoy_control_plane_connected_state{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
               "legendFormat": "Connected",
               "refId": "A"
             }
@@ -3903,7 +3988,6 @@ data:
           "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -3914,7 +3998,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 35
+            "y": 50
           },
           "hiddenSeries": false,
           "id": 5,
@@ -3934,7 +4018,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3944,12 +4028,12 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "legendFormat": "Sent",
               "refId": "A"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "legendFormat": "Received",
               "refId": "B"
             }
@@ -4003,7 +4087,6 @@ data:
           "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -4014,7 +4097,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 35
+            "y": 50
           },
           "hiddenSeries": false,
           "id": 7,
@@ -4038,7 +4121,7 @@ data:
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.3",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4048,44 +4131,44 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "hide": true,
               "legendFormat": "Connection destroyed by the client",
               "refId": "A"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "legendFormat": "Connection timeout",
               "refId": "B"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "hide": true,
               "legendFormat": "Connection destroyed by local Envoy",
               "refId": "C"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "legendFormat": "Pending failure ejection",
               "refId": "D"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "legendFormat": "Pending overflow",
               "refId": "E"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "legendFormat": "Request timeout",
               "refId": "F"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "legendFormat": "Response reset",
               "refId": "G"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}[1m]))",
               "legendFormat": "Request reset",
               "refId": "H"
             }
@@ -4133,7 +4216,7 @@ data:
         }
       ],
       "refresh": "5s",
-      "schemaVersion": 27,
+      "schemaVersion": 30,
       "style": "dark",
       "tags": [],
       "templating": {
@@ -4159,6 +4242,28 @@ data:
               "query": "label_values(envoy_server_live, mesh)",
               "refId": "Prometheus-mesh-Variable-Query"
             },
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "tagValuesQuery": "",
+            "tagsQuery": "",
+            "type": "query",
+            "useTags": false
+          },
+          {
+            "allFormat": "wildcard",
+            "allValue": null,
+            "current": {},
+            "datasource": "Prometheus",
+            "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Zone",
+            "multi": true,
+            "name": "zone",
+            "options": [],
+            "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -4287,12 +4392,12 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_cx_tx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "Bytes sent",
                   "refId": "A"
                 },
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_cx_rx_bytes_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "Bytes received",
                   "refId": "B"
                 }
@@ -4391,44 +4496,44 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_remote_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "hide": true,
                   "legendFormat": "Connection destroyed by the client",
                   "refId": "A"
                 },
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_cx_connect_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "Connection timeout",
                   "refId": "B"
                 },
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_cx_destroy_local_with_active_rq{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "hide": true,
                   "legendFormat": "Connection destroyed by local Envoy",
                   "refId": "C"
                 },
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_rq_pending_failure_eject{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "Pending failure ejection",
                   "refId": "D"
                 },
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "Pending overflow",
                   "refId": "E"
                 },
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_rq_timeout{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "Request timeout",
                   "refId": "F"
                 },
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_rq_rx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "Response reset",
                   "refId": "G"
                 },
                 {
-                  "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+                  "expr": "sum(irate(envoy_cluster_upstream_rq_tx_reset{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
                   "legendFormat": "Request reset",
                   "refId": "H"
                 }
@@ -4524,7 +4629,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "sum(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"})",
+                  "expr": "sum(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"})",
                   "legendFormat": "Connections",
                   "refId": "A"
                 }
@@ -4620,7 +4725,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m])))",
+                  "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_connect_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])))",
                   "legendFormat": "Time",
                   "refId": "A"
                 }
@@ -4717,7 +4822,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m])))",
+                  "expr": "max(histogram_quantile(0.99, irate(envoy_cluster_upstream_cx_length_ms_bucket{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m])))",
                   "legendFormat": "Time",
                   "refId": "A"
                 }
@@ -4834,21 +4939,21 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
+              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p99",
               "refId": "A"
             },
             {
-              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
+              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p95",
               "refId": "C"
             },
             {
-              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
+              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_service=\"$source_service\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=\"$destination_cluster\"}[1m])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p50",
@@ -5157,7 +5262,7 @@ data:
               "steppedLine": false,
               "targets": [
                 {
-                  "expr": "sum(envoy_cluster_health_check_healthy{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"})",
+                  "expr": "sum(envoy_cluster_health_check_healthy{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"})",
                   "legendFormat": "Healthy destinations",
                   "refId": "A"
                 }
@@ -5272,20 +5377,20 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
               "interval": "",
               "legendFormat": "Connection overflow",
               "refId": "A"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Pending request overflow",
               "refId": "B"
             },
             {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Retry overflow",
@@ -5387,7 +5492,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"})",
+              "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\"})",
               "interval": "",
               "legendFormat": "Healthy destinations",
               "refId": "A"
@@ -5464,6 +5569,29 @@ data:
               "query": "label_values(envoy_server_live, mesh)",
               "refId": "Prometheus-mesh-Variable-Query"
             },
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "tagValuesQuery": "",
+            "tags": [],
+            "tagsQuery": "",
+            "type": "query",
+            "useTags": false
+          },
+          {
+            "allFormat": "wildcard",
+            "allValue": null,
+            "current": {},
+            "datasource": "Prometheus",
+            "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Zone",
+            "multi": true,
+            "name": "zone",
+            "options": [],
+            "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -7863,7 +7991,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "This metric presents if policies are properly propagated from Global to Remotes. All instances of global and remotes in the system should have the same number of policies. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
+          "description": "This metric presents if policies are properly propagated from Global to Zones. All instances of global and zones in the system should have the same number of policies. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -7960,7 +8088,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "This metric presents if Dataplanes are properly propagated from Remotes to Global. Keep in mind that Dataplanes from all remotes != Dataplanes from global. All remotes receive additional one dataplane of Ingress from other Remotes. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
+          "description": "This metric presents if Dataplanes are properly propagated from Zones to Global. Keep in mind that Dataplanes from all zones != Dataplanes from global. All zones receive additional one dataplane of Ingress from other Zones. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -8057,7 +8185,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Number of KDS messages exchanged between Global Control Plane and Remote Control Plane over KDS. Global sends to Remote policies and Ingress Dataplanes",
+          "description": "Number of KDS messages exchanged between Global Control Plane and Zone Control Plane over KDS. Global sends to Zone policies and Ingress Dataplanes",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -8199,7 +8327,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Number of remote CP connected to Global.",
+          "description": "Number of zone CP connected to Global.",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -8401,7 +8529,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "How much it took to generate KDS configuration for a single remote control plane",
+          "description": "How much it took to generate KDS configuration for a single zone control plane",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -8496,7 +8624,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Number of KDS messages exchanged between Global Control Plane and Remote Control Plane over KDS. Remote sends to Global its Dataplanes and DataplaneInsights",
+          "description": "Number of KDS messages exchanged between Global Control Plane and Zone Control Plane over KDS. Zone sends to Global its Dataplanes and DataplaneInsights",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -8593,7 +8721,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Remote - KDS message exchange",
+          "title": "Zone - KDS message exchange",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -8638,7 +8766,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Number of global CP connected to Remote.",
+          "description": "Number of global CP connected to Zone.",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -8688,7 +8816,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Remote - KDS active connections",
+          "title": "Zone - KDS active connections",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -8733,7 +8861,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL",
+          "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -8795,7 +8923,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Remote - KDS config generations",
+          "title": "Zone - KDS config generations",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -8890,7 +9018,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Remote - Latency of KDS config generation (99th percentile)",
+          "title": "Zone - Latency of KDS config generation (99th percentile)",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -9960,8 +10088,8 @@ data:
       "editable": true,
       "gnetId": null,
       "graphTooltip": 0,
-      "id": 4,
-      "iteration": 1617611866352,
+      "id": 1,
+      "iteration": 1619601383600,
       "links": [],
       "panels": [
         {
@@ -10051,6 +10179,7 @@ data:
           "targets": [
             {
               "expr": "sum(envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
+              "instant": true,
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -10157,7 +10286,7 @@ data:
           "pluginVersion": "7.4.3",
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\",envoy_cluster_name=~\"localhost_.*\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\",envoy_cluster_name=~\"localhost_.*\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "",
@@ -10222,7 +10351,7 @@ data:
           "pluginVersion": "7.4.3",
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\",envoy_cluster_name!~\"localhost_.*\",envoy_cluster_name!=\"kuma_envoy_admin\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\",envoy_cluster_name!~\"localhost_.*\",envoy_cluster_name!=\"kuma_envoy_admin\",envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "",
@@ -10301,21 +10430,21 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
+              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p99",
               "refId": "A"
             },
             {
-              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
+              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p95",
               "refId": "C"
             },
             {
-              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
+              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",kuma_io_zone=~\"$zone\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
               "hide": false,
               "interval": "",
               "legendFormat": "p50",
@@ -10413,14 +10542,14 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Incoming",
               "refId": "C"
             },
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\",envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing",
@@ -10518,14 +10647,14 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[1m])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "Incoming {{envoy_response_code_class}}xx",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing {{envoy_response_code_class}}xx",
@@ -10922,6 +11051,29 @@ data:
             "useTags": false
           },
           {
+            "allFormat": "wildcard",
+            "allValue": null,
+            "current": {},
+            "datasource": "Prometheus",
+            "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Zone",
+            "multi": true,
+            "name": "zone",
+            "options": [],
+            "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "tagValuesQuery": "",
+            "tags": [],
+            "tagsQuery": "",
+            "type": "query",
+            "useTags": false
+          },
+          {
             "allValue": null,
             "current": {
               "selected": true,
@@ -10929,7 +11081,7 @@ data:
               "value": "backend_kuma-demo_svc_3001"
             },
             "datasource": null,
-            "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+            "definition": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, kuma_io_service)",
             "description": null,
             "error": null,
             "hide": 0,
@@ -10939,7 +11091,7 @@ data:
             "name": "service",
             "options": [],
             "query": {
-              "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+              "query": "label_values(envoy_server_live{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"}, kuma_io_service)",
               "refId": "StandardVariableQuery"
             },
             "refresh": 1,
@@ -10988,7 +11140,7 @@ roleRef:
   name: grafana-clusterrole
   apiGroup: rbac.authorization.k8s.io
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: grafana
@@ -11001,7 +11153,7 @@ rules:
     verbs:          ['use']
     resourceNames:  [grafana]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: grafana
@@ -11062,9 +11214,16 @@ spec:
       securityContext:
         fsGroup: 472
         runAsUser: 472
+      initContainers:
+        - name: init-plugins
+          image: alpine
+          command: [ '/bin/sh', '-c', 'wget -O /tmp/kuma.zip https://github.com/kumahq/kuma-grafana-datasource/releases/download/v0.0.3/kumahq-kuma-datasource-0.0.3.zip && unzip /tmp/kuma.zip -d /var/lib/grafana/plugins/ && rm /tmp/kuma.zip']
+          volumeMounts:
+            - name: plugins-volume
+              mountPath: /var/lib/grafana/plugins
       containers:
         - name: grafana
-          image: "grafana/grafana:7.4.3"
+          image: "grafana/grafana:8.1.2"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -11078,6 +11237,9 @@ spec:
               readOnly: true
             - name: provisioning-dashboards
               mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: plugins-volume
+              mountPath: /var/lib/grafana/plugins
               readOnly: true
           ports:
             - name: service
@@ -11128,4 +11290,6 @@ spec:
                   name: provisioning-dashboards-4
 
         - name: storage
+          emptyDir: {}
+        - name: plugins-volume
           emptyDir: {}

@@ -21,7 +21,9 @@ var NodePortAddressPriority = []kube_core.NodeAddressType{
 	kube_core.NodeInternalIP,
 }
 
-func (p *PodConverter) IngressFor(dp *mesh_proto.Dataplane, pod *kube_core.Pod, services []*kube_core.Service) error {
+func (p *PodConverter) IngressFor(
+	ctx context.Context, zoneIngress *mesh_proto.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service,
+) error {
 	if len(services) != 1 {
 		return errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
 	}
@@ -32,29 +34,29 @@ func (p *PodConverter) IngressFor(dp *mesh_proto.Dataplane, pod *kube_core.Pod, 
 	if len(ifaces) != 1 {
 		return errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
 	}
-	if dp.Networking == nil {
-		dp.Networking = &mesh_proto.Dataplane_Networking{
-			Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
-		}
-	}
-	dp.Networking.Inbound = ifaces
-	dp.Networking.Address = pod.Status.PodIP
 
-	coords, err := p.coordinatesFromAnnotations(metadata.Annotations(pod.Annotations))
+	if zoneIngress.Networking == nil {
+		zoneIngress.Networking = &mesh_proto.ZoneIngress_Networking{}
+	}
+
+	zoneIngress.Networking.Address = pod.Status.PodIP
+	zoneIngress.Networking.Port = ifaces[0].Port
+
+	coords, err := p.coordinatesFromAnnotations(pod.Annotations)
 	if err != nil {
 		return err
 	}
 
 	if coords == nil { // if ingress public coordinates were not present in annotations we will try to pick it from service
-		coords, err = p.coordinatesFromService(services[0])
+		coords, err = p.coordinatesFromService(ctx, services[0])
 		if err != nil {
 			return err
 		}
 	}
 
 	if coords != nil {
-		dp.Networking.Ingress.PublicAddress = coords.address
-		dp.Networking.Ingress.PublicPort = coords.port
+		zoneIngress.Networking.AdvertisedAddress = coords.address
+		zoneIngress.Networking.AdvertisedPort = coords.port
 	}
 	return nil
 }
@@ -83,21 +85,21 @@ func (p *PodConverter) coordinatesFromAnnotations(annotations metadata.Annotatio
 }
 
 // coordinatesFromService is trying to generate ingress with public address and port using Service that selects the ingress
-func (p *PodConverter) coordinatesFromService(service *kube_core.Service) (*coordinates, error) {
+func (p *PodConverter) coordinatesFromService(ctx context.Context, service *kube_core.Service) (*coordinates, error) {
 	switch service.Spec.Type {
 	case kube_core.ServiceTypeLoadBalancer:
 		return p.coordinatesFromLoadBalancer(service)
 	case kube_core.ServiceTypeNodePort:
-		return p.coordinatesFromNodePort(service)
+		return p.coordinatesFromNodePort(ctx, service)
 	default:
 		converterLog.Info("ingress service type is not public, therefore the public coordinates of the ingress will not be automatically set. Change the ingress service to LoadBalancer or NodePort or override the settings using annotations.")
 		return nil, nil
 	}
 }
 
-func (p *PodConverter) coordinatesFromNodePort(service *kube_core.Service) (*coordinates, error) {
+func (p *PodConverter) coordinatesFromNodePort(ctx context.Context, service *kube_core.Service) (*coordinates, error) {
 	nodes := &kube_core.NodeList{}
-	if err := p.NodeGetter.List(context.Background(), nodes); err != nil {
+	if err := p.NodeGetter.List(ctx, nodes); err != nil {
 		return nil, err
 	}
 	if len(nodes.Items) < 1 { // this should not happen, K8S always has at least one node

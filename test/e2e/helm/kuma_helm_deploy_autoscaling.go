@@ -7,12 +7,10 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/random"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -20,7 +18,7 @@ func ControlPlaneAutoscalingWithHelmChart() {
 	minReplicas := 3
 
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		c, err := NewK8sClusterWithTimeout(
@@ -36,17 +34,15 @@ func ControlPlaneAutoscalingWithHelmChart() {
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
-		deployOptsFuncs = []DeployOptionsFunc{
+		deployOptsFuncs = append(deployOptsFuncs,
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
 			WithHelmOpt("controlPlane.autoscaling.enabled", "true"),
 			WithHelmOpt("controlPlane.autoscaling.minReplicas", strconv.Itoa(minReplicas)),
-			WithCNI(),
-		}
+			WithCNI())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
-			Install(KumaDNS()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

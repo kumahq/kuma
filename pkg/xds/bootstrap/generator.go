@@ -1,43 +1,34 @@
 package bootstrap
 
 import (
-	"bytes"
 	"context"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
-	"net"
+	"os"
 	"sort"
-	"strconv"
 	"strings"
-	"text/template"
 
-	"github.com/asaskevich/govalidator"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/validators"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
-	envoy_bootstrap_v2 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-	_ "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshalling Envoy protobuf works in tests (normally it is imported in root.go)
+
+	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works in tests (normally it is imported in root.go)
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type BootstrapGenerator interface {
-	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, types.BootstrapVersion, error)
+	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error)
 }
 
 func NewDefaultBootstrapGenerator(
@@ -73,27 +64,86 @@ type bootstrapGenerator struct {
 	hdsEnabled    bool
 }
 
-func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, types.BootstrapVersion, error) {
+func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
 	if err := b.validateRequest(request); err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
-	proxyId, err := core_xds.BuildProxyId(request.Mesh, request.Name)
+	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
+	params := configParameters{
+		Id:                 proxyId.String(),
+		AdminAddress:       b.config.Params.AdminAddress,
+		AdminPort:          b.config.Params.AdminPort,
+		AdminAccessLogPath: b.config.Params.AdminAccessLogPath,
+		XdsHost:            b.xdsHost(request),
+		XdsPort:            b.config.Params.XdsPort,
+		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout,
+		AccessLogPipe:      envoy_common.AccessLogSocketName(request.Name, request.Mesh),
+		DataplaneToken:     request.DataplaneToken,
+		DataplaneResource:  request.DataplaneResource,
+		KumaDpVersion:      request.Version.KumaDp.Version,
+		KumaDpGitTag:       request.Version.KumaDp.GitTag,
+		KumaDpGitCommit:    request.Version.KumaDp.GitCommit,
+		KumaDpBuildDate:    request.Version.KumaDp.BuildDate,
+		EnvoyVersion:       request.Version.Envoy.Version,
+		EnvoyBuild:         request.Version.Envoy.Build,
+		DynamicMetadata:    request.DynamicMetadata,
+		DNSPort:            request.DNSPort,
+		EmptyDNSPort:       request.EmptyDNSPort,
+		ProxyType:          request.ProxyType,
+	}
+	if params.ProxyType == "" {
+		params.ProxyType = string(mesh_proto.DataplaneProxyType)
+	}
+	if request.AdminPort != 0 {
+		params.AdminPort = request.AdminPort
+	}
+
+	switch mesh_proto.ProxyType(params.ProxyType) {
+	case mesh_proto.IngressProxyType:
+		zoneIngress, err := b.zoneIngressFor(ctx, request, proxyId)
+		if err != nil {
+			return nil, err
+		}
+		// The admin port in kuma-dp is always bound to 127.0.0.1
+		if zoneIngress.UsesInboundInterface(core_mesh.IPv4Loopback, params.AdminPort) {
+			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", params.AdminPort)
+		}
+		params.Service = "ingress"
+	case mesh_proto.DataplaneProxyType, "":
+		params.HdsEnabled = b.hdsEnabled
+		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
+		if err != nil {
+			return nil, err
+		}
+		// The admin port in kuma-dp is always bound to 127.0.0.1
+		if dataplane.UsesInboundInterface(core_mesh.IPv4Loopback, params.AdminPort) {
+			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", params.AdminPort)
+		}
+		if dataplane.UsesOutboundInterface(core_mesh.IPv4Loopback, params.AdminPort) {
+			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", params.AdminPort)
+		}
+		params.Service = dataplane.Spec.GetIdentifyingService()
+	default:
+		return nil, errors.Errorf("unknown proxy type %v", params.ProxyType)
+	}
+	var err error
+	if params.CertBytes, err = b.caCert(request); err != nil {
+		return nil, err
+	}
+
+	log.WithValues("params", params).Info("Generating bootstrap config")
+	config, err := genConfig(params)
 	if err != nil {
-		return nil, "", err
+		return nil, errors.Wrap(err, "failed creating bootstrap conf")
 	}
-
-	dataplane, err := b.dataplaneFor(ctx, request, proxyId)
-	if err != nil {
-		return nil, "", err
+	if err = config.Validate(); err != nil {
+		return nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
 	}
-
-	return b.generateFor(*proxyId, dataplane, request)
+	return config, nil
 }
 
 var DpTokenRequired = errors.New("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
-
-var InvalidBootstrapVersion = errors.New(`Invalid BootstrapVersion. Available values are: "2", "3"`)
 
 var NotCA = errors.New("A data plane proxy is trying to verify the control plane using the certificate which is not a certificate authority (basic constraint 'CA' is set to 'false').\n" +
 	"Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE")
@@ -114,23 +164,13 @@ func ISSANMismatchErr(err error) bool {
 }
 
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
-	if b.dpAuthEnabled && request.DataplaneTokenPath == "" && request.DataplaneToken == "" {
+	if b.dpAuthEnabled && request.DataplaneToken == "" {
 		return DpTokenRequired
 	}
 	if b.config.Params.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
 		if !b.hostsAndIps[request.Host] {
 			return SANMismatchErr(request.Host, b.hostsAndIps.slice())
 		}
-	}
-	if request.DataplaneToken != "" && request.DataplaneTokenPath != "" {
-		verr := validators.ValidationError{}
-		verr.AddViolation("dataplaneToken", "only one of dataplaneToken and dataplaneTokenField can be defined")
-		return verr.OrNil()
-	}
-	if b.bootstrapVersion(request.BootstrapVersion) == types.BootstrapV2 && request.DNSPort != 0 {
-		verr := validators.ValidationError{}
-		verr.AddViolation("dnsPort", "DNS cannot be used in API V2. Upgrade Kuma DP to API V3")
-		return verr.OrNil()
 	}
 	return nil
 }
@@ -170,8 +210,31 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 	}
 }
 
+func (b *bootstrapGenerator) zoneIngressFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.ZoneIngressResource, error) {
+	if request.DataplaneResource != "" {
+		res, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
+		if err != nil {
+			return nil, err
+		}
+		zoneIngress, ok := res.(*core_mesh.ZoneIngressResource)
+		if !ok {
+			return nil, errors.Errorf("invalid resource")
+		}
+		if err := zoneIngress.Validate(); err != nil {
+			return nil, err
+		}
+		return zoneIngress, nil
+	} else {
+		zoneIngress := core_mesh.NewZoneIngressResource()
+		if err := b.resManager.Get(ctx, zoneIngress, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
+			return nil, err
+		}
+		return zoneIngress, nil
+	}
+}
+
 func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string) error {
-	if err := b.resManager.Get(ctx, core_mesh.NewMeshResource(), core_store.GetByKey(mesh, model.NoMesh)); err != nil {
+	if err := b.resManager.Get(ctx, core_mesh.NewMeshResource(), core_store.GetByKey(mesh, core_model.NoMesh)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			verr := validators.ValidationError{}
 			verr.AddViolation("mesh", fmt.Sprintf("mesh %q does not exist", mesh))
@@ -182,101 +245,40 @@ func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string)
 	return nil
 }
 
-func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *core_mesh.DataplaneResource, request types.BootstrapRequest) (proto.Message, types.BootstrapVersion, error) {
-	// if dataplane has no service - fill this with placeholder. Otherwise take the first service
-	service := dataplane.Spec.GetIdentifyingService()
-
-	adminPort := b.config.Params.AdminPort
-	if request.AdminPort != 0 {
-		adminPort = request.AdminPort
-	}
-
-	if err := b.verifyAdminPort(adminPort, dataplane); err != nil {
-		return nil, "", err
-	}
-
-	cert, origin, err := b.caCert(request)
-	if err != nil {
-		return nil, "", err
-	}
-
-	if err := b.validateCaCert(cert, origin, request); err != nil {
-		return nil, "", err
-	}
-
-	accessLogSocket := envoy_common.AccessLogSocketName(request.Name, request.Mesh)
-	xdsHost := b.xdsHost(request)
-	xdsUri := net.JoinHostPort(xdsHost, strconv.FormatUint(uint64(b.config.Params.XdsPort), 10))
-
-	params := configParameters{
-		Id:                 proxyId.String(),
-		Service:            service,
-		AdminAddress:       b.config.Params.AdminAddress,
-		AdminPort:          adminPort,
-		AdminAccessLogPath: b.config.Params.AdminAccessLogPath,
-		XdsClusterType:     b.xdsClusterType(xdsHost),
-		XdsHost:            xdsHost,
-		XdsPort:            b.config.Params.XdsPort,
-		XdsUri:             xdsUri,
-		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout,
-		AccessLogPipe:      accessLogSocket,
-		DataplaneTokenPath: request.DataplaneTokenPath,
-		DataplaneToken:     request.DataplaneToken,
-		DataplaneResource:  request.DataplaneResource,
-		CertBytes:          base64.StdEncoding.EncodeToString(cert),
-		KumaDpVersion:      request.Version.KumaDp.Version,
-		KumaDpGitTag:       request.Version.KumaDp.GitTag,
-		KumaDpGitCommit:    request.Version.KumaDp.GitCommit,
-		KumaDpBuildDate:    request.Version.KumaDp.BuildDate,
-		EnvoyVersion:       request.Version.Envoy.Version,
-		EnvoyBuild:         request.Version.Envoy.Build,
-		HdsEnabled:         b.hdsEnabled,
-		DynamicMetadata:    request.DynamicMetadata,
-		DNSPort:            request.DNSPort,
-		EmptyDNSPort:       request.EmptyDNSPort,
-	}
-	log.WithValues("params", params).Info("Generating bootstrap config")
-	return b.configForParameters(params, request.BootstrapVersion)
-}
-
-func (b *bootstrapGenerator) validateCaCert(cert []byte, origin string, request types.BootstrapRequest) error {
-	if request.DataplaneTokenPath != "" {
-		// when using GoogleGRPC it is valid to put non-CA certificate therefore we should only verify this for EnvoyGRPC
-		// EnvoyGRPC is used when DataplaneToken is passed via request as inline value, not as a file.
-		return nil
-	}
-
-	pemCert, _ := pem.Decode(cert)
-	if pemCert == nil {
-		return errors.New("could not parse certificate from " + origin)
-	}
-	x509Cert, err := x509.ParseCertificate(pemCert.Bytes)
-	if err != nil {
-		return errors.Wrap(err, "could not parse certificate from "+origin)
-	}
-	// checking just x509Cert.IsCA is not enough, because it's valid to generate CA without CA:TRUE basic constraint
-	if x509Cert.BasicConstraintsValid && !x509Cert.IsCA {
-		return NotCA
-	}
-	return nil
-}
-
 // caCert gets CA cert that was used to signed cert that DP server is protected with.
 // Technically result of this function does not have to be a valid CA.
 // When user provides custom cert + key and does not provide --ca-cert-file to kuma-dp run, this can return just a regular cert
-func (b *bootstrapGenerator) caCert(request types.BootstrapRequest) ([]byte, string, error) {
+func (b *bootstrapGenerator) caCert(request types.BootstrapRequest) ([]byte, error) {
 	// CaCert from the request takes precedence. It is only visible if user provides --ca-cert-file to kuma-dp run
-	if request.CaCert != "" {
-		return []byte(request.CaCert), "request .CaCert", nil
-	}
-	if b.xdsCertFile != "" {
-		file, err := ioutil.ReadFile(b.xdsCertFile)
+	var cert []byte
+	var origin string
+	switch {
+	case request.CaCert != "":
+		cert = []byte(request.CaCert)
+		origin = "request .CaCert"
+	case b.xdsCertFile != "":
+		var err error
+		cert, err = os.ReadFile(b.xdsCertFile)
+		origin = "file " + b.xdsCertFile
 		if err != nil {
-			return nil, "file " + b.xdsCertFile, err
+			return nil, errors.Wrapf(err, "failed getting cert from %s", origin)
 		}
-		return file, "", nil
+	default:
+		return nil, nil
 	}
-	return nil, "", nil
+	pemCert, _ := pem.Decode(cert)
+	if pemCert == nil {
+		return nil, errors.Errorf("could not parse certificate from %s", origin)
+	}
+	x509Cert, err := x509.ParseCertificate(pemCert.Bytes)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not parse certificate %s", origin)
+	}
+	// checking just x509Cert.IsCA is not enough, because it's valid to generate CA without CA:TRUE basic constraint
+	if x509Cert.BasicConstraintsValid && !x509Cert.IsCA {
+		return nil, NotCA
+	}
+	return cert, nil
 }
 
 func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
@@ -285,98 +287,6 @@ func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
 	} else {
 		return request.Host
 	}
-}
-
-func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_mesh.DataplaneResource) error {
-	// The admin port in kuma-dp is always bound to 127.0.0.1
-	if dataplane.UsesInboundInterface(core_mesh.IPv4Loopback, adminPort) {
-		return errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", adminPort)
-	}
-
-	if dataplane.UsesOutboundInterface(core_mesh.IPv4Loopback, adminPort) {
-		return errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", adminPort)
-	}
-	return nil
-}
-
-func (b *bootstrapGenerator) bootstrapVersion(reqVersion types.BootstrapVersion) types.BootstrapVersion {
-	if reqVersion != "" {
-		return reqVersion
-	}
-	// if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
-	switch b.config.APIVersion {
-	case envoy_common.APIV2:
-		return types.BootstrapV2
-	case envoy_common.APIV3:
-		return types.BootstrapV3
-	default:
-		return ""
-	}
-}
-
-func (b *bootstrapGenerator) configForParameters(params configParameters, reqVersion types.BootstrapVersion) (proto.Message, types.BootstrapVersion, error) {
-	version := b.bootstrapVersion(reqVersion)
-	switch {
-	case version == types.BootstrapV2:
-		cfg, err := b.configForParametersV2(params)
-		if err != nil {
-			return nil, "", err
-		}
-		return cfg, types.BootstrapV2, nil
-	case version == types.BootstrapV3:
-		cfg, err := b.configForParametersV3(params)
-		if err != nil {
-			return nil, "", err
-		}
-		return cfg, types.BootstrapV3, nil
-	default:
-		return nil, "", InvalidBootstrapVersion
-	}
-}
-
-func (b *bootstrapGenerator) configForParametersV2(params configParameters) (proto.Message, error) {
-	tmpl, err := template.New("bootstrap").Parse(configTemplateV2)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse config template")
-	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, params); err != nil {
-		return nil, errors.Wrap(err, "failed to render config template")
-	}
-	config := &envoy_bootstrap_v2.Bootstrap{}
-	if err := util_proto.FromYAML(buf.Bytes(), config); err != nil {
-		return nil, errors.Wrap(err, "failed to parse bootstrap config")
-	}
-	if err := config.Validate(); err != nil {
-		return nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
-	}
-	return config, nil
-}
-
-func (b *bootstrapGenerator) configForParametersV3(params configParameters) (proto.Message, error) {
-	tmpl, err := template.New("bootstrap").Parse(configTemplateV3)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse config template")
-	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, params); err != nil {
-		return nil, errors.Wrap(err, "failed to render config template")
-	}
-	config := &envoy_bootstrap_v3.Bootstrap{}
-	if err := util_proto.FromYAML(buf.Bytes(), config); err != nil {
-		return nil, errors.Wrap(err, "failed to parse bootstrap config")
-	}
-	if err := config.Validate(); err != nil {
-		return nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
-	}
-	return config, nil
-}
-
-func (b *bootstrapGenerator) xdsClusterType(address string) string {
-	if govalidator.IsIP(address) {
-		return "STATIC"
-	}
-	return "STRICT_DNS"
 }
 
 type SANSet map[string]bool
@@ -391,7 +301,7 @@ func (s SANSet) slice() []string {
 }
 
 func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
-	certBytes, err := ioutil.ReadFile(dpServerCertFile)
+	certBytes, err := os.ReadFile(dpServerCertFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read certificate")
 	}

@@ -7,11 +7,12 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
-func DefaultConfig() Config {
+var DefaultConfig = func() Config {
 	return Config{
 		ControlPlane: ControlPlane{
 			URL: "https://localhost:5678",
@@ -25,13 +26,14 @@ func DefaultConfig() Config {
 			Name:      "",                                                      // Dataplane name must be set explicitly
 			AdminPort: config_types.MustPortRange(30001, config_types.MaxPort), // by default, automatically choose a free port for Envoy Admin interface
 			DrainTime: 30 * time.Second,
+			ProxyType: "dataplane",
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
 			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
 		},
 		DNS: DNS{
-			Enabled:                   false,
+			Enabled:                   true,
 			CoreDNSPort:               15053,
 			EnvoyDNSPort:              15054,
 			CoreDNSEmptyPort:          15055,
@@ -109,15 +111,14 @@ type Dataplane struct {
 	Mesh string `yaml:"mesh,omitempty" envconfig:"kuma_dataplane_mesh"`
 	// Dataplane name.
 	Name string `yaml:"name,omitempty" envconfig:"kuma_dataplane_name"`
+	// ProxyType defines mode which should be used, supported values: 'dataplane', 'ingress'
+	ProxyType string `yaml:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Port (or range of ports to choose from) for Envoy Admin API to listen on.
 	// Empty value indicates that Envoy Admin API should not be exposed over TCP.
 	// Format: "9901 | 9901-9999 | 9901- | -9901".
 	AdminPort config_types.PortRange `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
 	// Drain time for listeners.
 	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
-	// BootstrapVersion defines bootstrap version (and API version) of xDS config.
-	// If empty, default version defined in Kuma CP will be used.
-	BootstrapVersion string `yaml:"bootstrapVersion" envconfig:"kuma_dataplane_bootstrap_version"`
 }
 
 // DataplaneRuntime defines the context in which dataplane (Envoy) runs.
@@ -126,6 +127,8 @@ type DataplaneRuntime struct {
 	BinaryPath string `yaml:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
 	// Dir to store auto-generated Envoy bootstrap config in.
 	ConfigDir string `yaml:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
+	// Concurrency specifies how to generate the Envoy concurrency flag.
+	Concurrency uint32 `yaml:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
 	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
 	TokenPath string `yaml:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
 	// Token is dataplane token's value provided directly, will be stored to a temporary file before applying
@@ -170,6 +173,9 @@ func (c *ControlPlane) Sanitize() {
 }
 
 func (c *ControlPlane) Validate() (errs error) {
+	if _, err := url.Parse(c.URL); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Url is not valid"))
+	}
 	if err := c.Retry.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Retry is not valid"))
 	}
@@ -182,16 +188,31 @@ func (d *Dataplane) Sanitize() {
 }
 
 func (d *Dataplane) Validate() (errs error) {
-	if d.Mesh == "" {
+	proxyType := mesh_proto.ProxyType(d.ProxyType)
+	switch proxyType {
+	case mesh_proto.DataplaneProxyType, mesh_proto.IngressProxyType:
+	default:
+		if err := proxyType.IsValid(); err != nil {
+			errs = multierr.Append(errs, errors.Wrap(err, ".ProxyType is not valid"))
+		} else {
+			// Not all Dataplane types are allowed to be set directly in config.
+			errs = multierr.Append(errs, errors.Errorf(".ProxyType %q is not supported", proxyType))
+		}
+	}
+
+	if d.Mesh == "" && proxyType != mesh_proto.IngressProxyType {
 		errs = multierr.Append(errs, errors.Errorf(".Mesh must be non-empty"))
 	}
+
 	if d.Name == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Name must be non-empty"))
 	}
+
 	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
+
 	return
 }
 

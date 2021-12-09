@@ -2,38 +2,29 @@ package mux
 
 import (
 	"context"
-	"io"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
-type MultiplexStream interface {
-	Send(*mesh_proto.Message) error
-	Recv() (*mesh_proto.Message, error)
-	Context() context.Context
-}
-
 type kdsServerStream struct {
-	MultiplexStream
-	requests chan *envoy_api_v2.DiscoveryRequest
+	ctx          context.Context
+	bufferStream *bufferStream
 }
 
-func (k *kdsServerStream) put(request *envoy_api_v2.DiscoveryRequest) {
-	k.requests <- request
+func (k *kdsServerStream) Send(response *envoy_sd.DiscoveryResponse) error {
+	err := k.bufferStream.Send(&mesh_proto.Message{Value: &mesh_proto.Message_Response{Response: response}})
+	return err
 }
 
-func (k *kdsServerStream) Send(response *envoy_api_v2.DiscoveryResponse) error {
-	return k.MultiplexStream.Send(&mesh_proto.Message{Value: &mesh_proto.Message_Response{Response: response}})
-}
-
-func (k *kdsServerStream) Recv() (*envoy_api_v2.DiscoveryRequest, error) {
-	if r, ok := <-k.requests; ok {
-		return r, nil
+func (k *kdsServerStream) Recv() (*envoy_sd.DiscoveryRequest, error) {
+	res, err := k.bufferStream.Recv()
+	if err != nil {
+		return nil, err
 	}
-	return nil, io.EOF
+	return res.GetRequest(), nil
 }
 
 func (k *kdsServerStream) SetHeader(metadata.MD) error {
@@ -49,7 +40,7 @@ func (k *kdsServerStream) SetTrailer(metadata.MD) {
 }
 
 func (k *kdsServerStream) Context() context.Context {
-	return k.MultiplexStream.Context()
+	return k.ctx
 }
 
 func (k *kdsServerStream) SendMsg(m interface{}) error {

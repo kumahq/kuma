@@ -4,13 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/util/template"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -18,11 +16,12 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/util/template"
 )
 
 const (
@@ -58,12 +57,17 @@ name: demo
 Apply a resource from external URL
 $ kumactl apply -f https://example.com/resource.yaml
 `,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := pctx.CheckServerVersionCompatibility(); err != nil {
+				cmd.PrintErrln(err)
+			}
+
 			var b []byte
 			var err error
 
 			if ctx.args.file == "-" {
-				b, err = ioutil.ReadAll(cmd.InOrStdin())
+				b, err = io.ReadAll(cmd.InOrStdin())
 				if err != nil {
 					return err
 				}
@@ -85,12 +89,12 @@ $ kumactl apply -f https://example.com/resource.yaml
 						return errors.Wrap(err, "error while retrieving URL")
 					}
 					defer resp.Body.Close()
-					b, err = ioutil.ReadAll(resp.Body)
+					b, err = io.ReadAll(resp.Body)
 					if err != nil {
 						return errors.Wrap(err, "error while reading provided file")
 					}
 				} else {
-					b, err = ioutil.ReadFile(ctx.args.file)
+					b, err = os.ReadFile(ctx.args.file)
 					if err != nil {
 						return errors.Wrap(err, "error while reading provided file")
 					}
@@ -105,12 +109,15 @@ $ kumactl apply -f https://example.com/resource.yaml
 				if len(rawResource) == 0 {
 					continue
 				}
-				bytes := template.Render(rawResource, ctx.args.vars)
-				res, err := rest.UnmarshallToCore(bytes)
+				bytes := []byte(rawResource)
+				if len(ctx.args.vars) > 0 {
+					bytes = template.Render(rawResource, ctx.args.vars)
+				}
+				res, err := rest_types.UnmarshallToCore(bytes)
 				if err != nil {
 					return errors.Wrap(err, "YAML contains invalid resource")
 				}
-				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Scope()); err.HasViolations() {
+				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Descriptor().Scope); err.HasViolations() {
 					return err.OrNil()
 				}
 				resources = append(resources, res)
@@ -130,7 +137,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 						return err
 					}
 
-					if err := upsert(rs, resource); err != nil {
+					if err := upsert(pctx.Runtime.Registry, rs, resource); err != nil {
 						return err
 					}
 				}
@@ -145,8 +152,8 @@ $ kumactl apply -f https://example.com/resource.yaml
 	return cmd
 }
 
-func upsert(rs store.ResourceStore, res model.Resource) error {
-	newRes, err := registry.Global().NewObject(res.GetType())
+func upsert(typeRegistry registry.TypeRegistry, rs store.ResourceStore, res model.Resource) error {
+	newRes, err := typeRegistry.NewObject(res.Descriptor().Name)
 	if err != nil {
 		return err
 	}

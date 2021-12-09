@@ -11,15 +11,19 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
+
+func typeIsUnregistered(err error) bool {
+	var typeErr *k8s_registry.UnknownTypeError
+	return errors.As(err, &typeErr)
+}
 
 var _ store.ResourceStore = &KubernetesStore{}
 
@@ -41,6 +45,9 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	opts := store.NewCreateOptions(fs...)
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
+		if typeIsUnregistered(err) {
+			return errors.Errorf("cannot create instance of unregistered type %q", r.Descriptor().Name)
+		}
 		return errors.Wrap(err, "failed to convert core model into k8s counterpart")
 	}
 	name, namespace, err := k8sNameNamespace(opts.Name, obj.Scope())
@@ -61,13 +68,9 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 		}
 	}
 
-	if opts.Synced {
-		markAsSynced(obj)
-	}
-
 	if err := s.Client.Create(ctx, obj); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
-			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
+			return store.ErrorResourceAlreadyExists(r.Descriptor().Name, opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to create k8s resource")
 	}
@@ -78,30 +81,18 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	return nil
 }
 
-func markAsSynced(obj k8s_model.KubernetesObject) {
-	annotations := obj.GetAnnotations()
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
-	annotations[k8s_common.K8sSynced] = "true"
-	obj.SetAnnotations(annotations)
-}
-
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...store.UpdateOptionsFunc) error {
-	opts := store.NewUpdateOptions(fs...)
-
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
-		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
-	}
-
-	if opts.Synced {
-		markAsSynced(obj)
+		if typeIsUnregistered(err) {
+			return errors.Errorf("cannot update instance of unregistered type %q", r.Descriptor().Name)
+		}
+		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
 
 	if err := s.Client.Update(ctx, obj); err != nil {
 		if kube_apierrs.IsConflict(err) {
-			return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
+			return store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
 		}
 		return errors.Wrap(err, "failed to update k8s resource")
 	}
@@ -111,6 +102,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	return nil
 }
+
 func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
@@ -121,8 +113,13 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
-		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
+		// Unregistered types can't exist in the first place, so deletion would automatically succeed.
+		if typeIsUnregistered(err) {
+			return nil
+		}
+		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
+
 	name, namespace, err := k8sNameNamespace(opts.Name, obj.Scope())
 	if err != nil {
 		return err
@@ -137,11 +134,15 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	}
 	return nil
 }
+
 func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
-		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
+		if typeIsUnregistered(err) {
+			return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
+		}
+		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
 	name, namespace, err := k8sNameNamespace(opts.Name, obj.Scope())
 	if err != nil {
@@ -149,7 +150,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	}
 	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: namespace, Name: name}, obj); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
+			return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
 		}
 		return errors.Wrap(err, "failed to get k8s resource")
 	}
@@ -157,17 +158,21 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
 	if opts.Version != "" && r.GetMeta().GetVersion() != opts.Version {
-		return store.ErrorResourcePreconditionFailed(r.GetType(), opts.Name, opts.Mesh)
+		return store.ErrorResourcePreconditionFailed(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	if r.GetMeta().GetMesh() != opts.Mesh {
-		return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
+		return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	return nil
 }
+
 func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, fs ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(fs...)
 	obj, err := s.Converter.ToKubernetesList(rs)
 	if err != nil {
+		if typeIsUnregistered(err) {
+			return nil
+		}
 		return errors.Wrapf(err, "failed to convert core list model of type %s into k8s counterpart", rs.GetItemType())
 	}
 	if err := s.Client.List(ctx, obj); err != nil {

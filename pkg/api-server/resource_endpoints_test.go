@@ -3,7 +3,7 @@ package api_server_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -12,7 +12,7 @@ import (
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
-	mesh_res "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -58,7 +58,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 	BeforeEach(func() {
 		// create default mesh
-		err := resourceStore.Create(context.Background(), mesh_res.NewMeshResource(), store.CreateByKey(mesh, model.NoMesh))
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -72,7 +72,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(200))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			json := `
 			{
@@ -94,7 +94,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(404))
 
 			// and
-			bytes, err := ioutil.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(MatchJSON(`
 			{
@@ -132,7 +132,7 @@ var _ = Describe("Resource Endpoints", func() {
 				"modificationTime": "0001-01-01T00:00:00Z",
 				"path": "/sample-path"
 			}`
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(Or(
 				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json1, json2)),
@@ -172,7 +172,7 @@ var _ = Describe("Resource Endpoints", func() {
 				"modificationTime": "0001-01-01T00:00:00Z",
 				"path": "/sample-path"
 			}`
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(Or(
 				MatchJSON(fmt.Sprintf(`{"total": %d, "items": [%s,%s], "next": null}`, 2, json1, json2)),
@@ -218,7 +218,7 @@ var _ = Describe("Resource Endpoints", func() {
 				],
 				"next": "http://%s/sample-traffic-routes?offset=2&size=2"
 			}`, client.address)
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(json))
 
@@ -246,7 +246,7 @@ var _ = Describe("Resource Endpoints", func() {
 				],
 				"next": null
 			}`
-			body, err = ioutil.ReadAll(response.Body)
+			body, err = io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(json))
 		})
@@ -262,7 +262,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// then
 			Expect(response.StatusCode).To(Equal(400))
 			// and
-			bytes, err := ioutil.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(MatchJSON(`
 			{
@@ -289,7 +289,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// then
 			Expect(response.StatusCode).To(Equal(400))
 			// and
-			bytes, err := ioutil.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(MatchJSON(`
 			{
@@ -316,7 +316,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// then
 			Expect(response.StatusCode).To(Equal(400))
 			// and
-			bytes, err := ioutil.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(MatchJSON(`
 			{
@@ -398,7 +398,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(400))
 
 			// and
-			bytes, err := ioutil.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(MatchJSON(`
 			{
@@ -432,7 +432,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(400))
 
 			// and
-			bytes, err := ioutil.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(MatchJSON(`
 			{
@@ -466,7 +466,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(400))
 
 			// and
-			bytes, err := ioutil.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(MatchJSON(`
 			{
@@ -499,7 +499,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(400))
 
 			// when
-			respBytes, err := ioutil.ReadAll(response.Body)
+			respBytes, err := io.ReadAll(response.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -539,7 +539,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(400))
 
 			// when
-			respBytes, err := ioutil.ReadAll(response.Body)
+			respBytes, err := io.ReadAll(response.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -563,7 +563,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 		It("should return 400 when mesh does not exist", func() {
 			// setup
-			err := resourceStore.Delete(context.Background(), mesh_res.NewMeshResource(), store.DeleteByKey(model.DefaultMesh, model.NoMesh))
+			err := resourceStore.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
@@ -582,7 +582,7 @@ var _ = Describe("Resource Endpoints", func() {
 			response := client.put(res)
 
 			// when
-			respBytes, err := ioutil.ReadAll(response.Body)
+			respBytes, err := io.ReadAll(response.Body)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -616,7 +616,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			resource := sample_model.NewTrafficRouteResource()
 			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, name, mesh)))
 		})
 
 		It("should delete non-existing resource", func() {
@@ -627,7 +627,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(404))
 
 			// and
-			bytes, err := ioutil.ReadAll(response.Body)
+			bytes, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(MatchJSON(`
 			{

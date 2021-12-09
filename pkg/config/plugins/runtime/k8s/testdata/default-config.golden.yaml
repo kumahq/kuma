@@ -45,6 +45,8 @@ injector:
       openshift.io/deployer-pod-for.name: '*'
   caCertFile: ""
   builtinDNS:
+    enabled: true
     port: 15053
 marshalingCacheExpirationTime: 5m0s
+serviceAccountName: system:serviceaccount:kuma-system:kuma-control-plane
 controlPlaneServiceName: kuma-control-plane

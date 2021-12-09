@@ -2,8 +2,8 @@ package multizone
 
 import (
 	"crypto/x509"
-	"io/ioutil"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -16,7 +16,6 @@ var _ config.Config = &MultizoneConfig{}
 
 // Global configuration
 type GlobalConfig struct {
-	PollTimeout time.Duration `yaml:"pollTimeout,omitempty" envconfig:"kuma_multizone_global_poll_timeout"`
 	// KDS Configuration
 	KDS *KdsServerConfig `yaml:"kds,omitempty"`
 }
@@ -31,41 +30,41 @@ func (g *GlobalConfig) Validate() error {
 
 func DefaultGlobalConfig() *GlobalConfig {
 	return &GlobalConfig{
-		PollTimeout: 500 * time.Millisecond,
 		KDS: &KdsServerConfig{
 			GrpcPort:                 5685,
 			RefreshInterval:          1 * time.Second,
 			ZoneInsightFlushInterval: 10 * time.Second,
+			MaxMsgSize:               10 * 1024 * 1024,
 		},
 	}
 }
 
-// Remote configuration
-type RemoteConfig struct {
-	// Kuma Zone name used to mark the remote dataplane resources
-	Zone string `yaml:"zone,omitempty" envconfig:"kuma_multizone_remote_zone"`
+// Zone configuration
+type ZoneConfig struct {
+	// Kuma Zone name used to mark the zone dataplane resources
+	Name string `yaml:"name,omitempty" envconfig:"kuma_multizone_zone_name"`
 	// GlobalAddress URL of Global Kuma CP
-	GlobalAddress string `yaml:"globalAddress,omitempty" envconfig:"kuma_multizone_remote_global_address"`
+	GlobalAddress string `yaml:"globalAddress,omitempty" envconfig:"kuma_multizone_zone_global_address"`
 	// KDS Configuration
 	KDS *KdsClientConfig `yaml:"kds,omitempty"`
 }
 
-func (r *RemoteConfig) Sanitize() {
+func (r *ZoneConfig) Sanitize() {
 	r.KDS.Sanitize()
 }
 
-func (r *RemoteConfig) Validate() error {
-	if r.Zone == "" {
-		return errors.Errorf("Zone is mandatory in remote mode")
-	} else if !govalidator.IsDNSName(r.Zone) {
-		return errors.Errorf("Wrong zone name %s", r.Zone)
+func (r *ZoneConfig) Validate() error {
+	if r.Name == "" {
+		return errors.Errorf("Name is mandatory in Zone mode")
+	} else if !govalidator.IsDNSName(r.Name) {
+		return errors.Errorf("Wrong zone name %s", r.Name)
 	}
 	if r.GlobalAddress == "" {
-		return errors.Errorf("GlobalAddress is mandatory in remote mode")
+		return errors.Errorf("GlobalAddress is mandatory in Zone mode")
 	}
 	u, err := url.Parse(r.GlobalAddress)
 	if err != nil {
-		return errors.Wrapf(err, "unable to parse remote GlobaAddress.")
+		return errors.Wrapf(err, "unable to parse zone GlobalAddress.")
 	}
 	switch u.Scheme {
 	case "grpc":
@@ -73,7 +72,7 @@ func (r *RemoteConfig) Validate() error {
 		rootCaFile := r.KDS.RootCAFile
 		if rootCaFile != "" {
 			roots := x509.NewCertPool()
-			caCert, err := ioutil.ReadFile(rootCaFile)
+			caCert, err := os.ReadFile(rootCaFile)
 			if err != nil {
 				return errors.Wrapf(err, "could not read certificate %s", rootCaFile)
 			}
@@ -83,17 +82,18 @@ func (r *RemoteConfig) Validate() error {
 			}
 		}
 	default:
-		return errors.Errorf("unsupported scheme %q in remote GlobalAddress. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
+		return errors.Errorf("unsupported scheme %q in zone GlobalAddress. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
 	}
 	return r.KDS.Validate()
 }
 
-func DefaultRemoteConfig() *RemoteConfig {
-	return &RemoteConfig{
+func DefaultZoneConfig() *ZoneConfig {
+	return &ZoneConfig{
 		GlobalAddress: "",
-		Zone:          "",
+		Name:          "",
 		KDS: &KdsClientConfig{
 			RefreshInterval: 1 * time.Second,
+			MaxMsgSize:      10 * 1024 * 1024,
 		},
 	}
 }
@@ -101,21 +101,21 @@ func DefaultRemoteConfig() *RemoteConfig {
 // Multizone configuration
 type MultizoneConfig struct {
 	Global *GlobalConfig `yaml:"global,omitempty"`
-	Remote *RemoteConfig `yaml:"remote,omitempty"`
+	Zone   *ZoneConfig   `yaml:"zone,omitempty"`
 }
 
 func (m *MultizoneConfig) Sanitize() {
 	m.Global.Sanitize()
-	m.Remote.Sanitize()
+	m.Zone.Sanitize()
 }
 
 func (m *MultizoneConfig) Validate() error {
-	panic("not implemented. Call Global and Remote validators as needed.")
+	panic("not implemented. Call Global and Zone validators as needed.")
 }
 
 func DefaultMultizoneConfig() *MultizoneConfig {
 	return &MultizoneConfig{
 		Global: DefaultGlobalConfig(),
-		Remote: DefaultRemoteConfig(),
+		Zone:   DefaultZoneConfig(),
 	}
 }

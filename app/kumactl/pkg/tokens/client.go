@@ -3,30 +3,25 @@ package tokens
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 
-	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
-	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
-func NewDataplaneTokenClient(config *kumactl_config.ControlPlaneCoordinates_ApiServer) (DataplaneTokenClient, error) {
-	client, err := kumactl_client.ApiServerClient(config)
-	if err != nil {
-		return nil, err
-	}
+func NewDataplaneTokenClient(client util_http.Client) DataplaneTokenClient {
 	return &httpDataplaneTokenClient{
 		client: client,
-	}, nil
+	}
 }
 
 type DataplaneTokenClient interface {
-	Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error)
+	Generate(name string, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error)
 }
 
 type httpDataplaneTokenClient struct {
@@ -35,12 +30,13 @@ type httpDataplaneTokenClient struct {
 
 var _ DataplaneTokenClient = &httpDataplaneTokenClient{}
 
-func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error) {
+func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string, dpType string, validFor time.Duration) (string, error) {
 	tokenReq := &types.DataplaneTokenRequest{
-		Name: name,
-		Mesh: mesh,
-		Tags: tags,
-		Type: dpType,
+		Name:     name,
+		Mesh:     mesh,
+		Tags:     tags,
+		Type:     dpType,
+		ValidFor: validFor.String(),
 	}
 	reqBytes, err := json.Marshal(tokenReq)
 	if err != nil {
@@ -56,7 +52,7 @@ func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[s
 		return "", errors.Wrap(err, "could not execute the request")
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", errors.Wrap(err, "could not read a body of the request")
 	}

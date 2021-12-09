@@ -3,7 +3,7 @@ package api_server_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -13,7 +13,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -50,7 +50,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -160,7 +160,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(200))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(zone1Json))
 		})
@@ -172,7 +172,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(200))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(string(body)).To(MatchJSON(fmt.Sprintf(`{"total": 3, "items": [%s,%s,%s], "next": null}`, zone1Json, zone2Json, zone3Json)))

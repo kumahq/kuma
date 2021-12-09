@@ -12,18 +12,14 @@ import (
 
 type DNSResolver interface {
 	GetDomain() string
-	SetVIPs(list vips.List)
-	GetVIPs() vips.List
-
-	ForwardLookup(service string) (string, error)
+	SetVIPs(map[vips.HostnameEntry]string)
 	ForwardLookupFQDN(name string) (string, error)
-	ReverseLookup(ip string) (string, error)
 }
 
 type dnsResolver struct {
 	sync.RWMutex
 	domain  string
-	viplist vips.List
+	viplist map[vips.HostnameEntry]string
 }
 
 var _ DNSResolver = &dnsResolver{}
@@ -38,66 +34,39 @@ func (d *dnsResolver) GetDomain() string {
 	return d.domain
 }
 
-func (s *dnsResolver) SetVIPs(list vips.List) {
+func (s *dnsResolver) SetVIPs(list map[vips.HostnameEntry]string) {
 	s.Lock()
 	defer s.Unlock()
 	s.viplist = list
 }
 
-func (s *dnsResolver) GetVIPs() vips.List {
-	s.RLock()
-	defer s.RUnlock()
-	return s.viplist
-}
-
-func (s *dnsResolver) ForwardLookup(service string) (string, error) {
-	s.RLock()
-	defer s.RUnlock()
-
-	ip, found := s.viplist[service]
-
-	if !found {
-		return "", errors.Errorf("service [%s] not found in domain [%s].", service, s.domain)
-	}
-	return ip, nil
-}
-
 func (s *dnsResolver) ForwardLookupFQDN(name string) (string, error) {
 	s.RLock()
 	defer s.RUnlock()
+	ipFqdn, foundFqdn := s.viplist[vips.NewFqdnEntry(strings.TrimSuffix(name, "."))]
+
 	domain, err := s.domainFromName(name)
 	if err != nil {
 		return "", err
 	}
 
-	if domain != s.domain {
-		return "", errors.Errorf("domain [%s] not found.", domain)
-	}
-
-	service, err := s.serviceFromName(name)
-	if err != nil {
-		return "", err
-	}
-
-	ip, found := s.viplist[service]
-	if !found {
-		return "", errors.Errorf("service [%s] not found in domain [%s].", service, domain)
-	}
-
-	return ip, nil
-}
-
-func (s *dnsResolver) ReverseLookup(ip string) (string, error) {
-	s.RLock()
-	defer s.RUnlock()
-
-	for service, serviceIP := range s.viplist {
-		if serviceIP == ip {
-			return service + "." + s.domain, nil
+	if domain == s.domain {
+		service, err := s.serviceFromName(name)
+		if err != nil {
+			return "", err
 		}
-	}
 
-	return "", errors.Errorf("IP [%s] not found", ip)
+		ip, found := s.viplist[vips.NewServiceEntry(service)]
+		if found {
+			return ip, nil
+		} else if foundFqdn {
+			return ipFqdn, nil
+		}
+		return "", errors.Errorf("service [%s] not found in domain [%s].", service, domain)
+	} else if foundFqdn {
+		return ipFqdn, nil
+	}
+	return "", errors.Errorf("domain [%s] not found.", domain)
 }
 
 func (s *dnsResolver) domainFromName(name string) (string, error) {

@@ -3,7 +3,7 @@ package api_server_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -59,7 +59,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 			// then
 			Expect(response.StatusCode).To(Equal(200))
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			json := `
 			{
@@ -103,7 +103,7 @@ var _ = Describe("Resource Endpoints", func() {
 				"creationTime": "2018-07-17T16:05:36.995Z",
 				"modificationTime": "2018-07-17T16:05:36.995Z"
 			}`
-			body, err := ioutil.ReadAll(response.Body)
+			body, err := io.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(string(body)).To(Or(
@@ -230,7 +230,7 @@ var _ = Describe("Resource Endpoints", func() {
 			// and
 			resource := mesh.NewMeshResource()
 			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, name))
-			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, name)))
+			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.Descriptor().Name, name, name)))
 		})
 
 		It("should delete non-existing resource", func() {

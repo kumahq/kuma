@@ -9,13 +9,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/kumahq/kuma/test/framework"
 )
 
 func TrafficPermissionHybrid() {
-	var globalCluster, remoteUniversal, remoteKube Cluster
-	var optsGlobal, optsRemoteUniversal, optsRemoteKube []DeployOptionsFunc
+	var globalCluster, zoneUniversal, zoneKube Cluster
+	var optsGlobal, optsZoneUniversal, optsZoneKube = KumaK8sDeployOpts, KumaUniversalDeployOpts, KumaZoneK8sDeployOpts
 	var clientPodName string
 
 	namespaceWithSidecarInjection := func(namespace string) string {
@@ -57,7 +56,6 @@ spec:
 
 		// Global
 		globalCluster = k8sClusters.GetCluster(Kuma1)
-		optsGlobal = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Global, optsGlobal...)).
@@ -68,45 +66,42 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 		globalCP := globalCluster.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
-		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("default", "ingress")
+		testServerToken, err := globalCP.GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 
-		// Remote universal
-		remoteUniversal = universalClusters.GetCluster(Kuma3)
-		optsRemoteUniversal = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		// Zone universal
+		zoneUniversal = universalClusters.GetCluster(Kuma3)
+		optsZoneUniversal = append(optsZoneUniversal,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Remote, optsRemoteUniversal...)).
-			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
-			Install(IngressUniversal("default", ingressToken)).
-			Setup(remoteUniversal)
+			Install(Kuma(config_core.Zone, optsZoneUniversal...)).
+			Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
+			Install(IngressUniversal(ingressTokenKuma3)).
+			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteUniversal.VerifyKuma()
+		err = zoneUniversal.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		// Remote kubernetes
-		remoteKube = k8sClusters.GetCluster(Kuma2)
-		optsRemoteKube = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		// Zone kubernetes
+		zoneKube = k8sClusters.GetCluster(Kuma2)
+		optsZoneKube = append(optsZoneKube,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Remote, optsRemoteKube...)).
-			Install(KumaDNS()).
+			Install(Kuma(config_core.Zone, optsZoneKube...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
-			Setup(remoteKube)
+			Setup(zoneKube)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteKube.VerifyKuma()
+		err = zoneKube.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		pods, err := k8s.ListPodsE(
-			remoteKube.GetTesting(),
-			remoteKube.GetKubectlOptions(TestNamespace),
+			zoneKube.GetTesting(),
+			zoneKube.GetKubectlOptions(TestNamespace),
 			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
 			},
@@ -147,28 +142,27 @@ spec:
 		err = globalCluster.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remoteUniversal.DeleteKuma(optsRemoteUniversal...)
+		err = zoneUniversal.DeleteKuma(optsZoneUniversal...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteUniversal.DismissCluster()
+		err = zoneUniversal.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remoteKube.DeleteKuma(optsRemoteKube...)
+		err = zoneKube.DeleteKuma(optsZoneKube...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteKube.DismissCluster()
+		err = zoneKube.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	trafficAllowed := func() {
-		stdout, _, err := remoteKube.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+		_, _, err := zoneKube.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("Echo universal"))
 	}
 
 	trafficBlocked := func() {
 		Eventually(func() error {
-			_, _, err := remoteKube.Exec(TestNamespace, clientPodName, "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+			_, _, err := zoneKube.Exec(TestNamespace, clientPodName, "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 			return err
 		}, "30s", "1s").Should(HaveOccurred())
 	}
@@ -206,7 +200,7 @@ metadata:
 spec:
   sources:
     - match:
-        kuma.io/zone: kuma-2-remote
+        kuma.io/zone: kuma-2-zone
   destinations:
     - match:
         kuma.io/zone: kuma-3
@@ -236,9 +230,40 @@ spec:
         kuma.io/service: demo-client_kuma-test_svc
   destinations:
     - match:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
 `
 		err := YamlK8s(yaml)(globalCluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		trafficAllowed()
+	})
+
+	It("should allow the traffic with tags added dynamically on Kubernetes", func() {
+		// given
+		removeDefaultTrafficPermission()
+		trafficBlocked()
+
+		// when
+		yaml := `
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  name: example-on-service
+spec:
+  sources:
+    - match:
+        newtag: client
+  destinations:
+    - match:
+        kuma.io/service: test-server
+`
+		err := YamlK8s(yaml)(globalCluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// and when Kubernetes pod is labeled
+		err = k8s.RunKubectlE(zoneKube.GetTesting(), zoneKube.GetKubectlOptions(TestNamespace), "label", "pod", clientPodName, "newtag=client")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

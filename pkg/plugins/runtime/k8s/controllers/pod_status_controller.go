@@ -3,16 +3,9 @@ package controllers
 import (
 	"context"
 
-	"go.uber.org/multierr"
-
-	"github.com/pkg/errors"
-
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -23,8 +16,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 // PodStatusReconciler tracks pods status changes and signals kuma-dp when it has to complete
@@ -38,8 +35,7 @@ type PodStatusReconciler struct {
 	EnvoyAdminClient  admin.EnvoyAdminClient
 }
 
-func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	ctx := context.Background()
+func (r *PodStatusReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	log := r.Log.WithValues("pod-status", req.NamespacedName)
 
 	// Fetch the Pod instance
@@ -117,12 +113,6 @@ func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 }
 
 func (r *PodStatusReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	for _, addToScheme := range []func(*kube_runtime.Scheme) error{kube_core.AddToScheme, mesh_k8s.AddToScheme} {
-		if err := addToScheme(mgr.GetScheme()); err != nil {
-			return err
-		}
-	}
-
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Pod{}, builder.WithPredicates(podStatusEvents)).
 		Complete(r)

@@ -1,0 +1,16 @@
+# TYPE custom_metric_seconds summary
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-_0_",quantile="0.5"} 2
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-_0_",quantile="0.9"} 5
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-_0_",quantile="0.99"} 20
+custom_metric_seconds_sum{envoy_cluster_name="echo-server_kuma-test_svc_8080-_0_"} 1000
+custom_metric_seconds_count{envoy_cluster_name="echo-server_kuma-test_svc_8080-_0_"} 500
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-_1_",quantile="0.5"} 3
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-_1_",quantile="0.9"} 6
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-_1_",quantile="0.99"} 11
+custom_metric_seconds_sum{envoy_cluster_name="echo-server_kuma-test_svc_8080-_1_"} 600
+custom_metric_seconds_count{envoy_cluster_name="echo-server_kuma-test_svc_8080-_1_"} 100
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-_2_",quantile="0.5"} 4
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-_2_",quantile="0.9"} 7
+custom_metric_seconds{envoy_cluster_name="echo-server_kuma-test_svc_8080-_2_",quantile="0.99"} 13
+custom_metric_seconds_sum{envoy_cluster_name="echo-server_kuma-test_svc_8080-_2_"} 800
+custom_metric_seconds_count{envoy_cluster_name="echo-server_kuma-test_svc_8080-_2_"} 200

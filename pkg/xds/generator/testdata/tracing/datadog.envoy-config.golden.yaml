@@ -1,0 +1,18 @@
+resources:
+- name: tracing:datadog
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: tracing_datadog
+    connectTimeout: 10s
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: tracing:datadog
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: localhost
+                portValue: 2304
+    name: tracing:datadog
+    type: STRICT_DNS

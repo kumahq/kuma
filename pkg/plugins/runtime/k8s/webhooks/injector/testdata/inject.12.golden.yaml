@@ -4,6 +4,7 @@ metadata:
   annotations:
     kuma.io/mesh: mesh-name-from-ns
     kuma.io/sidecar-injected: "true"
+    kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-inbound-v6-port: "15010"
@@ -26,6 +27,7 @@ spec:
   - args:
     - run
     - --log-level=info
+    - --concurrency=2
     env:
     - name: POD_NAME
       valueFrom:
@@ -76,6 +78,8 @@ spec:
       value: $(POD_NAME).$(POD_NAMESPACE)
     - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
+    - name: KUMA_DNS_ENABLED
+      value: "false"
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
@@ -126,6 +130,7 @@ spec:
     - ""
     - --exclude-outbound-ports
     - ""
+    - --verbose
     - --skip-resolv-conf
     command:
     - /usr/bin/kumactl

@@ -2,32 +2,29 @@ package envoy
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var _ = Describe("Remote Bootstrap", func() {
 
 	type testCase struct {
 		config                   kuma_dp.Config
-		bootstrapVersion         types.BootstrapVersion
 		dataplane                *rest.Resource
 		dynamicMetadata          map[string]string
 		expectedBootstrapRequest string
@@ -49,12 +46,11 @@ var _ = Describe("Remote Bootstrap", func() {
 		defer server.Close()
 		mux.HandleFunc("/bootstrap", func(writer http.ResponseWriter, req *http.Request) {
 			defer GinkgoRecover()
-			body, err := ioutil.ReadAll(req.Body)
+			body, err := io.ReadAll(req.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(given.expectedBootstrapRequest))
 
-			writer.Header().Set(types.BootstrapVersionHeader, string(given.bootstrapVersion))
-			response, err := ioutil.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
+			response, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			_, err = writer.Write(response)
 			Expect(err).ToNot(HaveOccurred())
@@ -67,18 +63,16 @@ var _ = Describe("Remote Bootstrap", func() {
 
 		// when
 		params := BootstrapParams{
-			Dataplane:        given.dataplane,
-			BootstrapVersion: given.bootstrapVersion,
+			Dataplane: given.dataplane,
 			EnvoyVersion: EnvoyVersion{
 				Build:   "hash/1.15.0/RELEASE",
 				Version: "1.15.0",
 			},
 			DynamicMetadata: given.dynamicMetadata,
 		}
-		config, version, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, params)
+		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, params)
 
 		// then
-		Expect(version).To(Equal(given.bootstrapVersion))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(config).ToNot(BeNil())
 	},
@@ -91,8 +85,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.DataplaneRuntime.Token = "token"
 
 				return testCase{
-					config:           cfg,
-					bootstrapVersion: "2",
+					config: cfg,
 					dataplane: &rest.Resource{
 						Meta: rest.ResourceMeta{
 							Type: "Dataplane",
@@ -107,6 +100,7 @@ var _ = Describe("Remote Bootstrap", func() {
 					{
 					  "mesh": "demo",
 					  "name": "sample",
+					  "proxyType": "dataplane",
 					  "adminPort": 4321,
 					  "dataplaneToken": "token",
 					  "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
@@ -123,10 +117,10 @@ var _ = Describe("Remote Bootstrap", func() {
 						}
 					  },
 					  "caCert": "",
-					  "bootstrapVersion": "2",
 					  "dynamicMetadata": {
 					    "test": "value"
-					  }
+					  },
+                      "bootstrapVersion": "3"
 					}`,
 				}
 			}()),
@@ -148,11 +142,11 @@ var _ = Describe("Remote Bootstrap", func() {
 							Name: "sample",
 						},
 					},
-					bootstrapVersion: "3",
 					expectedBootstrapRequest: `
                     {
                       "mesh": "demo",
                       "name": "sample",
+                      "proxyType": "dataplane",
                       "adminPort": 4321,
                       "dataplaneToken": "token",
                       "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
@@ -169,8 +163,8 @@ var _ = Describe("Remote Bootstrap", func() {
                         }
                       },
                       "caCert": "",
-                      "bootstrapVersion": "3",
-					  "dynamicMetadata": null
+                      "dynamicMetadata": null,
+                      "bootstrapVersion": "3"
                     }`,
 				}
 			}()),
@@ -195,6 +189,7 @@ var _ = Describe("Remote Bootstrap", func() {
                     {
                       "mesh": "demo",
                       "name": "sample",
+                      "proxyType": "dataplane",
                       "dataplaneToken": "token",
                       "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
                       "version": {
@@ -210,8 +205,8 @@ var _ = Describe("Remote Bootstrap", func() {
                         }
                       },
                       "caCert": "",
-                      "bootstrapVersion": "",
-					  "dynamicMetadata": null
+					  "dynamicMetadata": null,
+                      "bootstrapVersion": "3"
                     }`,
 				}
 			}()),
@@ -229,7 +224,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				writer.WriteHeader(404)
 				i++
 			} else {
-				response, err := ioutil.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
+				response, err := os.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
 				_, err = writer.Write(response)
 				Expect(err).ToNot(HaveOccurred())
@@ -253,7 +248,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				},
 			},
 		}
-		_, _, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, params)
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, params)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -288,7 +283,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				},
 			},
 		}
-		_, _, err = generator(fmt.Sprintf("http://localhost:%d", port), config, params)
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config, params)
 
 		// then
 		Expect(err).To(MatchError("retryable: Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp or pass it to kuma-dp run --dataplane-file=/file. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))

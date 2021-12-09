@@ -31,6 +31,26 @@ FIt("should access service locally and remotely", func() {
 make test/e2e E2E_PKG_LIST=./test/e2e/deploy/... 
 ```
 
+## Running e2e tests one at a time
+
+When you run `make test/e2e`, the Docker infrastructure will get torn down if any tests fail.
+In the case of failing tests, it can be useful to run one suit at a time, while leaving the Docker containers in place.
+
+To do this, first create the test environment:
+```
+make build/kumactl images test/e2e/k8s/start
+```
+
+Now you can run each test suite (exiting on any failures):
+```
+(
+    set -e
+    for t in $(go list ./test/e2e/...); do
+        make test/e2e/test E2E_PKG_LIST="$t"
+    done
+)
+```
+
 ## Debug the test - do not clean up environment
 
 Even if you execute one test and it fails, our framework clean up the environment (delete Kubernetes clusters, containers etc.)
@@ -69,5 +89,17 @@ Running `make test/e2e/debug` can intentionally leave resources if test fails. C
 
 ```
 make k3d/stop/all && docker stop $(docker ps -aq) # omit $ for fish
+```
+
+### Integration with direnv
+
+[direnv](https://direnv.net/) is a useful tool that can populate environment variables in your shell as you change directories.
+The Kuma build has an optional `dev/envrc` target that generates a `.envrc` file to set the `$CI_TOOLS_DIR` and `$KUBECONFIG` environment variables.
+This is useful to keeping the Kuma CI tools installation tidy in your Kuma workspace, and for conveniently accessing the Kind clusters that are provisioned by the e2e tests.
+
+```
+$ make dev/envrc
+direnv: loading ~/upstream/konghq/kuma/.envrc
+direnv: export +CI_TOOLS_DIR +KUBECONFIG
 ```
 

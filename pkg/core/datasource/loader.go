@@ -2,14 +2,13 @@ package datasource
 
 import (
 	"context"
-	"io/ioutil"
-
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"os"
 
 	"github.com/pkg/errors"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
@@ -40,7 +39,7 @@ func (l *loader) Load(ctx context.Context, mesh string, source *system_proto.Dat
 	case *system_proto.DataSource_InlineString:
 		data, err = []byte(source.GetInlineString()), nil
 	case *system_proto.DataSource_File:
-		data, err = ioutil.ReadFile(source.GetFile())
+		data, err = os.ReadFile(source.GetFile())
 	default:
 		return nil, errors.New("unsupported type of the DataSource")
 	}
@@ -51,6 +50,9 @@ func (l *loader) Load(ctx context.Context, mesh string, source *system_proto.Dat
 }
 
 func (l *loader) loadSecret(ctx context.Context, mesh string, secret string) ([]byte, error) {
+	if l.secretManager == nil {
+		return nil, errors.New("no resource manager")
+	}
 	resource := system.NewSecretResource()
 	if err := l.secretManager.Get(ctx, resource, core_store.GetByKey(secret, mesh)); err != nil {
 		return nil, err

@@ -1,16 +1,15 @@
 package v3_test
 
 import (
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -24,10 +23,10 @@ var _ = Describe("RetryConfigurer", func() {
 		listenerProtocol core_xds.SocketAddressProtocol
 		statsName        string
 		service          string
-		subsets          []envoy_common.ClusterSubset
+		routes           envoy_common.Routes
 		dpTags           mesh_proto.MultiValueTagSet
-		protocol         mesh_core.Protocol
-		retry            *mesh_core.RetryResource
+		protocol         core_mesh.Protocol
+		retry            *core_mesh.RetryResource
 		expected         string
 	}
 
@@ -37,10 +36,10 @@ var _ = Describe("RetryConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(HttpConnectionManager(given.statsName)).
+					Configure(HttpConnectionManager(given.statsName, false)).
 					Configure(HttpOutboundRoute(
 						given.service,
-						given.subsets,
+						given.routes,
 						given.dpTags,
 					)).
 					Configure(Retry(given.retry, given.protocol)))).
@@ -61,10 +60,12 @@ var _ = Describe("RetryConfigurer", func() {
 			listenerPort:    17777,
 			statsName:       "127.0.0.1:17777",
 			service:         "backend",
-			subsets: []envoy_common.ClusterSubset{
+			routes: envoy_common.Routes{
 				{
-					ClusterName: "backend",
-					Weight:      100,
+					Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+						envoy_common.WithService("backend"),
+						envoy_common.WithWeight(100),
+					)},
 				},
 			},
 			dpTags: map[string]map[string]bool{
@@ -73,13 +74,12 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "http",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
-							NumRetries: &wrappers.UInt32Value{
-								Value: 7,
-							},
+							NumRetries:       util_proto.UInt32(7),
+							RetriableMethods: []mesh_proto.HttpMethod{mesh_proto.HttpMethod_GET, mesh_proto.HttpMethod_POST},
 						},
 					},
 				},
@@ -109,13 +109,17 @@ var _ = Describe("RetryConfigurer", func() {
                       name: backend
                       retryPolicy:
                         numRetries: 7
+                        retriableRequestHeaders:
+                        - exactMatch: GET
+                          name: :method
+                        - exactMatch: POST
+                          name: :method
                         retryOn: gateway-error,connect-failure,refused-stream
                       routes:
                       - match:
                           prefix: /
                         route:
                           cluster: backend
-                          timeout: 0s
                   statPrefix: "127_0_0_1_17777"
             name: outbound:127.0.0.1:17777
             trafficDirection: OUTBOUND`,
@@ -127,10 +131,12 @@ var _ = Describe("RetryConfigurer", func() {
 			listenerPort:    18080,
 			statsName:       "127.0.0.1:18080",
 			service:         "backend",
-			subsets: []envoy_common.ClusterSubset{
+			routes: envoy_common.Routes{
 				{
-					ClusterName: "backend",
-					Weight:      100,
+					Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+						envoy_common.WithService("backend"),
+						envoy_common.WithWeight(100),
+					)},
 				},
 			},
 			dpTags: map[string]map[string]bool{
@@ -139,23 +145,15 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "http",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
-							NumRetries: &wrappers.UInt32Value{
-								Value: 3,
-							},
-							PerTryTimeout: &duration.Duration{
-								Seconds: 1,
-							},
+							NumRetries:    util_proto.UInt32(3),
+							PerTryTimeout: util_proto.Duration(time.Second * 1),
 							BackOff: &mesh_proto.Retry_Conf_BackOff{
-								BaseInterval: &duration.Duration{
-									Nanos: 200000000,
-								},
-								MaxInterval: &duration.Duration{
-									Nanos: 500000000,
-								},
+								BaseInterval: util_proto.Duration(time.Nanosecond * 200000000),
+								MaxInterval:  util_proto.Duration(time.Nanosecond * 500000000),
 							},
 							RetriableStatusCodes: []uint32{500, 502},
 						},
@@ -200,7 +198,6 @@ var _ = Describe("RetryConfigurer", func() {
                           prefix: /
                         route:
                           cluster: backend
-                          timeout: 0s
                   statPrefix: "127_0_0_1_18080"
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,
@@ -212,10 +209,12 @@ var _ = Describe("RetryConfigurer", func() {
 			listenerPort:    17777,
 			statsName:       "127.0.0.1:17777",
 			service:         "backend",
-			subsets: []envoy_common.ClusterSubset{
+			routes: envoy_common.Routes{
 				{
-					ClusterName: "backend",
-					Weight:      100,
+					Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+						envoy_common.WithService("backend"),
+						envoy_common.WithWeight(100),
+					)},
 				},
 			},
 			dpTags: map[string]map[string]bool{
@@ -224,13 +223,11 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "grpc",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Grpc: &mesh_proto.Retry_Conf_Grpc{
-							NumRetries: &wrappers.UInt32Value{
-								Value: 18,
-							},
+							NumRetries: util_proto.UInt32(18),
 						},
 					},
 				},
@@ -266,7 +263,6 @@ var _ = Describe("RetryConfigurer", func() {
                           prefix: /
                         route:
                           cluster: backend
-                          timeout: 0s
                   statPrefix: "127_0_0_1_17777"
             name: outbound:127.0.0.1:17777
             trafficDirection: OUTBOUND`,
@@ -278,10 +274,12 @@ var _ = Describe("RetryConfigurer", func() {
 			listenerPort:    18080,
 			statsName:       "127.0.0.1:18080",
 			service:         "backend",
-			subsets: []envoy_common.ClusterSubset{
+			routes: envoy_common.Routes{
 				{
-					ClusterName: "backend",
-					Weight:      100,
+					Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+						envoy_common.WithService("backend"),
+						envoy_common.WithWeight(100),
+					)},
 				},
 			},
 			dpTags: map[string]map[string]bool{
@@ -290,23 +288,15 @@ var _ = Describe("RetryConfigurer", func() {
 				},
 			},
 			protocol: "grpc",
-			retry: &mesh_core.RetryResource{
+			retry: &core_mesh.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
 						Grpc: &mesh_proto.Retry_Conf_Grpc{
-							NumRetries: &wrappers.UInt32Value{
-								Value: 2,
-							},
-							PerTryTimeout: &duration.Duration{
-								Seconds: 2,
-							},
+							NumRetries:    util_proto.UInt32(2),
+							PerTryTimeout: util_proto.Duration(time.Second * 2),
 							BackOff: &mesh_proto.Retry_Conf_BackOff{
-								BaseInterval: &duration.Duration{
-									Nanos: 400000000,
-								},
-								MaxInterval: &duration.Duration{
-									Seconds: 1,
-								},
+								BaseInterval: util_proto.Duration(time.Nanosecond * 400000000),
+								MaxInterval:  util_proto.Duration(time.Second * 1),
 							},
 							RetryOn: []mesh_proto.Retry_Conf_Grpc_RetryOn{
 								mesh_proto.Retry_Conf_Grpc_cancelled,
@@ -351,7 +341,6 @@ var _ = Describe("RetryConfigurer", func() {
                           prefix: /
                         route:
                           cluster: backend
-                          timeout: 0s
                   statPrefix: "127_0_0_1_18080"
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,

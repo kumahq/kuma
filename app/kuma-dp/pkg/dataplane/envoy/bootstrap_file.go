@@ -1,7 +1,6 @@
 package envoy
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -22,5 +21,5 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
 }

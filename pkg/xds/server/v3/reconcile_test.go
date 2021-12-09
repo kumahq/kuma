@@ -1,84 +1,112 @@
 package v3
 
 import (
-	"fmt"
-	"sync/atomic"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_model "github.com/kumahq/kuma/pkg/core/xds"
-	core_xds_v3 "github.com/kumahq/kuma/pkg/core/xds/v3"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
+func hcmForRoute(routeName string) *anypb.Any {
+	hcm := envoy_hcm.HttpConnectionManager{
+		RouteSpecifier: &envoy_hcm.HttpConnectionManager_Rds{
+			Rds: &envoy_hcm.Rds{
+				RouteConfigName: routeName,
+			},
+		},
+	}
+
+	a, err := proto.MarshalAnyDeterministic(&hcm)
+	Expect(err).To(Succeed())
+
+	return a
+}
+
 var _ = Describe("Reconcile", func() {
 	Describe("reconciler", func() {
-
-		var backupNewUUID func() string
-
-		BeforeEach(func() {
-			backupNewUUID = core.NewUUID
-		})
-		AfterEach(func() {
-			core.NewUUID = backupNewUUID
-		})
-
-		var serial uint64
+		var xdsContext XdsContext
 
 		BeforeEach(func() {
-			core.NewUUID = func() string {
-				uuid := atomic.AddUint64(&serial, 1)
-				return fmt.Sprintf("v%d", uuid)
-			}
-		})
-
-		var xdsContext core_xds_v3.XdsContext
-
-		BeforeEach(func() {
-			xdsContext = core_xds_v3.NewXdsContext()
+			xdsContext = NewXdsContext()
 		})
 
 		snapshot := envoy_cache.Snapshot{
 			Resources: [envoy_types.UnknownType]envoy_cache.Resources{
 				envoy_types.Listener: {
-					Items: map[string]envoy_types.ResourceWithTtl{
+					Items: map[string]envoy_types.ResourceWithTTL{
 						"listener": {
-							Resource: &envoy.Listener{},
+							Resource: &envoy_listener.Listener{
+								Address: &envoy_core.Address{
+									Address: &envoy_core.Address_SocketAddress{
+										SocketAddress: &envoy_core.SocketAddress{
+											Address: "127.0.0.1",
+											PortSpecifier: &envoy_core.SocketAddress_PortValue{
+												PortValue: 99,
+											},
+										},
+									},
+								},
+								FilterChains: []*envoy_listener.FilterChain{{
+									Filters: []*envoy_listener.Filter{{
+										Name: "envoy.filters.network.http_connection_manager",
+										ConfigType: &envoy_listener.Filter_TypedConfig{
+											TypedConfig: hcmForRoute("route"),
+										},
+									}},
+								}},
+							},
 						},
 					},
 				},
 				envoy_types.Route: {
-					Items: map[string]envoy_types.ResourceWithTtl{
+					Items: map[string]envoy_types.ResourceWithTTL{
 						"route": {
-							Resource: &envoy.RouteConfiguration{},
+							Resource: &envoy_route.RouteConfiguration{},
 						},
 					},
 				},
 				envoy_types.Cluster: {
-					Items: map[string]envoy_types.ResourceWithTtl{
+					Items: map[string]envoy_types.ResourceWithTTL{
 						"cluster": {
-							Resource: &envoy.Cluster{},
+							Resource: &envoy_cluster.Cluster{
+								Name:                 "cluster",
+								ClusterDiscoveryType: &envoy_cluster.Cluster_Type{Type: envoy_cluster.Cluster_EDS},
+								EdsClusterConfig: &envoy_cluster.Cluster_EdsClusterConfig{
+									EdsConfig: &envoy_core.ConfigSource{
+										ResourceApiVersion: envoy_core.ApiVersion_V3,
+										ConfigSourceSpecifier: &envoy_core.ConfigSource_Ads{
+											Ads: &envoy_core.AggregatedConfigSource{},
+										},
+									},
+								},
+							},
 						},
 					},
 				},
 				envoy_types.Endpoint: {
-					Items: map[string]envoy_types.ResourceWithTtl{
-						"endpoint": {
-							Resource: &envoy.ClusterLoadAssignment{},
+					Items: map[string]envoy_types.ResourceWithTTL{
+						"cluster": {
+							Resource: &envoy_endpoint.ClusterLoadAssignment{ClusterName: "cluster"},
 						},
 					},
 				},
 				envoy_types.Secret: {
-					Items: map[string]envoy_types.ResourceWithTtl{
+					Items: map[string]envoy_types.ResourceWithTTL{
 						"secret": {
 							Resource: &envoy_auth.Secret{},
 						},
@@ -87,7 +115,7 @@ var _ = Describe("Reconcile", func() {
 			},
 		}
 
-		It("should generate a Snaphot per Envoy Node", func() {
+		It("should generate a Snapshot per Envoy Node", func() {
 			// given
 			snapshots := make(chan envoy_cache.Snapshot, 3)
 			snapshots <- snapshot               // initial Dataplane configuration
@@ -103,7 +131,7 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			// given
-			dataplane := &mesh_core.DataplaneResource{
+			dataplane := &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Mesh:    "demo",
 					Name:    "example",
@@ -115,15 +143,17 @@ var _ = Describe("Reconcile", func() {
 			By("simulating discovery event")
 			// when
 			proxy := &xds_model.Proxy{
-				Id: xds_model.ProxyId{
-					Mesh: "demo",
-					Name: "example",
-				},
+				Id:        *xds_model.BuildProxyId("demo", "example"),
 				Dataplane: dataplane,
 			}
 			err := r.Reconcile(xds_context.Context{}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
+			Expect(snapshot.Resources[envoy_types.Listener].Version).To(BeEmpty())
+			Expect(snapshot.Resources[envoy_types.Route].Version).To(BeEmpty())
+			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(BeEmpty())
+			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(BeEmpty())
+			Expect(snapshot.Resources[envoy_types.Secret].Version).To(BeEmpty())
 
 			By("verifying that snapshot versions were auto-generated")
 			// when
@@ -132,11 +162,16 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
 			// and
-			Expect(snapshot.Resources[envoy_types.Listener].Version).To(Equal("v1"))
-			Expect(snapshot.Resources[envoy_types.Route].Version).To(Equal("v2"))
-			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal("v3"))
-			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal("v4"))
-			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal("v5"))
+			listenerV1 := snapshot.Resources[envoy_types.Listener].Version
+			routeV1 := snapshot.Resources[envoy_types.Route].Version
+			clusterV1 := snapshot.Resources[envoy_types.Cluster].Version
+			endpointV1 := snapshot.Resources[envoy_types.Endpoint].Version
+			secretV1 := snapshot.Resources[envoy_types.Secret].Version
+			Expect(listenerV1).ToNot(BeEmpty())
+			Expect(routeV1).ToNot(BeEmpty())
+			Expect(clusterV1).ToNot(BeEmpty())
+			Expect(endpointV1).ToNot(BeEmpty())
+			Expect(secretV1).ToNot(BeEmpty())
 
 			By("simulating discovery event (Dataplane watchdog triggers refresh)")
 			// when
@@ -151,11 +186,11 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
 			// and
-			Expect(snapshot.Resources[envoy_types.Listener].Version).To(Equal("v1"))
-			Expect(snapshot.Resources[envoy_types.Route].Version).To(Equal("v2"))
-			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal("v3"))
-			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal("v4"))
-			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal("v5"))
+			Expect(snapshot.Resources[envoy_types.Listener].Version).To(Equal(listenerV1))
+			Expect(snapshot.Resources[envoy_types.Route].Version).To(Equal(routeV1))
+			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal(clusterV1))
+			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal(endpointV1))
+			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal(secretV1))
 
 			By("simulating discovery event (Dataplane gets changed)")
 			// when
@@ -170,11 +205,42 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
 			// and
-			Expect(snapshot.Resources[envoy_types.Listener].Version).To(Equal("v6"))
-			Expect(snapshot.Resources[envoy_types.Route].Version).To(Equal("v7"))
-			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal("v8"))
-			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal("v9"))
-			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal("v10"))
+			Expect(snapshot.Resources[envoy_types.Listener].Version).To(SatisfyAll(
+				Not(Equal(listenerV1)),
+				Not(BeEmpty()),
+			))
+			Expect(snapshot.Resources[envoy_types.Route].Version).To(SatisfyAll(
+				Not(Equal(routeV1)),
+				Not(BeEmpty()),
+			))
+			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(SatisfyAll(
+				Not(Equal(clusterV1)),
+				Not(BeEmpty()),
+			))
+			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(SatisfyAll(
+				Not(Equal(endpointV1)),
+				Not(BeEmpty()),
+			))
+			Expect(snapshot.Resources[envoy_types.Secret].Version).To(SatisfyAll(
+				Not(Equal(secretV1)),
+				Not(BeEmpty()),
+			))
+
+			By("simulating clear")
+			// when
+			err = r.Clear(&proxy.Id)
+			Expect(err).ToNot(HaveOccurred())
+			snapshot, err = xdsContext.Cache().GetSnapshot("demo.example")
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("no snapshot found"))
+
+			Expect(snapshot.Resources[envoy_types.Listener].Version).To(BeEmpty())
+			Expect(snapshot.Resources[envoy_types.Route].Version).To(BeEmpty())
+			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(BeEmpty())
+			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(BeEmpty())
+			Expect(snapshot.Resources[envoy_types.Secret].Version).To(BeEmpty())
 		})
 	})
 })

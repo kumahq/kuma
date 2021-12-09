@@ -1,12 +1,9 @@
 package generator
 
 import (
-	"github.com/asaskevich/govalidator"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -24,18 +21,27 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 		return nil, nil
 	}
 
-	if proxy.APIVersion == envoy_common.APIV2 {
-		return nil, nil // DNS is not available for API V2
-	}
-
 	if proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying() == nil {
 		return nil, nil // DNS only makes sense when transparent proxy is used
 	}
+	ipV6Enabled := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetRedirectPortInboundV6() != 0
 
-	vips := g.computeVIPs(ctx, proxy)
+	vips := map[string][]string{}
+	for _, dnsOutbound := range proxy.Routing.VipDomains {
+		for _, domain := range dnsOutbound.Domains {
+			v6 := util_net.ToV6(dnsOutbound.Address)
+			if v6 != dnsOutbound.Address { // The address passed is not already v6
+				vips[domain] = []string{dnsOutbound.Address}
+			}
+			if ipV6Enabled {
+				vips[domain] = append(vips[domain], v6)
+			}
+		}
+	}
+
 	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 		Configure(envoy_listeners.InboundListener(names.GetDNSListenerName(), "127.0.0.1", dnsPort, core_xds.SocketAddressProtocolUDP)).
-		Configure(envoy_listeners.DNS(vips, emptyDnsPort)).
+		Configure(envoy_listeners.DNS(vips, emptyDnsPort, proxy.Metadata.Version.Envoy)).
 		Build()
 	if err != nil {
 		return nil, err
@@ -48,25 +54,4 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 		Origin:   OriginDNS,
 	})
 	return resources, nil
-}
-
-func (g DNSGenerator) computeVIPs(ctx xds_context.Context, proxy *core_xds.Proxy) map[string]string {
-	domainsByIPs := ctx.ControlPlane.DNSResolver.GetVIPs().FQDNsByIPs()
-	meshedVips := map[string]string{}
-	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
-		if domain, ok := domainsByIPs[outbound.Address]; ok {
-			// add regular .mesh domain
-			meshedVips[domain+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
-			// add hostname from address in external service
-			endpoints := proxy.Routing.OutboundTargets[outbound.Tags[mesh_proto.ServiceTag]]
-			for _, endpoint := range endpoints {
-				if govalidator.IsDNSName(endpoint.Target) {
-					if endpoint.ExternalService != nil && endpoint.Target != "" {
-						meshedVips[endpoint.Target] = outbound.Address
-					}
-				}
-			}
-		}
-	}
-	return meshedVips
 }

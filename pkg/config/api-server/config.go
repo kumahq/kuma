@@ -20,6 +20,8 @@ type ApiServerConfig struct {
 	HTTPS ApiServerHTTPSConfig `yaml:"https"`
 	// Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
 	Auth ApiServerAuth `yaml:"auth"`
+	// Authentication configuration for API Server
+	Authn ApiServerAuthn `yaml:"authn"`
 }
 
 // API Server HTTP configuration
@@ -73,8 +75,21 @@ func (a *ApiServerHTTPSConfig) Validate() error {
 type ApiServerAuth struct {
 	// Directory of authorized client certificates (only validate in HTTPS)
 	ClientCertsDir string `yaml:"clientCertsDir" envconfig:"kuma_api_server_auth_client_certs_dir"`
-	// Allow requests that are originating from localhost
-	AllowFromLocalhost bool `yaml:"allowFromLocalhost" envconfig:"kuma_api_server_auth_allow_from_localhost"`
+}
+
+// Api Server Authentication configuration
+type ApiServerAuthn struct {
+	// Type of authentication mechanism (available values: "clientCerts")
+	Type string `yaml:"type" envconfig:"kuma_api_server_authn_type"`
+	// Localhost is authenticated as a user admin of group admin
+	LocalhostIsAdmin bool `yaml:"localhostIsAdmin" envconfig:"kuma_api_server_authn_localhost_is_admin"`
+	// Configuration for tokens authentication
+	Tokens ApiServerAuthnTokens `yaml:"tokens"`
+}
+
+type ApiServerAuthnTokens struct {
+	// If true then User Token with name admin and group admin will be created and placed as admin-user-token Kuma Global Secret
+	BootstrapAdminToken bool `yaml:"bootstrapAdminToken" envconfig:"kuma_api_server_authn_tokens_bootstrap_admin_token"`
 }
 
 func (a *ApiServerConfig) Sanitize() {
@@ -107,8 +122,14 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			TlsKeyFile:  "", // autoconfigured
 		},
 		Auth: ApiServerAuth{
-			ClientCertsDir:     "",
-			AllowFromLocalhost: true,
+			ClientCertsDir: "",
+		},
+		Authn: ApiServerAuthn{
+			Type:             "tokens",
+			LocalhostIsAdmin: true,
+			Tokens: ApiServerAuthnTokens{
+				BootstrapAdminToken: true,
+			},
 		},
 	}
 }

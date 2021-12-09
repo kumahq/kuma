@@ -8,7 +8,6 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -142,7 +141,6 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 		createOpts := []store.CreateOptionsFunc{
 			store.CreateBy(rk),
 			store.CreatedAt(creationTime),
-			store.CreateSynced(),
 		}
 		if opts.Zone != "" {
 			createOpts = append(createOpts, store.CreateWithOwner(zone))
@@ -158,7 +156,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 		// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 		// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
 		// from upstream store, because we update downstream only when resource have changed in upstream
-		if err := s.resourceStore.Update(ctx, r, store.ModifiedAt(now), store.UpdateSynced()); err != nil {
+		if err := s.resourceStore.Update(ctx, r, store.ModifiedAt(now)); err != nil {
 			return err
 		}
 	}

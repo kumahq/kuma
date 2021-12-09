@@ -12,8 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/config"
 
-	"github.com/kumahq/kuma/pkg/util/net"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -23,6 +21,7 @@ import (
 	mads_v1_client "github.com/kumahq/kuma/pkg/mads/v1/client"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 type testRuntime struct {
@@ -67,7 +66,7 @@ var _ = Describe("MADS Server", func() {
 			metrics: m,
 		}
 
-		port, err = net.PickTCPPort("127.0.0.1", 10000, 20000)
+		port, err = test.FindFreePort("127.0.0.1")
 		Expect(err).ToNot(HaveOccurred())
 
 		rt.config.MonitoringAssignmentServer.Port = port
@@ -92,11 +91,14 @@ var _ = Describe("MADS Server", func() {
 	})
 
 	It("should serve GRPC requests", func() {
-		client, err := mads_v1_client.New(fmt.Sprintf("grpc://localhost:%d", port))
+		client, err := mads_v1_client.New(fmt.Sprintf("grpc://127.0.0.1:%d", port))
 		Expect(err).ToNot(HaveOccurred())
 
-		stream, err := client.StartStream()
-		Expect(err).ToNot(HaveOccurred())
+		var stream *mads_v1_client.Stream
+		Eventually(func() bool {
+			stream, err = client.StartStream()
+			return err == nil
+		}, "10s", "100ms").Should(BeTrue())
 
 		err = stream.RequestAssignments("client-1")
 		Expect(err).ToNot(HaveOccurred())
@@ -107,7 +109,7 @@ var _ = Describe("MADS Server", func() {
 	})
 
 	It("should serve HTTP/1.1 requests", func() {
-		rt, err := config.NewRoundTripperFromConfig(config.HTTPClientConfig{TLSConfig: config.TLSConfig{InsecureSkipVerify: true}}, "mads", false, false)
+		rt, err := config.NewRoundTripperFromConfig(config.HTTPClientConfig{TLSConfig: config.TLSConfig{InsecureSkipVerify: true}}, "mads", config.WithHTTP2Disabled())
 		Expect(err).ToNot(HaveOccurred())
 
 		client := &http.Client{Transport: rt}
@@ -127,14 +129,19 @@ var _ = Describe("MADS Server", func() {
 		err = marshaller.Marshal(reqbuf, req)
 		Expect(err).ToNot(HaveOccurred())
 
-		request, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/v3/discovery:monitoringassignments", port), reqbuf)
+		request, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%d/v3/discovery:monitoringassignments", port), reqbuf)
 		Expect(err).ToNot(HaveOccurred())
 
 		request.Header.Add("Content-Type", "application/json")
 		request.Header.Add("Accept", "application/json")
 
-		resp, err := client.Do(request)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.Status).To(Equal("200 OK"))
+		Eventually(func() bool {
+			response, err := client.Do(request)
+			ok := err == nil && response.StatusCode == 200
+			if response != nil {
+				Expect(response.Body.Close()).To(Succeed())
+			}
+			return ok
+		}, "10s", "100ms").Should(BeTrue())
 	})
 })

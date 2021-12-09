@@ -7,17 +7,16 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/kumahq/kuma/pkg/core/datasource"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/metrics"
-
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	"github.com/kumahq/kuma/pkg/xds/topology"
@@ -33,14 +32,12 @@ var (
 type Cache struct {
 	cache  *once.Cache
 	rm     manager.ReadOnlyResourceManager
-	dsl    datasource.Loader
 	ipFunc lookup.LookupIPFunc
 	zone   string
 }
 
 func NewCache(
 	rm manager.ReadOnlyResourceManager,
-	dsl datasource.Loader,
 	zone string, expirationTime time.Duration,
 	ipFunc lookup.LookupIPFunc,
 	metrics metrics.Metrics,
@@ -52,29 +49,41 @@ func NewCache(
 	return &Cache{
 		cache:  c,
 		rm:     rm,
-		dsl:    dsl,
 		zone:   zone,
 		ipFunc: ipFunc,
 	}, nil
 }
 
-func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string, apiVersion envoy_common.APIVersion) (proto.Message, error) {
-	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, service, meshHash)
+func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error) {
+	key := sha256.Hash(fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, cluster.Hash(), meshHash))
+
 	elt, err := c.cache.GetOrRetrieve(ctx, key, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
 		dataplanes, err := topology.GetDataplanes(claCacheLog, ctx, c.rm, c.ipFunc, meshName)
 		if err != nil {
 			return nil, err
 		}
+		zoneIngresses, err := topology.GetZoneIngresses(claCacheLog, ctx, c.rm, c.ipFunc)
+		if err != nil {
+			return nil, err
+		}
+
 		mesh := core_mesh.NewMeshResource()
 		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, model.NoMesh)); err != nil {
 			return nil, err
 		}
-		externalServices := &core_mesh.ExternalServiceResourceList{}
-		if err := c.rm.List(ctx, externalServices, core_store.ListByMesh(meshName)); err != nil {
-			return nil, err
+		// We pick here EndpointMap without External Services
+		//
+		// This also solves the problem that if the ExternalService is blocked by TrafficPermission
+		// OutboundProxyGenerate treats this as EDS cluster and tries to get endpoints via GetCLA
+		// Since GetCLA is consistent for a mesh, it would return an endpoint with address which is not valid for EDS.
+		endpointMap := topology.BuildEdsEndpointMap(mesh, c.zone, dataplanes.Items, zoneIngresses.Items)
+		endpoints := []xds.Endpoint{}
+		for _, endpoint := range endpointMap[cluster.Service()] {
+			if endpoint.ContainsTags(cluster.Tags()) {
+				endpoints = append(endpoints, endpoint)
+			}
 		}
-		endpointMap := topology.BuildEndpointMap(mesh, c.zone, dataplanes.Items, externalServices.Items, c.dsl)
-		return envoy_endpoints.CreateClusterLoadAssignment(service, endpointMap[service], apiVersion)
+		return envoy_endpoints.CreateClusterLoadAssignment(cluster.Name(), endpoints, apiVersion)
 	}))
 	if err != nil {
 		return nil, err

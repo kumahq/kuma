@@ -3,7 +3,7 @@ package get_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -12,29 +12,24 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("kumactl get traffic-routes", func() {
 
-	var sampleTrafficRoutes []*mesh_core.TrafficRouteResource
+	var sampleTrafficRoutes []*core_mesh.TrafficRouteResource
 
 	BeforeEach(func() {
-		sampleTrafficRoutes = []*mesh_core.TrafficRouteResource{
+		sampleTrafficRoutes = []*core_mesh.TrafficRouteResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default",
@@ -61,24 +56,16 @@ var _ = Describe("kumactl get traffic-routes", func() {
 
 	Describe("GetTrafficRoutesCmd", func() {
 
-		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
 		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
 		BeforeEach(func() {
 			// setup
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return rootTime },
-					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
-				},
-			}
-
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
+
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, core_mesh.TrafficRouteResourceTypeDescriptor)
+			Expect(err).ToNot(HaveOccurred())
 
 			for _, pt := range sampleTrafficRoutes {
 				key := core_model.ResourceKey{
@@ -103,18 +90,13 @@ var _ = Describe("kumactl get traffic-routes", func() {
 
 		DescribeTable("kumactl get traffic-routes -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "traffic-routes"}, given.outputFormat, given.pagination))
+				// when
+				Expect(
+					ExecuteRootCommand(rootCmd, "traffic-routes", given.outputFormat, given.pagination),
+				).To(Succeed())
 
 				// when
-				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and

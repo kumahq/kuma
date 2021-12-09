@@ -3,11 +3,12 @@ package postgres
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/testcontainers/testcontainers-go"
+
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestPostgresLeader(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Postgres Leader Suite")
+	testcontainers.SkipIfProviderIsNotHealthy(t)
+	test.RunSpecs(t, "Postgres Leader Suite")
 }

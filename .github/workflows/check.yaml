@@ -1,0 +1,35 @@
+name: "Lint PRs"
+
+on:
+  pull_request:
+    types:
+      - edited
+      - opened
+      - reopened
+      - synchronized
+
+
+jobs:
+  # This job checks all PR commits and the PR title using
+  # https://github.com/conventional-changelog/commitlint
+  # for whether they follow the conventional commit format at
+  # https://www.conventionalcommits.org/en/v1.0.0/
+  # See also /.github/commitlint.config.js for more details
+  commit-lint:
+    name: "Check commits and PR title"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v2
+      - run: npm install -g @commitlint/cli @commitlint/config-conventional
+      - name: "Check commits"
+        run: |
+          commitlint --config .github/commitlint.config.js --from="origin/${{ github.event.pull_request.base.ref }}"
+      - name: "Check PR title"
+        # Inject as env variable to escape properly
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          commitlint --config .github/commitlint.config.js --edit=<(echo "${TITLE}")

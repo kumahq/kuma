@@ -4,8 +4,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
+	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/api/generic"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
+
+var _ generic.Insight = &DataplaneInsight{}
 
 func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
 	return &DiscoverySubscriptionStatus{
@@ -29,20 +34,30 @@ func NewVersion() *Version {
 			Version: "",
 			Build:   "",
 		},
+		Dependencies: map[string]string{},
 	}
 }
 
-func (ds *DataplaneInsight) IsOnline() bool {
-	for _, s := range ds.GetSubscriptions() {
-		if s.ConnectTime != nil && s.DisconnectTime == nil {
+func (x *EnvoyVersion) ParseVersion() (version, label string) {
+	parts := strings.SplitN(x.Version, "-", 2)
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	} else {
+		return x.Version, ""
+	}
+}
+
+func (x *DataplaneInsight) IsOnline() bool {
+	for _, s := range x.GetSubscriptions() {
+		if s.GetConnectTime() != nil && s.GetDisconnectTime() == nil {
 			return true
 		}
 	}
 	return false
 }
 
-func (ds *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
-	for i, s := range ds.GetSubscriptions() {
+func (x *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
+	for i, s := range x.GetSubscriptions() {
 		if s.Id == id {
 			return i, s
 		}
@@ -50,58 +65,90 @@ func (ds *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscript
 	return -1, nil
 }
 
-func (ds *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time) error {
-	if ds.MTLS == nil {
-		ds.MTLS = &DataplaneInsight_MTLS{}
+func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time, issuedBackend string, supportedBackends []string) error {
+	if x.MTLS == nil {
+		x.MTLS = &DataplaneInsight_MTLS{}
 	}
-	ts, err := ptypes.TimestampProto(expiration)
-	if err != nil {
+	ts := util_proto.MustTimestampProto(expiration)
+	if err := ts.CheckValid(); err != nil {
 		return err
 	}
-	ds.MTLS.CertificateExpirationTime = ts
-	ds.MTLS.CertificateRegenerations++
-	ts, err = ptypes.TimestampProto(generation)
-	if err != nil {
+	x.MTLS.CertificateExpirationTime = ts
+	x.MTLS.CertificateRegenerations++
+	ts = util_proto.MustTimestampProto(generation)
+	if err := ts.CheckValid(); err != nil {
 		return err
 	}
-	ds.MTLS.LastCertificateRegeneration = ts
+	x.MTLS.IssuedBackend = issuedBackend
+	x.MTLS.SupportedBackends = supportedBackends
+	x.MTLS.LastCertificateRegeneration = ts
 	return nil
 }
 
-func (ds *DataplaneInsight) UpdateSubscription(s *DiscoverySubscription) {
-	if ds == nil {
-		return
+func (x *DataplaneInsight) UpdateSubscription(s generic.Subscription) error {
+	if x == nil {
+		return nil
 	}
-	i, old := ds.GetSubscription(s.Id)
+	discoverySubscription, ok := s.(*DiscoverySubscription)
+	if !ok {
+		return errors.Errorf("invalid type %T for DataplaneInsight", s)
+	}
+	i, old := x.GetSubscription(discoverySubscription.Id)
 	if old != nil {
-		ds.Subscriptions[i] = s
+		x.Subscriptions[i] = discoverySubscription
 	} else {
-		ds.Subscriptions = append(ds.Subscriptions, s)
+		x.finalizeSubscriptions()
+		x.Subscriptions = append(x.Subscriptions, discoverySubscription)
+	}
+	return nil
+}
+
+// If Kuma CP was killed ungracefully then we can get a subscription without a DisconnectTime.
+// Because of the way we process subscriptions the lack of DisconnectTime on old subscription
+// will cause wrong status.
+func (x *DataplaneInsight) finalizeSubscriptions() {
+	now := util_proto.Now()
+	for _, subscription := range x.GetSubscriptions() {
+		if subscription.DisconnectTime == nil {
+			subscription.DisconnectTime = now
+		}
 	}
 }
 
-func (ds *DataplaneInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
-	if len(ds.GetSubscriptions()) == 0 {
+// todo(lobkovilya): delete GetLatestSubscription, use GetLastSubscription instead
+func (x *DataplaneInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
+	if len(x.GetSubscriptions()) == 0 {
 		return nil, nil
 	}
 	var idx int = 0
 	var latest *time.Time
-	for i, s := range ds.GetSubscriptions() {
-		t, err := ptypes.Timestamp(s.ConnectTime)
-		if err != nil {
+	for i, s := range x.GetSubscriptions() {
+		if err := s.ConnectTime.CheckValid(); err != nil {
 			continue
 		}
+		t := s.ConnectTime.AsTime()
 		if latest == nil || latest.Before(t) {
 			idx = i
 			latest = &t
 		}
 	}
-	return ds.Subscriptions[idx], latest
+	return x.Subscriptions[idx], latest
 }
 
-func (ds *DataplaneInsight) Sum(v func(*DiscoverySubscription) uint64) uint64 {
+func (x *DataplaneInsight) GetLastSubscription() generic.Subscription {
+	if len(x.GetSubscriptions()) == 0 {
+		return nil
+	}
+	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
+}
+
+func (x *DiscoverySubscription) SetDisconnectTime(t time.Time) {
+	x.DisconnectTime = util_proto.MustTimestampProto(t)
+}
+
+func (x *DataplaneInsight) Sum(v func(*DiscoverySubscription) uint64) uint64 {
 	var result uint64 = 0
-	for _, s := range ds.GetSubscriptions() {
+	for _, s := range x.GetSubscriptions() {
 		result += v(s)
 	}
 	return result

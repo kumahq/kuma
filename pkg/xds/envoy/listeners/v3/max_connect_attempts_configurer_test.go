@@ -5,14 +5,12 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("MaxConnectAttemptsConfigurer", func() {
@@ -22,7 +20,7 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 		listenerPort       uint32
 		listenerProtocol   core_xds.SocketAddressProtocol
 		statsName          string
-		clusters           []envoy_common.ClusterSubset
+		clusters           []envoy_common.Cluster
 		maxConnectAttempts uint32
 		expected           string
 	}
@@ -30,7 +28,7 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// given
-			retry := &mesh_core.RetryResource{
+			retry := &core_mesh.RetryResource{
 				Meta: nil,
 				Spec: &mesh_proto.Retry{
 					Sources:      nil,
@@ -60,11 +58,14 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic tcp_proxy", testCase{
-			listenerName:       "outbound:127.0.0.1:5432",
-			listenerAddress:    "127.0.0.1",
-			listenerPort:       5432,
-			statsName:          "db",
-			clusters:           []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
+			listenerName:    "outbound:127.0.0.1:5432",
+			listenerAddress: "127.0.0.1",
+			listenerPort:    5432,
+			statsName:       "db",
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("db"),
+				envoy_common.WithWeight(200),
+			)},
 			maxConnectAttempts: 5,
 			expected: `
             name: outbound:127.0.0.1:5432

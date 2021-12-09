@@ -5,27 +5,22 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 func (p *PodConverter) OutboundInterfacesFor(
+	ctx context.Context,
 	pod *kube_core.Pod,
 	others []*mesh_k8s.Dataplane,
-	externalServices []*mesh_k8s.ExternalService,
-	vips vips.List,
 ) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+
 	dataplanes := []*core_mesh.DataplaneResource{}
 	for _, other := range others {
 		dp := core_mesh.NewDataplaneResource()
@@ -35,19 +30,10 @@ func (p *PodConverter) OutboundInterfacesFor(
 		}
 		dataplanes = append(dataplanes, dp)
 	}
-	externalServicesRes := []*core_mesh.ExternalServiceResource{}
-	for _, es := range externalServices {
-		res := core_mesh.NewExternalServiceResource()
-		if err := p.ResourceConverter.ToCoreResource(es, res); err != nil {
-			converterLog.Error(err, "failed to parse ExternalService", "externalService", es.Spec)
-			continue // one invalid ExternalService definition should not break the entire mesh
-		}
-		externalServicesRes = append(externalServicesRes, res)
-	}
 
 	endpoints := endpointsByService(dataplanes)
 	for _, serviceTag := range endpoints.Services() {
-		service, port, err := p.k8sService(serviceTag)
+		service, port, err := p.k8sService(ctx, serviceTag)
 		if err != nil {
 			converterLog.Error(err, "could not get K8S Service for service tag")
 			continue // one invalid Dataplane definition should not break the entire mesh
@@ -84,12 +70,6 @@ func (p *PodConverter) OutboundInterfacesFor(
 			})
 		}
 	}
-
-	resourceKey := model.ResourceKey{
-		Mesh: MeshFor(pod),
-		Name: pod.Name,
-	}
-	outbounds = append(outbounds, dns.VIPOutbounds(resourceKey, dataplanes, vips, externalServicesRes)...)
 	return outbounds, nil
 }
 
@@ -101,7 +81,7 @@ func isServiceLess(port uint32) bool {
 	return port == mesh_proto.TCPPortReserved
 }
 
-func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32, error) {
+func (p *PodConverter) k8sService(ctx context.Context, serviceTag string) (*kube_core.Service, uint32, error) {
 	name, ns, port, err := parseService(serviceTag)
 	if err != nil {
 		return nil, 0, errors.Wrapf(err, "failed to parse `service` host %q as FQDN", serviceTag)
@@ -112,7 +92,7 @@ func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32
 
 	svc := &kube_core.Service{}
 	svcKey := kube_client.ObjectKey{Namespace: ns, Name: name}
-	if err := p.ServiceGetter.Get(context.Background(), svcKey, svc); err != nil {
+	if err := p.ServiceGetter.Get(ctx, svcKey, svc); err != nil {
 		return nil, 0, errors.Wrapf(err, "failed to get Service %q", svcKey)
 	}
 	return svc, port, nil

@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -32,7 +32,7 @@ var _ = Describe("ProbeGenerator", func() {
 			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			proxy := &core_xds.Proxy{
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",
 					},
@@ -89,6 +89,20 @@ var _ = Describe("ProbeGenerator", func() {
                 path: /8080/healthz/probe
 `,
 			expected: "03.envoy.golden.yaml",
+		}),
+		Entry("http probes with queries", testCase{
+			dataplane: `
+            networking:
+              inbound:
+              - port: 8080
+            probes:
+              port: 9000
+              endpoints:
+              - inboundPort: 8080
+                inboundPath: /healthz/probe?param1=value1&param2=value2
+                path: /8080/healthz/probe?param1=value1&param2=value2
+`,
+			expected: "04.envoy.golden.yaml",
 		}),
 	)
 })

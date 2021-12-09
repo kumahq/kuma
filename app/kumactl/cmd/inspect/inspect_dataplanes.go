@@ -2,6 +2,7 @@ package inspect
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -15,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -62,9 +63,27 @@ func newInspectDataplanesCmd(pctx *cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-func printDataplaneOverviews(now time.Time, dataplaneOverviews *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
+func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "KUMA-DP VERSION", "ENVOY VERSION", "NOTES"},
+		Headers: []string{
+			"MESH",
+			"NAME",
+			"TAGS",
+			"STATUS",
+			"LAST CONNECTED AGO",
+			"LAST UPDATED AGO",
+			"TOTAL UPDATES",
+			"TOTAL ERRORS",
+			"CERT REGENERATED AGO",
+			"CERT EXPIRATION",
+			"CERT REGENERATIONS",
+			"CERT BACKEND",
+			"SUPPORTED CERT BACKENDS",
+			"KUMA-DP VERSION",
+			"ENVOY VERSION",
+			"DEPENDENCIES VERSIONS",
+			"NOTES",
+		},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -97,9 +116,17 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *mesh_core.Datapl
 				}
 				dataplaneInsight.GetMTLS().GetCertificateExpirationTime()
 				certRegenerations := strconv.Itoa(int(dataplaneInsight.GetMTLS().GetCertificateRegenerations()))
+				certBackend := dataplaneInsight.GetMTLS().GetIssuedBackend()
+				if dataplaneInsight.GetMTLS() == nil {
+					certBackend = "-"
+				} else if dataplaneInsight.GetMTLS().GetIssuedBackend() == "" {
+					certBackend = "unknown" // backwards compatibility with Kuma 1.2.x
+				}
+				supportedBackend := strings.Join(dataplaneInsight.GetMTLS().GetSupportedBackends(), ",")
 
 				var kumaDpVersion string
 				var envoyVersion string
+				var dependenciesVersions []string
 				if lastSubscription.GetVersion() != nil {
 					if lastSubscription.Version.KumaDp != nil {
 						kumaDpVersion = lastSubscription.Version.KumaDp.Version
@@ -107,6 +134,17 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *mesh_core.Datapl
 					if lastSubscription.Version.Envoy != nil {
 						envoyVersion = lastSubscription.Version.Envoy.Version
 					}
+					for name, version := range lastSubscription.GetVersion().GetDependencies() {
+						dependenciesVersions = append(
+							dependenciesVersions,
+							fmt.Sprintf("%s: %s", name, version),
+						)
+					}
+				}
+
+				dependenciesVersionsCell := strings.Join(dependenciesVersions, ", ")
+				if dependenciesVersionsCell == "" {
+					dependenciesVersionsCell = "-"
 				}
 
 				return []string{
@@ -121,8 +159,11 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *mesh_core.Datapl
 					table.Ago(lastCertGeneration, now),   // CERT REGENERATED AGO
 					table.Date(certExpiration),           // CERT EXPIRATION
 					certRegenerations,                    // CERT REGENERATIONS
+					certBackend,                          // CERT BACKEND
+					supportedBackend,                     // SUPPORTED CERT BACKENDS
 					kumaDpVersion,                        // KUMA-DP VERSION
 					envoyVersion,                         // ENVOY VERSION
+					dependenciesVersionsCell,             // DEPENDENCIES VERSIONS
 					strings.Join(errs, ";"),              // NOTES
 				}
 			}

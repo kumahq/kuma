@@ -12,12 +12,13 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl delete mesh", func() {
@@ -38,17 +39,17 @@ var _ = Describe("kumactl delete mesh", func() {
 	}
 
 	Describe("Delete Mesh", func() {
-
 		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
-		var outbuf, errbuf *bytes.Buffer
+		var outbuf *bytes.Buffer
 		var store core_store.ResourceStore
 
 		BeforeEach(func() {
 			// setup
 			rootCtx = kumactl_cmd.DefaultRootContext()
-			rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-				return store, nil
+			rootCtx.Runtime.NewAPIServerClient = test.GetMockNewAPIServerClient()
+			rootCtx.Runtime.NewResourceStore = func(util_http.Client) core_store.ResourceStore {
+				return store
 			}
 
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
@@ -60,10 +61,15 @@ var _ = Describe("kumactl delete mesh", func() {
 			}
 
 			rootCmd = cmd.NewRootCmd(rootCtx)
+
+			// Different versions of cobra might emit errors to stdout
+			// or stderr. It's too fragile to depend on precidely what
+			// it does, and that's not something that needs to be tested
+			// within Kuma anyway. So we just combine all the output
+			// and validate the aggregate.
 			outbuf = &bytes.Buffer{}
-			errbuf = &bytes.Buffer{}
 			rootCmd.SetOut(outbuf)
-			rootCmd.SetErr(errbuf)
+			rootCmd.SetErr(outbuf)
 		})
 
 		It("should throw an error in case of no args", func() {
@@ -81,8 +87,6 @@ var _ = Describe("kumactl delete mesh", func() {
 			Expect(err.Error()).To(Equal("accepts 2 arg(s), received 1"))
 			// and
 			Expect(outbuf.String()).To(MatchRegexp(`Error: accepts 2 arg\(s\), received 1`))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		It("should throw an error in case of a non existing mesh", func() {
@@ -100,8 +104,6 @@ var _ = Describe("kumactl delete mesh", func() {
 			Expect(err.Error()).To(Equal("there is no Mesh with name \"some-non-existing-mesh\""))
 			// and
 			Expect(outbuf.String()).To(Equal("Error: there is no Mesh with name \"some-non-existing-mesh\"\n"))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		It("should delete the mesh if exists", func() {
@@ -115,9 +117,6 @@ var _ = Describe("kumactl delete mesh", func() {
 			err := rootCmd.Execute()
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			// and
-			// and
-			Expect(errbuf.String()).To(BeEmpty())
 			// and
 			Expect(outbuf.String()).To(Equal("deleted Mesh \"mesh2\"\n"))
 

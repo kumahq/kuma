@@ -63,22 +63,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.1:443
@@ -114,6 +104,7 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.fault
             typedConfig:
@@ -127,6 +118,10 @@ resources:
                 safeRegexMatch:
                   googleRe2: {}
                   regex: .*&kuma.io/service=[^&]*frontend[,&].*
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
           - name: envoy.filters.http.router
           routeConfig:
             name: inbound:backend1
@@ -139,10 +134,68 @@ resources:
               name: backend1
               routes:
               - match:
+                  headers:
+                  - name: x-kuma-tags
+                    safeRegexMatch:
+                      googleRe2: {}
+                      regex: .*&kuma.io/service=[^&]*frontend[,&].*
                   prefix: /
                 route:
                   cluster: localhost:8080
-                  timeout: 0s
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
+                    statPrefix: rate_limit
+                    tokenBucket:
+                      fillInterval: 10s
+                      maxTokens: 200
+                      tokensPerFill: 200
+              - match:
+                  headers:
+                  - name: x-kuma-tags
+                    safeRegexMatch:
+                      googleRe2: {}
+                      regex: .*&kuma.io/service=.*
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
+                    responseHeadersToAdd:
+                    - append: false
+                      header:
+                        key: x-rate-limited
+                        value: "true"
+                    statPrefix: rate_limit
+                    status:
+                      code: NotFound
+                    tokenBucket:
+                      fillInterval: 2s
+                      maxTokens: 100
+                      tokensPerFill: 100
+              - match:
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+          setCurrentClientCertDetails:
+            uri: true
           statPrefix: localhost_8080
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -156,22 +209,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.1:80
@@ -208,22 +251,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.2:443
@@ -246,6 +279,7 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
           routeConfig:
@@ -262,7 +296,8 @@ resources:
                   prefix: /
                 route:
                   cluster: localhost:8080
-                  timeout: 0s
+          setCurrentClientCertDetails:
+            uri: true
           statPrefix: localhost_8080
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -276,22 +311,12 @@ resources:
               validationContextSdsSecretConfig:
                 name: mesh_ca
                 sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
+                  ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
+                ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.2:80

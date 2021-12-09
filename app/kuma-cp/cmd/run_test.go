@@ -1,15 +1,18 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"sigs.k8s.io/testing_frameworks/integration/addr"
+
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 type ConfigFactory interface {
@@ -30,21 +33,27 @@ func (f ConfigFactoryFunc) GenerateConfig() string {
 
 func RunSmokeTest(factory ConfigFactory, workdir string) {
 	Describe("run", func() {
-		var stopCh chan struct{}
 		var errCh chan error
 		var configFile *os.File
 
 		var diagnosticsPort int
+		var ctx context.Context
+		var cancel func()
+		var opts = kuma_cmd.RunCmdOpts{
+			SetupSignalHandler: func() context.Context {
+				return ctx
+			},
+		}
 
 		JustBeforeEach(func() {
-			stopCh = make(chan struct{})
+			ctx, cancel = context.WithCancel(context.Background())
 			errCh = make(chan error)
 
 			freePort, _, err := addr.Suggest()
 			Expect(err).NotTo(HaveOccurred())
 			diagnosticsPort = freePort
 
-			file, err := ioutil.TempFile("", "*")
+			file, err := os.CreateTemp("", "*")
 			Expect(err).ToNot(HaveOccurred())
 			configFile = file
 		})
@@ -60,16 +69,12 @@ func RunSmokeTest(factory ConfigFactory, workdir string) {
 			}
 		})
 
-		It("should be possible to run `kuma-cp run with default mode`", func(done Done) {
+		It("should be possible to run `kuma-cp run with default mode`", test.Within(time.Minute, func() {
 			// given
 			config := fmt.Sprintf(factory.GenerateConfig(), diagnosticsPort)
 			_, err := configFile.WriteString(config)
 			Expect(err).ToNot(HaveOccurred())
-			cmd := newRunCmdWithOpts(runCmdOpts{
-				SetupSignalHandler: func() <-chan struct{} {
-					return stopCh
-				},
-			})
+			cmd := newRunCmdWithOpts(opts)
 			cmd.SetArgs([]string{"--config-file=" + configFile.Name()})
 
 			// when
@@ -102,15 +107,12 @@ func RunSmokeTest(factory ConfigFactory, workdir string) {
 			}, "10s", "10ms").Should(BeTrue())
 
 			// when
-			By("signalling Control Plane to stop")
-			close(stopCh)
+			By("signaling Control Plane to stop")
+			cancel()
 
 			// then
 			err = <-errCh
 			Expect(err).ToNot(HaveOccurred())
-
-			// complete
-			close(done)
-		}, 60)
+		}))
 	})
 }

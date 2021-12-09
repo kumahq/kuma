@@ -3,11 +3,9 @@ package mesh_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestMeshSnapshot(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "MeshSnapshot Suite")
+	test.RunSpecs(t, "MeshSnapshot Suite")
 }

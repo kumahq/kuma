@@ -1,6 +1,7 @@
 package net
 
 import (
+	"fmt"
 	"net"
 	"sort"
 
@@ -21,4 +22,13 @@ func GetAllIPs() ([]string, error) {
 	}
 	sort.Strings(result) // sort so IPv4 are the first elements in the list
 	return result, nil
+}
+
+// ToV6 return self if ip6 other return the v4 prefixed with ::ffff:
+func ToV6(ip string) string {
+	parsedIp := net.ParseIP(ip)
+	if parsedIp.To4() != nil {
+		return fmt.Sprintf("::ffff:%x:%x", uint32(parsedIp[12])<<8+uint32(parsedIp[13]), uint32(parsedIp[14])<<8+uint32(parsedIp[15]))
+	}
+	return ip
 }

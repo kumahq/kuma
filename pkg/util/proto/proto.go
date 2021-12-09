@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 
-	pstruct "github.com/golang/protobuf/ptypes/struct"
-
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func FromYAML(content []byte, pb proto.Message) error {
@@ -63,7 +62,7 @@ func FromMap(in map[string]interface{}, out proto.Message) error {
 }
 
 // Converts loosely typed Struct to strongly typed Message
-func ToTyped(protoStruct *pstruct.Struct, message proto.Message) error {
+func ToTyped(protoStruct *structpb.Struct, message proto.Message) error {
 	if protoStruct == nil {
 		return nil
 	}
@@ -78,19 +77,19 @@ func ToTyped(protoStruct *pstruct.Struct, message proto.Message) error {
 }
 
 // Converts loosely typed Struct to strongly typed Message
-func ToStruct(message proto.Message) (*pstruct.Struct, error) {
+func ToStruct(message proto.Message) (*structpb.Struct, error) {
 	configBytes, err := ToJSON(message)
 	if err != nil {
 		return nil, err
 	}
-	str := &pstruct.Struct{}
+	str := &structpb.Struct{}
 	if err := FromJSON(configBytes, str); err != nil {
 		return nil, err
 	}
 	return str, nil
 }
 
-func MustToStruct(message proto.Message) *pstruct.Struct {
+func MustToStruct(message proto.Message) *structpb.Struct {
 	str, err := ToStruct(message)
 	if err != nil {
 		panic(err)

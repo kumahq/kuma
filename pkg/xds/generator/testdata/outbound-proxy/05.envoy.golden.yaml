@@ -1,19 +1,10 @@
 resources:
-- name: es
+- name: es-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    commonHttpProtocolOptions:
-      idleTimeout: 0s
     connectTimeout: 10s
-    dnsLookupFamily: V4_ONLY
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - kuma.io/protocol
     loadAssignment:
-      clusterName: es
+      clusterName: es-_0_
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -28,8 +19,15 @@ resources:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    name: es
-    type: STRICT_DNS
+    name: es-_0_
+    type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
 - name: outbound:127.0.0.1:18081
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -61,12 +59,7 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  cluster: es
-                  metadataMatch:
-                    filterMetadata:
-                      envoy.lb:
-                        kuma.io/protocol: http
-                  timeout: 0s
+                  cluster: es-_0_
           statPrefix: es
     name: outbound:127.0.0.1:18081
     trafficDirection: OUTBOUND

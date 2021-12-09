@@ -3,11 +3,9 @@ package v1_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 func TestV1alpha1(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "v1 Suite")
+	test.RunSpecs(t, "Observability v1 Suite")
 }

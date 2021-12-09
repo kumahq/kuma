@@ -10,7 +10,7 @@ import (
 
 var _ = Describe("MultiValueTagSet", func() {
 
-	Describe("Keys()", func() {
+	Describe("HostnameEntries()", func() {
 		type testCase struct {
 			value    MultiValueTagSet
 			expected []string
@@ -138,8 +138,8 @@ var _ = Describe("Dataplane_Networking", func() {
 						},
 					},
 					expected: []InboundInterface{
-						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "127.0.0.1", WorkloadPort: 80},
-						{DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
+						{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "127.0.0.1", WorkloadPort: 80},
+						{DataplaneAdvertisedIP: "192.168.0.2", DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
 					},
 				}),
 			)
@@ -193,7 +193,7 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 	}
 	DescribeTable("MatchTags()",
 		func(given testCase) {
-			//given
+			// given
 			outbound := Dataplane_Networking_Outbound{
 				Service: given.serviceTag,
 			}
@@ -356,6 +356,58 @@ var _ = Describe("Dataplane with inbound", func() {
 	})
 })
 
+var _ = Describe("Dataplane classification", func() {
+	Describe("with normal networking", func() {
+		It("should be a dataplane", func() {
+			dp := Dataplane{
+				Networking: &Dataplane_Networking{},
+			}
+			Expect(dp.IsDelegatedGateway()).To(BeFalse())
+			Expect(dp.IsBuiltinGateway()).To(BeFalse())
+		})
+	})
+
+	Describe("with gateway networking", func() {
+		It("should be a gateway", func() {
+			gw := Dataplane{
+				Networking: &Dataplane_Networking{
+					Gateway: &Dataplane_Networking_Gateway{},
+				},
+			}
+			Expect(gw.IsDelegatedGateway()).To(BeTrue())
+			Expect(gw.IsBuiltinGateway()).To(BeFalse())
+		})
+	})
+
+	Describe("with delegated gateway networking", func() {
+		It("should be a gateway", func() {
+			gw := Dataplane{
+				Networking: &Dataplane_Networking{
+					Gateway: &Dataplane_Networking_Gateway{
+						Type: Dataplane_Networking_Gateway_DELEGATED,
+					},
+				},
+			}
+			Expect(gw.IsDelegatedGateway()).To(BeTrue())
+			Expect(gw.IsBuiltinGateway()).To(BeFalse())
+		})
+	})
+
+	Describe("with builtin gateway networking", func() {
+		It("should be a gateway", func() {
+			gw := Dataplane{
+				Networking: &Dataplane_Networking{
+					Gateway: &Dataplane_Networking_Gateway{
+						Type: Dataplane_Networking_Gateway_BUILTIN,
+					},
+				},
+			}
+			Expect(gw.IsDelegatedGateway()).To(BeFalse())
+			Expect(gw.IsBuiltinGateway()).To(BeTrue())
+		})
+	})
+})
+
 var _ = Describe("Dataplane with gateway", func() {
 	d := Dataplane{
 		Networking: &Dataplane_Networking{
@@ -420,7 +472,7 @@ var _ = Describe("TagSelector", func() {
 				// when
 				match := TagSelector(given.tags).Matches(dpTags)
 
-				//then
+				// then
 				Expect(match).To(Equal(given.match))
 			},
 			Entry("should match 0 tags", testCase{

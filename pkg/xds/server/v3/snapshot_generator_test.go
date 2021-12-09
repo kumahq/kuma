@@ -1,24 +1,25 @@
 package v3
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/test/matchers"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_cache_v3 "github.com/kumahq/kuma/pkg/util/cache/v3"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
@@ -26,23 +27,22 @@ var _ = Describe("Reconcile", func() {
 	Describe("templateSnapshotGenerator", func() {
 
 		gen := templateSnapshotGenerator{
-			ProxyTemplateResolver: &template.SimpleProxyTemplateResolver{
-				ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
-				DefaultProxyTemplate:    template.DefaultProxyTemplate,
-			},
+			ProxyTemplateResolver: template.SequentialResolver(
+				&template.SimpleProxyTemplateResolver{
+					ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
+				},
+				generator.DefaultTemplateResolver,
+			),
 		}
 
 		It("Generate Snapshot per Envoy Node", func() {
 			// given
 			ctx := xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-system:5677",
-				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("12345"),
+					Secrets: &xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
+					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
@@ -62,14 +62,14 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			dataplane := mesh_proto.Dataplane{}
-			dpBytes, err := ioutil.ReadFile(filepath.Join("testdata", "dataplane.input.yaml"))
+			dpBytes, err := os.ReadFile(filepath.Join("testdata", "dataplane.input.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 
 			proxy := &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.web1"},
+				Id:         *model.BuildProxyId("", "demo.web1"),
 				APIVersion: envoy_common.APIV3,
-				Dataplane: &mesh_core.DataplaneResource{
+				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name:    "web1",
 						Mesh:    "demo",
@@ -80,11 +80,12 @@ var _ = Describe("Reconcile", func() {
 				Policies: model.MatchedPolicies{
 					TrafficPermissions: model.TrafficPermissionMap{
 						mesh_proto.InboundInterface{
-							DataplaneIP:   "192.168.0.1",
-							DataplanePort: 80,
-							WorkloadIP:    "127.0.0.1",
-							WorkloadPort:  8080,
-						}: &mesh_core.TrafficPermissionResource{
+							DataplaneAdvertisedIP: "192.168.0.1",
+							DataplaneIP:           "192.168.0.1",
+							DataplanePort:         80,
+							WorkloadIP:            "127.0.0.1",
+							WorkloadPort:          8080,
+						}: &core_mesh.TrafficPermissionResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "tp-1",
 								Mesh: "default",

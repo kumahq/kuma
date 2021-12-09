@@ -7,14 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
-
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -73,19 +70,19 @@ func (f FieldOperator) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry
 	case CMD_BYTES_SENT:
 		return f.formatUint(entry.GetConnectionProperties().GetSentBytes())
 	case CMD_PROTOCOL:
-		return "", nil // replicate Envoy's behaviour
+		return "", nil // replicate Envoy's behavior
 	case CMD_RESPONSE_CODE:
-		return "0", nil // replicate Envoy's behaviour
+		return "0", nil // replicate Envoy's behavior
 	case CMD_RESPONSE_CODE_DETAILS:
-		return "", nil // replicate Envoy's behaviour
+		return "", nil // replicate Envoy's behavior
 	case CMD_REQUEST_DURATION:
-		return "", nil // replicate Envoy's behaviour
+		return "", nil // replicate Envoy's behavior
 	case CMD_RESPONSE_DURATION:
-		return "", nil // replicate Envoy's behaviour
+		return "", nil // replicate Envoy's behavior
 	case CMD_RESPONSE_TX_DURATION:
-		return "", nil // replicate Envoy's behaviour
+		return "", nil // replicate Envoy's behavior
 	case CMD_GRPC_STATUS:
-		return "", nil // replace Envoy's behaviour
+		return "", nil // replace Envoy's behavior
 	default:
 		return f.formatAccessLogCommon(entry.GetCommonProperties())
 	}
@@ -157,29 +154,28 @@ func (f FieldOperator) formatInt(value int64) (string, error) {
 	return strconv.FormatInt(value, 10), nil
 }
 
-func (f FieldOperator) formatDuration(dur *duration.Duration) (string, error) {
+func (f FieldOperator) formatDuration(dur *durationpb.Duration) (string, error) {
 	if dur == nil {
 		return "", nil
 	}
-	durNanos, err := ptypes.Duration(dur)
-	if err != nil {
+	if err := dur.CheckValid(); err != nil {
 		return "", err
 	}
-	return f.formatInt(int64(durNanos / time.Millisecond))
+	return f.formatInt(int64(dur.AsDuration() / time.Millisecond))
 }
 
-func (f FieldOperator) formatDurationDelta(outer *duration.Duration, inner *duration.Duration) (string, error) {
+func (f FieldOperator) formatDurationDelta(outer *durationpb.Duration, inner *durationpb.Duration) (string, error) {
 	if outer == nil || inner == nil {
 		return "", nil
 	}
-	outerNanos, err := ptypes.Duration(outer)
-	if err != nil {
+	if err := outer.CheckValid(); err != nil {
 		return "", err
 	}
-	innerNanos, err := ptypes.Duration(inner)
-	if err != nil {
+	outerNanos := outer.AsDuration()
+	if err := inner.CheckValid(); err != nil {
 		return "", err
 	}
+	innerNanos := inner.AsDuration()
 	return f.formatInt(int64((outerNanos - innerNanos) / time.Millisecond))
 }
 
@@ -287,7 +283,7 @@ func (f FieldOperator) formatUriSans(sans []*accesslog_data.TLSProperties_Certif
 	return strings.Join(values, ","), nil
 }
 
-func (f FieldOperator) formatTlsCipherSuite(value *wrappers.UInt32Value) (string, error) {
+func (f FieldOperator) formatTlsCipherSuite(value *wrapperspb.UInt32Value) (string, error) {
 	if value == nil || value.GetValue() == 0xFFFF {
 		return "", nil
 	}

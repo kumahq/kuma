@@ -33,7 +33,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
@@ -235,7 +234,7 @@ func createStructuredListWatch(gvk schema.GroupVersionKind, ip *specificInformer
 		return nil, err
 	}
 
-	client, err := apiutil.RESTClientForGVK(gvk, ip.config, ip.codecs)
+	client, err := apiutil.RESTClientForGVK(gvk, false, ip.config, ip.codecs)
 	if err != nil {
 		return nil, err
 	}

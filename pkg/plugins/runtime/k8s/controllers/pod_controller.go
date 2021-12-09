@@ -3,18 +3,14 @@ package controllers
 import (
 	"context"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
+	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -22,13 +18,12 @@ import (
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
-	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_record "k8s.io/client-go/tools/record"
-
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
@@ -56,8 +51,7 @@ type PodReconciler struct {
 	SystemNamespace   string
 }
 
-func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	ctx := context.Background()
+func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	log := r.Log.WithValues("pod", req.NamespacedName)
 
 	// Fetch the Pod instance
@@ -89,11 +83,29 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		if pod.Namespace != r.SystemNamespace {
 			return kube_ctrl.Result{}, errors.Errorf("Ingress can only be deployed in system namespace %q", r.SystemNamespace)
 		}
-		services, err := r.findMatchingServices(pod)
+		services, err := r.findMatchingServices(ctx, pod)
 		if err != nil {
 			return kube_ctrl.Result{}, err
 		}
-		return kube_ctrl.Result{}, r.createOrUpdateIngress(pod, services)
+		err = r.createOrUpdateIngress(ctx, pod, services)
+		if err != nil {
+			return kube_ctrl.Result{}, err
+		}
+
+		// backwards compatibility
+		// During the upgrade to Kuma 1.2.0 a new Ingress pod may make a request to the old-versioned PodController.
+		// This will inevitably cause a generation of both Dataplane Ingress resource and Zone Ingress resource.
+		// That's why here we're deleting Dataplane Ingress resource.
+		if err = r.deleteOldTypeIngressIfExists(ctx, req, log); err != nil {
+			return kube_ctrl.Result{}, err
+		}
+		return kube_ctrl.Result{}, nil
+	}
+
+	// If we are using a builtin gateway, we want to generate a builtin gateway
+	// dataplane.
+	if name, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaGatewayAnnotation); name == metadata.AnnotationBuiltin {
+		return kube_ctrl.Result{}, r.createorUpdateBuiltinGatewayDataplane(ctx, pod)
 	}
 
 	// only Pods with injected Kuma need a Dataplane descriptor
@@ -105,38 +117,43 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, nil
 	}
 
-	services, err := r.findMatchingServices(pod)
+	services, err := r.findMatchingServices(ctx, pod)
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
-	externalServices, err := r.findExternalServices(pod)
-	if err != nil {
-		return kube_ctrl.Result{}, err
-	}
-
-	others, err := r.findOtherDataplanes(pod)
+	others, err := r.findOtherDataplanes(ctx, pod)
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
 	r.Log.WithValues("req", req).V(1).Info("other dataplanes", "others", others)
 
-	vips, err := r.Persistence.GetByMesh(MeshFor(pod))
-	if err != nil {
-		return kube_ctrl.Result{}, err
-	}
-
-	if err := r.createOrUpdateDataplane(pod, services, externalServices, others, vips); err != nil {
+	if err := r.createOrUpdateDataplane(ctx, pod, services, others); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
 	return kube_ctrl.Result{}, nil
 }
 
-func (r *PodReconciler) findMatchingServices(pod *kube_core.Pod) ([]*kube_core.Service, error) {
-	ctx := context.Background()
+func (r *PodReconciler) deleteOldTypeIngressIfExists(ctx context.Context, req kube_ctrl.Request, log logr.Logger) error {
+	oldDpIngress := &mesh_k8s.Dataplane{}
+	if err := r.Get(ctx, req.NamespacedName, oldDpIngress); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
 
+	log.Info("deleting dataplane-based Ingress, since new ZoneIngress resource was successfully created")
+	if err := r.Delete(ctx, oldDpIngress); err != nil {
+		log.Error(err, "failed to delete dataplane-based Ingress")
+		return err
+	}
+	return nil
+}
+
+func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core.Pod) ([]*kube_core.Service, error) {
 	// List Services in the same Namespace
 	allServices := &kube_core.ServiceList{}
 	if err := r.List(ctx, allServices, kube_client.InNamespace(pod.Namespace)); err != nil {
@@ -146,36 +163,12 @@ func (r *PodReconciler) findMatchingServices(pod *kube_core.Pod) ([]*kube_core.S
 	}
 
 	// only consider Services that match this Pod
-	matchingServices := util_k8s.FindServices(allServices, util_k8s.AnySelector(), util_k8s.MatchServiceThatSelectsPod(pod))
+	matchingServices := util_k8s.FindServices(allServices, util_k8s.Not(util_k8s.Ignored()), util_k8s.AnySelector(), util_k8s.MatchServiceThatSelectsPod(pod))
 
 	return matchingServices, nil
 }
 
-func (r *PodReconciler) findExternalServices(pod *kube_core.Pod) ([]*mesh_k8s.ExternalService, error) {
-	ctx := context.Background()
-
-	// List all ExternalServices
-	allExternalServices := &mesh_k8s.ExternalServiceList{}
-	if err := r.List(ctx, allExternalServices); err != nil {
-		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
-		log.Error(err, "unable to list ExternalServices")
-		return nil, err
-	}
-
-	mesh := MeshFor(pod)
-	meshedExternalServices := []*mesh_k8s.ExternalService{}
-	for i := range allExternalServices.Items {
-		es := allExternalServices.Items[i]
-		if es.Mesh == mesh {
-			meshedExternalServices = append(meshedExternalServices, &es)
-		}
-	}
-	return meshedExternalServices, nil
-}
-
-func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dataplane, error) {
-	ctx := context.Background()
-
+func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.Pod) ([]*mesh_k8s.Dataplane, error) {
 	// List all Dataplanes
 	allDataplanes := &mesh_k8s.DataplaneList{}
 	if err := r.List(ctx, allDataplanes); err != nil {
@@ -185,7 +178,7 @@ func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dat
 	}
 
 	// only consider Dataplanes in the same Mesh as Pod
-	mesh := MeshFor(pod)
+	mesh := util_k8s.MeshFor(pod)
 	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
 	for i := range allDataplanes.Items {
 		dataplane := allDataplanes.Items[i]
@@ -194,7 +187,7 @@ func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dat
 			converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
-		if dataplane.Mesh == mesh || dp.Spec.IsIngress() {
+		if dataplane.Mesh == mesh {
 			otherDataplanes = append(otherDataplanes, &dataplane)
 		}
 	}
@@ -203,14 +196,11 @@ func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dat
 }
 
 func (r *PodReconciler) createOrUpdateDataplane(
+	ctx context.Context,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	vips vips.List,
 ) error {
-	ctx := context.Background()
-
 	dataplane := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
@@ -218,7 +208,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, externalServices, others, vips); err != nil {
+		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
@@ -241,18 +231,16 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	return nil
 }
 
-func (r *PodReconciler) createOrUpdateIngress(pod *kube_core.Pod, services []*kube_core.Service) error {
-	ctx := context.Background()
-
-	ingress := &mesh_k8s.Dataplane{
+func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) error {
+	ingress := &mesh_k8s.ZoneIngress{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
 		},
-		Mesh: model.DefaultMesh,
+		Mesh: model.NoMesh,
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ingress, func() error {
-		if err := r.PodConverter.PodToIngress(ingress, pod, services); err != nil {
+		if err := r.PodConverter.PodToIngress(ctx, ingress, pod, services); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Ingress")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, ingress, r.Scheme); err != nil {
@@ -276,24 +264,13 @@ func (r *PodReconciler) createOrUpdateIngress(pod *kube_core.Pod, services []*ku
 }
 
 func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
-	for _, addToScheme := range []func(*kube_runtime.Scheme) error{kube_core.AddToScheme, mesh_k8s.AddToScheme} {
-		if err := addToScheme(mgr.GetScheme()); err != nil {
-			return err
-		}
-	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Pod{}).
 		// on Service update reconcile affected Pods (all Pods in the same namespace)
-		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ServiceToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("service-to-pods-mapper")},
-		}).
+		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
 		// on ExternalService update reconcile affected Pods (all Pods in the same mesh)
-		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ExternalServiceToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("external-service-to-pods-mapper")},
-		}).
-		Watches(&kube_source.Kind{Type: &kube_core.ConfigMap{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ConfigMapToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("configmap-to-pods-mapper"), SystemNamespace: r.SystemNamespace},
-		}).
+		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToPodsMapper(r.Log, mgr.GetClient()))).
+		Watches(&kube_source.Kind{Type: &kube_core.ConfigMap{}}, kube_handler.EnqueueRequestsFromMapFunc(ConfigMapToPodsMapper(r.Log, r.SystemNamespace, mgr.GetClient()))).
 		Complete(r)
 }
 
@@ -311,103 +288,96 @@ func (r *PodReconciler) isPodComplete(pod *kube_core.Pod) bool {
 	return true
 }
 
-type ServiceToPodsMapper struct {
-	kube_client.Client
-	Log logr.Logger
+func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("service-to-pods-mapper")
+	return func(obj kube_client.Object) []kube_reconile.Request {
+		// List Pods in the same namespace as a Service
+		pods := &kube_core.PodList{}
+		if err := client.List(context.Background(), pods, kube_client.InNamespace(obj.GetNamespace())); err != nil {
+			l.WithValues("service", obj.GetName()).Error(err, "failed to fetch Pods")
+			return nil
+		}
+
+		var req []kube_reconile.Request
+		for _, pod := range pods.Items {
+			req = append(req, kube_reconile.Request{
+				NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
+			})
+		}
+		return req
+	}
 }
 
-func (m *ServiceToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	// List Pods in the same namespace as a Service
-	pods := &kube_core.PodList{}
-	if err := m.Client.List(context.Background(), pods, kube_client.InNamespace(obj.Meta.GetNamespace())); err != nil {
-		m.Log.WithValues("service", obj.Meta).Error(err, "failed to fetch Pods")
-		return nil
-	}
+func ExternalServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("external-service-to-pods-mapper")
+	return func(obj kube_client.Object) []kube_reconile.Request {
+		cause, ok := obj.(*mesh_k8s.ExternalService)
+		if !ok {
+			l.WithValues("externalService", obj.GetName()).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj), "wrong argument type")
+			return nil
+		}
 
-	var req []kube_reconile.Request
-	for _, pod := range pods.Items {
-		req = append(req, kube_reconile.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
-		})
+		// List Dataplanes in the same Mesh as the original
+		dataplanes := &mesh_k8s.DataplaneList{}
+		if err := client.List(context.Background(), dataplanes); err != nil {
+			l.WithValues("dataplane", obj.GetName()).Error(err, "failed to fetch Dataplanes")
+			return nil
+		}
+
+		var req []kube_reconile.Request
+		for _, dataplane := range dataplanes.Items {
+			// skip Dataplanes from other Meshes
+			if dataplane.Mesh != cause.Mesh {
+				continue
+			}
+			ownerRef := kube_meta.GetControllerOf(&dataplane)
+			if ownerRef == nil || ownerRef.Kind != "Pod" {
+				continue
+			}
+			req = append(req, kube_reconile.Request{
+				NamespacedName: kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: ownerRef.Name},
+			})
+		}
+		return req
 	}
-	return req
 }
 
-type ExternalServiceToPodsMapper struct {
-	kube_client.Client
-	Log logr.Logger
-}
-
-func (m *ExternalServiceToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	cause, ok := obj.Object.(*mesh_k8s.ExternalService)
-	if !ok {
-		m.Log.WithValues("externalService", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
-		return nil
-	}
-
-	// List Dataplanes in the same Mesh as the original
-	dataplanes := &mesh_k8s.DataplaneList{}
-	if err := m.Client.List(context.Background(), dataplanes); err != nil {
-		m.Log.WithValues("dataplane", obj.Meta).Error(err, "failed to fetch Dataplanes")
-		return nil
-	}
-
-	var req []kube_reconile.Request
-	for _, dataplane := range dataplanes.Items {
-		// skip Dataplanes from other Meshes
-		if dataplane.Mesh != cause.Mesh {
-			continue
+func ConfigMapToPodsMapper(l logr.Logger, ns string, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("configmap-to-pods-mapper")
+	return func(obj kube_client.Object) []kube_reconile.Request {
+		if obj.GetNamespace() != ns {
+			return nil
 		}
-		ownerRef := kube_meta.GetControllerOf(&dataplane)
-		if ownerRef == nil || ownerRef.Kind != "Pod" {
-			continue
+		mesh, ok := vips.MeshFromConfigKey(obj.GetName())
+		if !ok {
+			return nil
 		}
-		req = append(req, kube_reconile.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: ownerRef.Name},
-		})
-	}
-	return req
-}
 
-type ConfigMapToPodsMapper struct {
-	kube_client.Client
-	Log             logr.Logger
-	SystemNamespace string
-}
-
-func (m *ConfigMapToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	if obj.Meta.GetNamespace() != m.SystemNamespace {
-		return nil
-	}
-	mesh, ok := vips.MeshFromConfigKey(obj.Meta.GetName())
-	if !ok {
-		return nil
-	}
-
-	// List Dataplanes in the same Mesh as the original
-	dataplanes := &mesh_k8s.DataplaneList{}
-	if err := m.Client.List(context.Background(), dataplanes); err != nil {
-		m.Log.WithValues("dataplane", obj.Meta).Error(err, "failed to fetch Dataplanes")
-		return nil
-	}
-
-	var req []kube_reconile.Request
-	for _, dataplane := range dataplanes.Items {
-		// skip Dataplanes from other Meshes
-		if dataplane.Mesh != mesh {
-			continue
+		// List Dataplanes in the same Mesh as the original
+		dataplanes := &mesh_k8s.DataplaneList{}
+		if err := client.List(context.Background(), dataplanes); err != nil {
+			l.WithValues("dataplane", obj.GetName()).Error(err, "failed to fetch Dataplanes")
+			return nil
 		}
-		// skip itself
-		if dataplane.Namespace == obj.Meta.GetNamespace() && dataplane.Name == obj.Meta.GetName() {
-			continue
+
+		var req []kube_reconile.Request
+		for _, dataplane := range dataplanes.Items {
+			// skip Dataplanes from other Meshes
+			if dataplane.Mesh != mesh {
+				continue
+			}
+			// skip itself
+			if dataplane.Namespace == obj.GetNamespace() && dataplane.Name == obj.GetName() {
+				continue
+			}
+			ownerRef := kube_meta.GetControllerOf(&dataplane)
+			if ownerRef == nil || ownerRef.Kind != "Pod" {
+				continue
+			}
+			req = append(req, kube_reconile.Request{
+				NamespacedName: kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: ownerRef.Name},
+			})
 		}
-		ownerRef := kube_meta.GetControllerOf(&dataplane)
-		if ownerRef == nil || ownerRef.Kind != "Pod" {
-			continue
-		}
-		req = append(req, kube_reconile.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: ownerRef.Name},
-		})
+		return req
 	}
-	return req
 }

@@ -7,6 +7,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/config/core"
 )
 
 type UniversalClusters struct {
@@ -14,6 +16,8 @@ type UniversalClusters struct {
 	clusters map[string]*UniversalCluster
 	verbose  bool
 }
+
+var _ Clusters = &UniversalClusters{}
 
 func NewUniversalClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	if len(clusterNames) < 1 || len(clusterNames) > maxClusters {
@@ -25,7 +29,11 @@ func NewUniversalClusters(clusterNames []string, verbose bool) (Clusters, error)
 	clusters := map[string]*UniversalCluster{}
 
 	for _, name := range clusterNames {
-		clusters[name] = NewUniversalCluster(t, name, verbose)
+		if name == Kuma4 {
+			clusters[name] = NewUniversalCluster(t, name, true)
+		} else {
+			clusters[name] = NewUniversalCluster(t, name, false)
+		}
 	}
 
 	return &UniversalClusters{
@@ -41,6 +49,10 @@ func (cs *UniversalClusters) WithTimeout(timeout time.Duration) Cluster {
 	}
 
 	return cs
+}
+
+func (cs *UniversalClusters) Verbose() bool {
+	return cs.verbose
 }
 
 func (cs *UniversalClusters) WithRetries(retries int) Cluster {
@@ -74,9 +86,9 @@ func (cs *UniversalClusters) GetCluster(name string) Cluster {
 	return c
 }
 
-func (cs *UniversalClusters) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
+func (cs *UniversalClusters) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
 	for name, c := range cs.clusters {
-		if err := c.DeployKuma(mode, fs...); err != nil {
+		if err := c.DeployKuma(mode, opt...); err != nil {
 			return errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
 		}
 	}
@@ -98,7 +110,7 @@ func (cs *UniversalClusters) VerifyKuma() error {
 	return nil
 }
 
-func (cs *UniversalClusters) DeleteKuma(opts ...DeployOptionsFunc) error {
+func (cs *UniversalClusters) DeleteKuma(opts ...KumaDeploymentOption) error {
 	failed := []string{}
 
 	for name, c := range cs.clusters {
@@ -144,9 +156,9 @@ func (c *UniversalClusters) GetKumactlOptions() *KumactlOptions {
 	return nil
 }
 
-func (cs *UniversalClusters) DeployApp(fs ...DeployOptionsFunc) error {
+func (cs *UniversalClusters) DeployApp(opt ...AppDeploymentOption) error {
 	for name, c := range cs.clusters {
-		if err := c.DeployApp(fs...); err != nil {
+		if err := c.DeployApp(opt...); err != nil {
 			return errors.Wrapf(err, "unable to deploy on %s", name)
 		}
 	}
@@ -193,6 +205,15 @@ func (cs *UniversalClusters) Deploy(deployment Deployment) error {
 	for name, c := range cs.clusters {
 		if err := c.Deploy(deployment); err != nil {
 			return errors.Wrapf(err, "deployment %s failed on %s cluster", deployment.Name(), name)
+		}
+	}
+	return nil
+}
+
+func (cs *UniversalClusters) DeleteDeployment(deploymentName string) error {
+	for name, c := range cs.clusters {
+		if err := c.DeleteDeployment(deploymentName); err != nil {
+			return errors.Wrapf(err, "delete deployment %s failed on %s cluster", deploymentName, name)
 		}
 	}
 	return nil

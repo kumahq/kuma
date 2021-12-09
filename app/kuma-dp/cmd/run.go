@@ -1,23 +1,26 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -28,10 +31,11 @@ var runLog = dataplaneLog.WithName("run")
 // PreRunE loads the Kuma DP config
 // PostRunE actually runs all the components with loaded config
 // To extend Kuma DP, plug your code in RunE. Use RootContext.Config and add components to RootContext.ComponentManager
-func newRunCmd(rootCtx *RootContext) *cobra.Command {
+func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cfg := rootCtx.Config
-	var dp *rest.Resource
 	var tmpDir string
+	var adminPort uint32
+	var proxyResource model.Resource
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Dataplane (Envoy)",
@@ -40,11 +44,14 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			var err error
+
 			// only support configuration via environment variables and args
 			if err := config.Load("", cfg); err != nil {
 				runLog.Error(err, "unable to load configuration")
 				return err
 			}
+
 			if conf, err := config.ToJson(cfg); err == nil {
 				runLog.Info("effective configuration", "config", string(conf))
 			} else {
@@ -52,23 +59,40 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 
-			var err error
-			dp, err = readDataplaneResource(cmd, cfg)
+			// Map the resource types that are acceptable depending on the value of the `--proxy-type` flag.
+			proxyTypeMap := map[string]model.ResourceType{
+				string(mesh_proto.DataplaneProxyType): mesh.DataplaneType,
+				string(mesh_proto.IngressProxyType):   mesh.ZoneIngressType,
+			}
+
+			if _, ok := proxyTypeMap[cfg.Dataplane.ProxyType]; !ok {
+				return errors.Errorf("invalid proxy type %q", cfg.Dataplane.ProxyType)
+			}
+
+			proxyResource, err = readResource(cmd, &cfg.DataplaneRuntime)
 			if err != nil {
-				runLog.Error(err, "unable to read provided dataplane")
+				runLog.Error(err, "failed to read policy", "proxyType", cfg.Dataplane.ProxyType)
+
 				return err
 			}
-			if dp != nil {
-				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {
-					return errors.New("--name and --mesh cannot be specified when dataplane definition is provided. Mesh and name will be read from the dataplane definition.")
+
+			if proxyResource != nil {
+				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.Descriptor().Name {
+					return errors.Errorf("invalid proxy resource type %q, expected %s",
+						proxyResource.Descriptor().Name, resType)
 				}
-				cfg.Dataplane.Mesh = dp.Meta.GetMesh()
-				cfg.Dataplane.Name = dp.Meta.GetName()
+
+				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {
+					return errors.New("--name and --mesh cannot be specified when a dataplane definition is provided, mesh and name will be read from the dataplane definition")
+				}
+
+				cfg.Dataplane.Mesh = proxyResource.GetMeta().GetMesh()
+				cfg.Dataplane.Name = proxyResource.GetMeta().GetName()
 			}
 
 			if !cfg.Dataplane.AdminPort.Empty() {
 				// unless a user has explicitly opted out of Envoy Admin API, pick a free port from the range
-				adminPort, err := util_net.PickTCPPort("127.0.0.1", cfg.Dataplane.AdminPort.Lowest(), cfg.Dataplane.AdminPort.Highest())
+				adminPort, err = util_net.PickTCPPort("127.0.0.1", cfg.Dataplane.AdminPort.Lowest(), cfg.Dataplane.AdminPort.Highest())
 				if err != nil {
 					return errors.Wrapf(err, "unable to find a free port in the range %q for Envoy Admin API to listen on", cfg.Dataplane.AdminPort)
 				}
@@ -77,9 +101,9 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 
 			if cfg.DataplaneRuntime.ConfigDir == "" || cfg.DNS.ConfigDir == "" {
-				tmpDir, err = ioutil.TempDir("", "kuma-dp-")
+				tmpDir, err = os.MkdirTemp("", "kuma-dp-")
 				if err != nil {
-					runLog.Error(err, "unable to create a temporary directory to store generated config sat")
+					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
 					return err
 				}
 
@@ -110,7 +134,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 
 			if cfg.ControlPlane.CaCert == "" && cfg.ControlPlane.CaCertFile != "" {
-				cert, err := ioutil.ReadFile(cfg.ControlPlane.CaCertFile)
+				cert, err := os.ReadFile(cfg.ControlPlane.CaCertFile)
 				if err != nil {
 					return errors.Wrapf(err, "could not read certificate file %s", cfg.ControlPlane.CaCertFile)
 				}
@@ -127,7 +151,15 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				}()
 			}
 
-			shouldQuit := setupQuitChannel()
+			shouldQuit := make(chan struct{})
+			ctx := opts.SetupSignalHandler()
+			go func() {
+				<-ctx.Done()
+				runLog.Info("Kuma DP caught an exit signal")
+				if shouldQuit != nil {
+					close(shouldQuit)
+				}
+			}()
 			components := []component.Component{
 				accesslogs.NewAccessLogServer(cfg.Dataplane),
 			}
@@ -135,7 +167,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			opts := envoy.Opts{
 				Config:          *cfg,
 				Generator:       rootCtx.BootstrapGenerator,
-				Dataplane:       dp,
+				Dataplane:       rest.NewFromModel(proxyResource),
 				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
 				Stdout:          cmd.OutOrStdout(),
 				Stderr:          cmd.OutOrStderr(),
@@ -159,6 +191,13 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 					return err
 				}
 
+				version, err := dnsServer.GetVersion()
+				if err != nil {
+					return err
+				}
+
+				opts.DynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
+
 				components = append(components, dnsServer)
 			}
 
@@ -168,6 +207,9 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 
 			components = append(components, dataplane)
+
+			metricsServer := metrics.New(cfg.Dataplane, adminPort)
+			components = append(components, metricsServer)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
@@ -182,14 +224,18 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 	}
-
+	var bootstrapVersion string
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
 	cmd.PersistentFlags().Var(&cfg.Dataplane.AdminPort, "admin-port", `Port (or range of ports to choose from) for Envoy Admin API to listen on. Empty value indicates that Envoy Admin API should not be exposed over TCP. Format: "9901 | 9901-9999 | 9901- | -9901"`)
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
+	cmd.PersistentFlags().StringVar(&cfg.Dataplane.ProxyType, "proxy-type", "dataplane", `type of the Dataplane ("dataplane", "ingress")`)
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane Dataplane Server. Example: https://localhost:5678")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCertFile, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
-	cmd.PersistentFlags().StringVar(&cfg.Dataplane.BootstrapVersion, "bootstrap-version", cfg.Dataplane.BootstrapVersion, "Bootstrap version (and API version) of xDS config. If empty, default version defined in Kuma CP will be used. (ex. '2', '3')")
+	cmd.PersistentFlags().Uint32Var(&cfg.DataplaneRuntime.Concurrency, "concurrency", cfg.DataplaneRuntime.Concurrency, "Number of Envoy worker threads")
+	// todo(lobkovilya): delete deprecated bootstrap-version flag. Issue https://github.com/kumahq/kuma/issues/2986
+	cmd.PersistentFlags().StringVar(&bootstrapVersion, "bootstrap-version", "", "Bootstrap version (and API version) of xDS config. If empty, default version defined in Kuma CP will be used. (ex. '2', '3')")
+	_ = cmd.PersistentFlags().MarkDeprecated("bootstrap-version", "Envoy API v3 is used and can not be changed")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
@@ -211,19 +257,5 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 	if err := os.MkdirAll(filepath.Dir(filename), perm); err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filename, data, perm)
-}
-
-func setupQuitChannel() chan struct{} {
-	quit := make(chan struct{})
-	quitOnSignal := core.SetupSignalHandler()
-	go func() {
-		<-quitOnSignal
-		runLog.Info("Kuma DP caught an exit signal")
-		if quit != nil {
-			close(quit)
-		}
-	}()
-
-	return quit
+	return os.WriteFile(filename, data, perm)
 }

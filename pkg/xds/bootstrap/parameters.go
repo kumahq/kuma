@@ -8,16 +8,13 @@ type configParameters struct {
 	AdminAddress       string
 	AdminPort          uint32
 	AdminAccessLogPath string
-	XdsClusterType     string
 	XdsHost            string
 	XdsPort            uint32
-	XdsUri             string
 	XdsConnectTimeout  time.Duration
 	AccessLogPipe      string
 	DataplaneToken     string
-	DataplaneTokenPath string
 	DataplaneResource  string
-	CertBytes          string
+	CertBytes          []byte
 	KumaDpVersion      string
 	KumaDpGitTag       string
 	KumaDpGitCommit    string
@@ -28,4 +25,5 @@ type configParameters struct {
 	DynamicMetadata    map[string]string
 	DNSPort            uint32
 	EmptyDNSPort       uint32
+	ProxyType          string
 }

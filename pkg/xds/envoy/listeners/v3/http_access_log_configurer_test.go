@@ -5,14 +5,12 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/xds"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("HttpAccessLogConfigurer", func() {
@@ -35,11 +33,8 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			sourceService := "web"
 			destinationService := "backend"
 			proxy := &core_xds.Proxy{
-				Id: xds.ProxyId{
-					Name: "web",
-					Mesh: "example",
-				},
-				Dataplane: &mesh_core.DataplaneResource{
+				Id: *core_xds.BuildProxyId("web", "example"),
+				Dataplane: &core_mesh.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "192.168.0.1",
@@ -63,7 +58,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy.APIV3).
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
-					Configure(HttpConnectionManager(given.statsName)).
+					Configure(HttpConnectionManager(given.statsName, false)).
 					Configure(HttpAccessLog(mesh, envoy.TrafficDirectionOutbound, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
@@ -126,16 +121,16 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                   - name: envoy.access_loggers.file
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                      format: |+
-                        [%START_TIME%] demo "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "backend" "192.168.0.1" "%UPSTREAM_HOST%"
-
+                      logFormat:
+                        textFormatSource:
+                          inlineString: |+
+                            [%START_TIME%] demo "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "backend" "192.168.0.1" "%UPSTREAM_HOST%"
                       path: /tmp/log
                   httpFilters:
                   - name: envoy.filters.http.router
                   statPrefix: backend
             name: outbound:127.0.0.1:27070
-            trafficDirection: OUTBOUND
-`,
+            trafficDirection: OUTBOUND`,
 		}),
 		Entry("basic http_connection_manager with tcp access log", testCase{
 			listenerName:    "outbound:127.0.0.1:27070",
@@ -146,7 +141,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			backend: &mesh_proto.LoggingBackend{
 				Name: "tcp",
 				Format: `[%START_TIME%] "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%REQ(ORIGIN)%" "%REQ(CONTENT-TYPE)%" "%KUMA_SOURCE_SERVICE%" "%KUMA_DESTINATION_SERVICE%" "%KUMA_SOURCE_ADDRESS%" "%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%" "%UPSTREAM_HOST%"
-
 "%RESP(SERVER):5%" "%TRAILER(GRPC-MESSAGE):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
 `, // intentional newline at the end
 				Type: mesh_proto.LoggingTcpType,
@@ -181,9 +175,8 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                             clusterName: access_log_sink
                         logName: |+
                           127.0.0.1:1234;[%START_TIME%] "%REQ(x-request-id)%" "%REQ(:authority)%" "%REQ(origin)%" "%REQ(content-type)%" "web" "backend" "192.168.0.1:0" "192.168.0.1" "%UPSTREAM_HOST%"
-            
                           "%RESP(server):5%" "%TRAILER(grpc-message):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
-            
+
                         transportApiVersion: V3
                   httpFilters:
                   - name: envoy.filters.http.router

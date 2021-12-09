@@ -2,8 +2,9 @@ package api_server_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -68,14 +69,14 @@ var _ = Describe("GUI Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			received, err := ioutil.ReadAll(resp.Body)
+			received, err := io.ReadAll(resp.Body)
 
 			// then
 			Expect(resp.Body.Close()).To(Succeed())
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "app", "kuma-ui", "pkg", "resources", "data", given.expectedFile))
+			fileContent, err := os.ReadFile(filepath.Join("..", "..", "app", "kuma-ui", "pkg", "resources", "data", given.expectedFile))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -112,7 +113,7 @@ var _ = Describe("GUI Server", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				received, err := ioutil.ReadAll(resp.Body)
+				received, err := io.ReadAll(resp.Body)
 
 				// then
 				Expect(resp.Body.Close()).To(Succeed())
@@ -124,11 +125,11 @@ var _ = Describe("GUI Server", func() {
 			},
 				Entry("should not serve index.html without path", testCase{
 					urlPath:  "/gui",
-					expected: "GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP.",
+					expected: "GUI is disabled. If this is a Zone CP, please check the GUI on the Global CP.",
 				}),
 				Entry("should not serve index.html with / path", testCase{
 					urlPath:  "/gui/",
-					expected: "GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP.",
+					expected: "GUI is disabled. If this is a Zone CP, please check the GUI on the Global CP.",
 				}),
 			)
 		})

@@ -16,21 +16,21 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	test_store "github.com/kumahq/kuma/pkg/test/store"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl apply", func() {
@@ -41,10 +41,14 @@ var _ = Describe("kumactl apply", func() {
 	BeforeEach(func() {
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-					return store, nil
+				Registry: registry.Global(),
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+					return nil, nil
 				},
-				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+				NewResourceStore: func(util_http.Client) core_store.ResourceStore {
+					return store
+				},
+				NewAPIServerClient: test.GetMockNewAPIServerClient(),
 			},
 		}
 		store = core_store.NewPaginationStore(memory_resources.NewStore())
@@ -72,6 +76,7 @@ var _ = Describe("kumactl apply", func() {
 		// and
 		Expect(resource.Spec.Networking.Outbound).To(HaveLen(1))
 		Expect(resource.Spec.Networking.Outbound[0].Port).To(Equal(uint32(3000)))
+		// nolint:staticcheck
 		Expect(resource.Spec.Networking.Outbound[0].Service).To(Equal("postgres"))
 	}
 
@@ -178,7 +183,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// when
 		resource := mesh.NewMeshResource()
-		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
+		// with production code, the mesh is not required for zone store. API Server then infer mesh from the name
 		err = store.Get(context.Background(), resource, core_store.GetByKey("sample", ""))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -265,7 +270,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// when
 		resource := mesh.NewMeshResource()
-		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
+		// with production code, the mesh is not required for zone store. API Server then infer mesh from the name
 		err = store.Get(context.Background(), resource, core_store.GetByKey("meshinit", ""))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -326,7 +331,7 @@ var _ = Describe("kumactl apply", func() {
 
 	It("should return kuma api server error", func() {
 		// setup
-		rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
+		rootCtx.Runtime.NewResourceStore = func(util_http.Client) core_store.ResourceStore {
 			kumaErr := &types.Error{
 				Title:   "Could not process resource",
 				Details: "Resource is not valid",
@@ -344,7 +349,7 @@ var _ = Describe("kumactl apply", func() {
 			store := test_store.FailingStore{
 				Err: kumaErr,
 			}
-			return &store, nil
+			return &store
 		}
 
 		// given
@@ -354,6 +359,7 @@ var _ = Describe("kumactl apply", func() {
 		)
 		buf := &bytes.Buffer{}
 		rootCmd.SetOut(buf)
+		rootCmd.SetErr(buf)
 
 		// when
 		err := rootCmd.Execute()
@@ -390,6 +396,7 @@ var _ = Describe("kumactl apply", func() {
 		})
 		buf := &bytes.Buffer{}
 		rootCmd.SetOut(buf)
+		rootCmd.SetErr(buf)
 
 		// when
 		err = rootCmd.Execute()
@@ -478,7 +485,7 @@ mesh: default
 networking:
   inbound: 0 # should be a string
 `,
-			err: "YAML contains invalid resource: json: cannot unmarshal number into Go value of type []json.RawMessage",
+			err: "YAML contains invalid resource: invalid Dataplane object \"dp-1\": json: cannot unmarshal number into Go value of type []json.RawMessage",
 		}),
 		Entry("no resource", testCase{
 			resource: ``,

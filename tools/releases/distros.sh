@@ -2,6 +2,8 @@
 
 set -e
 
+source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
+
 GOARCH=(amd64)
 
 # first component is the distribution name, second is the system - must map to
@@ -12,37 +14,8 @@ PULP_HOST="https://api.pulp.konnect-prod.konghq.com"
 PULP_PACKAGE_TYPE="mesh"
 PULP_DIST_NAME="alpine"
 [ -z "$RELEASE_NAME" ] && RELEASE_NAME="kuma"
-ENVOY_VERSION=1.17.1
+ENVOY_VERSION=1.20.0
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
-
-function msg_green() {
-  builtin echo -en "\033[1;32m"
-  echo "$@"
-  builtin echo -en "\033[0m"
-}
-
-function msg_red() {
-  builtin echo -en "\033[1;31m" >&2
-  echo "$@" >&2
-  builtin echo -en "\033[0m" >&2
-}
-
-function msg_yellow() {
-  builtin echo -en "\033[1;33m"
-  echo "$@"
-  builtin echo -en "\033[0m"
-}
-
-function msg() {
-  builtin echo -en "\033[1m"
-  echo "$@"
-  builtin echo -en "\033[0m"
-}
-
-function msg_err() {
-  msg_red $@
-  exit 1
-}
 
 function get_envoy() {
   local distro=$1

@@ -7,27 +7,16 @@ updates:
     labels:
       - "dependencies"
   - package-ecosystem: "gomod"
-    directory: "/api/"
+    directory: "/"
     schedule:
       interval: "weekly"
     labels:
       - "dependencies"
-  - package-ecosystem: "gomod"
-    directory: "/pkg/plugins/resources/k8s/native/"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "dependencies"
-  - package-ecosystem: "gomod"
-    directory: "/tools/releases/changelog"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "dependencies"
+      - "release-1.4"
+    target-branch: "release-1.4"
   - package-ecosystem: "docker"
     directory: "/tools/releases/dockerfiles"
     schedule:
       interval: "weekly"
     labels:
       - "dependencies"
-

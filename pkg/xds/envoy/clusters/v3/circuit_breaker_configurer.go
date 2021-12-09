@@ -4,11 +4,11 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 type CircuitBreakerConfigurer struct {
-	CircuitBreaker *mesh_core.CircuitBreakerResource
+	CircuitBreaker *core_mesh.CircuitBreakerResource
 }
 
 var _ ClusterConfigurer = &CircuitBreakerConfigurer{}

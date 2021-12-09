@@ -43,18 +43,23 @@ type memoryMeta struct {
 func (m memoryMeta) GetName() string {
 	return m.Name
 }
+
 func (m memoryMeta) GetNameExtensions() model.ResourceNameExtensions {
 	return model.ResourceNameExtensionsUnsupported
 }
+
 func (m memoryMeta) GetMesh() string {
 	return m.Mesh
 }
+
 func (m memoryMeta) GetVersion() string {
 	return m.Version.String()
 }
+
 func (m memoryMeta) GetCreationTime() time.Time {
 	return m.CreationTime
 }
+
 func (m memoryMeta) GetModificationTime() time.Time {
 	return m.ModificationTime
 }
@@ -97,8 +102,8 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 
 	opts := store.NewCreateOptions(fs...)
 	// Name must be provided via CreateOptions
-	if _, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh); record != nil {
-		return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
+	if _, record := c.findRecord(string(r.Descriptor().Name), opts.Name, opts.Mesh); record != nil {
+		return store.ErrorResourceAlreadyExists(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 
 	meta := memoryMeta{
@@ -114,7 +119,7 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 
 	// convert into storage representation
 	record, err := c.marshalRecord(
-		string(r.GetType()),
+		string(r.Descriptor().Name),
 		meta,
 		r.GetSpec())
 	if err != nil {
@@ -122,9 +127,9 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 	}
 
 	if opts.Owner != nil {
-		_, ownerRecord := c.findRecord(string(opts.Owner.GetType()), opts.Owner.GetMeta().GetName(), opts.Owner.GetMeta().GetMesh())
+		_, ownerRecord := c.findRecord(string(opts.Owner.Descriptor().Name), opts.Owner.GetMeta().GetName(), opts.Owner.GetMeta().GetMesh())
 		if ownerRecord == nil {
-			return store.ErrorResourceNotFound(opts.Owner.GetType(), opts.Owner.GetMeta().GetName(), opts.Owner.GetMeta().GetMesh())
+			return store.ErrorResourceNotFound(opts.Owner.Descriptor().Name, opts.Owner.GetMeta().GetName(), opts.Owner.GetMeta().GetMesh())
 		}
 		ownerRecord.Children = append(ownerRecord.Children, &record.resourceKey)
 	}
@@ -135,13 +140,14 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 		go func() {
 			c.eventWriter.Send(events.ResourceChangedEvent{
 				Operation: events.Create,
-				Type:      r.GetType(),
+				Type:      r.Descriptor().Name,
 				Key:       model.MetaToResourceKey(r.GetMeta()),
 			})
 		}()
 	}
 	return nil
 }
+
 func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -155,15 +161,15 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 
 	// Name must be provided via r.GetMeta()
 	mesh := r.GetMeta().GetMesh()
-	idx, record := c.findRecord(string(r.GetType()), r.GetMeta().GetName(), mesh)
+	idx, record := c.findRecord(string(r.Descriptor().Name), r.GetMeta().GetName(), mesh)
 	if record == nil || meta.Version != record.Version {
-		return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
+		return store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
 	}
 	meta.Version = meta.Version.Next()
 	meta.ModificationTime = opts.ModificationTime
 
 	record, err := c.marshalRecord(
-		string(r.GetType()),
+		string(r.Descriptor().Name),
 		meta,
 		r.GetSpec())
 	if err != nil {
@@ -178,13 +184,14 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 		go func() {
 			c.eventWriter.Send(events.ResourceChangedEvent{
 				Operation: events.Update,
-				Type:      r.GetType(),
+				Type:      r.Descriptor().Name,
 				Key:       model.MetaToResourceKey(r.GetMeta()),
 			})
 		}()
 	}
 	return nil
 }
+
 func (c *memoryStore) Delete(ctx context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -200,9 +207,9 @@ func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.
 	}
 
 	// Name must be provided via DeleteOptions
-	idx, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh)
+	idx, record := c.findRecord(string(r.Descriptor().Name), opts.Name, opts.Mesh)
 	if record == nil {
-		return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
+		return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	for _, child := range record.Children {
 		_, childRecord := c.findRecord(child.ResourceType, child.Name, child.Mesh)
@@ -225,7 +232,7 @@ func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.
 		go func() {
 			c.eventWriter.Send(events.ResourceChangedEvent{
 				Operation: events.Delete,
-				Type:      r.GetType(),
+				Type:      r.Descriptor().Name,
 				Key: model.ResourceKey{
 					Mesh: opts.Mesh,
 					Name: opts.Name,
@@ -242,15 +249,16 @@ func (c *memoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOp
 
 	opts := store.NewGetOptions(fs...)
 	// Name must be provided via GetOptions
-	_, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh)
+	_, record := c.findRecord(string(r.Descriptor().Name), opts.Name, opts.Mesh)
 	if record == nil {
-		return store.ErrorResourceNotFound(r.GetType(), opts.Name, opts.Mesh)
+		return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	if opts.Version != "" && opts.Version != record.Version.String() {
-		return store.ErrorResourcePreconditionFailed(r.GetType(), opts.Name, opts.Mesh)
+		return store.ErrorResourcePreconditionFailed(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	return c.unmarshalRecord(record, r)
 }
+
 func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

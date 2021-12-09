@@ -1,26 +1,10 @@
-EXAMPLE_NAMESPACE ?= kuma-example
-KIND_KUBECONFIG_DIR ?= $(HOME)/.kube
-KIND_KUBECONFIG ?= $(KIND_KUBECONFIG_DIR)/kind-kuma-config
-KIND_CLUSTER_NAME ?= kuma
-
-ifdef IPV6
-KIND_CONFIG=$(TOP)/test/kind/cluster-ipv6.yaml
-else
-KIND_CONFIG=$(TOP)/test/kind/cluster.yaml
-endif
-
-ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
-	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-registry=$(DOCKER_REGISTRY) --dataplane-registry=$(DOCKER_REGISTRY) --dataplane-init-registry=$(DOCKER_REGISTRY)
-else
-	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
-endif
-
-CI_K3D_VERSION ?= v4.4.1
+CI_K3D_VERSION ?= v4.4.5
 
 K3D_PATH := $(CI_TOOLS_DIR)/k3d
 
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
+PORT_PREFIX := $$(( $(subst kuma-,30,$(KIND_CLUSTER_NAME)) - 1 ))
 
 .PHONY: k3d/start
 k3d/start: ${KIND_KUBECONFIG_DIR}
@@ -34,6 +18,7 @@ k3d/start: ${KIND_KUBECONFIG_DIR}
 		  	--k3s-server-arg '--disable=metrics-server' \
 		  	--no-lb --no-hostip \
 		  	--network kind \
+		  	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)89:30080-30089" \
 		  	--timeout 120s && \
 		until \
 			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
@@ -41,7 +26,7 @@ k3d/start: ${KIND_KUBECONFIG_DIR}
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
-	@echo export KUBECONFIG="${KIND_KUBECONFIG}"
+	@echo export KUBECONFIG="$(KIND_KUBECONFIG)"
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
@@ -60,20 +45,20 @@ k3d/load/images:
     	$(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) \
     	$(KUMA_INIT_DOCKER_IMAGE) $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) \
     	$(KUMACTL_DOCKER_IMAGE) kuma-universal:latest \
-    	--cluster=$(KIND_CLUSTER_NAME) --trace
+    	--cluster=$(KIND_CLUSTER_NAME) --verbose
 
 .PHONY: k3d/load
 k3d/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl docker/build/kuma-universal k3d/load/images
 
 .PHONY: k3d/deploy/kuma
 k3d/deploy/kuma: build/kumactl k3d/load
-	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kumactl install dns | kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
 	@until \
-    	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
     do \
     	echo "Waiting for the cluster to come up" && sleep 1; \
     done

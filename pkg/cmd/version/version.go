@@ -1,8 +1,6 @@
 package version
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -17,16 +15,10 @@ func NewVersionCmd() *cobra.Command {
 		Short: "Print version",
 		Long:  `Print version.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			buildInfo := kuma_version.Build
-
 			if args.detailed {
-				cmd.Println(fmt.Sprintf("Product:    %s", kuma_version.Product))
-				cmd.Println(fmt.Sprintf("Version:    %s", buildInfo.Version))
-				cmd.Println(fmt.Sprintf("Git Tag:    %s", buildInfo.GitTag))
-				cmd.Println(fmt.Sprintf("Git Commit: %s", buildInfo.GitCommit))
-				cmd.Println(fmt.Sprintf("Build Date: %s", buildInfo.BuildDate))
+				cmd.Println(kuma_version.FormatDetailedProductInfo())
 			} else {
-				cmd.Printf("%s: %s\n", kuma_version.Product, buildInfo.Version)
+				cmd.Printf("%s: %s\n", kuma_version.Product, kuma_version.Build.Version)
 			}
 
 			return nil

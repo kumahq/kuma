@@ -5,8 +5,6 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -33,7 +31,7 @@ func (c *virtualHostModificator) apply(resources *core_xds.ResourceSet) error {
 			for _, networkFilter := range chain.Filters {
 				if networkFilter.Name == "envoy.filters.network.http_connection_manager" {
 					hcm := &envoy_hcm.HttpConnectionManager{}
-					err := ptypes.UnmarshalAny(networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig, hcm)
+					err := util_proto.UnmarshalAnyTo(networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig, hcm)
 					if err != nil {
 						return err
 					}
@@ -76,7 +74,7 @@ func (c *virtualHostModificator) applyHCMModification(hcm *envoy_hcm.HttpConnect
 func (c *virtualHostModificator) patch(routeCfg *envoy_route.RouteConfiguration, vHostPatch *envoy_route.VirtualHost) {
 	for _, vHost := range routeCfg.VirtualHosts {
 		if c.virtualHostMatches(vHost) {
-			proto.Merge(vHost, vHostPatch)
+			util_proto.Merge(vHost, vHostPatch)
 		}
 	}
 }

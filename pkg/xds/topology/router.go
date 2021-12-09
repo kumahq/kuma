@@ -4,9 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/policy"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -37,11 +39,11 @@ func (m *pseudoMeta) GetModificationTime() time.Time {
 }
 
 // GetRoutes picks a single the most specific route for each outbound interface of a given Dataplane.
-func GetRoutes(ctx context.Context, dataplane *mesh_core.DataplaneResource, manager core_manager.ReadOnlyResourceManager) (core_xds.RouteMap, error) {
+func GetRoutes(ctx context.Context, dataplane *core_mesh.DataplaneResource, manager core_manager.ReadOnlyResourceManager) (core_xds.RouteMap, error) {
 	if len(dataplane.Spec.Networking.GetOutbound()) == 0 {
 		return nil, nil
 	}
-	routes := &mesh_core.TrafficRouteResourceList{}
+	routes := &core_mesh.TrafficRouteResourceList{}
 	if err := manager.List(ctx, routes, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
 		return nil, err
 	}
@@ -49,7 +51,7 @@ func GetRoutes(ctx context.Context, dataplane *mesh_core.DataplaneResource, mana
 }
 
 // BuildRouteMap picks a single the most specific route for each outbound interface of a given Dataplane.
-func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.TrafficRouteResource) core_xds.RouteMap {
+func BuildRouteMap(dataplane *core_mesh.DataplaneResource, routes []*core_mesh.TrafficRouteResource) core_xds.RouteMap {
 	policies := make([]policy.ConnectionPolicy, len(routes))
 	for i, route := range routes {
 		policies[i] = route
@@ -59,32 +61,35 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 	routeMap := core_xds.RouteMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-		policy, exists := policyMap[serviceName]
-
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
-		if exists {
-			route := policy.(*mesh_core.TrafficRouteResource)
-			split := []*mesh_proto.TrafficRoute_Split{}
-			for _, destination := range route.Spec.GetConf().GetSplit() {
-				split = append(split, &mesh_proto.TrafficRoute_Split{
-					Weight:      destination.Weight,
-					Destination: handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), destination.Destination),
-				})
-			}
-
-			routeMap[outbound] = &mesh_core.TrafficRouteResource{
-				Meta: route.GetMeta(),
-				Spec: &mesh_proto.TrafficRoute{
-					Sources:      route.Spec.GetSources(),
-					Destinations: route.Spec.GetDestinations(),
-					Conf: &mesh_proto.TrafficRoute_Conf{
-						Split: split,
-					},
-				},
-			}
+		if policy, exists := policyMap[serviceName]; exists {
+			routeMap[outbound] = resolveTrafficRouteWildcards(policy.(*core_mesh.TrafficRouteResource), oface.GetTagsIncludingLegacy())
 		}
 	}
 	return routeMap
+}
+
+func resolveTrafficRouteWildcards(routeRes *core_mesh.TrafficRouteResource, outboundTags map[string]string) *core_mesh.TrafficRouteResource {
+	route := proto.Clone(routeRes.Spec).(*mesh_proto.TrafficRoute) // we need to clone the Spec so we don't override the resource in Cache.
+	if len(route.Conf.Destination) > 0 {
+		route.Conf.Destination = handleWildcardTagsFor(outboundTags, route.Conf.Destination)
+	}
+	for _, split := range route.Conf.Split {
+		split.Destination = handleWildcardTagsFor(outboundTags, split.Destination)
+	}
+	for _, http := range route.Conf.Http {
+		if len(http.Destination) > 0 {
+			http.Destination = handleWildcardTagsFor(outboundTags, http.Destination)
+		}
+		for _, split := range http.Split {
+			split.Destination = handleWildcardTagsFor(outboundTags, split.Destination)
+		}
+	}
+
+	return &core_mesh.TrafficRouteResource{
+		Meta: routeRes.GetMeta(),
+		Spec: route,
+	}
 }
 
 func handleWildcardTagsFor(outboundTags, routeTags map[string]string) map[string]string {
@@ -107,14 +112,14 @@ func handleWildcardTagsFor(outboundTags, routeTags map[string]string) map[string
 
 // BuildDestinationMap creates a map of selectors to match other dataplanes reachable from a given one
 // via given routes.
-func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds.RouteMap) core_xds.DestinationMap {
+func BuildDestinationMap(dataplane *core_mesh.DataplaneResource, routes core_xds.RouteMap) core_xds.DestinationMap {
 	destinations := core_xds.DestinationMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		route, ok := routes[outbound]
 		if ok {
-			for _, destination := range route.Spec.GetConf().GetSplit() {
+			for _, destination := range route.Spec.GetConf().GetSplitWithDestination() {
 				service, ok := destination.Destination[mesh_proto.ServiceTag]
 				if !ok {
 					// ignore destinations without a `service` tag

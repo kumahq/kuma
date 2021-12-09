@@ -2,7 +2,7 @@ package table_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -35,7 +35,7 @@ var _ = Describe("printer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+			expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

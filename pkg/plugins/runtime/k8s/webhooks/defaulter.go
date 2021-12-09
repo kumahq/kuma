@@ -7,9 +7,8 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 )
 
 type Defaulter interface {
@@ -67,10 +66,10 @@ func (h *defaultingHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	marshalled, err := json.Marshal(obj)
+	marshaled, err := json.Marshal(obj)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	return admission.PatchResponseFromRaw(req.Object.Raw, marshalled)
+	return admission.PatchResponseFromRaw(req.Object.Raw, marshaled)
 }

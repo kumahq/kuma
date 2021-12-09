@@ -4,14 +4,16 @@ import (
 	"fmt"
 
 	"github.com/emicklei/go-restful"
+	"github.com/pkg/errors"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
+	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 func HandleError(response *restful.Response, err error, title string) {
@@ -30,8 +32,16 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleMaxPageSizeExceeded(title, err, response)
 	case err == api_server_types.InvalidPageSize:
 		handleInvalidPageSize(title, response)
-	case issuer.IsSigningKeyNotFoundErr(err):
+	case tokens.IsSigningKeyNotFound(err):
 		handleSigningKeyNotFound(err, response)
+	case errors.Is(err, &access.AccessDeniedError{}):
+		var accessErr *access.AccessDeniedError
+		errors.As(err, &accessErr)
+		handleAccessDenied(accessErr, response)
+	case errors.Is(err, &Unauthenticated{}):
+		var unauthenticated *Unauthenticated
+		errors.As(err, &err)
+		handleUnauthenticated(unauthenticated, title, response)
 	default:
 		handleUnknownError(err, title, response)
 	}
@@ -138,6 +148,22 @@ func handleSigningKeyNotFound(err error, response *restful.Response) {
 		Details: err.Error(),
 	}
 	writeError(response, 404, kumaErr)
+}
+
+func handleAccessDenied(err *access.AccessDeniedError, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   "Access Denied",
+		Details: err.Reason,
+	}
+	writeError(response, 403, kumaErr)
+}
+
+func handleUnauthenticated(err *Unauthenticated, title string, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   title,
+		Details: err.Error(),
+	}
+	writeError(response, 401, kumaErr)
 }
 
 func writeError(response *restful.Response, httpStatus int, kumaErr types.Error) {

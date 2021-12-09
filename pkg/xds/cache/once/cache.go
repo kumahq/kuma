@@ -75,6 +75,6 @@ func (c *Cache) GetOrRetrieve(ctx context.Context, key string, retriever Retriev
 	if o.Err != nil {
 		return "", o.Err
 	}
-	v, _ = c.cache.Get(key)
+	v = o.Value
 	return v, nil
 }

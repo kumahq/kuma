@@ -1,7 +1,204 @@
 resources:
 - name: api-http
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: api-http
+    outlierDetection:
+      enforcingConsecutive5xx: 100
+      enforcingConsecutiveGatewayFailure: 0
+      enforcingConsecutiveLocalOriginFailure: 0
+      enforcingFailurePercentage: 0
+      enforcingSuccessRate: 0
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - exact: spiffe://mesh1/api-http
+            validationContextSdsSecretConfig:
+              name: mesh_ca
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: api-http{mesh=mesh1}
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: api-tcp
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbPolicy: LEAST_REQUEST
+    leastRequestLbConfig:
+      choiceCount: 4
+    name: api-tcp
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - exact: spiffe://mesh1/api-tcp
+            validationContextSdsSecretConfig:
+              name: mesh_ca
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: api-tcp{mesh=mesh1}
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbPolicy: MAGLEV
+    name: backend
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - exact: spiffe://mesh1/backend
+            validationContextSdsSecretConfig:
+              name: mesh_ca
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: backend{mesh=mesh1}
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: db-_0_
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: db-_0_
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - exact: spiffe://mesh1/db
+            validationContextSdsSecretConfig:
+              name: mesh_ca
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: db{mesh=mesh1,role=master}
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: db-_1_
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: db-_1_
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - exact: spiffe://mesh1/db
+            validationContextSdsSecretConfig:
+              name: mesh_ca
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: db{mesh=mesh1,role=replica}
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: api-http
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-http
     endpoints:
     - lbEndpoints:
@@ -35,7 +232,7 @@ resources:
               region: eu
 - name: api-tcp
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-tcp
     endpoints:
     - lbEndpoints:
@@ -67,7 +264,7 @@ resources:
               region: eu
 - name: backend
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: backend
     endpoints:
     - lbEndpoints:
@@ -89,9 +286,9 @@ resources:
               address: 192.168.0.2
               portValue: 8082
         loadBalancingWeight: 1
-- name: db
+- name: db-_0_
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: db
     endpoints:
     - lbEndpoints:
@@ -107,225 +304,24 @@ resources:
               role: master
             envoy.transport_socket_match:
               role: master
-- name: api-http
+- name: db-_1_
   resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    commonHttpProtocolOptions:
-      idleTimeout: 0s
-    connectTimeout: 10s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    http2ProtocolOptions: {}
-    name: api-http
-    outlierDetection:
-      enforcingConsecutive5xx: 100
-      enforcingConsecutiveGatewayFailure: 0
-      enforcingConsecutiveLocalOriginFailure: 0
-      enforcingFailurePercentage: 0
-      enforcingSuccessRate: 0
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          combinedValidationContext:
-            defaultValidationContext:
-              matchSubjectAltNames:
-              - exact: spiffe://mesh1/api-http
-            validationContextSdsSecretConfig:
-              name: mesh_ca
-              sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: identity_cert
-            sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: ads_cluster
-                transportApiVersion: V3
-              resourceApiVersion: V3
-        sni: api-http{mesh=mesh1}
-    type: EDS
-- name: api-tcp
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    http2ProtocolOptions: {}
-    lbPolicy: LEAST_REQUEST
-    leastRequestLbConfig:
-      choiceCount: 4
-    name: api-tcp
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          combinedValidationContext:
-            defaultValidationContext:
-              matchSubjectAltNames:
-              - exact: spiffe://mesh1/api-tcp
-            validationContextSdsSecretConfig:
-              name: mesh_ca
-              sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: identity_cert
-            sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: ads_cluster
-                transportApiVersion: V3
-              resourceApiVersion: V3
-        sni: api-tcp{mesh=mesh1}
-    type: EDS
-- name: backend
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    http2ProtocolOptions: {}
-    lbPolicy: MAGLEV
-    name: backend
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          combinedValidationContext:
-            defaultValidationContext:
-              matchSubjectAltNames:
-              - exact: spiffe://mesh1/backend
-            validationContextSdsSecretConfig:
-              name: mesh_ca
-              sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
-                resourceApiVersion: V3
-          tlsCertificateSdsSecretConfigs:
-          - name: identity_cert
-            sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: ads_cluster
-                transportApiVersion: V3
-              resourceApiVersion: V3
-        sni: backend{mesh=mesh1}
-    type: EDS
-- name: db
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    http2ProtocolOptions: {}
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - role
-    name: db
-    transportSocketMatches:
-    - match:
-        role: master
-      name: db{mesh=mesh1,role=master}
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchSubjectAltNames:
-                - exact: spiffe://mesh1/db
-              validationContextSdsSecretConfig:
-                name: mesh_ca
-                sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: identity_cert
-              sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
-                resourceApiVersion: V3
-          sni: db{mesh=mesh1,role=master}
-    - match:
-        role: replica
-      name: db{mesh=mesh1,role=replica}
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchSubjectAltNames:
-                - exact: spiffe://mesh1/db
-              validationContextSdsSecretConfig:
-                name: mesh_ca
-                sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: identity_cert
-              sdsConfig:
-                apiConfigSource:
-                  apiType: GRPC
-                  grpcServices:
-                  - envoyGrpc:
-                      clusterName: ads_cluster
-                  transportApiVersion: V3
-                resourceApiVersion: V3
-          sni: db{mesh=mesh1,role=replica}
-    type: EDS
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: db
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.3
+              portValue: 5432
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              role: master
+            envoy.transport_socket_match:
+              role: master
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -360,9 +356,10 @@ resources:
           - name: envoy.access_loggers.file
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-              format: |+
-                [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
-
+              logFormat:
+                textFormatSource:
+                  inlineString: |
+                    [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
               path: /var/log
           httpFilters:
           - name: envoy.filters.http.router
@@ -382,7 +379,6 @@ resources:
                   prefix: /
                 route:
                   cluster: api-http
-                  timeout: 0s
           statPrefix: api-http
     name: outbound:127.0.0.1:40001
     trafficDirection: OUTBOUND
@@ -407,9 +403,8 @@ resources:
                 grpcService:
                   envoyGrpc:
                     clusterName: access_log_sink
-                logName: |+
+                logName: |
                   logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-
                 transportApiVersion: V3
           cluster: api-tcp
           statPrefix: api-tcp
@@ -431,17 +426,9 @@ resources:
           statPrefix: db
           weightedClusters:
             clusters:
-            - metadataMatch:
-                filterMetadata:
-                  envoy.lb:
-                    role: master
-              name: db
+            - name: db-_0_
               weight: 10
-            - metadataMatch:
-                filterMetadata:
-                  envoy.lb:
-                    role: replica
-              name: db
+            - name: db-_1_
               weight: 90
     name: outbound:127.0.0.1:54321
     trafficDirection: OUTBOUND

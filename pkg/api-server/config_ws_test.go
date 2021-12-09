@@ -2,7 +2,7 @@ package api_server_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -45,15 +45,21 @@ var _ = Describe("Config WS", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
 		json := fmt.Sprintf(`
 		{
 		  "apiServer": {
 			"auth": {
-			  "allowFromLocalhost": true,
 			  "clientCertsDir": "../../test/certs/client"
+			},
+			"authn": {
+			  "localhostIsAdmin": true,
+			  "type": "tokens",
+			  "tokens": {
+			    "bootstrapAdminToken": true
+			  }
 			},
 			"corsAllowedDomains": [
 			  ".*"
@@ -73,7 +79,6 @@ var _ = Describe("Config WS", func() {
 			"readOnly": false
 		  },
 		  "bootstrapServer": {
-			"apiVersion": "v3",
 			"params": {
 			  "adminAccessLogPath": "/dev/null",
 			  "adminAddress": "127.0.0.1",
@@ -93,7 +98,8 @@ var _ = Describe("Config WS", func() {
 		  "dnsServer": {
 			"CIDR": "240.0.0.0/4",
 			"domain": "mesh",
-			"port": 5653
+			"port": 5653,
+			"serviceVipEnabled": true
 		  },
 		  "dpServer": {
 			"auth": {
@@ -128,7 +134,8 @@ var _ = Describe("Config WS", func() {
 		  "metrics": {
 			"dataplane": {
 			  "enabled": true,
-			  "subscriptionLimit": 10
+			  "subscriptionLimit": 2,
+			  "idleTimeout": "5m0s"
 			},
 			"mesh": {
 			  "maxResyncTimeout": "20s",
@@ -136,17 +143,17 @@ var _ = Describe("Config WS", func() {
 			},
 			"zone": {
 			  "enabled": true,
-			  "subscriptionLimit": 10
+			  "subscriptionLimit": 10,
+			  "idleTimeout": "5m0s"
 			}
 		  },
 		  "mode": "standalone",
 		  "monitoringAssignmentServer": {
 			"apiVersions": [
-			  "v1alpha1",
 			  "v1"
 			],
 			"assignmentRefreshInterval": "1s",
-			"fetchTimeout": "30s",
+			"defaultFetchTimeout": "30s",
 			"grpcPort": 0,
 			"port": 5676
 		  },
@@ -157,19 +164,20 @@ var _ = Describe("Config WS", func() {
 				"refreshInterval": "1s",
 				"tlsCertFile": "",
 				"tlsKeyFile": "",
-				"zoneInsightFlushInterval": "10s"
-			  },
-			  "pollTimeout": "500ms"
+				"zoneInsightFlushInterval": "10s",
+				"maxMsgSize": 10485760
+			  }
 			},
-			"remote": {
+			"zone": {
 			  "kds": {
 				"refreshInterval": "1s",
-				"rootCaFile": ""
+				"rootCaFile": "",
+				"maxMsgSize": 10485760
 			  }
 			}
 		  },
 		  "reports": {
-			"enabled": true
+			"enabled": false
 		  },
 		  "runtime": {
 			"kubernetes": {
@@ -179,9 +187,11 @@ var _ = Describe("Config WS", func() {
 				"port": 5443
 			  },
 			  "controlPlaneServiceName": "kuma-control-plane",
+			  "serviceAccountName": "system:serviceaccount:kuma-system:kuma-control-plane",
 			  "injector": {
 				"caCertFile": "",
 				"builtinDNS": {
+                  "enabled": true,
                   "port": 15053
                 },
                 "cniEnabled": false,
@@ -248,9 +258,6 @@ var _ = Describe("Config WS", func() {
               "dataplaneCleanupAge": "72h0m0s"
             }
           },
-          "sdsServer": {
-            "dataplaneConfigurationRefreshInterval": "1s"
-          },
           "dpServer": {
             "port": 5678,
             "tlsCertFile": "",
@@ -279,11 +286,14 @@ var _ = Describe("Config WS", func() {
               "connectionTimeout": 5,
               "dbName": "kuma",
               "host": "127.0.0.1",
+              "maxIdleConnections": 0,
               "maxOpenConnections": 0,
               "password": "*****",
               "port": 15432,
               "maxReconnectInterval": "1m0s",
               "minReconnectInterval": "10s",
+              "maxIdleConnections": 50,
+              "maxOpenConnections": 50,
               "tls": {
                 "certPath": "",
                 "keyPath": "",
@@ -310,6 +320,23 @@ var _ = Describe("Config WS", func() {
           "diagnostics": {
             "serverPort": 5680,
             "debugEndpoints": false
+          },
+          "access": {
+            "type": "static",
+            "static": {
+              "adminResources": {
+                "users": ["mesh-system:admin"],
+                "groups": ["mesh-system:admin"]
+              },
+              "generateDpToken": {
+                "users": ["mesh-system:admin"],
+                "groups": ["mesh-system:admin"]
+              },
+              "generateUserToken": {
+                "users": ["mesh-system:admin"],
+                "groups": ["mesh-system:admin"]
+              }
+            }
           }
         }
 		`, port, cfg.HTTPS.Port)

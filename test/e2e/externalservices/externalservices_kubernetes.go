@@ -3,26 +3,18 @@ package externalservices
 import (
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
 func ExternalServicesOnKubernetes() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
-
 	meshDefaulMtlsOn := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -37,28 +29,6 @@ spec:
   networking:
     outbound:
       passthrough: %s
-`
-
-	trafficRoute := `
-apiVersion: kuma.io/v1alpha1
-kind: TrafficRoute
-mesh: default
-metadata:
-  name: rule-example
-  namespace: default
-spec:
-  sources:
-  - match:
-      kuma.io/service: "*"
-  destinations:
-  - match:
-      kuma.io/service: external-service
-  conf:
-    split:
-    - weight: 1
-      destination:
-        kuma.io/service: external-service
-        id: "%s"
 `
 
 	externalService := `
@@ -80,6 +50,22 @@ spec:
 	es1 := "1"
 	es2 := "2"
 
+	trafficPermission := `
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  name: traffic-to-es
+spec:
+  sources:
+    - match:
+        kuma.io/service: '*'
+  destinations:
+    - match:
+        kuma.io/service: external-service
+
+`
+
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -93,7 +79,7 @@ metadata:
 
 	var cluster Cluster
 	var clientPod *v1.Pod
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		clusters, err := NewK8sClusters(
@@ -103,10 +89,6 @@ metadata:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma1)
-		deployOptsFuncs = []DeployOptionsFunc{
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"),
-		}
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
@@ -119,12 +101,6 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlK8s(fmt.Sprintf(externalService,
-			es1, es1,
-			"externalservice-http-server.externalservice-namespace.svc.cluster.local", 10080,
-			"false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		pods, err := k8s.ListPodsE(
@@ -155,9 +131,19 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	trafficBlocked := func() error {
+		_, _, err := cluster.Exec(TestNamespace, clientPod.GetName(), "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
+		return err
+	}
+
 	It("should route to external-service", func() {
 		// given Mesh with passthrough enabled
 		err := YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true"))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// and no default traffic permission
+		err = k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-default")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication outside of the Mesh works
@@ -171,16 +157,7 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the external service is no longer possible
-		_, err = retry.DoWithRetryE(cluster.GetTesting(), "passthrough access to service", 5, DefaultTimeout, func() (string, error) {
-			_, _, err := cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
-			if err != nil {
-				return "", err
-			}
-
-			return "", nil
-		})
-		Expect(err).To(HaveOccurred())
+		Eventually(trafficBlocked, "30s", "1s").Should(HaveOccurred())
 
 		// when apply external service
 		err = YamlK8s(fmt.Sprintf(externalService,
@@ -189,7 +166,11 @@ metadata:
 			"false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlK8s(fmt.Sprintf(trafficRoute, es1))(cluster)
+		// then traffic is still blocked because of lack of the traffic permission
+		Consistently(trafficBlocked, "10s", "1s").Should(HaveOccurred())
+
+		// when TrafficPermission is added
+		err = YamlK8s(trafficPermission)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then you can access external service again
@@ -220,9 +201,6 @@ metadata:
 			es2, es2,
 			"externalservice-https-server.externalservice-namespace.svc.cluster.local", 10080,
 			"true"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlK8s(fmt.Sprintf(trafficRoute, es2))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",

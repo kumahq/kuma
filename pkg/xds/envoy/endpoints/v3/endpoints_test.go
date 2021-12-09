@@ -5,38 +5,12 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
-
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 )
 
 var _ = Describe("Endpoints", func() {
-
-	Describe("CreateStaticEndpoint()", func() {
-		It("should generate 'static' Endpoints", func() {
-			// given
-			expected := `
-            clusterName: localhost:8080
-            endpoints:
-            - lbEndpoints:
-              - endpoint:
-                  address:
-                    socketAddress:
-                      address: 127.0.0.1
-                      portValue: 8080
-`
-			// when
-			resource := CreateStaticEndpoint("localhost:8080", "127.0.0.1", 8080)
-
-			// then
-			actual, err := util_proto.ToYAML(resource)
-
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
-		})
-	})
 
 	Describe("ClusterLoadAssignment()", func() {
 		type testCase struct {
@@ -171,13 +145,13 @@ var _ = Describe("Endpoints", func() {
 					{
 						Target: "192.168.0.1",
 						Port:   8081,
-						Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/region": "us", "kuma.io/zone": "west"},
+						Tags:   map[string]string{"kuma.io/service": "backend", "region": "us", "kuma.io/zone": "west"},
 						Weight: 1,
 					},
 					{
 						Target: "192.168.0.2",
 						Port:   8082,
-						Tags:   map[string]string{"kuma.io/service": "backend", "kuma.io/region": "eu", "kuma.io/zone": "west"},
+						Tags:   map[string]string{"kuma.io/service": "backend", "region": "eu", "kuma.io/zone": "west"},
 						Weight: 2,
 					},
 				},
@@ -193,10 +167,10 @@ var _ = Describe("Endpoints", func() {
                     metadata:
                       filterMetadata:
                         envoy.lb:
-                          kuma.io/region: us
+                          region: us
                           kuma.io/zone: west
                         envoy.transport_socket_match:
-                          kuma.io/region: us
+                          region: us
                           kuma.io/zone: west
                     loadBalancingWeight: 1
                   - endpoint:
@@ -207,10 +181,10 @@ var _ = Describe("Endpoints", func() {
                     metadata:
                       filterMetadata:
                         envoy.lb:
-                          kuma.io/region: eu
+                          region: eu
                           kuma.io/zone: west
                         envoy.transport_socket_match:
-                          kuma.io/region: eu
+                          region: eu
                           kuma.io/zone: west
                     loadBalancingWeight: 2
 `,

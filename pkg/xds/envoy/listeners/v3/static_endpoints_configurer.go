@@ -1,26 +1,18 @@
 package v3
 
 import (
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 
-	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
-
-	"github.com/kumahq/kuma/pkg/tls"
-
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
-	"github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type StaticEndpointsConfigurer struct {
 	VirtualHostName string
 	Paths           []*envoy_common.StaticEndpointPath
-	KeyPair         *tls.KeyPair
 }
 
 var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
@@ -57,11 +49,9 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 	}
 
 	config := &envoy_hcm.HttpConnectionManager{
-		StatPrefix: util_xds.SanitizeMetric(c.VirtualHostName),
-		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
-		HttpFilters: []*envoy_hcm.HttpFilter{{
-			Name: "envoy.filters.http.router",
-		}},
+		StatPrefix:  util_xds.SanitizeMetric(c.VirtualHostName),
+		CodecType:   envoy_hcm.HttpConnectionManager_AUTO,
+		HttpFilters: []*envoy_hcm.HttpFilter{},
 		RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: &envoy_route.RouteConfiguration{
 				VirtualHosts: []*envoy_route.VirtualHost{{
@@ -69,13 +59,11 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 					Domains: []string{"*"},
 					Routes:  routes,
 				}},
-				ValidateClusters: &wrappers.BoolValue{
-					Value: false,
-				},
+				ValidateClusters: util_proto.Bool(false),
 			},
 		},
 	}
-	pbst, err := proto.MarshalAnyDeterministic(config)
+	pbst, err := util_proto.MarshalAnyDeterministic(config)
 	if err != nil {
 		return err
 	}
@@ -86,21 +74,5 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 			TypedConfig: pbst,
 		},
 	})
-
-	if c.KeyPair != nil {
-		tlsContext := xds_tls.StaticDownstreamTlsContext(c.KeyPair)
-		pbst, err = proto.MarshalAnyDeterministic(tlsContext)
-		if err != nil {
-			return err
-		}
-
-		filterChain.TransportSocket = &envoy_core.TransportSocket{
-			Name: "envoy.transport_sockets.tls",
-			ConfigType: &envoy_core.TransportSocket_TypedConfig{
-				TypedConfig: pbst,
-			},
-		}
-	}
-
 	return nil
 }

@@ -1,0 +1,20 @@
+ARG ENVOY_BUILD_IMAGE
+FROM $ENVOY_BUILD_IMAGE
+
+ARG BUILD_CMD
+
+# based on the fix https://github.com/envoyproxy/envoy/pull/18426, could be deleted as soon as it'll be merged
+RUN git clone https://gn.googlesource.com/gn && \
+    pushd gn && \
+    git checkout 45aa842fb41d79e149b46fac8ad71728856e15b9 && \
+    python build/gen.py && \
+    ninja -C out && \
+    mv -f out/gn /usr/local/bin/gn && \
+    chmod +x /usr/local/bin/gn && \
+    popd
+
+COPY . /envoy-sources/
+
+RUN bash -c "pushd envoy-sources/ && bazel/setup_clang.sh /opt/llvm"
+RUN bash -c "pushd /envoy-sources && $BUILD_CMD"
+RUN bash -c "pushd /envoy-sources/bazel-bin/contrib/exe && strip envoy-static -o envoy"

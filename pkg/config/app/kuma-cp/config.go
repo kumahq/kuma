@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config/access"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -16,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
-	"github.com/kumahq/kuma/pkg/config/sds"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 )
@@ -53,8 +53,9 @@ func (m *Metrics) Validate() error {
 }
 
 type DataplaneMetrics struct {
-	Enabled           bool `yaml:"enabled" envconfig:"kuma_metrics_dataplane_enabled"`
-	SubscriptionLimit int  `yaml:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
+	Enabled           bool          `yaml:"enabled" envconfig:"kuma_metrics_dataplane_enabled"`
+	SubscriptionLimit int           `yaml:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
+	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"kuma_metrics_dataplane_idle_timeout"`
 }
 
 func (d *DataplaneMetrics) Sanitize() {
@@ -68,8 +69,9 @@ func (d *DataplaneMetrics) Validate() error {
 }
 
 type ZoneMetrics struct {
-	Enabled           bool `yaml:"enabled" envconfig:"kuma_metrics_zone_enabled"`
-	SubscriptionLimit int  `yaml:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
+	Enabled           bool          `yaml:"enabled" envconfig:"kuma_metrics_zone_enabled"`
+	SubscriptionLimit int           `yaml:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
+	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"kuma_metrics_zone_idle_timeout"`
 }
 
 func (d *ZoneMetrics) Sanitize() {
@@ -117,8 +119,6 @@ type Config struct {
 	BootstrapServer *bootstrap.BootstrapServerConfig `yaml:"bootstrapServer,omitempty"`
 	// Envoy XDS server configuration
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer,omitempty"`
-	// Envoy SDS server configuration
-	SdsServer *sds.SdsServerConfig `yaml:"sdsServer,omitempty"`
 	// Monitoring Assignment Discovery Service (MADS) server configuration
 	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer,omitempty"`
 	// API Server configuration
@@ -141,6 +141,8 @@ type Config struct {
 	Diagnostics *diagnostics.DiagnosticsConfig `yaml:"diagnostics,omitempty"`
 	// Dataplane Server configuration
 	DpServer *dp_server.DpServerConfig `yaml:"dpServer"`
+	// Access Control configuration
+	Access access.AccessConfig `yaml:"access"`
 }
 
 func (c *Config) Sanitize() {
@@ -148,7 +150,6 @@ func (c *Config) Sanitize() {
 	c.Store.Sanitize()
 	c.BootstrapServer.Sanitize()
 	c.XdsServer.Sanitize()
-	c.SdsServer.Sanitize()
 	c.MonitoringAssignmentServer.Sanitize()
 	c.ApiServer.Sanitize()
 	c.Runtime.Sanitize()
@@ -160,13 +161,12 @@ func (c *Config) Sanitize() {
 	c.Diagnostics.Sanitize()
 }
 
-func DefaultConfig() Config {
+var DefaultConfig = func() Config {
 	return Config{
 		Environment:                core.UniversalEnvironment,
 		Mode:                       core.Standalone,
 		Store:                      store.DefaultStoreConfig(),
 		XdsServer:                  xds.DefaultXdsServerConfig(),
-		SdsServer:                  sds.DefaultSdsServerConfig(),
 		MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
 		ApiServer:                  api_server.DefaultApiServerConfig(),
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
@@ -177,11 +177,13 @@ func DefaultConfig() Config {
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
 				Enabled:           true,
-				SubscriptionLimit: 10,
+				SubscriptionLimit: 2,
+				IdleTimeout:       5 * time.Minute,
 			},
 			Zone: &ZoneMetrics{
 				Enabled:           true,
 				SubscriptionLimit: 10,
+				IdleTimeout:       5 * time.Minute,
 			},
 			Mesh: &MeshMetrics{
 				MinResyncTimeout: 1 * time.Second,
@@ -189,7 +191,7 @@ func DefaultConfig() Config {
 			},
 		},
 		Reports: &Reports{
-			Enabled: true,
+			Enabled: false,
 		},
 		General:     DefaultGeneralConfig(),
 		GuiServer:   gui_server.DefaultGuiServerConfig(),
@@ -197,6 +199,7 @@ func DefaultConfig() Config {
 		Multizone:   multizone.DefaultMultizoneConfig(),
 		Diagnostics: diagnostics.DefaultDiagnosticsConfig(),
 		DpServer:    dp_server.DefaultDpServerConfig(),
+		Access:      access.DefaultAccessConfig(),
 	}
 }
 
@@ -222,9 +225,6 @@ func (c *Config) Validate() error {
 		if err := c.BootstrapServer.Validate(); err != nil {
 			return errors.Wrap(err, "Bootstrap Server validation failed")
 		}
-		if err := c.SdsServer.Validate(); err != nil {
-			return errors.Wrap(err, "SDS Server validation failed")
-		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
 		}
@@ -237,18 +237,15 @@ func (c *Config) Validate() error {
 		if err := c.Metrics.Validate(); err != nil {
 			return errors.Wrap(err, "Metrics validation failed")
 		}
-	case core.Remote:
-		if err := c.Multizone.Remote.Validate(); err != nil {
-			return errors.Wrap(err, "Multizone Remote validation failed")
+	case core.Zone:
+		if err := c.Multizone.Zone.Validate(); err != nil {
+			return errors.Wrap(err, "Multizone Zone validation failed")
 		}
 		if err := c.XdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "Xds Server validation failed")
 		}
 		if err := c.BootstrapServer.Validate(); err != nil {
 			return errors.Wrap(err, "Bootstrap Server validation failed")
-		}
-		if err := c.SdsServer.Validate(); err != nil {
-			return errors.Wrap(err, "SDS Server validation failed")
 		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")

@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -14,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 var meshCacheLog = core.Log.WithName("mesh-cache")
@@ -44,16 +46,16 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 		switch typ {
 		case core_mesh.DataplaneType:
 			dataplanes := &core_mesh.DataplaneResourceList{}
-			if err := rm.List(ctx, dataplanes); err != nil {
+			if err := rm.List(ctx, dataplanes, core_store.ListByMesh(meshName)); err != nil {
 				return nil, err
 			}
-			meshedDpsAndIngresses := &core_mesh.DataplaneResourceList{}
-			for _, d := range dataplanes.Items {
-				if d.GetMeta().GetMesh() == meshName || d.Spec.IsIngress() {
-					_ = meshedDpsAndIngresses.AddItem(d)
-				}
+			snapshot.resources[typ] = dataplanes
+		case core_mesh.ZoneIngressType:
+			zoneIngresses := &core_mesh.ZoneIngressResourceList{}
+			if err := rm.List(ctx, zoneIngresses); err != nil {
+				return nil, err
 			}
-			snapshot.resources[typ] = meshedDpsAndIngresses
+			snapshot.resources[typ] = zoneIngresses
 		case system.ConfigType:
 			configs := &system.ConfigResourceList{}
 			var items []*system.ConfigResource
@@ -67,6 +69,20 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 			}
 			configs.Items = items
 			snapshot.resources[typ] = configs
+		case core_mesh.ServiceInsightType:
+			// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
+			// This information is only useful when mTLS is enabled with PERMISSIVE mode.
+			// Not including this into mesh hash for other cases saves us unnecessary XDS config generations.
+			if backend := snapshot.mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
+				break
+			}
+
+			insights := &core_mesh.ServiceInsightResourceList{}
+			if err := rm.List(ctx, insights, core_store.ListByMesh(meshName)); err != nil {
+				return nil, err
+			}
+
+			snapshot.resources[typ] = insights
 		default:
 			rlist, err := registry.Global().NewList(typ)
 			if err != nil {
@@ -92,7 +108,7 @@ func (m *meshSnapshot) hash() string {
 	for _, rl := range m.resources {
 		resources = append(resources, rl.GetItems()...)
 	}
-	return m.hashResources(resources...)
+	return sha256.Hash(m.hashResources(resources...))
 }
 
 func (m *meshSnapshot) hashResources(rs ...core_model.Resource) string {
@@ -112,16 +128,24 @@ func (m *meshSnapshot) hashResource(r core_model.Resource) string {
 	// after resolving. That's why it is important to include address into hash.
 	case *core_mesh.DataplaneResource:
 		return strings.Join(
-			[]string{string(v.GetType()),
+			[]string{string(v.Descriptor().Name),
 				v.GetMeta().GetMesh(),
 				v.GetMeta().GetName(),
 				v.GetMeta().GetVersion(),
 				m.hashResolvedIPs(v.Spec.GetNetworking().GetAddress()),
-				m.hashResolvedIPs(v.Spec.GetNetworking().GetIngress().GetPublicAddress()),
+			}, ":")
+	case *core_mesh.ZoneIngressResource:
+		return strings.Join(
+			[]string{string(v.Descriptor().Name),
+				v.GetMeta().GetMesh(),
+				v.GetMeta().GetName(),
+				v.GetMeta().GetVersion(),
+				m.hashResolvedIPs(v.Spec.GetNetworking().GetAddress()),
+				m.hashResolvedIPs(v.Spec.GetNetworking().GetAdvertisedAddress()),
 			}, ":")
 	default:
 		return strings.Join(
-			[]string{string(v.GetType()),
+			[]string{string(v.Descriptor().Name),
 				v.GetMeta().GetMesh(),
 				v.GetMeta().GetName(),
 				v.GetMeta().GetVersion()}, ":")

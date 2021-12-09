@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"path/filepath"
 
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/pkg/util/test"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var _ = Describe("kumactl install gateway", func() {
@@ -28,11 +27,6 @@ var _ = Describe("kumactl install gateway", func() {
 		goldenFile string
 	}
 
-	type testCaseErr struct {
-		extraArgs   []string
-		expectedErr string
-	}
-
 	BeforeEach(func() {
 		kuma_version.Build = kuma_version.BuildInfo{
 			Version:   "0.0.1",
@@ -42,36 +36,10 @@ var _ = Describe("kumactl install gateway", func() {
 		}
 	})
 
-	DescribeTable("should generate error",
-		func(given testCaseErr) {
-			// given
-			rootCmd := cmd.DefaultRootCmd()
-			rootCmd.SetArgs(append([]string{"install", "gateway"}, given.extraArgs...))
-			rootCmd.SetOut(stdout)
-			rootCmd.SetErr(stderr)
-
-			// when
-			err := rootCmd.Execute()
-
-			// then
-			Expect(err.Error()).To(Equal(given.expectedErr))
-		},
-		Entry("should fail due to lack of type", testCaseErr{
-			extraArgs:   nil,
-			expectedErr: "required flag(s) \"type\" not set",
-		}),
-		Entry("should fail due to invalid type", testCaseErr{
-			extraArgs: []string{
-				"--type", "invalidtype",
-			},
-			expectedErr: "Only gateway type 'kong' currently supported",
-		}),
-	)
-
 	DescribeTable("should generate Kubernetes resources",
 		func(given testCase) {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs(append([]string{"install", "gateway"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
@@ -81,7 +49,7 @@ var _ = Describe("kumactl install gateway", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(stderr.Bytes()).To(BeNil())
+			Expect(stderr.String()).To(BeEmpty())
 
 			// and output matches golden files
 			actual := stdout.Bytes()
@@ -89,15 +57,27 @@ var _ = Describe("kumactl install gateway", func() {
 		},
 		Entry("should generate Kubernetes resources with default settings", testCase{
 			extraArgs: []string{
-				"--type", "kong",
+				"kong",
 			},
 			goldenFile: "install-gateway.defaults.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources with custom settings", testCase{
 			extraArgs: []string{
-				"--type", "kong", "--namespace", "notdefault",
+				"kong", "--namespace", "notdefault",
 			},
 			goldenFile: "install-gateway.overrides.golden.yaml",
+		}),
+		Entry("should generate Kubernetes resources with default settings for enterprise", testCase{
+			extraArgs: []string{
+				"kong-enterprise", "--license-path", filepath.Join("testdata", "/license"),
+			},
+			goldenFile: "install-gateway-enterprise.defaults.golden.yaml",
+		}),
+		Entry("should generate Kubernetes resources with custom settings for enterprise", testCase{
+			extraArgs: []string{
+				"kong-enterprise", "--license-path", filepath.Join("testdata", "/license"), "--namespace", "notdefault",
+			},
+			goldenFile: "install-gateway-enterprise.overrides.golden.yaml",
 		}),
 	)
 })

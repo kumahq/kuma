@@ -8,10 +8,10 @@ import (
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/clusterid"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
@@ -21,10 +21,10 @@ import (
 	"github.com/kumahq/kuma/pkg/hds"
 	"github.com/kumahq/kuma/pkg/insights"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
-	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
+	kds_zone "github.com/kumahq/kuma/pkg/kds/zone"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
 	metrics "github.com/kumahq/kuma/pkg/metrics/components"
-	sds_server "github.com/kumahq/kuma/pkg/sds/server"
+	"github.com/kumahq/kuma/pkg/util/os"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds"
 )
@@ -35,17 +35,11 @@ var (
 
 const gracefullyShutdownDuration = 3 * time.Second
 
-func newRunCmd() *cobra.Command {
-	return newRunCmdWithOpts(runCmdOpts{
-		SetupSignalHandler: core.SetupSignalHandler,
-	})
-}
+// This is the open file limit below which the control plane may not
+// reasonably have enough descriptors to accept all its clients.
+const minOpenFileLimit = 4096
 
-type runCmdOpts struct {
-	SetupSignalHandler func() (stopCh <-chan struct{})
-}
-
-func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
+func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 	args := struct {
 		configPath string
 	}{}
@@ -60,8 +54,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "could not load the configuration")
 				return err
 			}
-			closeCh := opts.SetupSignalHandler()
-			rt, err := bootstrap.Bootstrap(cfg, closeCh)
+			ctx := opts.SetupSignalHandler()
+			rt, err := bootstrap.Bootstrap(ctx, cfg)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
@@ -78,6 +72,16 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
 			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode))
+
+			if err := os.RaiseFileLimit(); err != nil {
+				runLog.Error(err, "unable to raise the open file limit")
+			}
+
+			if limit, _ := os.CurrentFileLimit(); limit < minOpenFileLimit {
+				runLog.Info("for better performance, raise the open file limit",
+					"minimim-open-files", minOpenFileLimit)
+			}
+
 			switch cfg.Mode {
 			case config_core.Standalone:
 				if err := mads_server.SetupServer(rt); err != nil {
@@ -88,16 +92,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DNS")
 					return err
 				}
-				if err := gc.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up GC")
-					return err
-				}
 				if err := xds.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up XDS")
-					return err
-				}
-				if err := sds_server.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up SDS")
 					return err
 				}
 				if err := hds.Setup(rt); err != nil {
@@ -116,29 +112,21 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Defaults")
 					return err
 				}
-			case config_core.Remote:
+			case config_core.Zone:
 				if err := mads_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
-				if err := kds_remote.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS Remote")
+				if err := kds_zone.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Zone")
 					return err
 				}
 				if err := dns.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up DNS")
 					return err
 				}
-				if err := gc.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up GC")
-					return err
-				}
 				if err := xds.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up XDS")
-					return err
-				}
-				if err := sds_server.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up SDS")
 					return err
 				}
 				if err := hds.Setup(rt); err != nil {
@@ -180,9 +168,13 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up Metrics")
 				return err
 			}
+			if err := gc.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up GC")
+				return err
+			}
 
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
-			if err := rt.Start(closeCh); err != nil {
+			if err := rt.Start(ctx.Done()); err != nil {
 				runLog.Error(err, "problem running Control Plane")
 				return err
 			}

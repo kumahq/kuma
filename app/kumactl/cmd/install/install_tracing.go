@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 )
@@ -13,16 +14,12 @@ type tracingTemplateArgs struct {
 	Namespace string
 }
 
-func newInstallTracing() *cobra.Command {
-	args := struct {
-		Namespace string
-	}{
-		Namespace: "kuma-tracing",
-	}
+func newInstallTracing(pctx *kumactl_cmd.RootContext) *cobra.Command {
+	args := pctx.InstallTracingContext.TemplateArgs
 	cmd := &cobra.Command{
 		Use:   "tracing",
 		Short: "Install Tracing backend in Kubernetes cluster (Jaeger)",
-		Long:  `Install Tracing backend in Kubernetes cluster (Jaeger) in a 'kuma-tracing' namespace`,
+		Long:  `Install Tracing backend in Kubernetes cluster (Jaeger) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			templateArgs := tracingTemplateArgs{
 				Namespace: args.Namespace,

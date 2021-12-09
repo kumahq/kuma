@@ -4,33 +4,26 @@ import (
 	"context"
 	"net"
 
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-
-	"github.com/kumahq/kuma/pkg/api-server/customization"
-	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
-	"github.com/kumahq/kuma/pkg/dp-server/server"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
-
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
-	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
-
-	"github.com/kumahq/kuma/pkg/events"
-
+	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplaneinsight"
+	externalservice_managers "github.com/kumahq/kuma/pkg/core/managers/apis/external_service"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	ratelimit_managers "github.com/kumahq/kuma/pkg/core/managers/apis/ratelimit"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneingressinsight"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -42,14 +35,25 @@ import (
 	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dp-server/server"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/events"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
+	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
+	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
-func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
+var log = core.Log.WithName("bootstrap")
+
+func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := autoconfigure(&cfg); err != nil {
 		return nil, err
 	}
-	builder, err := core_runtime.BuilderFor(cfg, closeCh)
+	builder, err := core_runtime.BuilderFor(appCtx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -68,10 +72,11 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	if err := initializeConfigStore(cfg, builder); err != nil {
 		return nil, err
 	}
-	// we add Secret store to unified ResourceStore so global<->remote synchronizer can use unified interface
+	// we add Secret store to unified ResourceStore so global<->zone synchronizer can use unified interface
 	builder.WithResourceStore(core_store.NewCustomizableResourceStore(builder.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
-		system.SecretType: builder.SecretStore(),
-		system.ConfigType: builder.ConfigStore(),
+		system.SecretType:       builder.SecretStore(),
+		system.GlobalSecretType: builder.SecretStore(),
+		system.ConfigType:       builder.ConfigStore(),
 	}))
 
 	if err := initializeConfigManager(cfg, builder); err != nil {
@@ -80,6 +85,7 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	if err := initializeDNSResolver(cfg, builder); err != nil {
 		return nil, err
 	}
+	builder.WithMeshValidator(mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()))
 	if err := initializeResourceManager(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -94,11 +100,31 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
-	builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(builder.ResourceManager(), builder.Config()))
+	envoyAdminClient, err := admin.NewEnvoyAdminClient(
+		builder.ResourceManager(),
+		builder.CaManagers(),
+		builder.Config().DpServer.TlsCertFile,
+		builder.Config().DpServer.TlsKeyFile,
+		builder.Config().Runtime.Kubernetes.Injector.SidecarContainer.AdminPort,
+	)
+	if err != nil {
+		return nil, err
+	}
+	builder.WithEnvoyAdminClient(envoyAdminClient)
 	builder.WithAPIManager(customization.NewAPIList())
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
+	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
-	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Remote.Zone))
+	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
+
+	builder.WithAccess(core_runtime.Access{
+		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
+		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
+	})
+
+	if err := initializeAPIServerAuthenticator(builder); err != nil {
+		return nil, err
+	}
 
 	if err := initializeAfterBootstrap(cfg, builder); err != nil {
 		return nil, err
@@ -117,20 +143,28 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 		return nil, err
 	}
 
+	logWarnings(rt.Config())
+
 	return rt, nil
 }
 
-func initializeMetrics(builder *core_runtime.Builder) error {
-	zone := ""
-	switch builder.Config().Mode {
-	case config_core.Remote:
-		zone = builder.Config().Multizone.Remote.Zone
-	case config_core.Global:
-		zone = "Global"
-	case config_core.Standalone:
-		zone = "Standalone"
+func logWarnings(config kuma_cp.Config) {
+	if config.ApiServer.Authn.LocalhostIsAdmin {
+		log.Info("WARNING: you can access Control Plane API as admin by sending requests from the same machine where Control Plane runs. To increase security, it is recommended to extract admin credentials and set KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN to false.")
 	}
-	metrics, err := metrics.NewMetrics(zone)
+}
+
+func initializeMetrics(builder *core_runtime.Builder) error {
+	zoneName := ""
+	switch builder.Config().Mode {
+	case config_core.Zone:
+		zoneName = builder.Config().Multizone.Zone.Name
+	case config_core.Global:
+		zoneName = "Global"
+	case config_core.Standalone:
+		zoneName = "Standalone"
+	}
+	metrics, err := metrics.NewMetrics(zoneName)
 	if err != nil {
 		return err
 	}
@@ -138,8 +172,8 @@ func initializeMetrics(builder *core_runtime.Builder) error {
 	return nil
 }
 
-func Bootstrap(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
-	runtime, err := buildRuntime(cfg, closeCh)
+func Bootstrap(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runtime, error) {
+	runtime, err := buildRuntime(appCtx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -284,30 +318,69 @@ func initializeCaManagers(builder *core_runtime.Builder) error {
 	return nil
 }
 
+func initializeAPIServerAuthenticator(builder *core_runtime.Builder) error {
+	authnType := builder.Config().ApiServer.Authn.Type
+	plugin, ok := core_plugins.Plugins().AuthnAPIServer()[core_plugins.PluginName(authnType)]
+	if !ok {
+		return errors.Errorf("there is not implementation of authn named %s", authnType)
+	}
+	authenticator, err := plugin.NewAuthenticator(builder)
+	if err != nil {
+		return errors.Wrapf(err, "could not initiate authenticator %s", authnType)
+	}
+	builder.WithAPIServerAuthenticator(authenticator)
+	return nil
+}
+
 func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
-	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
-	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
+	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, nil)
 
-	meshValidator := mesh_managers.MeshValidator{
-		CaManagers: builder.CaManagers(),
-		Store:      builder.ResourceStore(),
+	customizableManager.Customize(
+		mesh.MeshType,
+		mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.MeshValidator()),
+	)
+
+	rateLimitValidator := ratelimit_managers.RateLimitValidator{
+		Store: builder.ResourceStore(),
 	}
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator)
-	customManagers[mesh.MeshType] = meshManager
+	customizableManager.Customize(
+		mesh.RateLimitType,
+		ratelimit_managers.NewRateLimitManager(builder.ResourceStore(), rateLimitValidator),
+	)
 
-	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Remote.Zone)
-	customManagers[mesh.DataplaneType] = dpManager
+	externalServiceValidator := externalservice_managers.ExternalServiceValidator{
+		Store: builder.ResourceStore(),
+	}
+	customizableManager.Customize(
+		mesh.ExternalServiceType,
+		externalservice_managers.NewExternalServiceManager(builder.ResourceStore(), externalServiceValidator),
+	)
 
-	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
-	customManagers[mesh.DataplaneInsightType] = dpInsightManager
+	customizableManager.Customize(
+		mesh.DataplaneType,
+		dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Zone.Name),
+	)
 
-	zoneValidator := zone.Validator{Store: builder.ResourceStore()}
-	zoneManager := zone.NewZoneManager(builder.ResourceStore(), zoneValidator)
-	customManagers[system.ZoneType] = zoneManager
+	customizableManager.Customize(
+		mesh.DataplaneInsightType,
+		dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
+	)
 
-	zoneInsightManager := zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone)
-	customManagers[system.ZoneInsightType] = zoneInsightManager
+	customizableManager.Customize(
+		system.ZoneType,
+		zone.NewZoneManager(builder.ResourceStore(), zone.Validator{Store: builder.ResourceStore()}),
+	)
+
+	customizableManager.Customize(
+		system.ZoneInsightType,
+		zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone),
+	)
+
+	customizableManager.Customize(
+		mesh.ZoneIngressInsightType,
+		zoneingressinsight.NewZoneIngressInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
+	)
 
 	var cipher secret_cipher.Cipher
 	switch cfg.Store.Type {
@@ -320,14 +393,21 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	}
 	var secretValidator secret_manager.SecretValidator
 	switch cfg.Mode {
-	case config_core.Remote:
+	case config_core.Zone:
 		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
 	default:
 		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
 	}
-	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator)
-	customManagers[system.SecretType] = secretManager
-	customManagers[system.GlobalSecretType] = secret_manager.NewGlobalSecretManager(builder.SecretStore(), cipher)
+
+	customizableManager.Customize(
+		system.SecretType,
+		secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator),
+	)
+
+	customizableManager.Customize(
+		system.GlobalSecretType,
+		secret_manager.NewGlobalSecretManager(builder.SecretStore(), cipher),
+	)
 
 	builder.WithResourceManager(customizableManager)
 

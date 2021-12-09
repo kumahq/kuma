@@ -6,16 +6,16 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/hds/cache"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -33,13 +33,12 @@ func NewSnapshotGenerator(readOnlyResourceManager manager.ReadOnlyResourceManage
 }
 
 func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3.Snapshot, error) {
-	proxyID, err := xds.ParseProxyIdFromString(node.Id)
+	proxyId, err := xds.ParseProxyIdFromString(node.Id)
 	if err != nil {
 		return nil, err
 	}
-	dpKey := model.ResourceKey{Mesh: proxyID.Mesh, Name: proxyID.Name}
 	dp := mesh.NewDataplaneResource()
-	if err := g.readOnlyResourceManager.Get(context.Background(), dp, store.GetBy(dpKey)); err != nil {
+	if err := g.readOnlyResourceManager.Get(context.Background(), dp, store.GetBy(proxyId.ToResourceKey())); err != nil {
 		return nil, err
 	}
 
@@ -53,28 +52,28 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 
 		var timeout *durationpb.Duration
 		if serviceProbe.Timeout == nil {
-			timeout = durationpb.New(g.config.CheckDefaults.Timeout)
+			timeout = util_proto.Duration(g.config.CheckDefaults.Timeout)
 		} else {
 			timeout = serviceProbe.Timeout
 		}
 
 		var interval *durationpb.Duration
 		if serviceProbe.Timeout == nil {
-			interval = durationpb.New(g.config.CheckDefaults.Interval)
+			interval = util_proto.Duration(g.config.CheckDefaults.Interval)
 		} else {
 			interval = serviceProbe.Interval
 		}
 
-		var healthyThreshold *wrappers.UInt32Value
+		var healthyThreshold *wrapperspb.UInt32Value
 		if serviceProbe.HealthyThreshold == nil {
-			healthyThreshold = &wrappers.UInt32Value{Value: g.config.CheckDefaults.HealthyThreshold}
+			healthyThreshold = util_proto.UInt32(g.config.CheckDefaults.HealthyThreshold)
 		} else {
 			healthyThreshold = serviceProbe.HealthyThreshold
 		}
 
-		var unhealthyThreshold *wrappers.UInt32Value
+		var unhealthyThreshold *wrapperspb.UInt32Value
 		if serviceProbe.UnhealthyThreshold == nil {
-			unhealthyThreshold = &wrappers.UInt32Value{Value: g.config.CheckDefaults.UnhealthyThreshold}
+			unhealthyThreshold = util_proto.UInt32(g.config.CheckDefaults.UnhealthyThreshold)
 		} else {
 			unhealthyThreshold = serviceProbe.UnhealthyThreshold
 		}
@@ -101,7 +100,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 					Interval:           interval,
 					HealthyThreshold:   healthyThreshold,
 					UnhealthyThreshold: unhealthyThreshold,
-					NoTrafficInterval:  durationpb.New(g.config.CheckDefaults.NoTrafficInterval),
+					NoTrafficInterval:  util_proto.Duration(g.config.CheckDefaults.NoTrafficInterval),
 					HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
 						TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
 					},
@@ -112,7 +111,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 
 	hcs := &envoy_service_health.HealthCheckSpecifier{
 		ClusterHealthChecks: healthChecks,
-		Interval:            durationpb.New(g.config.Interval),
+		Interval:            util_proto.Duration(g.config.Interval),
 	}
 
 	return cache.NewSnapshot("", hcs), nil

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,25 +14,27 @@ import (
 	"strings"
 	"time"
 
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-
-	"github.com/gruntwork-io/terratest/modules/random"
-
-	"github.com/kumahq/kuma/pkg/config/core"
-
-	"github.com/pkg/errors"
-
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
+	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 type K8sCluster struct {
@@ -50,6 +51,8 @@ type K8sCluster struct {
 	defaultTimeout      time.Duration
 	defaultRetries      int
 }
+
+var _ Cluster = &K8sCluster{}
 
 func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, error) {
 	cluster := &K8sCluster{
@@ -86,6 +89,10 @@ func (c *K8sCluster) WithTimeout(timeout time.Duration) Cluster {
 	c.defaultTimeout = timeout
 
 	return c
+}
+
+func (c *K8sCluster) Verbose() bool {
+	return c.verbose
 }
 
 func (c *K8sCluster) WithRetries(retries int) Cluster {
@@ -260,9 +267,35 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 	return str, nil
 }
 
+type cniConf struct {
+	binDir   string
+	netDir   string
+	confName string
+}
+
+func (c *K8sCluster) getCniConfig() (cfg cniConf) {
+	nodes := k8s.GetNodes(c.t, c.GetKubectlOptions())
+	Expect(nodes).ToNot(BeEmpty())
+	// Check if it's k3d or kind
+	if strings.HasPrefix(nodes[0].Spec.ProviderID, "k3s://") {
+		cfg.confName = "10-flannel.conflist"
+		cfg.netDir = "/var/lib/rancher/k3s/agent/etc/cni/net.d"
+		cfg.binDir = "/bin"
+	} else {
+		cfg.confName = "10-kindnet.conflist"
+		cfg.netDir = "/etc/cni/net.d"
+		cfg.binDir = "/opt/cni/bin"
+	}
+	cName := GetCniConfName()
+	if cName != "" {
+		cfg.confName = cName
+	}
+	return cfg
+}
+
 // deployKumaViaKubectl uses kubectl to install kuma
 // using the resources from the `kumactl install control-plane` command
-func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) error {
+func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *kumaDeploymentOptions) error {
 	yaml, err := c.yamlForKumaViaKubectl(mode, opts)
 	if err != nil {
 		return err
@@ -273,7 +306,7 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 		yaml)
 }
 
-func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (string, error) {
+func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *kumaDeploymentOptions) (string, error) {
 	argsMap := map[string]string{
 		"--namespace":               KumaNamespace,
 		"--control-plane-registry":  KumaImageRegistry,
@@ -294,7 +327,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 	}
 
 	switch mode {
-	case core.Remote:
+	case core.Zone:
 		argsMap["--kds-global-address"] = opts.globalAddress
 	}
 
@@ -304,15 +337,12 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 	}
 
 	if opts.cni {
+		cniCfg := c.getCniConfig()
 		argsMap["--cni-enabled"] = ""
 		argsMap["--cni-chained"] = ""
-		argsMap["--cni-net-dir"] = "/etc/cni/net.d"
-		argsMap["--cni-bin-dir"] = "/opt/cni/bin"
-		argsMap["--cni-conf-name"] = "10-kindnet.conflist"
-
-		if HasCniConfName() {
-			argsMap["--cni-conf-name"] = GetCniConfName()
-		}
+		argsMap["--cni-net-dir"] = cniCfg.netDir
+		argsMap["--cni-bin-dir"] = cniCfg.binDir
+		argsMap["--cni-conf-name"] = cniCfg.confName
 	}
 
 	if HasApiVersion() {
@@ -339,7 +369,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 	return c.controlplane.InstallCP(args...)
 }
 
-func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) map[string]string {
+func (c *K8sCluster) genValues(mode string, opts *kumaDeploymentOptions) map[string]string {
 	values := map[string]string{
 		"controlPlane.mode":                      mode,
 		"global.image.tag":                       kuma_version.Build.Version,
@@ -383,15 +413,12 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 	}
 
 	if opts.cni {
+		cniCfg := c.getCniConfig()
 		values["cni.enabled"] = "true"
 		values["cni.chained"] = "true"
-		values["cni.netDir"] = "/etc/cni/net.d"
-		values["cni.binDir"] = "/opt/cni/bin"
-		values["cni.confName"] = "10-kindnet.conflist"
-
-		if HasCniConfName() {
-			values["cni.confName"] = GetCniConfName()
-		}
+		values["cni.netDir"] = cniCfg.netDir
+		values["cni.binDir"] = cniCfg.binDir
+		values["cni.confName"] = cniCfg.confName
 	}
 
 	if opts.isipv6 {
@@ -401,10 +428,10 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 	switch mode {
 	case core.Global:
 		if !UseLoadBalancer() {
-			values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
+			values["controlPlane.globalZoneSyncService.type"] = "NodePort"
 		}
-	case core.Remote:
-		values["controlPlane.zone"] = kumactlOpts.CPName
+	case core.Zone:
+		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
 	}
 
@@ -422,7 +449,7 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 
 type helmFn func(testing.TestingT, *helm.Options, string, string) error
 
-func (c *K8sCluster) processViaHelm(mode string, opts *deployOptions, fn helmFn) error {
+func (c *K8sCluster) processViaHelm(mode string, opts *kumaDeploymentOptions, fn helmFn) error {
 	// run from test/e2e
 	helmChart, err := filepath.Abs(HelmChartPath)
 	if err != nil {
@@ -437,7 +464,7 @@ func (c *K8sCluster) processViaHelm(mode string, opts *deployOptions, fn helmFn)
 		helmChart = *opts.helmChartPath
 	}
 
-	values := genValues(mode, opts, c.GetKumactlOptions())
+	values := c.genValues(mode, opts)
 
 	helmOpts := &helm.Options{
 		SetValues:      values,
@@ -468,37 +495,43 @@ func (c *K8sCluster) processViaHelm(mode string, opts *deployOptions, fn helmFn)
 
 // deployKumaViaHelm uses Helm to install kuma
 // using the kuma helm chart
-func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
+func (c *K8sCluster) deployKumaViaHelm(mode string, opts *kumaDeploymentOptions) error {
 	return c.processViaHelm(mode, opts, helm.InstallE)
 }
 
 // upgradeKumaViaHelm uses Helm to upgrade kuma
 // using the kuma helm chart
-func (c *K8sCluster) upgradeKumaViaHelm(mode string, opts *deployOptions) error {
+func (c *K8sCluster) upgradeKumaViaHelm(mode string, opts *kumaDeploymentOptions) error {
 	return c.processViaHelm(mode, opts, helm.UpgradeE)
 }
 
-func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
-	opts := newDeployOpt(fs...)
+func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
+	var opts kumaDeploymentOptions
+
+	opts.apply(opt...)
+
 	replicas := 1
 	if opts.cpReplicas != 0 {
 		replicas = opts.cpReplicas
 	}
-	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.loPort, c.hiPort, c.verbose, replicas)
+
+	// backwards compatibility, check for 1.3.x localhost is admin env variable.
+	localhostIsAdmin := opts.env["KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST"] == "true"
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.loPort, c.hiPort, c.verbose, replicas, localhostIsAdmin)
 
 	switch mode {
-	case core.Remote:
+	case core.Zone:
 		if opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for remote")
+			return errors.Errorf("GlobalAddress expected for zone")
 		}
 	}
 
 	var err error
 	switch opts.installationMode {
 	case KumactlInstallationMode:
-		err = c.deployKumaViaKubectl(mode, opts)
+		err = c.deployKumaViaKubectl(mode, &opts)
 	case HelmInstallationMode:
-		err = c.deployKumaViaHelm(mode, opts)
+		err = c.deployKumaViaHelm(mode, &opts)
 	default:
 		return errors.Errorf("invalid installation mode: %s", opts.installationMode)
 	}
@@ -533,32 +566,64 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 		}
 	}
 
-	err = c.controlplane.FinalizeAdd()
-	if err != nil {
+	if err := c.controlplane.FinalizeAdd(); err != nil {
 		return err
+	}
+
+	converter := resources_k8s.NewSimpleConverter()
+	for name, updateFuncs := range opts.meshUpdateFuncs {
+		for _, f := range updateFuncs {
+			Logf("applying update function to mesh %q", name)
+			err := c.controlplane.UpdateObject("mesh", name,
+				func(obj runtime.Object) runtime.Object {
+					mesh := core_mesh.NewMeshResource()
+
+					// The kubectl updater should have already converted the Kubernetes object
+					// to a concrete type, so we can safely cast here.
+					if err := converter.ToCoreResource(obj.(*mesh_k8s.Mesh), mesh); err != nil {
+						panic(err.Error())
+					}
+
+					// Apply the conversion function.
+					mesh.Spec = f(mesh.Spec)
+
+					// Convert back to a Kubernetes resource.
+					meshObj, err := converter.ToKubernetesObject(mesh)
+					if err != nil {
+						panic(err.Error())
+					}
+
+					return meshObj
+				})
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
 }
 
-func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
+func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error {
+	var opts kumaDeploymentOptions
+
 	if c.controlplane == nil {
 		return errors.New("To upgrade Kuma has to be installed first")
 	}
 
-	opts := newDeployOpt(fs...)
+	opts.apply(opt...)
 	if opts.cpReplicas != 0 {
 		c.controlplane.replicas = opts.cpReplicas
 	}
 
 	switch mode {
-	case core.Remote:
+	case core.Zone:
 		if opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for remote")
+			return errors.Errorf("GlobalAddress expected for zone")
 		}
 	}
 
-	if err := c.upgradeKumaViaHelm(mode, opts); err != nil {
+	if err := c.upgradeKumaViaHelm(mode, &opts); err != nil {
 		return err
 	}
 
@@ -593,6 +658,49 @@ func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
 	return nil
 }
 
+// StopControlPlane scales the replicas of a control plane to 0 and wait for it to complete. Useful for testing restarts in combination with RestartControlPlane.
+func (c *K8sCluster) StopControlPlane() error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", KumaServiceName)); err != nil {
+		return err
+	}
+	_, err := retry.DoWithRetryE(c.t,
+		"wait for control-plane to be down",
+		c.defaultRetries,
+		c.defaultTimeout,
+		func() (string, error) {
+			pods := c.controlplane.GetKumaCPPods()
+			if len(pods) == 0 {
+				return "Done", nil
+			}
+			names := []string{}
+			for _, p := range pods {
+				names = append(names, p.Name)
+			}
+			return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
+		},
+	)
+	return err
+}
+
+// RestartControlPlane scales the replicas of a control plane back to `c.controlplane.replicas` and waits for it to be running. Useful for testing restarts in combination with StopControlPlane.
+func (c *K8sCluster) RestartControlPlane() error {
+	if c.controlplane.replicas == 0 {
+		return errors.New("replica count is 0, can't restart the control-plane")
+	}
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(KumaNamespace), "scale", fmt.Sprintf("--replicas=%d", c.controlplane.replicas), fmt.Sprintf("deployment/%s", KumaServiceName)); err != nil {
+		return err
+	}
+	if err := c.WaitApp(KumaServiceName, KumaNamespace, c.controlplane.replicas); err != nil {
+		return err
+	}
+
+	if err := c.controlplane.FinalizeAdd(); err != nil {
+		return err
+	}
+
+	return c.VerifyKuma()
+}
+
 func (c *K8sCluster) GetKuma() ControlPlane {
 	return c.controlplane
 }
@@ -620,7 +728,7 @@ func (c *K8sCluster) deleteCRDs() (errs error) {
 
 	if err := cmd.Run(); err != nil {
 		errs = multierr.Append(errs, err)
-	} else if tmpfile, err := ioutil.TempFile("", "crds.yaml"); err != nil {
+	} else if tmpfile, err := os.CreateTemp("", "crds.yaml"); err != nil {
 		errs = multierr.Append(errs, err)
 	} else {
 		defer os.Remove(tmpfile.Name()) // clean up
@@ -637,7 +745,7 @@ func (c *K8sCluster) deleteCRDs() (errs error) {
 	return errs
 }
 
-func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
+func (c *K8sCluster) deleteKumaViaHelm(opts *kumaDeploymentOptions) (errs error) {
 	if opts.helmReleaseName == "" {
 		return errors.New("must supply a helm release name for cleanup")
 	}
@@ -663,7 +771,7 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
 	return errs
 }
 
-func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
+func (c *K8sCluster) deleteKumaViaKumactl(opts *kumaDeploymentOptions) error {
 	yaml, err := c.yamlForKumaViaKubectl(c.controlplane.mode, opts)
 	if err != nil {
 		return err
@@ -678,17 +786,19 @@ func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
 	return nil
 }
 
-func (c *K8sCluster) DeleteKuma(fs ...DeployOptionsFunc) error {
-	c.CleanupPortForwards()
+func (c *K8sCluster) DeleteKuma(opt ...KumaDeploymentOption) error {
+	var opts kumaDeploymentOptions
 
-	opts := newDeployOpt(fs...)
+	opts.apply(opt...)
+
+	c.CleanupPortForwards()
 
 	var err error
 	switch opts.installationMode {
 	case HelmInstallationMode:
-		err = c.deleteKumaViaHelm(opts)
+		err = c.deleteKumaViaHelm(&opts)
 	case KumactlInstallationMode:
-		err = c.deleteKumaViaKumactl(opts)
+		err = c.deleteKumaViaKumactl(&opts)
 	}
 
 	return err
@@ -732,8 +842,11 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *K8sCluster) DeployApp(fs ...DeployOptionsFunc) error {
-	opts := newDeployOpt(fs...)
+func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {
+	var opts appDeploymentOptions
+
+	opts.apply(opt...)
+
 	namespace := opts.namespace
 	appname := opts.appname
 
@@ -799,10 +912,11 @@ func (c *K8sCluster) GetTesting() testing.TestingT {
 }
 
 func (c *K8sCluster) DismissCluster() (errs error) {
-	for _, deployment := range c.deployments {
+	for name, deployment := range c.deployments {
 		if err := deployment.Delete(c); err != nil {
 			errs = multierr.Append(errs, err)
 		}
+		delete(c.deployments, name)
 	}
 	return nil
 }
@@ -810,6 +924,18 @@ func (c *K8sCluster) DismissCluster() (errs error) {
 func (c *K8sCluster) Deploy(deployment Deployment) error {
 	c.deployments[deployment.Name()] = deployment
 	return deployment.Deploy(c)
+}
+
+func (c *K8sCluster) DeleteDeployment(name string) error {
+	deployment, ok := c.deployments[name]
+	if !ok {
+		return errors.Errorf("deployment %s not found", name)
+	}
+	if err := deployment.Delete(c); err != nil {
+		return err
+	}
+	delete(c.deployments, name)
+	return nil
 }
 
 func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {

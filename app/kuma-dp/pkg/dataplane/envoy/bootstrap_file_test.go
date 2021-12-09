@@ -1,7 +1,6 @@
 package envoy
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -18,7 +17,7 @@ var _ = Describe("Bootstrap File", func() {
 
 		BeforeEach(func() {
 			var err error
-			configDir, err = ioutil.TempDir("", "")
+			configDir, err = os.MkdirTemp("", "")
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -48,7 +47,7 @@ var _ = Describe("Bootstrap File", func() {
 			Expect(filename).To(Equal(filepath.Join(configDir, "bootstrap.yaml")))
 
 			// when
-			actual, err := ioutil.ReadFile(filename)
+			actual, err := os.ReadFile(filename)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

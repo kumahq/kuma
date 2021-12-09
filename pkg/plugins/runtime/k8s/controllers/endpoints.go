@@ -3,9 +3,8 @@ package controllers
 import (
 	"sort"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 type Endpoint struct {
@@ -28,9 +27,6 @@ func (e EndpointsByService) Services() []string {
 func endpointsByService(dataplanes []*core_mesh.DataplaneResource) EndpointsByService {
 	result := EndpointsByService{}
 	for _, other := range dataplanes {
-		if other.Spec.IsIngress() {
-			continue
-		}
 		for _, inbound := range other.Spec.Networking.GetInbound() {
 			svc, ok := inbound.GetTags()[mesh_proto.ServiceTag]
 			if !ok {

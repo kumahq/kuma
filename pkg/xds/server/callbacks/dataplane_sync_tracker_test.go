@@ -3,25 +3,25 @@ package callbacks_test
 import (
 	"context"
 	"sync/atomic"
+	"time"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/test"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
-	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
-
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
 var _ = Describe("Sync", func() {
 	Describe("dataplaneSyncTracker", func() {
 		It("should not fail when ADS stream is closed before Watchdog is even created", func() {
 			// setup
-			tracker := NewDataplaneSyncTracker(nil)
+			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(nil))
 
 			// given
 			ctx := context.Background()
@@ -45,13 +45,13 @@ var _ = Describe("Sync", func() {
 		It("should not fail when Envoy presents invalid Node ID", func() {
 			// setup
 			tracker := NewDataplaneSyncTracker(nil)
-			callbacks := util_xds_v2.AdaptCallbacks(tracker)
+			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
 			ctx := context.Background()
 			streamID := int64(1)
 			typ := ""
-			req := &envoy.DiscoveryRequest{}
+			req := &envoy_sd.DiscoveryRequest{}
 
 			By("simulating Envoy connecting to the Control Plane")
 			// when
@@ -73,24 +73,24 @@ var _ = Describe("Sync", func() {
 			// expect no panic
 		})
 
-		It("should create a Watchdog when Envoy presents a valid Node ID", func(done Done) {
+		It("should create a Watchdog when Envoy presents a valid Node ID", test.Within(5*time.Second, func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
-			tracker := NewDataplaneSyncTracker(NewDataplaneWatchdogFunc(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
-					watchdogCh <- dataplaneId
+					watchdogCh <- key
 					<-stop
 					close(watchdogCh)
 				})
-			}))
-			callbacks := util_xds_v2.AdaptCallbacks(tracker)
+			})
+			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
 			ctx := context.Background()
 			streamID := int64(1)
 			typ := ""
-			req := &envoy.DiscoveryRequest{
+			req := &envoy_sd.DiscoveryRequest{
 				Node: &envoy_core.Node{
 					Id: "demo.example",
 				},
@@ -129,27 +129,25 @@ var _ = Describe("Sync", func() {
 			_, watchdogIsRunning := <-watchdogCh
 			// then
 			Expect(watchdogIsRunning).To(BeFalse())
-
-			close(done)
-		}, 5)
+		}))
 
 		It("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
-			tracker := NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-stop
 					atomic.AddInt32(&activeWatchdogs, -1)
 				})
 			})
-			callbacks := util_xds_v2.AdaptCallbacks(tracker)
+			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent
 			streamID := int64(1)
 			err := callbacks.OnStreamOpen(context.Background(), streamID, "")
 			Expect(err).ToNot(HaveOccurred())
-			err = callbacks.OnStreamRequest(streamID, &envoy.DiscoveryRequest{
+			err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
 				Node: &envoy_core.Node{
 					Id: "default.backend-01",
 				},
@@ -160,7 +158,7 @@ var _ = Describe("Sync", func() {
 			streamID = 2
 			err = callbacks.OnStreamOpen(context.Background(), streamID, "")
 			Expect(err).ToNot(HaveOccurred())
-			err = callbacks.OnStreamRequest(streamID, &envoy.DiscoveryRequest{
+			err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
 				Node: &envoy_core.Node{
 					Id: "default.backend-01",
 				},

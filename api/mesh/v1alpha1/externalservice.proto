@@ -4,7 +4,9 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "validate/validate.proto";
+import "google/protobuf/wrappers.proto";
 
 import "system/v1alpha1/datasource.proto";
 import "config.proto";
@@ -15,13 +17,19 @@ option (doc.config) = {
   file_name : "external-service"
 };
 
-// ExternalService defines configuration of the externaly accessible service
+// ExternalService defines configuration of the externally accessible service
 message ExternalService {
+
+  option (kuma.mesh.resource).name = "ExternalServiceResource";
+  option (kuma.mesh.resource).type = "ExternalService";
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "external-service";
 
   // Networking describes the properties of the external service connectivity
   message Networking {
     // Address of the external service
-    string address = 1;
+    string address = 1 [ (doc.required) = true ];
 
     // TLS
     message TLS {
@@ -36,14 +44,25 @@ message ExternalService {
 
       // Data source for the authentication
       kuma.system.v1alpha1.DataSource client_key = 4;
+
+      // If true then TLS session will allow renegotiation.
+      // It's not recommended to set this to true because of security reasons.
+      // However, some servers requires this setting, especially when using
+      // mTLS.
+      google.protobuf.BoolValue allowRenegotiation = 5;
+
+      // ServerName overrides the default Server Name Indicator set by Kuma.
+      // The default value is set to "address" specified in "networking".
+      google.protobuf.StringValue server_name = 6;
     }
 
     TLS tls = 2;
   }
 
-  Networking networking = 1;
+  Networking networking = 1 [ (doc.required) = true ];
 
   // Tags associated with the external service,
   // e.g. kuma.io/service=web, kuma.io/protocol, version=1.0.
-  map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
+  map<string, string> tags = 2
+      [ (validate.rules).map.min_pairs = 1, (doc.required) = true ];
 }

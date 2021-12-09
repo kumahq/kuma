@@ -3,12 +3,16 @@ package injector_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	kube_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kumahq/kuma/pkg/config"
 	conf "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
@@ -16,11 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	inject "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 	"github.com/kumahq/kuma/pkg/test/matchers"
-
-	kube_core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-
-	"github.com/ghodss/yaml"
 )
 
 var _ = Describe("Injector", func() {
@@ -53,11 +52,11 @@ var _ = Describe("Injector", func() {
 			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
 			obj, _, errMesh := decoder.Decode([]byte(given.mesh), nil, nil)
 			Expect(errMesh).ToNot(HaveOccurred())
-			errCreate := k8sClient.Create(context.Background(), obj)
+			errCreate := k8sClient.Create(context.Background(), obj.(kube_client.Object))
 			Expect(errCreate).ToNot(HaveOccurred())
 			ns, _, errNs := decoder.Decode([]byte(given.namespace), nil, nil)
 			Expect(errNs).ToNot(HaveOccurred())
-			errUpd := k8sClient.Update(context.Background(), ns)
+			errUpd := k8sClient.Update(context.Background(), ns.(kube_client.Object))
 			Expect(errUpd).ToNot(HaveOccurred())
 
 			// given
@@ -65,7 +64,7 @@ var _ = Describe("Injector", func() {
 
 			By("loading input Pod")
 			// when
-			input, err := ioutil.ReadFile(inputFile)
+			input, err := os.ReadFile(inputFile)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when
@@ -518,6 +517,38 @@ var _ = Describe("Injector", func() {
                 annotations:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.builtindns.config.yaml",
+		}),
+		Entry("26. sidecar with high concurrency", testCase{
+			num: "26",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.builtindns.config.yaml",
+		}),
+		Entry("27. sidecar with high resource limit", testCase{
+			num: "27",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.high-resources.config.yaml",
 		}),
 	)
 })

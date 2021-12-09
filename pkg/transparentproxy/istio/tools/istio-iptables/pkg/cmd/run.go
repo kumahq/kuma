@@ -16,7 +16,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strings"
@@ -721,7 +720,7 @@ func HandleDNSUDPv6(
 	// Note: If a user somehow configured etc/resolv.conf to point to dnsmasq and server X, and dnsmasq also
 	// pointed to server X, this would not work. However, the assumption is that is not a common case.
 	for _, s := range dnsServersV6 {
-		if s == "0.0.0.0" {
+		if s == "::" {
 			raw = []string{
 				"-t", table, opsStr, chain,
 				"-p", constants.UDP, "--dport", "53",
@@ -789,7 +788,7 @@ func (iptConfigurator *IptablesConfigurator) executeIptablesRestoreCommand(isIpv
 		filename = fmt.Sprintf("ip6tables-rules-%d.txt", time.Now().UnixNano())
 		cmd = constants.IP6TABLESRESTORE
 	}
-	rulesFile, err := ioutil.TempFile("", filename)
+	rulesFile, err := os.CreateTemp("", filename)
 	if err != nil {
 		return fmt.Errorf("unable to create iptables-restore file: %v", err)
 	}

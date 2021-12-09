@@ -3,35 +3,41 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 orbs:
   aws-cli: circleci/aws-cli@1.4.0
   aws-ecr: circleci/aws-ecr@6.15.3
-  aws-eks: circleci/aws-eks@1.0.3
+  aws-eks: circleci/aws-eks@1.1.0
   kubernetes: circleci/kubernetes@0.11.2
   slack: circleci/slack@4.1
+  azure-cli: circleci/azure-cli@1.1.0
+  azure-acr: circleci/azure-acr@0.2.0
+  azure-aks: circleci/azure-aks@0.2.1
 
-commands:
-  early_return_for_forked_pull_requests:
-    description: >-
-      If this build is from a fork, stop executing the current job and return success.
-      This is useful to avoid steps that will fail due to missing credentials.
-    steps:
-    - run:
-        name: "Early return if this build is from a forked PR"
-        command: |
-          if [ -n "${CIRCLE_PR_NUMBER}" ]; then
-            echo "Nothing to do for forked PRs, so marking this step successful"
-            circleci step halt
-          fi
+parameters:
+  run_workflow_clean_eks:
+    default: true
+    type: boolean
+
+  run_workflow_clean_aks:
+    default: true
+    type: boolean
+
+  run_workflow_e2e_eks:
+    default: true
+    type: boolean
+
+  run_workflow_e2e_aks:
+    default: true
+    type: boolean
 
 reusable:
 
   constants:
-    - &go_version "1.16.3"
+    - &go_version "1.17.3"
 
   docker_images:
-    - &golang_image "golang:1.16.3"
-    - &circleci_golang_image "circleci/golang:1.16.3"
+    - &golang_image "golang:1.17.3"
+    - &circleci_golang_image "circleci/golang:1.17.3"
 
   vm_images:
-  - &ubuntu_vm_image "ubuntu-2004:202101-01"
+  - &ubuntu_vm_image "ubuntu-2004:202104-01"
 
   snippets:
 
@@ -49,7 +55,7 @@ reusable:
         branches:
           ignore: /.*/
         tags:
-          only: /^(\d+)\.(\d+)\.(\d+)$/
+          only: /^v?(\d+)\.(\d+)\.(\d+)$/
 
     # filters for the kuma-commit workflow
     master_workflow_filters: &master_workflow_filters
@@ -61,13 +67,12 @@ reusable:
         tags:
           ignore: /.*/ # we don't want to run master workflow on commits with tag because use_local_kuma_images has to be false for all the jobs to pass
 
-    # filters for the eks-e2e workflow
+    # filters for the {a,e}ks-e2e workflow
     master_only_workflow_filters: &master_only_workflow_filters
       filters:
         branches:
           only:
             - master
-            - /^release-.*/
 
     # filters for the kuma-commit workflow
     commit_workflow_filters: &commit_workflow_filters
@@ -78,14 +83,57 @@ reusable:
            - /^release-.*/
            - gh-pages
 
-parameters:
-  run_workflow_eks_e2e:
-    default: true
-    type: boolean
+# See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
+commands:
+  early_return_for_forked_pull_requests:
+    description: >-
+      If this build is from a fork, stop executing the current job and return success.
+      This is useful to avoid steps that will fail due to missing credentials.
+    steps:
+    - run:
+        name: "Early return if this build is from a forked PR"
+        command: |
+          if [ -n "${CIRCLE_PR_NUMBER}" ]; then
+            echo "Nothing to do for forked PRs, so marking this step successful"
+            circleci step halt
+          fi
+  install_build_tools:
+    description: "Install an upstream Go release to $HOME/go"
+    parameters:
+      go_os:
+        type: string
+        default: linux
+      go_arch:
+        type: string
+        default: amd64
+      go_version:
+        type: string
+        default: *go_version
+    steps:
+    - run:
+        # `unzip` is necessary to install `protoc`
+        # `gcc`   is necessary to run `go test -race`
+        # `git`   is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
+        name: "Install basic tools"
+        command: |
+          if [ -r /etc/os-release ]; then source /etc/os-release; fi
+          case "$ID" in
+          ubuntu)
+            if ! command -v sudo 2>&1 >/dev/null; then
+              apt update
+              apt install -y sudo
+            fi
 
-  run_workflow_clean_eks:
-    default: true
-    type: boolean
+            sudo apt update
+            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc
+            ;;
+          esac
+    - run:
+        name: "Install Go"
+        # See https://golang.org/doc/install#tarball
+        command: |
+          curl --progress-bar --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
+          echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
 
 executors:
   golang:
@@ -112,9 +160,9 @@ executors:
       GO111MODULE: "on"
 
   mac:
-    resource_class: large
+    resource_class: medium
     macos:
-      xcode: "11.6.0"
+      xcode: "12.5.1"
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
@@ -159,9 +207,8 @@ jobs:
     - run:
         name: "Setup Environment"
         command: |
-          echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
-          echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
-          echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
+          echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
+          echo 'export PATH=$HOME/bin:$PATH' >> $BASH_ENV
           echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
           echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
           echo "export CLUSTER_2=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-2" >> $BASH_ENV
@@ -230,9 +277,12 @@ jobs:
         # prefer the exact match
         - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
 
+    - install_build_tools
+
     - run:
         name: "Download Go modules"
-        command: go mod download
+        command: |
+          go mod download
 
     # since execution of go commands might change contents of "go.sum",
     #  we have to save cache immediately
@@ -243,7 +293,8 @@ jobs:
 
     - run:
         name: "Install all development tools"
-        command: make dev/tools
+        command: |
+          make dev/tools
 
     - run:
         name: "Setup Helm"
@@ -258,7 +309,7 @@ jobs:
         name: "Run E2E tests"
         command: |
           export KUMA_UNIVERSAL_IMAGE="${ECR_REGISTRY}/kuma-universal:${TAG}";
-          export E2E_PKG_LIST="./test/e2e/helm";
+          export E2E_PKG_LIST="./test/e2e/helm/...";
           export API_VERSION="<< parameters.api_version >>"
 
           make test/e2e/test \
@@ -266,7 +317,7 @@ jobs:
             KUMA_GLOBAL_IMAGE_TAG="${TAG}" \
             KUMA_CNI_CONF_NAME="10-aws.conflist" \
             KUMA_USE_LOAD_BALANCER=true \
-            KUMA_IN_EKS=true \
+            KUMA_USE_HOSTNAME_INSTEAD_OF_IP=true \
             KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}" \
             KUMA_DEFAULT_RETRIES=60 \
             KUMA_DEFAULT_TIMEOUT="6s"
@@ -294,6 +345,250 @@ jobs:
         event: pass
         template: basic_success_1
 
+  aks-acr-clean-registry:
+    executor: azure-cli/default
+    steps:
+    - azure-cli/install
+
+    - azure-cli/login-with-service-principal
+
+    - run:
+        name: "Remove all test images from repository"
+        command: |
+          PURGE_CMD="acr purge \
+            --filter 'kumactl:.*' \
+            --filter 'kuma-cp:.*' \
+            --filter 'kuma-dp:.*' \
+            --filter 'kuma-init:.*' \
+            --filter 'kuma-universal:.*' \
+            --untagged \
+            --ago 1s"
+
+          az acr run \
+             --cmd "${PURGE_CMD}" \
+             --registry "${AZURE_ACR_REGISTRY}" \
+             /dev/null
+
+  aks-delete-clusters:
+    executor: azure-cli/default
+    steps:
+    - azure-cli/install
+
+    - azure-cli/login-with-service-principal
+
+    - run:
+        name: "Remove all test images from repository"
+        command: |
+          for name in $(az aks list --resource-group=${AZURE_RESOURCE_GROUP} | jq -r '.[].name'); do
+            az aks delete --resource-group=${AZURE_RESOURCE_GROUP} --name ${name} --yes &
+          done
+
+          wait
+
+  aks-e2e:
+    executor: vm
+    environment:
+      GOPATH: /home/circleci/.go-kuma-go
+    parameters:
+      prefix:
+        description: |
+          Prefix for the cluster names
+        type: string
+        default: kuma-cicd-e2e-test
+      api_version:
+        description: |
+          XDS API version
+        type: string
+        default: v3
+      node_count:
+        description: |
+          Amount of nodes for cluster's node pool
+        type: integer
+        default: 1
+      node_vm_size:
+        description: |
+          Size of Virtual Machines to create as Kubernetes nodes
+        type: string
+        default: "Standard_DS2_v2"
+      kubernetes_version:
+        description: |
+          Version of Kubernetes to use for creating the cluster, such as "1.11.8" or "1.12.6".
+        type: string
+        default: "1.22.2"
+    steps:
+    - early_return_for_forked_pull_requests
+
+    - checkout
+
+    - run:
+        name: "Setup Environment"
+        command: |
+          echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
+          echo 'export PATH=$HOME/bin:$PATH' >> $BASH_ENV
+          echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
+          echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
+          echo "export CLUSTER_2=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-2" >> $BASH_ENV
+          echo "export AZURE_ACR_REGISTRY_FULLNAME=${AZURE_ACR_REGISTRY}.azurecr.io" >> $BASH_ENV
+
+    - azure-cli/install
+
+    - azure-cli/login-with-service-principal
+
+    - run:
+        name: "Install AKS Preview Azure CLI Extension"
+        command: |
+          az extension add --name aks-preview
+
+    - kubernetes/install
+
+    # Mount files from the upstream jobs
+    - attach_workspace:
+        at: build
+
+    - run:
+        name: "Load Docker images from TAR archives"
+        command: make docker/load
+
+    - azure-acr/acr-login:
+        registry-name: ${AZURE_ACR_REGISTRY}
+
+    - run:
+        name: "Push images to ECR & Create clusters"
+        command: |
+          for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
+            make docker/tag/${image} \
+              DOCKER_REGISTRY="${AZURE_ACR_REGISTRY_FULLNAME}" \
+              KUMA_VERSION="${TAG}" &
+          done
+
+          wait
+
+          for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
+            docker push "${AZURE_ACR_REGISTRY_FULLNAME}"/${image}:"${TAG}" &
+          done
+
+          clusters="${CLUSTER_1} ${CLUSTER_2}"
+
+          for name in ${clusters}; do
+            az aks create \
+              --name "${name}" \
+              --resource-group "${AZURE_RESOURCE_GROUP}" \
+              --location "${AZURE_LOCATION}" \
+              --subscription ${AZURE_SUBSCRIPTION} \
+              --node-count << parameters.node_count >> \
+              --node-vm-size << parameters.node_vm_size >> \
+              --kubernetes-version << parameters.kubernetes_version >> \
+              --enable-addons monitoring \
+              --generate-ssh-keys \
+              --network-plugin azure \
+              --enable-managed-identity \
+              --assign-identity "${AZURE_IDENTITY_CONTROL_PLANE}" \
+              --assign-kubelet-identity "${AZURE_IDENTITY_KUBELET}" \
+              &
+          done
+
+          FAIL="0"
+          for job in $(jobs -p); do
+            wait "${job}" || FAIL=$((FAIL + 1))
+          done
+
+          exit ${FAIL}
+
+    - azure-aks/update-kubeconfig-with-credentials:
+        cluster-name: "${CLUSTER_1}"
+        resource-group: "${AZURE_RESOURCE_GROUP}"
+        subscription: "${AZURE_SUBSCRIPTION}"
+        file: ~/.kube/kind-kuma-1-config
+
+    - azure-aks/update-kubeconfig-with-credentials:
+        cluster-name: "${CLUSTER_2}"
+        resource-group: "${AZURE_RESOURCE_GROUP}"
+        subscription: "${AZURE_SUBSCRIPTION}"
+        file: ~/.kube/kind-kuma-2-config
+
+    - restore_cache:
+        keys:
+        # prefer the exact match
+        - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+
+    - install_build_tools
+
+    - run:
+        name: "Download Go modules"
+        command: |
+          go mod download
+
+    # since execution of go commands might change contents of "go.sum",
+    #  we have to save cache immediately
+    - save_cache:
+        key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        paths:
+        - "/home/circleci/.go-kuma-go"
+
+    - run:
+        name: "Install all development tools"
+        command: |
+          make dev/tools
+
+    - run:
+        name: "Setup Helm"
+        command: helm repo add kuma https://kumahq.github.io/charts
+
+    # We need kumactl to be built to run tests, and to not build it again,
+    #  we can use the one already build by earlier jobs
+    - attach_workspace:
+        at: build
+
+    - run:
+        name: "Run E2E tests"
+        command: |
+          export KUMA_UNIVERSAL_IMAGE="${AZURE_ACR_REGISTRY_FULLNAME}/kuma-universal:${TAG}";
+          export E2E_PKG_LIST="./test/e2e/helm/...";
+          export API_VERSION="<< parameters.api_version >>"
+
+          make test/e2e/test \
+            KUMA_GLOBAL_IMAGE_REGISTRY="${AZURE_ACR_REGISTRY_FULLNAME}" \
+            KUMA_GLOBAL_IMAGE_TAG="${TAG}" \
+            KUMA_CNI_CONF_NAME="10-azure.conflist" \
+            KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}" \
+            KUMA_DEFAULT_RETRIES=30 \
+            KUMA_DEFAULT_TIMEOUT="3s" \
+            KUMA_USE_LOAD_BALANCER=true
+
+    - run:
+        name: "Cleanup"
+        when: always
+        command: |
+          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
+            az acr repository delete \
+              --subscription "${AZURE_SUBSCRIPTION}" \
+              --name "${AZURE_ACR_REGISTRY}" \
+              --image "${image}:${TAG}" \
+              --yes \
+              &
+          done
+
+          clusters="${CLUSTER_1} ${CLUSTER_2}"
+
+          for name in ${clusters}; do
+            az aks delete \
+              --subscription "${AZURE_SUBSCRIPTION}" \
+              --name "${name}" \
+              --resource-group "${AZURE_RESOURCE_GROUP}" \
+              --yes \
+              &
+          done
+
+          wait || true
+
+    - slack/notify:
+        event: fail
+        template: basic_fail_1
+
+    - slack/notify:
+        event: pass
+        template: basic_success_1
+
   eks-delete-clusters:
     executor: aws-eks/python3
     steps:
@@ -310,28 +605,6 @@ jobs:
 
           wait
 
-  dev_golang:
-    docker:
-    - image: *golang_image
-    environment:
-      GO_VERSION: *go_version
-      GO111MODULE: "on"
-    steps:
-    - checkout
-    - run:
-        name: "Install pre-requirements"
-        # `unzip` is necessary to install `protoc`
-        command: apt update && apt install -y unzip
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools
-    - run:
-        name: "Build all binaries"
-        command: make build
-    - run:
-        name: "Run unit tests"
-        command: GO_TEST_OPTS='-p 2' make test
-
   dev_ubuntu:
     docker:
     - image: ubuntu:20.04
@@ -343,55 +616,19 @@ jobs:
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
     steps:
-    - run:
-        name: "Install prerequisites"
-        # make sure to deploy `git` befor checking out the code, otherwise Circle uses its own version, which behaves differently
-        # `unzip` is necessary to install `protoc`
-        # `gcc`   is necessary to run `go test -race`
-        command: |
-          apt update && apt install -y curl git make unzip gcc
+    - install_build_tools
     - checkout
-    - run:
-        name: "Install Go"
-        command: |
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
     - run:
         name: "Install all development tools"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make dev/tools
-    # - run:
-    #     name: "Install check tools (clang-format, ...)"
-    #     command: |
-    #       apt update && apt install -y wget
-
-    #       # see https://apt.llvm.org/
-
-    #       cat  >>/etc/apt/sources.list \<<EOF
-
-    #       deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
-    #       deb-src http://apt.llvm.org/xenial/ llvm-toolchain-xenial main
-
-    #       EOF
-
-    #       wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
-
-    #       apt update && apt install -y clang-format-11
-#    - run:
-#        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-#        command: |
-#          export PATH=$HOME/go/bin:$PATH
-#          make check BUILD_INFO_VERSION=latest
     - run:
         name: "Build all binaries"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make build
     - run:
         name: "Run unit tests"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           GO_TEST_OPTS='-p 2' make test
 
   dev_mac:
@@ -402,31 +639,24 @@ jobs:
       GOPATH: /Users/distiller/.go-kuma-go
     steps:
     - checkout
-    - run:
-        name: "Install Go"
-        command: |
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.darwin-amd64.tar.gz | tar -xz -C $HOME
+    - install_build_tools:
+        go_os: darwin
     - run:
         name: "Install all development tools"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make dev/tools
     # Do NOT install `clang-format` on Mac since it takes unreasonable amount of time
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make check BUILD_INFO_VERSION=latest
     - run:
         name: "Build all binaries"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make build
     - run:
         name: "Run unit tests"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           GO_TEST_OPTS='-p 2' make test
 
   go_cache:
@@ -436,7 +666,7 @@ jobs:
     - run:
         name: "Download Go modules"
         command: |
-          make vet
+          go mod download
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
         key: go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
@@ -447,8 +677,6 @@ jobs:
     executor: golang
     # we need a large resource class to satisfy the needs of golangci-lint run under `make check`
     resource_class: large
-    environment:
-      CLANG_FORMAT_PATH: clang-format-13
     steps:
     - checkout
     - restore_cache:
@@ -467,88 +695,36 @@ jobs:
         command: |
          # see https://apt.llvm.org/
 
+         # Assuming this is Debian, $VERSION_CODENAME nas the release name we
+         # need for apt.
+         . /etc/os-release
+
          cat  >>/etc/apt/sources.list \<<EOF
 
-         deb http://apt.llvm.org/stretch/ llvm-toolchain-stretch main
-         deb-src http://apt.llvm.org/stretch/ llvm-toolchain-stretch main
+         deb https://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME} main
+         deb-src https://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME} main
 
          EOF
 
          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
-         apt update && apt install -y clang-format-13
+         apt update && apt install -y clang-format
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
 
-  api_check:
-    executor: golang
-    steps:
-    - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - api-go.mod-{{ .Branch }}-{{ checksum "api/go.sum" }}
-    - run:
-        name: "Download Go modules"
-        command: |
-          cd api && go mod download
-    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
-    - save_cache:
-        key: api-go.mod-{{ .Branch }}-{{ checksum "api/go.sum" }}
-        paths:
-          - "/go/pkg/mod"
-    - run:
-        name: "Install pre-requirements"
-        # `unzip` is necessary to install `protoc`
-        command: apt update && apt install -y unzip
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools -C api
-    - run:
-        name: "Verify that auto-generated code is up-to-date"
-        command: make check -C api
-
   test:
-    executor: golang
-    resource_class: medium
-    steps:
-    - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-    - run:
-        name: "Install pre-requirements"
-        # `unzip` is necessary to install `protoc`
-        command: apt update && apt install -y unzip
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools
-    - run:
-        name: "Run unit tests"
-        command: GO_TEST_OPTS='-p 2' make test
-    - store_artifacts:
-        path: build/coverage
-        destination: /coverage
-
-  integration:
     executor: vm
     parameters:
       target:
-        description: The integration make target.
+        description: The test make target.
         type: string
-        default: integration
+        default: test
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
+    - install_build_tools
     - checkout
-    - run:
-        name: "Install Go"
-        command: |
-          apt update && apt install -y curl git make
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
     - restore_cache:
         keys:
         # prefer the exact match
@@ -556,7 +732,6 @@ jobs:
     - run:
         name: "Download Go modules"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           go mod download
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
@@ -566,16 +741,33 @@ jobs:
     - run:
         name: "Install all development tools"
         command: |
-          export PATH=$HOME/go/bin:$PATH
           make dev/tools
     - run:
-        name: "Run integration tests"
+        name: "Run tests"
         command: |
-          export PATH=$HOME/go/bin:$PATH
+          export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
           make << parameters.target >>
+    - run:
+        # Ref https://docs.codecov.com/docs/about-the-codecov-bash-uploader
+        name: "Push coverage to Codecov"
+        when: always
+        command: |
+          set -o errexit
+          curl --fail --location --silent --output codecov https://codecov.io/bash
+          readonly VERSION=$(grep -o 'VERSION=\"[0-9\.]*\"' codecov | cut -d'"' -f2)
+          readonly URL="https://raw.githubusercontent.com/codecov/codecov-bash"
+          for i in 1 256 512 ; do
+            echo checking SHA${i}SUM for version ${VERSION}
+            shasum --algorithm $i --check --ignore-missing <(
+              curl --location --silent "${URL}/${VERSION}/SHA${i}SUM"
+            )
+          done
+          bash ./codecov -f "build/coverage/*.out"
     - store_artifacts:
         path: build/coverage
         destination: /coverage
+    - store_test_results:
+        path: /tmp/xunit
 
   e2e:
     executor: vm
@@ -588,17 +780,12 @@ jobs:
         description: use IPv6
         type: boolean
         default: false
-    parallelism: 2
+    parallelism: 8
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
+      - install_build_tools
       - checkout
-      - run:
-          name: "Install Go"
-          command: |
-            apt update && apt install -y curl git make
-            # see https://golang.org/doc/install#tarball
-            curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
       - restore_cache:
           keys:
             # prefer the exact match
@@ -606,7 +793,6 @@ jobs:
       - run:
           name: "Download Go modules"
           command: |
-            export PATH=$HOME/go/bin:$PATH
             go mod download
       # since execution of go commands might change contents of "go.sum", we have to save cache immediately
       - save_cache:
@@ -616,36 +802,53 @@ jobs:
       - run:
           name: "Install all development tools"
           command: |
-            export PATH=$HOME/go/bin:$PATH
             make dev/tools
       - run:
           name: "Setup Helm"
           command: |
-            export PATH=$HOME/go/bin:$PATH
             helm repo add kuma https://kumahq.github.io/charts
       - when:
           condition: << parameters.ipv6 >>
           steps:
             - run:
+                name: Enable IPV6 and change DNS # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
+                command: |
+                  cat \<<'EOF' | sudo tee /etc/docker/daemon.json
+                  {
+                    "ipv6": true,
+                    "fixed-cidr-v6": "2001:db8:1::/64",
+                    "dns": ["8.8.8.8"],
+                    "dns-search": ["."]
+                  }
+                  EOF
+                  sudo service docker restart
+            - run:
                 name: "Run IPv6 E2E tests"
                 command: |
-                  export PATH=$HOME/go/bin:$PATH
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export IPV6=true
                   export KUMA_DEFAULT_RETRIES=60
                   export KUMA_DEFAULT_TIMEOUT="6s"
+                  export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
+                  export BUILD_WITH_EXPERIMENTAL_GATEWAY=Y
                   make test/e2e
+            - store_test_results:
+                path: /tmp/xunit
       - unless:
           condition: << parameters.ipv6 >>
           steps:
             - run:
                 name: "Run IPv4 E2E tests"
                 command: |
-                  export PATH=$HOME/go/bin:$PATH
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
+                  export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
+                  export BUILD_WITH_EXPERIMENTAL_GATEWAY=Y
+                  export K3D=true
                   make test/e2e
+            - store_test_results:
+                path: /tmp/xunit
 
   build:
     executor: golang
@@ -678,7 +881,7 @@ jobs:
     - attach_workspace:
         at: build
     - setup_remote_docker:
-        version: 19.03.12
+        version: 20.10.7
     - run:
         name: Build Docker images
         command: |
@@ -686,7 +889,39 @@ jobs:
             DOCKER_REGISTRY="<< parameters.docker_registry >>"
     - run:
         name: Save Docker images into TAR archives
-        command: make docker/save
+        command: |
+          make docker/save \
+            DOCKER_REGISTRY="<< parameters.docker_registry >>"
+    # Persist the specified paths into the workspace for use in downstream jobs
+    - persist_to_workspace:
+        root: build
+        paths:
+        - docker-images
+
+  images-kumactl:
+    executor: remote-docker
+    parameters:
+      docker_registry:
+        description: "Registry for container images"
+        type: string
+        default: "docker.io/kumahq"
+    steps:
+    - checkout
+    # Mount files from the upstream jobs
+    - attach_workspace:
+        at: build
+    - setup_remote_docker:
+        version: 20.10.7
+    - run:
+        name: Build kumactl's Docker image
+        command: |
+          make docker/build/kumactl \
+            DOCKER_REGISTRY="<< parameters.docker_registry >>"
+    - run:
+        name: Save kumactl's Docker image into TAR archives
+        command: |
+          make docker/save/kumactl \
+            DOCKER_REGISTRY="<< parameters.docker_registry >>"
     # Persist the specified paths into the workspace for use in downstream jobs
     - persist_to_workspace:
         root: build
@@ -770,6 +1005,11 @@ jobs:
         - run:
             name: Load Docker images into Minikube
             command: make load/example/minikube
+    - unless:
+        condition: << parameters.use_local_kuma_images >>
+        steps:
+        - attach_workspace:
+            at: docker-images
     - run:
         name: Deploy example setup
         command: make deploy/example/minikube
@@ -813,35 +1053,26 @@ jobs:
   release:
     executor: vm
     steps:
+    - install_build_tools
     - checkout
-    - run:
-        name: "Install Go"
-        command: |
-          apt update && apt install -y curl git make
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
     - run:
         name: "Download Go modules"
         command: go mod download
     - run:
         name: Build Packages
         command: |
-          export PATH=$HOME/go/bin:$PATH
           ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
     - run:
         name: Push Packages
         command: |
-          export PATH=$HOME/go/bin:$PATH
           ./tools/releases/distros.sh --release --version $CIRCLE_TAG
     - run:
         name: Build Docker
         command: |
-          export PATH=$HOME/go/bin:$PATH
           ./tools/releases/docker.sh --build --version $CIRCLE_TAG
     - run:
         name: Push Docker
         command: |
-          export PATH=$HOME/go/bin:$PATH
           ./tools/releases/docker.sh --push --version $CIRCLE_TAG
 
   helm-release:
@@ -887,12 +1118,10 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - go_cache
-    - integration:
+    - test:
         <<: *commit_workflow_filters
         requires:
         - check
-        # custom parameters
-        target: -j1 integration test
     - images:
         <<: *commit_workflow_filters
         requires:
@@ -904,15 +1133,6 @@ workflows:
         - images
         - check
         # custom parameters
-        use_local_kuma_images: true
-    - example_minikube:
-        <<: *commit_workflow_filters
-        name: minikube_v1_16
-        requires:
-          - images
-          - check
-        # custom parameters
-        kubernetes_version: v1.16.15
         use_local_kuma_images: true
     - example_minikube:
         <<: *commit_workflow_filters
@@ -958,40 +1178,72 @@ workflows:
     - eks-ecr-clean-registry
     - eks-delete-clusters
 
+  clean-aks:
+    when: << pipeline.parameters.run_workflow_clean_aks >>
+    triggers:
+    - schedule:
+        # run cleanup everyday at 02:00 - it's the last resort for cleanup of
+        # AKS resources if anything went wrong and because of any reason
+        # they were not cleaned immediately after tests
+        cron: "0 2 * * *"
+        <<: *master_only_workflow_filters
+    jobs:
+    - aks-acr-clean-registry
+    - aks-delete-clusters
+
   e2e-eks:
-    when: << pipeline.parameters.run_workflow_eks_e2e >>
+    when: << pipeline.parameters.run_workflow_e2e_eks >>
     triggers:
     - schedule:
         # run every Monday at 00:00
         cron: "0 0 * * 1"
         <<: *master_only_workflow_filters
     jobs:
-    - go_cache: *master_workflow_filters
+    - go_cache: *master_only_workflow_filters
     - build:
-        <<: *master_workflow_filters
+        <<: *master_only_workflow_filters
         requires:
         - go_cache
     - images:
-        <<: *master_workflow_filters
+        <<: *master_only_workflow_filters
         requires:
         - build
         docker_registry: ${ECR_REGISTRY}
     - eks-e2e:
-        <<: *master_workflow_filters
+        <<: *master_only_workflow_filters
         name: test/e2e/eks
+        requires:
+        - images
+
+  e2e-aks:
+    when: << pipeline.parameters.run_workflow_e2e_aks >>
+    triggers:
+    - schedule:
+        # run every Monday at 00:00
+        cron: "0 0 * * 1"
+        <<: *master_only_workflow_filters
+    jobs:
+    - go_cache: *master_only_workflow_filters
+    - build:
+        <<: *master_only_workflow_filters
+        requires:
+        - go_cache
+    - images:
+        <<: *master_only_workflow_filters
+        requires:
+        - build
+        docker_registry: ${AZURE_ACR_REGISTRY}.azurecr.io
+    - aks-e2e:
+        <<: *master_only_workflow_filters
+        name: test/e2e/aks
         requires:
         - images
 
   kuma-master:
     jobs:
-      - dev_golang: *master_workflow_filters
       - dev_mac: *master_workflow_filters
       - dev_ubuntu: *master_workflow_filters
       - go_cache: *master_workflow_filters
-      - api_check:
-          <<: *master_workflow_filters
-          requires:
-            - go_cache
       - check:
           <<: *master_workflow_filters
           requires:
@@ -1003,12 +1255,6 @@ workflows:
       - test:
           <<: *master_workflow_filters
           requires:
-            - api_check
-            - check
-      - integration:
-          <<: *master_workflow_filters
-          requires:
-            - api_check
             - check
       - images:
           <<: *master_workflow_filters
@@ -1021,15 +1267,6 @@ workflows:
             - images
             - check
           # custom parameters
-          use_local_kuma_images: true
-      - example_minikube:
-          <<: *master_workflow_filters
-          name: minikube_v1_16
-          requires:
-            - images
-            - check
-          # custom parameters
-          kubernetes_version: v1.16.15
           use_local_kuma_images: true
       - example_minikube:
           <<: *master_workflow_filters
@@ -1075,14 +1312,6 @@ workflows:
             - check
       - e2e:
           <<: *master_workflow_filters
-          name: test/e2e V2
-          requires:
-            - images
-            - check
-          # custom parameters
-          api: v2
-      - e2e:
-          <<: *master_workflow_filters
           name: test/e2e-ipv6
           requires:
             - images
@@ -1093,29 +1322,28 @@ workflows:
   kuma-release:
     jobs:
     - go_cache: *release_workflow_filters
-    - api_check:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
     - check:
         <<: *release_workflow_filters
         requires:
         - go_cache
+    - build:
+        <<: *release_workflow_filters
+        requires:
+        - go_cache
+    - images-kumactl:
+        <<: *release_workflow_filters
+        requires:
+        - build
     - test:
         <<: *release_workflow_filters
         requires:
-        - go_cache
-    - integration:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
+          - go_cache
+        target: test
     - release:
         <<: *release_workflow_filters
         requires:
-        - api_check
         - check
         - test
-        - integration
     - helm-release:
         <<: *helm_release_workflow_filters
         requires:
@@ -1124,23 +1352,16 @@ workflows:
         <<: *release_workflow_filters
         name: docker-compose
         requires:
+        - images-kumactl
         - release
         # custom parameters
-        # docker images for a release build must be downloaded from a public Docker registry
-        use_local_kuma_images: false
-    - example_minikube:
-        <<: *release_workflow_filters
-        name: minikube_v1_16
-        requires:
-        - release
-        # custom parameters
-        kubernetes_version: v1.16.15
         # docker images for a release build must be downloaded from a public Docker registry
         use_local_kuma_images: false
     - example_minikube:
         <<: *release_workflow_filters
         name: minikube_v1_17
         requires:
+        - images-kumactl
         - release
         # custom parameters
         kubernetes_version: v1.17.17
@@ -1150,7 +1371,8 @@ workflows:
         <<: *release_workflow_filters
         name: minikube_v1_18
         requires:
-          - release
+        - images-kumactl
+        - release
         # custom parameters
         kubernetes_version: v1.18.16
         # docker images for a release build must be downloaded from a public Docker registry
@@ -1159,7 +1381,8 @@ workflows:
         <<: *release_workflow_filters
         name: minikube_v1_19
         requires:
-          - release
+        - images-kumactl
+        - release
         # custom parameters
         kubernetes_version: v1.19.8
         use_local_kuma_images: false
@@ -1167,7 +1390,8 @@ workflows:
         <<: *release_workflow_filters
         name: minikube_v1_20
         requires:
-          - release
+        - images-kumactl
+        - release
         # custom parameters
         kubernetes_version: v1.20.4
         use_local_kuma_images: false

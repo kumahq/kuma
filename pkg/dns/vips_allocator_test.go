@@ -4,33 +4,29 @@ import (
 	"context"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
-
-	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
-func dp(services ...string) *mesh_proto.Dataplane {
+func dpWithTags(tags ...map[string]string) *mesh_proto.Dataplane {
 	inbound := []*mesh_proto.Dataplane_Networking_Inbound{}
-	for _, service := range services {
+	for _, t := range tags {
 		inbound = append(inbound, &mesh_proto.Dataplane_Networking_Inbound{
 			Port: 8080,
-			Tags: map[string]string{
-				mesh_proto.ServiceTag: service,
-			},
+			Tags: t,
 		})
 	}
 	return &mesh_proto.Dataplane{
@@ -39,6 +35,14 @@ func dp(services ...string) *mesh_proto.Dataplane {
 			Inbound: inbound,
 		},
 	}
+}
+
+func dp(services ...string) *mesh_proto.Dataplane {
+	var tags []map[string]string
+	for _, s := range services {
+		tags = append(tags, map[string]string{mesh_proto.ServiceTag: s})
+	}
+	return dpWithTags(tags...)
 }
 
 type errConfigManager struct {
@@ -77,7 +81,7 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		allocator, err = dns.NewVIPsAllocator(rm, cm, "240.0.0.0/24", r)
+		allocator, err = dns.NewVIPsAllocator(rm, cm, true, "240.0.0.0/24", r)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -91,29 +95,31 @@ var _ = Describe("VIP Allocator", func() {
 		// then
 		vipList, err := persistence.GetByMesh("mesh-1")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(vipList).To(HaveLen(2))
+		Expect(vipList.HostnameEntries()).To(HaveLen(2))
 
 		vipList, err = persistence.GetByMesh("mesh-2")
 		Expect(err).ToNot(HaveOccurred())
 
-		for _, service := range []string{"backend", "frontend", "web"} {
-			ip, err := r.ForwardLookup(service)
+		for _, service := range []string{"backend.mesh", "frontend.mesh", "web.mesh"} {
+			ip, err := r.ForwardLookupFQDN(service)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ip).To(HavePrefix("240.0.0"))
 		}
 
-		Expect(vipList).To(HaveLen(1))
+		Expect(vipList.HostnameEntries()).To(HaveLen(1))
 	})
 
 	It("should respect already allocated VIPs in case of IPAM restarts", func() {
 		// setup
 		persistence := vips.NewPersistence(rm, cm)
+		vobv, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+			vips.NewServiceEntry("frontend"): {Address: "240.0.0.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}}}},
+			vips.NewServiceEntry("backend"):  {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}}}},
+		})
+		Expect(err).ToNot(HaveOccurred())
 		// we add VIPs directly to the 'persistence' object
 		// that emulates situation when IPAM is fresh and doesn't aware of allocated VIPs
-		err := persistence.Set("mesh-1", vips.List{
-			"frontend": "240.0.0.0",
-			"backend":  "240.0.0.1",
-		})
+		err = persistence.Set("mesh-1", vobv)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
@@ -126,16 +132,21 @@ var _ = Describe("VIP Allocator", func() {
 		vipList, err := persistence.GetByMesh("mesh-1")
 		Expect(err).ToNot(HaveOccurred())
 		// then
-		Expect(vipList).To(Equal(vips.List{
-			"frontend": "240.0.0.0",
-			"backend":  "240.0.0.1",
-			"database": "240.0.0.2",
-		}))
+		expected, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
+			vips.NewServiceEntry("backend"):  {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}}}},
+			vips.NewServiceEntry("database"): {Address: "240.0.0.2", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "database"}}}},
+			vips.NewServiceEntry("frontend"): {Address: "240.0.0.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}}}},
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(vipList.HostnameEntries()).To(Equal(expected.HostnameEntries()))
+		for _, k := range vipList.HostnameEntries() {
+			Expect(vipList.Get(k).Address).To(Equal(expected.Get(k).Address))
+		}
 	})
 
 	It("should return error if failed to update VIP config", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, "240.0.0.0/24", r)
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24", r)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1")
@@ -151,7 +162,7 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should try to update all meshes and return combined error", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, "240.0.0.0/24", r)
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24", r)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfigs()
@@ -169,200 +180,297 @@ var _ = Describe("VIP Allocator", func() {
 	})
 })
 
-var _ = Describe("BuildServiceSet", func() {
-	var rm manager.ResourceManager
+type outboundViewTestCase struct {
+	givenResources      map[model.ResourceKey]model.Resource
+	whenMesh            string
+	whenSkipServiceVips bool
+	thenHostnameEntries []vips.HostnameEntry
+	thenOutbounds       map[vips.HostnameEntry][]vips.OutboundEntry
+}
 
-	BeforeEach(func() {
-		rm = manager.NewResourceManager(memory.NewStore())
-	})
+var _ = DescribeTable("outboundView",
+	func(tc outboundViewTestCase) {
+		// Given
+		rm := manager.NewResourceManager(memory.NewStore())
+		meshes := map[string]bool{}
 
-	It("should build service set for mesh", func() {
-		// setup meshes
-		err := rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		for k, res := range tc.givenResources {
+			if exists := meshes[k.Mesh]; !exists {
+				Expect(rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateBy(model.WithoutMesh(k.Mesh)))).ToNot(HaveOccurred())
+				meshes[k.Mesh] = true
+			}
+			Expect(rm.Create(context.Background(), res, store.CreateBy(k))).ToNot(HaveOccurred())
+		}
+
+		// When
+		serviceSet, err := dns.BuildVirtualOutboundMeshView(rm, !tc.whenSkipServiceVips, tc.whenMesh)
+
+		// Then
 		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-2", model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-3", model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		// setup dataplanes
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("backend")}, store.CreateByKey("backend-1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("frontend")}, store.CreateByKey("frontend-1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("frontend")}, store.CreateByKey("frontend-2", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database", "metrics")}, store.CreateByKey("db-m-1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("another-mesh-svc")}, store.CreateByKey("another-mesh-dp-1", "mesh-2"))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("only-mesh-3-service")}, store.CreateByKey("dp-m-3", "mesh-3"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// setup ingress
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: &mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-					{
-						Port: 10001,
+		Expect(serviceSet.HostnameEntries()).To(Equal(tc.thenHostnameEntries))
+		for k, entries := range tc.thenOutbounds {
+			entry := serviceSet.Get(k)
+			Expect(entry).ToNot(BeNil(), "key:"+k.String())
+			Expect(entry.Outbounds).To(Equal(entries), "key:"+k.String())
+		}
+	},
+	Entry("no resource", outboundViewTestCase{whenMesh: "mesh", thenHostnameEntries: []vips.HostnameEntry{}}),
+	Entry("dp with multiple services", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "dp1"): &mesh.DataplaneResource{Spec: dp("service1", "service2")},
+		},
+		whenMesh:            "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewServiceEntry("service1"), vips.NewServiceEntry("service2")},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewServiceEntry("service1"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "service1"}, Origin: "service"},
+			},
+		},
+	}),
+	Entry("external service", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "es-1"): &mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "external.service.com:8080",
+					},
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "my-external-service-1",
 					},
 				},
-				Ingress: &mesh_proto.Dataplane_Networking_Ingress{
-					AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+			},
+		},
+		whenMesh:            "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewServiceEntry("my-external-service-1"), vips.NewHostEntry("external.service.com")},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewServiceEntry("my-external-service-1"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "service", Port: 8080},
+			},
+			vips.NewHostEntry("external.service.com"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "host", Port: 8080},
+			},
+		},
+	}),
+	Entry("zone ingress", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("default", "ingress-1"): &mesh.ZoneIngressResource{
+				Spec: &mesh_proto.ZoneIngress{
+					Networking: &mesh_proto.ZoneIngress_Networking{Port: 1000, AdvertisedPort: 1000, AdvertisedAddress: "127.0.0.1", Address: "127.0.0.1"},
+					AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
 						{
-							Mesh:      "mesh-1",
-							Instances: 2,
+							Mesh: "other-mesh",
 							Tags: map[string]string{
-								mesh_proto.ServiceTag: "ingress-svc",
+								mesh_proto.ServiceTag: "srv1",
 							},
+							Instances: 2,
 						},
 						{
-							Mesh:      "mesh-2",
-							Instances: 3,
+							Mesh: "mesh",
 							Tags: map[string]string{
-								mesh_proto.ServiceTag: "another-mesh-ingress-svc",
+								mesh_proto.ServiceTag: "srv1",
 							},
+							Instances: 2,
+						},
+						{
+							Mesh: "mesh",
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "srv2",
+							},
+							Instances: 2,
 						},
 					},
 				},
 			},
-		}}, store.CreateByKey("ingress-1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// setup external services
-		es := func(service string) *mesh_proto.ExternalService {
-			return &mesh_proto.ExternalService{
-				Networking: &mesh_proto.ExternalService_Networking{
-					Address: "external.service.com:8080",
+		},
+		whenMesh:            "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewServiceEntry("srv1"), vips.NewServiceEntry("srv2")},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewServiceEntry("srv1"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "srv1"}, Origin: "service"},
+			},
+		},
+	}),
+	Entry("virtual outbound simple", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "dp1-a"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "instance": "a", "port": "9000"})},
+			model.WithMesh("mesh", "dp1-b"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "instance": "b"})},
+			model.WithMesh("mesh", "dp2"):   &mesh.DataplaneResource{Spec: dp("service2")},
+			model.WithMesh("mesh", "vob-1"): &mesh.VirtualOutboundResource{
+				Spec: &mesh_proto.VirtualOutbound{
+					Selectors: []*mesh_proto.Selector{
+						{Match: map[string]string{mesh_proto.ServiceTag: "*", "instance": "*"}},
+					},
+					Conf: &mesh_proto.VirtualOutbound_Conf{
+						Host: "{{.srv}}.{{.instance}}.mesh",
+						Port: "{{if .port}}{{.port}}{{else}}8080{{end}}",
+						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
+							{Name: "srv", TagKey: mesh_proto.ServiceTag},
+							{Name: "instance"},
+							{Name: "port"},
+						},
+					},
 				},
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: service,
+			},
+		},
+		whenMesh: "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{
+			vips.NewServiceEntry("service1"),
+			vips.NewServiceEntry("service2"),
+			vips.NewFqdnEntry("service1.a.mesh"),
+			vips.NewFqdnEntry("service1.b.mesh"),
+		},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewFqdnEntry("service1.a.mesh"): {
+				{Port: 9000, TagSet: map[string]string{mesh_proto.ServiceTag: "service1", "instance": "a", "port": "9000"}, Origin: "virtual-outbound:vob-1"},
+			},
+			vips.NewFqdnEntry("service1.b.mesh"): {
+				{Port: 8080, TagSet: map[string]string{mesh_proto.ServiceTag: "service1", "instance": "b"}, Origin: "virtual-outbound:vob-1"},
+			},
+		},
+	}),
+	Entry("virtual outbound same hostname different ports", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "dp1-a"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "port": "9000"})},
+			model.WithMesh("mesh", "dp1-b"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "port": "8000"})},
+			model.WithMesh("mesh", "dp2"):   &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service2"})},
+			model.WithMesh("mesh", "vob-1"): &mesh.VirtualOutboundResource{
+				Spec: &mesh_proto.VirtualOutbound{
+					Selectors: []*mesh_proto.Selector{
+						{Match: map[string]string{mesh_proto.ServiceTag: "*"}},
+					},
+					Conf: &mesh_proto.VirtualOutbound_Conf{
+						Host: "{{.srv}}.mesh",
+						Port: "{{if .port}}{{.port}}{{else}}8080{{end}}",
+						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
+							{Name: "srv", TagKey: mesh_proto.ServiceTag},
+							{Name: "port"},
+						},
+					},
 				},
-			}
-		}
+			},
+		},
+		whenMesh: "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{
+			vips.NewServiceEntry("service1"),
+			vips.NewServiceEntry("service2"),
+			vips.NewFqdnEntry("service1.mesh"),
+			vips.NewFqdnEntry("service2.mesh"),
+		},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewFqdnEntry("service1.mesh"): {
+				{Port: 8000, TagSet: map[string]string{mesh_proto.ServiceTag: "service1", "port": "8000"}, Origin: "virtual-outbound:vob-1"},
+				{Port: 9000, TagSet: map[string]string{mesh_proto.ServiceTag: "service1", "port": "9000"}, Origin: "virtual-outbound:vob-1"},
+			},
+			vips.NewFqdnEntry("service2.mesh"): {
+				{Port: 8080, TagSet: map[string]string{mesh_proto.ServiceTag: "service2"}, Origin: "virtual-outbound:vob-1"},
+			},
+		},
+	}),
+	Entry("virtual outbound collision, picks the most specific", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "dp1"): &mesh.DataplaneResource{Spec: dpWithTags(map[string]string{mesh_proto.ServiceTag: "service1", "instance": "1"})},
+			model.WithMesh("mesh", "vob-1"): &mesh.VirtualOutboundResource{
+				Spec: &mesh_proto.VirtualOutbound{
+					Selectors: []*mesh_proto.Selector{
+						{Match: map[string]string{mesh_proto.ServiceTag: "*"}},
+					},
+					Conf: &mesh_proto.VirtualOutbound_Conf{
+						Host: "{{.srv}}.mesh",
+						Port: "8080",
+						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
+							{Name: "srv", TagKey: mesh_proto.ServiceTag},
+						},
+					},
+				},
+			},
+			model.WithMesh("mesh", "vob-2"): &mesh.VirtualOutboundResource{
+				Spec: &mesh_proto.VirtualOutbound{
+					Selectors: []*mesh_proto.Selector{
+						// High weight for this vob
+						{Match: map[string]string{mesh_proto.ServiceTag: "*", "instance": "*"}},
+					},
+					Conf: &mesh_proto.VirtualOutbound_Conf{
+						Host: "{{.srv}}.mesh",
+						Port: "8080",
+						Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
+							{Name: "srv", TagKey: mesh_proto.ServiceTag},
+						},
+					},
+				},
+			},
+		},
+		whenMesh: "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{
+			vips.NewServiceEntry("service1"),
+			vips.NewFqdnEntry("service1.mesh"),
+		},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewFqdnEntry("service1.mesh"): {
+				{Port: 8080, TagSet: map[string]string{mesh_proto.ServiceTag: "service1"}, Origin: "virtual-outbound:vob-2"},
+			},
+		},
+	}),
+	Entry("dp skip service vips", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh", "dp1"): &mesh.DataplaneResource{Spec: dp("service1")},
+			model.WithMesh("mesh", "es-1"): &mesh.ExternalServiceResource{
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "external.service.com:8080",
+					},
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "my-external-service-1",
+					},
+				},
+			},
+		},
+		whenSkipServiceVips: true,
+		whenMesh:            "mesh",
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewHostEntry("external.service.com")},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewHostEntry("external.service.com"): {
+				{TagSet: map[string]string{mesh_proto.ServiceTag: "my-external-service-1"}, Origin: "host", Port: 8080},
+			},
+		},
+	}),
+)
 
-		err = rm.Create(context.Background(), &mesh.ExternalServiceResource{Spec: es("es-backend")}, store.CreateByKey("es-backend-1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), &mesh.ExternalServiceResource{Spec: es("another-mesh-es")}, store.CreateByKey("es-backend-1", "mesh-2"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		serviceSet, err := dns.BuildServiceSet(rm, "mesh-1")
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		Expect(serviceSet).To(Equal(dns.ServiceSet{
-			"backend":     true,
-			"frontend":    true,
-			"database":    true,
-			"metrics":     true,
-			"ingress-svc": true,
-			"es-backend":  true,
-		}))
-	})
-})
-
-var _ = Describe("UpdateMeshedVIPs", func() {
+var _ = Describe("AllocateVIPs", func() {
 	It("should allocate new VIPs", func() {
 		// setup
-		vipsList := vips.List{}
-		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
+		gv, err := vips.NewGlobalView("240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
-		serviceSet := dns.ServiceSet{
-			"backend":  true,
-			"frontend": true,
-		}
+		serviceSet := vips.NewEmptyVirtualOutboundView()
+		Expect(serviceSet.Add(vips.NewServiceEntry("backend"), vips.OutboundEntry{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}})).ToNot(HaveOccurred())
+		Expect(serviceSet.Add(vips.NewServiceEntry("frontend"), vips.OutboundEntry{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}})).ToNot(HaveOccurred())
 		// when
-		updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
+		err = dns.AllocateVIPs(gv, serviceSet)
 		Expect(err).ToNot(HaveOccurred())
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(updated).To(BeTrue())
-		Expect(vipsList).To(Equal(vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
-		}))
-	})
-
-	It("should free IP for deleted service", func() {
-		// setup
-		vipsList := vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
-		}
-		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
-		Expect(err).ToNot(HaveOccurred())
-		serviceSet := dns.ServiceSet{
-			"backend": true,
-		}
-		// when
-		updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
-		Expect(err).ToNot(HaveOccurred())
-		// then
-		Expect(updated).To(BeTrue())
-		Expect(vipsList).To(Equal(vips.List{
-			"backend": "240.0.0.0",
-		}))
-	})
-
-	It("should return updated=false if nothing changed", func() {
-		// setup
-		vipsList := vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
-		}
-		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
-		Expect(err).ToNot(HaveOccurred())
-		serviceSet := dns.ServiceSet{
-			"backend":  true,
-			"frontend": true,
-		}
-		// when
-		updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
-		Expect(err).ToNot(HaveOccurred())
-		// then
-		Expect(updated).To(BeFalse())
-		Expect(vipsList).To(Equal(vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
-		}))
+		Expect(serviceSet.HostnameEntries()).To(Equal([]vips.HostnameEntry{vips.NewServiceEntry("backend"), vips.NewServiceEntry("frontend")}))
+		Expect(serviceSet.Get(vips.NewServiceEntry("backend")).Address).ToNot(BeEmpty())
+		Expect(serviceSet.Get(vips.NewServiceEntry("frontend")).Address).ToNot(BeEmpty())
 	})
 
 	It("should generate the same VIP for services across meshes", func() {
 		// setup
-		global := vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
-			"database": "240.0.0.10",
-		}
-		meshed := vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
-		}
-		ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
+		gv, err := vips.NewGlobalView("240.0.0.0/4")
 		Expect(err).ToNot(HaveOccurred())
-		serviceSet := dns.ServiceSet{
-			"backend":  true,
-			"frontend": true,
-			"database": true,
-		}
+		Expect(gv.Reserve(vips.NewServiceEntry("backend"), "240.0.0.0")).ToNot(HaveOccurred())
+		Expect(gv.Reserve(vips.NewServiceEntry("frontend"), "240.0.0.1")).ToNot(HaveOccurred())
+		Expect(gv.Reserve(vips.NewServiceEntry("database"), "240.0.0.10")).ToNot(HaveOccurred())
+		Expect(err).ToNot(HaveOccurred())
+		serviceSet := vips.NewEmptyVirtualOutboundView()
+		Expect(serviceSet.Add(vips.NewServiceEntry("backend"), vips.OutboundEntry{Origin: "default", TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}})).ToNot(HaveOccurred())
+		Expect(serviceSet.Add(vips.NewServiceEntry("frontend"), vips.OutboundEntry{Origin: "default", TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}})).ToNot(HaveOccurred())
+		Expect(serviceSet.Add(vips.NewServiceEntry("database"), vips.OutboundEntry{Origin: "default", TagSet: map[string]string{mesh_proto.ServiceTag: "database"}})).ToNot(HaveOccurred())
 		// when
-		updated, err := dns.UpdateMeshedVIPs(global, meshed, ipam, serviceSet)
+		err = dns.AllocateVIPs(gv, serviceSet)
 		Expect(err).ToNot(HaveOccurred())
 		// then
-		Expect(updated).To(BeTrue())
-		Expect(meshed).To(Equal(vips.List{
-			"backend":  "240.0.0.0",
-			"frontend": "240.0.0.1",
-			"database": "240.0.0.10",
-		}))
+		Expect(serviceSet.HostnameEntries()).To(Equal([]vips.HostnameEntry{vips.NewServiceEntry("backend"), vips.NewServiceEntry("database"), vips.NewServiceEntry("frontend")}))
+		Expect(serviceSet.Get(vips.NewServiceEntry("backend")).Address).To(Equal("240.0.0.0"))
+		Expect(serviceSet.Get(vips.NewServiceEntry("frontend")).Address).To(Equal("240.0.0.1"))
+		Expect(serviceSet.Get(vips.NewServiceEntry("database")).Address).To(Equal("240.0.0.10"))
 	})
 })

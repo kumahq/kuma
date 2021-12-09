@@ -50,7 +50,7 @@ func (d *vipsSynchronizer) Start(stop <-chan struct{}) error {
 		select {
 		case <-ticker.C:
 			if err := d.synchronize(); err != nil {
-				vipsSynchronizerLog.Error(err, "unable to synchronise")
+				vipsSynchronizerLog.Error(err, "unable to synchronize")
 			}
 		case <-stop:
 			vipsSynchronizerLog.Info("stopping")
@@ -63,10 +63,10 @@ func (d *vipsSynchronizer) synchronize() error {
 	if d.leadInfo.IsLeader() {
 		return nil // when CP is leader we skip this because VIP allocator updates DNSResolver
 	}
-	vipList, _, err := d.persistence.Get()
+	voByMesh, err := d.persistence.Get()
 	if err != nil {
 		return err
 	}
-	d.resolver.SetVIPs(vipList)
+	d.resolver.SetVIPs(vips.ToVIPMap(voByMesh))
 	return nil
 }

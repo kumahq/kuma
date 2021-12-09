@@ -8,18 +8,19 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	pkg_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
-
 	"github.com/pkg/errors"
 
+	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	pkg_log "github.com/kumahq/kuma/pkg/log"
 )
 
 var (
@@ -27,15 +28,14 @@ var (
 )
 
 type BootstrapParams struct {
-	Dataplane        *rest.Resource
-	BootstrapVersion types.BootstrapVersion
-	DNSPort          uint32
-	EmptyDNSPort     uint32
-	EnvoyVersion     EnvoyVersion
-	DynamicMetadata  map[string]string
+	Dataplane       *rest.Resource
+	DNSPort         uint32
+	EmptyDNSPort    uint32
+	EnvoyVersion    EnvoyVersion
+	DynamicMetadata map[string]string
 }
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error)
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error)
 
 type Opts struct {
 	Config          kuma_dp.Config
@@ -123,13 +123,12 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	}
 	runLog.Info("fetched Envoy version", "version", envoyVersion)
 	runLog.Info("generating bootstrap configuration")
-	bootstrapConfig, version, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
-		Dataplane:        e.opts.Dataplane,
-		BootstrapVersion: types.BootstrapVersion(e.opts.Config.Dataplane.BootstrapVersion),
-		DNSPort:          e.opts.DNSPort,
-		EmptyDNSPort:     e.opts.EmptyDNSPort,
-		EnvoyVersion:     *envoyVersion,
-		DynamicMetadata:  e.opts.DynamicMetadata,
+	bootstrapConfig, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
+		Dataplane:       e.opts.Dataplane,
+		DNSPort:         e.opts.DNSPort,
+		EmptyDNSPort:    e.opts.EmptyDNSPort,
+		EnvoyVersion:    *envoyVersion,
+		DynamicMetadata: e.opts.DynamicMetadata,
 	})
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
@@ -150,7 +149,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	}
 
 	args := []string{
-		"-c", configFile,
+		"--config-path", configFile,
 		"--drain-time-s",
 		fmt.Sprintf("%d", e.opts.Config.Dataplane.DrainTime/time.Second),
 		// "hot restart" (enabled by default) requires each Envoy instance to have
@@ -162,17 +161,28 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		// and we don't expect users to do "hot restart" manually.
 		// so, let's turn it off to simplify getting started experience.
 		"--disable-hot-restart",
-		"-l ", e.opts.LogLevel.String(),
+		"--log-level", e.opts.LogLevel.String(),
 	}
-	if version != "" { // version is always send by Kuma CP, but we check empty for backwards compatibility reasons (new Kuma DP connects to old Kuma CP)
-		args = append(args, "--bootstrap-version", string(version))
+
+	// If the concurrency is explicit, use that. On Linux, users
+	// can also implicitly set concurrency using cpusets.
+	if e.opts.Config.DataplaneRuntime.Concurrency > 0 {
+		args = append(args,
+			"--concurrency",
+			strconv.FormatUint(uint64(e.opts.Config.DataplaneRuntime.Concurrency), 10),
+		)
+	} else if runtime.GOOS == "linux" {
+		// The `--cpuset-threads` flag is still present on
+		// non-Linux, but emits a warning that we might as well
+		// avoid.
+		args = append(args, "--cpuset-threads")
 	}
-	command := exec.CommandContext(ctx, resolvedPath, args...)
-	command.Stdout = e.opts.Stdout
-	command.Stderr = e.opts.Stderr
-	runLog.Info("starting Envoy", "args", args)
+
+	command := command_utils.BuildCommand(ctx, e.opts.Stdout, e.opts.Stderr, resolvedPath, args...)
+
+	runLog.Info("starting Envoy", "path", resolvedPath, "arguments", args)
 	if err := command.Start(); err != nil {
-		runLog.Error(err, "the envoy executable was found at "+resolvedPath+" but an error occurred when executing it")
+		runLog.Error(err, "envoy executable failed", "path", resolvedPath, "arguments", args)
 		return err
 	}
 	done := make(chan error, 1)
@@ -209,16 +219,20 @@ func (e *Envoy) version() (*EnvoyVersion, error) {
 	command := exec.Command(resolvedPath, arg)
 	output, err := command.Output()
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("the envoy excutable was found at %s but an error occurred when executing it with arg %s", resolvedPath, arg))
+		return nil, errors.Wrapf(err, "failed to execute %s with arguments %q", resolvedPath, arg)
 	}
-	build := strings.Trim(string(output), "\n")
-	build = regexp.MustCompile(`:(.*)`).FindString(build)
-	build = strings.Trim(build, ":")
+	build := strings.ReplaceAll(string(output), "\r\n", "\n")
+	build = strings.Trim(build, "\n")
+	build = regexp.MustCompile(`version:(.*)`).FindString(build)
+	build = strings.Trim(build, "version:")
 	build = strings.Trim(build, " ")
-	version := regexp.MustCompile(`/([0-9.]+)/`).FindString(build)
-	version = strings.Trim(version, "/")
+
+	parts := strings.Split(build, "/")
+	if len(parts) != 5 { // revision/build_version_number/revision_status/build_type/ssl_version
+		return nil, errors.Errorf("wrong Envoy build format: %s", build)
+	}
 	return &EnvoyVersion{
 		Build:   build,
-		Version: version,
+		Version: parts[1],
 	}, nil
 }

@@ -6,14 +6,15 @@ ENVOY_ADMIN_PORT ?= 9901
 
 POSTGRES_SSL_MODE ?= disable
 
-run/universal/postgres/ssl: POSTGRES_SSL_MODE=verifyCa
-run/universal/postgres/ssl: POSTGRES_SSL_CERT_PATH=$(TOOLS_DIR)/postgres/ssl/certs/postgres.client.crt
-run/universal/postgres/ssl: POSTGRES_SSL_KEY_PATH=$(TOOLS_DIR)/postgres/ssl/certs/postgres.client.key
-run/universal/postgres/ssl: POSTGRES_SSL_ROOT_CERT_PATH=$(TOOLS_DIR)/postgres/ssl/certs/rootCA.crt
-run/universal/postgres/ssl: run/universal/postgres ## Dev: Run Control Plane locally in universal mode with Postgres store and SSL enabled
+run/universal/postgres/ssl: ## Dev: Run Control Plane locally in universal mode with Postgres store and SSL enabled
+	POSTGRES_SSL_MODE=verifyCa \
+	POSTGRES_SSL_CERT_PATH=$(TOOLS_DIR)/postgres/certs/postgres.client.crt \
+	POSTGRES_SSL_KEY_PATH=$(TOOLS_DIR)/postgres/certs/postgres.client.key \
+	POSTGRES_SSL_ROOT_CERT_PATH=$(TOOLS_DIR)/postgres/certs/rootCA.crt \
+	$(MAKE) run/universal/postgres
 
 .PHONY: run/universal/postgres
-run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal mode with Postgres store
+run/universal/postgres: ## Dev: Run Control Plane locally in universal mode with Postgres store
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=postgres \
 	KUMA_STORE_POSTGRES_HOST=localhost \
@@ -64,7 +65,7 @@ run/universal/memory: ## Dev: Run Control Plane locally in universal mode with i
 
 .PHONY: start/postgres
 start/postgres: ## Boostrap: start Postgres for Control Plane with initial schema
-	docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml up -d
+	docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml up -d --build
 	$(TOOLS_DIR)/postgres/wait-for-postgres.sh 15432
 
 .PHONY: stop/postgres
@@ -73,12 +74,11 @@ stop/postgres: ## Boostrap: stop Postgres
 
 .PHONY: start/postgres/ssl
 start/postgres/ssl: ## Boostrap: start Postgres for Control Plane with initial schema and SSL enabled
-	docker-compose -f $(TOOLS_DIR)/postgres/ssl/docker-compose.yaml up -d
-	$(TOOLS_DIR)/postgres/wait-for-postgres.sh 15432
+	POSTGRES_MODE=tls $(MAKE) start/postgres
 
 .PHONY: stop/postgres/ssl
 stop/postgres/ssl: ## Boostrap: stop Postgres with SSL enabled
-	docker-compose -f $(TOOLS_DIR)/postgres/ssl/docker-compose.yaml stop
+	$(MAKE) stop/postgres
 
 .PHONY: run/kuma-dp
 run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally

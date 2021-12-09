@@ -2,7 +2,7 @@ package yaml_test
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -10,11 +10,10 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
@@ -42,7 +41,7 @@ var _ = Describe("printer", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+			expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -56,7 +55,7 @@ var _ = Describe("printer", func() {
 		Entry("format response from Kuma REST API", testCase{
 			obj: &core_rest.Resource{
 				Meta: core_rest.ResourceMeta{
-					Type:             string(mesh_core.MeshType),
+					Type:             string(core_mesh.MeshType),
 					Name:             "demo",
 					CreationTime:     t1,
 					ModificationTime: t2,

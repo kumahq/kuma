@@ -3,38 +3,34 @@ package get_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
-	kuma_mesh "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("kumactl get circuit-breakers", func() {
 
 	circuitBreakerResources := []*mesh.CircuitBreakerResource{
 		{
-			Spec: &kuma_mesh.CircuitBreaker{
-				Sources: []*kuma_mesh.Selector{
+			Spec: &mesh_proto.CircuitBreaker{
+				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
 							"service": "frontend",
@@ -42,24 +38,24 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 						},
 					},
 				},
-				Destinations: []*kuma_mesh.Selector{
+				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
 							"service": "backend",
 						},
 					},
 				},
-				Conf: &kuma_mesh.CircuitBreaker_Conf{
-					Interval:                    &duration.Duration{Seconds: 5},
-					BaseEjectionTime:            &duration.Duration{Seconds: 5},
-					MaxEjectionPercent:          &wrappers.UInt32Value{Value: 50},
+				Conf: &mesh_proto.CircuitBreaker_Conf{
+					Interval:                    util_proto.Duration(time.Second * 5),
+					BaseEjectionTime:            util_proto.Duration(time.Second * 5),
+					MaxEjectionPercent:          util_proto.UInt32(50),
 					SplitExternalAndLocalErrors: false,
-					Detectors: &kuma_mesh.CircuitBreaker_Conf_Detectors{
-						TotalErrors:       &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{},
-						GatewayErrors:     &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{},
-						LocalErrors:       &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{},
-						StandardDeviation: &kuma_mesh.CircuitBreaker_Conf_Detectors_StandardDeviation{},
-						Failure:           &kuma_mesh.CircuitBreaker_Conf_Detectors_Failure{},
+					Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
+						TotalErrors:       &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
+						GatewayErrors:     &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
+						LocalErrors:       &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
+						StandardDeviation: &mesh_proto.CircuitBreaker_Conf_Detectors_StandardDeviation{},
+						Failure:           &mesh_proto.CircuitBreaker_Conf_Detectors_Failure{},
 					},
 				},
 			},
@@ -69,8 +65,8 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 			},
 		},
 		{
-			Spec: &kuma_mesh.CircuitBreaker{
-				Sources: []*kuma_mesh.Selector{
+			Spec: &mesh_proto.CircuitBreaker{
+				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
 							"service": "web",
@@ -78,31 +74,31 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 						},
 					},
 				},
-				Destinations: []*kuma_mesh.Selector{
+				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
 							"service": "redis",
 						},
 					},
 				},
-				Conf: &kuma_mesh.CircuitBreaker_Conf{
-					Interval:                    &duration.Duration{Seconds: 5},
-					BaseEjectionTime:            &duration.Duration{Seconds: 5},
-					MaxEjectionPercent:          &wrappers.UInt32Value{Value: 50},
+				Conf: &mesh_proto.CircuitBreaker_Conf{
+					Interval:                    util_proto.Duration(time.Second * 5),
+					BaseEjectionTime:            util_proto.Duration(time.Second * 5),
+					MaxEjectionPercent:          util_proto.UInt32(50),
 					SplitExternalAndLocalErrors: false,
-					Detectors: &kuma_mesh.CircuitBreaker_Conf_Detectors{
-						TotalErrors:   &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 20}},
-						GatewayErrors: &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 10}},
-						LocalErrors:   &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 2}},
-						StandardDeviation: &kuma_mesh.CircuitBreaker_Conf_Detectors_StandardDeviation{
-							RequestVolume: &wrappers.UInt32Value{Value: 20},
-							MinimumHosts:  &wrappers.UInt32Value{Value: 3},
-							Factor:        &wrappers.DoubleValue{Value: 1.9},
+					Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
+						TotalErrors:   &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: util_proto.UInt32(20)},
+						GatewayErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: util_proto.UInt32(10)},
+						LocalErrors:   &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: util_proto.UInt32(2)},
+						StandardDeviation: &mesh_proto.CircuitBreaker_Conf_Detectors_StandardDeviation{
+							RequestVolume: util_proto.UInt32(20),
+							MinimumHosts:  util_proto.UInt32(3),
+							Factor:        util_proto.Double(1.9),
 						},
-						Failure: &kuma_mesh.CircuitBreaker_Conf_Detectors_Failure{
-							RequestVolume: &wrappers.UInt32Value{Value: 20},
-							MinimumHosts:  &wrappers.UInt32Value{Value: 3},
-							Threshold:     &wrappers.UInt32Value{Value: 85},
+						Failure: &mesh_proto.CircuitBreaker_Conf_Detectors_Failure{
+							RequestVolume: util_proto.UInt32(20),
+							MinimumHosts:  util_proto.UInt32(3),
+							Threshold:     util_proto.UInt32(85),
 						},
 					},
 				},
@@ -116,24 +112,16 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 
 	Describe("GetCircuitBreakerCmd", func() {
 
-		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
 		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
 		BeforeEach(func() {
 			// setup
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return rootTime },
-					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
-				},
-			}
-
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
+
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, mesh.CircuitBreakerResourceTypeDescriptor)
+			Expect(err).ToNot(HaveOccurred())
 
 			for _, cb := range circuitBreakerResources {
 				err := store.Create(context.Background(), cb, core_store.CreateBy(core_model.MetaToResourceKey(cb.GetMeta())))
@@ -154,18 +142,13 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 
 		DescribeTable("kumactl get circuit-breakers -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "circuit-breakers"}, given.outputFormat, given.pagination))
+				// when
+				Expect(
+					ExecuteRootCommand(rootCmd, "circuit-breakers", given.outputFormat, given.pagination),
+				).To(Succeed())
 
 				// when
-				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and

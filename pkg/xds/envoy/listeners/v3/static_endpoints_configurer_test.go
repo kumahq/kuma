@@ -6,12 +6,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
-
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
 
 var _ = Describe("StaticEndpointsConfigurer", func() {
@@ -29,9 +26,9 @@ var _ = Describe("StaticEndpointsConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy.APIV3).
+			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(StaticEndpoints(given.listenerName,
 						[]*envoy_common.StaticEndpointPath{
 							{

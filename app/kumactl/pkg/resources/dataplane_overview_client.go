@@ -2,38 +2,29 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
 	"github.com/pkg/errors"
 
-	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
-	kuma_http "github.com/kumahq/kuma/pkg/util/http"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 type DataplaneOverviewClient interface {
 	List(ctx context.Context, meshName string, tags map[string]string, gateway bool, ingress bool) (*mesh.DataplaneOverviewResourceList, error)
 }
 
-func NewDataplaneOverviewClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (DataplaneOverviewClient, error) {
-	client, err := kumactl_client.ApiServerClient(coordinates)
-	if err != nil {
-		return nil, err
-	}
+func NewDataplaneOverviewClient(client util_http.Client) DataplaneOverviewClient {
 	return &httpDataplaneOverviewClient{
 		Client: client,
-	}, nil
+	}
 }
 
 type httpDataplaneOverviewClient struct {
-	Client kuma_http.Client
+	Client util_http.Client
 }
 
 func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string, tags map[string]string, gateway bool, ingress bool) (*mesh.DataplaneOverviewResourceList, error) {
@@ -45,7 +36,7 @@ func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string,
 	if err != nil {
 		return nil, err
 	}
-	statusCode, b, err := d.doRequest(ctx, req)
+	statusCode, b, err := doRequest(d.Client, ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -76,25 +67,4 @@ func constructUrl(meshName string, tags map[string]string, gateway bool, ingress
 	}
 	result.RawQuery = query.Encode()
 	return result, err
-}
-
-func (d *httpDataplaneOverviewClient) doRequest(ctx context.Context, req *http.Request) (int, []byte, error) {
-	resp, err := d.Client.Do(req.WithContext(ctx))
-	if err != nil {
-		return 0, nil, err
-	}
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return resp.StatusCode, nil, err
-	}
-	if resp.StatusCode/100 >= 4 {
-		kumaErr := types.Error{}
-		if err := json.Unmarshal(b, &kumaErr); err == nil {
-			if kumaErr.Title != "" && kumaErr.Details != "" {
-				return resp.StatusCode, b, &kumaErr
-			}
-		}
-	}
-	return resp.StatusCode, b, nil
 }

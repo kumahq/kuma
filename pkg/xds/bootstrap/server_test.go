@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -144,7 +144,7 @@ var _ = Describe("Bootstrap Server", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			received, err := ioutil.ReadAll(resp.Body)
+			received, err := io.ReadAll(resp.Body)
 			Expect(resp.Body.Close()).To(Succeed())
 			Expect(err).ToNot(HaveOccurred())
 
@@ -153,17 +153,17 @@ var _ = Describe("Bootstrap Server", func() {
 		},
 		Entry("minimal data provided (universal)", testCase{
 			dataplaneName:      "dp-1",
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneTokenPath": "/tmp/token", %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneToken": "token", %s }`, version),
 			expectedConfigFile: "bootstrap.universal.golden.yaml",
 		}),
 		Entry("minimal data provided (k8s)", testCase{
 			dataplaneName:      "dp-1.default",
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneTokenPath": "/tmp/token", %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneToken": "token", %s }`, version),
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
 			dataplaneName:      "dp-1.default",
-			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneTokenPath": "/tmp/token", %s }`, version),
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneToken": "token", %s }`, version),
 			expectedConfigFile: "bootstrap.overridden.golden.yaml",
 		}),
 	)
@@ -174,7 +174,7 @@ var _ = Describe("Bootstrap Server", func() {
 		{
 			"mesh": "default",
 			"name": "dp-1.default",
-			"dataplaneTokenPath": "/tmp/token"
+			"dataplaneToken": "token"
 		}
 		`
 
@@ -217,7 +217,7 @@ var _ = Describe("Bootstrap Server", func() {
 		resp, err := httpClient.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(json))
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		bytes, err := ioutil.ReadAll(resp.Body)
+		bytes, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
 		Expect(resp.StatusCode).To(Equal(422))

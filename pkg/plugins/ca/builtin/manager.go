@@ -4,17 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	ca_issuer "github.com/kumahq/kuma/pkg/core/ca/issuer"
-	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_validators "github.com/kumahq/kuma/pkg/core/validators"
@@ -34,14 +32,20 @@ func NewBuiltinCaManager(secretManager manager.ResourceManager) core_ca.Manager 
 
 var _ core_ca.Manager = &builtinCaManager{}
 
-func (b *builtinCaManager) Ensure(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
-	_, err := b.getCa(ctx, mesh, backend.Name)
-	if core_store.IsResourceNotFound(err) {
+func (b *builtinCaManager) EnsureBackends(ctx context.Context, mesh string, backends []*mesh_proto.CertificateAuthorityBackend) error {
+	for _, backend := range backends {
+		_, err := b.getCa(ctx, mesh, backend.Name)
+		if err == nil { // CA is there, nothing to ensure
+			continue
+		}
+
+		if !core_store.IsResourceNotFound(err) {
+			return err
+		}
+
 		if err := b.create(ctx, mesh, backend); err != nil {
 			return errors.Wrapf(err, "failed to create CA for mesh %q and backend %q", mesh, backend.Name)
 		}
-	} else {
-		return err
 	}
 	return nil
 }
@@ -71,7 +75,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 
 	var opts []certOptsFn
 	if cfg.GetCaCert().GetExpiration() != "" {
-		duration, err := mesh_helper.ParseDuration(cfg.GetCaCert().GetExpiration())
+		duration, err := core_mesh.ParseDuration(cfg.GetCaCert().GetExpiration())
 		if err != nil {
 			return err
 		}
@@ -84,9 +88,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 
 	certSecret := &core_system.SecretResource{
 		Spec: &system_proto.Secret{
-			Data: &wrappers.BytesValue{
-				Value: keyPair.CertPEM,
-			},
+			Data: util_proto.Bytes(keyPair.CertPEM),
 		},
 	}
 	if err := b.secretManager.Create(ctx, certSecret, core_store.CreateBy(certSecretResKey(mesh, backend.Name))); err != nil {
@@ -95,9 +97,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 
 	keySecret := &core_system.SecretResource{
 		Spec: &system_proto.Secret{
-			Data: &wrappers.BytesValue{
-				Value: keyPair.KeyPEM,
-			},
+			Data: util_proto.Bytes(keyPair.KeyPEM),
 		},
 	}
 	if err := b.secretManager.Create(ctx, keySecret, core_store.CreateBy(keySecretResKey(mesh, backend.Name))); err != nil {
@@ -136,7 +136,7 @@ func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh strin
 
 	var opts []ca_issuer.CertOptsFn
 	if backend.GetDpCert().GetRotation().GetExpiration() != "" {
-		duration, err := mesh_helper.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
+		duration, err := core_mesh.ParseDuration(backend.GetDpCert().GetRotation().Expiration)
 		if err != nil {
 			return core_ca.KeyPair{}, err
 		}

@@ -6,22 +6,24 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/kumahq/kuma/pkg/api-server/customization"
+	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
-	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	"github.com/kumahq/kuma/pkg/api-server/customization"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
-
-	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 type resourceApiClient struct {
@@ -117,12 +119,23 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		config.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 	}
 
-	defs := append(definitions.All, SampleTrafficRouteWsDefinition)
-	resources := manager.NewResourceManager(store)
-	wsManager := customization.NewAPIList()
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, wsManager, defs, &cfg, enableGUI, metrics)
+	apiServer, err := api_server.NewApiServer(
+		manager.NewResourceManager(store),
+		customization.NewAPIList(),
+		append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor),
+		&cfg,
+		enableGUI,
+		metrics,
+		func() string { return "instance-id" },
+		func() string { return "cluster-id" },
+		certs.ClientCertAuthenticator,
+		runtime.Access{
+			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
+			DataplaneTokenAccess: nil,
+		},
+	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

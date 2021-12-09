@@ -30,16 +30,20 @@ var _ = Describe("xDS", func() {
 					Expect(*proxyId).To(Equal(given.expected))
 				},
 				Entry("mesh and name without namespace", testCase{
-					nodeID: "demo.example",
-					expected: core_xds.ProxyId{
-						Mesh: "demo", Name: "example",
-					},
+					nodeID:   "demo.example",
+					expected: *core_xds.BuildProxyId("demo", "example"),
 				}),
 				Entry("name with namespace and mesh", testCase{
-					nodeID: "demo.example.sample",
-					expected: core_xds.ProxyId{
-						Mesh: "demo", Name: "example.sample",
-					},
+					nodeID:   "demo.example.sample",
+					expected: *core_xds.BuildProxyId("demo", "example.sample"),
+				}),
+				Entry("mesh and name without namespace and proxy type", testCase{
+					nodeID:   "demo.example",
+					expected: *core_xds.BuildProxyId("demo", "example"),
+				}),
+				Entry("name with namespace and mesh and proxy type", testCase{
+					nodeID:   "demo.example.sample",
+					expected: *core_xds.BuildProxyId("demo", "example.sample"),
 				}),
 			)
 		})
@@ -79,10 +83,7 @@ var _ = Describe("xDS", func() {
 	Describe("ProxyId(...).ToResourceKey()", func() {
 		It("should convert proxy ID to resource key", func() {
 			// given
-			id := core_xds.ProxyId{
-				Mesh: "default",
-				Name: "demo",
-			}
+			id := *core_xds.BuildProxyId("default", "demo")
 
 			// when
 			key := id.ToResourceKey()
@@ -270,6 +271,58 @@ var _ = Describe("xDS", func() {
 					}},
 				}),
 			)
+		})
+	})
+
+	Describe("ContainsTags", func() {
+		// given
+		endpoint := core_xds.Endpoint{
+			Tags: map[string]string{
+				"kuma.io/service": "backend",
+				"version":         "v1",
+			},
+		}
+
+		It("should match single tag", func() {
+			// when
+			contains := endpoint.ContainsTags(map[string]string{
+				"kuma.io/service": "backend",
+			})
+
+			// then
+			Expect(contains).To(BeTrue())
+		})
+
+		It("should match all the tags", func() {
+			// when
+			contains := endpoint.ContainsTags(map[string]string{
+				"kuma.io/service": "backend",
+				"version":         "v1",
+			})
+
+			// then
+			Expect(contains).To(BeTrue())
+		})
+
+		It("should not match when value of a tag is different", func() {
+			// when
+			contains := endpoint.ContainsTags(map[string]string{
+				"kuma.io/service": "backend",
+				"version":         "v2",
+			})
+
+			// then
+			Expect(contains).To(BeFalse())
+		})
+
+		It("should not match when endpoint has no such tag", func() {
+			// when
+			contains := endpoint.ContainsTags(map[string]string{
+				"team": "xyz",
+			})
+
+			// then
+			Expect(contains).To(BeFalse())
 		})
 	})
 })

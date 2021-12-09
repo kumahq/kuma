@@ -3,30 +3,26 @@ package get_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
 
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("kumactl get fault-injections", func() {
@@ -51,16 +47,16 @@ var _ = Describe("kumactl get fault-injections", func() {
 				},
 				Conf: &v1alpha1.FaultInjection_Conf{
 					Delay: &v1alpha1.FaultInjection_Conf_Delay{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						Value:      &duration.Duration{Seconds: 5},
+						Percentage: util_proto.Double(50),
+						Value:      util_proto.Duration(time.Second * 5),
 					},
 					Abort: &v1alpha1.FaultInjection_Conf_Abort{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						HttpStatus: &wrappers.UInt32Value{Value: 500},
+						Percentage: util_proto.Double(50),
+						HttpStatus: util_proto.UInt32(500),
 					},
 					ResponseBandwidth: &v1alpha1.FaultInjection_Conf_ResponseBandwidth{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						Limit:      &wrappers.StringValue{Value: "50 mbps"},
+						Percentage: util_proto.Double(50),
+						Limit:      util_proto.String("50 mbps"),
 					},
 				},
 			},
@@ -88,16 +84,16 @@ var _ = Describe("kumactl get fault-injections", func() {
 				},
 				Conf: &v1alpha1.FaultInjection_Conf{
 					Delay: &v1alpha1.FaultInjection_Conf_Delay{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						Value:      &duration.Duration{Seconds: 5},
+						Percentage: util_proto.Double(50),
+						Value:      util_proto.Duration(time.Second * 5),
 					},
 					Abort: &v1alpha1.FaultInjection_Conf_Abort{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						HttpStatus: &wrappers.UInt32Value{Value: 500},
+						Percentage: util_proto.Double(50),
+						HttpStatus: util_proto.UInt32(500),
 					},
 					ResponseBandwidth: &v1alpha1.FaultInjection_Conf_ResponseBandwidth{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						Limit:      &wrappers.StringValue{Value: "50 mbps"},
+						Percentage: util_proto.Double(50),
+						Limit:      util_proto.String("50 mbps"),
 					},
 				},
 			},
@@ -110,24 +106,16 @@ var _ = Describe("kumactl get fault-injections", func() {
 
 	Describe("GetFaultInjectionCmd", func() {
 
-		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
 		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
 		BeforeEach(func() {
 			// setup
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: func() time.Time { return rootTime },
-					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
-				},
-			}
-
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
+
+			rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, mesh.FaultInjectionResourceTypeDescriptor)
+			Expect(err).ToNot(HaveOccurred())
 
 			for _, ds := range faultInjectionResources {
 				err := store.Create(context.Background(), ds, core_store.CreateBy(core_model.MetaToResourceKey(ds.GetMeta())))
@@ -148,18 +136,13 @@ var _ = Describe("kumactl get fault-injections", func() {
 
 		DescribeTable("kumactl get fault-injections -o table|json|yaml",
 			func(given testCase) {
-				// given
-				rootCmd.SetArgs(append([]string{
-					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"get", "fault-injections"}, given.outputFormat, given.pagination))
+				// when
+				Expect(
+					ExecuteRootCommand(rootCmd, "fault-injections", given.outputFormat, given.pagination),
+				).To(Succeed())
 
 				// when
-				err := rootCmd.Execute()
-				// then
-				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and

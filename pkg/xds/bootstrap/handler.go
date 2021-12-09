@@ -2,7 +2,7 @@ package bootstrap
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 
@@ -22,7 +22,7 @@ type BootstrapHandler struct {
 }
 
 func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
-	bytes, err := ioutil.ReadAll(req.Body)
+	bytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Error(err, "Could not read a request")
 		resp.WriteHeader(http.StatusInternalServerError)
@@ -49,7 +49,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 	reqParams.Host = hostname
 	logger := log.WithValues("params", reqParams)
 
-	config, version, err := b.Generator.Generate(req.Context(), reqParams)
+	config, err := b.Generator.Generate(req.Context(), reqParams)
 	if err != nil {
 		handleError(resp, err, logger)
 		return
@@ -63,7 +63,8 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	resp.Header().Set("content-type", "text/x-yaml")
-	resp.Header().Set(types.BootstrapVersionHeader, string(version))
+	// backwards compatibility
+	resp.Header().Set(types.BootstrapVersionHeader, string(types.BootstrapV3))
 	resp.WriteHeader(http.StatusOK)
 	_, err = resp.Write(bytes)
 	if err != nil {
@@ -81,7 +82,7 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 		}
 		return
 	}
-	if err == InvalidBootstrapVersion || ISSANMismatchErr(err) || err == NotCA {
+	if ISSANMismatchErr(err) || err == NotCA {
 		resp.WriteHeader(http.StatusBadRequest)
 		if _, err := resp.Write([]byte(err.Error())); err != nil {
 			logger.Error(err, "Error while writing the response")

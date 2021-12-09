@@ -3,7 +3,7 @@ package install_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 
@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl install tracing", func() {
@@ -32,7 +32,7 @@ var _ = Describe("kumactl install tracing", func() {
 	DescribeTable("should install transparent proxy",
 		func(given testCase) {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCmd := test.DefaultTestingRootCmd()
 			rootCmd.SetArgs(append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
@@ -42,10 +42,10 @@ var _ = Describe("kumactl install tracing", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(stderr.Bytes()).To(BeNil())
+			Expect(stderr.String()).To(BeEmpty())
 
 			// when
-			regex, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+			regex, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -53,8 +53,7 @@ var _ = Describe("kumactl install tracing", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			Expect(r.Find(stdout.Bytes())).ToNot(BeEmpty(), fmt.Sprintf("%v\n-----%v\n", stdout.String(), stderr.String()))
-
+			Expect(r.Find(stdout.Bytes())).ToNot(BeEmpty(), fmt.Sprintf("%q\n-----\n%q\n", stdout.String(), stderr.String()))
 		},
 		Entry("should generate defaults with username", testCase{
 			extraArgs: []string{
@@ -92,6 +91,31 @@ var _ = Describe("kumactl install tracing", func() {
 				"--exclude-inbound-ports", "1000,1001",
 			},
 			goldenFile: "install-transparent-proxy.overrides.golden.txt",
+		}),
+	)
+
+	DescribeTable("should return error",
+		func(given testCase) {
+			// given
+			rootCmd := test.DefaultTestingRootCmd()
+			rootCmd.SetArgs(append([]string{"install", "transparent-proxy", "--dry-run"}, given.extraArgs...))
+			rootCmd.SetOut(stdout)
+			rootCmd.SetErr(stderr)
+
+			// when
+			err := rootCmd.Execute()
+			// then
+			Expect(err).To(HaveOccurred())
+			// and
+			Expect(stderr.String()).To(ContainSubstring("one of --redirect-dns or --redirect-all-dns-traffic should be specified"))
+		},
+		Entry("should generate defaults with username", testCase{
+			extraArgs: []string{
+				"--kuma-dp-user", "root",
+				"--redirect-dns",
+				"--redirect-all-dns-traffic",
+			},
+			goldenFile: "install-transparent-proxy.defaults.golden.txt",
 		}),
 	)
 })

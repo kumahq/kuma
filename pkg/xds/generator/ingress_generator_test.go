@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -23,25 +23,26 @@ var _ = Describe("IngressGenerator", func() {
 		dataplane       string
 		expected        string
 		outboundTargets core_xds.EndpointMap
-		trafficRoutes   *mesh_core.TrafficRouteResourceList
+		trafficRoutes   *core_mesh.TrafficRouteResourceList
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
 		func(given testCase) {
 			gen := generator.IngressGenerator{}
 
-			dataplane := &mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
+			zoneIngress := &mesh_proto.ZoneIngress{}
+			Expect(util_proto.FromYAML([]byte(given.dataplane), zoneIngress)).To(Succeed())
 
-			proxy := &core_xds.Proxy{
-				Id: core_xds.ProxyId{Name: "ingress", Mesh: "default"},
-				Dataplane: &mesh_core.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Version: "1",
-					},
-					Spec: dataplane,
+			zoneIngressRes := &core_mesh.ZoneIngressResource{
+				Meta: &test_model.ResourceMeta{
+					Version: "1",
 				},
-				APIVersion: envoy_common.APIV3,
+				Spec: zoneIngress,
+			}
+			proxy := &core_xds.Proxy{
+				Id:          *core_xds.BuildProxyId("default", "ingress"),
+				ZoneIngress: zoneIngressRes,
+				APIVersion:  envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					OutboundTargets:  given.outboundTargets,
 					TrafficRouteList: given.trafficRoutes,
@@ -69,20 +70,18 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress:
-                availableServices:
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v1
-                      region: eu
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v2
-                      region: us
-              inbound:
-                - port: 10001
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
 `,
 			expected: "01.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -111,8 +110,8 @@ var _ = Describe("IngressGenerator", func() {
 					},
 				},
 			},
-			trafficRoutes: &mesh_core.TrafficRouteResourceList{
-				Items: []*mesh_core.TrafficRouteResource{
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -122,10 +121,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},
@@ -136,14 +132,12 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress: {}
-              inbound:
-                - port: 10001
+              port: 10001
 `,
 			expected:        "02.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{},
-			trafficRoutes: &mesh_core.TrafficRouteResourceList{
-				Items: []*mesh_core.TrafficRouteResource{
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -153,10 +147,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},
@@ -167,20 +158,18 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress:
-                availableServices:
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v1
-                      region: eu
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v2
-                      region: us
-              inbound:
-                - port: 10001
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
 `,
 			expected: "03.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -209,8 +198,8 @@ var _ = Describe("IngressGenerator", func() {
 					},
 				},
 			},
-			trafficRoutes: &mesh_core.TrafficRouteResourceList{
-				Items: []*mesh_core.TrafficRouteResource{
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -220,10 +209,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},
@@ -238,14 +224,14 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: 10,
+										Weight: util_proto.UInt32(10),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"version":             "v2",
 										},
 									},
 									{
-										Weight: 90,
+										Weight: util_proto.UInt32(90),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"region":              "eu",
@@ -262,41 +248,39 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress:
-                availableServices:
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v1
-                      region: eu
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v2
-                      region: us
-                  - mesh: mesh2
-                    tags:
-                      kuma.io/service: backend
-                      cloud: eks
-                      arch: ARM
-                      os: ubuntu
-                      region: asia
-                      version: v3
-                  - mesh: mesh2
-                    tags:
-                      kuma.io/service: frontend
-                      cloud: gke
-                      arch: x86
-                      os: debian
-                      region: eu
-                      version: v1
-                  - mesh: mesh2
-                    tags:
-                      kuma.io/service: frontend
-                      cloud: aks
-                      version: v2
-              inbound:
-                - port: 10001
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
+              - mesh: mesh2
+                tags:
+                  kuma.io/service: backend
+                  cloud: eks
+                  arch: ARM
+                  os: ubuntu
+                  region: asia
+                  version: v3
+              - mesh: mesh2
+                tags:
+                  kuma.io/service: frontend
+                  cloud: gke
+                  arch: x86
+                  os: debian
+                  region: eu
+                  version: v1
+              - mesh: mesh2
+                tags:
+                  kuma.io/service: frontend
+                  cloud: aks
+                  version: v2
 `,
 			expected: "04.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -364,8 +348,8 @@ var _ = Describe("IngressGenerator", func() {
 					},
 				},
 			},
-			trafficRoutes: &mesh_core.TrafficRouteResourceList{
-				Items: []*mesh_core.TrafficRouteResource{
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -375,10 +359,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},
@@ -391,13 +372,10 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight: 100,
-									Destination: map[string]string{
-										mesh_proto.ServiceTag: "*",
-										"version":             "v2",
-									},
-								}},
+								Destination: map[string]string{
+									mesh_proto.ServiceTag: "*",
+									"version":             "v2",
+								},
 							},
 						},
 					},
@@ -412,14 +390,14 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: 10,
+										Weight: util_proto.UInt32(10),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"version":             "v2",
 										},
 									},
 									{
-										Weight: 90,
+										Weight: util_proto.UInt32(90),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"region":              "eu",
@@ -440,7 +418,7 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: 10,
+										Weight: util_proto.UInt32(10),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "frontend",
 											"region":              "eu",
@@ -448,7 +426,7 @@ var _ = Describe("IngressGenerator", func() {
 										},
 									},
 									{
-										Weight: 90,
+										Weight: util_proto.UInt32(90),
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "frontend",
 											"cloud":               "aks",
@@ -465,27 +443,25 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress:
-                availableServices:
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v1
-                      region: eu
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v2
-                      region: us
-              inbound:
-                - port: 10001
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
 `,
 			expected: "05.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
 				"backend": {},
 			},
-			trafficRoutes: &mesh_core.TrafficRouteResourceList{
-				Items: []*mesh_core.TrafficRouteResource{
+			trafficRoutes: &core_mesh.TrafficRouteResourceList{
+				Items: []*core_mesh.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -495,10 +471,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},
@@ -511,10 +484,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},

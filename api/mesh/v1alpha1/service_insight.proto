@@ -4,12 +4,28 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "google/protobuf/timestamp.proto";
 
 message ServiceInsight {
+
+  option (kuma.mesh.resource).name = "ServiceInsightResource";
+  option (kuma.mesh.resource).type = "ServiceInsight";
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).ws.name = "service-insight";
+  option (kuma.mesh.resource).ws.read_only = true;
+
   google.protobuf.Timestamp last_sync = 1;
 
   message Service {
+    option (kuma.mesh.resource).name = "ServiceOverviewResource";
+    option (kuma.mesh.resource).type = "ServiceOverview";
+    option (kuma.mesh.resource).package = "mesh";
+    option (kuma.mesh.resource).skip_registration = true;
+    option (kuma.mesh.resource).skip_validation = true;
+
     enum Status {
       none = 0; // should not be used
       offline = 1;
@@ -26,6 +42,8 @@ message ServiceInsight {
     }
 
     DataplaneStat dataplanes = 2;
+
+    map<string, uint32> issuedBackends = 3;
   }
 
   map<string, Service> services = 2;

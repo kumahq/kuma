@@ -8,11 +8,11 @@ import (
 )
 
 type DataplaneMetadataTracker interface {
-	Metadata(streamID core_xds.StreamID) *core_xds.DataplaneMetadata
+	Metadata(dpKey core_model.ResourceKey) *core_xds.DataplaneMetadata
 }
 
 type ConnectionInfoTracker interface {
-	ConnectionInfo(streamID core_xds.StreamID) xds_context.ConnectionInfo
+	ConnectionInfo(dpKey core_model.ResourceKey) *xds_context.ConnectionInfo
 }
 
 // SnapshotReconciler reconciles Envoy XDS configuration (Snapshot) by executing all generators (pkg/xds/generator)
@@ -23,5 +23,5 @@ type SnapshotReconciler interface {
 
 // DataplaneWatchdogFactory returns a Watchdog that creates a new XdsContext and Proxy and executes SnapshotReconciler if there is any change
 type DataplaneWatchdogFactory interface {
-	New(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog
+	New(dpKey core_model.ResourceKey) util_watchdog.Watchdog
 }
