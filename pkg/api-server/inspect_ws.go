@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net"
+	"sort"
 
 	"github.com/emicklei/go-restful"
 
@@ -118,19 +119,24 @@ func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies) []ap
 	attachmentMap := core_xds.GroupByAttachment(matchedPolicies)
 
 	entries := make([]api_server_types.InspectEntry, 0, len(attachmentMap))
-	for attachment, policyMap := range attachmentMap {
+	attachments := []core_xds.Attachment{}
+	for attachment := range attachmentMap {
+		attachments = append(attachments, attachment)
+	}
+
+	sort.Stable(core_xds.AttachmentList(attachments))
+
+	for _, attachment := range attachments {
+		policyMap := attachmentMap[attachment]
 		entry := api_server_types.InspectEntry{
-			Type: attachment.Type.String(),
-			Name: attachment.Name,
+			Type:            attachment.Type.String(),
+			Name:            attachment.Name,
+			MatchedPolicies: map[core_model.ResourceType][]core_model.ResourceSpec{},
 		}
 		for resType, policies := range policyMap {
-			newPoliciesList := api_server_types.MatchedPolicy{
-				ResourceType: resType,
-			}
 			for _, policy := range policies {
-				newPoliciesList.Items = append(newPoliciesList.Items, policy.GetSpec())
+				entry.MatchedPolicies[resType] = append(entry.MatchedPolicies[resType], policy.GetSpec())
 			}
-			entry.MatchedPolicies = append(entry.MatchedPolicies, newPoliciesList)
 		}
 		entries = append(entries, entry)
 	}

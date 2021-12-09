@@ -1,5 +1,5 @@
 {
-  "matchedPolicies": [[]],
+  "matchedPolicies": {"":  {"hello": "world"}},
   "name": "192.168.0.1:80",
   "type": "inbound"
 }

@@ -1,9 +1,0 @@
-{
-  "matchedPolicies": [
-    {
-      "items": []
-    }
-  ],
-  "name": "192.168.0.1:80",
-  "type": "inbound"
-}

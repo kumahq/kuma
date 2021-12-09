@@ -63,6 +63,12 @@ type Attachment struct {
 	Name string
 }
 
+type AttachmentList []Attachment
+
+func (a AttachmentList) Len() int           { return len(a) }
+func (a AttachmentList) Less(i, j int) bool { return fmt.Sprintf("%s", a[i]) < fmt.Sprintf("%s", a[j]) }
+func (a AttachmentList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
 type PolicyMap map[core_model.ResourceType][]core_model.Resource
 type AttachmentMap map[Attachment]PolicyMap
 

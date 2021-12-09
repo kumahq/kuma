@@ -12,14 +12,9 @@ import (
 )
 
 type InspectEntry struct {
-	Type            string          `json:"type"`
-	Name            string          `json:"name"`
-	MatchedPolicies []MatchedPolicy `json:"matchedPolicies"`
-}
-
-type MatchedPolicy struct {
-	ResourceType core_model.ResourceType   `json:"resourceType"`
-	Items        []core_model.ResourceSpec `json:"items"`
+	Type            string                                                `json:"type"`
+	Name            string                                                `json:"name"`
+	MatchedPolicies map[core_model.ResourceType][]core_model.ResourceSpec `json:"matchedPolicies"`
 }
 
 var _ json.Marshaler = &InspectEntry{}
@@ -33,15 +28,11 @@ func (r *InspectEntry) MarshalJSON() ([]byte, error) {
 	if r.Name != "" {
 		result["name"] = r.Name
 	}
-	plist := []interface{}{}
-	for _, matchedPolicy := range r.MatchedPolicies {
-		matchedPolicyMap := map[string]interface{}{}
-		if matchedPolicy.ResourceType != "" {
-			matchedPolicyMap["resourceType"] = matchedPolicy.ResourceType
-		}
 
+	matchedPolicyMap := map[string]interface{}{}
+	for resType, matchedPolicies := range r.MatchedPolicies {
 		list := []interface{}{}
-		for _, item := range matchedPolicy.Items {
+		for _, item := range matchedPolicies {
 			var buf bytes.Buffer
 			if err := (&jsonpb.Marshaler{}).Marshal(&buf, item); err != nil {
 				return nil, err
@@ -52,11 +43,10 @@ func (r *InspectEntry) MarshalJSON() ([]byte, error) {
 			}
 			list = append(list, out)
 		}
-		matchedPolicyMap["items"] = list
-		plist = append(plist, matchedPolicyMap)
+		matchedPolicyMap[string(resType)] = list
 	}
-	if len(plist) != 0 {
-		result["matchedPolicies"] = plist
+	if len(matchedPolicyMap) != 0 {
+		result["matchedPolicies"] = matchedPolicyMap
 	}
 	return json.Marshal(result)
 }
@@ -74,42 +64,38 @@ func (r *InspectEntry) UnmarshalJSON(data []byte) error {
 	}
 
 	if matchedPoliciesRaw, ok := m["matchedPolicies"]; ok {
-		matchedPolicies, ok := matchedPoliciesRaw.([]interface{})
+		r.MatchedPolicies = map[core_model.ResourceType][]core_model.ResourceSpec{}
+
+		matchedPolicies, ok := matchedPoliciesRaw.(map[string]interface{})
 		if !ok {
-			return errors.New("MatchedPolicies is not a list")
+			return errors.New("MatchedPolicies is not a map[string]interface{}")
 		}
-		for i, matchedPolicyRaw := range matchedPolicies {
-			unmarshalled := MatchedPolicy{}
+		for resTypeRaw, matchedPolicyRaw := range matchedPolicies {
+			var resType core_model.ResourceType
+			if resTypeRaw == "" {
+				return errors.New("MatchedPolicies key is empty")
+			} else {
+				resType = core_model.ResourceType(resTypeRaw)
+			}
 
-			matchedPolicy, ok := matchedPolicyRaw.(map[string]interface{})
+			items, ok := matchedPolicyRaw.([]interface{})
 			if !ok {
-				return errors.Errorf("MatchedPolicies[%d] is not a map[string]interface{}", i)
+				return errors.Errorf("MatchedPolicies[%s] is not a list", resType)
 			}
-			if matchedPolicy["resourceType"] != nil {
-				unmarshalled.ResourceType = core_model.ResourceType(matchedPolicy["resourceType"].(string))
-			}
-
-			if itemsRaw, ok := matchedPolicy["items"]; ok {
-				items, ok := itemsRaw.([]interface{})
-				if !ok {
-					return errors.Errorf("MatchedPolicies[%d].Items is not a list", i)
+			for _, item := range items {
+				res, err := registry.Global().NewObject(resType)
+				if err != nil {
+					return err
 				}
-				for _, item := range items {
-					res, err := registry.Global().NewObject(unmarshalled.ResourceType)
-					if err != nil {
-						return err
-					}
-					mItem, err := json.Marshal(item)
-					if err != nil {
-						return err
-					}
-					if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(mItem), res.GetSpec()); err != nil {
-						return err
-					}
-					unmarshalled.Items = append(unmarshalled.Items, res.GetSpec())
+				mItem, err := json.Marshal(item)
+				if err != nil {
+					return err
 				}
+				if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(mItem), res.GetSpec()); err != nil {
+					return err
+				}
+				r.MatchedPolicies[resType] = append(r.MatchedPolicies[resType], res.GetSpec())
 			}
-			r.MatchedPolicies = append(r.MatchedPolicies, unmarshalled)
 		}
 	}
 	return nil

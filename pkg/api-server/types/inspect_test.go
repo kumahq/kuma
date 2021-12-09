@@ -38,13 +38,8 @@ var _ = Describe("Marshal InspectEntry", func() {
 			input: &types.InspectEntry{
 				Type: "inbound",
 				Name: "192.168.0.1:80",
-				MatchedPolicies: []types.MatchedPolicy{
-					{
-						ResourceType: core_mesh.TimeoutType,
-						Items: []model.ResourceSpec{
-							samples.Timeout,
-						},
-					},
+				MatchedPolicies: map[model.ResourceType][]model.ResourceSpec{
+					core_mesh.TimeoutType: {samples.Timeout},
 				},
 			},
 			goldenFile: "full_example.json",
@@ -74,11 +69,11 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 			Expect(unmarshaledInspectEntry.Name).To(Equal(given.output.Name))
 			Expect(unmarshaledInspectEntry.Type).To(Equal(given.output.Type))
 			Expect(unmarshaledInspectEntry.MatchedPolicies).To(HaveLen(len(given.output.MatchedPolicies)))
-			for i, mp := range unmarshaledInspectEntry.MatchedPolicies {
-				Expect(mp.ResourceType).To(Equal(given.output.MatchedPolicies[i].ResourceType))
-				Expect(mp.Items).To(HaveLen(len(given.output.MatchedPolicies[i].Items)))
-				for j, item := range mp.Items {
-					Expect(item).To(MatchProto(given.output.MatchedPolicies[i].Items[j]))
+			for resType, mp := range unmarshaledInspectEntry.MatchedPolicies {
+				Expect(given.output.MatchedPolicies[resType]).ToNot(BeNil())
+				Expect(mp).To(HaveLen(len(given.output.MatchedPolicies[resType])))
+				for i, item := range mp {
+					Expect(item).To(MatchProto(given.output.MatchedPolicies[resType][i]))
 				}
 			}
 		},
@@ -91,39 +86,17 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 			output: &types.InspectEntry{
 				Type: "inbound",
 				Name: "192.168.0.1:80",
-				MatchedPolicies: []types.MatchedPolicy{
-					{
-						ResourceType: core_mesh.TimeoutType,
-						Items: []model.ResourceSpec{
-							samples.Timeout,
-						},
-					},
+				MatchedPolicies: map[model.ResourceType][]model.ResourceSpec{
+					core_mesh.TimeoutType: {samples.Timeout},
 				},
 			},
 		}),
-		Entry("empty items", testCase{
-			inputFile: "empty_items.json",
+		Entry("empty matched policies", testCase{
+			inputFile: "empty_matched_policies.json",
 			output: &types.InspectEntry{
-				Type: "inbound",
-				Name: "192.168.0.1:80",
-				MatchedPolicies: []types.MatchedPolicy{
-					{
-						ResourceType: core_mesh.TimeoutType,
-						Items:        []model.ResourceSpec{},
-					},
-				},
-			},
-		}),
-		Entry("empty items", testCase{
-			inputFile: "empty_resource_type.json",
-			output: &types.InspectEntry{
-				Type: "inbound",
-				Name: "192.168.0.1:80",
-				MatchedPolicies: []types.MatchedPolicy{
-					{
-						Items: []model.ResourceSpec{},
-					},
-				},
+				Type:            "inbound",
+				Name:            "192.168.0.1:80",
+				MatchedPolicies: map[model.ResourceType][]model.ResourceSpec{},
 			},
 		}),
 	)
@@ -140,17 +113,17 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(given.errMsg))
 		},
-		Entry("matchedPolicies is not list", testCase{
-			inputFile: "error.matched_policies_is_not_list.json",
-			errMsg:    "MatchedPolicies is not a list",
+		Entry("matchedPolicies has wrong type", testCase{
+			inputFile: "error.matched_policies_wrong_type.json",
+			errMsg:    "MatchedPolicies is not a map[string]interface{}",
 		}),
-		Entry("matchedPolicies's element is not a map", testCase{
-			inputFile: "error.matched_policies_item_is_not_map.json",
-			errMsg:    "MatchedPolicies[0] is not a map[string]interface{}",
+		Entry("matchedPolicies key is empty", testCase{
+			inputFile: "error.matched_policies_empty_key.json",
+			errMsg:    "MatchedPolicies key is empty",
 		}),
-		Entry("matchedPolicies[i].items is not list", testCase{
-			inputFile: "error.matched_policies_items_is_not_list.json",
-			errMsg:    "MatchedPolicies[0].Items is not a list",
+		Entry("matchedPolicies value is not a list", testCase{
+			inputFile: "error.matched_policies_value_not_list.json",
+			errMsg:    "MatchedPolicies[Timeout] is not a list",
 		}),
 	)
 })
