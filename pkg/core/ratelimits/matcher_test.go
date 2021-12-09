@@ -95,7 +95,7 @@ var _ = Describe("Match", func() {
 			for key := range inboundMatched {
 				Expect(len(inboundMatched[key])).To(Equal(len(given.expected.Inbound[key])))
 				for i, matched := range inboundMatched[key] {
-					Expect(matched).To(MatchProto(given.expected.Inbound[key][i]))
+					Expect(matched.Spec).To(MatchProto(given.expected.Inbound[key][i].Spec))
 				}
 			}
 			outboundMatched := allMatched.Outbound
