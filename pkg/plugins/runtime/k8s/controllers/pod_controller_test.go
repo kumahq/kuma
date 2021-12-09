@@ -405,8 +405,8 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "pod-with-kuma-sidecar-and-ip",
 			},
-			Spec: map[string]interface{}{
-				"networking": map[string]interface{}{},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{},
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -484,8 +484,8 @@ var _ = Describe("PodReconciler", func() {
 					Name:       "dp-1",
 				}},
 			},
-			Spec: map[string]interface{}{
-				"networking": map[string]interface{}{},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{},
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -501,8 +501,8 @@ var _ = Describe("PodReconciler", func() {
 					Name:       "dp-2",
 				}},
 			},
-			Spec: map[string]interface{}{
-				"networking": map[string]interface{}{},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{},
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -518,8 +518,8 @@ var _ = Describe("PodReconciler", func() {
 					Name:       "dp-3",
 				}},
 			},
-			Spec: map[string]interface{}{
-				"networking": map[string]interface{}{},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{},
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -532,11 +532,11 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "es-1",
 			},
-			Spec: map[string]interface{}{
-				"networking": map[string]interface{}{
-					"address": "httpbin.org:443",
+			Spec: &mesh_proto.ExternalService{
+				Networking: &mesh_proto.ExternalService_Networking{
+					Address: "httpbin.org:443",
 				},
-				"tags": map[string]interface{}{
+				Tags: map[string]string{
 					mesh_proto.ServiceTag: "httpbin",
 				},
 			},
@@ -562,10 +562,10 @@ var _ = Describe("PodReconciler", func() {
 					Name:       "pod-ingress",
 				}},
 			},
-			Spec: map[string]interface{}{
-				"networking": map[string]interface{}{
-					"ingress": map[string]interface{}{},
-				},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{},
+				//  XXX ingress not memeber of Dataplane protobuf
+				//		"ingress": map[string]interface{}{},
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
