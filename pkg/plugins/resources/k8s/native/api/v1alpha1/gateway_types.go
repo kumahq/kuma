@@ -12,8 +12,8 @@ import (
 type Gateway struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Mesh              string `json:"mesh,omitempty"`
 
-	Mesh string           `json:"mesh,omitempty"`
 	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
