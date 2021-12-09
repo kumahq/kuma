@@ -18,9 +18,10 @@ package v1alpha1
 
 import (
 	"github.com/golang/protobuf/proto"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	test_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // TrafficRouteSpec defines the desired state of SampleTrafficRoute

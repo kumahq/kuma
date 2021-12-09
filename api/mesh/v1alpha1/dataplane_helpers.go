@@ -10,8 +10,9 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/pkg/errors"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const (

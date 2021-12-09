@@ -6,10 +6,9 @@ package v1alpha1
 
 import (
 	"github.com/golang/protobuf/proto"
-
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )

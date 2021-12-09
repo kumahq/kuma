@@ -3,10 +3,10 @@ package v1alpha1
 import (
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/kumahq/kuma/api/generic"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
