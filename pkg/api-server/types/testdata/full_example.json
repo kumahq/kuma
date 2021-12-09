@@ -1,0 +1,41 @@
+{
+  "matchedPolicies": [
+    {
+      "items": [
+        {
+          "conf": {
+            "connectTimeout": "5s",
+            "grpc": {
+              "maxStreamDuration": "5s",
+              "streamIdleTimeout": "5s"
+            },
+            "http": {
+              "idleTimeout": "5s",
+              "requestTimeout": "5s"
+            },
+            "tcp": {
+              "idleTimeout": "5s"
+            }
+          },
+          "destinations": [
+            {
+              "match": {
+                "service": "*"
+              }
+            }
+          ],
+          "sources": [
+            {
+              "match": {
+                "service": "*"
+              }
+            }
+          ]
+        }
+      ],
+      "resourceType": "Timeout"
+    }
+  ],
+  "name": "192.168.0.1:80",
+  "type": "inbound"
+}

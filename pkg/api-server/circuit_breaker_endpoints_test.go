@@ -35,7 +35,7 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
 		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics, nil)
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes/default/circuit-breakers",

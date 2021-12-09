@@ -42,7 +42,7 @@ var _ = Describe("Auth test", func() {
 		cfg.HTTPS.TlsKeyFile = keyPath
 		cfg.Authn.Type = certs.PluginName
 		cfg.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
-		apiServer := createTestApiServer(resourceStore, cfg, true, metrics)
+		apiServer := createTestApiServer(resourceStore, cfg, true, metrics, nil)
 		httpsPort = cfg.HTTPS.Port
 		httpPort = cfg.HTTP.Port
 

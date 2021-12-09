@@ -30,7 +30,7 @@ var _ = Describe("GUI Server", func() {
 		resourceStore := memory.NewStore()
 		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
-		apiServer := createTestApiServer(resourceStore, cfg, enabelGUI, metrics)
+		apiServer := createTestApiServer(resourceStore, cfg, enabelGUI, metrics, nil)
 
 		stop = make(chan struct{})
 		go func() {

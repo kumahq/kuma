@@ -31,7 +31,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 		resourceStore = memory.NewStore()
 		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics, nil)
 		client := resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes",

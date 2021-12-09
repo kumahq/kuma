@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -48,6 +49,8 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	cfg.ApiServer = config
 	apiServer, err := api_server.NewApiServer(
 		manager.NewResourceManager(store),
+		api_server.NewSimpleMatchedPolicyGetter(&cfg,
+			manager.NewResourceManager(store), config_manager.NewConfigManager(store)),
 		wsManager,
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
 		&cfg,

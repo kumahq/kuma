@@ -21,7 +21,7 @@ var _ = Describe("Versions WS", func() {
 		resourceStore := memory.NewStore()
 		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
-		apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
+		apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics, nil)
 
 		stop := make(chan struct{})
 		go func() {
