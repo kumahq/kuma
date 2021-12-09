@@ -668,9 +668,134 @@ func HandleDNSUDP(
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
 	}
+	// Split UDP DNS traffic to separate conntrack zones
+	addConntrackZoneDNSUDP(ops, iptables, ext, cmd, proxyUID, proxyGID, dnsServersV4, false)
 }
 
 // kuma changes start
+
+// addConntrackZoneDNSUDP is a helper function to add iptables rules to split DNS traffic
+// in two separate conntrack zones to avoid issues with UDP conntrack race conditions.
+// Traffic that goes from istio to DNS servers and vice versa are zone 1 and traffic from
+// DNS client to istio and vice versa goes to zone 2
+func addConntrackZoneDNSUDP(
+	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
+	cmd, proxyUID, proxyGID string, dnsServersV4 []string, captureAllDNS bool) {
+	const paramIdxRaw = 4
+	var raw []string
+	opsStr := opsToString[ops]
+	table := constants.RAW
+	chainOUTPUT := constants.OUTPUT
+	chainPREROUTING := constants.PREROUTING
+
+	// TODO: add ip6 as well
+	for _, uid := range split(proxyUID) {
+		// Packets with dst port 53 from istio to zone 1. These are Istio calls to upstream resolvers
+		raw = []string{
+			"-t", table, opsStr, chainOUTPUT,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", constants.CT, "--zone", "1",
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chainOUTPUT, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+		// Packets with src port 15053 from istio to zone 2. These are Istio response packets to application clients
+		raw = []string{
+			"-t", table, opsStr, chainOUTPUT,
+			"-p", "udp", "--sport", "15053", "-m", "owner", "--uid-owner", uid, "-j", constants.CT, "--zone", "2",
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chainOUTPUT, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	}
+	for _, gid := range split(proxyGID) {
+		// Packets with dst port 53 from istio to zone 1. These are Istio calls to upstream resolvers
+		raw = []string{
+			"-t", table, opsStr, chainOUTPUT,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", constants.CT, "--zone", "1",
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chainOUTPUT, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+		// Packets with src port 15053 from istio to zone 2. These are Istio response packets to application clients
+		raw = []string{
+			"-t", table, opsStr, chainOUTPUT,
+			"-p", "udp", "--sport", "15053", "-m", "owner", "--gid-owner", gid, "-j", constants.CT, "--zone", "2",
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chainOUTPUT, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+
+	}
+
+	if captureAllDNS {
+		// Not specifying destination address is useful for the CNI case where pod DNS server address cannot be decided.
+
+		// Mark all UDP dns traffic with dst port 53 as zone 2. These are application client packets towards DNS resolvers.
+		raw = []string{
+			"-t", table, opsStr, chainOUTPUT,
+			"-p", "udp", "--dport", "53",
+			"-j", constants.CT, "--zone", "2",
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chainOUTPUT, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+		// Mark all UDP dns traffic with src port 53 as zone 1. These are response packets from the DNS resolvers.
+		raw = []string{
+			"-t", table, opsStr, chainPREROUTING,
+			"-p", "udp", "--sport", "53",
+			"-j", constants.CT, "--zone", "1",
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chainPREROUTING, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	} else {
+		// Go through all DNS servers in etc/resolv.conf and mark the packets based on these destination addresses.
+		for _, s := range dnsServersV4 {
+			// Mark all UDP dns traffic with dst port 53 as zone 2. These are application client packets towards DNS resolvers.
+			raw = []string{
+				"-t", table, opsStr, chainOUTPUT,
+				"-p", "udp", "--dport", "53", "-d", s + "/32",
+				"-j", constants.CT, "--zone", "2",
+			}
+			switch ops {
+			case AppendOps:
+				iptables.AppendRuleV4(chainOUTPUT, table, raw[paramIdxRaw:]...)
+			case DeleteOps:
+				ext.RunQuietlyAndIgnore(cmd, raw...)
+			}
+			// Mark all UDP dns traffic with src port 53 as zone 1. These are response packets from the DNS resolvers.
+			raw = []string{
+				"-t", table, opsStr, chainPREROUTING,
+				"-p", "udp", "--sport", "53", "-d", s + "/32",
+				"-j", constants.CT, "--zone", "1",
+			}
+			switch ops {
+			case AppendOps:
+				iptables.AppendRuleV4(chainPREROUTING, table, raw[paramIdxRaw:]...)
+			case DeleteOps:
+				ext.RunQuietlyAndIgnore(cmd, raw...)
+			}
+		}
+	}
+}
 
 // HandleDNSUDPv6 is a IPv6 helper function to tackle with DNS UDP specific operations.
 // This helps the creation logic of DNS UDP rules in sync with the deletion.
