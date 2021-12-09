@@ -25,8 +25,18 @@ var (
 	log = core.Log.WithName("mesh-insight-resyncer")
 )
 
-func ServiceInsightName(mesh string) string {
-	return fmt.Sprintf("all-services-%s", mesh)
+func ServiceInsightKey(mesh string) model.ResourceKey {
+	return model.ResourceKey{
+		Name: fmt.Sprintf("all-services-%s", mesh),
+		Mesh: mesh,
+	}
+}
+
+func MeshInsightKey(mesh string) model.ResourceKey {
+	return model.ResourceKey{
+		Name: mesh,
+		Mesh: model.NoMesh,
+	}
 }
 
 type Config struct {
@@ -49,7 +59,16 @@ type resyncer struct {
 	meshInsightMux     sync.Mutex
 	serviceInsightMux  sync.Mutex
 	rateLimiters       map[string]*rate.Limiter
-	registry           registry.TypeRegistry
+	// info provides an information about the last sync for both ServiceInsight and MeshInsight
+	// Previously this data was stored in the Resource itself, but since resyncer runs only on leader
+	// we can just save this in memory and save requests to the DB.
+	info     map[model.ResourceKey]syncInfo
+	registry registry.TypeRegistry
+}
+
+type syncInfo struct {
+	resourceHash string
+	lastSync     time.Time
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -68,6 +87,7 @@ func NewResyncer(config *Config) component.Component {
 		rm:                 config.ResourceManager,
 		rateLimiterFactory: config.RateLimiterFactory,
 		rateLimiters:       map[string]*rate.Limiter{},
+		info:               map[model.ResourceKey]syncInfo{},
 		registry:           config.Registry,
 	}
 
@@ -80,6 +100,7 @@ func NewResyncer(config *Config) component.Component {
 }
 
 func (r *resyncer) Start(stop <-chan struct{}) error {
+	r.info = map[model.ResourceKey]syncInfo{} // clear the map if component is restarted
 	go func(stop <-chan struct{}) {
 		ticker := r.tick(r.maxResyncTimeout - r.minResyncTimeout)
 		for {
@@ -249,8 +270,20 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 		}
 	}
 
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
-		insight.LastSync = proto.MustTimestampProto(core.Now())
+	hash, err := proto.Hash(insight)
+	if err != nil {
+		return err
+	}
+	key := ServiceInsightKey(mesh)
+	info := r.info[key]
+	if info.resourceHash == hash {
+		log.V(1).Info("no need to update ServiceInsight because the resource is the same")
+		info.lastSync = core.Now()
+		r.info[key] = info
+		return nil
+	}
+
+	err = manager.Upsert(r.rm, key, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
 		return resource.SetSpec(insight)
 	})
 	if err != nil {
@@ -265,6 +298,11 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 			return nil
 		}
 		return err
+	}
+	log.V(1).Info("ServiceInsights updated")
+	r.info[key] = syncInfo{
+		resourceHash: hash,
+		lastSync:     core.Now(),
 	}
 	return nil
 }
@@ -399,8 +437,20 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		}
 	}
 
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
-		insight.LastSync = proto.MustTimestampProto(core.Now())
+	hash, err := proto.Hash(insight)
+	if err != nil {
+		return err
+	}
+	key := MeshInsightKey(mesh)
+	info := r.info[key]
+	if info.resourceHash == hash {
+		log.V(1).Info("no need to update MeshInsight because the resource is the same")
+		info.lastSync = core.Now()
+		r.info[key] = info
+		return nil
+	}
+
+	err = manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
 		return resource.SetSpec(insight)
 	})
 	if err != nil {
@@ -415,6 +465,11 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			return nil
 		}
 		return err
+	}
+	log.V(1).Info("MeshInsight updated")
+	r.info[key] = syncInfo{
+		resourceHash: hash,
+		lastSync:     core.Now(),
 	}
 	return nil
 }
@@ -478,19 +533,14 @@ func getOrDefault(version string) string {
 
 func (r *resyncer) needResyncServiceInsight(mesh string) (bool, error) {
 	serviceInsight := core_mesh.NewServiceInsightResource()
-	if err := r.rm.Get(context.Background(), serviceInsight, store.GetByKey(ServiceInsightName(mesh), mesh)); err != nil {
+	if err := r.rm.Get(context.Background(), serviceInsight, store.GetBy(ServiceInsightKey(mesh))); err != nil {
 		if !store.IsResourceNotFound(err) {
 			return false, errors.Wrap(err, "failed to get ServiceInsight")
 		}
 		return true, nil
 	}
-	if err := serviceInsight.Spec.LastSync.CheckValid(); err != nil {
-		return false, errors.Wrapf(err, "lastSync has wrong value: %s", serviceInsight.Spec.LastSync)
-	}
-	if core.Now().Sub(serviceInsight.Spec.LastSync.AsTime()) < r.minResyncTimeout {
-		return false, nil
-	}
-	return true, nil
+	info, exist := r.info[ServiceInsightKey(mesh)]
+	return !exist || core.Now().Sub(info.lastSync) > r.minResyncTimeout, nil
 }
 
 func (r *resyncer) needResyncMeshInsight(mesh string) (bool, error) {
@@ -501,13 +551,8 @@ func (r *resyncer) needResyncMeshInsight(mesh string) (bool, error) {
 		}
 		return true, nil
 	}
-	if err := meshInsight.Spec.LastSync.CheckValid(); err != nil {
-		return false, errors.Wrapf(err, "lastSync has wrong value: %s", meshInsight.Spec.LastSync)
-	}
-	if core.Now().Sub(meshInsight.Spec.LastSync.AsTime()) < r.minResyncTimeout {
-		return false, nil
-	}
-	return true, nil
+	info, exist := r.info[MeshInsightKey(mesh)]
+	return !exist || core.Now().Sub(info.lastSync) > r.minResyncTimeout, nil
 }
 
 func (r *resyncer) NeedLeaderElection() bool {

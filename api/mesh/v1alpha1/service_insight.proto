@@ -17,7 +17,7 @@ message ServiceInsight {
   option (kuma.mesh.resource).ws.name = "service-insight";
   option (kuma.mesh.resource).ws.read_only = true;
 
-  google.protobuf.Timestamp last_sync = 1;
+  reserved 1; // formally last_sync
 
   message Service {
     option (kuma.mesh.resource).name = "ServiceOverviewResource";
