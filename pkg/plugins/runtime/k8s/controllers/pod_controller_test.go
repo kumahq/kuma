@@ -564,7 +564,7 @@ var _ = Describe("PodReconciler", func() {
 			},
 			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{},
-				//  XXX ingress not memeber of Dataplane protobuf
+				//  XXX ingress not member of Dataplane protobuf
 				//		"ingress": map[string]interface{}{},
 			},
 		})
