@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/generic"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 

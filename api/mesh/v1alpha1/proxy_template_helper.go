@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"github.com/golang/protobuf/proto"
+
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
