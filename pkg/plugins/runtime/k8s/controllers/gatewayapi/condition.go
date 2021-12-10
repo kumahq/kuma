@@ -1,10 +1,11 @@
 package gatewayapi
 
 import (
-	kube_apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 func conditionOn(
@@ -15,10 +16,10 @@ func conditionOn(
 	}
 }
 
-func getCondition(deployment *kube_apps.Deployment, typ kube_apps.DeploymentConditionType) *metav1.ConditionStatus {
-	for _, c := range deployment.Status.Conditions {
-		if c.Type == typ {
-			status := metav1.ConditionStatus(c.Status)
+func getReadyCondition(instance *mesh_k8s.GatewayInstance) *metav1.ConditionStatus {
+	for _, c := range instance.Status.Conditions {
+		if c.Type == mesh_k8s.GatewayInstanceReady {
+			status := c.Status
 			return &status
 		}
 	}
@@ -26,26 +27,25 @@ func getCondition(deployment *kube_apps.Deployment, typ kube_apps.DeploymentCond
 	return nil
 }
 
-func setConditions(gateway *gatewayapi.Gateway, deployment *kube_apps.Deployment) {
-	conditions := []metav1.Condition{
-		conditionOn(gateway, gatewayapi.GatewayConditionScheduled, metav1.ConditionTrue, gatewayapi.GatewayReasonScheduled),
-	}
+func setConditions(gateway *gatewayapi.Gateway, instance *mesh_k8s.GatewayInstance) {
+	readinessStatus := metav1.ConditionUnknown                      //nolint:ineffassign
+	readinessReason := gatewayapi.GatewayConditionReason("Unknown") //nolint:ineffassign
 
 	// TODO(michaelbeaumont) it'd be nice to get more up to date info from the
 	// kuma-dp instance to tell whether listeners are _really_ ready
 	if len(gateway.Status.Addresses) == 0 {
-		conditions = append(conditions,
-			conditionOn(gateway, gatewayapi.GatewayConditionReady, metav1.ConditionFalse, gatewayapi.GatewayReasonAddressNotAssigned),
-		)
-	} else if condition := getCondition(deployment, kube_apps.DeploymentAvailable); condition == nil || *condition != metav1.ConditionTrue {
-		conditions = append(conditions,
-			conditionOn(gateway, gatewayapi.GatewayConditionReady, metav1.ConditionFalse, gatewayapi.GatewayReasonListenersNotReady),
-		)
+		readinessStatus = metav1.ConditionFalse
+		readinessReason = gatewayapi.GatewayReasonAddressNotAssigned
+	} else if ready := getReadyCondition(instance); ready != nil && *ready == metav1.ConditionTrue {
+		readinessStatus = metav1.ConditionTrue
+		readinessReason = gatewayapi.GatewayReasonReady
 	} else {
-		conditions = append(conditions,
-			conditionOn(gateway, gatewayapi.GatewayConditionReady, metav1.ConditionTrue, gatewayapi.GatewayReasonReady),
-		)
+		readinessStatus = metav1.ConditionFalse
+		readinessReason = gatewayapi.GatewayReasonListenersNotReady
 	}
 
-	gateway.Status.Conditions = conditions
+	gateway.Status.Conditions = []metav1.Condition{
+		conditionOn(gateway, gatewayapi.GatewayConditionScheduled, metav1.ConditionTrue, gatewayapi.GatewayReasonScheduled),
+		conditionOn(gateway, gatewayapi.GatewayConditionReady, readinessStatus, readinessReason),
+	}
 }
