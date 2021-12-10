@@ -79,6 +79,14 @@ type GatewayInstanceStatus struct {
 	Conditions []kube_meta.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
+const (
+	GatewayInstanceReady string = "Ready"
+
+	GatewayInstanceDeploymentNotAvailable = "DeploymentNotAvailable"
+
+	GatewayInstanceAddressNotReady = "LoadBalancerAddressNotReady"
+)
+
 // GatewayInstanceList contains a list of GatewayInstances.
 //
 // +kubebuilder:object:root=true
