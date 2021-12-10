@@ -50,12 +50,11 @@ func (t *ConfigResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		// Spec is assumed to not be nil throughout the code. Do
-		// not overwrite initialized empty protobuf.
 		if protoType == nil {
-			return nil
+			t.Spec = &system_proto.Config{}
+		} else {
+			t.Spec = protoType
 		}
-		t.Spec = protoType
 		return nil
 	}
 }
@@ -155,12 +154,11 @@ func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		// Spec is assumed to not be nil throughout the code. Do
-		// not overwrite initialized empty protobuf.
 		if protoType == nil {
-			return nil
+			t.Spec = &system_proto.Secret{}
+		} else {
+			t.Spec = protoType
 		}
-		t.Spec = protoType
 		return nil
 	}
 }
@@ -260,12 +258,11 @@ func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		// Spec is assumed to not be nil throughout the code. Do
-		// not overwrite initialized empty protobuf.
 		if protoType == nil {
-			return nil
+			t.Spec = &system_proto.Zone{}
+		} else {
+			t.Spec = protoType
 		}
-		t.Spec = protoType
 		return nil
 	}
 }
@@ -364,12 +361,11 @@ func (t *ZoneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		// Spec is assumed to not be nil throughout the code. Do
-		// not overwrite initialized empty protobuf.
 		if protoType == nil {
-			return nil
+			t.Spec = &system_proto.ZoneInsight{}
+		} else {
+			t.Spec = protoType
 		}
-		t.Spec = protoType
 		return nil
 	}
 }
@@ -468,12 +464,11 @@ func (t *ZoneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		// Spec is assumed to not be nil throughout the code. Do
-		// not overwrite initialized empty protobuf.
 		if protoType == nil {
-			return nil
+			t.Spec = &system_proto.ZoneOverview{}
+		} else {
+			t.Spec = protoType
 		}
-		t.Spec = protoType
 		return nil
 	}
 }
