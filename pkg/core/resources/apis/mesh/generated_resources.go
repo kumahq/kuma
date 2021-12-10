@@ -54,6 +54,11 @@ func (t *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -150,6 +155,11 @@ func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -250,6 +260,11 @@ func (t *DataplaneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -350,6 +365,11 @@ func (t *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -441,6 +461,11 @@ func (t *ExternalServiceResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -545,6 +570,11 @@ func (t *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -645,6 +675,11 @@ func (t *GatewayResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -741,6 +776,11 @@ func (t *GatewayRouteResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -841,6 +881,11 @@ func (t *HealthCheckResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -937,6 +982,11 @@ func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -1037,6 +1087,11 @@ func (t *MeshInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -1136,6 +1191,11 @@ func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -1240,6 +1300,11 @@ func (t *RateLimitResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -1344,6 +1409,11 @@ func (t *RetryResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -1444,6 +1514,11 @@ func (t *ServiceInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -1544,6 +1619,11 @@ func (t *ServiceOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -1643,6 +1723,11 @@ func (t *TimeoutResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -1747,6 +1832,11 @@ func (t *TrafficLogResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -1851,6 +1941,11 @@ func (t *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -1955,6 +2050,11 @@ func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -2055,6 +2155,11 @@ func (t *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -2155,6 +2260,11 @@ func (t *VirtualOutboundResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -2251,6 +2361,11 @@ func (t *ZoneIngressResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -2351,6 +2466,11 @@ func (t *ZoneIngressInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
@@ -2451,6 +2571,11 @@ func (t *ZoneIngressOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}

@@ -206,6 +206,11 @@ func (t *{{.ResourceName}}) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
+		// Spec is assumed to not be nil throughout the code. Do
+		// not overwrite initialized empty protobuf.
+		if protoType == nil {
+			return nil
+		}
 		t.Spec = protoType
 		return nil
 	}
