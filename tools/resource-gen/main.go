@@ -42,7 +42,7 @@ import (
 )
 
 {{range .Resources}}
-{{- if not .SkipNativeGenerate }}
+{{- if not .SkipKubernetesWrappers }}
 
 // +kubebuilder:object:root=true
 type {{.ResourceType}} struct {
@@ -309,36 +309,36 @@ func SelectorsForMessage(m protoreflect.MessageDescriptor) []string {
 }
 
 type ResourceInfo struct {
-	ResourceName       string
-	ResourceType       string
-	ProtoType          string
-	Selectors          []string
-	SkipRegistration   bool
-	SkipValidation     bool
-	SkipNativeGenerate bool
-	ScopeNamespace     bool
-	Global             bool
-	KumactlSingular    string
-	KumactlPlural      string
-	WsReadOnly         bool
-	WsAdminOnly        bool
-	WsPath             string
-	KdsDirection       string
+	ResourceName           string
+	ResourceType           string
+	ProtoType              string
+	Selectors              []string
+	SkipRegistration       bool
+	SkipValidation         bool
+	SkipKubernetesWrappers bool
+	ScopeNamespace         bool
+	Global                 bool
+	KumactlSingular        string
+	KumactlPlural          string
+	WsReadOnly             bool
+	WsAdminOnly            bool
+	WsPath                 string
+	KdsDirection           string
 }
 
 func ToResourceInfo(m protoreflect.MessageType) ResourceInfo {
 	r := KumaResourceForMessage(m)
 
 	out := ResourceInfo{
-		ResourceType:       r.Type,
-		ResourceName:       r.Name,
-		ProtoType:          string(m.Descriptor().Name()),
-		Selectors:          SelectorsForMessage(m.Descriptor()),
-		SkipRegistration:   r.SkipRegistration,
-		SkipNativeGenerate: r.SkipNativeGenerate,
-		SkipValidation:     r.SkipValidation,
-		Global:             r.Global,
-		ScopeNamespace:     r.ScopeNamespace,
+		ResourceType:           r.Type,
+		ResourceName:           r.Name,
+		ProtoType:              string(m.Descriptor().Name()),
+		Selectors:              SelectorsForMessage(m.Descriptor()),
+		SkipRegistration:       r.SkipRegistration,
+		SkipKubernetesWrappers: r.SkipKubernetesWrappers,
+		SkipValidation:         r.SkipValidation,
+		Global:                 r.Global,
+		ScopeNamespace:         r.ScopeNamespace,
 	}
 	if r.Ws != nil {
 		pluralResourceName := r.Ws.Plural

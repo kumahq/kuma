@@ -32,7 +32,7 @@ message KumaResourceOptions {
   bool scope_namespace = 11;
 
   // Whether to skip generation of native API helper functions.
-  bool skip_native_generate = 12;
+  bool skip_kubernetes_wrappers = 12;
 }
 
 message KumaWsOptions {
