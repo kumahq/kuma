@@ -189,7 +189,7 @@ Routes:
       virtualHosts:
       - domains:
         - echo.example.com
-        name: edge-gateway:HTTP:8080:echo.example.com
+        name: echo.example.com
         routes:
         - match:
             path: /api

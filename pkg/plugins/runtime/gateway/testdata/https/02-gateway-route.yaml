@@ -106,7 +106,7 @@ Routes:
       virtualHosts:
       - domains:
         - extra.example.com
-        name: edge-gateway:HTTP:8080:extra.example.com
+        name: extra.example.com
         routes:
         - match:
             path: /
@@ -126,7 +126,7 @@ Routes:
               totalWeight: 1
       - domains:
         - '*'
-        name: edge-gateway:HTTP:8080:*
+        name: '*'
         routes:
         - match:
             path: /
