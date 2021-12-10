@@ -17,10 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/golang/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	test_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 )
 
@@ -43,42 +41,6 @@ type SampleTrafficRouteList struct {
 	Items           []SampleTrafficRoute `json:"items"`
 }
 
-func (cb *SampleTrafficRoute) GetObjectMeta() *metav1.ObjectMeta {
-	return &cb.ObjectMeta
-}
-
-func (cb *SampleTrafficRoute) SetObjectMeta(m *metav1.ObjectMeta) {
-	cb.ObjectMeta = *m
-}
-
-func (cb *SampleTrafficRoute) GetMesh() string {
-	return cb.Mesh
-}
-
-func (cb *SampleTrafficRoute) SetMesh(mesh string) {
-	cb.Mesh = mesh
-}
-
-func (cb *SampleTrafficRoute) GetSpec() proto.Message {
-	return cb.Spec
-}
-
-func (cb *SampleTrafficRoute) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(TrafficRouteSpec)
-}
-
-func (cb *SampleTrafficRoute) Scope() model.Scope {
-	return model.ScopeCluster
-}
-
 func init() {
 	SchemeBuilder.Register(&SampleTrafficRoute{}, &SampleTrafficRouteList{})
-}
-
-func (l *SampleTrafficRouteList) GetItems() []model.KubernetesObject {
-	result := make([]model.KubernetesObject, len(l.Items))
-	for i := range l.Items {
-		result[i] = &l.Items[i]
-	}
-	return result
 }

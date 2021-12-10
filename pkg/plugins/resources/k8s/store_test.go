@@ -410,12 +410,14 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
+			tr1.Spec = &sample_proto.TrafficRoute{}
 			tr1.Spec.Path = "/example"
 			err = s.Update(context.Background(), tr1)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
+			tr2.Spec = &sample_proto.TrafficRoute{}
 			tr2.Spec.Path = "/another"
 			err = s.Update(context.Background(), tr2)
 			// then
