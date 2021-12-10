@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 	"google.golang.org/protobuf/proto"
 
@@ -182,7 +181,7 @@ func (r *resyncer) createOrUpdateServiceInsights() error {
 		return err
 	}
 	for _, mesh := range meshes.Items {
-		if need, err := r.needResyncServiceInsight(mesh.GetMeta().GetName()); err != nil || !need {
+		if need := r.needResyncServiceInsight(mesh.GetMeta().GetName()); !need {
 			continue
 		}
 		err := r.createOrUpdateServiceInsight(mesh.GetMeta().GetName())
@@ -309,7 +308,7 @@ func (r *resyncer) createOrUpdateMeshInsights() error {
 		return err
 	}
 	for _, mesh := range meshes.Items {
-		if need, err := r.needResyncMeshInsight(mesh.GetMeta().GetName()); err != nil || !need {
+		if need := r.needResyncMeshInsight(mesh.GetMeta().GetName()); !need {
 			continue
 		}
 		err := r.createOrUpdateMeshInsight(mesh.GetMeta().GetName())
@@ -523,28 +522,14 @@ func getOrDefault(version string) string {
 	return version
 }
 
-func (r *resyncer) needResyncServiceInsight(mesh string) (bool, error) {
-	serviceInsight := core_mesh.NewServiceInsightResource()
-	if err := r.rm.Get(context.Background(), serviceInsight, store.GetBy(ServiceInsightKey(mesh))); err != nil {
-		if !store.IsResourceNotFound(err) {
-			return false, errors.Wrap(err, "failed to get ServiceInsight")
-		}
-		return true, nil
-	}
+func (r *resyncer) needResyncServiceInsight(mesh string) bool {
 	info, exist := r.info[ServiceInsightKey(mesh)]
-	return !exist || core.Now().Sub(info.lastSync) > r.minResyncTimeout, nil
+	return !exist || core.Now().Sub(info.lastSync) > r.minResyncTimeout
 }
 
-func (r *resyncer) needResyncMeshInsight(mesh string) (bool, error) {
-	meshInsight := core_mesh.NewMeshInsightResource()
-	if err := r.rm.Get(context.Background(), meshInsight, store.GetByKey(mesh, model.NoMesh)); err != nil {
-		if !store.IsResourceNotFound(err) {
-			return false, errors.Wrap(err, "failed to get MeshInsight")
-		}
-		return true, nil
-	}
+func (r *resyncer) needResyncMeshInsight(mesh string) bool {
 	info, exist := r.info[MeshInsightKey(mesh)]
-	return !exist || core.Now().Sub(info.lastSync) > r.minResyncTimeout, nil
+	return !exist || core.Now().Sub(info.lastSync) > r.minResyncTimeout
 }
 
 func (r *resyncer) NeedLeaderElection() bool {
