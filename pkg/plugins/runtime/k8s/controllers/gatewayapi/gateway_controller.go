@@ -88,10 +88,6 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 
 	r.updateStatus(gateway, svc, deployment)
 
-	if err := r.Get(ctx, req.NamespacedName, gateway); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Gateway")
-	}
-
 	if err := r.Client.Status().Update(ctx, gateway); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update Gateway status")
 	}
