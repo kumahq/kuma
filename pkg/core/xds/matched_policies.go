@@ -3,7 +3,6 @@ package xds
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -72,70 +71,94 @@ func (a AttachmentList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 type PolicyMap map[core_model.ResourceType][]core_model.Resource
 type AttachmentMap map[Attachment]PolicyMap
 
-func (m AttachmentMap) store(key interface{}, resources []core_model.Resource) {
-	if len(resources) == 0 {
-		return
-	}
-	resType := resources[0].Descriptor().Name
-
-	attachment := Attachment{}
-	if key == nil {
-		attachment.Type = Dataplane
-	} else {
-		switch key.(type) {
-		case mesh_proto.InboundInterface:
-			attachment.Type = Inbound
-		case mesh_proto.OutboundInterface:
-			attachment.Type = Outbound
-		case string:
-			attachment.Type = Service
-		}
-		attachment.Name = fmt.Sprintf("%s", key)
-	}
-
-	if _, ok := m[attachment]; !ok {
-		m[attachment] = PolicyMap{}
-	}
-	m[attachment][resType] = resources
-}
-
 func GroupByAttachment(matchedPolicies *MatchedPolicies) AttachmentMap {
 	result := AttachmentMap{}
 
-	processField := func(f reflect.Value) {
-		if f.IsNil() {
+	addPolicies := func(key Attachment, policies []core_model.Resource) {
+		if len(policies) == 0 {
 			return
 		}
-
-		switch f.Kind() {
-		case reflect.Map:
-			for _, mapKey := range f.MapKeys() {
-				mapValue := f.MapIndex(mapKey)
-
-				key := mapKey.Interface()
-				resources := []core_model.Resource{}
-				if mapValue.Kind() == reflect.Slice {
-					for i := 0; i < mapValue.Len(); i++ {
-						resources = append(resources, mapValue.Index(i).Interface().(core_model.Resource))
-					}
-				} else {
-					resources = []core_model.Resource{mapValue.Interface().(core_model.Resource)}
-				}
-
-				result.store(key, resources)
-			}
-		case reflect.Ptr:
-			var key interface{}
-			resources := []core_model.Resource{f.Interface().(core_model.Resource)}
-
-			result.store(key, resources)
+		if _, ok := result[key]; !ok {
+			result[key] = PolicyMap{}
+		}
+		for _, policy := range policies {
+			resType := policy.Descriptor().Name
+			result[key][resType] = append(result[key][resType], policy)
 		}
 	}
 
-	matchedPoliciesValue := reflect.ValueOf(matchedPolicies).Elem()
-	for i := 0; i < matchedPoliciesValue.NumField(); i++ {
-		processField(matchedPoliciesValue.Field(i))
+	for inbound, policies := range getInboundMatchedPolicies(matchedPolicies) {
+		addPolicies(Attachment{Type: Inbound, Name: inbound.String()}, policies)
+	}
+
+	for outbound, policies := range getOutboundMatchedPolicies(matchedPolicies) {
+		addPolicies(Attachment{Type: Outbound, Name: outbound.String()}, policies)
+	}
+
+	for service, policies := range getServiceMatchedPolicies(matchedPolicies) {
+		addPolicies(Attachment{Type: Service, Name: service}, policies)
+	}
+
+	addPolicies(Attachment{Type: Dataplane, Name: ""}, getDataplaneMatchedPolicies(matchedPolicies))
+
+	return result
+}
+
+func getInboundMatchedPolicies(matchedPolicies *MatchedPolicies) map[mesh_proto.InboundInterface][]core_model.Resource {
+	result := map[mesh_proto.InboundInterface][]core_model.Resource{}
+
+	for inbound, tp := range matchedPolicies.TrafficPermissions {
+		result[inbound] = append(result[inbound], tp)
+	}
+	for inbound, fiList := range matchedPolicies.FaultInjections {
+		for _, fi := range fiList {
+			result[inbound] = append(result[inbound], fi)
+		}
+	}
+	for inbound, rlList := range matchedPolicies.RateLimitsInbound {
+		for _, rl := range rlList {
+			result[inbound] = append(result[inbound], rl)
+		}
 	}
 
 	return result
+}
+
+func getOutboundMatchedPolicies(matchedPolicies *MatchedPolicies) map[mesh_proto.OutboundInterface][]core_model.Resource {
+	result := map[mesh_proto.OutboundInterface][]core_model.Resource{}
+
+	for outbound, timeout := range matchedPolicies.Timeouts {
+		result[outbound] = append(result[outbound], timeout)
+	}
+	for outbound, rl := range matchedPolicies.RateLimitsOutbound {
+		result[outbound] = append(result[outbound], rl)
+	}
+
+	return result
+}
+
+func getServiceMatchedPolicies(matchedPolicies *MatchedPolicies) map[ServiceName][]core_model.Resource {
+	result := map[ServiceName][]core_model.Resource{}
+
+	for service, tl := range matchedPolicies.TrafficLogs {
+		result[service] = append(result[service], tl)
+	}
+	for service, hc := range matchedPolicies.HealthChecks {
+		result[service] = append(result[service], hc)
+	}
+	for service, cb := range matchedPolicies.CircuitBreakers {
+		result[service] = append(result[service], cb)
+	}
+	for service, retry := range matchedPolicies.Retries {
+		result[service] = append(result[service], retry)
+	}
+
+	return result
+}
+
+func getDataplaneMatchedPolicies(matchedPolicies *MatchedPolicies) []core_model.Resource {
+	if matchedPolicies.TrafficTrace != nil {
+		return []core_model.Resource{matchedPolicies.TrafficTrace}
+	}
+	return nil
 }
