@@ -61,7 +61,9 @@ type resyncer struct {
 	// info provides an information about the last sync for both ServiceInsight and MeshInsight
 	// Previously this data was stored in the Resource itself, but since resyncer runs only on leader
 	// we can just save this in memory and save requests to the DB.
-	info     map[model.ResourceKey]syncInfo
+	infos    map[model.ResourceKey]syncInfo
+	infosMux sync.RWMutex
+
 	registry registry.TypeRegistry
 }
 
@@ -86,7 +88,7 @@ func NewResyncer(config *Config) component.Component {
 		rm:                 config.ResourceManager,
 		rateLimiterFactory: config.RateLimiterFactory,
 		rateLimiters:       map[string]*rate.Limiter{},
-		info:               map[model.ResourceKey]syncInfo{},
+		infos:              map[model.ResourceKey]syncInfo{},
 		registry:           config.Registry,
 	}
 
@@ -99,7 +101,7 @@ func NewResyncer(config *Config) component.Component {
 }
 
 func (r *resyncer) Start(stop <-chan struct{}) error {
-	r.info = map[model.ResourceKey]syncInfo{} // clear the map if component is restarted
+	r.infos = map[model.ResourceKey]syncInfo{} // clear the map if component is restarted
 	go func(stop <-chan struct{}) {
 		ticker := r.tick(r.maxResyncTimeout - r.minResyncTimeout)
 		for {
@@ -270,11 +272,11 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	}
 
 	key := ServiceInsightKey(mesh)
-	info := r.info[key]
+	info, _ := r.getInfo(key)
 	if proto.Equal(info.resource, insight) {
 		log.V(1).Info("no need to update ServiceInsight because the resource is the same")
 		info.lastSync = core.Now()
-		r.info[key] = info
+		r.setInfo(key, info)
 		return nil
 	}
 
@@ -295,10 +297,10 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 		return err
 	}
 	log.V(1).Info("ServiceInsights updated")
-	r.info[key] = syncInfo{
+	r.setInfo(key, syncInfo{
 		resource: insight,
 		lastSync: core.Now(),
-	}
+	})
 	return nil
 }
 
@@ -433,11 +435,11 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	}
 
 	key := MeshInsightKey(mesh)
-	info := r.info[key]
+	info, _ := r.getInfo(key)
 	if proto.Equal(info.resource, insight) {
 		log.V(1).Info("no need to update MeshInsight because the resource is the same")
 		info.lastSync = core.Now()
-		r.info[key] = info
+		r.setInfo(key, info)
 		return nil
 	}
 
@@ -458,10 +460,10 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		return err
 	}
 	log.V(1).Info("MeshInsight updated")
-	r.info[key] = syncInfo{
+	r.setInfo(key, syncInfo{
 		resource: insight,
 		lastSync: core.Now(),
-	}
+	})
 	return nil
 }
 
@@ -523,13 +525,26 @@ func getOrDefault(version string) string {
 }
 
 func (r *resyncer) needResyncServiceInsight(mesh string) bool {
-	info, exist := r.info[ServiceInsightKey(mesh)]
+	info, exist := r.getInfo(ServiceInsightKey(mesh))
 	return !exist || core.Now().Sub(info.lastSync) > r.minResyncTimeout
 }
 
 func (r *resyncer) needResyncMeshInsight(mesh string) bool {
-	info, exist := r.info[MeshInsightKey(mesh)]
+	info, exist := r.getInfo(MeshInsightKey(mesh))
 	return !exist || core.Now().Sub(info.lastSync) > r.minResyncTimeout
+}
+
+func (r *resyncer) getInfo(key model.ResourceKey) (syncInfo, bool) {
+	r.infosMux.RLock()
+	defer r.infosMux.RUnlock()
+	info, ok := r.infos[key]
+	return info, ok
+}
+
+func (r *resyncer) setInfo(key model.ResourceKey, info syncInfo) {
+	r.infosMux.Lock()
+	r.infos[key] = info
+	r.infosMux.Unlock()
 }
 
 func (r *resyncer) NeedLeaderElection() bool {
