@@ -14,6 +14,18 @@ import (
 // DataplanePolicy with an empty selector (one that has no tags) is considered a match with a rank (score) of 0.
 // In case if there are multiple DataplanePolicies with the same rank (score), the policy created last is chosen.
 func SelectDataplanePolicy(dataplane *mesh.DataplaneResource, policies []DataplanePolicy) DataplanePolicy {
+	return SelectDataplanePolicyWithMatcher(dataplane.Spec.Matches, policies)
+}
+
+// A TagMatcher test whether a tag selector matches some predicate.
+type TagMatcher func(selector mesh_proto.TagSelector) bool
+
+// SelectDataplanePolicyWithMatcher tries to match a DataplanePolicy with the given matches function.
+// Every matching DataplanePolicy gets a rank (score) defined as a maximum number of tags in a matching selector.
+// DataplanePolicy with an empty list of selectors is considered a match with a rank (score) of 0.
+// DataplanePolicy with an empty selector (one that has no tags) is considered a match with a rank (score) of 0.
+// In case if there are multiple DataplanePolicies with the same rank (score), the policy created last is chosen.
+func SelectDataplanePolicyWithMatcher(matches TagMatcher, policies []DataplanePolicy) DataplanePolicy {
 	sort.Stable(DataplanePolicyByName(policies)) // sort to avoid flakiness
 
 	var bestPolicy DataplanePolicy
@@ -37,7 +49,7 @@ func SelectDataplanePolicy(dataplane *mesh.DataplaneResource, policies []Datapla
 				continue
 			}
 			tagSelector := mesh_proto.TagSelector(selector.Match)
-			if dataplane.Spec.Matches(tagSelector) {
+			if matches(tagSelector) {
 				rank := tagSelector.Rank()
 				if rank.CompareTo(bestRank) > 0 || sameRankCreatedLater(policy, rank) {
 					bestRank = rank
