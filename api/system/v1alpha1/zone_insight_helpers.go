@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
@@ -28,7 +27,7 @@ func (m *ZoneInsight) MarshalJSON() ([]byte, error) {
 	return util_proto.ToJSON(m)
 }
 func (t *ZoneInsight) DeepCopyInto(out *ZoneInsight) {
-	proto.Merge(out, t)
+	util_proto.Merge(out, t)
 }
 func (t *ZoneInsight) DeepCopy() *ZoneInsight {
 	if t == nil {

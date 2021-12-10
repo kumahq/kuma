@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/golang/protobuf/proto"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -14,7 +12,7 @@ func (m *Zone) MarshalJSON() ([]byte, error) {
 	return util_proto.ToJSON(m)
 }
 func (t *Zone) DeepCopyInto(out *Zone) {
-	proto.Merge(out, t)
+	util_proto.Merge(out, t)
 }
 func (t *Zone) DeepCopy() *Zone {
 	if t == nil {
