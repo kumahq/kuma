@@ -22,8 +22,6 @@ import (
 	test_insights "github.com/kumahq/kuma/pkg/insights/test"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
-	. "github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Insight Persistence", func() {
@@ -93,7 +91,6 @@ var _ = Describe("Insight Persistence", func() {
 			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 		}, "10s", "100ms").Should(BeNil())
 		Expect(insight.Spec.Policies[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
-		Expect(insight.Spec.LastSync).To(MatchProto(proto.MustTimestampProto(now)))
 	})
 
 	It("should count dataplanes by version", func() {
@@ -336,7 +333,6 @@ var _ = Describe("Insight Persistence", func() {
 		}, "10s", "100ms").Should(BeNil())
 		Expect(insight.Spec.Policies[string(core_mesh.DataplaneType)]).To(BeNil())
 		Expect(insight.Spec.Dataplanes.Total).To(Equal(uint32(1)))
-		Expect(insight.Spec.LastSync).To(MatchProto(proto.MustTimestampProto(now)))
 	})
 
 	It("should return correct statuses in service insights", func() {
@@ -955,7 +951,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		serviceInsight := core_mesh.NewServiceInsightResource()
 		Eventually(func() error {
-			return rm.Get(context.Background(), serviceInsight, store.GetByKey(insights.ServiceInsightName("mesh-1"), "mesh-1"))
+			return rm.Get(context.Background(), serviceInsight, store.GetBy(insights.ServiceInsightKey("mesh-1")))
 		}, "10s", "100ms").Should(BeNil())
 
 		Expect(serviceInsight.Spec.Services).To(HaveKey("gateway"))

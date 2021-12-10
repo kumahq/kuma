@@ -106,7 +106,7 @@ Routes:
       virtualHosts:
       - domains:
         - foo.example.com
-        name: edge-gateway:HTTP:8080:foo.example.com
+        name: foo.example.com
         routes:
         - match:
             path: /
@@ -126,7 +126,7 @@ Routes:
               totalWeight: 1
       - domains:
         - bar.example.com
-        name: edge-gateway:HTTP:8080:bar.example.com
+        name: bar.example.com
         routes:
         - match:
             path: /
@@ -146,7 +146,7 @@ Routes:
               totalWeight: 1
       - domains:
         - '*.example.com'
-        name: edge-gateway:HTTP:8080:*.example.com
+        name: '*.example.com'
         routes:
         - match:
             path: /
@@ -166,7 +166,7 @@ Routes:
               totalWeight: 1
       - domains:
         - '*'
-        name: edge-gateway:HTTP:8080:*
+        name: '*'
 Runtimes:
   Resources: {}
 Secrets:

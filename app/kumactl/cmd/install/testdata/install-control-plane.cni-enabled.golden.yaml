@@ -724,6 +724,41 @@ rules:
       - list
       - watch
   - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses
+      - gateways
+      - referencepolicies
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
       - coordination.k8s.io
     resources:
       - leases

@@ -331,7 +331,7 @@ Routes:
       virtualHosts:
       - domains:
         - two.example.com
-        name: gateway-multihost:HTTPS:9443:two.example.com
+        name: two.example.com
         requireTls: ALL
         responseHeadersToAdd:
         - append: false
@@ -357,7 +357,7 @@ Routes:
               totalWeight: 1
       - domains:
         - three.example.com
-        name: gateway-multihost:HTTPS:9443:three.example.com
+        name: three.example.com
         requireTls: ALL
         responseHeadersToAdd:
         - append: false
@@ -383,7 +383,7 @@ Routes:
               totalWeight: 1
       - domains:
         - one.example.com
-        name: gateway-multihost:HTTPS:9443:one.example.com
+        name: one.example.com
         requireTls: ALL
         responseHeadersToAdd:
         - append: false
