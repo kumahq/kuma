@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -51,7 +50,7 @@ func (m *Dataplane) MarshalJSON() ([]byte, error) {
 	return util_proto.ToJSON(m)
 }
 func (t *Dataplane) DeepCopyInto(out *Dataplane) {
-	proto.Merge(out, t)
+	util_proto.Merge(out, t)
 }
 func (t *Dataplane) DeepCopy() *Dataplane {
 	if t == nil {

@@ -4,7 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/generic"
@@ -56,7 +55,7 @@ func (m *DataplaneInsight) MarshalJSON() ([]byte, error) {
 	return util_proto.ToJSON(m)
 }
 func (t *DataplaneInsight) DeepCopyInto(out *DataplaneInsight) {
-	proto.Merge(out, t)
+	util_proto.Merge(out, t)
 }
 func (t *DataplaneInsight) DeepCopy() *DataplaneInsight {
 	if t == nil {

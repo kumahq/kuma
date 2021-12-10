@@ -5,8 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -18,7 +16,7 @@ func (m *TrafficRoute) MarshalJSON() ([]byte, error) {
 	return util_proto.ToJSON(m)
 }
 func (t *TrafficRoute) DeepCopyInto(out *TrafficRoute) {
-	proto.Merge(out, t)
+	util_proto.Merge(out, t)
 }
 func (t *TrafficRoute) DeepCopy() *TrafficRoute {
 	if t == nil {

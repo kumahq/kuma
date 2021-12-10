@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/generic"
@@ -20,7 +19,7 @@ func (m *ZoneIngressInsight) MarshalJSON() ([]byte, error) {
 	return util_proto.ToJSON(m)
 }
 func (t *ZoneIngressInsight) DeepCopyInto(out *ZoneIngressInsight) {
-	proto.Merge(out, t)
+	util_proto.Merge(out, t)
 }
 func (t *ZoneIngressInsight) DeepCopy() *ZoneIngressInsight {
 	if t == nil {
