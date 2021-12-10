@@ -101,7 +101,7 @@ func NewResyncer(config *Config) component.Component {
 }
 
 func (r *resyncer) Start(stop <-chan struct{}) error {
-	r.infos = map[model.ResourceKey]syncInfo{} // clear the map if component is restarted
+	r.clearInfos() // clear the map if component is restarted
 	go func(stop <-chan struct{}) {
 		ticker := r.tick(r.maxResyncTimeout - r.minResyncTimeout)
 		for {
@@ -544,6 +544,12 @@ func (r *resyncer) getInfo(key model.ResourceKey) (syncInfo, bool) {
 func (r *resyncer) setInfo(key model.ResourceKey, info syncInfo) {
 	r.infosMux.Lock()
 	r.infos[key] = info
+	r.infosMux.Unlock()
+}
+
+func (r *resyncer) clearInfos() {
+	r.infosMux.Lock()
+	r.infos = map[model.ResourceKey]syncInfo{}
 	r.infosMux.Unlock()
 }
 
