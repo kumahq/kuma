@@ -29,6 +29,9 @@ const (
 	// External service tag
 	ExternalServiceTag = "kuma.io/external-service-name"
 
+	// Listener tag is used to select Gateway listeners
+	ListenerTag = "gateways.kuma.io/listener-name"
+
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
 )
