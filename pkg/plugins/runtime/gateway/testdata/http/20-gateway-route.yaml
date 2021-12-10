@@ -192,7 +192,7 @@ Routes:
       virtualHosts:
       - domains:
         - two.example.com
-        name: gateway-multihost:HTTP:9080:two.example.com
+        name: two.example.com
         routes:
         - match:
             prefix: /
@@ -212,7 +212,7 @@ Routes:
               totalWeight: 1
       - domains:
         - three.example.com
-        name: gateway-multihost:HTTP:9080:three.example.com
+        name: three.example.com
         routes:
         - match:
             prefix: /
@@ -232,7 +232,7 @@ Routes:
               totalWeight: 1
       - domains:
         - one.example.com
-        name: gateway-multihost:HTTP:9080:one.example.com
+        name: one.example.com
         routes:
         - match:
             prefix: /

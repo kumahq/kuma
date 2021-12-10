@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
@@ -28,7 +27,7 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 	resources := ResourceAggregator{}
 
 	vh := envoy_routes.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
-		envoy_routes.CommonVirtualHost(envoy_names.Join(info.Listener.ResourceName, info.Host.Hostname)),
+		envoy_routes.CommonVirtualHost(info.Host.Hostname),
 		envoy_routes.DomainNames(info.Host.Hostname),
 	)
 

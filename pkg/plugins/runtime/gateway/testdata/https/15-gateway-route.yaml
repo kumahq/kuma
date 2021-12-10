@@ -215,7 +215,7 @@ Routes:
       virtualHosts:
       - domains:
         - echo.example.com
-        name: edge-gateway:HTTPS:8080:echo.example.com
+        name: echo.example.com
         requireTls: ALL
         responseHeadersToAdd:
         - append: false
