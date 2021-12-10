@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
+	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -18,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/events"
-	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var (
@@ -67,8 +67,8 @@ type resyncer struct {
 }
 
 type syncInfo struct {
-	resourceHash string
-	lastSync     time.Time
+	resource proto.Message
+	lastSync time.Time
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -270,20 +270,16 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 		}
 	}
 
-	hash, err := proto.Hash(insight)
-	if err != nil {
-		return err
-	}
 	key := ServiceInsightKey(mesh)
 	info := r.info[key]
-	if info.resourceHash == hash {
+	if proto.Equal(info.resource, insight) {
 		log.V(1).Info("no need to update ServiceInsight because the resource is the same")
 		info.lastSync = core.Now()
 		r.info[key] = info
 		return nil
 	}
 
-	err = manager.Upsert(r.rm, key, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
+	err := manager.Upsert(r.rm, key, core_mesh.NewServiceInsightResource(), func(resource model.Resource) error {
 		return resource.SetSpec(insight)
 	})
 	if err != nil {
@@ -301,8 +297,8 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	}
 	log.V(1).Info("ServiceInsights updated")
 	r.info[key] = syncInfo{
-		resourceHash: hash,
-		lastSync:     core.Now(),
+		resource: insight,
+		lastSync: core.Now(),
 	}
 	return nil
 }
@@ -437,20 +433,16 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		}
 	}
 
-	hash, err := proto.Hash(insight)
-	if err != nil {
-		return err
-	}
 	key := MeshInsightKey(mesh)
 	info := r.info[key]
-	if info.resourceHash == hash {
+	if proto.Equal(info.resource, insight) {
 		log.V(1).Info("no need to update MeshInsight because the resource is the same")
 		info.lastSync = core.Now()
 		r.info[key] = info
 		return nil
 	}
 
-	err = manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
 		return resource.SetSpec(insight)
 	})
 	if err != nil {
@@ -468,8 +460,8 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	}
 	log.V(1).Info("MeshInsight updated")
 	r.info[key] = syncInfo{
-		resourceHash: hash,
-		lastSync:     core.Now(),
+		resource: insight,
+		lastSync: core.Now(),
 	}
 	return nil
 }
