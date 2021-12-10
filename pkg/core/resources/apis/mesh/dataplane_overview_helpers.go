@@ -31,7 +31,8 @@ func (t *DataplaneOverviewResource) GetStatus() (Status, []string) {
 
 	allInboundsOffline := len(errs) == len(t.Spec.Dataplane.Networking.Inbound)
 	allInboundsOnline := len(errs) == 0
-	if t.Spec.Dataplane.IsDelegatedGateway() {
+
+	if t.Spec.Dataplane.GetNetworking().GetGateway() != nil {
 		allInboundsOffline = false
 		allInboundsOnline = true
 	}
