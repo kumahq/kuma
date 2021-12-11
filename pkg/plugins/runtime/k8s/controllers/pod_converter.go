@@ -38,28 +38,17 @@ func (p *PodConverter) PodToDataplane(
 	if err != nil {
 		return err
 	}
-	spec, err := util_proto.ToMap(dataplaneProto)
-	if err != nil {
-		return err
-	}
-	dataplane.Spec = spec
+	dataplane.Spec = dataplaneProto
 	return nil
 }
 
 func (p *PodConverter) PodToIngress(zoneIngress *mesh_k8s.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
 	zoneIngressProto := &mesh_proto.ZoneIngress{}
-	if err := util_proto.FromMap(zoneIngress.Spec, zoneIngressProto); err != nil {
-		return err
-	}
 	// Pass the current dataplane so we won't override available services in Ingress section
 	if err := p.IngressFor(zoneIngressProto, pod, services); err != nil {
 		return err
 	}
-	spec, err := util_proto.ToMap(zoneIngressProto)
-	if err != nil {
-		return err
-	}
-	zoneIngress.Spec = spec
+	zoneIngress.Spec = zoneIngressProto
 	return nil
 }
 

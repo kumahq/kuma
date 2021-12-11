@@ -3,7 +3,28 @@ package v1alpha1
 import (
 	"net"
 	"strconv"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
+
+func (m *ExternalService) UnmarshalJSON(data []byte) error {
+	return util_proto.FromJSON(data, m)
+}
+
+func (m *ExternalService) MarshalJSON() ([]byte, error) {
+	return util_proto.ToJSON(m)
+}
+func (t *ExternalService) DeepCopyInto(out *ExternalService) {
+	util_proto.Merge(out, t)
+}
+func (t *ExternalService) DeepCopy() *ExternalService {
+	if t == nil {
+		return nil
+	}
+	out := new(ExternalService)
+	t.DeepCopyInto(out)
+	return out
+}
 
 // Matches is simply an alias for MatchTags to make source code more aesthetic.
 func (es *ExternalService) Matches(selector TagSelector) bool {

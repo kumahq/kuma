@@ -15,6 +15,7 @@ var _ = Describe("DataplaneToMeshMapper", func() {
 		l := log.NewLogger(log.InfoLevel)
 		mapper := DataplaneToMeshMapper(l, "ns", k8s.NewSimpleConverter())
 		requests := mapper(&mesh_k8s.Dataplane{
+<<<<<<< HEAD
 			Spec: map[string]interface{}{
 				"networking": map[string]interface{}{
 					"address": "10.20.1.2",
@@ -22,6 +23,16 @@ var _ = Describe("DataplaneToMeshMapper", func() {
 						{
 							"tags": map[string]string{mesh_proto.ServiceTag: "ingress", mesh_proto.ZoneTag: "zone-2"},
 							"port": 10001,
+=======
+			Mesh: "mesh-1",
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "10.20.1.2",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port: 10001,
+							Tags: map[string]string{mesh_proto.ServiceTag: "redis"},
+>>>>>>> f59ec994 (perf(*): eliminate uneccessary JSON marshalling (#3440))
 						},
 					},
 					"ingress": map[string]interface{}{
