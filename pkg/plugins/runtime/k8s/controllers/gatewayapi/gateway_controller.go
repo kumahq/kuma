@@ -13,6 +13,7 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -76,6 +77,10 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not upsert Gateway")
 	}
 
+	if err := r.setKumaOwner(ctx, gateway); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "could not set Owner of Kuma Gateway to Gateway API Gateway")
+	}
+
 	deployment, err := r.createOrUpdateDeployment(ctx, resource, gateway)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to create Deployment for Gateway")
@@ -93,6 +98,21 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	}
 
 	return kube_ctrl.Result{}, nil
+}
+
+func (r *GatewayReconciler) setKumaOwner(ctx context.Context, gateway *gatewayapi.Gateway) error {
+	gatewayKey := kube_types.NamespacedName{Name: gateway.Name, Namespace: gateway.Namespace}
+	gatewayK8s := &mesh_k8s.Gateway{}
+
+	if err := r.Client.Get(ctx, gatewayKey, gatewayK8s); err != nil {
+		return errors.Wrap(err, "could not find Kuma Gateway Kubernetes object")
+	}
+
+	if err := kube_controllerutil.SetControllerReference(gateway, gatewayK8s, r.Scheme); err != nil {
+		return errors.Wrap(err, "could not set controller reference")
+	}
+
+	return nil
 }
 
 func (r *GatewayReconciler) getGatewayClass(ctx context.Context, name gatewayapi.ObjectName) (*gatewayapi.GatewayClass, error) {
