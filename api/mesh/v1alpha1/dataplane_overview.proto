@@ -17,6 +17,7 @@ message DataplaneOverview {
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).skip_kubernetes_wrappers = true;
 
   Dataplane dataplane = 1 [ (validate.rules).message.required = true ];
 

@@ -25,6 +25,7 @@ message ServiceInsight {
     option (kuma.mesh.resource).package = "mesh";
     option (kuma.mesh.resource).skip_registration = true;
     option (kuma.mesh.resource).skip_validation = true;
+    option (kuma.mesh.resource).skip_kubernetes_wrappers = true;
 
     enum Status {
       none = 0; // should not be used

@@ -26,6 +26,7 @@ message GatewayRoute {
   option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "gateway-route";
+  option (kuma.mesh.resource).scope_namespace = true;
 
   // Backend selects a target for HTTP request forwarding.
   message Backend {

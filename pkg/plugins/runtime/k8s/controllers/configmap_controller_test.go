@@ -16,13 +16,13 @@ var _ = Describe("DataplaneToMeshMapper", func() {
 		mapper := DataplaneToMeshMapper(l, "ns", k8s.NewSimpleConverter())
 		requests := mapper(&mesh_k8s.Dataplane{
 			Mesh: "mesh-1",
-			Spec: map[string]interface{}{
-				"networking": map[string]interface{}{
-					"address": "10.20.1.2",
-					"inbound": []map[string]interface{}{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "10.20.1.2",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							"tags": map[string]string{mesh_proto.ServiceTag: "redis"},
-							"port": 10001,
+							Port: 10001,
+							Tags: map[string]string{mesh_proto.ServiceTag: "redis"},
 						},
 					},
 				},
