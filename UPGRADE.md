@@ -8,6 +8,11 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Any type
+
+It is not possible to remove computing stats with: `kuma.metrics.dataplane.enabled` and `kuma.metrics.zone.enabled` (the configurations are removed).
+These stats are useful to Kuma internally and can't be turned off.
+
 ### Kubernetes
 
 Please migrate your `kuma.io/sidecar-injection` annotations to labels.
