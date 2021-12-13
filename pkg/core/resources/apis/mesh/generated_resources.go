@@ -54,7 +54,11 @@ func (t *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.CircuitBreaker{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -150,7 +154,11 @@ func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.Dataplane{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -250,7 +258,11 @@ func (t *DataplaneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.DataplaneInsight{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -350,7 +362,11 @@ func (t *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.DataplaneOverview{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -441,7 +457,11 @@ func (t *ExternalServiceResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.ExternalService{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -545,7 +565,11 @@ func (t *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.FaultInjection{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -645,7 +669,11 @@ func (t *GatewayResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.Gateway{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -740,7 +768,11 @@ func (t *GatewayRouteResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.GatewayRoute{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -839,7 +871,11 @@ func (t *HealthCheckResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.HealthCheck{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -935,7 +971,11 @@ func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.Mesh{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -1035,7 +1075,11 @@ func (t *MeshInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.MeshInsight{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -1134,7 +1178,11 @@ func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.ProxyTemplate{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -1238,7 +1286,11 @@ func (t *RateLimitResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.RateLimit{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -1342,7 +1394,11 @@ func (t *RetryResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.Retry{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -1442,7 +1498,11 @@ func (t *ServiceInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.ServiceInsight{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -1542,7 +1602,11 @@ func (t *ServiceOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.ServiceInsight_Service{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -1641,7 +1705,11 @@ func (t *TimeoutResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.Timeout{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -1745,7 +1813,11 @@ func (t *TrafficLogResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.TrafficLog{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -1849,7 +1921,11 @@ func (t *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.TrafficPermission{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -1953,7 +2029,11 @@ func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.TrafficRoute{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -2053,7 +2133,11 @@ func (t *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.TrafficTrace{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -2153,7 +2237,11 @@ func (t *VirtualOutboundResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.VirtualOutbound{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -2249,7 +2337,11 @@ func (t *ZoneIngressResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.ZoneIngress{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -2349,7 +2441,11 @@ func (t *ZoneIngressInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.ZoneIngressInsight{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }
@@ -2449,7 +2545,11 @@ func (t *ZoneIngressOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return fmt.Errorf("invalid type %T for Spec", spec)
 	} else {
-		t.Spec = protoType
+		if protoType == nil {
+			t.Spec = &mesh_proto.ZoneIngressOverview{}
+		} else {
+			t.Spec = protoType
+		}
 		return nil
 	}
 }

@@ -230,7 +230,7 @@ var _ = Describe("Envoy", func() {
 			// given
 			cfg := kuma_dp.Config{
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
-					BinaryPath: filepath.Join("testdata"),
+					BinaryPath: "testdata",
 					ConfigDir:  configDir,
 				},
 			}

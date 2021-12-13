@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/golang/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
@@ -22,12 +23,12 @@ func (pt *SampleTrafficRoute) SetMesh(mesh string) {
 	pt.Mesh = mesh
 }
 
-func (pt *SampleTrafficRoute) GetSpec() map[string]interface{} {
+func (pt *SampleTrafficRoute) GetSpec() proto.Message {
 	return pt.Spec
 }
 
-func (pt *SampleTrafficRoute) SetSpec(spec map[string]interface{}) {
-	pt.Spec = spec
+func (pt *SampleTrafficRoute) SetSpec(spec proto.Message) {
+	pt.Spec = proto.Clone(spec).(TrafficRouteSpec)
 }
 
 func (pt *SampleTrafficRoute) Scope() model.Scope {
