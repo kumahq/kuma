@@ -18,10 +18,12 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	test_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 )
 
 // TrafficRouteSpec defines the desired state of SampleTrafficRoute
-type TrafficRouteSpec = map[string]interface{}
+type TrafficRouteSpec = *test_proto.TrafficRoute
 
 // SampleTrafficRoute is the Schema for the proxytemplates API
 type SampleTrafficRoute struct {
