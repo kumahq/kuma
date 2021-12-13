@@ -3,6 +3,7 @@ package context
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
@@ -37,14 +38,30 @@ func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *me
 	if tt == nil {
 		return nil
 	}
-	return mc.Resource.GetTracingBackend(tt.Spec.GetConf().GetBackend())
+	if tb := mc.Resource.GetTracingBackend(tt.Spec.GetConf().GetBackend()); tb == nil {
+		core.Log.Info("Tracing backend is not found. Ignoring.",
+			"backendName", tt.Spec.GetConf().GetBackend(),
+			"trafficTraceName", tt.GetMeta().GetName(),
+			"trafficTraceMesh", tt.GetMeta().GetMesh())
+		return nil
+	} else {
+		return tb
+	}
 }
 
 func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh_proto.LoggingBackend {
 	if tl == nil {
 		return nil
 	}
-	return mc.Resource.GetLoggingBackend(tl.Spec.GetConf().GetBackend())
+	if lb := mc.Resource.GetLoggingBackend(tl.Spec.GetConf().GetBackend()); lb == nil {
+		core.Log.Info("Logging backend is not found. Ignoring.",
+			"backendName", tl.Spec.GetConf().GetBackend(),
+			"trafficLogName", tl.GetMeta().GetName(),
+			"trafficLogMesh", tl.GetMeta().GetMesh())
+		return nil
+	} else {
+		return lb
+	}
 }
 
 func BuildControlPlaneContext(
