@@ -1141,7 +1141,7 @@ workflows:
           - images
           - check
         # custom parameters
-        kubernetes_version: v1.18.16
+        kubernetes_version: v1.18.20
         use_local_kuma_images: true
     - example_minikube:
         <<: *commit_workflow_filters
@@ -1150,7 +1150,7 @@ workflows:
           - images
           - check
         # custom parameters
-        kubernetes_version: v1.20.4
+        kubernetes_version: v1.20.13
         use_local_kuma_images: true
     - e2e:
         <<: *commit_workflow_filters
