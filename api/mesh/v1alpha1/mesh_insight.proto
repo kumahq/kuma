@@ -18,8 +18,7 @@ message MeshInsight {
   option (kuma.mesh.resource).ws.name = "mesh-insight";
   option (kuma.mesh.resource).ws.read_only = true;
 
-  // last_sync is a time of the last synchronization
-  google.protobuf.Timestamp last_sync = 1;
+  reserved 1; // formerly last_sync
 
   // DataplaneStat defines statistic specifically for Dataplane
   message DataplaneStat {

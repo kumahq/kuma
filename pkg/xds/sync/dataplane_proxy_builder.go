@@ -240,8 +240,7 @@ func (p *DataplaneProxyBuilder) resolveTLSReadiness(
 	}
 
 	serviceInsight := core_mesh.NewServiceInsightResource()
-	insightName := insights.ServiceInsightName(key.Mesh)
-	if err := p.CachingResManager.Get(ctx, serviceInsight, core_store.GetByKey(insightName, key.Mesh)); err != nil {
+	if err := p.CachingResManager.Get(ctx, serviceInsight, core_store.GetBy(insights.ServiceInsightKey(key.Mesh))); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			// Nothing about the TLS readiness has been reported yet
 			syncLog.Info("could not determine service TLS readiness", "error", err)
