@@ -73,8 +73,8 @@ function main() {
     shift
   done
 
-  [ -z "$DOCKER_USERNAME" ] && msg_err "$DOCKER_USERNAME required"
-  [ -z "$DOCKER_API_KEY" ] && msg_err "$DOCKER_API_KEY required"
+  [ -z "$DOCKER_USERNAME" ] && msg_err "\$DOCKER_USERNAME required"
+  [ -z "$DOCKER_API_KEY" ] && msg_err "\$DOCKER_API_KEY required"
   [ -z "$KUMA_VERSION" ] && msg_err "Error: --version required"
 
   case $op in
