@@ -26,6 +26,9 @@ func DefaultCollectResponsesOpts() CollectResponsesOpts {
 		NumberOfRequests: 10,
 		Method:           "GET",
 		Headers:          map[string]string{},
+		Flags: []string{
+			"--fail",
+		},
 	}
 }
 
@@ -70,6 +73,35 @@ func Insecure() CollectResponsesOptsFn {
 	}
 }
 
+// NoFail removes the default curl --fail flag.
+// See https://curl.se/docs/manpage.html#-f.
+func NoFail() CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		flags := make([]string, 0, len(opts.Flags))
+		for _, f := range flags {
+			if f != "--fail" {
+				flags = append(flags, f)
+			}
+		}
+		opts.Flags = flags
+	}
+}
+
+// OutputFormat sets the curl --write-out flag.
+// See https://everything.curl.dev/usingcurl/verbose/writeout.
+func OutputFormat(format string) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		// Setting an output format implicitly silences other
+		// kinds of output since the caller presumably needs to
+		// parse the format they specified.
+		opts.Flags = append(opts.Flags,
+			"--silent",
+			"--output", os.DevNull,
+			"--write-out", ShellEscape(format),
+		)
+	}
+}
+
 func CollectResponse(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (types.EchoResponse, error) {
 	opts := DefaultCollectResponsesOpts()
 	for _, f := range fn {
@@ -77,7 +109,6 @@ func CollectResponse(cluster framework.Cluster, source, destination string, fn .
 	}
 	cmd := []string{
 		"curl",
-		"--fail",
 		"--request", opts.Method,
 		"--max-time", "3",
 	}
