@@ -8,6 +8,16 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Kubernetes
+
+Please migrate your `kuma.io/sidecar-injection` annotations to labels.
+The new version still supports annotation, but to have a guarantee that applications can only start with sidecar, you must use label instead of annotation.
+
+### Universal
+
+We removed support for old Ingress (`Dataplane#networking.ingress`) from pre 1.2 days.
+If you are still using it, please migrate to `ZoneIngress` first (see `Upgrade to 1.2.0` section).
+
 ## Upgrade to `1.4.0`
 
 Starting with this version, the default API server authentication method is user

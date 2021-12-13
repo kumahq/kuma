@@ -60,7 +60,7 @@ controlPlane:
   affinity: {}
 
   # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
-  injectorFailurePolicy: Ignore
+  injectorFailurePolicy: Fail
 
   service:
     # -- (string) Optionally override of the Kuma Control Plane Service's name
@@ -195,7 +195,7 @@ ingress:
   nodeSelector:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
-  
+
   # -- Affinity placement rule for the Kuma Ingress pods
   affinity: {}
 

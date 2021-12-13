@@ -60,47 +60,16 @@ func (p *IngressProxyBuilder) getZoneIngress(key core_model.ResourceKey) (*core_
 	ctx := context.Background()
 
 	zoneIngress := core_mesh.NewZoneIngressResource()
-	err := p.ReadOnlyResManager.Get(ctx, zoneIngress, core_store.GetBy(key))
-	if err == nil {
-		// Update Ingress' Available Services
-		// This was placed as an operation of DataplaneWatchdog out of the convenience.
-		// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
-		if err := p.updateIngress(zoneIngress); err != nil {
-			return nil, err
-		}
-		return zoneIngress, nil
-	}
-	if !core_store.IsResourceNotFound(err) {
-		return nil, err
-	}
-
-	// for backward compatibility with dataplane-based ingresses
-	oldTypeIngress, err := p.resolveDataplane(ctx, key)
-	if err != nil {
+	if err := p.ReadOnlyResManager.Get(ctx, zoneIngress, core_store.GetBy(key)); err != nil {
 		return nil, err
 	}
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
-	if err := p.updateIngressCompat(oldTypeIngress); err != nil {
+	if err := p.updateIngress(zoneIngress); err != nil {
 		return nil, err
 	}
-	return core_mesh.NewZoneIngressResourceFromDataplane(oldTypeIngress)
-}
-
-func (p *IngressProxyBuilder) resolveDataplane(ctx context.Context, key core_model.ResourceKey) (*core_mesh.DataplaneResource, error) {
-	dataplane := core_mesh.NewDataplaneResource()
-
-	if err := p.ReadOnlyResManager.Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
-		return nil, err
-	}
-
-	// Envoy requires IPs instead of Hostname therefore we need to resolve an address. Consider moving this outside of this component.
-	resolvedDp, err := xds_topology.ResolveAddress(p.LookupIP, dataplane)
-	if err != nil {
-		return nil, err
-	}
-	return resolvedDp, nil
+	return zoneIngress, nil
 }
 
 func (p *IngressProxyBuilder) resolveRouting(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, dataplanes *core_mesh.DataplaneResourceList) (*xds.Routing, error) {
@@ -116,17 +85,6 @@ func (p *IngressProxyBuilder) resolveRouting(ctx context.Context, zoneIngress *c
 		TrafficRouteList: routes,
 	}
 	return routing, nil
-}
-
-func (p *IngressProxyBuilder) updateIngressCompat(dpIngress *core_mesh.DataplaneResource) error {
-	ctx := context.Background()
-
-	allMeshDataplanes := &core_mesh.DataplaneResourceList{}
-	if err := p.ReadOnlyResManager.List(ctx, allMeshDataplanes); err != nil {
-		return err
-	}
-	allMeshDataplanes.Items = xds_topology.ResolveAddresses(syncLog, p.LookupIP, allMeshDataplanes.Items)
-	return ingress.UpdateAvailableServicesCompat(ctx, p.ResManager, dpIngress, allMeshDataplanes.Items)
 }
 
 func (p *IngressProxyBuilder) updateIngress(zoneIngress *core_mesh.ZoneIngressResource) error {

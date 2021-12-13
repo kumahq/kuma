@@ -22,36 +22,38 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			VirtualProbesEnabled: true,
 			VirtualProbesPort:    9000,
 			SidecarContainer: SidecarContainer{
-				Image:                 "kuma/kuma-dp:latest",
 				RedirectPortInbound:   15006,
 				RedirectPortInboundV6: 15010,
 				RedirectPortOutbound:  15001,
-				UID:                   5678,
-				GID:                   5678,
-				AdminPort:             9901,
-				DrainTime:             30 * time.Second,
+				DataplaneContainer: DataplaneContainer{
+					Image:     "kuma/kuma-dp:latest",
+					UID:       5678,
+					GID:       5678,
+					AdminPort: 9901,
+					DrainTime: 30 * time.Second,
 
-				ReadinessProbe: SidecarReadinessProbe{
-					InitialDelaySeconds: 1,
-					TimeoutSeconds:      3,
-					PeriodSeconds:       5,
-					SuccessThreshold:    1,
-					FailureThreshold:    12,
-				},
-				LivenessProbe: SidecarLivenessProbe{
-					InitialDelaySeconds: 60,
-					TimeoutSeconds:      3,
-					PeriodSeconds:       5,
-					FailureThreshold:    12,
-				},
-				Resources: SidecarResources{
-					Requests: SidecarResourceRequests{
-						CPU:    "50m",
-						Memory: "64Mi",
+					ReadinessProbe: SidecarReadinessProbe{
+						InitialDelaySeconds: 1,
+						TimeoutSeconds:      3,
+						PeriodSeconds:       5,
+						SuccessThreshold:    1,
+						FailureThreshold:    12,
 					},
-					Limits: SidecarResourceLimits{
-						CPU:    "1000m",
-						Memory: "512Mi",
+					LivenessProbe: SidecarLivenessProbe{
+						InitialDelaySeconds: 60,
+						TimeoutSeconds:      3,
+						PeriodSeconds:       5,
+						FailureThreshold:    12,
+					},
+					Resources: SidecarResources{
+						Requests: SidecarResourceRequests{
+							CPU:    "50m",
+							Memory: "64Mi",
+						},
+						Limits: SidecarResourceLimits{
+							CPU:    "1000m",
+							Memory: "512Mi",
+						},
 					},
 				},
 			},
@@ -144,16 +146,10 @@ type SidecarTraffic struct {
 	ExcludeOutboundPorts []uint32 `yaml:"excludeOutboundPorts" envconfig:"kuma_runtime_kubernetes_sidecar_traffic_exclude_outbound_ports"`
 }
 
-// SidecarContainer defines configuration of the Kuma sidecar container.
-type SidecarContainer struct {
+// DataplaneContainer defines the configuration of a Kuma dataplane proxy container.
+type DataplaneContainer struct {
 	// Image name.
 	Image string `yaml:"image,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_image"`
-	// Redirect port for inbound traffic.
-	RedirectPortInbound uint32 `yaml:"redirectPortInbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound"`
-	// Redirect port for inbound IPv6 traffic.
-	RedirectPortInboundV6 uint32 `yaml:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
-	// Redirect port for outbound traffic.
-	RedirectPortOutbound uint32 `yaml:"redirectPortOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_outbound"`
 	// User ID.
 	UID int64 `yaml:"uid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_uid"`
 	// Group ID.
@@ -170,6 +166,17 @@ type SidecarContainer struct {
 	Resources SidecarResources `yaml:"resources,omitempty"`
 	// EnvVars are additional environment variables that can be placed on Kuma DP sidecar
 	EnvVars map[string]string `yaml:"envVars" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_env_vars"`
+}
+
+// SidecarContainer defines configuration of the Kuma sidecar container.
+type SidecarContainer struct {
+	DataplaneContainer `yaml:",inline"`
+	// Redirect port for inbound traffic.
+	RedirectPortInbound uint32 `yaml:"redirectPortInbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound"`
+	// Redirect port for inbound IPv6 traffic.
+	RedirectPortInboundV6 uint32 `yaml:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
+	// Redirect port for outbound traffic.
+	RedirectPortOutbound uint32 `yaml:"redirectPortOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_outbound"`
 }
 
 // SidecarReadinessProbe defines periodic probe of container service readiness.

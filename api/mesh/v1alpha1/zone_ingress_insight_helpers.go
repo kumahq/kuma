@@ -11,6 +11,25 @@ import (
 
 var _ generic.Insight = &ZoneIngressInsight{}
 
+func (m *ZoneIngressInsight) UnmarshalJSON(data []byte) error {
+	return util_proto.FromJSON(data, m)
+}
+
+func (m *ZoneIngressInsight) MarshalJSON() ([]byte, error) {
+	return util_proto.ToJSON(m)
+}
+func (t *ZoneIngressInsight) DeepCopyInto(out *ZoneIngressInsight) {
+	util_proto.Merge(out, t)
+}
+func (t *ZoneIngressInsight) DeepCopy() *ZoneIngressInsight {
+	if t == nil {
+		return nil
+	}
+	out := new(ZoneIngressInsight)
+	t.DeepCopyInto(out)
+	return out
+}
+
 func (x *ZoneIngressInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
 	for i, s := range x.GetSubscriptions() {
 		if s.Id == id {

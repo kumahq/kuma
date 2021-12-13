@@ -12,7 +12,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 // createorUpdateBuiltinGatewayDataplane manages the dataplane for a pod
@@ -46,13 +45,8 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 		return nil
 	}
 
-	spec, err := util_proto.ToMap(dataplaneProto)
-	if err != nil {
-		return err
-	}
-
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		dataplane.Spec = spec
+		dataplane.Spec = dataplaneProto
 
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
 			return errors.Wrap(err, "unable to set Dataplane's controller reference to Pod")

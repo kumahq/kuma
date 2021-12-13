@@ -27,10 +27,6 @@ func (d *DataplaneResource) Validate() error {
 	}
 
 	switch {
-	case d.Spec.IsIngress():
-		err.Add(validateIngressNetworking(d.Spec.GetNetworking()))
-		err.Add(validateIngress(net.Field("ingress"), d.Spec.GetNetworking().GetIngress()))
-
 	case d.Spec.IsDelegatedGateway():
 		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
 			err.AddViolationAt(net.Field("inbound"),
@@ -124,67 +120,6 @@ func validateAddress(path validators.PathBuilder, address string) validators.Val
 	}
 	if !govalidator.IsIP(address) && !govalidator.IsDNSName(address) {
 		err.AddViolationAt(path.Field("address"), "address has to be valid IP address or domain name")
-	}
-	return err
-}
-
-func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) validators.ValidationError {
-	var err validators.ValidationError
-	path := validators.RootedAt("networking")
-	if networking.Gateway != nil {
-		err.AddViolationAt(path, "gateway cannot be defined in the ingress mode")
-	}
-	if len(networking.GetOutbound()) != 0 {
-		err.AddViolationAt(path, "dataplane cannot have outbounds in the ingress mode")
-	}
-	if len(networking.GetInbound()) != 1 {
-		err.AddViolationAt(path, "dataplane must have one inbound interface")
-	}
-	for i, inbound := range networking.GetInbound() {
-		p := path.Field("inbound").Index(i)
-		err.Add(ValidatePort(p.Field("port"), inbound.GetPort()))
-		if inbound.ServicePort != 0 {
-			err.AddViolationAt(p.Field("servicePort"), `cannot be defined in the ingress mode`)
-		}
-		if inbound.ServiceAddress != "" {
-			err.AddViolationAt(p.Field("serviceAddress"), `cannot be defined in the ingress mode`)
-		}
-		if inbound.Address != "" {
-			err.AddViolationAt(p.Field("address"), `cannot be defined in the ingress mode`)
-		}
-		err.AddErrorAt(p.Field("tags"), validateTags(inbound.Tags))
-		if protocol, exist := inbound.Tags[mesh_proto.ProtocolTag]; exist {
-			if protocol != ProtocolTCP {
-				err.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), `other values than TCP are not allowed`)
-			}
-		}
-	}
-	return err
-}
-
-func validateIngress(path validators.PathBuilder, ingress *mesh_proto.Dataplane_Networking_Ingress) validators.ValidationError {
-	if ingress == nil {
-		return validators.ValidationError{}
-	}
-	var err validators.ValidationError
-	if ingress.GetPublicAddress() == "" && ingress.GetPublicPort() != 0 {
-		err.AddViolationAt(path.Field("publicAddress"), `has to be defined with publicPort`)
-	}
-	if ingress.GetPublicPort() == 0 && ingress.GetPublicAddress() != "" {
-		err.AddViolationAt(path.Field("publicPort"), `has to be defined with publicAddress`)
-	}
-	if ingress.GetPublicAddress() != "" {
-		err.Add(validateAddress(path.Field("publicAddress"), ingress.GetPublicAddress()))
-	}
-	if ingress.GetPublicPort() != 0 {
-		err.Add(ValidatePort(path.Field("publicPort"), ingress.GetPublicPort()))
-	}
-	for i, ingressInterface := range ingress.GetAvailableServices() {
-		p := path.Field("availableService").Index(i)
-		if _, ok := ingressInterface.Tags[mesh_proto.ServiceTag]; !ok {
-			err.AddViolationAt(p.Field("tags").Key(mesh_proto.ServiceTag), "cannot be empty")
-		}
-		err.AddErrorAt(p.Field("tags"), validateTags(ingressInterface.GetTags()))
 	}
 	return err
 }
