@@ -38,17 +38,6 @@ func NewVersion() *Version {
 	}
 }
 
-<<<<<<< HEAD
-=======
-func (x *EnvoyVersion) ParseVersion() (version, label string) {
-	parts := strings.SplitN(x.Version, "-", 2)
-	if len(parts) == 2 {
-		return parts[0], parts[1]
-	} else {
-		return x.Version, ""
-	}
-}
-
 func (m *DataplaneInsight) UnmarshalJSON(data []byte) error {
 	return util_proto.FromJSON(data, m)
 }
@@ -68,7 +57,6 @@ func (t *DataplaneInsight) DeepCopy() *DataplaneInsight {
 	return out
 }
 
->>>>>>> f59ec994 (perf(*): eliminate uneccessary JSON marshalling (#3440))
 func (x *DataplaneInsight) IsOnline() bool {
 	for _, s := range x.GetSubscriptions() {
 		if s.GetConnectTime() != nil && s.GetDisconnectTime() == nil {

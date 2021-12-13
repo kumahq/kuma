@@ -5,9 +5,11 @@ import (
 	"sort"
 
 	kube_core "k8s.io/api/core/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
@@ -131,4 +133,23 @@ func CopyStringMap(in map[string]string) map[string]string {
 		out[key] = value
 	}
 	return out
+}
+
+func MeshFor(obj kube_meta.Object) string {
+	mesh, exist := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation)
+	if !exist || mesh == "" {
+		return model.DefaultMesh
+	}
+
+	return mesh
+}
+
+// ServiceTagFor returns the canonical service name for a Kubernetes service,
+// optionally with a specific port.
+func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
+	port := ""
+	if svcPort != nil {
+		port = fmt.Sprintf("_%d", svcPort.Port)
+	}
+	return fmt.Sprintf("%s_%s_svc%s", svc.Name, svc.Namespace, port)
 }
