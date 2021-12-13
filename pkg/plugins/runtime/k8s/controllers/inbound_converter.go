@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -11,6 +12,12 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+)
+
+const (
+	KubeNamespaceTag = "k8s.kuma.io/namespace"
+	KubeServiceTag   = "k8s.kuma.io/service-name"
+	KubePortTag      = "k8s.kuma.io/service-port"
 )
 
 func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service) (ifaces []*mesh_proto.Dataplane_Networking_Inbound) {
@@ -137,6 +144,9 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	if tags == nil {
 		tags = make(map[string]string)
 	}
+	tags[KubeNamespaceTag] = pod.Namespace
+	tags[KubeServiceTag] = svc.Name
+	tags[KubePortTag] = strconv.Itoa(int(svcPort.Port))
 	tags[mesh_proto.ServiceTag] = ServiceTagFor(svc, svcPort)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
@@ -184,6 +194,7 @@ func InboundTagsForPod(zone string, pod *kube_core.Pod) map[string]string {
 	if tags == nil {
 		tags = make(map[string]string)
 	}
+	tags[KubeNamespaceTag] = pod.Namespace
 	tags[mesh_proto.ServiceTag] = fmt.Sprintf("%s_%s_svc", nameFromPod(pod), pod.Namespace)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
