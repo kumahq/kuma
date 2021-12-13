@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
 
 // RouteTableGenerator generates Envoy xDS resources gateway routes from
@@ -75,6 +76,18 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 			timeout := t.(*core_mesh.TimeoutResource)
 			routeBuilder.Configure(
 				route.RouteActionRequestTimeout(timeout.Spec.GetConf().GetHttp().GetRequestTimeout().AsDuration()),
+			)
+		}
+
+		if r := match.BestConnectionPolicyForDestination(e.Action.Forward, core_mesh.RateLimitType); r != nil {
+			ratelimit := r.(*core_mesh.RateLimitResource)
+			conf, err := v3.NewRateLimitConfiguration(ratelimit.Spec.GetConf().GetHttp())
+			if err != nil {
+				return nil, err
+			}
+
+			routeBuilder.Configure(
+				route.RoutePerFilterConfig("envoy.filters.http.local_ratelimit", conf),
 			)
 		}
 
