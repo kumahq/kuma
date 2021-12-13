@@ -37,7 +37,7 @@ reusable:
     - &circleci_golang_image "circleci/golang:1.17.3"
 
   vm_images:
-  - &ubuntu_vm_image "ubuntu-2004:202104-01"
+  - &ubuntu_vm_image "ubuntu-2004:202111-01"
 
   snippets:
 
@@ -97,6 +97,27 @@ commands:
             echo "Nothing to do for forked PRs, so marking this step successful"
             circleci step halt
           fi
+  install_aws_eksctl:
+    description: "Install eksctl because of: https://github.com/CircleCI-Public/aws-eks-orb/issues/42"
+    steps:
+      - run:
+          name: "Install eksctl"
+          command: |
+            if which eksctl > /dev/null; then
+            echo "eksctl is already installed"
+            exit 0
+            fi
+
+            mkdir -p eksctl_download
+            curl --silent --location --retry 5 "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" \
+            | tar xz -C eksctl_download
+            chmod +x eksctl_download/eksctl
+            SUDO=""
+            if [ $(id -u) -ne 0 ] && which sudo > /dev/null ; then
+            SUDO="sudo"
+            fi
+            $SUDO mv eksctl_download/eksctl /usr/local/bin/
+            rmdir eksctl_download
   install_build_tools:
     description: "Install an upstream Go release to $HOME/go"
     parameters:
@@ -132,8 +153,15 @@ commands:
         name: "Install Go"
         # See https://golang.org/doc/install#tarball
         command: |
-          curl --progress-bar --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
+          curl -s --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
           echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
+    - run:
+        name: "Update runc"
+        # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
+        command: |
+          sudo wget -O /usr/bin/runc https://github.com/opencontainers/runc/releases/download/v1.0.2/runc.amd64
+          sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
+
 
 executors:
   golang:
@@ -220,7 +248,7 @@ jobs:
 
     - aws-cli/install
 
-    - aws-eks/install-eksctl
+    - install_aws_eksctl
 
     - aws-eks/install-aws-iam-authenticator
 
@@ -590,11 +618,11 @@ jobs:
         template: basic_success_1
 
   eks-delete-clusters:
-    executor: aws-eks/python3
+    executor: aws-cli/default
     steps:
     - aws-cli/install
 
-    - aws-eks/install-eksctl
+    - install_aws_eksctl
 
     - run:
         name: "Clean clusters"
@@ -799,6 +827,9 @@ jobs:
           key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
           paths:
             - "/home/circleci/.go-kuma-go"
+      # Mount files from the upstream jobs
+      - attach_workspace:
+          at: build
       - run:
           name: "Install all development tools"
           command: |
@@ -832,7 +863,7 @@ jobs:
                   export KUMA_DEFAULT_TIMEOUT="6s"
                   export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
                   export BUILD_WITH_EXPERIMENTAL_GATEWAY=Y
-                  make test/e2e
+                  make -j2 test/e2e
             - store_test_results:
                 path: /tmp/xunit
       - unless:
@@ -846,7 +877,7 @@ jobs:
                   export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
                   export BUILD_WITH_EXPERIMENTAL_GATEWAY=Y
                   export K3D=true
-                  make test/e2e
+                  make -j2 test/e2e
             - store_test_results:
                 path: /tmp/xunit
 
@@ -1159,11 +1190,14 @@ workflows:
           - images
           - check
 # keep this one disabled and enable only for development
-#    - e2e:
-#        <<: *commit_workflow_filters
-#        name: test/e2e-ipv6
-#        # custom parameters
-#        ipv6: true
+    - e2e:
+        <<: *commit_workflow_filters
+        name: test/e2e-ipv6
+        requires:
+          - images
+          - check
+        # custom parameters
+        ipv6: true
 
   clean-eks:
     when: << pipeline.parameters.run_workflow_clean_eks >>

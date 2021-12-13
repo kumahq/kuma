@@ -15,11 +15,19 @@ KUMA_USE_HOSTNAME_INSTEAD_OF_IP ?=
 KUMA_DEFAULT_RETRIES ?=
 KUMA_DEFAULT_TIMEOUT ?=
 
-ENV_VARS ?= API_VERSION="$(API_VERSION)"
-
-ifdef KUMA_UNIVERSAL_IMAGE
-	ENV_VARS += KUMA_UNIVERSAL_IMAGE=$(KUMA_UNIVERSAL_IMAGE)
+ifdef CI
+# In circleCI all this was built from previous targets let's reuse them!
+E2E_DEPS_TARGETS=docker/load
+else
+E2E_DEPS_TARGETS=build/kumactl images
 endif
+
+ifndef KUMA_UNIVERSAL_IMAGE
+	KUMA_UNIVERSAL_IMAGE=$(KUMA_UNIVERSAL_DOCKER_IMAGE)
+endif
+
+ENV_VARS ?= API_VERSION="$(API_VERSION)"
+ENV_VARS += KUMA_UNIVERSAL_IMAGE=$(KUMA_UNIVERSAL_IMAGE)
 
 ifdef HELM_CHART_PATH
 	ENV_VARS += HELM_CHART_PATH=$(HELM_CHART_PATH)
@@ -94,7 +102,7 @@ endef
 
 $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
 
-.PHHONY: test/e2e/list
+.PHONY: test/e2e/list
 test/e2e/list:
 	@echo $(ALL_TESTS)
 
@@ -136,7 +144,9 @@ test/e2e/debug-universal: build/kumactl images/test
 	GINKGO_EDITOR_INTEGRATION=true \
 		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
 
+
 .PHONY: test/e2e
-test/e2e: build/kumactl images test/e2e/k8s/start
+test/e2e: $(E2E_DEPS_TARGETS)
+	$(MAKE) test/e2e/k8s/start
 	$(MAKE) test/e2e/test || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
