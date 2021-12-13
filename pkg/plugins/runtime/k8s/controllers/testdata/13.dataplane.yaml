@@ -5,13 +5,14 @@ spec:
   networking:
     address: 192.168.0.1
     inbound:
-      - health:
-          ready: true
-        port: 49151
-        tags:
-          app: example
-          kuma.io/instance: example
-          kuma.io/protocol: tcp
-          kuma.io/service: example_demo_svc
-          kuma.io/zone: zone-1
-          version: "0.1"
+    - health:
+        ready: true
+      port: 49151
+      tags:
+        app: example
+        k8s.kuma.io/namespace: demo
+        kuma.io/instance: example
+        kuma.io/protocol: tcp
+        kuma.io/service: example_demo_svc
+        kuma.io/zone: zone-1
+        version: "0.1"
