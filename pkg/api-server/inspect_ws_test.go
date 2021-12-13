@@ -88,7 +88,7 @@ var _ = Describe("Inspect WS", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", given.goldenFile)))
 		},
-		Entry("", testCase{
+		Entry("full example", testCase{
 			path:       "/inspect/meshes/default/dataplane/backend-1",
 			goldenFile: "inspect.json",
 			matchedPolicies: &core_xds.MatchedPolicies{
