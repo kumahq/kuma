@@ -4,6 +4,7 @@ metadata:
   labels:
     app: example
     version: "0.1"
+    kuma.io/sidecar-injection: enabled
 spec:
   containers:
     - ports: []
