@@ -6,6 +6,24 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upcoming release
+
+### Kubernetes
+
+Please migrate your `kuma.io/sidecar-injection` annotations to labels.
+The new version still supports annotation, but to have a guarantee that applications can only start with sidecar, you must use label instead of annotation.
+
+## Upgrade to `1.4.0`
+
+Starting with this version, the default API server authentication method is user
+tokens. In order to continue using client certificates (the previous default
+method), you'll need to explicitly set the authentication method to client
+certificates. This can be done by setting the `KUMA_API_SERVER_AUTHN_TYPE` variable to
+`"clientCerts"`.
+
+See [Configuration - Control plane](https://kuma.io/docs/1.3.1/documentation/configuration/#control-plane)
+for how to set this variable.
+
 ## Upgrade to `1.3.0`
 
 Starting with this version `Mesh` resource will limit the maximal number of mtls backends to 1, so please make sure your `Mesh` has correct backend applied before the upgrade.
