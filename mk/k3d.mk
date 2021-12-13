@@ -1,7 +1,5 @@
 CI_K3D_VERSION ?= v5.2.0
 
-K3D_PATH := $(CI_TOOLS_DIR)/k3d
-
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
 PORT_PREFIX := $$(( $(subst kuma-,30,$(KIND_CLUSTER_NAME)) - 1 ))
