@@ -2,7 +2,6 @@ package api_server
 
 import (
 	"context"
-	"encoding/json"
 	"net"
 	"sort"
 
@@ -86,7 +85,6 @@ func inspectWs(mpg core_xds.MatchedPoliciesGetter) *restful.WebService {
 			Doc("inspect dataplane matched policies").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
-			Param(ws.QueryParameter("policy", "policy type").DataType("string")).
 			Returns(200, "OK", nil),
 	)
 
@@ -103,11 +101,8 @@ func inspectDataplane(mpg core_xds.MatchedPoliciesGetter) restful.RouteFunction 
 			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
 			return
 		}
-		entries := newDataplaneInspectResponse(matchedPolicies)
 
-		bytes, _ := json.Marshal(entries)
-		unm := []api_server_types.InspectEntry{}
-		_ = json.Unmarshal(bytes, &unm)
+		entries := newDataplaneInspectResponse(matchedPolicies)
 
 		if err := response.WriteAsJson(entries); err != nil {
 			rest_errors.HandleError(response, err, "Could not write response")
