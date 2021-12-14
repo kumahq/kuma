@@ -8,6 +8,12 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Any type
+
+The `kuma.metrics.dataplane.enabled` and `kuma.metrics.zone.enabled` configurations have been removed.
+
+Kuma always generate the corresponding metrics.
+
 ### Kubernetes
 
 Please migrate your `kuma.io/sidecar-injection` annotations to labels.

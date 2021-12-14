@@ -22,7 +22,6 @@ var _ = Describe("ZoneIngressInsight Manager", func() {
 		// setup
 		s := memory.NewStore()
 		cfg := &kuma_cp.DataplaneMetrics{
-			Enabled:           true,
 			SubscriptionLimit: 3,
 		}
 		manager := zoneingressinsight.NewZoneIngressInsightManager(s, cfg)
@@ -52,11 +51,11 @@ var _ = Describe("ZoneIngressInsight Manager", func() {
 		Expect(actual.Spec.Subscriptions[2].Id).To(Equal("9"))
 	})
 
-	It("should cleanup subscriptions if disabled", func() {
+	It("should cleanup subscriptions if limit is 0", func() {
 		// setup
 		s := memory.NewStore()
 		cfg := &kuma_cp.DataplaneMetrics{
-			Enabled: false,
+			SubscriptionLimit: 0,
 		}
 		manager := zoneingressinsight.NewZoneIngressInsightManager(s, cfg)
 
