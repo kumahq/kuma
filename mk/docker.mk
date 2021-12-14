@@ -63,22 +63,35 @@ docker/build/kuma-universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/a
 	docker tag kuma-universal $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
 .PHONY: image/kuma-cp
-image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
+image/kuma-cp: ## Dev: Rebuild `kuma-cp` Docker image
+	$(MAKE) build/kuma-cp/linux-amd64
+	$(MAKE) docker/build/kuma-cp
 
 .PHONY: image/kuma-dp
-image/kuma-dp: build/kuma-dp/linux-amd64 build/coredns/linux-amd64 build/artifacts-linux-amd64/envoy/envoy docker/build/kuma-dp ## Dev: Rebuild `kuma-dp` Docker image
+image/kuma-dp: build/artifacts-linux-amd64/envoy/envoy ## Dev: Rebuild `kuma-dp` Docker image
+	$(MAKE) build/kuma-dp/linux-amd64
+	$(MAKE) build/coredns/linux-amd64
+	$(MAKE) docker/build/kuma-dp
 
 .PHONY: image/kumactl
-image/kumactl: build/kumactl/linux-amd64 docker/build/kumactl ## Dev: Rebuild `kumactl` Docker image
+image/kumactl:
+	$(MAKE) build/kumactl/linux-amd64
+	$(MAKE) docker/build/kumactl ## Dev: Rebuild `kumactl` Docker image
 
 .PHONY: image/kuma-init
-image/kuma-init: docker/build/kuma-init ## Dev: Rebuild `kuma-init` Docker image
+image/kuma-init: ## Dev: Rebuild `kuma-init` Docker image
+	$(MAKE) build/kumactl/linux-amd64
+	$(MAKE) docker/build/kuma-init
 
 .PHONY: image/kuma-prometheus-sd
-image/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-amd64 docker/build/kuma-prometheus-sd ## Dev: Rebuild `kuma-prometheus-sd` Docker image
+image/kuma-prometheus-sd: ## Dev: Rebuild `kuma-prometheus-sd` Docker image
+	$(MAKE) build/kuma-prometheus-sd/linux-amd64
+	$(MAKE) docker/build/kuma-prometheus-sd
 
 .PHONY: image/kuma-universal
-image/kuma-universal: build/linux-amd64 docker/build/kuma-universal
+image/kuma-universal:
+	$(MAKE) build/linux-amd64
+	$(MAKE) docker/build/kuma-universal
 
 .PHONY: images
 images: images/release images/test ## Dev: Rebuild release and tesst Docker images

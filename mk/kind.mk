@@ -55,9 +55,7 @@ kind/start: ${KUBECONFIG_DIR}
 			--kubeconfig $(KIND_KUBECONFIG) \
 			--quiet --wait 120s && \
 		KUBECONFIG=$(KIND_KUBECONFIG) kubectl scale deployment --replicas 1 coredns --namespace kube-system && \
-		until \
-			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
-		do echo "Waiting for the cluster to come up" && sleep 1; done )
+		$(MAKE) kind/wait)
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
@@ -65,6 +63,12 @@ kind/start: ${KUBECONFIG_DIR}
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
+
+.PHONY: kind/wait
+kind/wait:
+	until \
+		KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
+	do echo "Waiting for the cluster to come up" && sleep 1; done
 
 .PHONY: kind/stop
 kind/stop:
