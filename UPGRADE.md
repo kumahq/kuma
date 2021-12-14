@@ -10,8 +10,9 @@ does not have any particular instructions.
 
 ### Any type
 
-It is not possible to remove computing stats with: `kuma.metrics.dataplane.enabled` and `kuma.metrics.zone.enabled` (the configurations are removed).
-These stats are useful to Kuma internally and can't be turned off.
+The `kuma.metrics.dataplane.enabled` and `kuma.metrics.zone.enabled` configurations have been removed.
+
+Kuma always generate the corresponding metrics.
 
 ### Kubernetes
 

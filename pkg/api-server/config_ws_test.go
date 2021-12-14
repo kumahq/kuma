@@ -133,7 +133,6 @@ var _ = Describe("Config WS", func() {
 		  },
 		  "metrics": {
 			"dataplane": {
-			  "enabled": true,
 			  "subscriptionLimit": 2,
 			  "idleTimeout": "5m0s"
 			},
@@ -142,7 +141,6 @@ var _ = Describe("Config WS", func() {
 			  "minResyncTimeout": "1s"
 			},
 			"zone": {
-			  "enabled": true,
 			  "subscriptionLimit": 10,
 			  "idleTimeout": "5m0s"
 			}
