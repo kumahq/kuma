@@ -478,26 +478,15 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
-			respChan := make(chan *http.Response, 1)
-
-			go func() {
-				resp, err := http.DefaultClient.Do(req)
-				Expect(err).ToNot(HaveOccurred())
-
-				respChan <- resp
-			}()
-
-			// given an updated mesh while the request is in progress
-			time.Sleep(5 * time.Millisecond)
-
-			err = createDataPlane(dp2)
+			start := time.Now()
+			resp, err := http.DefaultClient.Do(req)
+			// Ensure we're returning in less than 1 sec as this is the first request
+			Expect(time.Now()).To(BeTemporally("<", start.Add(time.Second)))
 			Expect(err).ToNot(HaveOccurred())
-
-			resp := <-respChan
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			Expect(resp).To(HaveHTTPStatus(http.StatusOK))
 
 			// when
 			respBody, err := io.ReadAll(resp.Body)
