@@ -115,7 +115,7 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 		},
 		Entry("matchedPolicies has wrong type", testCase{
 			inputFile: "error.matched_policies_wrong_type.json",
-			errMsg:    "MatchedPolicies is not a map[string]interface{}",
+			errMsg:    "json: cannot unmarshal array into Go struct field intermediateInspectEntry.matchedPolicies of type map[string]interface {}",
 		}),
 		Entry("matchedPolicies key is empty", testCase{
 			inputFile: "error.matched_policies_empty_key.json",

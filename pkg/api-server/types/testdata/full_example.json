@@ -1,4 +1,6 @@
 {
+  "type": "inbound",
+  "name": "192.168.0.1:80",
   "matchedPolicies": {
     "Timeout": [
       {
@@ -32,7 +34,5 @@
         ]
       }
     ]
-  },
-  "name": "192.168.0.1:80",
-  "type": "inbound"
+  }
 }

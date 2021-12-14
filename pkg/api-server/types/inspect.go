@@ -17,17 +17,23 @@ type InspectEntry struct {
 	MatchedPolicies map[core_model.ResourceType][]core_model.ResourceSpec `json:"matchedPolicies"`
 }
 
+type intermediateInspectEntry struct {
+	// Intermediate representation is needed to preserve the order of the fields.
+	// If use 'map[string]interface{}' as intermediate representation then the fields
+	// will be sorted lexicographically.
+	Type            string                 `json:"type"`
+	Name            string                 `json:"name"`
+	MatchedPolicies map[string]interface{} `json:"matchedPolicies"`
+}
+
 var _ json.Marshaler = &InspectEntry{}
 var _ json.Unmarshaler = &InspectEntry{}
 
 func (r *InspectEntry) MarshalJSON() ([]byte, error) {
-	result := map[string]interface{}{}
-	if r.Type != "" {
-		result["type"] = r.Type
-	}
-	if r.Name != "" {
-		result["name"] = r.Name
-	}
+	result := intermediateInspectEntry{}
+
+	result.Type = r.Type
+	result.Name = r.Name
 
 	matchedPolicyMap := map[string]interface{}{}
 	for resType, matchedPolicies := range r.MatchedPolicies {
@@ -46,31 +52,21 @@ func (r *InspectEntry) MarshalJSON() ([]byte, error) {
 		matchedPolicyMap[string(resType)] = list
 	}
 	if len(matchedPolicyMap) != 0 {
-		result["matchedPolicies"] = matchedPolicyMap
+		result.MatchedPolicies = matchedPolicyMap
 	}
 	return json.Marshal(result)
 }
 
 func (r *InspectEntry) UnmarshalJSON(data []byte) error {
-	m := map[string]interface{}{}
-	if err := json.Unmarshal(data, &m); err != nil {
+	intermediate := intermediateInspectEntry{}
+	if err := json.Unmarshal(data, &intermediate); err != nil {
 		return err
 	}
-	if m["name"] != nil {
-		r.Name = m["name"].(string)
-	}
-	if m["type"] != nil {
-		r.Type = m["type"].(string)
-	}
 
-	if matchedPoliciesRaw, ok := m["matchedPolicies"]; ok {
+	if intermediate.MatchedPolicies != nil {
 		r.MatchedPolicies = map[core_model.ResourceType][]core_model.ResourceSpec{}
 
-		matchedPolicies, ok := matchedPoliciesRaw.(map[string]interface{})
-		if !ok {
-			return errors.New("MatchedPolicies is not a map[string]interface{}")
-		}
-		for resTypeRaw, matchedPolicyRaw := range matchedPolicies {
+		for resTypeRaw, matchedPolicyRaw := range intermediate.MatchedPolicies {
 			var resType core_model.ResourceType
 			if resTypeRaw == "" {
 				return errors.New("MatchedPolicies key is empty")
@@ -98,5 +94,9 @@ func (r *InspectEntry) UnmarshalJSON(data []byte) error {
 			}
 		}
 	}
+
+	r.Name = intermediate.Name
+	r.Type = intermediate.Type
+
 	return nil
 }

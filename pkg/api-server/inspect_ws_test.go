@@ -15,44 +15,88 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-type staticMatchedPolicyGetter struct {
-	mp *core_xds.MatchedPolicies
-}
+type dataplaneBuilder core_mesh.DataplaneResource
 
-func (s *staticMatchedPolicyGetter) Get(ctx context.Context, dataplaneKey model.ResourceKey) (*core_xds.MatchedPolicies, error) {
-	return s.mp, nil
-}
-
-func inbound(ip string, dpPort, workloadPort uint32) mesh_proto.InboundInterface {
-	return mesh_proto.InboundInterface{
-		DataplaneIP:   ip,
-		DataplanePort: dpPort,
-		WorkloadPort:  workloadPort,
+func newMesh(name string) *core_mesh.MeshResource {
+	return &core_mesh.MeshResource{
+		Meta: &test_model.ResourceMeta{Name: name},
+		Spec: &mesh_proto.Mesh{},
 	}
 }
 
-func outbound(ip string, port uint32) mesh_proto.OutboundInterface {
-	return mesh_proto.OutboundInterface{
-		DataplaneIP:   ip,
-		DataplanePort: port,
+func newDataplaneBuilder() *dataplaneBuilder {
+	return &dataplaneBuilder{
+		Spec: &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "1.1.1.1",
+			},
+		},
 	}
+}
+
+func (b *dataplaneBuilder) build() *core_mesh.DataplaneResource {
+	return (*core_mesh.DataplaneResource)(b)
+}
+
+func (b *dataplaneBuilder) meta(name, mesh string) *dataplaneBuilder {
+	b.Meta = &test_model.ResourceMeta{Name: name, Mesh: mesh}
+	return b
+}
+
+func (b *dataplaneBuilder) inbound(service, ip string, dpPort, workloadPort uint32) *dataplaneBuilder {
+	b.Spec.Networking.Inbound = append(b.Spec.Networking.Inbound, &mesh_proto.Dataplane_Networking_Inbound{
+		Address:     ip,
+		Port:        dpPort,
+		ServicePort: workloadPort,
+		Tags: map[string]string{
+			mesh_proto.ServiceTag:  service,
+			mesh_proto.ProtocolTag: "http",
+		},
+	})
+	return b
+}
+
+func (b *dataplaneBuilder) outbound(service, ip string, port uint32) *dataplaneBuilder {
+	b.Spec.Networking.Outbound = append(b.Spec.Networking.Outbound, &mesh_proto.Dataplane_Networking_Outbound{
+		Address: ip,
+		Port:    port,
+		Tags: map[string]string{
+			mesh_proto.ServiceTag: service,
+		},
+	})
+	return b
+}
+
+func serviceSelector(service, protocol string) []*mesh_proto.Selector {
+	selector := &mesh_proto.Selector{
+		Match: map[string]string{
+			mesh_proto.ServiceTag: service,
+		},
+	}
+	if protocol != "" {
+		selector.Match[mesh_proto.ProtocolTag] = protocol
+	}
+	return []*mesh_proto.Selector{selector}
 }
 
 var _ = Describe("Inspect WS", func() {
 
 	type testCase struct {
-		path            string
-		goldenFile      string
-		matchedPolicies *core_xds.MatchedPolicies
+		path       string
+		goldenFile string
+		resources  []core_model.Resource
 	}
 
 	DescribeTable("should return policies matched for specific dataplane",
@@ -61,8 +105,14 @@ var _ = Describe("Inspect WS", func() {
 			resourceStore := memory.NewStore()
 			metrics, err := metrics.NewMetrics("Standalone")
 			Expect(err).ToNot(HaveOccurred())
-			apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(),
-				true, metrics, &staticMatchedPolicyGetter{mp: given.matchedPolicies})
+
+			rm := manager.NewResourceManager(resourceStore)
+			for _, resource := range given.resources {
+				err = rm.Create(context.Background(), resource, store.CreateBy(core_model.MetaToResourceKey(resource.GetMeta())))
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
 
 			stop := make(chan struct{})
 			go func() {
@@ -91,33 +141,64 @@ var _ = Describe("Inspect WS", func() {
 		Entry("full example", testCase{
 			path:       "/inspect/meshes/default/dataplane/backend-1",
 			goldenFile: "inspect.json",
-			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficPermissions: core_xds.TrafficPermissionMap{
-					inbound("192.168.0.1", 80, 81): {Spec: samples.TrafficPermission},
+			resources: []core_model.Resource{
+				newMesh("default"),
+				newDataplaneBuilder().
+					meta("backend-1", "default").
+					inbound("backend", "192.168.0.1", 80, 81).
+					outbound("redis", "192.168.0.2", 8080).
+					outbound("gateway", "192.168.0.3", 8080).
+					outbound("postgres", "192.168.0.4", 8080).
+					outbound("web", "192.168.0.2", 8080).
+					build(),
+				&core_mesh.TrafficPermissionResource{
+					Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
+					Spec: &mesh_proto.TrafficPermission{
+						Sources:      serviceSelector("*", ""),
+						Destinations: serviceSelector("*", ""),
+					},
 				},
-				HealthChecks: core_xds.HealthCheckMap{
-					"backend":  {Spec: samples.HealthCheck},
-					"gateway":  {Spec: samples.HealthCheck},
-					"postgres": {Spec: samples.HealthCheck},
-				},
-				FaultInjections: core_xds.FaultInjectionMap{
-					inbound("192.168.0.1", 80, 81): {
-						{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
+				&core_mesh.FaultInjectionResource{
+					Meta: &test_model.ResourceMeta{Name: "fi-1", Mesh: "default"},
+					Spec: &mesh_proto.FaultInjection{
+						Sources:      serviceSelector("*", ""),
+						Destinations: serviceSelector("backend", "http"),
+						Conf: &mesh_proto.FaultInjection_Conf{
 							Delay: &mesh_proto.FaultInjection_Conf_Delay{
 								Value:      durationpb.New(5 * time.Second),
 								Percentage: util_proto.Double(90),
 							},
-						}}},
-						{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
+						},
+					},
+				},
+				&core_mesh.FaultInjectionResource{
+					Meta: &test_model.ResourceMeta{Name: "fi-2", Mesh: "default"},
+					Spec: &mesh_proto.FaultInjection{
+						Sources:      serviceSelector("*", ""),
+						Destinations: serviceSelector("backend", "http"),
+						Conf: &mesh_proto.FaultInjection_Conf{
 							Abort: &mesh_proto.FaultInjection_Conf_Abort{
 								HttpStatus: util_proto.UInt32(500),
 								Percentage: util_proto.Double(80),
 							},
-						}}},
+						},
 					},
 				},
-				Timeouts: core_xds.TimeoutMap{
-					outbound("192.168.0.2", 8080): {Spec: samples.Timeout},
+				&core_mesh.TimeoutResource{
+					Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "default"},
+					Spec: &mesh_proto.Timeout{
+						Sources:      serviceSelector("*", ""),
+						Destinations: serviceSelector("redis", ""),
+						Conf:         samples.Timeout.Conf,
+					},
+				},
+				&core_mesh.HealthCheckResource{
+					Meta: &test_model.ResourceMeta{Name: "hc-1", Mesh: "default"},
+					Spec: &mesh_proto.HealthCheck{
+						Sources:      serviceSelector("backend", ""),
+						Destinations: serviceSelector("*", ""),
+						Conf:         samples.HealthCheck.Conf,
+					},
 				},
 			},
 		}),

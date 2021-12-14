@@ -36,7 +36,7 @@ var _ = Describe("Global Insights Endpoints", func() {
 		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics, nil)
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
 
 		client := resourceApiClient{
 			address: apiServer.Address(),

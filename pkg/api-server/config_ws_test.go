@@ -24,7 +24,7 @@ var _ = Describe("Config WS", func() {
 		resourceStore := memory.NewStore()
 		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
-		apiServer := createTestApiServer(resourceStore, cfg, true, metrics, nil)
+		apiServer := createTestApiServer(resourceStore, cfg, true, metrics)
 
 		stop := make(chan struct{})
 		go func() {

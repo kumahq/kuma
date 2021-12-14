@@ -31,7 +31,7 @@ var _ = Describe("Resource Endpoints", func() {
 		resourceStore = store.NewPaginationStore(memory.NewStore())
 		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics, nil)
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes",

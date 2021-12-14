@@ -31,7 +31,7 @@ var _ = Describe("Read only Resource Endpoints", func() {
 		cfg.ReadOnly = true
 		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
-		apiServer = createTestApiServer(resourceStore, cfg, true, metrics, nil)
+		apiServer = createTestApiServer(resourceStore, cfg, true, metrics)
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/sample-traffic-routes",

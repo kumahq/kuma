@@ -20,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
@@ -105,7 +104,7 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, enableGUI bool, metrics core_metrics.Metrics, mpg xds.MatchedPoliciesGetter) *api_server.ApiServer {
+func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, enableGUI bool, metrics core_metrics.Metrics) *api_server.ApiServer {
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client
 	port, err := test.GetFreePort()
@@ -124,13 +123,9 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
 
-	if mpg == nil {
-		mpg = api_server.NewSimpleMatchedPolicyGetter(&cfg,
-			manager.NewResourceManager(store), config_manager.NewConfigManager(store))
-	}
 	apiServer, err := api_server.NewApiServer(
 		manager.NewResourceManager(store),
-		mpg,
+		api_server.NewSimpleMatchedPolicyGetter(&cfg, manager.NewResourceManager(store), config_manager.NewConfigManager(store)),
 		customization.NewAPIList(),
 		append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor),
 		&cfg,
