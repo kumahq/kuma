@@ -31,8 +31,7 @@ const controllerName = "gateways.kuma.io/controller"
 // GatewayReconciler reconciles a GatewayAPI Gateway object.
 type GatewayReconciler struct {
 	kube_client.Client
-	Reader kube_client.Reader
-	Log    logr.Logger
+	Log logr.Logger
 
 	Scheme          *kube_runtime.Scheme
 	Converter       k8s_common.Converter
