@@ -159,9 +159,10 @@ commands:
         name: "Update runc"
         # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
         command: |
-          sudo wget -O /usr/bin/runc https://github.com/opencontainers/runc/releases/download/v1.0.2/runc.amd64
-          sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
-
+          if [[ `uname -s` == "Linux" ]]; then
+            sudo sh -c 'curl -s --fail --location https://github.com/opencontainers/runc/releases/download/v1.0.3/runc.amd64 > /usr/bin/runc'
+            sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
+          fi
 
 executors:
   golang:
