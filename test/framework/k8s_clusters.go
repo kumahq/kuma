@@ -2,7 +2,6 @@ package framework
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -30,24 +29,9 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	clusters := map[string]*K8sCluster{}
 
 	for i, name := range clusterNames {
-		clusters[name] = &K8sCluster{
-			t:                   t,
-			name:                name,
-			kubeconfig:          os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, name)),
-			loPort:              uint32(kumaCPAPIPortFwdBase + i*1000),
-			hiPort:              uint32(kumaCPAPIPortFwdBase + (i+1)*1000 - 1),
-			forwardedPortsChans: map[uint32]chan struct{}{},
-			verbose:             verbose,
-			deployments:         map[string]Deployment{},
-			defaultTimeout:      GetDefaultTimeout(),
-			defaultRetries:      GetDefaultRetries(),
-		}
-
-		var err error
-		clusters[name].clientset, err = k8s.GetKubernetesClientFromOptionsE(t, clusters[name].GetKubectlOptions())
-		if err != nil {
-			return nil, errors.Wrapf(err, "error in getting access to K8S")
-		}
+		clusters[name] = NewK8sCluster(t, name, verbose)
+		clusters[name].loPort = uint32(kumaCPAPIPortFwdBase + i*1000)
+		clusters[name].hiPort = uint32(kumaCPAPIPortFwdBase + (i+1)*1000 - 1)
 	}
 
 	return &K8sClusters{

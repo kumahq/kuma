@@ -31,11 +31,9 @@ metadata:
 	)
 
 	BeforeEach(func() {
-		c, err := NewK8SCluster(NewTestingT(), Kuma1, Silent)
-		Expect(err).ToNot(HaveOccurred())
-		k8sCluster = c
+		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
-		err = NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, optsKubernetes...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
