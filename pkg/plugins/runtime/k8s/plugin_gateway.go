@@ -70,7 +70,6 @@ func addGatewayReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conver
 
 	gatewayAPIGatewayReconciler := &gatewayapi_controllers.GatewayReconciler{
 		Client:          mgr.GetClient(),
-		Reader:          mgr.GetAPIReader(),
 		Log:             core.Log.WithName("controllers").WithName("gatewayapi").WithName("Gateway"),
 		Scheme:          mgr.GetScheme(),
 		Converter:       converter,
@@ -84,7 +83,6 @@ func addGatewayReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conver
 
 	gatewayAPIHTTPRouteReconciler := &gatewayapi_controllers.HTTPRouteReconciler{
 		Client:          mgr.GetClient(),
-		Reader:          mgr.GetAPIReader(),
 		Log:             core.Log.WithName("controllers").WithName("gatewayapi").WithName("HTTPRoute"),
 		Scheme:          mgr.GetScheme(),
 		Converter:       converter,

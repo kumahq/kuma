@@ -21,8 +21,7 @@ import (
 // MeshReconciler reconciles a Mesh object
 type MeshReconciler struct {
 	kube_client.Client
-	Reader kube_client.Reader
-	Log    logr.Logger
+	Log logr.Logger
 
 	Scheme          *kube_runtime.Scheme
 	Converter       k8s_common.Converter
