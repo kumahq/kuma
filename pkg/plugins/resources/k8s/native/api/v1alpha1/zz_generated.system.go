@@ -68,6 +68,7 @@ func (l *ZoneList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&system_proto.Zone{}, &Zone{
 		TypeMeta: metav1.TypeMeta{
@@ -138,6 +139,7 @@ func (l *ZoneInsightList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&system_proto.ZoneInsight{}, &ZoneInsight{
 		TypeMeta: metav1.TypeMeta{
