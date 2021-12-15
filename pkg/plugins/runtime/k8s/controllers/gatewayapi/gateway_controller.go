@@ -93,8 +93,8 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, gateway *gatewayapi.Gateway) (*mesh_k8s.GatewayInstance, error) {
 	instance := &mesh_k8s.GatewayInstance{
 		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace:    gateway.Namespace,
-			GenerateName: gateway.Name,
+			Namespace: gateway.Namespace,
+			Name:      gateway.Name,
 		},
 	}
 

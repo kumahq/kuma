@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -10,8 +11,10 @@ import (
 	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
+	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -73,17 +76,81 @@ func k8sSelector(name string) map[string]string {
 	return map[string]string{"app": name}
 }
 
+const controllerKey string = ".metadata.controller"
+
+func indexController(mgr kube_ctrl.Manager, ownerGVK kube_schema.GroupVersionKind, objType kube_client.Object) error {
+	ownerKind := ownerGVK.Kind
+	ownerGV := ownerGVK.GroupVersion().String()
+
+	return mgr.GetFieldIndexer().IndexField(context.Background(), objType, controllerKey, func(rawObj kube_client.Object) []string {
+		owner := kube_meta.GetControllerOf(rawObj)
+		if owner == nil || owner.APIVersion != ownerGV || owner.Kind != ownerKind {
+			return nil
+		}
+
+		return []string{owner.Name}
+	})
+}
+
+// createOrUpdateControlled either creates an object to be controlled by the
+// given object or updates the existing one.
+func (r *GatewayInstanceReconciler) createOrUpdateControlled(
+	ctx context.Context, owner kube_meta.Object, objectList kube_client.ObjectList, mutate func(kube_client.Object) (kube_client.Object, error),
+) (kube_client.Object, error) {
+	if err := r.Client.List(
+		ctx, objectList, kube_client.InNamespace(owner.GetNamespace()), kube_client.MatchingFields{controllerKey: owner.GetName()},
+	); err != nil {
+		return nil, errors.Wrap(err, "unable to list objects")
+	}
+
+	items, err := kube_apimeta.ExtractList(objectList)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to extract list of runtime.Objects")
+	}
+
+	switch len(items) {
+	case 0:
+		obj, err := mutate(nil)
+		if err != nil {
+			return nil, errors.Wrap(err, "couldn't mutate object for creation")
+		}
+
+		if err := kube_controllerutil.SetControllerReference(owner, obj, r.Scheme); err != nil {
+			return nil, errors.Wrap(err, "unable to set object's controller reference")
+		}
+
+		if err := r.Client.Create(ctx, obj); err != nil {
+			return nil, errors.Wrap(err, "couldn't create object")
+		}
+		return obj, nil
+	case 1:
+		item, ok := items[0].(kube_client.Object)
+		if !ok {
+			return nil, fmt.Errorf("expected runtime.Object to be client.Object")
+		}
+
+		obj, err := mutate(item)
+		if err != nil {
+			return nil, errors.Wrap(err, "couldn't mutate object for update")
+		}
+
+		if err := kube_controllerutil.SetControllerReference(owner, obj, r.Scheme); err != nil {
+			return nil, errors.Wrap(err, "unable to set object's controller reference")
+		}
+
+		if err := r.Client.Update(ctx, obj); err != nil {
+			return nil, errors.Wrap(err, "couldn't update object")
+		}
+		return obj, nil
+	default:
+		return nil, fmt.Errorf("expected a maximum of one item controlled by %s/%s", owner.GetNamespace(), owner.GetName())
+	}
+}
+
 func (r *GatewayInstanceReconciler) createOrUpdateService(
 	ctx context.Context,
 	gatewayInstance *mesh_k8s.GatewayInstance,
 ) (*kube_core.Service, error) {
-	service := &kube_core.Service{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace:    gatewayInstance.Namespace,
-			GenerateName: gatewayInstance.Name,
-		},
-	}
-
 	gateway := match.Gateway(r.ResourceManager, func(selector mesh_proto.TagSelector) bool {
 		return selector.Matches(gatewayInstance.Spec.Tags)
 	})
@@ -92,30 +159,43 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		return nil, fmt.Errorf("no matching Gateway")
 	}
 
-	if _, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
-		var ports []kube_core.ServicePort
+	obj, err := r.createOrUpdateControlled(
+		ctx, gatewayInstance, &kube_core.ServiceList{},
+		func(obj kube_client.Object) (kube_client.Object, error) {
+			service := &kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace:    gatewayInstance.Namespace,
+					GenerateName: fmt.Sprintf("%s-", gatewayInstance.Name),
+				},
+			}
+			if obj != nil {
+				service = obj.(*kube_core.Service)
+			}
 
-		for _, listener := range gateway.Spec.GetConf().GetListeners() {
-			ports = append(ports, kube_core.ServicePort{
-				Name:     strconv.Itoa(int(listener.Port)),
-				Protocol: kube_core.ProtocolTCP,
-				Port:     int32(listener.Port),
-			})
-		}
+			var ports []kube_core.ServicePort
 
-		service.Spec = kube_core.ServiceSpec{
-			Selector: k8sSelector(gatewayInstance.Name),
-			Ports:    ports,
-			Type:     gatewayInstance.Spec.ServiceType,
-		}
+			for _, listener := range gateway.Spec.GetConf().GetListeners() {
+				ports = append(ports, kube_core.ServicePort{
+					Name:     strconv.Itoa(int(listener.Port)),
+					Protocol: kube_core.ProtocolTCP,
+					Port:     int32(listener.Port),
+				})
+			}
 
-		err := kube_controllerutil.SetControllerReference(gatewayInstance, service, r.Scheme)
-		return errors.Wrap(err, "unable to set Service's controller reference to GatewayInstance")
-	}); err != nil {
+			service.Spec = kube_core.ServiceSpec{
+				Selector: k8sSelector(gatewayInstance.Name),
+				Ports:    ports,
+				Type:     gatewayInstance.Spec.ServiceType,
+			}
+
+			return service, nil
+		},
+	)
+	if err != nil {
 		return nil, errors.Wrap(err, "unable to create or update Service for GatewayInstance")
 	}
 
-	return service, nil
+	return obj.(*kube_core.Service), nil
 }
 
 func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
@@ -127,55 +207,61 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 		return nil, errors.Wrap(err, "unable to get Namespace for GatewayInstance")
 	}
 
-	deployment := &kube_apps.Deployment{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace:    gatewayInstance.GetNamespace(),
-			GenerateName: gatewayInstance.GetName(),
+	obj, err := r.createOrUpdateControlled(
+		ctx, gatewayInstance, &kube_apps.DeploymentList{},
+		func(obj kube_client.Object) (kube_client.Object, error) {
+			deployment := &kube_apps.Deployment{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace:    gatewayInstance.Namespace,
+					GenerateName: fmt.Sprintf("%s-", gatewayInstance.Name),
+				},
+			}
+			if obj != nil {
+				deployment = obj.(*kube_apps.Deployment)
+			}
+
+			container, err := r.ProxyFactory.NewContainer(gatewayInstance.Annotations, &ns)
+			if err != nil {
+				return nil, errors.Wrap(err, "unable to create gateway container")
+			}
+
+			if res := gatewayInstance.Spec.Resources; res != nil {
+				container.Resources = *res
+			}
+
+			container.Name = util_k8s.KumaGatewayContainerName
+
+			podSpec := kube_core.PodSpec{
+				Containers: []kube_core.Container{container},
+			}
+
+			annotations := map[string]string{
+				metadata.KumaGatewayAnnotation:          metadata.AnnotationBuiltin,
+				metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationDisabled,
+				mesh_proto.ServiceTag:                   gatewayInstance.Annotations[mesh_proto.ServiceTag],
+				metadata.KumaMeshAnnotation:             util_k8s.MeshFor(gatewayInstance),
+			}
+
+			deployment.Spec.Replicas = &gatewayInstance.Spec.Replicas
+			deployment.Spec.Selector = &kube_meta.LabelSelector{
+				MatchLabels: k8sSelector(gatewayInstance.Name),
+			}
+			deployment.Spec.Template = kube_core.PodTemplateSpec{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Labels:      k8sSelector(gatewayInstance.Name),
+					Annotations: annotations,
+				},
+				Spec: podSpec,
+			}
+
+			return deployment, nil
 		},
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create or update Service for GatewayInstance")
 	}
 
-	if _, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
-		container, err := r.ProxyFactory.NewContainer(gatewayInstance.Annotations, &ns)
-		if err != nil {
-			return errors.Wrap(err, "unable to create gateway container")
-		}
-
-		if res := gatewayInstance.Spec.Resources; res != nil {
-			container.Resources = *res
-		}
-
-		container.Name = util_k8s.KumaGatewayContainerName
-
-		podSpec := kube_core.PodSpec{
-			Containers: []kube_core.Container{container},
-		}
-
-		annotations := map[string]string{
-			metadata.KumaGatewayAnnotation:          metadata.AnnotationBuiltin,
-			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationDisabled,
-			mesh_proto.ServiceTag:                   gatewayInstance.Annotations[mesh_proto.ServiceTag],
-			metadata.KumaMeshAnnotation:             util_k8s.MeshFor(gatewayInstance),
-		}
-
-		deployment.Spec.Replicas = &gatewayInstance.Spec.Replicas
-		deployment.Spec.Selector = &kube_meta.LabelSelector{
-			MatchLabels: k8sSelector(gatewayInstance.Name),
-		}
-		deployment.Spec.Template = kube_core.PodTemplateSpec{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Labels:      k8sSelector(gatewayInstance.Name),
-				Annotations: annotations,
-			},
-			Spec: podSpec,
-		}
-
-		err = kube_controllerutil.SetControllerReference(gatewayInstance, deployment, r.Scheme)
-		return errors.Wrap(err, "unable to set Deployment's owner reference")
-	}); err != nil {
-		return nil, errors.Wrap(err, "unable to create or update Deployment")
-	}
-
-	return deployment, nil
+	return obj.(*kube_apps.Deployment), nil
 }
 
 func getCombinedReadiness(svc *kube_core.Service, deployment *kube_apps.Deployment) (kube_meta.ConditionStatus, string) {
@@ -215,6 +301,20 @@ func updateStatus(gatewayInstance *mesh_k8s.GatewayInstance, svc *kube_core.Serv
 }
 
 func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
+	gatewayInstanceGVK := kube_schema.GroupVersionKind{
+		Group:   mesh_k8s.GroupVersion.Group,
+		Version: mesh_k8s.GroupVersion.Version,
+		Kind:    reflect.TypeOf(mesh_k8s.GatewayInstance{}).Name(),
+	}
+
+	if err := indexController(mgr, gatewayInstanceGVK, &kube_core.Service{}); err != nil {
+		return err
+	}
+
+	if err := indexController(mgr, gatewayInstanceGVK, &kube_apps.Deployment{}); err != nil {
+		return err
+	}
+
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&mesh_k8s.GatewayInstance{}).
 		Owns(&kube_core.Service{}).
