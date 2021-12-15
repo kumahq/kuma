@@ -459,7 +459,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(discoveryRes.Resources).To(HaveLen(2))
 		})
 
-		It("should allow specifying the fetch timeout", func() {
+		It("should return straightaway on first request with a fetch timeout", func() {
 			// given
 			discoveryReq := envoy_v3.DiscoveryRequest{
 				VersionInfo:   "",
