@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -235,9 +236,14 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				Containers: []kube_core.Container{container},
 			}
 
+			jsonTags, err := json.Marshal(gatewayInstance.Spec.Tags)
+			if err != nil {
+				return nil, errors.Wrap(err, "unable to marshal tags to JSON")
+			}
+
 			annotations := map[string]string{
 				metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
-				mesh_proto.ServiceTag:          gatewayInstance.Spec.Tags[mesh_proto.ServiceTag],
+				metadata.KumaTagsAnnotation:    string(jsonTags),
 				metadata.KumaMeshAnnotation:    util_k8s.MeshFor(gatewayInstance),
 			}
 

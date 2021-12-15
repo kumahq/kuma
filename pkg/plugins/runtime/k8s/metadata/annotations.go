@@ -27,6 +27,9 @@ const (
 	// which is crucial for Multizone communication
 	KumaIngressAnnotation = "kuma.io/ingress"
 
+	// KumaTagsAnnotation holds a JSON representation of desired tags
+	KumaTagsAnnotation = "kuma.io/tags"
+
 	// KumaIngressPublicAddressAnnotation allows to pick public address for Ingress
 	// If not defined, Kuma will try to pick this address from the Ingress Service
 	KumaIngressPublicAddressAnnotation = "kuma.io/ingress-public-address"
