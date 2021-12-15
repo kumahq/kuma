@@ -92,7 +92,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 			RunAsGroup: &i.ContainerConfig.GID,
 		},
 		LivenessProbe: &kube_core.Probe{
-			Handler: kube_core.Handler{
+			ProbeHandler: kube_core.ProbeHandler{
 				HTTPGet: &kube_core.HTTPGetAction{
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
@@ -107,7 +107,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 			FailureThreshold:    i.ContainerConfig.LivenessProbe.FailureThreshold,
 		},
 		ReadinessProbe: &kube_core.Probe{
-			Handler: kube_core.Handler{
+			ProbeHandler: kube_core.ProbeHandler{
 				HTTPGet: &kube_core.HTTPGetAction{
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
