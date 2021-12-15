@@ -7,7 +7,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/server/types"
@@ -18,7 +20,11 @@ type CollectResponsesOpts struct {
 	Method           string
 	Headers          map[string]string
 
-	Flags []string
+	Flags        []string
+	ShellEscaped func(string) string
+
+	namespace   string
+	application string
 }
 
 func DefaultCollectResponsesOpts() CollectResponsesOpts {
@@ -26,6 +32,7 @@ func DefaultCollectResponsesOpts() CollectResponsesOpts {
 		NumberOfRequests: 10,
 		Method:           "GET",
 		Headers:          map[string]string{},
+		ShellEscaped:     ShellEscape,
 		Flags: []string{
 			"--fail",
 		},
@@ -102,7 +109,32 @@ func OutputFormat(format string) CollectResponsesOptsFn {
 	}
 }
 
-func CollectResponse(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (types.EchoResponse, error) {
+// FromKubernetesPod executes the curl command from a pod belonging to
+// the specified Kubernetes deployment. The cluster must be a Kubernetes
+// cluster, and the deployment must have an "app" label that matches the
+// application parameter.
+//
+// Note that the caller of CollectResponse still needs to specify the
+// source container name within the Pod.
+func FromKubernetesPod(namespace string, application string) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.namespace = namespace
+		opts.application = application
+
+		// For universal clusters, the curl exec is done in the shell,
+		// so we need to quote arguments. For Kubernetes cluster, the
+		// exec used the API without the shell, so we must not quote
+		// anything.
+		opts.ShellEscaped = func(s string) string { return s }
+	}
+}
+
+func CollectResponse(
+	cluster framework.Cluster,
+	container string,
+	destination string,
+	fn ...CollectResponsesOptsFn,
+) (types.EchoResponse, error) {
 	opts := DefaultCollectResponsesOpts()
 	for _, f := range fn {
 		f(&opts)
@@ -113,18 +145,38 @@ func CollectResponse(cluster framework.Cluster, source, destination string, fn .
 		"--max-time", "3",
 	}
 	for key, value := range opts.Headers {
-		cmd = append(cmd, "--header", ShellEscape(fmt.Sprintf("%s: %s", key, value)))
+		cmd = append(cmd, "--header", opts.ShellEscaped(fmt.Sprintf("%s: %s", key, value)))
 	}
 	cmd = append(cmd, opts.Flags...)
-	cmd = append(cmd, ShellEscape(destination))
-	stdout, _, err := cluster.ExecWithRetries("", "", source, cmd...)
+	cmd = append(cmd, opts.ShellEscaped(destination))
+
+	var pod string
+
+	if opts.namespace != "" && opts.application != "" {
+		pods, err := k8s.ListPodsE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(opts.namespace),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", opts.application),
+			},
+		)
+		if err != nil {
+			return types.EchoResponse{}, errors.Wrap(err, "failed to list pods")
+		}
+
+		pod = pods[0].Name
+	}
+
+	stdout, _, err := cluster.ExecWithRetries(opts.namespace, pod, container, cmd...)
 	if err != nil {
 		return types.EchoResponse{}, err
 	}
+
 	response := &types.EchoResponse{}
 	if err := json.Unmarshal([]byte(stdout), response); err != nil {
 		return types.EchoResponse{}, err
 	}
+
 	return *response, nil
 }
 
