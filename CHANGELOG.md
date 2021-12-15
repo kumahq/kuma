@@ -1,7 +1,7 @@
 # CHANGELOG
 
 ## [1.4.1]
-> Released on TBD
+> Released on 2021/12/15
 
 Changes:
 * feat: add kubernetes tags automatically [#3439](https://github.com//kumahq/kuma/pull/3439)
