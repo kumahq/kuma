@@ -107,7 +107,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 	})
 
-	It("should not override other DP", func() {
+	It("should not override extisting DP with different service", func() {
 		// given already created DP
 		dp := &core_mesh.DataplaneResource{
 			Meta: &model.ResourceMeta{
