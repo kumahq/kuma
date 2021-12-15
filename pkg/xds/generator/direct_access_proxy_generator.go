@@ -50,7 +50,14 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 			Configure(envoy_listeners.OutboundListener(name, endpoint.Address, endpoint.Port, core_xds.SocketAddressProtocolTCP)).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 				Configure(envoy_listeners.TcpProxy(name, envoy_common.NewCluster(envoy_common.WithService("direct_access")))).
-				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, name, proxy.Policies.Logs[core_mesh.PassThroughService], proxy)))).
+				Configure(envoy_listeners.NetworkAccessLog(
+					meshName,
+					envoy_common.TrafficDirectionOutbound,
+					sourceService,
+					name,
+					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+					proxy,
+				)))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Build()
 		if err != nil {

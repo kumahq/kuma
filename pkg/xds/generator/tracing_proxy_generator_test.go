@@ -87,16 +87,31 @@ var _ = Describe("TracingProxyGenerator", func() {
 				},
 				APIVersion: envoy_common.APIV3,
 				Policies: core_xds.MatchedPolicies{
-					TracingBackend: &mesh_proto.TracingBackend{
-						Name: "datadog",
-						Type: mesh_proto.TracingDatadogType,
-						Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
-							Address: "localhost",
-							Port:    2304,
-						}),
+					TrafficTrace: &core_mesh.TrafficTraceResource{
+						Spec: &mesh_proto.TrafficTrace{
+							Conf: &mesh_proto.TrafficTrace_Conf{
+								Backend: "datadog",
+							},
+						},
 					},
 				},
 			},
+			ctx: xds_context.Context{Mesh: xds_context.MeshContext{
+				Resource: &core_mesh.MeshResource{Spec: &mesh_proto.Mesh{
+					Tracing: &mesh_proto.Tracing{
+						Backends: []*mesh_proto.TracingBackend{
+							{
+								Name: "datadog",
+								Type: mesh_proto.TracingDatadogType,
+								Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
+									Address: "localhost",
+									Port:    2304,
+								}),
+							},
+						},
+					},
+				}},
+			}},
 			expected: "datadog.envoy-config.golden.yaml",
 		}),
 		Entry("should create cluster for Zipkin", testCase{
@@ -115,15 +130,30 @@ var _ = Describe("TracingProxyGenerator", func() {
 				},
 				APIVersion: envoy_common.APIV3,
 				Policies: core_xds.MatchedPolicies{
-					TracingBackend: &mesh_proto.TracingBackend{
-						Name: "zipkin",
-						Type: mesh_proto.TracingZipkinType,
-						Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
-							Url: "http://zipkin.us:9090/v2/spans",
-						}),
+					TrafficTrace: &core_mesh.TrafficTraceResource{
+						Spec: &mesh_proto.TrafficTrace{
+							Conf: &mesh_proto.TrafficTrace_Conf{
+								Backend: "zipkin",
+							},
+						},
 					},
 				},
 			},
+			ctx: xds_context.Context{Mesh: xds_context.MeshContext{
+				Resource: &core_mesh.MeshResource{Spec: &mesh_proto.Mesh{
+					Tracing: &mesh_proto.Tracing{
+						Backends: []*mesh_proto.TracingBackend{
+							{
+								Name: "zipkin",
+								Type: mesh_proto.TracingZipkinType,
+								Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Url: "http://zipkin.us:9090/v2/spans",
+								}),
+							},
+						},
+					},
+				}},
+			}},
 			expected: "zipkin.envoy-config.golden.yaml",
 		}),
 		Entry("should create cluster for Zipkin with tls sni", testCase{
@@ -142,15 +172,30 @@ var _ = Describe("TracingProxyGenerator", func() {
 				},
 				APIVersion: envoy_common.APIV3,
 				Policies: core_xds.MatchedPolicies{
-					TracingBackend: &mesh_proto.TracingBackend{
-						Name: "zipkin",
-						Type: mesh_proto.TracingZipkinType,
-						Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
-							Url: "https://zipkin.us:9090/v2/spans",
-						}),
+					TrafficTrace: &core_mesh.TrafficTraceResource{
+						Spec: &mesh_proto.TrafficTrace{
+							Conf: &mesh_proto.TrafficTrace_Conf{
+								Backend: "zipkin",
+							},
+						},
 					},
 				},
 			},
+			ctx: xds_context.Context{Mesh: xds_context.MeshContext{
+				Resource: &core_mesh.MeshResource{Spec: &mesh_proto.Mesh{
+					Tracing: &mesh_proto.Tracing{
+						Backends: []*mesh_proto.TracingBackend{
+							{
+								Name: "zipkin",
+								Type: mesh_proto.TracingZipkinType,
+								Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Url: "https://zipkin.us:9090/v2/spans",
+								}),
+							},
+						},
+					},
+				}},
+			}},
 			expected: "zipkin.envoy-config-https.golden.yaml",
 		}),
 	)

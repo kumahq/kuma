@@ -81,8 +81,8 @@ type EndpointList []Endpoint
 // EndpointMap holds routing-related information about a set of endpoints grouped by service name.
 type EndpointMap map[ServiceName][]Endpoint
 
-// LogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
-type LogMap map[ServiceName]*mesh_proto.LoggingBackend
+// TrafficLogMap holds the most specific TrafficLog for each outbound interface of a Dataplane.
+type TrafficLogMap map[ServiceName]*core_mesh.TrafficLogResource
 
 // HealthCheckMap holds the most specific HealthCheck for each reachable service.
 type HealthCheckMap map[ServiceName]*core_mesh.HealthCheckResource
@@ -94,16 +94,16 @@ type CircuitBreakerMap map[ServiceName]*core_mesh.CircuitBreakerResource
 type RetryMap map[ServiceName]*core_mesh.RetryResource
 
 // FaultInjectionMap holds all matched FaultInjectionResources for each InboundInterface
-type FaultInjectionMap map[mesh_proto.InboundInterface][]*mesh_proto.FaultInjection
+type FaultInjectionMap map[mesh_proto.InboundInterface][]*core_mesh.FaultInjectionResource
 
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*core_mesh.TrafficPermissionResource
 
 // InboundRateLimitsMap holds all RateLimitResources for each InboundInterface
-type InboundRateLimitsMap map[mesh_proto.InboundInterface][]*mesh_proto.RateLimit
+type InboundRateLimitsMap map[mesh_proto.InboundInterface][]*core_mesh.RateLimitResource
 
 // OutboundRateLimitsMap holds the RateLimitResource for each OutboundInterface
-type OutboundRateLimitsMap map[mesh_proto.OutboundInterface]*mesh_proto.RateLimit
+type OutboundRateLimitsMap map[mesh_proto.OutboundInterface]*core_mesh.RateLimitResource
 
 type RateLimitsMap struct {
 	Inbound  InboundRateLimitsMap
@@ -146,19 +146,6 @@ type Routing struct {
 	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
 	// TrafficRouteList is used only for generating configs for Ingress.
 	TrafficRouteList *core_mesh.TrafficRouteResourceList
-}
-
-type MatchedPolicies struct {
-	TrafficPermissions TrafficPermissionMap
-	Logs               LogMap
-	HealthChecks       HealthCheckMap
-	CircuitBreakers    CircuitBreakerMap
-	Retries            RetryMap
-	TrafficTrace       *core_mesh.TrafficTraceResource
-	TracingBackend     *mesh_proto.TracingBackend
-	FaultInjections    FaultInjectionMap
-	Timeouts           TimeoutMap
-	RateLimits         RateLimitsMap
 }
 
 type CaSecret struct {

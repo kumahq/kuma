@@ -310,6 +310,12 @@ var (
 				"kuma.io/service": "*",
 			},
 		}},
+		Conf: &mesh_proto.RateLimit_Conf{
+			Http: &mesh_proto.RateLimit_Conf_Http{
+				Requests: 100,
+				Interval: util_proto.Duration(1 * time.Minute),
+			},
+		},
 	}
 	Gateway = &mesh_proto.Gateway{
 		Selectors: []*mesh_proto.Selector{{

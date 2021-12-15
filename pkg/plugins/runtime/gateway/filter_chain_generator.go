@@ -272,6 +272,7 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 	// Tracing and logging have to be configured after the HttpConnectionManager is enabled.
 	builder.Configure(
 		envoy_listeners.DefaultCompressorFilter(),
+<<<<<<< HEAD
 		envoy_listeners.Tracing(info.Proxy.Policies.TracingBackend, service),
 		// TODO(jpeach) Logging policy doesn't work at all. The logging backend is
 		// selected by matching against outbound service names, and gateway dataplanes
@@ -282,6 +283,22 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 			service, // Source service is the gateway service.
 			"*",     // Destination service could be anywhere, depending on the routes.
 			info.Proxy.Policies.Logs[service],
+=======
+		envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service),
+		// In mesh proxies, the access log is configured on the outbound
+		// listener, which is why we index the Logs slice by destination
+		// service name.  A Gateway listener by definition forwards traffic
+		// to multiple destinations, so rather than making up some arbitrary
+		// rules about which destination service we should accept here, we
+		// match the log policy for the generic pass through service. This
+		// will be the only policy available for a Dataplane with no outbounds.
+		envoy_listeners.HttpAccessLog(
+			ctx.Mesh.Resource.Meta.GetName(),
+			envoy.TrafficDirectionInbound,
+			service,                // Source service is the gateway service.
+			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
+			ctx.Mesh.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+>>>>>>> abc8a69d (chore(kuma-cp) refactor MatchedPolicies structure (#3461))
 			info.Proxy,
 		),
 	)

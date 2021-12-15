@@ -51,7 +51,7 @@ func buildRateLimitMap(
 	}
 	for inbound, connectionPolicies := range policyMap {
 		for _, policy := range connectionPolicies {
-			result.Inbound[inbound] = append(result.Inbound[inbound], policy.(*core_mesh.RateLimitResource).Spec)
+			result.Inbound[inbound] = append(result.Inbound[inbound], policy.(*core_mesh.RateLimitResource))
 		}
 	}
 
@@ -59,9 +59,9 @@ func buildRateLimitMap(
 
 	for _, outbound := range dataplane.Spec.GetNetworking().GetOutbound() {
 		serviceName := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-		if policy, exists := outboundMap[serviceName]; exists {
+		if connectionPolicy, exists := outboundMap[serviceName]; exists {
 			oface := dataplane.Spec.GetNetworking().ToOutboundInterface(outbound)
-			result.Outbound[oface] = policy.(*core_mesh.RateLimitResource).Spec
+			result.Outbound[oface] = connectionPolicy.(*core_mesh.RateLimitResource)
 		}
 	}
 

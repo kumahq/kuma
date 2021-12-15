@@ -24,12 +24,32 @@ var _ = Describe("OutboundProxyGenerator", func() {
 	meta := &test_model.ResourceMeta{
 		Name: "mesh1",
 	}
+	logging := &mesh_proto.Logging{
+		Backends: []*mesh_proto.LoggingBackend{
+			{
+				Name: "file",
+				Type: mesh_proto.LoggingFileType,
+				Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+					Path: "/var/log",
+				}),
+			},
+			{
+				Name: "elk",
+				Type: mesh_proto.LoggingTcpType,
+				Conf: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+					Address: "logstash:1234",
+				}),
+			},
+		},
+	}
 	plainCtx := xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{},
 		Mesh: xds_context.MeshContext{
 			Resource: &core_mesh.MeshResource{
 				Meta: meta,
-				Spec: &mesh_proto.Mesh{},
+				Spec: &mesh_proto.Mesh{
+					Logging: logging,
+				},
 			},
 		},
 	}
@@ -50,6 +70,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							},
 						},
 					},
+					Logging: logging,
 				},
 				Meta: meta,
 			},
@@ -301,20 +322,20 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					OutboundTargets: outboundTargets,
 				},
 				Policies: model.MatchedPolicies{
-					Logs: model.LogMap{
-						"api-http": &mesh_proto.LoggingBackend{
-							Name: "file",
-							Type: mesh_proto.LoggingFileType,
-							Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
-								Path: "/var/log",
-							}),
+					TrafficLogs: model.TrafficLogMap{
+						"api-http": &core_mesh.TrafficLogResource{
+							Spec: &mesh_proto.TrafficLog{
+								Conf: &mesh_proto.TrafficLog_Conf{
+									Backend: "file",
+								},
+							},
 						},
-						"api-tcp": &mesh_proto.LoggingBackend{
-							Name: "elk",
-							Type: mesh_proto.LoggingTcpType,
-							Conf: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
-								Address: "logstash:1234",
-							}),
+						"api-tcp": &core_mesh.TrafficLogResource{
+							Spec: &mesh_proto.TrafficLog{
+								Conf: &mesh_proto.TrafficLog_Conf{
+									Backend: "elk",
+								},
+							},
 						},
 					},
 					CircuitBreakers: model.CircuitBreakerMap{
