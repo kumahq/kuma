@@ -276,7 +276,7 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 		// is a no-op unless we later add a per-route configuration.
 		envoy_listeners.RateLimit([]*mesh_proto.RateLimit{nil}),
 		envoy_listeners.DefaultCompressorFilter(),
-		envoy_listeners.Tracing(info.Proxy.Policies.TracingBackend, service),
+		envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service),
 		// In mesh proxies, the access log is configured on the outbound
 		// listener, which is why we index the Logs slice by destination
 		// service name.  A Gateway listener by definition forwards traffic
@@ -289,7 +289,7 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 			envoy.TrafficDirectionInbound,
 			service,                // Source service is the gateway service.
 			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
-			info.Proxy.Policies.Logs[core_mesh.PassThroughService],
+			ctx.Mesh.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
 			info.Proxy,
 		),
 	)

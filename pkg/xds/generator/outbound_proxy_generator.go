@@ -60,7 +60,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		protocol := g.inferProtocol(proxy, clusters)
 
 		// Generate listener
-		listener, err := g.generateLDS(proxy, routes, outbound, protocol)
+		listener, err := g.generateLDS(ctx, proxy, routes, outbound, protocol)
 		if err != nil {
 			return nil, err
 		}
@@ -89,10 +89,10 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	return resources, nil
 }
 
-func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_mesh.Protocol) (envoy_common.NamedResource, error) {
+func (_ OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_mesh.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-	rateLimits := []*mesh_proto.RateLimit{}
-	if rateLimit, exists := proxy.Policies.RateLimits.Outbound[oface]; exists {
+	rateLimits := []*core_mesh.RateLimitResource{}
+	if rateLimit, exists := proxy.Policies.RateLimitsOutbound[oface]; exists {
 		rateLimits = append(rateLimits, rateLimit)
 	}
 	meshName := proxy.Dataplane.Meta.GetMesh()
@@ -110,8 +110,9 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, routes envoy_com
 		case core_mesh.ProtocolGRPC:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
-				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, sourceService)).
-				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Policies.Logs[serviceName], proxy)).
+				Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), sourceService)).
+				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName,
+					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]), proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
 				Configure(envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
@@ -119,14 +120,14 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, routes envoy_com
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
-				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend, sourceService)).
+				Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), sourceService)).
 				Configure(envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.HttpAccessLog(
 					meshName,
 					envoy_common.TrafficDirectionOutbound,
 					sourceService,
 					serviceName,
-					proxy.Policies.Logs[serviceName],
+					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
 					proxy,
 				)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
@@ -140,7 +141,7 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, routes envoy_com
 					envoy_common.TrafficDirectionOutbound,
 					sourceService,
 					serviceName,
-					proxy.Policies.Logs[serviceName],
+					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
 					proxy,
 				)).
 				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
@@ -156,7 +157,7 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, routes envoy_com
 					envoy_common.TrafficDirectionOutbound,
 					sourceService,
 					serviceName,
-					proxy.Policies.Logs[serviceName],
+					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]),
 					proxy,
 				)).
 				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
@@ -327,15 +328,20 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *me
 	}
 
 	appendRoute := func(routes envoy_common.Routes, match *mesh_proto.TrafficRoute_Http_Match, modify *mesh_proto.TrafficRoute_Http_Modify,
-		clusters []envoy_common.Cluster, rateLimit *mesh_proto.RateLimit) envoy_common.Routes {
+		clusters []envoy_common.Cluster, rateLimit *core_mesh.RateLimitResource) envoy_common.Routes {
 		if len(clusters) == 0 {
 			return routes
+		}
+
+		var rlSpec *mesh_proto.RateLimit
+		if rateLimit != nil {
+			rlSpec = rateLimit.Spec
 		}
 
 		route := envoy_common.Route{
 			Match:     match,
 			Modify:    modify,
-			RateLimit: rateLimit,
+			RateLimit: rlSpec,
 			Clusters:  clusters,
 		}
 		return append(routes, route)
@@ -344,13 +350,13 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *me
 	for _, http := range route.Spec.GetConf().GetHttp() {
 		clustersInternal, clustersExternal := clustersFromSplit(http.GetSplitWithDestination())
 		routes = appendRoute(routes, http.Match, http.Modify, clustersInternal, nil)
-		routes = appendRoute(routes, http.Match, http.Modify, clustersExternal, proxy.Policies.RateLimits.Outbound[oface])
+		routes = appendRoute(routes, http.Match, http.Modify, clustersExternal, proxy.Policies.RateLimitsOutbound[oface])
 	}
 
 	if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) != 0 {
 		clustersInternal, clustersExternal := clustersFromSplit(defaultDestination)
 		routes = appendRoute(routes, nil, nil, clustersInternal, nil)
-		routes = appendRoute(routes, nil, nil, clustersExternal, proxy.Policies.RateLimits.Outbound[oface])
+		routes = appendRoute(routes, nil, nil, clustersExternal, proxy.Policies.RateLimitsOutbound[oface])
 	}
 
 	return routes, nil

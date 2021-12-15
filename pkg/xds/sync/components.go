@@ -1,11 +1,16 @@
 package sync
 
 import (
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -17,21 +22,30 @@ var (
 	xdsServerLog = core.Log.WithName("xds-server")
 )
 
-func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker DataplaneMetadataTracker, apiVersion envoy.APIVersion) *DataplaneProxyBuilder {
+func DefaultDataplaneProxyBuilder(
+	cachingRm manager.ReadOnlyResourceManager,
+	nonCachingRm manager.ResourceManager,
+	lookupIP lookup.LookupIPFunc,
+	dataSourceLoader datasource.Loader,
+	config kuma_cp.Config,
+	configManager config_manager.ConfigManager,
+	metadataTracker DataplaneMetadataTracker,
+	apiVersion envoy.APIVersion,
+) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
-		CachingResManager:     rt.ReadOnlyResourceManager(),
-		NonCachingResManager:  rt.ResourceManager(),
-		LookupIP:              rt.LookupIP(),
-		DataSourceLoader:      rt.DataSourceLoader(),
+		CachingResManager:     cachingRm,
+		NonCachingResManager:  nonCachingRm,
+		LookupIP:              lookupIP,
+		DataSourceLoader:      dataSourceLoader,
 		MetadataTracker:       metadataTracker,
-		PermissionMatcher:     permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
-		LogsMatcher:           logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
-		FaultInjectionMatcher: faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
-		RateLimitMatcher:      ratelimits.RateLimitMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
-		Zone:                  rt.Config().Multizone.Zone.Name,
+		PermissionMatcher:     permissions.TrafficPermissionsMatcher{ResourceManager: cachingRm},
+		LogsMatcher:           logs.TrafficLogsMatcher{ResourceManager: cachingRm},
+		FaultInjectionMatcher: faultinjections.FaultInjectionMatcher{ResourceManager: cachingRm},
+		RateLimitMatcher:      ratelimits.RateLimitMatcher{ResourceManager: cachingRm},
+		Zone:                  config.Multizone.Zone.Name,
 		APIVersion:            apiVersion,
-		ConfigManager:         rt.ConfigManager(),
-		TopLevelDomain:        rt.Config().DNSServer.Domain,
+		ConfigManager:         configManager,
+		TopLevelDomain:        config.DNSServer.Domain,
 	}
 }
 
@@ -55,7 +69,15 @@ func DefaultDataplaneWatchdogFactory(
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	apiVersion envoy.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
-	dataplaneProxyBuilder := defaultDataplaneProxyBuilder(rt, metadataTracker, apiVersion)
+	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
+		rt.ReadOnlyResourceManager(),
+		rt.ResourceManager(),
+		rt.LookupIP(),
+		rt.DataSourceLoader(),
+		rt.Config(),
+		rt.ConfigManager(),
+		metadataTracker,
+		apiVersion)
 	ingressProxyBuilder := defaultIngressProxyBuilder(rt, metadataTracker, apiVersion)
 	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, rt.ReadOnlyResourceManager(), rt.LookupIP(), rt.EnvoyAdminClient())
 

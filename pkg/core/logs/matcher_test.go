@@ -21,6 +21,7 @@ var _ = Describe("Matcher", func() {
 	var manager core_manager.ResourceManager
 	var matcher logs.TrafficLogsMatcher
 	var dpRes core_mesh.DataplaneResource
+	var meshRes core_mesh.MeshResource
 
 	var backendFile1 *mesh_proto.LoggingBackend
 	var backendFile2 *mesh_proto.LoggingBackend
@@ -52,7 +53,7 @@ var _ = Describe("Matcher", func() {
 				Path: "/tmp/access.logs",
 			}),
 		}
-		meshRes := core_mesh.MeshResource{
+		meshRes = core_mesh.MeshResource{
 			Spec: &mesh_proto.Mesh{
 				Logging: &mesh_proto.Logging{
 					Backends:       []*mesh_proto.LoggingBackend{backendFile1, backendFile2, backendFile3},
@@ -155,11 +156,11 @@ var _ = Describe("Matcher", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// should match because kong->backend rule
-		Expect(log["backend"]).To(Equal(backendFile2))
+		Expect(meshRes.GetLoggingBackend(log["backend"].Spec.GetConf().GetBackend())).To(Equal(backendFile2))
 		// should match because *->* rule and default backend file1
-		Expect(log["web"]).To(Equal(backendFile1))
+		Expect(meshRes.GetLoggingBackend(log["web"].Spec.GetConf().GetBackend())).To(Equal(backendFile1))
 		// should match implicit pass through because service *->* rule and default backend file1
-		Expect(log[core_mesh.PassThroughService]).To(Equal(backendFile1))
+		Expect(meshRes.GetLoggingBackend(log[core_mesh.PassThroughService].Spec.GetConf().GetBackend())).To(Equal(backendFile1))
 	})
 
 	It("should not match services", func() {
@@ -227,6 +228,7 @@ var _ = Describe("Matcher", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(log).To(HaveLen(0))
+		Expect(meshRes.GetLoggingBackend(log["backend"].Spec.GetConf().GetBackend())).To(BeNil())
+		Expect(meshRes.GetLoggingBackend(log["web"].Spec.GetConf().GetBackend())).To(BeNil())
 	})
 })

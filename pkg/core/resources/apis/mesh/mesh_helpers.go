@@ -31,6 +31,17 @@ func (m *MeshResource) MTLSEnabled() bool {
 	return m != nil && m.Spec.GetMtls().GetEnabledBackend() != ""
 }
 
+func (m *MeshResource) GetLoggingBackend(name string) *mesh_proto.LoggingBackend {
+	backends := map[string]*mesh_proto.LoggingBackend{}
+	for _, backend := range m.Spec.GetLogging().GetBackends() {
+		backends[backend.Name] = backend
+	}
+	if name == "" {
+		return backends[m.Spec.GetLogging().GetDefaultBackend()]
+	}
+	return backends[name]
+}
+
 func (m *MeshResource) GetTracingBackend(name string) *mesh_proto.TracingBackend {
 	backends := map[string]*mesh_proto.TracingBackend{}
 	for _, backend := range m.Spec.GetTracing().GetBackends() {
