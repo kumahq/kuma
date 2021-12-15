@@ -236,11 +236,13 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			}
 
 			annotations := map[string]string{
-				metadata.KumaGatewayAnnotation:          metadata.AnnotationBuiltin,
-				metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationDisabled,
-				mesh_proto.ServiceTag:                   gatewayInstance.Annotations[mesh_proto.ServiceTag],
-				metadata.KumaMeshAnnotation:             util_k8s.MeshFor(gatewayInstance),
+				metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
+				mesh_proto.ServiceTag:          gatewayInstance.Spec.Tags[mesh_proto.ServiceTag],
+				metadata.KumaMeshAnnotation:    util_k8s.MeshFor(gatewayInstance),
 			}
+
+			labels := k8sSelector(gatewayInstance.Name)
+			labels[metadata.KumaSidecarInjectionAnnotation] = metadata.AnnotationDisabled
 
 			deployment.Spec.Replicas = &gatewayInstance.Spec.Replicas
 			deployment.Spec.Selector = &kube_meta.LabelSelector{
@@ -248,7 +250,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			}
 			deployment.Spec.Template = kube_core.PodTemplateSpec{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Labels:      k8sSelector(gatewayInstance.Name),
+					Labels:      labels,
 					Annotations: annotations,
 				},
 				Spec: podSpec,
