@@ -2,6 +2,7 @@ package v3
 
 import (
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -17,7 +18,7 @@ var _ = Describe("defaultHandler", func() {
 		DescribeTable("should fail if configuration is not valid",
 			func(given testCase) {
 				// when
-				_, err := defaultHandler(nil, given.msg)
+				_, err := defaultHandler(logr.Logger{}, given.msg)
 				// then
 				Expect(err).To(HaveOccurred())
 				// and
