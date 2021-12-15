@@ -13,8 +13,8 @@ Changes:
 * feat: add affinity to CP and Ingress pods [#3036](https://github.com//kumahq/kuma/pull/3036)
   👍contributed by @andrey-dubnik
 * chore: bump github.com/golang-jwt/jwt/v4 from 4.1.0 to 4.2.0 [#3432](https://github.com//kumahq/kuma/pull/3432)
-* feat: consolidate tokens logic to support expiration, rotation, revocation and RSA256
-* fix:: simplify cluster creation with endpoints [#3403](https://github.com//kumahq/kuma/pull/3403)
+* feat: consolidate tokens logic to support expiration, rotation, revocation and RSA256 [#3376](https://github.com/kumahq/kuma/pull/3376)
+* fix: simplify cluster creation with endpoints [#3403](https://github.com//kumahq/kuma/pull/3403)
 * fix: enable metrics hijacker for current version of Kuma [#3405](https://github.com//kumahq/kuma/pull/3405)
 * fix: switch to mTLS when CP communicates with Envoy Admin [#3353](https://github.com//kumahq/kuma/pull/3353)
 * chore: bump github.com/spiffe/spire from 0.12.3 to 1.1.1 [#3388](https://github.com//kumahq/kuma/pull/3388)
