@@ -68,6 +68,7 @@ func (l *CircuitBreakerList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.CircuitBreaker{}, &CircuitBreaker{
 		TypeMeta: metav1.TypeMeta{
@@ -138,6 +139,7 @@ func (l *DataplaneList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.Dataplane{}, &Dataplane{
 		TypeMeta: metav1.TypeMeta{
@@ -208,6 +210,7 @@ func (l *DataplaneInsightList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.DataplaneInsight{}, &DataplaneInsight{
 		TypeMeta: metav1.TypeMeta{
@@ -278,6 +281,7 @@ func (l *ExternalServiceList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.ExternalService{}, &ExternalService{
 		TypeMeta: metav1.TypeMeta{
@@ -348,6 +352,7 @@ func (l *FaultInjectionList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.FaultInjection{}, &FaultInjection{
 		TypeMeta: metav1.TypeMeta{
@@ -522,6 +527,7 @@ func (l *HealthCheckList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.HealthCheck{}, &HealthCheck{
 		TypeMeta: metav1.TypeMeta{
@@ -592,6 +598,7 @@ func (l *MeshList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.Mesh{}, &Mesh{
 		TypeMeta: metav1.TypeMeta{
@@ -662,6 +669,7 @@ func (l *MeshInsightList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.MeshInsight{}, &MeshInsight{
 		TypeMeta: metav1.TypeMeta{
@@ -732,6 +740,7 @@ func (l *ProxyTemplateList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.ProxyTemplate{}, &ProxyTemplate{
 		TypeMeta: metav1.TypeMeta{
@@ -802,6 +811,7 @@ func (l *RateLimitList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.RateLimit{}, &RateLimit{
 		TypeMeta: metav1.TypeMeta{
@@ -872,6 +882,7 @@ func (l *RetryList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.Retry{}, &Retry{
 		TypeMeta: metav1.TypeMeta{
@@ -942,6 +953,7 @@ func (l *ServiceInsightList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.ServiceInsight{}, &ServiceInsight{
 		TypeMeta: metav1.TypeMeta{
@@ -1012,6 +1024,7 @@ func (l *TimeoutList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.Timeout{}, &Timeout{
 		TypeMeta: metav1.TypeMeta{
@@ -1082,6 +1095,7 @@ func (l *TrafficLogList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.TrafficLog{}, &TrafficLog{
 		TypeMeta: metav1.TypeMeta{
@@ -1152,6 +1166,7 @@ func (l *TrafficPermissionList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.TrafficPermission{}, &TrafficPermission{
 		TypeMeta: metav1.TypeMeta{
@@ -1222,6 +1237,7 @@ func (l *TrafficRouteList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.TrafficRoute{}, &TrafficRoute{
 		TypeMeta: metav1.TypeMeta{
@@ -1292,6 +1308,7 @@ func (l *TrafficTraceList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.TrafficTrace{}, &TrafficTrace{
 		TypeMeta: metav1.TypeMeta{
@@ -1362,6 +1379,7 @@ func (l *VirtualOutboundList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.VirtualOutbound{}, &VirtualOutbound{
 		TypeMeta: metav1.TypeMeta{
@@ -1432,6 +1450,7 @@ func (l *ZoneIngressList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.ZoneIngress{}, &ZoneIngress{
 		TypeMeta: metav1.TypeMeta{
@@ -1502,6 +1521,7 @@ func (l *ZoneIngressInsightList) GetItems() []model.KubernetesObject {
 	}
 	return result
 }
+
 func init() {
 	registry.RegisterObjectType(&mesh_proto.ZoneIngressInsight{}, &ZoneIngressInsight{
 		TypeMeta: metav1.TypeMeta{
