@@ -12,36 +12,23 @@ Changes:
 * test: fix postgress tests permissions [#3443](https://github.com//kumahq/kuma/pull/3443)
 * feat: add affinity to CP and Ingress pods [#3036](https://github.com//kumahq/kuma/pull/3036)
   👍contributed by @andrey-dubnik
-* chore: bump github.com/gruntwork-io/terratest [#3433](https://github.com//kumahq/kuma/pull/3433)
 * chore: bump github.com/golang-jwt/jwt/v4 from 4.1.0 to 4.2.0 [#3432](https://github.com//kumahq/kuma/pull/3432)
 * feat: consolidate tokens logic to support expiration, rotation, revocation and RSA256
-* ci: fix failing mac CI because of unsupported instance size [#3408](https://github.com//kumahq/kuma/pull/3408)
 * fix:: simplify cluster creation with endpoints [#3403](https://github.com//kumahq/kuma/pull/3403)
 * fix: enable metrics hijacker for current version of Kuma [#3405](https://github.com//kumahq/kuma/pull/3405)
 * fix: switch to mTLS when CP communicates with Envoy Admin [#3353](https://github.com//kumahq/kuma/pull/3353)
-* test: disable KIC E2E tests on Kind [#3398](https://github.com//kumahq/kuma/pull/3398)
 * chore: bump github.com/spiffe/spire from 0.12.3 to 1.1.1 [#3388](https://github.com//kumahq/kuma/pull/3388)
 * chore: bump github.com/spf13/viper from 1.8.1 to 1.9.0 [#3389](https://github.com//kumahq/kuma/pull/3389)
 * fix: validate cp url in dp conf [#3357](https://github.com//kumahq/kuma/pull/3357)
 * chore: send reports to tls endpoint [#3361](https://github.com//kumahq/kuma/pull/3361)
 * chore: check explicit service account name [#3228](https://github.com//kumahq/kuma/pull/3228)
 * feat: inspect other dependencies versions [#3352](https://github.com//kumahq/kuma/pull/3352)
-* chore: upgrade minikube to v1.24.0 [#3269](https://github.com//kumahq/kuma/pull/3269)
 * chore: add area/gateway label [#3263](https://github.com//kumahq/kuma/pull/3263)
-* build: notify about merged PRs on release branch [#3289](https://github.com//kumahq/kuma/pull/3289)
 * chore: remove dp token from xds metadata [#3282](https://github.com//kumahq/kuma/pull/3282)
 * refactor: move from io/ioutil to io and os packages [#3265](https://github.com//kumahq/kuma/pull/3265)
   👍contributed by @Juneezee
-* build: github notify about merged PRs workflow [#3258](https://github.com//kumahq/kuma/pull/3258)
 * fix: validate newly generated xDS snapshots [#3195](https://github.com//kumahq/kuma/pull/3195)
-* chore: remove RBAC generator [#3176](https://github.com//kumahq/kuma/pull/3176)
-* fix: run test/release also for RCs [#3208](https://github.com//kumahq/kuma/pull/3208)
-* chore: bump k8s.io/apiextensions-apiserver from 0.22.3 to 0.22.4 [#3218](https://github.com//kumahq/kuma/pull/3218)
-* chore: bump github.com/testcontainers/testcontainers-go [#3221](https://github.com//kumahq/kuma/pull/3221)
-* chore: bump github.com/gruntwork-io/terratest [#3222](https://github.com//kumahq/kuma/pull/3222)
-* build: fix dev_mac [#3209](https://github.com//kumahq/kuma/pull/3209)
-* chore: install latest kubectl version [#3207](https://github.com//kumahq/kuma/pull/3207)
-* tests: fix golden files after Helm chart update [#3205](https://github.com//kumahq/kuma/pull/3205)
+* chore: bump k8s.io/apiextensions-apiserver from 0.22.3 to 0.22.4 [#3218](https://github.com//kumahq/kuma/pull/3218)[s
 * chore: bump helm chart version to 0.8 [#3202](https://github.com//kumahq/kuma/pull/3202)
 
 ## [1.4.0]
