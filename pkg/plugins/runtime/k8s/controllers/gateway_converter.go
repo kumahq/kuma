@@ -17,11 +17,6 @@ import (
 // createorUpdateBuiltinGatewayDataplane manages the dataplane for a pod
 // belonging to a built-in Kuma gateway.
 func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod) error {
-	services, err := r.findMatchingServices(ctx, pod)
-	if err != nil {
-		return errors.Wrap(err, "couldn't find services for gateway pod")
-	}
-
 	dataplane := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
@@ -30,13 +25,16 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 		Mesh: k8s_util.MeshFor(pod),
 	}
 
-	if len(services) != 1 {
-		return errors.Errorf("Gateway should be matched by only 1 Service, found %d", len(services))
+	serviceAnnotation, ok := pod.Annotations[mesh_proto.ServiceTag]
+
+	if !ok {
+		r.EventRecorder.Eventf(
+			pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Missing %s annotation on Pod serving a builtin Gateway", mesh_proto.ServiceTag,
+		)
+		return nil
 	}
 
-	serviceName := k8s_util.ServiceTagFor(services[0], nil)
-
-	dataplaneProto, err := r.PodConverter.BuiltinGatewayDataplane(pod, serviceName)
+	dataplaneProto, err := r.PodConverter.BuiltinGatewayDataplane(pod, serviceAnnotation)
 	if err != nil {
 		return errors.Wrap(err, "unable to translate a Gateway Pod into a Dataplane")
 	} else if dataplaneProto == nil {
