@@ -18,17 +18,6 @@ import (
 )
 
 func TracingK8S() {
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	meshWithTracing := func(zipkinURL string) string {
 		return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -68,7 +57,7 @@ spec:
 		cluster = c
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(testserver.Install()).
 			Install(tracing.Install()).
@@ -76,10 +65,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
+	E2EAfterEach(func() {
 		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())

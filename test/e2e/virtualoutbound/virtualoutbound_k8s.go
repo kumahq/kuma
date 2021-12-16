@@ -14,17 +14,6 @@ import (
 )
 
 func VirtualOutboundOnK8s() {
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	var k8sCluster Cluster
 	var optsKubernetes = append(KumaK8sDeployOpts,
 		WithEnv("KUMA_DNS_SERVER_SERVICE_VIP_ENABLED", "false"),
@@ -37,17 +26,14 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Standalone, optsKubernetes...)).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(testserver.Install(testserver.WithStatefulSet(true), testserver.WithReplicas(2))).
 			Setup(k8sCluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
+	E2EAfterEach(func() {
 		Expect(k8sCluster.DeleteKuma(optsKubernetes...)).To(Succeed())
 		Expect(k8sCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
