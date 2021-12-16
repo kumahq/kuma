@@ -1026,6 +1026,7 @@ rules:
     resources:
       - gateways
       - gatewayroutes
+      - gatewayinstances
     verbs:
       - get
       - list
@@ -1034,6 +1035,14 @@ rules:
       - update
       - patch
       - delete
+  - apiGroups:
+      - kuma.io
+    resources:
+      - gatewayinstances/status
+    verbs:
+      - get
+      - patch
+      - update
   - apiGroups:
       - kuma.io
     resources:

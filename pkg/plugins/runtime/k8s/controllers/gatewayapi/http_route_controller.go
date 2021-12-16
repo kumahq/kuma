@@ -2,12 +2,12 @@ package gatewayapi
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
+	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -87,9 +87,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoute(ctx context.Context, mesh string, 
 			namespace = string(*ns)
 		}
 
-		match := map[string]string{
-			mesh_proto.ServiceTag: fmt.Sprintf("%s-kuma-gateway_%s_svc", string(ref.Name), namespace),
-		}
+		match := serviceTagForGateway(kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)})
+
 		if ref.SectionName != nil {
 			match[mesh_proto.ListenerTag] = string(*ref.SectionName)
 		}

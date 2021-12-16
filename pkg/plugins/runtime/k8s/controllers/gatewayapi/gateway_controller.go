@@ -6,13 +6,14 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -75,23 +76,41 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not upsert Gateway")
 	}
 
-	deployment, err := r.createOrUpdateDeployment(ctx, resource, gateway)
+	gatewayInstance, err := r.createOrUpdateInstance(ctx, gateway)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to create Deployment for Gateway")
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to create GatewayInstance")
 	}
 
-	svc, err := r.createOrUpdateService(ctx, resource, gateway)
-	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to create Service for Gateway")
-	}
-
-	r.updateStatus(gateway, svc, deployment)
+	r.updateStatus(gateway, gatewayInstance)
 
 	if err := r.Client.Status().Update(ctx, gateway); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update Gateway status")
 	}
 
 	return kube_ctrl.Result{}, nil
+}
+
+func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, gateway *gatewayapi.Gateway) (*mesh_k8s.GatewayInstance, error) {
+	instance := &mesh_k8s.GatewayInstance{
+		ObjectMeta: kube_meta.ObjectMeta{
+			Namespace: gateway.Namespace,
+			Name:      gateway.Name,
+		},
+	}
+
+	if _, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, instance, func() error {
+		instance.Spec = mesh_k8s.GatewayInstanceSpec{
+			ServiceType: kube_core.ServiceTypeLoadBalancer,
+			Tags:        serviceTagForGateway(kube_client.ObjectKeyFromObject(gateway)),
+		}
+
+		err := kube_controllerutil.SetControllerReference(gateway, instance, r.Scheme)
+		return errors.Wrap(err, "unable to set GatewayInstance's controller reference to Gateway")
+	}); err != nil {
+		return nil, errors.Wrap(err, "couldn't create GatewayInstance")
+	}
+
+	return instance, nil
 }
 
 func (r *GatewayReconciler) getGatewayClass(ctx context.Context, name gatewayapi.ObjectName) (*gatewayapi.GatewayClass, error) {
@@ -111,6 +130,12 @@ func (r *GatewayReconciler) getGatewayClass(ctx context.Context, name gatewayapi
 	}
 
 	return class, nil
+}
+
+func serviceTagForGateway(name kube_types.NamespacedName) map[string]string {
+	return map[string]string{
+		mesh_proto.ServiceTag: fmt.Sprintf("%s_%s_gateway", name.Name, name.Namespace),
+	}
 }
 
 func (r *GatewayReconciler) gapiToKumaGateway(gateway *gatewayapi.Gateway) (*mesh_proto.Gateway, error) {
@@ -140,9 +165,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(gateway *gatewayapi.Gateway) (*mes
 		listeners = append(listeners, listener)
 	}
 
-	match := map[string]string{
-		mesh_proto.ServiceTag: fmt.Sprintf("%s-kuma-gateway_%s_svc", gateway.Name, gateway.Namespace),
-	}
+	match := serviceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
 
 	return &mesh_proto.Gateway{
 		Selectors: []*mesh_proto.Selector{
@@ -154,28 +177,29 @@ func (r *GatewayReconciler) gapiToKumaGateway(gateway *gatewayapi.Gateway) (*mes
 	}, nil
 }
 
-func (r *GatewayReconciler) updateStatus(gateway *gatewayapi.Gateway, svc *kube_core.Service, deployment *kube_apps.Deployment) {
+func (r *GatewayReconciler) updateStatus(gateway *gatewayapi.Gateway, instance *mesh_k8s.GatewayInstance) {
 	ipType := gatewayapi.IPAddressType
 
 	var addrs []gatewayapi.GatewayAddress
 
-	for _, addr := range svc.Status.LoadBalancer.Ingress {
-		addrs = append(addrs, gatewayapi.GatewayAddress{
-			Type:  &ipType,
-			Value: addr.IP,
-		})
+	if lb := instance.Status.LoadBalancer; lb != nil {
+		for _, addr := range instance.Status.LoadBalancer.Ingress {
+			addrs = append(addrs, gatewayapi.GatewayAddress{
+				Type:  &ipType,
+				Value: addr.IP,
+			})
+		}
 	}
 
 	gateway.Status.Addresses = addrs
 
-	setConditions(gateway, deployment)
+	setConditions(gateway, instance)
 }
 
 func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayapi.Gateway{}).
 		Owns(&mesh_k8s.Gateway{}).
-		Owns(&kube_core.Service{}).
-		Owns(&kube_apps.Deployment{}).
+		Owns(&mesh_k8s.GatewayInstance{}).
 		Complete(r)
 }

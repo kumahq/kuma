@@ -87,7 +87,7 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addMeshReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
-	if err := addGatewayReconciler(mgr, rt, converter); err != nil {
+	if err := addGatewayReconcilers(mgr, rt, converter); err != nil {
 		return err
 	}
 	if err := addPodReconciler(mgr, rt, converter); err != nil {

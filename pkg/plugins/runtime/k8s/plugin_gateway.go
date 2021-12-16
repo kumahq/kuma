@@ -15,6 +15,7 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
+	controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	gatewayapi_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi"
 )
 
@@ -32,19 +33,14 @@ func crdsPresent(mgr kube_ctrl.Manager) bool {
 	return len(mappings) > 0
 }
 
-func addGatewayReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	// If we haven't registered our type, we're not reconciling gatewayapi
-	// objects.
+func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+	// If we haven't registered our type, we're not reconciling GatewayInstance
+	// or gatewayapi objects.
 	if _, err := registry.Global().NewObject(&mesh_proto.Gateway{}); err != nil {
 		var unknownTypeError *registry.UnknownTypeError
 		if errors.As(err, &unknownTypeError) {
 			return nil
 		}
-	}
-
-	if !crdsPresent(mgr) {
-		log.Info("Gateway API CRDs not registered")
-		return nil
 	}
 
 	cpURL := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
@@ -66,6 +62,23 @@ func addGatewayReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conver
 		ControlPlaneCACert: caCert,
 		ContainerConfig:    cfg.SidecarContainer.DataplaneContainer,
 		BuiltinDNS:         cfg.BuiltinDNS,
+	}
+
+	gatewayInstanceReconciler := &controllers.GatewayInstanceReconciler{
+		Client:          mgr.GetClient(),
+		Log:             core.Log.WithName("controllers").WithName("GatewayInstance"),
+		Scheme:          mgr.GetScheme(),
+		Converter:       converter,
+		ProxyFactory:    proxyFactory,
+		ResourceManager: rt.ResourceManager(),
+	}
+	if err := gatewayInstanceReconciler.SetupWithManager(mgr); err != nil {
+		return errors.Wrap(err, "could not setup GatewayInstance reconciler")
+	}
+
+	if !crdsPresent(mgr) {
+		log.Info("Gateway API CRDs not registered")
+		return nil
 	}
 
 	gatewayAPIGatewayReconciler := &gatewayapi_controllers.GatewayReconciler{
