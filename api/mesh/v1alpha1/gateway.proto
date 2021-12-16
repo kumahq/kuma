@@ -26,7 +26,6 @@ message Gateway {
   option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "gateway";
-  option (kuma.mesh.resource).scope_namespace = true;
 
   // TLSConfig describes a TLS configuration.
   message TLS {

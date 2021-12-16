@@ -835,7 +835,7 @@ spec:
   names:
     kind: GatewayRoute
     plural: gatewayroutes
-  scope: Namespaced
+  scope: Cluster
   versions:
     - name: v1alpha1
       served: true
@@ -861,7 +861,7 @@ spec:
   names:
     kind: Gateway
     plural: gateways
-  scope: Namespaced
+  scope: Cluster
   versions:
     - name: v1alpha1
       served: true
