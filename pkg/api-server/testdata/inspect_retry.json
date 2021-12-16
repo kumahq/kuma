@@ -1,0 +1,30 @@
+[
+ {
+  "dataplane": {
+   "mesh": "mesh-1",
+   "name": "backend-1"
+  },
+  "attachments": [
+   {
+    "type": "service",
+    "name": "gateway"
+   },
+   {
+    "type": "service",
+    "name": "redis"
+   }
+  ]
+ },
+ {
+  "dataplane": {
+   "mesh": "mesh-1",
+   "name": "redis-1"
+  },
+  "attachments": [
+   {
+    "type": "service",
+    "name": "gateway"
+   }
+  ]
+ }
+]

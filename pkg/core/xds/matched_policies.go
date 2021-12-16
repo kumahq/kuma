@@ -3,6 +3,7 @@ package xds
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -64,12 +65,21 @@ type Attachment struct {
 
 type AttachmentList []Attachment
 
-func (a AttachmentList) Len() int           { return len(a) }
-func (a AttachmentList) Less(i, j int) bool { return fmt.Sprintf("%s", a[i]) < fmt.Sprintf("%s", a[j]) }
-func (a AttachmentList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+type PoliciesByResourceType map[core_model.ResourceType][]core_model.Resource
+type AttachmentMap map[Attachment]PoliciesByResourceType
 
-type PolicyMap map[core_model.ResourceType][]core_model.Resource
-type AttachmentMap map[Attachment]PolicyMap
+type PolicyKey struct {
+	Type core_model.ResourceType
+	Key  core_model.ResourceKey
+}
+
+type AttachmentsByPolicy map[PolicyKey]AttachmentList
+
+func (abp AttachmentsByPolicy) Merge(other AttachmentsByPolicy) {
+	for k, v := range other {
+		abp[k] = append(abp[k], v...)
+	}
+}
 
 func GroupByAttachment(matchedPolicies *MatchedPolicies) AttachmentMap {
 	result := AttachmentMap{}
@@ -79,7 +89,7 @@ func GroupByAttachment(matchedPolicies *MatchedPolicies) AttachmentMap {
 			return
 		}
 		if _, ok := result[key]; !ok {
-			result[key] = PolicyMap{}
+			result[key] = PoliciesByResourceType{}
 		}
 		for _, policy := range policies {
 			resType := policy.Descriptor().Name
@@ -100,6 +110,46 @@ func GroupByAttachment(matchedPolicies *MatchedPolicies) AttachmentMap {
 	}
 
 	addPolicies(Attachment{Type: Dataplane, Name: ""}, getDataplaneMatchedPolicies(matchedPolicies))
+
+	return result
+}
+
+func GroupByPolicy(matchedPolicies *MatchedPolicies) AttachmentsByPolicy {
+	result := AttachmentsByPolicy{}
+
+	addAttachment := func(policy core_model.Resource, attachment Attachment) {
+		key := PolicyKey{
+			Type: policy.Descriptor().Name,
+			Key:  core_model.MetaToResourceKey(policy.GetMeta()),
+		}
+		result[key] = append(result[key], attachment)
+	}
+
+	for inbound, policies := range getInboundMatchedPolicies(matchedPolicies) {
+		for _, policy := range policies {
+			addAttachment(policy, Attachment{Type: Inbound, Name: inbound.String()})
+		}
+	}
+
+	for outbound, policies := range getOutboundMatchedPolicies(matchedPolicies) {
+		for _, policy := range policies {
+			addAttachment(policy, Attachment{Type: Outbound, Name: outbound.String()})
+		}
+	}
+
+	for service, policies := range getServiceMatchedPolicies(matchedPolicies) {
+		for _, policy := range policies {
+			addAttachment(policy, Attachment{Type: Service, Name: service})
+		}
+	}
+
+	for _, policy := range getDataplaneMatchedPolicies(matchedPolicies) {
+		addAttachment(policy, Attachment{Type: Dataplane, Name: ""})
+	}
+
+	for policyKey := range result {
+		sort.Stable(result[policyKey])
+	}
 
 	return result
 }
@@ -162,3 +212,7 @@ func getDataplaneMatchedPolicies(matchedPolicies *MatchedPolicies) []core_model.
 	}
 	return nil
 }
+
+func (a AttachmentList) Len() int           { return len(a) }
+func (a AttachmentList) Less(i, j int) bool { return fmt.Sprintf("%s", a[i]) < fmt.Sprintf("%s", a[j]) }
+func (a AttachmentList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

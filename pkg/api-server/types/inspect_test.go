@@ -17,27 +17,29 @@ import (
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
-var _ = Describe("Marshal InspectEntry", func() {
+var _ = Describe("Marshal DataplaneInspectEntry", func() {
 
 	type testCase struct {
-		input      *types.InspectEntry
+		input      *types.DataplaneInspectEntry
 		goldenFile string
 	}
 
-	DescribeTable("should marshal InspectEntry with jsonpb",
+	DescribeTable("should marshal DataplaneInspectEntry with jsonpb",
 		func(given testCase) {
 			actual, err := json.MarshalIndent(given.input, "", "  ")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchGoldenJSON(path.Join("testdata", given.goldenFile)))
 		},
 		Entry("empty", testCase{
-			input:      &types.InspectEntry{},
+			input:      &types.DataplaneInspectEntry{},
 			goldenFile: "empty.json",
 		}),
 		Entry("full example", testCase{
-			input: &types.InspectEntry{
-				Type: "inbound",
-				Name: "192.168.0.1:80",
+			input: &types.DataplaneInspectEntry{
+				AttachmentEntry: types.AttachmentEntry{
+					Type: "inbound",
+					Name: "192.168.0.1:80",
+				},
 				MatchedPolicies: map[model.ResourceType][]model.ResourceSpec{
 					core_mesh.TimeoutType: {samples.Timeout},
 				},
@@ -47,22 +49,22 @@ var _ = Describe("Marshal InspectEntry", func() {
 	)
 })
 
-var _ = Describe("Unmarshal InspectEntry", func() {
+var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 
 	type testCase struct {
 		inputFile string
-		output    *types.InspectEntry
+		output    *types.DataplaneInspectEntry
 		errMsg    string
 	}
 
-	DescribeTable("should unmarshal InspectEntry with jsonpb",
+	DescribeTable("should unmarshal DataplaneInspectEntry with jsonpb",
 		func(given testCase) {
 			inputFile, err := os.Open(path.Join("testdata", given.inputFile))
 			Expect(err).ToNot(HaveOccurred())
 			bytes, err := ioutil.ReadAll(inputFile)
 			Expect(err).ToNot(HaveOccurred())
 
-			unmarshaledInspectEntry := &types.InspectEntry{}
+			unmarshaledInspectEntry := &types.DataplaneInspectEntry{}
 			err = json.Unmarshal(bytes, unmarshaledInspectEntry)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -79,13 +81,15 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 		},
 		Entry("empty", testCase{
 			inputFile: "empty.json",
-			output:    &types.InspectEntry{},
+			output:    &types.DataplaneInspectEntry{},
 		}),
 		Entry("full example", testCase{
 			inputFile: "full_example.json",
-			output: &types.InspectEntry{
-				Type: "inbound",
-				Name: "192.168.0.1:80",
+			output: &types.DataplaneInspectEntry{
+				AttachmentEntry: types.AttachmentEntry{
+					Type: "inbound",
+					Name: "192.168.0.1:80",
+				},
 				MatchedPolicies: map[model.ResourceType][]model.ResourceSpec{
 					core_mesh.TimeoutType: {samples.Timeout},
 				},
@@ -93,9 +97,11 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 		}),
 		Entry("empty matched policies", testCase{
 			inputFile: "empty_matched_policies.json",
-			output: &types.InspectEntry{
-				Type:            "inbound",
-				Name:            "192.168.0.1:80",
+			output: &types.DataplaneInspectEntry{
+				AttachmentEntry: types.AttachmentEntry{
+					Type: "inbound",
+					Name: "192.168.0.1:80",
+				},
 				MatchedPolicies: map[model.ResourceType][]model.ResourceSpec{},
 			},
 		}),
@@ -108,14 +114,14 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 			bytes, err := ioutil.ReadAll(inputFile)
 			Expect(err).ToNot(HaveOccurred())
 
-			unmarshalledInspectEntry := &types.InspectEntry{}
+			unmarshalledInspectEntry := &types.DataplaneInspectEntry{}
 			err = json.Unmarshal(bytes, unmarshalledInspectEntry)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(given.errMsg))
 		},
 		Entry("matchedPolicies has wrong type", testCase{
 			inputFile: "error.matched_policies_wrong_type.json",
-			errMsg:    "json: cannot unmarshal array into Go struct field intermediateInspectEntry.matchedPolicies of type map[string]interface {}",
+			errMsg:    "json: cannot unmarshal array into Go struct field intermediateDataplaneInspectEntry.matchedPolicies of type map[string]interface {}",
 		}),
 		Entry("matchedPolicies key is empty", testCase{
 			inputFile: "error.matched_policies_empty_key.json",
