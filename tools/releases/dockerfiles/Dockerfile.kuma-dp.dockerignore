@@ -1,7 +1,7 @@
 *
 !build/artifacts-linux-amd64/kuma-dp/kuma-dp
 !build/artifacts-linux-amd64/coredns/coredns
-!build/artifacts-linux-amd64/envoy/envoy
+!build/artifacts-linux-amd64/envoy/*
 !tools/releases/templates/LICENSE
 !tools/releases/templates/NOTICE
 !tools/releases/templates/README
