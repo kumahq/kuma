@@ -81,7 +81,7 @@ func inspectWs(mpg core_xds.MatchedPoliciesGetter) *restful.WebService {
 		Produces(restful.MIME_JSON)
 
 	ws.Route(
-		ws.GET("/meshes/{mesh}/dataplane/{dataplane}").To(inspectDataplane(mpg)).
+		ws.GET("/meshes/{mesh}/dataplane/{dataplane}/policies").To(inspectDataplane(mpg)).
 			Doc("inspect dataplane matched policies").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
