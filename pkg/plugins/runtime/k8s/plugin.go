@@ -87,6 +87,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addMeshReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
+	if err := addGatewayReconcilers(mgr, rt, converter); err != nil {
+		return err
+	}
 	if err := addPodReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
@@ -122,7 +125,6 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 	}
 	reconciler := &k8s_controllers.MeshReconciler{
 		Client:          mgr.GetClient(),
-		Reader:          mgr.GetAPIReader(),
 		Log:             core.Log.WithName("controllers").WithName("Mesh"),
 		Scheme:          mgr.GetScheme(),
 		Converter:       converter,

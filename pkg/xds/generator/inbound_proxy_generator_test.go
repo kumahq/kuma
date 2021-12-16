@@ -112,7 +112,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 							DataplanePort:         80,
 							WorkloadIP:            "127.0.0.1",
 							WorkloadPort:          8080,
-						}: []*mesh_proto.FaultInjection{{
+						}: []*core_mesh.FaultInjectionResource{{Spec: &mesh_proto.FaultInjection{
 							Sources: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
@@ -133,18 +133,18 @@ var _ = Describe("InboundProxyGenerator", func() {
 									Value:      util_proto.Duration(time.Second * 5),
 								},
 							},
-						}},
+						}}},
 					},
-					RateLimits: model.RateLimitsMap{
-						Inbound: model.InboundRateLimitsMap{
-							mesh_proto.InboundInterface{
-								DataplaneAdvertisedIP: "192.168.0.1",
-								DataplaneIP:           "192.168.0.1",
-								DataplanePort:         80,
-								WorkloadIP:            "127.0.0.1",
-								WorkloadPort:          8080,
-							}: []*mesh_proto.RateLimit{
-								{
+					RateLimitsInbound: model.InboundRateLimitsMap{
+						mesh_proto.InboundInterface{
+							DataplaneAdvertisedIP: "192.168.0.1",
+							DataplaneIP:           "192.168.0.1",
+							DataplanePort:         80,
+							WorkloadIP:            "127.0.0.1",
+							WorkloadPort:          8080,
+						}: []*core_mesh.RateLimitResource{
+							{
+								Spec: &mesh_proto.RateLimit{
 									Sources: []*mesh_proto.Selector{
 										{
 											Match: map[string]string{
@@ -166,7 +166,9 @@ var _ = Describe("InboundProxyGenerator", func() {
 										},
 									},
 								},
-								{
+							},
+							{
+								Spec: &mesh_proto.RateLimit{
 									Sources: []*mesh_proto.Selector{
 										{
 											Match: map[string]string{

@@ -28,17 +28,6 @@ mtls:
 `, mesh)
 	}
 
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	var global, zone1, zone2, zone3, zone4 Cluster
 	var optsGlobal, optsZone1, optsZone2, optsZone3, optsZone4 = KumaUniversalDeployOpts, KumaZoneK8sDeployOpts, KumaZoneK8sDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
@@ -86,7 +75,7 @@ metadata:
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone1...)).
 			Install(KumaDNS()).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
@@ -103,7 +92,7 @@ metadata:
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone2...)).
 			Install(KumaDNS()).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(testserver.Install(testserver.WithMesh(nonDefaultMesh), testserver.WithServiceAccount("sa-test"))).
 			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(zone2)

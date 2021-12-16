@@ -12,17 +12,6 @@ import (
 )
 
 func ZoneAndGlobal() {
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	trafficRoutePolicy := func(namespace string, policyname string, weight int) string {
 		return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -82,7 +71,7 @@ spec:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone...)).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())

@@ -1,0 +1,305 @@
+Clusters:
+  Resources:
+    api-service-f8ae3d759cc477a6:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: api-service-f8ae3d759cc477a6
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+    echo-mirror-712ce3acc3cececc:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-mirror-712ce3acc3cececc
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+    echo-service-5a416c39037aa8f6:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-5a416c39037aa8f6
+      outlierDetection:
+        enforcingConsecutive5xx: 0
+        enforcingConsecutiveGatewayFailure: 0
+        enforcingConsecutiveLocalOriginFailure: 0
+        enforcingFailurePercentage: 0
+        enforcingSuccessRate: 0
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+Endpoints:
+  Resources:
+    api-service-f8ae3d759cc477a6:
+      clusterName: api-service-f8ae3d759cc477a6
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.1
+                portValue: 20001
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    echo-mirror-712ce3acc3cececc:
+      clusterName: echo-mirror-712ce3acc3cececc
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.3
+                portValue: 20003
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    echo-service-5a416c39037aa8f6:
+      clusterName: echo-service-5a416c39037aa8f6
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.6
+                portValue: 20006
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+Listeners:
+  Resources:
+    edge-gateway:HTTP:8080:
+      address:
+        socketAddress:
+          address: 192.168.1.1
+          portValue: 8080
+      filterChains:
+      - filters:
+        - name: envoy.filters.network.http_connection_manager
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            commonHttpProtocolOptions:
+              headersWithUnderscoresAction: REJECT_REQUEST
+              idleTimeout: 300s
+            http2ProtocolOptions:
+              allowConnect: true
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
+              maxConcurrentStreams: 100
+            httpFilters:
+            - name: envoy.filters.http.local_ratelimit
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                statPrefix: rate_limit
+            - name: gzip-compress
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                compressorLibrary:
+                  name: gzip
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                responseDirectionConfig:
+                  disableOnEtagHeader: true
+            - name: envoy.filters.http.router
+            mergeSlashes: true
+            normalizePath: true
+            rds:
+              configSource:
+                ads: {}
+                resourceApiVersion: V3
+              routeConfigName: edge-gateway:HTTP:8080
+            requestHeadersTimeout: 0.500s
+            serverName: Kuma Gateway
+            statPrefix: gateway-default
+            streamIdleTimeout: 5s
+            stripAnyHostPort: true
+      listenerFilters:
+      - name: envoy.filters.listener.tls_inspector
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+      name: edge-gateway:HTTP:8080
+      perConnectionBufferLimitBytes: 32768
+      reusePort: true
+      trafficDirection: INBOUND
+Routes:
+  Resources:
+    edge-gateway:HTTP:8080:
+      name: edge-gateway:HTTP:8080
+      requestHeadersToRemove:
+      - x-kuma-tags
+      validateClusters: false
+      virtualHosts:
+      - domains:
+        - echo.example.com
+        name: echo.example.com
+        routes:
+        - match:
+            path: /api
+          route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: api-service-f8ae3d759cc477a6
+                weight: 1
+              totalWeight: 1
+          typedPerFilterConfig:
+            envoy.filters.http.local_ratelimit:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              filterEnabled:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enabled
+              filterEnforced:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enforced
+              statPrefix: rate_limit
+              tokenBucket:
+                fillInterval: 20s
+                maxTokens: 1
+                tokensPerFill: 1
+        - match:
+            prefix: /api/
+          route:
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: api-service-f8ae3d759cc477a6
+                weight: 1
+              totalWeight: 1
+          typedPerFilterConfig:
+            envoy.filters.http.local_ratelimit:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              filterEnabled:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enabled
+              filterEnforced:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enforced
+              statPrefix: rate_limit
+              tokenBucket:
+                fillInterval: 20s
+                maxTokens: 1
+                tokensPerFill: 1
+        - match:
+            prefix: /
+          route:
+            requestMirrorPolicies:
+            - cluster: echo-mirror-712ce3acc3cececc
+              runtimeFraction:
+                defaultValue:
+                  numerator: 1
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-5a416c39037aa8f6
+                weight: 1
+              totalWeight: 1
+          typedPerFilterConfig:
+            envoy.filters.http.local_ratelimit:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              filterEnabled:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enabled
+              filterEnforced:
+                defaultValue:
+                  numerator: 100
+                runtimeKey: local_rate_limit_enforced
+              statPrefix: rate_limit
+              tokenBucket:
+                fillInterval: 10s
+                maxTokens: 1
+                tokensPerFill: 1
+Runtimes:
+  Resources: {}
+Secrets:
+  Resources: {}

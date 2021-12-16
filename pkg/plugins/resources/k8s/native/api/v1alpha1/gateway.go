@@ -38,4 +38,6 @@ func init() {
 			Kind:       "GatewayRouteList",
 		},
 	})
+
+	SchemeBuilder.Register(&GatewayInstance{}, &GatewayInstanceList{})
 }

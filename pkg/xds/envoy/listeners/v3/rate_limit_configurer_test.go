@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -13,7 +14,7 @@ import (
 
 var _ = Describe("RateLimitConfigurer", func() {
 	type testCase struct {
-		input    []*mesh_proto.RateLimit
+		input    []*core_mesh.RateLimitResource
 		expected string
 	}
 	DescribeTable("should generate proper Envoy config",
@@ -32,19 +33,21 @@ var _ = Describe("RateLimitConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic input", testCase{
-			input: []*mesh_proto.RateLimit{
+			input: []*core_mesh.RateLimitResource{
 				{
-					Sources: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"tag1": "value1",
-								"tag2": "value2",
+					Spec: &mesh_proto.RateLimit{
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"tag1": "value1",
+									"tag2": "value2",
+								},
 							},
 						},
-					},
-					Conf: &mesh_proto.RateLimit_Conf{
-						Http: &mesh_proto.RateLimit_Conf_Http{
-							Requests: 100,
+						Conf: &mesh_proto.RateLimit_Conf{
+							Http: &mesh_proto.RateLimit_Conf_Http{
+								Requests: 100,
+							},
 						},
 					},
 				},

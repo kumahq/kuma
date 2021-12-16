@@ -76,11 +76,7 @@ func HasDpInitImageRegistry() bool {
 }
 
 func GetUniversalImage() string {
-	if envIsPresent("KUMA_UNIVERSAL_IMAGE") {
-		return os.Getenv("KUMA_UNIVERSAL_IMAGE")
-	}
-
-	return KumaUniversalImage
+	return os.Getenv("KUMA_UNIVERSAL_IMAGE")
 }
 
 func GetApiVersion() string {

@@ -3,6 +3,7 @@ package zoneinsight
 import (
 	"context"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -46,11 +47,8 @@ func (m *zoneInsightManager) Update(ctx context.Context, resource core_model.Res
 }
 
 func (m *zoneInsightManager) limitSubscription(zoneInsight *system.ZoneInsightResource) {
-	if !m.config.Enabled {
-		zoneInsight.Spec.Subscriptions = nil
-		return
-	}
 	if m.config.SubscriptionLimit == 0 {
+		zoneInsight.Spec.Subscriptions = []*system_proto.KDSSubscription{}
 		return
 	}
 	if len(zoneInsight.Spec.Subscriptions) <= m.config.SubscriptionLimit {

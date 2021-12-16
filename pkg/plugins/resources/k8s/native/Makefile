@@ -1,9 +1,7 @@
 .PHONY: all test install crd/install crd/uninstall crd/upgrade deploy generate controller-gen
 
-# TODO(yskopets): CRD generation is broken since introduction of .proto definitions
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-#CRD_OPTIONS ?= "crd:trivialVersions=true"
-#CRD_OUTPUT := output:crd:artifacts:config=config/crd/bases
+CRD_OPTIONS ?= "crd:crdVersions=v1"
+CRD_OUTPUT := output:crd:artifacts:config=config/crd/bases
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -19,6 +17,7 @@ export TEST_ASSET_ETCD=$(ETCD_PATH)
 export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 
 CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen
+RESOURCE_GEN := go run -mod=mod ../../../../../tools/resource-gen/main.go
 
 all:
 
@@ -47,9 +46,15 @@ deploy: generate
 	kubectl apply -f config/crd/bases
 	kustomize build config/default | kubectl apply -f -
 
-generate:
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) webhook paths="./api/..." $(CRD_OUTPUT)
+.PHONY: generate
+generate: generate/types
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./api/v1alpha1/gateway_instance.go;./api/v1alpha1/groupversion_info.go" $(CRD_OUTPUT)
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt,year=$$(date +%Y) paths=./api/...
+
+.PHONY:
+generate/types:
+	$(RESOURCE_GEN) -package mesh -generator crd > api/v1alpha1/zz_generated.mesh.go
+	$(RESOURCE_GEN) -package system -generator crd > api/v1alpha1/zz_generated.system.go
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

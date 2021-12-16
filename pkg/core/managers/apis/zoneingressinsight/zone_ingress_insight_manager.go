@@ -3,6 +3,7 @@ package zoneingressinsight
 import (
 	"context"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -46,11 +47,8 @@ func (m *zoneIngressInsightManager) Update(ctx context.Context, resource core_mo
 }
 
 func (m *zoneIngressInsightManager) limitSubscription(zoneIngressInsight *mesh.ZoneIngressInsightResource) {
-	if !m.config.Enabled {
-		zoneIngressInsight.Spec.Subscriptions = nil
-		return
-	}
 	if m.config.SubscriptionLimit == 0 {
+		zoneIngressInsight.Spec.Subscriptions = []*mesh_proto.DiscoverySubscription{}
 		return
 	}
 	if len(zoneIngressInsight.Spec.Subscriptions) <= m.config.SubscriptionLimit {

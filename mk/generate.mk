@@ -27,7 +27,8 @@ generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc
 
 .PHONY: resources/type
 resources/type:
-	$(GO_RUN) ./tools/resource-gen/main.go -generator type
+	$(GO_RUN) ./tools/resource-gen/main.go -package mesh -generator type > pkg/core/resources/apis/mesh/zz_generated.resources.go
+	$(GO_RUN) ./tools/resource-gen/main.go -package system -generator type > pkg/core/resources/apis/system/zz_generated.resources.go
 
 .PHONY: protoc/pkg/config/app/kumactl/v1alpha1
 protoc/pkg/config/app/kumactl/v1alpha1:

@@ -30,30 +30,16 @@ spec:
       passthrough: %s
 `
 
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	var cluster *K8sCluster
 	var clientPod *v1.Pod
 	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
-		c, err := NewK8SCluster(NewTestingT(), Kuma1, Silent)
-		Expect(err).ToNot(HaveOccurred())
+		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
-		cluster = c.(*K8sCluster)
-
-		err = NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -76,11 +62,7 @@ metadata:
 		clientPod = &pods[0]
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-
+	E2EAfterEach(func() {
 		err := cluster.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 

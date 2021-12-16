@@ -8,8 +8,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 )
 
-// Gateway selects the matching GatewayResource (if any) for the given DataplaneResorce.
-func Gateway(m manager.ReadOnlyResourceManager, dp *core_mesh.DataplaneResource) *core_mesh.GatewayResource {
+// Gateway selects the matching GatewayResource (if any) for the given
+// TagMatcher.
+func Gateway(m manager.ReadOnlyResourceManager, tagMatcher policy.TagMatcher) *core_mesh.GatewayResource {
 	gatewayList := &core_mesh.GatewayResourceList{}
 
 	if err := m.List(context.Background(), gatewayList); err != nil {
@@ -21,7 +22,7 @@ func Gateway(m manager.ReadOnlyResourceManager, dp *core_mesh.DataplaneResource)
 		candidates[i] = gw
 	}
 
-	if p := policy.SelectDataplanePolicy(dp, candidates); p != nil {
+	if p := policy.SelectDataplanePolicyWithMatcher(tagMatcher, candidates); p != nil {
 		return p.(*core_mesh.GatewayResource)
 	}
 

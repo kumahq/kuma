@@ -177,10 +177,6 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 	if err != nil {
 		return nil, err
 	}
-	var tracingBackend *mesh_proto.TracingBackend
-	if trafficTrace != nil {
-		tracingBackend = meshContext.Resource.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
-	}
 
 	retries, err := xds_topology.GetRetries(ctx, dataplane, outboundSelectors, p.CachingResManager)
 	if err != nil {
@@ -192,7 +188,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		return nil, err
 	}
 
-	matchedLogs, err := p.LogsMatcher.Match(ctx, dataplane)
+	trafficLogs, err := p.LogsMatcher.Match(ctx, dataplane)
 	if err != nil {
 		return nil, err
 	}
@@ -214,15 +210,15 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 
 	matchedPolicies := &xds.MatchedPolicies{
 		TrafficPermissions: matchedPermissions,
-		Logs:               matchedLogs,
+		TrafficLogs:        trafficLogs,
 		HealthChecks:       healthChecks,
 		CircuitBreakers:    circuitBreakers,
 		TrafficTrace:       trafficTrace,
-		TracingBackend:     tracingBackend,
 		FaultInjections:    faultInjection,
 		Retries:            retries,
 		Timeouts:           timeouts,
-		RateLimits:         ratelimits,
+		RateLimitsInbound:  ratelimits.Inbound,
+		RateLimitsOutbound: ratelimits.Outbound,
 	}
 	return matchedPolicies, nil
 }
@@ -240,8 +236,7 @@ func (p *DataplaneProxyBuilder) resolveTLSReadiness(
 	}
 
 	serviceInsight := core_mesh.NewServiceInsightResource()
-	insightName := insights.ServiceInsightName(key.Mesh)
-	if err := p.CachingResManager.Get(ctx, serviceInsight, core_store.GetByKey(insightName, key.Mesh)); err != nil {
+	if err := p.CachingResManager.Get(ctx, serviceInsight, core_store.GetBy(insights.ServiceInsightKey(key.Mesh))); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			// Nothing about the TLS readiness has been reported yet
 			syncLog.Info("could not determine service TLS readiness", "error", err)

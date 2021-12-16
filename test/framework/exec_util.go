@@ -41,7 +41,10 @@ func (c *K8sCluster) ExecWithOptions(options ExecOptions) (string, string, error
 	config, err := k8s.LoadApiClientConfigE(c.kubeconfig, "")
 	Expect(err).NotTo(HaveOccurred())
 
-	req := c.clientset.CoreV1().RESTClient().Post().
+	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	Expect(err).NotTo(HaveOccurred())
+
+	req := clientset.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(options.PodName).
 		Namespace(options.Namespace).

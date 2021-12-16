@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -15,7 +16,7 @@ import (
 
 var _ = Describe("FaultInjectionConfigurer", func() {
 	type testCase struct {
-		input    []*mesh_proto.FaultInjection
+		input    []*core_mesh.FaultInjectionResource
 		expected string
 	}
 	DescribeTable("should generate proper Envoy config",
@@ -34,19 +35,21 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic input", testCase{
-			input: []*mesh_proto.FaultInjection{{
-				Sources: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"tag1": "value1",
-							"tag2": "value2",
+			input: []*core_mesh.FaultInjectionResource{{
+				Spec: &mesh_proto.FaultInjection{
+					Sources: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"tag1": "value1",
+								"tag2": "value2",
+							},
 						},
 					},
-				},
-				Conf: &mesh_proto.FaultInjection_Conf{
-					Delay: &mesh_proto.FaultInjection_Conf_Delay{
-						Percentage: util_proto.Double(50),
-						Value:      util_proto.Duration(time.Second * 5),
+					Conf: &mesh_proto.FaultInjection_Conf{
+						Delay: &mesh_proto.FaultInjection_Conf_Delay{
+							Percentage: util_proto.Double(50),
+							Value:      util_proto.Duration(time.Second * 5),
+						},
 					},
 				},
 			}},
@@ -73,25 +76,27 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                 statPrefix: stats`,
 		}),
 		Entry("2 policy selectors", testCase{
-			input: []*mesh_proto.FaultInjection{{
-				Sources: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"tag1": "value1m1",
-							"tag2": "value2m1",
+			input: []*core_mesh.FaultInjectionResource{{
+				Spec: &mesh_proto.FaultInjection{
+					Sources: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"tag1": "value1m1",
+								"tag2": "value2m1",
+							},
+						},
+						{
+							Match: map[string]string{
+								"tag1": "value1m2",
+								"tag2": "value2m2",
+							},
 						},
 					},
-					{
-						Match: map[string]string{
-							"tag1": "value1m2",
-							"tag2": "value2m2",
+					Conf: &mesh_proto.FaultInjection_Conf{
+						Delay: &mesh_proto.FaultInjection_Conf_Delay{
+							Percentage: util_proto.Double(50),
+							Value:      util_proto.Duration(time.Second * 5),
 						},
-					},
-				},
-				Conf: &mesh_proto.FaultInjection_Conf{
-					Delay: &mesh_proto.FaultInjection_Conf_Delay{
-						Percentage: util_proto.Double(50),
-						Value:      util_proto.Duration(time.Second * 5),
 					},
 				},
 			}},
@@ -117,53 +122,59 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                 statPrefix: stats`,
 		}),
 		Entry("should preserve the order of passed policies", testCase{
-			input: []*mesh_proto.FaultInjection{
+			input: []*core_mesh.FaultInjectionResource{
 				{
-					Sources: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"tag1": "value1",
-								"tag2": "value2",
-								"tag3": "value3",
+					Spec: &mesh_proto.FaultInjection{
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"tag1": "value1",
+									"tag2": "value2",
+									"tag3": "value3",
+								},
 							},
 						},
-					},
-					Conf: &mesh_proto.FaultInjection_Conf{
-						Delay: &mesh_proto.FaultInjection_Conf_Delay{
-							Percentage: util_proto.Double(100),
-							Value:      util_proto.Duration(time.Second * 15),
+						Conf: &mesh_proto.FaultInjection_Conf{
+							Delay: &mesh_proto.FaultInjection_Conf_Delay{
+								Percentage: util_proto.Double(100),
+								Value:      util_proto.Duration(time.Second * 15),
+							},
 						},
 					},
 				},
 				{
-					Sources: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"tag1": "value1",
-								"tag2": "value2",
+					Spec: &mesh_proto.FaultInjection{
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"tag1": "value1",
+									"tag2": "value2",
+								},
 							},
 						},
-					},
-					Conf: &mesh_proto.FaultInjection_Conf{
-						Delay: &mesh_proto.FaultInjection_Conf_Delay{
-							Percentage: util_proto.Double(100),
-							Value:      util_proto.Duration(time.Second * 10),
+						Conf: &mesh_proto.FaultInjection_Conf{
+							Delay: &mesh_proto.FaultInjection_Conf_Delay{
+								Percentage: util_proto.Double(100),
+								Value:      util_proto.Duration(time.Second * 10),
+							},
 						},
 					},
 				},
 				{
-					Sources: []*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"tag1": "*",
-								"tag2": "*",
+					Spec: &mesh_proto.FaultInjection{
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"tag1": "*",
+									"tag2": "*",
+								},
 							},
 						},
-					},
-					Conf: &mesh_proto.FaultInjection_Conf{
-						Delay: &mesh_proto.FaultInjection_Conf_Delay{
-							Percentage: util_proto.Double(100),
-							Value:      util_proto.Duration(time.Second * 5),
+						Conf: &mesh_proto.FaultInjection_Conf{
+							Delay: &mesh_proto.FaultInjection_Conf_Delay{
+								Percentage: util_proto.Double(100),
+								Value:      util_proto.Duration(time.Second * 5),
+							},
 						},
 					},
 				},

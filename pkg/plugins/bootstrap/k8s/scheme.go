@@ -5,6 +5,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client_scheme "k8s.io/client-go/kubernetes/scheme"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8scnicncfio "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
@@ -24,6 +25,9 @@ func NewScheme() (*kube_runtime.Scheme, error) {
 	}
 	if err := apiextensionsv1.AddToScheme(s); err != nil {
 		return nil, errors.Wrapf(err, "could not add %q to scheme", apiextensionsv1.SchemeGroupVersion)
+	}
+	if err := gatewayapi.Install(s); err != nil {
+		return nil, errors.Wrapf(err, "could not add %q to scheme", gatewayapi.SchemeGroupVersion)
 	}
 	return s, nil
 }

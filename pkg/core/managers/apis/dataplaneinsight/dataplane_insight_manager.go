@@ -3,6 +3,7 @@ package dataplaneinsight
 import (
 	"context"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -46,11 +47,8 @@ func (m *dataplaneInsightManager) Update(ctx context.Context, resource core_mode
 }
 
 func (m *dataplaneInsightManager) limitSubscription(dpInsight *core_mesh.DataplaneInsightResource) {
-	if !m.config.Enabled {
-		dpInsight.Spec.Subscriptions = nil
-		return
-	}
 	if m.config.SubscriptionLimit == 0 {
+		dpInsight.Spec.Subscriptions = []*mesh_proto.DiscoverySubscription{}
 		return
 	}
 	if len(dpInsight.Spec.Subscriptions) <= m.config.SubscriptionLimit {

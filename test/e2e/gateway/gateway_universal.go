@@ -385,4 +385,49 @@ data: %s
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
+
+	Context("when a rate limit is configured", func() {
+		BeforeEach(func() {
+			DeployCluster(KumaUniversalDeployOpts...)
+		})
+
+		JustBeforeEach(func() {
+			Expect(
+				cluster.GetKumactlOptions().KumactlApplyFromString(`
+type: RateLimit
+mesh: default
+name: external-routes
+sources:
+- match:
+    kuma.io/service: edge-gateway
+destinations:
+- match:
+    kuma.io/service: echo-service
+conf:
+  http:
+    requests: 5
+    interval: 10s
+`),
+			).To(Succeed())
+		})
+
+		It("should be rate limited", func() {
+			Eventually(func(g Gomega) {
+				target := fmt.Sprintf("http://%s/%s",
+					net.JoinHostPort(cluster.GetApp("gateway-proxy").GetIP(), "8080"),
+					path.Join("/", "test", url.PathEscape(GinkgoT().Name())),
+				)
+
+				response, err := testutil.CollectResponse(
+					cluster, "gateway-client", target,
+					testutil.NoFail(),
+					testutil.OutputFormat(`{ "received": { "status": %{response_code} } }`),
+					testutil.WithHeader("Host", "example.kuma.io"),
+				)
+
+				g.Expect(err).To(Succeed())
+				g.Expect(response.Received.StatusCode).To(Equal(429))
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
 }

@@ -929,6 +929,83 @@ conf:
     idle_timeout: 30s
 `,
 		),
+
+		Entry("match ratelimit policy",
+			"21-gateway-route.yaml", `
+type: GatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: /
+      filters:
+      - mirror:
+          percentage: 1
+          backend:
+            destination:
+              kuma.io/service: echo-mirror
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+    - matches:
+      - path:
+          match: PREFIX
+          value: /api
+      backends:
+      - destination:
+          kuma.io/service: api-service
+`, `
+type: RateLimit
+mesh: default
+name: echo-service
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: echo-service
+conf:
+  http:
+    requests: 1
+    interval: 10s
+`, `
+type: RateLimit
+mesh: default
+name: api-service
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: api-service
+conf:
+  http:
+    requests: 1
+    interval: 20s
+`, `
+# This does nothing because rate limits are per-route, not per-cluster.
+type: RateLimit
+mesh: default
+name: echo-mirror
+sources:
+- match:
+    kuma.io/service: gateway-default
+destinations:
+- match:
+    kuma.io/service: echo-mirror
+conf:
+  http:
+    requests: 1
+    interval: 30s
+`,
+		),
 	}
 
 	Context("with a HTTP gateway", func() {

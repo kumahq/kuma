@@ -10,10 +10,13 @@ spec:
   networking:
     address: 192.168.0.1
     inbound:
-      - port: 7070
-        tags:
-          app: example
-          kuma.io/protocol: tcp
-          kuma.io/service: sample_playground_svc_7071
-          version: "0.1"
-          kuma.io/zone: "zone-1"
+    - port: 7070
+      tags:
+        app: example
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: sample
+        k8s.kuma.io/service-port: "7071"
+        kuma.io/protocol: tcp
+        kuma.io/service: sample_playground_svc_7071
+        kuma.io/zone: zone-1
+        version: "0.1"

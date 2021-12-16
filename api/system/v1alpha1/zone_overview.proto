@@ -17,6 +17,7 @@ message ZoneOverview {
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).skip_kubernetes_wrappers = true;
 
   Zone zone = 1;
 

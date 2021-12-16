@@ -88,9 +88,13 @@ var _ = Describe("Match", func() {
 			for key := range bestMatched {
 				elements := []interface{}{}
 				for _, expected := range given.expected[key] {
-					elements = append(elements, MatchProto(expected))
+					elements = append(elements, MatchProto(expected.Spec))
 				}
-				Expect(bestMatched[key]).To(ConsistOf(elements...))
+				bestMatchedSpecs := make([]core_model.ResourceSpec, 0, len(bestMatched[key]))
+				for _, resource := range bestMatched[key] {
+					bestMatchedSpecs = append(bestMatchedSpecs, resource.GetSpec())
+				}
+				Expect(bestMatchedSpecs).To(ConsistOf(elements...))
 			}
 		},
 		Entry("1 inbound dataplane, 2 policies", testCase{
@@ -135,7 +139,7 @@ var _ = Describe("Match", func() {
 								"kuma.io/protocol": "http",
 							},
 						},
-					}).Spec,
+					}),
 				},
 			}}),
 		Entry("should apply policy only to the first inbound", testCase{
@@ -181,7 +185,7 @@ var _ = Describe("Match", func() {
 								"kuma.io/protocol": "http",
 							},
 						},
-					}).Spec,
+					}),
 				},
 			},
 		}),
@@ -244,7 +248,7 @@ var _ = Describe("Match", func() {
 								"kuma.io/protocol": "http",
 							},
 						},
-					}).Spec,
+					}),
 					policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
@@ -252,7 +256,7 @@ var _ = Describe("Match", func() {
 								"kuma.io/protocol": "http",
 							},
 						},
-					}).Spec,
+					}),
 					policyWithDestinationsFunc("fi3", time.Unix(1, 0), []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
@@ -261,7 +265,7 @@ var _ = Describe("Match", func() {
 								"kuma.io/protocol": "http",
 							},
 						},
-					}).Spec,
+					}),
 				},
 			},
 		}),

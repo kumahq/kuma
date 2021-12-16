@@ -5,25 +5,31 @@ spec:
   networking:
     address: 192.168.0.1
     inbound:
-      - port: 8080
-        tags:
-          app: example
-          kuma.io/instance: example
-          kuma.io/protocol: tcp
-          kuma.io/service: example_demo_svc_80
-          version: "0.1"
-          kuma.io/zone: "zone-1"
-      - port: 8443
-        tags:
-          app: example
-          kuma.io/instance: example
-          kuma.io/protocol: tcp
-          kuma.io/service: example_demo_svc_443
-          version: "0.1"
-          kuma.io/zone: "zone-1"
+    - port: 8080
+      tags:
+        app: example
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: example
+        k8s.kuma.io/service-port: "80"
+        kuma.io/instance: example
+        kuma.io/protocol: tcp
+        kuma.io/service: example_demo_svc_80
+        kuma.io/zone: zone-1
+        version: "0.1"
+    - port: 8443
+      tags:
+        app: example
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: example
+        k8s.kuma.io/service-port: "443"
+        kuma.io/instance: example
+        kuma.io/protocol: tcp
+        kuma.io/service: example_demo_svc_443
+        kuma.io/zone: zone-1
+        version: "0.1"
     outbound:
-      - address: 10.244.0.25
-        port: 80
-        tags:
-          kuma.io/instance: test-app-0
-          kuma.io/service: test-app_playground_svc_80
+    - address: 10.244.0.25
+      port: 80
+      tags:
+        kuma.io/instance: test-app-0
+        kuma.io/service: test-app_playground_svc_80

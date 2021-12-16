@@ -18,8 +18,6 @@ const (
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
 
-	KumaUniversalImage = "kuma-universal"
-
 	kdsPort             = 30685
 	loadBalancerKdsPort = 5685
 )

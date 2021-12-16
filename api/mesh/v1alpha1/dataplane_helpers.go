@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const (
@@ -29,6 +31,9 @@ const (
 	// External service tag
 	ExternalServiceTag = "kuma.io/external-service-name"
 
+	// Listener tag is used to select Gateway listeners
+	ListenerTag = "gateways.kuma.io/listener-name"
+
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
 )
@@ -39,6 +44,25 @@ const (
 	DataplaneProxyType ProxyType = "dataplane"
 	IngressProxyType   ProxyType = "ingress"
 )
+
+func (m *Dataplane) UnmarshalJSON(data []byte) error {
+	return util_proto.FromJSON(data, m)
+}
+
+func (m *Dataplane) MarshalJSON() ([]byte, error) {
+	return util_proto.ToJSON(m)
+}
+func (t *Dataplane) DeepCopyInto(out *Dataplane) {
+	util_proto.Merge(out, t)
+}
+func (t *Dataplane) DeepCopy() *Dataplane {
+	if t == nil {
+		return nil
+	}
+	out := new(Dataplane)
+	t.DeepCopyInto(out)
+	return out
+}
 
 func (t ProxyType) IsValid() error {
 	switch t {
