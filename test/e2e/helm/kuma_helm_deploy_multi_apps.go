@@ -17,17 +17,6 @@ import (
 )
 
 func AppDeploymentWithHelmChart() {
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	defaultMesh := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -66,7 +55,7 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(testserver.Install()).
 			Setup(cluster)

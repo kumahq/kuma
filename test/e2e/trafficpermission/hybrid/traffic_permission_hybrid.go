@@ -17,17 +17,6 @@ func TrafficPermissionHybrid() {
 	var optsGlobal, optsZoneUniversal, optsZoneKube = KumaK8sDeployOpts, KumaUniversalDeployOpts, KumaZoneK8sDeployOpts
 	var clientPodName string
 
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	meshMTLSOn := func(mesh string) string {
 		return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -92,7 +81,7 @@ spec:
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Zone, optsZoneKube...)).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Setup(zoneKube)
 		Expect(err).ToNot(HaveOccurred())

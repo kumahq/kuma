@@ -66,17 +66,6 @@ spec:
 
 `
 
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	var cluster Cluster
 	var clientPod *v1.Pod
 	var deployOptsFuncs = KumaK8sDeployOpts
@@ -91,7 +80,7 @@ metadata:
 		cluster = clusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(externalservice.Install(externalservice.HttpServer, []string{})).
 			Install(externalservice.Install(externalservice.HttpsServer, []string{})).

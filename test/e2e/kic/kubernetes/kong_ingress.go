@@ -98,16 +98,6 @@ func KICKubernetes() {
 		return
 	}
 
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
 	var ingressNamespace string
 	var altIngressNamespace = "kuma-yawetag"
 	var kubernetes Cluster
@@ -119,7 +109,7 @@ metadata:
 		kubernetes = k8sClusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Standalone, kubernetesOps...)).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(testserver.Install()).
 			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
