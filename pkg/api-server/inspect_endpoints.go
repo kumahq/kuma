@@ -73,22 +73,14 @@ func (s *simpleMatchedPolicyGetter) Get(ctx context.Context, dataplaneKey core_m
 	return &proxy.Policies, nil
 }
 
-func inspectWs(mpg core_xds.MatchedPoliciesGetter) *restful.WebService {
-	ws := new(restful.WebService)
-
-	ws.Path("/inspect").
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON)
-
+func addInspectEndpoints(ws *restful.WebService, mpg core_xds.MatchedPoliciesGetter) {
 	ws.Route(
-		ws.GET("/meshes/{mesh}/dataplane/{dataplane}/policies").To(inspectDataplane(mpg)).
+		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(mpg)).
 			Doc("inspect dataplane matched policies").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
 			Returns(200, "OK", nil),
 	)
-
-	return ws
 }
 
 func inspectDataplane(mpg core_xds.MatchedPoliciesGetter) restful.RouteFunction {

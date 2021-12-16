@@ -139,7 +139,7 @@ var _ = Describe("Inspect WS", func() {
 			Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", given.goldenFile)))
 		},
 		Entry("full example", testCase{
-			path:       "/inspect/meshes/default/dataplane/backend-1/policies",
+			path:       "meshes/default/dataplanes/backend-1/policies",
 			goldenFile: "inspect.json",
 			resources: []core_model.Resource{
 				newMesh("default"),
