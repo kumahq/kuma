@@ -10,7 +10,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/cncf/xds/go v0.0.0-20211011173535-cb28da3451f1
 	github.com/emicklei/go-restful v2.15.0+incompatible
-	github.com/envoyproxy/go-control-plane v0.9.10-0.20210907150352-cf90f659a021
+	github.com/envoyproxy/go-control-plane v0.10.1
 	github.com/envoyproxy/protoc-gen-validate v0.6.2
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
@@ -210,4 +210,4 @@ replace github.com/prometheus/prometheus => ./vendored/github.com/prometheus/pro
 //
 //	$ go mod edit -replace github.com/envoyproxy/go-control-plane=github.com/kumahq/go-control-plane@channel-increased-capacity
 //	$ GOPRIVATE=github.com/kumahq/go-control-plane go mod tidy
-replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.9.10-0.20211022075049-d35edcf0813a
+replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.10.1-0.20211216152657-b680695dd7da
