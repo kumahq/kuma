@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -55,7 +56,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	)
 	switch u.Scheme {
 	case "grpc":
-		dialOpts = append(dialOpts, grpc.WithInsecure())
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	case "grpcs":
 		tlsConfig, err := tlsConfig(c.config.RootCAFile)
 		if err != nil {
