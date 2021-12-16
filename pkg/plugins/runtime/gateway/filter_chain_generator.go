@@ -272,6 +272,9 @@ func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_l
 
 	// Tracing and logging have to be configured after the HttpConnectionManager is enabled.
 	builder.Configure(
+		// Force the ratelimit filter to always be present. This
+		// is a no-op unless we later add a per-route configuration.
+		envoy_listeners.RateLimit([]*core_mesh.RateLimitResource{nil}),
 		envoy_listeners.DefaultCompressorFilter(),
 		envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service),
 		// In mesh proxies, the access log is configured on the outbound

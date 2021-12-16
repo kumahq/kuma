@@ -12,24 +12,17 @@ import (
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-// GetDataplanes returns list of Dataplane in provided Mesh and Ingresses (which are cluster-scoped, not mesh-scoped)
+// GetDataplanes returns list of Dataplane in provided Mesh
 func GetDataplanes(log logr.Logger, ctx context.Context, rm manager.ReadOnlyResourceManager, lookupIPFunc lookup.LookupIPFunc, mesh string) (*core_mesh.DataplaneResourceList, error) {
 	dataplanes := &core_mesh.DataplaneResourceList{}
-	if err := rm.List(ctx, dataplanes); err != nil {
+	if err := rm.List(ctx, dataplanes, core_store.ListByMesh(mesh)); err != nil {
 		return nil, err
 	}
 	dataplanes.Items = ResolveAddresses(log, lookupIPFunc, dataplanes.Items)
-	filteredDataplanes := &core_mesh.DataplaneResourceList{}
-	for _, d := range dataplanes.Items {
-		// backwards compatibility
-		if d.GetMeta().GetMesh() == mesh || d.Spec.IsIngress() {
-			_ = filteredDataplanes.AddItem(d)
-		}
-	}
-
-	return filteredDataplanes, nil
+	return dataplanes, nil
 }
 
 func GetZoneIngresses(log logr.Logger, ctx context.Context, rm manager.ReadOnlyResourceManager, lookupIPFunc lookup.LookupIPFunc) (*core_mesh.ZoneIngressResourceList, error) {
@@ -86,28 +79,6 @@ func ResolveAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.Datap
 	return dataplane, nil
 }
 
-func ResolveIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.DataplaneResource) (*core_mesh.DataplaneResource, error) {
-	if dataplane.Spec.Networking.Ingress.PublicAddress == "" { // Ingress may not have public address yet.
-		return dataplane, nil
-	}
-	ips, err := lookupIPFunc(dataplane.Spec.Networking.Ingress.PublicAddress)
-	if err != nil {
-		return nil, err
-	}
-	if len(ips) == 0 {
-		return nil, errors.Errorf("can't resolve address %v", dataplane.Spec.Networking.Ingress.PublicAddress)
-	}
-	if dataplane.Spec.Networking.Ingress.PublicAddress != ips[0].String() { // only if we resolve any address, in most cases this is IP not a hostname
-		dpSpec := proto.Clone(dataplane.Spec).(*mesh_proto.Dataplane)
-		dpSpec.Networking.Ingress.PublicAddress = ips[0].String()
-		return &core_mesh.DataplaneResource{
-			Meta: dataplane.Meta,
-			Spec: dpSpec,
-		}, nil
-	}
-	return dataplane, nil
-}
-
 func ResolveZoneIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, zoneIngress *core_mesh.ZoneIngressResource) (*core_mesh.ZoneIngressResource, error) {
 	if zoneIngress.Spec.GetNetworking().GetAdvertisedAddress() == "" { // Ingress may not have public address yet.
 		return zoneIngress, nil
@@ -133,21 +104,12 @@ func ResolveZoneIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, zoneIngre
 func ResolveAddresses(log logr.Logger, lookupIPFunc lookup.LookupIPFunc, dataplanes []*core_mesh.DataplaneResource) []*core_mesh.DataplaneResource {
 	rv := []*core_mesh.DataplaneResource{}
 	for _, d := range dataplanes {
-		if d.Spec.IsIngress() {
-			dp, err := ResolveIngressPublicAddress(lookupIPFunc, d)
-			if err != nil {
-				log.Error(err, "failed to resolve ingress's public name, skipping dataplane")
-				continue
-			}
-			rv = append(rv, dp)
-		} else {
-			dp, err := ResolveAddress(lookupIPFunc, d)
-			if err != nil {
-				log.Error(err, "failed to resolve dataplane's domain name, skipping dataplane")
-				continue
-			}
-			rv = append(rv, dp)
+		dp, err := ResolveAddress(lookupIPFunc, d)
+		if err != nil {
+			log.Error(err, "failed to resolve dataplane's domain name, skipping dataplane")
+			continue
 		}
+		rv = append(rv, dp)
 	}
 	return rv
 }

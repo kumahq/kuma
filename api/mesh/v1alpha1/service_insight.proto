@@ -17,7 +17,7 @@ message ServiceInsight {
   option (kuma.mesh.resource).ws.name = "service-insight";
   option (kuma.mesh.resource).ws.read_only = true;
 
-  google.protobuf.Timestamp last_sync = 1;
+  reserved 1; // formerly last_sync
 
   message Service {
     option (kuma.mesh.resource).name = "ServiceOverviewResource";
@@ -25,6 +25,7 @@ message ServiceInsight {
     option (kuma.mesh.resource).package = "mesh";
     option (kuma.mesh.resource).skip_registration = true;
     option (kuma.mesh.resource).skip_validation = true;
+    option (kuma.mesh.resource).skip_kubernetes_wrappers = true;
 
     enum Status {
       none = 0; // should not be used

@@ -7,7 +7,6 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ k8s_common.Converter = &SimpleConverter{}
@@ -33,11 +32,7 @@ func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (k8s_model.K
 	if err != nil {
 		return nil, err
 	}
-	spec, err := util_proto.ToMap(r.GetSpec())
-	if err != nil {
-		return nil, err
-	}
-	obj.SetSpec(spec)
+	obj.SetSpec(r.GetSpec())
 	if r.GetMeta() != nil {
 		if adapter, ok := r.GetMeta().(*KubernetesMetaAdapter); ok {
 			obj.SetMesh(adapter.Mesh)
@@ -55,7 +50,8 @@ func (c *SimpleConverter) ToKubernetesList(rl core_model.ResourceList) (k8s_mode
 
 func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
 	out.SetMeta(&KubernetesMetaAdapter{ObjectMeta: *obj.GetObjectMeta(), Mesh: obj.GetMesh()})
-	return util_proto.FromMap(obj.GetSpec(), out.GetSpec())
+	err := out.SetSpec(obj.GetSpec())
+	return err
 }
 
 func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model.ResourceList, predicate k8s_common.ConverterPredicate) error {

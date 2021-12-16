@@ -20,17 +20,6 @@ import (
 )
 
 func ZoneAndGlobalWithHelmChart() {
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, zone ControlPlane
@@ -74,7 +63,7 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone...)).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())

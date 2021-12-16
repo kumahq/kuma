@@ -21,14 +21,9 @@ func ControlPlaneAutoscalingWithHelmChart() {
 	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
-		c, err := NewK8sClusterWithTimeout(
-			NewTestingT(),
-			Kuma1,
-			Silent,
-			6*time.Second)
-		Expect(err).ToNot(HaveOccurred())
-
-		cluster = c.WithRetries(60)
+		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
+			WithTimeout(6 * time.Second).
+			WithRetries(60)
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
@@ -41,7 +36,7 @@ func ControlPlaneAutoscalingWithHelmChart() {
 			WithHelmOpt("controlPlane.autoscaling.minReplicas", strconv.Itoa(minReplicas)),
 			WithCNI())
 
-		err = NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())

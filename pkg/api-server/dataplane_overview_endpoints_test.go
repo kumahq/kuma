@@ -105,18 +105,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				},
 			},
 		})
-
-		createDpWithInsights("dp-3", &v1alpha1.Dataplane{
-			Networking: &v1alpha1.Dataplane_Networking{
-				Address: "127.0.0.1",
-				Ingress: &v1alpha1.Dataplane_Networking_Ingress{},
-				Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
-					{
-						Port: 1234,
-					},
-				},
-			},
-		})
 	})
 
 	dp1Json := `
@@ -193,42 +181,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	}
 }`
 
-	dp3Json := `
-{
-	"type": "DataplaneOverview",
-	"name": "dp-3",
-	"mesh": "mesh1",
-	"creationTime": "2018-07-17T16:05:36.995Z",
-	"modificationTime": "2018-07-17T16:05:36.995Z",
-	"dataplane": {
-		"networking": {
-			"address": "127.0.0.1",
-			"ingress": {},
-			"inbound": [
-				{
-					"port": 1234
-				}
-			]
-		}
-	},
-	"dataplaneInsight": {
-		"subscriptions": [
-			{
-				"id": "stream-id-1",
-				"controlPlaneInstanceId": "cp-1",
-				"connectTime": "2019-07-01T00:00:00Z",
-				"status": {
-					"total": {},
-					"cds": {},
-					"eds": {},
-					"lds": {},
-					"rds": {}
-				}
-			}
-		]
-	}
-}`
-
 	Describe("On GET", func() {
 		It("should return an existing resource", func() {
 			// when
@@ -262,7 +214,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			},
 			Entry("should list all when no tag is provided", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights",
-				expectedJson: fmt.Sprintf(`{"total": 3, "items": [%s,%s,%s], "next": null}`, dp1Json, dp2Json, dp3Json),
+				expectedJson: fmt.Sprintf(`{"total": 2, "items": [%s,%s], "next": null}`, dp1Json, dp2Json),
 			}),
 			Entry("should list with only one matching tag", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?tag=service:backend",
@@ -279,10 +231,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			Entry("should list only gateway dataplanes", testCase{
 				url:          "/meshes/mesh1/dataplanes+insights?gateway=true",
 				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp1Json),
-			}),
-			Entry("should list only ingress dataplanes", testCase{
-				url:          "/meshes/mesh1/dataplanes+insights?ingress=true",
-				expectedJson: fmt.Sprintf(`{"total": 1, "items": [%s], "next": null}`, dp3Json),
 			}),
 		)
 	})

@@ -120,22 +120,6 @@ func DataplaneToMeshMapper(l logr.Logger, ns string, resourceConverter k8s_commo
 			return nil
 		}
 
-		// backwards compatibility
-		if dp.Spec.IsIngress() {
-			meshSet := map[string]bool{}
-			for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
-				meshSet[service.Mesh] = true
-			}
-
-			var requests []kube_reconile.Request
-			for mesh := range meshSet {
-				requests = append(requests, kube_reconile.Request{
-					NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh)},
-				})
-			}
-			return requests
-		}
-
 		return []kube_reconile.Request{{
 			NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(cause.Mesh)},
 		}}

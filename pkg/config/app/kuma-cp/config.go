@@ -53,7 +53,6 @@ func (m *Metrics) Validate() error {
 }
 
 type DataplaneMetrics struct {
-	Enabled           bool          `yaml:"enabled" envconfig:"kuma_metrics_dataplane_enabled"`
 	SubscriptionLimit int           `yaml:"subscriptionLimit" envconfig:"kuma_metrics_dataplane_subscription_limit"`
 	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"kuma_metrics_dataplane_idle_timeout"`
 }
@@ -69,7 +68,6 @@ func (d *DataplaneMetrics) Validate() error {
 }
 
 type ZoneMetrics struct {
-	Enabled           bool          `yaml:"enabled" envconfig:"kuma_metrics_zone_enabled"`
 	SubscriptionLimit int           `yaml:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
 	IdleTimeout       time.Duration `yaml:"idleTimeout" envconfig:"kuma_metrics_zone_idle_timeout"`
 }
@@ -176,12 +174,10 @@ var DefaultConfig = func() Config {
 		},
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
-				Enabled:           true,
 				SubscriptionLimit: 2,
 				IdleTimeout:       5 * time.Minute,
 			},
 			Zone: &ZoneMetrics{
-				Enabled:           true,
 				SubscriptionLimit: 10,
 				IdleTimeout:       5 * time.Minute,
 			},

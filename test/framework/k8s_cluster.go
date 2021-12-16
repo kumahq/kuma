@@ -25,7 +25,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
@@ -46,7 +45,6 @@ type K8sCluster struct {
 	hiPort              uint32
 	forwardedPortsChans map[uint32]chan struct{}
 	verbose             bool
-	clientset           *kubernetes.Clientset
 	deployments         map[string]Deployment
 	defaultTimeout      time.Duration
 	defaultRetries      int
@@ -54,8 +52,8 @@ type K8sCluster struct {
 
 var _ Cluster = &K8sCluster{}
 
-func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, error) {
-	cluster := &K8sCluster{
+func NewK8sCluster(t *TestingT, clusterName string, verbose bool) *K8sCluster {
+	return &K8sCluster{
 		t:                   t,
 		name:                clusterName,
 		kubeconfig:          os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, clusterName)),
@@ -67,22 +65,6 @@ func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, erro
 		defaultRetries:      GetDefaultRetries(),
 		defaultTimeout:      GetDefaultTimeout(),
 	}
-
-	var err error
-	cluster.clientset, err = k8s.GetKubernetesClientFromOptionsE(t, cluster.GetKubectlOptions())
-	if err != nil {
-		return nil, errors.Wrapf(err, "error in getting access to K8S")
-	}
-	return cluster, nil
-}
-
-func NewK8sClusterWithTimeout(t *TestingT, clusterName string, verbose bool, timeout time.Duration) (Cluster, error) {
-	c, err := NewK8SCluster(t, clusterName, verbose)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.WithTimeout(timeout), nil
 }
 
 func (c *K8sCluster) WithTimeout(timeout time.Duration) Cluster {

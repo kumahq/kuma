@@ -30,19 +30,18 @@ var _ = Describe("IngressGenerator", func() {
 		func(given testCase) {
 			gen := generator.IngressGenerator{}
 
-			dataplane := &mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
+			zoneIngress := &mesh_proto.ZoneIngress{}
+			Expect(util_proto.FromYAML([]byte(given.dataplane), zoneIngress)).To(Succeed())
 
-			zoneIngress, err := core_mesh.NewZoneIngressResourceFromDataplane(&core_mesh.DataplaneResource{
+			zoneIngressRes := &core_mesh.ZoneIngressResource{
 				Meta: &test_model.ResourceMeta{
 					Version: "1",
 				},
-				Spec: dataplane,
-			})
-			Expect(err).ToNot(HaveOccurred())
+				Spec: zoneIngress,
+			}
 			proxy := &core_xds.Proxy{
 				Id:          *core_xds.BuildProxyId("default", "ingress"),
-				ZoneIngress: zoneIngress,
+				ZoneIngress: zoneIngressRes,
 				APIVersion:  envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					OutboundTargets:  given.outboundTargets,
@@ -71,20 +70,18 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress:
-                availableServices:
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v1
-                      region: eu
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v2
-                      region: us
-              inbound:
-                - port: 10001
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
 `,
 			expected: "01.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -135,9 +132,7 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress: {}
-              inbound:
-                - port: 10001
+              port: 10001
 `,
 			expected:        "02.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{},
@@ -163,20 +158,18 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress:
-                availableServices:
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v1
-                      region: eu
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v2
-                      region: us
-              inbound:
-                - port: 10001
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
 `,
 			expected: "03.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -255,41 +248,39 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress:
-                availableServices:
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v1
-                      region: eu
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v2
-                      region: us
-                  - mesh: mesh2
-                    tags:
-                      kuma.io/service: backend
-                      cloud: eks
-                      arch: ARM
-                      os: ubuntu
-                      region: asia
-                      version: v3
-                  - mesh: mesh2
-                    tags:
-                      kuma.io/service: frontend
-                      cloud: gke
-                      arch: x86
-                      os: debian
-                      region: eu
-                      version: v1
-                  - mesh: mesh2
-                    tags:
-                      kuma.io/service: frontend
-                      cloud: aks
-                      version: v2
-              inbound:
-                - port: 10001
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
+              - mesh: mesh2
+                tags:
+                  kuma.io/service: backend
+                  cloud: eks
+                  arch: ARM
+                  os: ubuntu
+                  region: asia
+                  version: v3
+              - mesh: mesh2
+                tags:
+                  kuma.io/service: frontend
+                  cloud: gke
+                  arch: x86
+                  os: debian
+                  region: eu
+                  version: v1
+              - mesh: mesh2
+                tags:
+                  kuma.io/service: frontend
+                  cloud: aks
+                  version: v2
 `,
 			expected: "04.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
@@ -452,20 +443,18 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane: `
             networking:
               address: 10.0.0.1
-              ingress:
-                availableServices:
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v1
-                      region: eu
-                  - mesh: mesh1
-                    tags:
-                      kuma.io/service: backend
-                      version: v2
-                      region: us
-              inbound:
-                - port: 10001
+              port: 10001
+            availableServices:
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v1
+                  region: eu
+              - mesh: mesh1
+                tags:
+                  kuma.io/service: backend
+                  version: v2
+                  region: us
 `,
 			expected: "05.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{

@@ -15,6 +15,7 @@ message Config {
   option (kuma.mesh.resource).package = "system";
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).skip_kubernetes_wrappers = true;
   option (kuma.mesh.resource).kds.send_to_zone = true;
 
   // configuration that is stored (ex. in JSON)

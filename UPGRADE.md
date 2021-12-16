@@ -8,10 +8,21 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Any type
+
+The `kuma.metrics.dataplane.enabled` and `kuma.metrics.zone.enabled` configurations have been removed.
+
+Kuma always generate the corresponding metrics.
+
 ### Kubernetes
 
 Please migrate your `kuma.io/sidecar-injection` annotations to labels.
-The new version still supports annotation, but to have a guarantee that applications can only start with sidecar, you must use label instead of annotation. 
+The new version still supports annotation, but to have a guarantee that applications can only start with sidecar, you must use label instead of annotation.
+
+### Universal
+
+We removed support for old Ingress (`Dataplane#networking.ingress`) from pre 1.2 days.
+If you are still using it, please migrate to `ZoneIngress` first (see `Upgrade to 1.2.0` section).
 
 ## Upgrade to `1.4.0`
 

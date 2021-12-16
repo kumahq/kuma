@@ -17,17 +17,6 @@ import (
 )
 
 func AppDeploymentWithHelmChart() {
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	defaultMesh := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -39,14 +28,9 @@ metadata:
 	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
-		c, err := NewK8sClusterWithTimeout(
-			NewTestingT(),
-			Kuma1,
-			Silent,
-			6*time.Second)
-		Expect(err).ToNot(HaveOccurred())
-
-		cluster = c.WithRetries(60)
+		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
+			WithTimeout(6 * time.Second).
+			WithRetries(60)
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
@@ -59,14 +43,14 @@ metadata:
 			WithCPReplicas(3),         // test HA capability
 			WithCNI())
 
-		err = NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(testserver.Install()).
 			Setup(cluster)

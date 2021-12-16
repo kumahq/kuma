@@ -39,14 +39,10 @@ func UpgradingWithHelmChart() {
 	DescribeTable(
 		"should successfully upgrade Kuma via Helm",
 		func(given testCase) {
-			c, err := NewK8sClusterWithTimeout(
-				NewTestingT(),
-				Kuma1,
-				Silent,
-				6*time.Second)
-			Expect(err).ToNot(HaveOccurred())
+			cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
+				WithTimeout(6 * time.Second).
+				WithRetries(60)
 
-			cluster = c.WithRetries(60)
 			InitCluster(cluster)
 
 			releaseName := fmt.Sprintf(
@@ -63,7 +59,7 @@ func UpgradingWithHelmChart() {
 				WithoutHelmOpt("global.image.tag"),
 				WithHelmOpt("global.image.registry", UpstreamImageRegistry))
 
-			err = NewClusterSetup().
+			err := NewClusterSetup().
 				Install(Kuma(core.Standalone, deployOptsFuncs...)).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())

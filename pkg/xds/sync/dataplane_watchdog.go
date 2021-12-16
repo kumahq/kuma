@@ -8,9 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
@@ -48,7 +46,6 @@ func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, dpKey core_model.R
 }
 
 func (d *DataplaneWatchdog) Sync() error {
-	ctx := context.Background()
 	metadata := d.metadataTracker.Metadata(d.key)
 	if metadata == nil {
 		return errors.New("metadata cannot be nil")
@@ -56,17 +53,6 @@ func (d *DataplaneWatchdog) Sync() error {
 
 	if d.dpType == "" {
 		d.dpType = metadata.GetProxyType()
-	}
-	// backwards compatibility
-	if d.dpType == mesh_proto.DataplaneProxyType && !d.proxyTypeSettled {
-		dataplane := core_mesh.NewDataplaneResource()
-		if err := d.dataplaneProxyBuilder.CachingResManager.Get(ctx, dataplane, store.GetBy(d.key)); err != nil {
-			return err
-		}
-		if dataplane.Spec.IsIngress() {
-			d.dpType = mesh_proto.IngressProxyType
-		}
-		d.proxyTypeSettled = true
 	}
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:

@@ -43,7 +43,11 @@ func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = route
+		if route == nil {
+			t.Spec = &proto.TrafficRoute{}
+		} else {
+			t.Spec = route
+		}
 		return nil
 	}
 }

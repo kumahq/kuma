@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const (
@@ -29,6 +31,9 @@ const (
 	// External service tag
 	ExternalServiceTag = "kuma.io/external-service-name"
 
+	// Listener tag is used to select Gateway listeners
+	ListenerTag = "gateways.kuma.io/listener-name"
+
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
 )
@@ -39,6 +44,25 @@ const (
 	DataplaneProxyType ProxyType = "dataplane"
 	IngressProxyType   ProxyType = "ingress"
 )
+
+func (m *Dataplane) UnmarshalJSON(data []byte) error {
+	return util_proto.FromJSON(data, m)
+}
+
+func (m *Dataplane) MarshalJSON() ([]byte, error) {
+	return util_proto.ToJSON(m)
+}
+func (t *Dataplane) DeepCopyInto(out *Dataplane) {
+	util_proto.Merge(out, t)
+}
+func (t *Dataplane) DeepCopy() *Dataplane {
+	if t == nil {
+		return nil
+	}
+	out := new(Dataplane)
+	t.DeepCopyInto(out)
+	return out
+}
 
 func (t ProxyType) IsValid() error {
 	switch t {
@@ -402,17 +426,6 @@ func (d *Dataplane) GetIdentifyingService() string {
 	return ServiceUnknown
 }
 
-// IsIngress returns true if this Dataplane specifies an ingress
-// configuration.
-//
-// Deprecated: use ZoneIngress instead.
-func (d *Dataplane) IsIngress() bool {
-	if d.GetNetworking() == nil {
-		return false
-	}
-	return d.GetNetworking().GetIngress() != nil
-}
-
 func (d *Dataplane) IsDelegatedGateway() bool {
 	return d.GetNetworking().GetGateway() != nil &&
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED
@@ -421,31 +434,6 @@ func (d *Dataplane) IsDelegatedGateway() bool {
 func (d *Dataplane) IsBuiltinGateway() bool {
 	return d.GetNetworking().GetGateway() != nil &&
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
-}
-
-func (d *Dataplane) HasPublicAddress() bool {
-	if !d.IsIngress() {
-		return false
-	}
-	return d.Networking.Ingress.PublicAddress != "" && d.Networking.Ingress.PublicPort != 0
-}
-
-func (d *Dataplane) HasAvailableServices() bool {
-	if !d.IsIngress() {
-		return false
-	}
-	return len(d.Networking.Ingress.AvailableServices) != 0
-}
-
-func (d *Dataplane) IsZoneIngress(localZone string) bool {
-	if !d.IsIngress() {
-		return false
-	}
-	zone, ok := d.Networking.Inbound[0].Tags[ZoneTag]
-	if !ok {
-		return false
-	}
-	return zone != localZone
 }
 
 func (t MultiValueTagSet) String() string {

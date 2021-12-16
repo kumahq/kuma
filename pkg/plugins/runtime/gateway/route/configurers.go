@@ -8,6 +8,7 @@ import (
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -256,6 +257,27 @@ func RouteMirror(percent float64, destination Destination) RouteConfigurer {
 			},
 		)
 
+		return nil
+	})
+}
+
+// RoutePerFilterConfig sets an optional per-filter configuration message
+// for this route. filterName is the name of the filter that should receive
+// the configuration that is specified in filterConfig
+func RoutePerFilterConfig(filterName string, filterConfig *any.Any) RouteConfigurer {
+	return RouteConfigureFunc(func(r *envoy_config_route.Route) error {
+		if r.GetTypedPerFilterConfig() == nil {
+			r.TypedPerFilterConfig = map[string]*any.Any{}
+		}
+
+		m := r.GetTypedPerFilterConfig()
+
+		if _, ok := m[filterName]; ok {
+			return errors.Errorf("duplicate %q per-filter config for %s",
+				filterConfig.GetTypeUrl(), filterName)
+		}
+
+		m[filterName] = filterConfig
 		return nil
 	})
 }

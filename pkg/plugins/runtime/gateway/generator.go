@@ -89,7 +89,7 @@ type Generator struct {
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	mesh := ctx.Mesh.Resource.Meta.GetName()
 	manager := match.ManagerForMesh(g.ResourceManager, mesh)
-	gateway := match.Gateway(manager, proxy.Dataplane)
+	gateway := match.Gateway(manager, proxy.Dataplane.Spec.Matches)
 
 	if gateway == nil {
 		log.V(1).Info("no matching gateway for dataplane",

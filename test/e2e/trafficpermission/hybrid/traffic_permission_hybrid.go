@@ -17,17 +17,6 @@ func TrafficPermissionHybrid() {
 	var optsGlobal, optsZoneUniversal, optsZoneKube = KumaK8sDeployOpts, KumaUniversalDeployOpts, KumaZoneK8sDeployOpts
 	var clientPodName string
 
-	namespaceWithSidecarInjection := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  annotations:
-    kuma.io/sidecar-injection: "enabled"
-`, namespace)
-	}
-
 	meshMTLSOn := func(mesh string) string {
 		return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -92,7 +81,7 @@ spec:
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Zone, optsZoneKube...)).
-			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Setup(zoneKube)
 		Expect(err).ToNot(HaveOccurred())
@@ -137,12 +126,7 @@ spec:
 	})
 
 	E2EAfterSuite(func() {
-		err := globalCluster.DeleteKuma(optsGlobal...)
-		Expect(err).ToNot(HaveOccurred())
-		err = globalCluster.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = zoneUniversal.DeleteKuma(optsZoneUniversal...)
+		err := zoneUniversal.DeleteKuma(optsZoneUniversal...)
 		Expect(err).ToNot(HaveOccurred())
 		err = zoneUniversal.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
@@ -150,6 +134,11 @@ spec:
 		err = zoneKube.DeleteKuma(optsZoneKube...)
 		Expect(err).ToNot(HaveOccurred())
 		err = zoneKube.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
+
+		err = globalCluster.DeleteKuma(optsGlobal...)
+		Expect(err).ToNot(HaveOccurred())
+		err = globalCluster.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -228,6 +217,33 @@ spec:
   sources:
     - match:
         kuma.io/service: demo-client_kuma-test_svc
+  destinations:
+    - match:
+        kuma.io/service: test-server
+`
+		err := YamlK8s(yaml)(globalCluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		trafficAllowed()
+	})
+
+	It("should allow the traffic with k8s.kuma.io/namespace", func() {
+		// given
+		removeDefaultTrafficPermission()
+		trafficBlocked()
+
+		// when
+		yaml := `
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  name: example-on-namespace
+spec:
+  sources:
+    - match:
+        k8s.kuma.io/namespace: kuma-test
   destinations:
     - match:
         kuma.io/service: test-server

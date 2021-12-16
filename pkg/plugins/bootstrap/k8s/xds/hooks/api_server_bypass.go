@@ -34,8 +34,7 @@ func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context
 	if proxy.Dataplane == nil {
 		return nil
 	}
-	// backwards compatibility
-	if proxy.Dataplane.Spec.IsIngress() || ctx.Mesh.Resource.Spec.IsPassthrough() {
+	if ctx.Mesh.Resource.Spec.IsPassthrough() {
 		return nil
 	}
 
