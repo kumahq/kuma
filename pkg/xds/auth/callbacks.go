@@ -110,7 +110,7 @@ func (a *authCallbacks) credential(streamID core_xds.StreamID) (Credential, erro
 	if !exists {
 		return "", errors.Errorf("there is no context for stream ID %d", streamID)
 	}
-	credential, err := extractCredential(ctx)
+	credential, err := ExtractCredential(ctx)
 	if err != nil {
 		return "", errors.Wrap(err, "could not extract credential from DiscoveryRequest")
 	}
@@ -159,7 +159,7 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 		"authentication failed")
 }
 
-func extractCredential(ctx context.Context) (Credential, error) {
+func ExtractCredential(ctx context.Context) (Credential, error) {
 	metadata, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return "", errors.Errorf("request has no metadata")

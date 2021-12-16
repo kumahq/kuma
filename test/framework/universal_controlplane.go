@@ -42,7 +42,7 @@ func (c *UniversalControlPlane) GetName() string {
 }
 
 func (c *UniversalControlPlane) GetKumaCPLogs() (string, error) {
-	panic("not implemented")
+	return c.cluster.apps[AppModeCP].mainApp.Out(), nil
 }
 
 func (c *UniversalControlPlane) GetKDSServerAddress() string {

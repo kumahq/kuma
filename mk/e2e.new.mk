@@ -130,7 +130,7 @@ test/e2e/test:
 test/e2e/debug: build/kumactl images test/e2e/k8s/start
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
-	API_VERSION="$(API_VERSION)" \
+	$(ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
 		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
 
@@ -140,7 +140,7 @@ test/e2e/debug: build/kumactl images test/e2e/k8s/start
 test/e2e/debug-universal: build/kumactl images/test
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
-	API_VERSION="$(API_VERSION)" \
+	$(ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
 		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
 
