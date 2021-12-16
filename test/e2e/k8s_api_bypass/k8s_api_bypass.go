@@ -35,12 +35,9 @@ spec:
 	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
-		c, err := NewK8SCluster(NewTestingT(), Kuma1, Silent)
-		Expect(err).ToNot(HaveOccurred())
+		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
-		cluster = c.(*K8sCluster)
-
-		err = NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).

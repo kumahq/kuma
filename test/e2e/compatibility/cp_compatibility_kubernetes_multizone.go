@@ -47,13 +47,9 @@ func CpCompatibilityMultizoneKubernetes() {
 
 	BeforeEach(func() {
 		// Global CP
-		c, err := NewK8sClusterWithTimeout(
-			NewTestingT(),
-			Kuma1,
-			Silent,
-			6*time.Second)
-		Expect(err).ToNot(HaveOccurred())
-		globalCluster = c.WithRetries(60)
+		globalCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
+			WithTimeout(6 * time.Second).
+			WithRetries(60)
 
 		globalReleaseName = fmt.Sprintf(
 			"kuma-%s",
@@ -69,7 +65,7 @@ func CpCompatibilityMultizoneKubernetes() {
 			WithoutHelmOpt("global.image.tag"),
 			WithHelmOpt("global.image.registry", UpstreamImageRegistry))
 
-		err = NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(core.Global, globalDeployOptsFuncs...)).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -77,13 +73,9 @@ func CpCompatibilityMultizoneKubernetes() {
 		Expect(globalCluster.VerifyKuma()).To(Succeed())
 
 		// Zone CP
-		c, err = NewK8sClusterWithTimeout(
-			NewTestingT(),
-			Kuma2,
-			Silent,
-			6*time.Second)
-		Expect(err).ToNot(HaveOccurred())
-		zoneCluster = c.WithRetries(60)
+		zoneCluster = NewK8sCluster(NewTestingT(), Kuma2, Silent).
+			WithTimeout(6 * time.Second).
+			WithRetries(60)
 
 		zoneReleaseName = fmt.Sprintf(
 			"kuma-%s",
