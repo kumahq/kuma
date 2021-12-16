@@ -69,6 +69,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
+| ingress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
 | ingress.annotations | object | `{}` | Additional deployment annotation |
 | ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
 | ingress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
