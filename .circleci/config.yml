@@ -31,7 +31,6 @@ reusable:
 
   constants:
     - &go_version "1.17.3"
-    - &envoy_tag "v1.18.4"
 
   docker_images:
     - &golang_image "golang:1.17.3"
@@ -853,8 +852,6 @@ jobs:
 
   build:
     executor: golang
-    environment:
-      ENVOY_TAG: *envoy_tag
     steps:
     - checkout
     - restore_cache:
@@ -873,8 +870,6 @@ jobs:
 
   images:
     executor: remote-docker
-    environment:
-      ENVOY_TAG: *envoy_tag
     parameters:
       docker_registry:
         description: "Registry for container images"
