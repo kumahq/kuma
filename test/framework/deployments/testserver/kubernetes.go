@@ -109,7 +109,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Name:            k.Name(),
 					ImagePullPolicy: "IfNotPresent",
 					ReadinessProbe: &corev1.Probe{
-						Handler: corev1.Handler{
+						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
 								Path: `/probes?type=readiness`,
 								Port: intstr.FromInt(80),
@@ -119,7 +119,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 						PeriodSeconds:       3,
 					},
 					LivenessProbe: &corev1.Probe{
-						Handler: corev1.Handler{
+						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
 								Path: `/probes?type=liveness`,
 								Port: intstr.FromInt(80),
