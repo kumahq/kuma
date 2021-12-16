@@ -140,6 +140,8 @@ func (d *DataplaneLifecycle) registerDataplane(ctx context.Context, dp *core_mes
 // For example, if you spin down CP, then DP, then start CP, the old DP is still there for a couple of minutes (see pkg/gc).
 // We could check if Dataplane is identical, but CP may alter Dataplane resource after is connected.
 // What we do instead is that we use current data plane proxy credential to check if we can manage already registered Dataplane.
+// The assumption is that if you have a token that can manage the old Dataplane.
+// You can delete it and create a new one, so we can simplify this manual process by just replacing it.
 func (d *DataplaneLifecycle) validateUpsert(ctx context.Context, existing model.Resource) error {
 	if util_proto.IsEmpty(existing.GetSpec()) { // existing DP is empty, resource does not exist
 		return nil
