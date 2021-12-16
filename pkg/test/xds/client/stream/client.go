@@ -14,6 +14,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -39,7 +40,7 @@ func New(serverURL string) (*Client, error) {
 	var dialOpts []grpc.DialOption
 	switch url.Scheme {
 	case "grpc":
-		dialOpts = append(dialOpts, grpc.WithInsecure())
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	case "grpcs":
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 			InsecureSkipVerify: true, // it's acceptable since we don't pass any secrets to the server
