@@ -21,9 +21,9 @@ BAZEL_BUILD_OPTIONS=(
     "--action_env=PATH=/usr/local/bin:/opt/local/bin:/usr/bin:/bin"
     "--define" "wasm=disabled"
     "${BAZEL_BUILD_EXTRA_OPTIONS[@]+"${BAZEL_BUILD_EXTRA_OPTIONS[@]}"}")
-bazel build "${BAZEL_BUILD_OPTIONS[@]}" -c opt //source/exe:envoy-static
+bazel build "${BAZEL_BUILD_OPTIONS[@]}" -c opt //contrib/exe:envoy-static
 
 popd
 
-cp ${SOURCE_DIR}/bazel-bin/source/exe/envoy-static ${BINARY_PATH}
+cp ${SOURCE_DIR}/bazel-bin/contrib/exe/envoy-static ${BINARY_PATH}
 

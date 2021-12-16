@@ -10,4 +10,7 @@ RUN groupadd --gid $(id -g) -f envoygroup \
   && chown envoybuild:envoygroup /build /source
 
 COPY . /envoy-sources/
+
+RUN sudo -EHs -u envoybuild bash -c "pushd /envoy-sources && bazel/setup_clang.sh /opt/llvm"
 RUN sudo -EHs -u envoybuild bash -c "pushd /envoy-sources && $BUILD_CMD"
+RUN sudo -EHs -u envoybuild bash -c "pushd /envoy-sources/bazel-bin/contrib/exe && strip envoy-static -o envoy"

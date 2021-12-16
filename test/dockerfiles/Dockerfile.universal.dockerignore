@@ -1,7 +1,7 @@
 *
 !build/artifacts-linux-amd64/kuma-cp/kuma-cp
 !build/artifacts-linux-amd64/kuma-dp/kuma-dp
-!build/artifacts-linux-amd64/envoy/envoy
+!build/artifacts-linux-amd64/envoy/*
 !build/artifacts-linux-amd64/kumactl/kumactl
 !build/artifacts-linux-amd64/coredns/coredns
 !build/artifacts-linux-amd64/test-server/test-server

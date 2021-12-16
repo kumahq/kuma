@@ -13,6 +13,8 @@ RUN git clone https://gn.googlesource.com/gn && \
     chmod +x /usr/local/bin/gn && \
     popd
 
-RUN mkdir /build /source
 COPY . /envoy-sources/
+
+RUN bash -c "pushd envoy-sources/ && bazel/setup_clang.sh /opt/llvm"
 RUN bash -c "pushd /envoy-sources && $BUILD_CMD"
+RUN bash -c "pushd /envoy-sources/bazel-bin/contrib/exe && strip envoy-static -o envoy"
