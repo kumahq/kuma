@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## [1.4.1]
+> Released on 2021/12/15
+
+Changes:
+* feat: add kubernetes tags automatically [#3439](https://github.com//kumahq/kuma/pull/3439)
+* perf: update Mesh and ServiceInsights only when really needed [#3463](https://github.com//kumahq/kuma/pull/3463)
+* perf: eliminate uneccessary JSON marshalling [#3483](https://github.com//kumahq/kuma/pull/3483)
+* feat: sidecar injection webhook based on labels [#3417](https://github.com//kumahq/kuma/pull/3417)
+* chore: upgrade gui to new version [#3454](https://github.com//kumahq/kuma/pull/3454)
+* test: fix postgress tests permissions [#3443](https://github.com//kumahq/kuma/pull/3443)
+* feat: add affinity to CP and Ingress pods [#3036](https://github.com//kumahq/kuma/pull/3036)
+  👍contributed by @andrey-dubnik
+* chore: bump github.com/golang-jwt/jwt/v4 from 4.1.0 to 4.2.0 [#3432](https://github.com//kumahq/kuma/pull/3432)
+* feat: consolidate tokens logic to support expiration, rotation, revocation and RSA256 [#3376](https://github.com/kumahq/kuma/pull/3376)
+* fix: simplify cluster creation with endpoints [#3403](https://github.com//kumahq/kuma/pull/3403)
+* fix: enable metrics hijacker for current version of Kuma [#3405](https://github.com//kumahq/kuma/pull/3405)
+* fix: switch to mTLS when CP communicates with Envoy Admin [#3353](https://github.com//kumahq/kuma/pull/3353)
+* chore: bump github.com/spiffe/spire from 0.12.3 to 1.1.1 [#3388](https://github.com//kumahq/kuma/pull/3388)
+* chore: bump github.com/spf13/viper from 1.8.1 to 1.9.0 [#3389](https://github.com//kumahq/kuma/pull/3389)
+* fix: validate cp url in dp conf [#3357](https://github.com//kumahq/kuma/pull/3357)
+* chore: send reports to tls endpoint [#3361](https://github.com//kumahq/kuma/pull/3361)
+* chore: check explicit service account name [#3228](https://github.com//kumahq/kuma/pull/3228)
+* feat: inspect other dependencies versions [#3352](https://github.com//kumahq/kuma/pull/3352)
+* chore: add area/gateway label [#3263](https://github.com//kumahq/kuma/pull/3263)
+* chore: remove dp token from xds metadata [#3282](https://github.com//kumahq/kuma/pull/3282)
+* refactor: move from io/ioutil to io and os packages [#3265](https://github.com//kumahq/kuma/pull/3265)
+  👍contributed by @Juneezee
+* fix: validate newly generated xDS snapshots [#3195](https://github.com//kumahq/kuma/pull/3195)
+* chore: bump k8s.io/apiextensions-apiserver from 0.22.3 to 0.22.4 [#3218](https://github.com//kumahq/kuma/pull/3218)[s
+* chore: bump helm chart version to 0.8 [#3202](https://github.com//kumahq/kuma/pull/3202)
+
 ## [1.4.0]
 > Released on 2021/11/22
 
