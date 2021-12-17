@@ -2,9 +2,6 @@
 
 TOPDIR := ../../../../..
 
-CRD_OPTIONS ?= "crd:crdVersions=v1"
-CRD_OUTPUT := output:crd:artifacts:config=$(TOPDIR)/deployments/charts/kuma/crds
-
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
@@ -50,7 +47,8 @@ deploy: generate
 
 .PHONY: generate
 generate: generate/types
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./api/..." $(CRD_OUTPUT)
+	$(RM) $(TOPDIR)/deployments/charts/kuma/crds/*.yaml
+	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths="./api/..." output:crd:artifacts:config=$(TOPDIR)/deployments/charts/kuma/crds
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt,year=$$(date +%Y) paths=./api/...
 
 .PHONY:
