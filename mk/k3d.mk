@@ -1,4 +1,5 @@
-CI_K3D_VERSION ?= v5.2.0
+CI_K3D_VERSION ?= v5.2.2
+CI_K3S_VERSION ?= v1.21.1-k3s1
 
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
@@ -15,6 +16,7 @@ k3d/network/create:
 k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
 	@KUBECONFIG=$(KIND_KUBECONFIG)  \
 		 k3d cluster create "$(KIND_CLUSTER_NAME)" \
+		 	  -i rancher/k3s:$(CI_K3S_VERSION) \
 			  --k3s-arg '--no-deploy=traefik@server:0' \
 			  --k3s-arg '--disable=metrics-server@server:0' \
 			  --network kind \
