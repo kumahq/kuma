@@ -6,11 +6,13 @@ package v1alpha1
 
 import (
 	"github.com/golang/protobuf/proto"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 // +kubebuilder:object:root=true
@@ -19,8 +21,10 @@ type Zone struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string             `json:"mesh,omitempty"`
-	Spec *system_proto.Zone `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -52,11 +56,18 @@ func (cb *Zone) SetMesh(mesh string) {
 }
 
 func (cb *Zone) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := system_proto.Zone{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Zone) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*system_proto.Zone)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Zone) Scope() model.Scope {
@@ -92,8 +103,10 @@ type ZoneInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                    `json:"mesh,omitempty"`
-	Spec *system_proto.ZoneInsight `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -125,11 +138,18 @@ func (cb *ZoneInsight) SetMesh(mesh string) {
 }
 
 func (cb *ZoneInsight) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := system_proto.ZoneInsight{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ZoneInsight) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*system_proto.ZoneInsight)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ZoneInsight) Scope() model.Scope {

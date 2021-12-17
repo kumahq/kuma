@@ -6,15 +6,15 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: faultinjections.kuma.io
+  name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: FaultInjection
-    listKind: FaultInjectionList
-    plural: faultinjections
-    singular: faultinjection
-  scope: Cluster
+    kind: ZoneIngressInsight
+    listKind: ZoneIngressInsightList
+    plural: zoneingressinsights
+    singular: zoneingressinsight
+  scope: Namespaced
   versions:
   - name: v1alpha1
     schema:

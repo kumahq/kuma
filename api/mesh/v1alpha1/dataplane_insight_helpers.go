@@ -47,25 +47,6 @@ func (x *EnvoyVersion) ParseVersion() (version, label string) {
 	}
 }
 
-func (m *DataplaneInsight) UnmarshalJSON(data []byte) error {
-	return util_proto.FromJSON(data, m)
-}
-
-func (m *DataplaneInsight) MarshalJSON() ([]byte, error) {
-	return util_proto.ToJSON(m)
-}
-func (t *DataplaneInsight) DeepCopyInto(out *DataplaneInsight) {
-	util_proto.Merge(out, t)
-}
-func (t *DataplaneInsight) DeepCopy() *DataplaneInsight {
-	if t == nil {
-		return nil
-	}
-	out := new(DataplaneInsight)
-	t.DeepCopyInto(out)
-	return out
-}
-
 func (x *DataplaneInsight) IsOnline() bool {
 	for _, s := range x.GetSubscriptions() {
 		if s.GetConnectTime() != nil && s.GetDisconnectTime() == nil {

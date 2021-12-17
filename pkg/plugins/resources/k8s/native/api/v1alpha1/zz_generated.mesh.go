@@ -6,11 +6,13 @@ package v1alpha1
 
 import (
 	"github.com/golang/protobuf/proto"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 // +kubebuilder:object:root=true
@@ -19,8 +21,10 @@ type CircuitBreaker struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                     `json:"mesh,omitempty"`
-	Spec *mesh_proto.CircuitBreaker `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -52,11 +56,18 @@ func (cb *CircuitBreaker) SetMesh(mesh string) {
 }
 
 func (cb *CircuitBreaker) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.CircuitBreaker{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *CircuitBreaker) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.CircuitBreaker)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *CircuitBreaker) Scope() model.Scope {
@@ -92,8 +103,10 @@ type Dataplane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                `json:"mesh,omitempty"`
-	Spec *mesh_proto.Dataplane `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -125,11 +138,18 @@ func (cb *Dataplane) SetMesh(mesh string) {
 }
 
 func (cb *Dataplane) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.Dataplane{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Dataplane) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.Dataplane)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Dataplane) Scope() model.Scope {
@@ -165,8 +185,10 @@ type DataplaneInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh   string                       `json:"mesh,omitempty"`
-	Status *mesh_proto.DataplaneInsight `json:"status,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Status *apiextensionsv1.JSON `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -198,11 +220,19 @@ func (cb *DataplaneInsight) SetMesh(mesh string) {
 }
 
 func (cb *DataplaneInsight) GetSpec() proto.Message {
-	return cb.Status
+	spec := cb.Status
+	m := mesh_proto.DataplaneInsight{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *DataplaneInsight) SetSpec(spec proto.Message) {
-	cb.Status = proto.Clone(spec).(*mesh_proto.DataplaneInsight)
+	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+
 }
 
 func (cb *DataplaneInsight) Scope() model.Scope {
@@ -238,8 +268,10 @@ type ExternalService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                      `json:"mesh,omitempty"`
-	Spec *mesh_proto.ExternalService `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -271,11 +303,18 @@ func (cb *ExternalService) SetMesh(mesh string) {
 }
 
 func (cb *ExternalService) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.ExternalService{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ExternalService) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.ExternalService)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ExternalService) Scope() model.Scope {
@@ -311,8 +350,10 @@ type FaultInjection struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                     `json:"mesh,omitempty"`
-	Spec *mesh_proto.FaultInjection `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -344,11 +385,18 @@ func (cb *FaultInjection) SetMesh(mesh string) {
 }
 
 func (cb *FaultInjection) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.FaultInjection{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *FaultInjection) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.FaultInjection)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *FaultInjection) Scope() model.Scope {
@@ -384,8 +432,10 @@ type Gateway struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string              `json:"mesh,omitempty"`
-	Spec *mesh_proto.Gateway `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -413,11 +463,18 @@ func (cb *Gateway) SetMesh(mesh string) {
 }
 
 func (cb *Gateway) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.Gateway{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Gateway) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.Gateway)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Gateway) Scope() model.Scope {
@@ -438,8 +495,10 @@ type GatewayRoute struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                   `json:"mesh,omitempty"`
-	Spec *mesh_proto.GatewayRoute `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -467,11 +526,18 @@ func (cb *GatewayRoute) SetMesh(mesh string) {
 }
 
 func (cb *GatewayRoute) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.GatewayRoute{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *GatewayRoute) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.GatewayRoute)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *GatewayRoute) Scope() model.Scope {
@@ -492,8 +558,10 @@ type HealthCheck struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                  `json:"mesh,omitempty"`
-	Spec *mesh_proto.HealthCheck `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -525,11 +593,18 @@ func (cb *HealthCheck) SetMesh(mesh string) {
 }
 
 func (cb *HealthCheck) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.HealthCheck{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *HealthCheck) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.HealthCheck)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *HealthCheck) Scope() model.Scope {
@@ -565,8 +640,10 @@ type Mesh struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string           `json:"mesh,omitempty"`
-	Spec *mesh_proto.Mesh `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -598,11 +675,18 @@ func (cb *Mesh) SetMesh(mesh string) {
 }
 
 func (cb *Mesh) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.Mesh{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Mesh) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.Mesh)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Mesh) Scope() model.Scope {
@@ -638,8 +722,10 @@ type MeshInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                  `json:"mesh,omitempty"`
-	Spec *mesh_proto.MeshInsight `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -671,11 +757,18 @@ func (cb *MeshInsight) SetMesh(mesh string) {
 }
 
 func (cb *MeshInsight) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.MeshInsight{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *MeshInsight) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.MeshInsight)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *MeshInsight) Scope() model.Scope {
@@ -711,8 +804,10 @@ type ProxyTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                    `json:"mesh,omitempty"`
-	Spec *mesh_proto.ProxyTemplate `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -744,11 +839,18 @@ func (cb *ProxyTemplate) SetMesh(mesh string) {
 }
 
 func (cb *ProxyTemplate) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.ProxyTemplate{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ProxyTemplate) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.ProxyTemplate)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ProxyTemplate) Scope() model.Scope {
@@ -784,8 +886,10 @@ type RateLimit struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                `json:"mesh,omitempty"`
-	Spec *mesh_proto.RateLimit `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -817,11 +921,18 @@ func (cb *RateLimit) SetMesh(mesh string) {
 }
 
 func (cb *RateLimit) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.RateLimit{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *RateLimit) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.RateLimit)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *RateLimit) Scope() model.Scope {
@@ -857,8 +968,10 @@ type Retry struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string            `json:"mesh,omitempty"`
-	Spec *mesh_proto.Retry `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -890,11 +1003,18 @@ func (cb *Retry) SetMesh(mesh string) {
 }
 
 func (cb *Retry) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.Retry{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Retry) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.Retry)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Retry) Scope() model.Scope {
@@ -930,8 +1050,10 @@ type ServiceInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                     `json:"mesh,omitempty"`
-	Spec *mesh_proto.ServiceInsight `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -963,11 +1085,18 @@ func (cb *ServiceInsight) SetMesh(mesh string) {
 }
 
 func (cb *ServiceInsight) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.ServiceInsight{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ServiceInsight) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.ServiceInsight)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ServiceInsight) Scope() model.Scope {
@@ -1003,8 +1132,10 @@ type Timeout struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string              `json:"mesh,omitempty"`
-	Spec *mesh_proto.Timeout `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -1036,11 +1167,18 @@ func (cb *Timeout) SetMesh(mesh string) {
 }
 
 func (cb *Timeout) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.Timeout{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Timeout) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.Timeout)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Timeout) Scope() model.Scope {
@@ -1076,8 +1214,10 @@ type TrafficLog struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                 `json:"mesh,omitempty"`
-	Spec *mesh_proto.TrafficLog `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -1109,11 +1249,18 @@ func (cb *TrafficLog) SetMesh(mesh string) {
 }
 
 func (cb *TrafficLog) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.TrafficLog{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *TrafficLog) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.TrafficLog)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *TrafficLog) Scope() model.Scope {
@@ -1149,8 +1296,10 @@ type TrafficPermission struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                        `json:"mesh,omitempty"`
-	Spec *mesh_proto.TrafficPermission `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -1182,11 +1331,18 @@ func (cb *TrafficPermission) SetMesh(mesh string) {
 }
 
 func (cb *TrafficPermission) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.TrafficPermission{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *TrafficPermission) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.TrafficPermission)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *TrafficPermission) Scope() model.Scope {
@@ -1222,8 +1378,10 @@ type TrafficRoute struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                   `json:"mesh,omitempty"`
-	Spec *mesh_proto.TrafficRoute `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -1255,11 +1413,18 @@ func (cb *TrafficRoute) SetMesh(mesh string) {
 }
 
 func (cb *TrafficRoute) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.TrafficRoute{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *TrafficRoute) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.TrafficRoute)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *TrafficRoute) Scope() model.Scope {
@@ -1295,8 +1460,10 @@ type TrafficTrace struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                   `json:"mesh,omitempty"`
-	Spec *mesh_proto.TrafficTrace `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -1328,11 +1495,18 @@ func (cb *TrafficTrace) SetMesh(mesh string) {
 }
 
 func (cb *TrafficTrace) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.TrafficTrace{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *TrafficTrace) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.TrafficTrace)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *TrafficTrace) Scope() model.Scope {
@@ -1368,8 +1542,10 @@ type VirtualOutbound struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                      `json:"mesh,omitempty"`
-	Spec *mesh_proto.VirtualOutbound `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -1401,11 +1577,18 @@ func (cb *VirtualOutbound) SetMesh(mesh string) {
 }
 
 func (cb *VirtualOutbound) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.VirtualOutbound{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *VirtualOutbound) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.VirtualOutbound)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *VirtualOutbound) Scope() model.Scope {
@@ -1441,8 +1624,10 @@ type ZoneIngress struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                  `json:"mesh,omitempty"`
-	Spec *mesh_proto.ZoneIngress `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -1474,11 +1659,18 @@ func (cb *ZoneIngress) SetMesh(mesh string) {
 }
 
 func (cb *ZoneIngress) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.ZoneIngress{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ZoneIngress) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.ZoneIngress)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ZoneIngress) Scope() model.Scope {
@@ -1514,8 +1706,10 @@ type ZoneIngressInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                         `json:"mesh,omitempty"`
-	Spec *mesh_proto.ZoneIngressInsight `json:"spec,omitempty"`
+	Mesh string `json:"mesh,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -1547,11 +1741,18 @@ func (cb *ZoneIngressInsight) SetMesh(mesh string) {
 }
 
 func (cb *ZoneIngressInsight) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.ZoneIngressInsight{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ZoneIngressInsight) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.ZoneIngressInsight)
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ZoneIngressInsight) Scope() model.Scope {

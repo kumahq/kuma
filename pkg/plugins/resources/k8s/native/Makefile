@@ -1,7 +1,9 @@
 .PHONY: all test install crd/install crd/uninstall crd/upgrade deploy generate controller-gen
 
+TOPDIR := ../../../../..
+
 CRD_OPTIONS ?= "crd:crdVersions=v1"
-CRD_OUTPUT := output:crd:artifacts:config=config/crd/bases
+CRD_OUTPUT := output:crd:artifacts:config=$(TOPDIR)/deployments/charts/kuma/crds
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -17,7 +19,7 @@ export TEST_ASSET_ETCD=$(ETCD_PATH)
 export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 
 CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen
-RESOURCE_GEN := go run -mod=mod ../../../../../tools/resource-gen/main.go
+RESOURCE_GEN := go run -mod=mod $(TOPDIR)/tools/resource-gen/main.go
 
 all:
 
@@ -48,7 +50,7 @@ deploy: generate
 
 .PHONY: generate
 generate: generate/types
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./api/v1alpha1/gateway_instance.go;./api/v1alpha1/groupversion_info.go" $(CRD_OUTPUT)
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) paths="./api/..." $(CRD_OUTPUT)
 	$(CONTROLLER_GEN) object:headerFile=./hack/boilerplate.go.txt,year=$$(date +%Y) paths=./api/...
 
 .PHONY:

@@ -6,14 +6,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
-  name: faultinjections.kuma.io
+  name: virtualoutbounds.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: FaultInjection
-    listKind: FaultInjectionList
-    plural: faultinjections
-    singular: faultinjection
+    kind: VirtualOutbound
+    listKind: VirtualOutboundList
+    plural: virtualoutbounds
+    singular: virtualoutbound
   scope: Cluster
   versions:
   - name: v1alpha1
