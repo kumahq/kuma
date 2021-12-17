@@ -16,13 +16,24 @@ GH_PAGES_BRANCH="gh-pages"
 function package {
   # First package all the charts
   for dir in "${CHARTS_DIR}"/*; do
-    if [ ! -d "$dir" ]; then
+    if [ ! -d "${dir}" ]; then
       continue
+    fi
+
+    # Fail if there are uncommitted changes
+    git diff --exit-code HEAD -- "${dir}"
+
+    # TODO remove this when Gateway is no longer experimental
+    if [[ -n "${BUILD_WITH_EXPERIMENTAL_GATEWAY}" && "${BUILD_WITH_EXPERIMENTAL_GATEWAY}" != "N" && $(basename "${dir}") == "kuma" ]]; then
+      find "${dir}/crds" -name "*gateway*.yaml" -delete
     fi
 
     cr package \
       --package-path "${CHARTS_PACKAGE_PATH}" \
-      "$dir"
+      "${dir}"
+
+    # Restore files removed above
+    git checkout -- "${dir}"
   done
 }
 
