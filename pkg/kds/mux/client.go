@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -53,6 +54,11 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(
 		grpc.MaxCallSendMsgSize(int(c.config.MaxMsgSize)),
 		grpc.MaxCallRecvMsgSize(int(c.config.MaxMsgSize))),
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                grpcKeepAliveTime,
+			Timeout:             grpcKeepAliveTime,
+			PermitWithoutStream: true,
+		}),
 	)
 	switch u.Scheme {
 	case "grpc":
