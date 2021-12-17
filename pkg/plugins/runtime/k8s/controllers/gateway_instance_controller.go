@@ -12,14 +12,12 @@ import (
 	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -27,6 +25,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
+	ctrls_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/util"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
@@ -77,77 +76,6 @@ func k8sSelector(name string) map[string]string {
 	return map[string]string{"app": name}
 }
 
-const controllerKey string = ".metadata.controller"
-
-func indexController(mgr kube_ctrl.Manager, ownerGVK kube_schema.GroupVersionKind, objType kube_client.Object) error {
-	ownerKind := ownerGVK.Kind
-	ownerGV := ownerGVK.GroupVersion().String()
-
-	return mgr.GetFieldIndexer().IndexField(context.Background(), objType, controllerKey, func(rawObj kube_client.Object) []string {
-		owner := kube_meta.GetControllerOf(rawObj)
-		if owner == nil || owner.APIVersion != ownerGV || owner.Kind != ownerKind {
-			return nil
-		}
-
-		return []string{owner.Name}
-	})
-}
-
-// createOrUpdateControlled either creates an object to be controlled by the
-// given object or updates the existing one.
-func (r *GatewayInstanceReconciler) createOrUpdateControlled(
-	ctx context.Context, owner kube_meta.Object, objectList kube_client.ObjectList, mutate func(kube_client.Object) (kube_client.Object, error),
-) (kube_client.Object, error) {
-	if err := r.Client.List(
-		ctx, objectList, kube_client.InNamespace(owner.GetNamespace()), kube_client.MatchingFields{controllerKey: owner.GetName()},
-	); err != nil {
-		return nil, errors.Wrap(err, "unable to list objects")
-	}
-
-	items, err := kube_apimeta.ExtractList(objectList)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to extract list of runtime.Objects")
-	}
-
-	switch len(items) {
-	case 0:
-		obj, err := mutate(nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "couldn't mutate object for creation")
-		}
-
-		if err := kube_controllerutil.SetControllerReference(owner, obj, r.Scheme); err != nil {
-			return nil, errors.Wrap(err, "unable to set object's controller reference")
-		}
-
-		if err := r.Client.Create(ctx, obj); err != nil {
-			return nil, errors.Wrap(err, "couldn't create object")
-		}
-		return obj, nil
-	case 1:
-		item, ok := items[0].(kube_client.Object)
-		if !ok {
-			return nil, fmt.Errorf("expected runtime.Object to be client.Object")
-		}
-
-		obj, err := mutate(item)
-		if err != nil {
-			return nil, errors.Wrap(err, "couldn't mutate object for update")
-		}
-
-		if err := kube_controllerutil.SetControllerReference(owner, obj, r.Scheme); err != nil {
-			return nil, errors.Wrap(err, "unable to set object's controller reference")
-		}
-
-		if err := r.Client.Update(ctx, obj); err != nil {
-			return nil, errors.Wrap(err, "couldn't update object")
-		}
-		return obj, nil
-	default:
-		return nil, fmt.Errorf("expected a maximum of one item controlled by %s/%s", owner.GetNamespace(), owner.GetName())
-	}
-}
-
 func (r *GatewayInstanceReconciler) createOrUpdateService(
 	ctx context.Context,
 	gatewayInstance *mesh_k8s.GatewayInstance,
@@ -160,8 +88,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		return nil, fmt.Errorf("no matching Gateway")
 	}
 
-	obj, err := r.createOrUpdateControlled(
-		ctx, gatewayInstance, &kube_core.ServiceList{},
+	obj, err := ctrls_util.CreateOrUpdateControlled(
+		ctx, r.Client, gatewayInstance, &kube_core.ServiceList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
 			service := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
@@ -208,8 +136,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 		return nil, errors.Wrap(err, "unable to get Namespace for GatewayInstance")
 	}
 
-	obj, err := r.createOrUpdateControlled(
-		ctx, gatewayInstance, &kube_apps.DeploymentList{},
+	obj, err := ctrls_util.CreateOrUpdateControlled(
+		ctx, r.Client, gatewayInstance, &kube_apps.DeploymentList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
 			deployment := &kube_apps.Deployment{
 				ObjectMeta: kube_meta.ObjectMeta{
@@ -315,11 +243,11 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		Kind:    reflect.TypeOf(mesh_k8s.GatewayInstance{}).Name(),
 	}
 
-	if err := indexController(mgr, gatewayInstanceGVK, &kube_core.Service{}); err != nil {
+	if err := ctrls_util.IndexControllerOf(mgr, gatewayInstanceGVK, &kube_core.Service{}); err != nil {
 		return err
 	}
 
-	if err := indexController(mgr, gatewayInstanceGVK, &kube_apps.Deployment{}); err != nil {
+	if err := ctrls_util.IndexControllerOf(mgr, gatewayInstanceGVK, &kube_apps.Deployment{}); err != nil {
 		return err
 	}
 
