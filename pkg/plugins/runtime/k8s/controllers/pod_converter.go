@@ -40,7 +40,7 @@ func (p *PodConverter) PodToDataplane(
 	if err != nil {
 		return err
 	}
-	dataplane.Spec = dataplaneProto
+	dataplane.SetSpec(dataplaneProto)
 	return nil
 }
 
@@ -50,7 +50,7 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 	if err := p.IngressFor(ctx, zoneIngressProto, pod, services); err != nil {
 		return err
 	}
-	zoneIngress.Spec = zoneIngressProto
+	zoneIngress.SetSpec(zoneIngressProto)
 	return nil
 }
 
