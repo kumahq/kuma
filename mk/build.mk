@@ -82,6 +82,7 @@ build/kumactl: ## Dev: Build `kumactl` binary
 
 .PHONY: build/coredns
 build/coredns:
+ifeq (,$(wildcard $(BUILD_ARTIFACTS_DIR)/coredns/coredns))
 	rm -rf "$(COREDNS_TMP_DIRECTORY)"
 	git clone --branch $(COREDNS_VERSION) --depth 1 $(COREDNS_GIT_REPOSITORY) $(COREDNS_TMP_DIRECTORY)
 	cp $(COREDNS_PLUGIN_CFG_PATH) $(COREDNS_TMP_DIRECTORY)
@@ -90,6 +91,9 @@ build/coredns:
 		go get github.com/coredns/alternate && \
 		$(GO_BUILD_COREDNS) -ldflags="-s -w -X github.com/coredns/coredns/coremain.GitCommit=$(shell git describe --dirty --always)" -o $(BUILD_ARTIFACTS_DIR)/coredns/coredns
 	rm -rf "$(COREDNS_TMP_DIRECTORY)"
+else
+	echo "CoreDNS is already built. If you want to rebuild it, remove the binary: rm $(BUILD_ARTIFACTS_DIR)/coredns/coredns"
+endif
 
 .PHONY: build/kuma-prometheus-sd
 build/kuma-prometheus-sd: ## Dev: Build `kuma-prometheus-sd` binary
