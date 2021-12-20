@@ -16,7 +16,7 @@ func (g *GatewayRouteResource) Validate() error {
 		g.Spec.GetSelectors(),
 		ValidateSelectorsOpts{
 			RequireAtLeastOneSelector: true,
-			ValidateSelectorOpts: ValidateSelectorOpts{
+			ValidateTagsOpts: ValidateTagsOpts{
 				RequireAtLeastOneTag: true,
 				RequireService:       true,
 			},
@@ -285,7 +285,7 @@ func validateGatewayRouteBackend(
 	return ValidateSelector(
 		path,
 		conf.GetDestination(),
-		ValidateSelectorOpts{
+		ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
 			RequireService:       true,
 		})

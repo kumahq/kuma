@@ -18,7 +18,7 @@ func (t *VirtualOutboundResource) Validate() error {
 func (t *VirtualOutboundResource) validateSelectors() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("selectors"), t.Spec.GetSelectors(), ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateSelectorOpts: ValidateSelectorOpts{
+		ValidateTagsOpts: ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
 		},
 	})

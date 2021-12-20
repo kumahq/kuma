@@ -18,7 +18,7 @@ func (d *RateLimitResource) Validate() error {
 func (d *RateLimitResource) validateSources() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateSelectorOpts: ValidateSelectorOpts{
+		ValidateTagsOpts: ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
 		},
 	})
@@ -27,7 +27,7 @@ func (d *RateLimitResource) validateSources() validators.ValidationError {
 func (d *RateLimitResource) validateDestinations() (err validators.ValidationError) {
 	return ValidateSelectors(validators.RootedAt("destinations"), d.Spec.Destinations, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateSelectorOpts: ValidateSelectorOpts{
+		ValidateTagsOpts: ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
 		},
 	})

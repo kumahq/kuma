@@ -153,14 +153,14 @@ var _ = Describe("Dataplane", func() {
                   message: address has to be valid IP address or domain name
                 - field: networking.advertisedPort
                   message: port must be in the range [1, 65535]
-                - field: availableService[2].tags["kuma.io/service"]
-                  message: cannot be empty
-                - field: availableService[3].tags.tags["kuma.io/service"]
-                  message: tag value cannot be empty
-                - field: availableService[4].tags["kuma.io/service"]
-                  message: cannot be empty
-                - field: availableService[4].tags.tags["version"]
-                  message: tag value cannot be empty`,
+                - field: availableService[2].tags
+                  message: mandatory tag "kuma.io/service" is missing
+                - field: availableService[3].tags["kuma.io/service"]
+                  message: tag value must be non-empty
+                - field: availableService[4].tags["version"]
+                  message: tag value must be non-empty
+                - field: availableService[4].tags
+                  message: mandatory tag "kuma.io/service" is missing`,
 		}),
 	)
 
