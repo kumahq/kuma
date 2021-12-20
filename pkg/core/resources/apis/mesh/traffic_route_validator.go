@@ -16,7 +16,7 @@ func (d *TrafficRouteResource) Validate() error {
 func (d *TrafficRouteResource) validateSources() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateSelectorOpts: ValidateSelectorOpts{
+		ValidateTagsOpts: ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
 			RequireService:       true,
 		},
@@ -213,7 +213,7 @@ func (d *TrafficRouteResource) validateSplit(pathBuilder validators.PathBuilder,
 			err.AddViolationAt(pathBuilder.Index(i).Field("weight"), "needs to be defined")
 		}
 		totalWeight += routeEntry.GetWeight().GetValue()
-		err.Add(ValidateSelector(pathBuilder.Index(i).Field("destination"), routeEntry.GetDestination(), ValidateSelectorOpts{
+		err.Add(ValidateSelector(pathBuilder.Index(i).Field("destination"), routeEntry.GetDestination(), ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
 			RequireService:       true,
 		}))
@@ -225,7 +225,7 @@ func (d *TrafficRouteResource) validateSplit(pathBuilder validators.PathBuilder,
 }
 
 func (d *TrafficRouteResource) validateDestination(pathBuilder validators.PathBuilder, destination map[string]string) validators.ValidationError {
-	return ValidateSelector(pathBuilder, destination, ValidateSelectorOpts{
+	return ValidateSelector(pathBuilder, destination, ValidateTagsOpts{
 		RequireAtLeastOneTag: true,
 		RequireService:       true,
 	})

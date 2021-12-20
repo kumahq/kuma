@@ -37,7 +37,7 @@ func (f *FaultInjectionResource) HasFaultResponseBandwidth() bool {
 func (f *FaultInjectionResource) validateSources() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("sources"), f.Spec.GetSources(), ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateSelectorOpts: ValidateSelectorOpts{
+		ValidateTagsOpts: ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
 		},
 	})
@@ -46,9 +46,9 @@ func (f *FaultInjectionResource) validateSources() validators.ValidationError {
 func (f *FaultInjectionResource) validateDestinations() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("destinations"), f.Spec.GetDestinations(), ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateSelectorOpts: ValidateSelectorOpts{
+		ValidateTagsOpts: ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
-			ExtraSelectorValidators: []SelectorValidatorFunc{
+			ExtraTagsValidators: []TagsValidatorFunc{
 				ProtocolValidator(ProtocolHTTP, ProtocolHTTP2, ProtocolGRPC),
 			},
 		},
