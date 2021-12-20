@@ -395,8 +395,8 @@ var _ = Describe("Dataplane", func() {
                       foo: bar`,
 			expected: `
                 violations:
-                - field: networking.gateway.tags["kuma.io/service"]
-                  message: tag has to exist`,
+                - field: networking.gateway.tags
+                  message: mandatory tag "kuma.io/service" is missing`,
 		}),
 		Entry("networking.inbound: port of the range", testCase{
 			dataplane: `
@@ -499,7 +499,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["version"]'
-                  message: tag value cannot be empty`,
+                  message: tag value must be non-empty`,
 		}),
 		Entry("networking.inbound: `protocol` tag with an empty value", testCase{
 			dataplane: `
@@ -521,7 +521,7 @@ var _ = Describe("Dataplane", func() {
                 - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
                   message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: grpc, http, http2, kafka, tcp'
                 - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
-                  message: tag value cannot be empty`,
+                  message: tag value must be non-empty`,
 		}),
 		Entry("networking.inbound: `protocol` tag with unsupported value", testCase{
 			dataplane: `
@@ -558,8 +558,8 @@ var _ = Describe("Dataplane", func() {
                       service: redis`,
 			expected: `
                 violations:
-                - field: 'networking.gateway.tags["kuma.io/service"]'
-                  message: tag has to exist`,
+                - field: networking.gateway.tags
+                  message: mandatory tag "kuma.io/service" is missing`,
 		}),
 		Entry("networking.gateway: empty tag value", testCase{
 			dataplane: `
@@ -578,7 +578,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.gateway.tags["version"]'
-                  message: tag value cannot be empty`,
+                  message: tag value must be non-empty`,
 		}),
 		Entry("networking.gateway: protocol http", testCase{
 			dataplane: `
@@ -615,8 +615,8 @@ var _ = Describe("Dataplane", func() {
                     - port: 3333`,
 			expected: `
                 violations:
-                - field: networking.outbound[0].kuma.io/service
-                  message: cannot be empty`,
+                - field: networking.outbound[0].tags
+                  message: mandatory tag "kuma.io/service" is missing`,
 		}),
 		Entry("networking.outbound: empty service tag", testCase{
 			dataplane: `
@@ -636,8 +636,8 @@ var _ = Describe("Dataplane", func() {
                         version: v1`,
 			expected: `
                 violations:
-                - field: networking.outbound[0].tags["kuma.io/service"]
-                  message: tag has to exist`,
+                - field: networking.outbound[0].tags
+                  message: mandatory tag "kuma.io/service" is missing`,
 		}),
 		Entry("networking.outbound: port out of the range", testCase{
 			dataplane: `
