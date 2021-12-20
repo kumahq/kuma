@@ -1,4 +1,4 @@
-package auth
+package dp
 
 import (
 	. "github.com/onsi/ginkgo"
