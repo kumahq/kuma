@@ -151,8 +151,7 @@ test/e2e/debug: build/kumactl images test/e2e/k8s/start
 .PHONY: test/e2e/debug-fast
 test/e2e/debug-fast:
 	$(MAKE) $(K8SCLUSTERS_START_TARGETS) & # start K8S clusters in the background since it takes the most time
-	$(MAKE) images/release
-	$(MAKE) images/test # build test images only after release images because all binaries should be already built.
+	$(MAKE) images
 	$(MAKE) build/kumactl
 	$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS) # K3D is able to load images before the cluster is ready. It retries if cluster is not able to handle images yet.
 	$(MAKE) $(K8SCLUSTERS_WAIT_TARGETS) # there is no easy way of waiting for processes in the background so just wait for K8S clusters
