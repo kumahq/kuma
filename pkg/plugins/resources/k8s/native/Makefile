@@ -8,13 +8,10 @@ GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
 export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
 
-KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
-ETCD_PATH := $(CI_TOOLS_DIR)/etcd
-KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
-
-export TEST_ASSET_KUBE_APISERVER=$(KUBE_APISERVER_PATH)
-export TEST_ASSET_ETCD=$(ETCD_PATH)
-export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
+# This environment variable sets where the kubebuilder envtest framework looks
+# for etcd and other tools that is consumes. The `dev/install/kubebuilder` make
+# target guaranteed to link these tools into $CI_TOOLS_DIR.
+export KUBEBUILDER_ASSETS=$(CI_TOOLS_DIR)
 
 CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen
 RESOURCE_GEN := go run -mod=mod ../../../../../tools/resource-gen/main.go
