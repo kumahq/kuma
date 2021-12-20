@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ghodss/yaml"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	batchv1 "k8s.io/api/batch/v1"
@@ -45,9 +46,28 @@ func YamlK8sObject(obj runtime.Object) InstallFunc {
 		if err != nil {
 			return err
 		}
+
+		// Remove "status" from Kubernetes YAMLs
+		// "status" is an element in Kubernetes Object that is filled by Kubernetes, not a user.
+		// Encoder by default also serializes the Status object with default values (since those are not pointers)
+		// that does not have omitempty, so for example in case of StatefulSet.Status it will be
+		// status:
+		//   replicas: 0
+		//   availableReplicas: 0
+		// However, availableReplicas is a beta field that is not available in previous version of Kubernetes.
+		obj := map[string]interface{}{}
+		if err := yaml.Unmarshal(b.Bytes(), &obj); err != nil {
+			return err
+		}
+		delete(obj, "status")
+		bytes, err := yaml.Marshal(obj)
+		if err != nil {
+			return err
+		}
+
 		_, err = retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
 			func() (s string, err error) {
-				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), b.String())
+				return "", k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), string(bytes))
 			})
 		return err
 	}
