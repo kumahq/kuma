@@ -3,7 +3,7 @@
 set -e
 
 run() {
-    command=$@
+    command=$*
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
     echo '$' "$command"
     echo
