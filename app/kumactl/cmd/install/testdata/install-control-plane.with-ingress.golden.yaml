@@ -981,6 +981,7 @@ rules:
       - services
     verbs:
       - get
+      - delete
       - list
       - watch
       - create
