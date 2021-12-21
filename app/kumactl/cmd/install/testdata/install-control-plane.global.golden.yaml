@@ -797,6 +797,7 @@ spec:
     - port: 5685
       name: global-zone-sync
   selector:
+    app: kuma-control-plane
   
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
