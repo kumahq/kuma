@@ -32,11 +32,6 @@ function push() {
   for component in "${KUMA_COMPONENTS[@]}"; do
     msg "Pushing $component:$KUMA_VERSION ..."
     docker push $KUMA_DOCKER_REPO_ORG/"$component":"$KUMA_VERSION"
-    re='^[0-9]+([.][0-9]+)+([.][0-9]+)$'
-    if [[ $yournumber =~ $re ]]; then
-      msg "Pushing $component:latest ..."
-      docker push $KUMA_DOCKER_REPO_ORG/"$component":latest
-    fi
     msg_green "... done!"
   done
 
