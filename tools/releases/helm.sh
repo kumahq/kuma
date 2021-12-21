@@ -84,13 +84,13 @@ function main {
     shift
   done
 
-  [ -z "${GH_TOKEN}" ] && msg_err "GH_TOKEN required"
-
   case $op in
     package)
       package
       ;;
     release)
+      [ -z "${GH_TOKEN}" ] && msg_err "GH_TOKEN required"
+
       release
       ;;
   esac
