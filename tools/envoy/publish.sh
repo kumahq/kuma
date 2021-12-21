@@ -27,8 +27,8 @@ PULP_DIST_NAME="alpine"
 [ -z "$PULP_PASSWORD" ] && msg_err "PULP_PASSWORD required"
 
 docker run --rm \
-        -e PULP_USERNAME=${PULP_USERNAME} \
-        -e PULP_PASSWORD=${PULP_PASSWORD} \
+        -e PULP_USERNAME="${PULP_USERNAME}" \
+        -e PULP_PASSWORD="${PULP_PASSWORD}" \
         -e PULP_HOST=${PULP_HOST} \
         -v "${PWD}":/files:ro -it kong/release-script \
         --file /files/"${BINARY_PATH}" \

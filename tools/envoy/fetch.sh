@@ -21,11 +21,12 @@ function download_envoy() {
       mkdir -p "$(dirname "${BINARY_PATH}")"
     fi
 
-    local status=$(curl -# --location --output "${BINARY_PATH}" --write-out %{http_code} \
+    local status
+    status=$(curl -# --location --output "${BINARY_PATH}" --write-out '%{http_code}' \
     "https://download.konghq.com/mesh-alpine/${binary_name}")
 
   [ -f "${BINARY_PATH}" ] && chmod +x "${BINARY_PATH}"
-  [ "$status" -ne "200" ] && msg_err "Error: failed downloading Envoy" || true
+  if [ "$status" -ne "200" ]; then msg_err "Error: failed downloading Envoy"; fi
 }
 
 if [[ -n "${ENVOY_VERSION}" ]]; then

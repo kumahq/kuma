@@ -7,7 +7,7 @@ set -e
 #
 
 resolve_ip() {
-  getent hosts ${DATAPLANE_HOSTNAME} 2>/dev/null | awk -e '{ print $1 }'
+  getent hosts "${DATAPLANE_HOSTNAME}" 2>/dev/null | awk -e '{ print $1 }'
 }
 
 fail() {
@@ -26,7 +26,7 @@ create_dataplane() {
   # Resolve IP address allocated to the "${DATAPLANE_NAME}" container
   #
 
-  DATAPLANE_IP_ADDRESS=$( resolve_ip ${DATAPLANE_HOSTNAME} )
+  DATAPLANE_IP_ADDRESS=$( resolve_ip "${DATAPLANE_HOSTNAME}" )
   if [ -z "${DATAPLANE_IP_ADDRESS}" ]; then
     fail "failed to resolve IP address allocated to the '${DATAPLANE_HOSTNAME}' container"
   fi
@@ -37,15 +37,15 @@ create_dataplane() {
   #
 
   echo "${DATAPLANE_RESOURCE}" | kumactl apply -f - \
-    --var IP=${DATAPLANE_IP_ADDRESS} \
-    --var PUBLIC_PORT=${DATAPLANE_PUBLIC_PORT} \
-    --var LOCAL_PORT=${DATAPLANE_LOCAL_PORT}
+    --var IP="${DATAPLANE_IP_ADDRESS}" \
+    --var PUBLIC_PORT="${DATAPLANE_PUBLIC_PORT}" \
+    --var LOCAL_PORT="${DATAPLANE_LOCAL_PORT}"
 
   #
   # Create token for "${DATAPLANE_NAME}"
   #
 
-  kumactl generate dataplane-token --name=${DATAPLANE_NAME} > /${DATAPLANE_NAME}/token
+  kumactl generate dataplane-token --name="${DATAPLANE_NAME}" > /"${DATAPLANE_NAME}"/token
 }
 
 #

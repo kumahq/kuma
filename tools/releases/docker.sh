@@ -11,15 +11,15 @@ KUMA_COMPONENTS=("kuma-cp" "kuma-dp" "kumactl" "kuma-init" "kuma-prometheus-sd")
 function build() {
   for component in "${KUMA_COMPONENTS[@]}"; do
     msg "Building $component..."
-    docker build --build-arg KUMA_ROOT=$(pwd) -t $KUMA_DOCKER_REPO_ORG/$component:$KUMA_VERSION \
-      -f tools/releases/dockerfiles/Dockerfile.$component .
-    docker tag $KUMA_DOCKER_REPO_ORG/$component:$KUMA_VERSION $KUMA_DOCKER_REPO_ORG/$component:latest
+    docker build --build-arg KUMA_ROOT="$(pwd)" -t $KUMA_DOCKER_REPO_ORG/"$component":"$KUMA_VERSION" \
+      -f tools/releases/dockerfiles/Dockerfile."$component" .
+    docker tag $KUMA_DOCKER_REPO_ORG/"$component":"$KUMA_VERSION" $KUMA_DOCKER_REPO_ORG/"$component":latest
     msg_green "... done!"
   done
 }
 
 function docker_login() {
-  docker login -u $DOCKER_USERNAME -p $DOCKER_API_KEY $KUMA_DOCKER_REPO
+  docker login -u "$DOCKER_USERNAME" -p "$DOCKER_API_KEY" $KUMA_DOCKER_REPO
 }
 
 function docker_logout() {
@@ -31,11 +31,11 @@ function push() {
 
   for component in "${KUMA_COMPONENTS[@]}"; do
     msg "Pushing $component:$KUMA_VERSION ..."
-    docker push $KUMA_DOCKER_REPO_ORG/$component:$KUMA_VERSION
+    docker push $KUMA_DOCKER_REPO_ORG/"$component":"$KUMA_VERSION"
     re='^[0-9]+([.][0-9]+)+([.][0-9]+)$'
     if [[ $yournumber =~ $re ]]; then
       msg "Pushing $component:latest ..."
-      docker push $KUMA_DOCKER_REPO_ORG/$component:latest
+      docker push $KUMA_DOCKER_REPO_ORG/"$component":latest
     fi
     msg_green "... done!"
   done
@@ -87,4 +87,4 @@ function main() {
   esac
 }
 
-main $@
+main "$@"

@@ -97,5 +97,4 @@ function main {
 }
 
 
-main $@
-
+main "$@"
