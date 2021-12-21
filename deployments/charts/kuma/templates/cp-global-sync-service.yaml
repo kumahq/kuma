@@ -20,5 +20,6 @@ spec:
   {{- end }}
       name: global-zone-sync
   selector:
+    app: {{ include "kuma.name" . }}-control-plane
   {{ include "kuma.selectorLabels" . | nindent 4 }}
   {{- end }}
