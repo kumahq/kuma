@@ -885,7 +885,7 @@ jobs:
     - run:
         name: Build Docker images
         command: |
-          make docker/build \
+          make images \
             DOCKER_REGISTRY="<< parameters.docker_registry >>"
     - run:
         name: Save Docker images into TAR archives
@@ -915,7 +915,7 @@ jobs:
     - run:
         name: Build kumactl's Docker image
         command: |
-          make docker/build/kumactl \
+          make image/kumactl \
             DOCKER_REGISTRY="<< parameters.docker_registry >>"
     - run:
         name: Save kumactl's Docker image into TAR archives
