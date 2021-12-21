@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	gatewayapi_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi"
+	k8s_webhooks "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 )
 
 func crdsPresent(mgr kube_ctrl.Manager) bool {
@@ -33,14 +34,22 @@ func crdsPresent(mgr kube_ctrl.Manager) bool {
 	return len(mappings) > 0
 }
 
-func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+func gatewayPresent() bool {
 	// If we haven't registered our type, we're not reconciling GatewayInstance
 	// or gatewayapi objects.
 	if _, err := registry.Global().NewObject(&mesh_proto.Gateway{}); err != nil {
 		var unknownTypeError *registry.UnknownTypeError
 		if errors.As(err, &unknownTypeError) {
-			return nil
+			return false
 		}
+	}
+
+	return true
+}
+
+func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+	if !gatewayPresent() {
+		return nil
 	}
 
 	cpURL := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
@@ -107,4 +116,16 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 	}
 
 	return nil
+}
+
+// gatewayValidators returns all the Gateway-related validators we want to
+// start.
+func gatewayValidators(rt core_runtime.Runtime, converter k8s_common.Converter) []k8s_common.AdmissionValidator {
+	if !gatewayPresent() {
+		return nil
+	}
+
+	return []k8s_common.AdmissionValidator{
+		k8s_webhooks.NewGatewayInstanceValidatorWebhook(converter, rt.ResourceManager()),
+	}
 }

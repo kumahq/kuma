@@ -258,6 +258,10 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator)
 	composite.AddValidator(k8sZoneValidator)
 
+	for _, validator := range gatewayValidators(rt, converter) {
+		composite.AddValidator(validator)
+	}
+
 	path := "/validate-kuma-io-v1alpha1"
 	mgr.GetWebhookServer().Register(path, composite.WebHook())
 	log.Info("Registering a validation composite webhook", "path", path)
