@@ -94,6 +94,12 @@ func WithTags(tags Tags) NewClusterOpt {
 	})
 }
 
+func WithoutTag(tag string) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		delete(cluster.tags, tag)
+	})
+}
+
 func WithTimeout(timeout *core_mesh.TimeoutResource) NewClusterOpt {
 	return newClusterOptFunc(func(cluster *Cluster) {
 		cluster.timeout = timeout

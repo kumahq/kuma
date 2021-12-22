@@ -79,7 +79,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					CLACache: &dummyCLACache{outboundTargets: outboundTargets},
 					Secrets:  &xds.TestSecrets{},
 				},
-				Mesh: xds_context.MeshContext{
+				Mesh: &xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",

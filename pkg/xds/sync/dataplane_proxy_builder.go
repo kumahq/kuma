@@ -53,12 +53,12 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *
 		return nil, err
 	}
 
-	routing, destinations, err := p.resolveRouting(ctx, &envoyContext.Mesh, dp)
+	routing, destinations, err := p.resolveRouting(ctx, envoyContext.Mesh, dp)
 	if err != nil {
 		return nil, err
 	}
 
-	matchedPolicies, err := p.matchPolicies(ctx, &envoyContext.Mesh, dp, destinations)
+	matchedPolicies, err := p.matchPolicies(ctx, envoyContext.Mesh, dp, destinations)
 	if err != nil {
 		return nil, err
 	}

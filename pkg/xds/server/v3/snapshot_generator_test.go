@@ -41,7 +41,7 @@ var _ = Describe("Reconcile", func() {
 				ControlPlane: &xds_context.ControlPlaneContext{
 					Secrets: &xds.TestSecrets{},
 				},
-				Mesh: xds_context.MeshContext{
+				Mesh: &xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
