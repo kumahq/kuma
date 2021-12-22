@@ -77,7 +77,7 @@ var _ = Describe("SecretsGenerator", func() {
 				ControlPlane: &xds_context.ControlPlaneContext{
 					Secrets: &xds.TestSecrets{},
 				},
-				Mesh: xds_context.MeshContext{
+				Mesh: &xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Spec: &mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{

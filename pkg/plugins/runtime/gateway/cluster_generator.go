@@ -91,6 +91,7 @@ func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayRe
 			ctx.Mesh.Hash,
 			cluster,
 			info.Proxy.APIVersion,
+			ctx.Mesh.EndpointMap,
 		)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to build LoadAssignment for cluster %q", dest.Name)

@@ -12,18 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
-
-// GetDataplanes returns list of Dataplane in provided Mesh
-func GetDataplanes(log logr.Logger, ctx context.Context, rm manager.ReadOnlyResourceManager, lookupIPFunc lookup.LookupIPFunc, mesh string) (*core_mesh.DataplaneResourceList, error) {
-	dataplanes := &core_mesh.DataplaneResourceList{}
-	if err := rm.List(ctx, dataplanes, core_store.ListByMesh(mesh)); err != nil {
-		return nil, err
-	}
-	dataplanes.Items = ResolveAddresses(log, lookupIPFunc, dataplanes.Items)
-	return dataplanes, nil
-}
 
 func GetZoneIngresses(log logr.Logger, ctx context.Context, rm manager.ReadOnlyResourceManager, lookupIPFunc lookup.LookupIPFunc) (*core_mesh.ZoneIngressResourceList, error) {
 	zoneIngresses := &core_mesh.ZoneIngressResourceList{}
