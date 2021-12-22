@@ -29,7 +29,7 @@ PULP_DIST_NAME="alpine"
 docker run --rm \
         -e PULP_USERNAME="${PULP_USERNAME}" \
         -e PULP_PASSWORD="${PULP_PASSWORD}" \
-        -e PULP_HOST=${PULP_HOST} \
+        -e PULP_HOST="${PULP_HOST}" \
         -v "${PWD}":/files:ro -it kong/release-script \
         --file /files/"${BINARY_PATH}" \
-        --package-type ${PULP_PACKAGE_TYPE} --dist-name ${PULP_DIST_NAME} --publish
+        --package-type "${PULP_PACKAGE_TYPE}" --dist-name "${PULP_DIST_NAME}" --publish

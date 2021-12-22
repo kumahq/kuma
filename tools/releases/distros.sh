@@ -41,23 +41,23 @@ function create_tarball() {
   rm -rf "$dest_dir"
   mkdir "$dest_dir"
   mkdir "$kuma_dir"
-  mkdir "$kuma_dir"/bin
-  mkdir "$kuma_dir"/conf
+  mkdir "$kuma_dir/bin"
+  mkdir "$kuma_dir/conf"
 
   get_envoy "$distro" "$envoy_distro"
   chmod 755 build/envoy-"$distro"
 
-  cp -p build/envoy-"$distro" "$kuma_dir"/bin/envoy
-  cp -p build/artifacts-"$system"-"$arch"/kuma-cp/kuma-cp "$kuma_dir"/bin
-  cp -p build/artifacts-"$system"-"$arch"/kuma-dp/kuma-dp "$kuma_dir"/bin
-  cp -p build/artifacts-"$system"-"$arch"/kumactl/kumactl "$kuma_dir"/bin
-  cp -p build/artifacts-"$system"-"$arch"/coredns/coredns "$kuma_dir"/bin
-  cp -p build/artifacts-"$system"-"$arch"/kuma-prometheus-sd/kuma-prometheus-sd "$kuma_dir"/bin
-  cp -p $KUMA_CONFIG_PATH "$kuma_dir"/conf/kuma-cp.conf.yml
+  cp -p "build/envoy-$distro" "$kuma_dir"/bin/envoy
+  cp -p "build/artifacts-$system-$arch/kuma-cp/kuma-cp" "$kuma_dir/bin"
+  cp -p "build/artifacts-$system-$arch/kuma-dp/kuma-dp" "$kuma_dir/bin"
+  cp -p "build/artifacts-$system-$arch/kumactl/kumactl" "$kuma_dir/bin"
+  cp -p "build/artifacts-$system-$arch/coredns/coredns" "$kuma_dir/bin"
+  cp -p "build/artifacts-$system-$arch/kuma-prometheus-sd/kuma-prometheus-sd" "$kuma_dir/bin"
+  cp -p "$KUMA_CONFIG_PATH" "$kuma_dir/conf/kuma-cp.conf.yml"
 
   cp tools/releases/templates/* "$kuma_dir"
 
-  tar -czf build/artifacts-"$system"-"$arch"/$RELEASE_NAME-"$KUMA_VERSION"-"$distro"-"$arch".tar.gz -C "$dest_dir" .
+  tar -czf "build/artifacts-$system-$arch/$RELEASE_NAME-$KUMA_VERSION-$distro-$arch.tar.gz" -C "$dest_dir" .
 }
 
 function package() {
