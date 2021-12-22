@@ -82,6 +82,7 @@ type GatewayInstanceStatus struct {
 const (
 	GatewayInstanceReady string = "Ready"
 
+	GatewayInstanceNoGatewayMatched       = "NoGatewayMatched"
 	GatewayInstanceDeploymentNotAvailable = "DeploymentNotAvailable"
 
 	GatewayInstanceAddressNotReady = "LoadBalancerAddressNotReady"
