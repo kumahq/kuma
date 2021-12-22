@@ -6,7 +6,7 @@ set -o nounset
 
 echo "Building Envoy for CentOS 7"
 
-mkdir -p "$(dirname ${BINARY_PATH})"
+mkdir -p "$(dirname "${BINARY_PATH}")"
 
 SOURCE_DIR="${SOURCE_DIR}" "${KUMA_DIR:-.}/tools/envoy/fetch_sources.sh"
 
