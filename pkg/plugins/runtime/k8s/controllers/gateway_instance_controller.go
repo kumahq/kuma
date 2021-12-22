@@ -226,11 +226,21 @@ func getCombinedReadiness(svc *kube_core.Service, deployment *kube_apps.Deployme
 		}
 	}
 
-	if len(svc.Status.LoadBalancer.Ingress) > 0 {
-		return kube_meta.ConditionTrue, mesh_k8s.GatewayInstanceReady
-	} else {
-		return kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceAddressNotReady
+	switch svc.Spec.Type {
+	case kube_core.ServiceTypeNodePort, kube_core.ServiceTypeClusterIP:
+		// If we have any IP addresses assigned, the service is probably OK.
+		for _, ip := range svc.Spec.ClusterIPs {
+			if ip != kube_core.ClusterIPNone && ip != "" {
+				return kube_meta.ConditionTrue, mesh_k8s.GatewayInstanceReady
+			}
+		}
+	case kube_core.ServiceTypeLoadBalancer:
+		if len(svc.Status.LoadBalancer.Ingress) > 0 {
+			return kube_meta.ConditionTrue, mesh_k8s.GatewayInstanceReady
+		}
 	}
+
+	return kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceAddressNotReady
 }
 
 const noGateway = "No Gateway matched by tags"
