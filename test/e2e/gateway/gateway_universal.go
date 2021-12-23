@@ -22,7 +22,7 @@ import (
 func GatewayOnUniversal() {
 	var cluster *UniversalCluster
 
-	EchoServerUniversal := func(name string) InstallFunc {
+	EchoServerApp := func(name string) InstallFunc {
 		return func(cluster Cluster) error {
 			const service = "echo-service"
 			token, err := cluster.GetKuma().GenerateDpToken("default", service)
@@ -40,9 +40,9 @@ func GatewayOnUniversal() {
 		}
 	}
 
-	// GatewayClientUniversal runs an empty container that will
+	// GatewayClientApp runs an empty container that will
 	// function as a client for a gateway.
-	GatewayClientUniversal := func(name string) InstallFunc {
+	GatewayClientApp := func(name string) InstallFunc {
 		return func(cluster Cluster) error {
 			return cluster.DeployApp(WithName(name), WithoutDataplane(), WithVerbose())
 		}
@@ -118,8 +118,8 @@ networking:
 
 		SetupCluster(NewClusterSetup().
 			Install(Kuma(config_core.Standalone, opt...)).
-			Install(GatewayClientUniversal("gateway-client")).
-			Install(EchoServerUniversal("echo-server")).
+			Install(GatewayClientApp("gateway-client")).
+			Install(EchoServerApp("echo-server")).
 			Install(GatewayProxyUniversal("gateway-proxy")),
 		)
 	}
@@ -186,7 +186,7 @@ conf:
 		Expect(cluster.DismissCluster()).ToNot(HaveOccurred())
 	})
 
-	// ProxySimpleRequests tests that basic HTTP requests are proxied to a service.
+	// ProxySimpleRequests tests that basic HTTP requests are proxied to the echo-server.
 	ProxySimpleRequests := func(prefix string, instance string) func() {
 		return func() {
 			Eventually(func(g Gomega) {
@@ -264,9 +264,9 @@ conf:
 			SetupCluster(NewClusterSetup().
 				Install(Kuma(config_core.Standalone, opt...)).
 				Install(ExternalServerUniversal("external-echo")).
-				Install(GatewayClientUniversal("gateway-client")).
+				Install(GatewayClientApp("gateway-client")).
 				Install(GatewayProxyUniversal("gateway-proxy")).
-				Install(EchoServerUniversal("echo-server")),
+				Install(EchoServerApp("echo-server")),
 			)
 		})
 
