@@ -58,24 +58,24 @@ message Mesh {
 
   // Membership configures data plane proxy membership.
   message Membership {
-    // Requirement defines a set of requirements for data plane proxies to be a
-    // member of the mesh.
-    message Requirement {
+    // Rules defines a set of rules for data plane proxies to be member of the
+    // mesh.
+    message Rules {
       // Tags defines set of required tags. You can specify '*' in value to
       // require non empty value of tag
       map<string, string> tags = 1;
     }
 
-    // Allowed defines a set of requirements that data plane proxies must
+    // Requirements defines a set of requirements that data plane proxies must
     // fulfill in order to join the mesh. A data plane proxy must fulfill at
     // least one requirement in order to join the mesh. Empty list of allowed
     // requirements means that any proxy that is not explicitly denied can join.
-    repeated Requirement allowed = 1;
-    // Denied defines a set of requirements that data plane proxies cannot
+    repeated Rules requirements = 1;
+    // Restrictions defines a set of restrictions that data plane proxies cannot
     // fulfill in order to join the mesh. A data plane proxy cannot fulfill any
-    // requirement in order to join the mesh. Denied requirements takes
-    // precedence over allowed requirements.
-    repeated Requirement denied = 2;
+    // requirement in order to join the mesh.
+    // Restrictions takes precedence over requirements.
+    repeated Rules restrictions = 2;
   }
 
   // DataplaneProxyMembership defines a set of requirements for data plane

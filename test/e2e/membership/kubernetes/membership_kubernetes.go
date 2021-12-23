@@ -25,7 +25,7 @@ metadata:
   name: %s
 spec:
   dataplaneProxyMembership:
-    allowed:
+    requirements:
     - tags:
         k8s.kuma.io/namespace: %s`, mesh, ns)
 	}

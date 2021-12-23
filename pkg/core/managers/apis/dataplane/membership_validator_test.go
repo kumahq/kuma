@@ -73,7 +73,7 @@ var _ = Describe("Membership validator", func() {
 		Entry("when dp fulfills allowed mesh tag requirements", testCase{
 			mesh: &mesh_proto.Mesh{
 				DataplaneProxyMembership: &mesh_proto.Mesh_Membership{
-					Allowed: []*mesh_proto.Mesh_Membership_Requirement{
+					Requirements: []*mesh_proto.Mesh_Membership_Rules{
 						{
 							Tags: map[string]string{
 								"kuma.io/service": "backend",
@@ -87,7 +87,7 @@ var _ = Describe("Membership validator", func() {
 							},
 						},
 					},
-					Denied: []*mesh_proto.Mesh_Membership_Requirement{
+					Restrictions: []*mesh_proto.Mesh_Membership_Rules{
 						{
 							Tags: map[string]string{
 								"kuma.io/service": "web",
@@ -141,7 +141,7 @@ var _ = Describe("Membership validator", func() {
 		Entry("when dp fails to fulfill requirements", testCase{
 			mesh: &mesh_proto.Mesh{
 				DataplaneProxyMembership: &mesh_proto.Mesh_Membership{
-					Allowed: []*mesh_proto.Mesh_Membership_Requirement{
+					Requirements: []*mesh_proto.Mesh_Membership_Rules{
 						{
 							Tags: map[string]string{
 								"kuma.io/service": "backend",
@@ -176,14 +176,14 @@ var _ = Describe("Membership validator", func() {
 		Entry("when dp uses tag value that is denied", testCase{
 			mesh: &mesh_proto.Mesh{
 				DataplaneProxyMembership: &mesh_proto.Mesh_Membership{
-					Allowed: []*mesh_proto.Mesh_Membership_Requirement{
+					Requirements: []*mesh_proto.Mesh_Membership_Rules{
 						{
 							Tags: map[string]string{
 								"kuma.io/service": "backend",
 							},
 						},
 					},
-					Denied: []*mesh_proto.Mesh_Membership_Requirement{
+					Restrictions: []*mesh_proto.Mesh_Membership_Rules{
 						{
 							Tags: map[string]string{
 								"kuma.io/zone": "east",
@@ -218,7 +218,7 @@ var _ = Describe("Membership validator", func() {
 		Entry("when dp do not provide required tag", testCase{
 			mesh: &mesh_proto.Mesh{
 				DataplaneProxyMembership: &mesh_proto.Mesh_Membership{
-					Allowed: []*mesh_proto.Mesh_Membership_Requirement{
+					Requirements: []*mesh_proto.Mesh_Membership_Rules{
 						{
 							Tags: map[string]string{
 								"kuma.io/service": "backend",
@@ -249,14 +249,14 @@ var _ = Describe("Membership validator", func() {
 		Entry("when dp uses tag key that is denied", testCase{
 			mesh: &mesh_proto.Mesh{
 				DataplaneProxyMembership: &mesh_proto.Mesh_Membership{
-					Allowed: []*mesh_proto.Mesh_Membership_Requirement{
+					Requirements: []*mesh_proto.Mesh_Membership_Rules{
 						{
 							Tags: map[string]string{
 								"kuma.io/service": "backend",
 							},
 						},
 					},
-					Denied: []*mesh_proto.Mesh_Membership_Requirement{
+					Restrictions: []*mesh_proto.Mesh_Membership_Rules{
 						{
 							Tags: map[string]string{
 								"version": "*",

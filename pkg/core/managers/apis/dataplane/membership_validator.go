@@ -20,7 +20,7 @@ type NotAllowedErr struct {
 }
 
 func (n *NotAllowedErr) Error() string {
-	return fmt.Sprintf("dataplane cannot be a member of mesh %q because its tags %q does not fulfill any allowed set of tags defined on the Mesh", n.Mesh, n.TagSet.String())
+	return fmt.Sprintf("dataplane cannot be a member of mesh %q because its tags %q does not fulfill any requirements defined on the Mesh", n.Mesh, n.TagSet.String())
 }
 
 type DeniedErr struct {
@@ -30,7 +30,7 @@ type DeniedErr struct {
 }
 
 func (n *DeniedErr) Error() string {
-	return fmt.Sprintf("dataplane cannot be a member of mesh %q because its tags %q matches denied tags %q defined on the Mesh", n.Mesh, n.DpTagSet.String(), n.DeniedTagSet)
+	return fmt.Sprintf("dataplane cannot be a member of mesh %q because its tags %q matches restricted tags %q defined on the Mesh", n.Mesh, n.DpTagSet.String(), n.DeniedTagSet)
 }
 
 func NewMembershipValidator() Validator {
@@ -48,13 +48,13 @@ func (m *membershipValidator) validateDp(key model.ResourceKey, dp *core_mesh.Da
 	}
 
 	for _, tagSet := range dp.Spec.SingleValueTagSets() {
-		if !isAllowedToJoin(tagSet, membership.GetAllowed()) {
+		if !isAllowedToJoin(tagSet, membership.GetRequirements()) {
 			return &NotAllowedErr{
 				Mesh:   key.Mesh,
 				TagSet: tagSet,
 			}
 		}
-		if denied, deniedTags := isDeniedToJoin(tagSet, membership.GetDenied()); denied {
+		if denied, deniedTags := isDeniedToJoin(tagSet, membership.GetRestrictions()); denied {
 			return &DeniedErr{
 				Mesh:         key.Mesh,
 				DpTagSet:     tagSet,
@@ -65,27 +65,29 @@ func (m *membershipValidator) validateDp(key model.ResourceKey, dp *core_mesh.Da
 	return nil
 }
 
-func isAllowedToJoin(tagSet mesh_proto.SingleValueTagSet, allowedList []*mesh_proto.Mesh_Membership_Requirement) bool {
-	if len(allowedList) == 0 {
+func isAllowedToJoin(tagSet mesh_proto.SingleValueTagSet, requirements []*mesh_proto.Mesh_Membership_Rules) bool {
+	if len(requirements) == 0 {
 		return true
 	}
-	for _, allowed := range allowedList {
-		if matchTags(allowed.Tags, tagSet) {
+	for _, requirement := range requirements {
+		if matchTags(requirement.Tags, tagSet) {
 			return true
 		}
 	}
 	return false
 }
 
-func isDeniedToJoin(tagSet mesh_proto.SingleValueTagSet, deniedList []*mesh_proto.Mesh_Membership_Requirement) (bool, mesh_proto.SingleValueTagSet) {
-	for _, denied := range deniedList {
-		if matchTags(denied.Tags, tagSet) {
-			return true, denied.Tags
+func isDeniedToJoin(tagSet mesh_proto.SingleValueTagSet, restrictions []*mesh_proto.Mesh_Membership_Rules) (bool, mesh_proto.SingleValueTagSet) {
+	for _, restriction := range restrictions {
+		if matchTags(restriction.Tags, tagSet) {
+			return true, restriction.Tags
 		}
 	}
 	return false, nil
 }
 
+// matchTags checks whether dp tags has required tags
+// If required tags has `*` in value, dp tags have to contain non-empty value
 func matchTags(requiredTags map[string]string, dpTags map[string]string) bool {
 	for requiredTag, requiredValue := range requiredTags {
 		dpValue := dpTags[requiredTag]

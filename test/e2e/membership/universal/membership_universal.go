@@ -34,10 +34,10 @@ func MembershipUniversal() {
 type: Mesh
 name: default
 dataplaneProxyMembership:
-  allowed:
+  requirements:
   - tags:
       kuma.io/service: demo-client
-  denied:
+  restrictions:
   - tags:
       kuma.io/service: test-server
 `
