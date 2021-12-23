@@ -12,10 +12,10 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/test/runtime"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -29,7 +29,7 @@ type dummyCLACache struct {
 	outboundTargets model.EndpointMap
 }
 
-func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, version envoy_common.APIVersion) (proto.Message, error) {
+func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion, endpointMap core_xds.EndpointMap) (proto.Message, error) {
 	return endpoints.CreateClusterLoadAssignment(cluster.Service(), d.outboundTargets[cluster.Service()]), nil
 }
 
@@ -87,7 +87,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						Spec: &mesh_proto.Mesh{},
 					},
 				},
-				EnvoyAdminClient: &runtime.DummyEnvoyAdminClient{},
 			}
 
 			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
