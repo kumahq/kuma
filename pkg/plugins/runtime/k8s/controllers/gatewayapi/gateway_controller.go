@@ -134,7 +134,7 @@ func (r *GatewayReconciler) getGatewayClass(ctx context.Context, name gatewayapi
 
 func serviceTagForGateway(name kube_types.NamespacedName) map[string]string {
 	return map[string]string{
-		mesh_proto.ServiceTag: fmt.Sprintf("gateways.kuma.io/%s_%s", name.Name, name.Namespace),
+		mesh_proto.ServiceTag: fmt.Sprintf("%s_%s_gateway", name.Name, name.Namespace),
 	}
 }
 
