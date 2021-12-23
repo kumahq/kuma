@@ -8,6 +8,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -63,7 +64,10 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		WithComponentManager(component.NewManager(leader_memory.NewAlwaysLeaderElector())).
 		WithResourceStore(resources_memory.NewStore()).
 		WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore())).
-		WithMeshValidator(mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()))
+		WithResourceValidators(core_runtime.ResourceValidators{
+			Dataplane: dataplane.NewMembershipValidator(),
+			Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
+		})
 
 	rm := newResourceManager(builder)
 	builder.WithResourceManager(rm).
@@ -110,7 +114,7 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.MeshValidator())
+	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.ResourceValidators().Mesh)
 	customManagers[core_mesh.MeshType] = meshManager
 
 	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil)

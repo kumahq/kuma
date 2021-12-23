@@ -164,12 +164,14 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	} else {
 		funcs = append(funcs, framework.YamlK8sObject(k.deployment()))
 	}
-	funcs = append(funcs,
-		framework.YamlK8sObject(k.service()),
-		framework.WaitService(k.opts.Namespace, k.Name()),
-		framework.WaitNumPods(1, k.Name()),
-		framework.WaitPodsAvailable(k.opts.Namespace, k.Name()),
-	)
+	funcs = append(funcs, framework.YamlK8sObject(k.service()))
+	if k.opts.WaitingToBeReady {
+		funcs = append(funcs,
+			framework.WaitService(k.opts.Namespace, k.Name()),
+			framework.WaitNumPods(k.opts.Namespace, 1, k.Name()),
+			framework.WaitPodsAvailable(k.opts.Namespace, k.Name()),
+		)
+	}
 	return framework.Combine(funcs...)(cluster)
 }
 

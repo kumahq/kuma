@@ -9,25 +9,22 @@ import (
 
 	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s_common.Converter, resourceManager manager.ResourceManager) k8s_common.AdmissionValidator {
+func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s_common.Converter) k8s_common.AdmissionValidator {
 	return &MeshValidator{
-		validator:       validator,
-		converter:       converter,
-		resourceManager: resourceManager,
+		validator: validator,
+		converter: converter,
 	}
 }
 
 type MeshValidator struct {
-	validator       managers_mesh.MeshValidator
-	converter       k8s_common.Converter
-	decoder         *admission.Decoder
-	resourceManager manager.ResourceManager
+	validator managers_mesh.MeshValidator
+	converter k8s_common.Converter
+	decoder   *admission.Decoder
 }
 
 func (h *MeshValidator) InjectDecoder(d *admission.Decoder) error {
