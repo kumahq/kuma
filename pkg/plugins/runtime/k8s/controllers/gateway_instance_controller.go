@@ -92,14 +92,14 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		return selector.Matches(gatewayInstance.Spec.Tags)
 	})
 
-	if gateway == nil {
-		// We have an index and watch set up to requeue when this changes
-		return nil, nil
-	}
-
-	obj, err := ctrls_util.CreateOrUpdateControlled(
+	obj, err := ctrls_util.ManageControlledObject(
 		ctx, r.Client, gatewayInstance, &kube_core.ServiceList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
+			// If we don't have a gateway, we don't want our Service anymore
+			if gateway == nil {
+				return nil, nil
+			}
+
 			service := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace:    gatewayInstance.Namespace,
@@ -133,6 +133,10 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		return nil, errors.Wrap(err, "unable to create or update Service for GatewayInstance")
 	}
 
+	if obj == nil {
+		return nil, nil
+	}
+
 	return obj.(*kube_core.Service), nil
 }
 
@@ -147,7 +151,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 		return nil, errors.Wrap(err, "unable to get Namespace for GatewayInstance")
 	}
 
-	obj, err := ctrls_util.CreateOrUpdateControlled(
+	obj, err := ctrls_util.ManageControlledObject(
 		ctx, r.Client, gatewayInstance, &kube_apps.DeploymentList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
 			deployment := &kube_apps.Deployment{

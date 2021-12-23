@@ -15,10 +15,14 @@ import (
 
 const controllerKey string = ".metadata.controller"
 
-// CreateOrUpdateControlled either creates an object to be controlled by the
-// given object or updates the existing one.
-// This object must be indexed by calling IndexControllerOf.
-func CreateOrUpdateControlled(
+// ManageControlledObject is used to handle the lifecycle of and mutate
+// a single object controlled by owner.
+// This object type must be indexed by calling IndexControllerOf.
+// If a controlled object exists, it's passed to mutate. Otherwise mutate
+// receives a nil object.
+// mutate should return a nil Object if the owned object should be deleted or
+// not created.
+func ManageControlledObject(
 	ctx context.Context, client kube_client.Client, owner kube_meta.Object, objectList kube_client.ObjectList, mutate func(kube_client.Object) (kube_client.Object, error),
 ) (kube_client.Object, error) {
 	if err := client.List(
@@ -37,6 +41,11 @@ func CreateOrUpdateControlled(
 		obj, err := mutate(nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "couldn't mutate object for creation")
+		}
+
+		// We don't want to create anything
+		if obj == nil {
+			return nil, nil
 		}
 
 		if err := kube_controllerutil.SetControllerReference(owner, obj, client.Scheme()); err != nil {
@@ -58,6 +67,12 @@ func CreateOrUpdateControlled(
 			return nil, errors.Wrap(err, "couldn't mutate object for update")
 		}
 
+		// We want to delete our object
+		if obj == nil {
+			err := client.Delete(ctx, item)
+			return nil, errors.Wrap(err, "couldn't delete object")
+		}
+
 		if err := kube_controllerutil.SetControllerReference(owner, obj, client.Scheme()); err != nil {
 			return nil, errors.Wrap(err, "unable to set object's controller reference")
 		}
@@ -72,7 +87,7 @@ func CreateOrUpdateControlled(
 }
 
 // IndexControllerOf adds an index to objects of this GVK for use with
-// CreateOrUpdateControlled.
+// ManageControlledObject.
 func IndexControllerOf(mgr kube_ctrl.Manager, ownerGVK kube_schema.GroupVersionKind, objType kube_client.Object) error {
 	ownerKind := ownerGVK.Kind
 	ownerGV := ownerGVK.GroupVersion().String()
