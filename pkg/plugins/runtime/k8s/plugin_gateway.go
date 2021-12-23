@@ -90,6 +90,14 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		return nil
 	}
 
+	gatewayAPIGatewayClassReconciler := &gatewayapi_controllers.GatewayClassReconciler{
+		Client: mgr.GetClient(),
+		Log:    core.Log.WithName("controllers").WithName("gatewayapi").WithName("GatewayClass"),
+	}
+	if err := gatewayAPIGatewayClassReconciler.SetupWithManager(mgr); err != nil {
+		return errors.Wrap(err, "could not setup Gateway API GatewayClass reconciler")
+	}
+
 	gatewayAPIGatewayReconciler := &gatewayapi_controllers.GatewayReconciler{
 		Client:          mgr.GetClient(),
 		Log:             core.Log.WithName("controllers").WithName("gatewayapi").WithName("Gateway"),
