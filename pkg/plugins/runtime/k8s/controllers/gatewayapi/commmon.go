@@ -3,6 +3,7 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -38,4 +39,13 @@ func serviceTagForGateway(name kube_types.NamespacedName) map[string]string {
 	return map[string]string{
 		mesh_proto.ServiceTag: fmt.Sprintf("%s_%s_gateway", name.Name, name.Namespace),
 	}
+}
+
+func gatewayForServiceTag(tag string) (kube_types.NamespacedName, error) {
+	splits := strings.SplitN(tag, "_", 3)
+	if len(splits) < 3 || splits[2] != "gateway" {
+		return kube_types.NamespacedName{}, fmt.Errorf("tag does not represent a Gateway")
+	}
+
+	return kube_types.NamespacedName{Name: splits[0], Namespace: splits[1]}, nil
 }
