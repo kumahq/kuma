@@ -129,29 +129,45 @@ func FromKubernetesPod(namespace string, application string) CollectResponsesOpt
 	}
 }
 
+func collectOptions(options ...CollectResponsesOptsFn) CollectResponsesOpts {
+	opts := DefaultCollectResponsesOpts()
+
+	for _, o := range options {
+		o(&opts)
+	}
+
+	return opts
+}
+
+func collectCommand(opts CollectResponsesOpts, arg0 string, args ...string) []string {
+	var cmd []string
+
+	cmd = append(cmd, arg0)
+
+	for key, value := range opts.Headers {
+		cmd = append(cmd, "--header", opts.ShellEscaped(fmt.Sprintf("%s: %s", key, value)))
+	}
+
+	cmd = append(cmd, opts.Flags...)
+	cmd = append(cmd, args...)
+
+	return cmd
+}
+
 func CollectResponse(
 	cluster framework.Cluster,
 	container string,
 	destination string,
 	fn ...CollectResponsesOptsFn,
 ) (types.EchoResponse, error) {
-	opts := DefaultCollectResponsesOpts()
-	for _, f := range fn {
-		f(&opts)
-	}
-	cmd := []string{
-		"curl",
+	opts := collectOptions(fn...)
+	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
-	}
-	for key, value := range opts.Headers {
-		cmd = append(cmd, "--header", opts.ShellEscaped(fmt.Sprintf("%s: %s", key, value)))
-	}
-	cmd = append(cmd, opts.Flags...)
-	cmd = append(cmd, opts.ShellEscaped(destination))
+		opts.ShellEscaped(destination),
+	)
 
 	var pod string
-
 	if opts.namespace != "" && opts.application != "" {
 		pods, err := k8s.ListPodsE(
 			cluster.GetTesting(),
@@ -204,13 +220,8 @@ type FailureResponse struct {
 // Curl JSON output is returned so the caller can inspect the failure to
 // see whether it was what was expected.
 func CollectFailure(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (FailureResponse, error) {
-	opts := DefaultCollectResponsesOpts()
-	for _, f := range fn {
-		f(&opts)
-	}
-
-	cmd := []string{
-		"curl",
+	opts := collectOptions(fn...)
+	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
 		"--silent",               // Suppress human-readable errors.
@@ -218,14 +229,26 @@ func CollectFailure(cluster framework.Cluster, source, destination string, fn ..
 		// Silence output so that we don't try to parse it. A future refactor could try to address this
 		// by using "%{stderr}%{json}", but that needs a bit more investigation.
 		"--output", os.DevNull,
+		opts.ShellEscaped(destination),
+	)
+
+	var pod string
+	if opts.namespace != "" && opts.application != "" {
+		pods, err := k8s.ListPodsE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(opts.namespace),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", opts.application),
+			},
+		)
+		if err != nil {
+			return FailureResponse{}, errors.Wrap(err, "failed to list pods")
+		}
+
+		pod = pods[0].Name
 	}
 
-	for key, value := range opts.Headers {
-		cmd = append(cmd, "--header", ShellEscape(fmt.Sprintf("%s: %s", key, value)))
-	}
-
-	cmd = append(cmd, ShellEscape(destination))
-	stdout, _, err := cluster.Exec("", "", source, cmd...)
+	stdout, _, err := cluster.Exec(opts.namespace, pod, source, cmd...)
 
 	// 1. If we fail to decode the JSON status, return the JSON error,
 	// but prefer the original error if we have it.
