@@ -20,9 +20,7 @@ k3d/start: ${KIND_KUBECONFIG_DIR}
 		  	--network kind \
 		  	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)89:30080-30089" \
 		  	--timeout 120s && \
-		until \
-			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
-		do echo "Waiting for the cluster to come up" && sleep 1; done )
+		$(MAKE) k3d/wait)
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
 	@echo
@@ -30,6 +28,12 @@ k3d/start: ${KIND_KUBECONFIG_DIR}
 	@echo
 	@echo '<<< ------------------------------------------------------------- <<<'
 	@echo
+
+.PHONY: k3d/wait
+k3d/wait:
+	until \
+		 KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
+	do echo "Waiting for the cluster to come up" && sleep 1; done
 
 .PHONY: k3d/stop
 k3d/stop:
@@ -48,7 +52,7 @@ k3d/load/images:
     	--cluster=$(KIND_CLUSTER_NAME) --verbose
 
 .PHONY: k3d/load
-k3d/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl docker/build/kuma-universal k3d/load/images
+k3d/load: images k3d/load/images
 
 .PHONY: k3d/deploy/kuma
 k3d/deploy/kuma: build/kumactl k3d/load
