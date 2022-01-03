@@ -24,6 +24,6 @@ Fix #XXX
 
 ### Backwards compatibility
 
-- [ ] Update [`UPGRADE.md`](UPGRADE.md) with any steps users will need to take
+- [ ] Update [`UPGRADE.md`](/UPGRADE.md) with any steps users will need to take
       when upgrading.
-- [ ] Add `backport-to-stable` label if the code is backwards compatible. Otherwise, list breaking changes.
+- [ ] Add `backport-to-stable` label if the code follows our [backporting policy](/CONTRIBUTING.md#backporting)
