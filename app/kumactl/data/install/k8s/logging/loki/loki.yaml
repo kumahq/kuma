@@ -79,7 +79,7 @@ metadata:
     app: loki
     release: loki
 data:
-  loki.yaml: YXV0aF9lbmFibGVkOiBmYWxzZQpjaHVua19zdG9yZV9jb25maWc6CiAgbWF4X2xvb2tfYmFja19wZXJpb2Q6IDBzCmluZ2VzdGVyOgogIGNodW5rX2Jsb2NrX3NpemU6IDI2MjE0NAogIGNodW5rX2lkbGVfcGVyaW9kOiAzbQogIGNodW5rX3JldGFpbl9wZXJpb2Q6IDFtCiAgbGlmZWN5Y2xlcjoKICAgIHJpbmc6CiAgICAgIGt2c3RvcmU6CiAgICAgICAgc3RvcmU6IGlubWVtb3J5CiAgICAgIHJlcGxpY2F0aW9uX2ZhY3RvcjogMQogIG1heF90cmFuc2Zlcl9yZXRyaWVzOiAwCmxpbWl0c19jb25maWc6CiAgZW5mb3JjZV9tZXRyaWNfbmFtZTogZmFsc2UKICByZWplY3Rfb2xkX3NhbXBsZXM6IHRydWUKICByZWplY3Rfb2xkX3NhbXBsZXNfbWF4X2FnZTogMTY4aApzY2hlbWFfY29uZmlnOgogIGNvbmZpZ3M6CiAgLSBmcm9tOiAiMjAxOC0wNC0xNSIKICAgIGluZGV4OgogICAgICBwZXJpb2Q6IDE2OGgKICAgICAgcHJlZml4OiBpbmRleF8KICAgIG9iamVjdF9zdG9yZTogZmlsZXN5c3RlbQogICAgc2NoZW1hOiB2OQogICAgc3RvcmU6IGJvbHRkYgpzZXJ2ZXI6CiAgaHR0cF9saXN0ZW5fcG9ydDogMzEwMApzdG9yYWdlX2NvbmZpZzoKICBib2x0ZGI6CiAgICBkaXJlY3Rvcnk6IC9kYXRhL2xva2kvaW5kZXgKICBmaWxlc3lzdGVtOgogICAgZGlyZWN0b3J5OiAvZGF0YS9sb2tpL2NodW5rcwp0YWJsZV9tYW5hZ2VyOgogIHJldGVudGlvbl9kZWxldGVzX2VuYWJsZWQ6IGZhbHNlCiAgcmV0ZW50aW9uX3BlcmlvZDogMHM=
+  loki.yaml: YXV0aF9lbmFibGVkOiBmYWxzZQpjaHVua19zdG9yZV9jb25maWc6CiAgbWF4X2xvb2tfYmFja19wZXJpb2Q6IDBzCmluZ2VzdGVyOgogIGNodW5rX2Jsb2NrX3NpemU6IDI2MjE0NAogIGNodW5rX2lkbGVfcGVyaW9kOiAzbQogIGNodW5rX3JldGFpbl9wZXJpb2Q6IDFtCiAgbGlmZWN5Y2xlcjoKICAgIHJpbmc6CiAgICAgIGt2c3RvcmU6CiAgICAgICAgc3RvcmU6IGlubWVtb3J5CiAgICAgIHJlcGxpY2F0aW9uX2ZhY3RvcjogMQogIHdhbDoKICAgIGVuYWJsZWQ6IGZhbHNlCmxpbWl0c19jb25maWc6CiAgZW5mb3JjZV9tZXRyaWNfbmFtZTogZmFsc2UKc2NoZW1hX2NvbmZpZzoKICBjb25maWdzOgogIC0gZnJvbTogIjIwMTgtMDQtMTUiCiAgICBpbmRleDoKICAgICAgcGVyaW9kOiAxNjhoCiAgICAgIHByZWZpeDogaW5kZXhfCiAgICBvYmplY3Rfc3RvcmU6IGZpbGVzeXN0ZW0KICAgIHNjaGVtYTogdjkKICAgIHN0b3JlOiBib2x0ZGIKc2VydmVyOgogIGh0dHBfbGlzdGVuX3BvcnQ6IDMxMDAKc3RvcmFnZV9jb25maWc6CiAgYm9sdGRiOgogICAgZGlyZWN0b3J5OiAvZGF0YS9sb2tpL2luZGV4CiAgZmlsZXN5c3RlbToKICAgIGRpcmVjdG9yeTogL2RhdGEvbG9raS9jaHVua3MKdGFibGVfbWFuYWdlcjoKICByZXRlbnRpb25fZGVsZXRlc19lbmFibGVkOiBmYWxzZQogIHJldGVudGlvbl9wZXJpb2Q6IDBzCg==
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -575,7 +575,7 @@ spec:
       serviceAccountName: loki-promtail
       containers:
         - name: promtail
-          image: "grafana/promtail:2.1.0"
+          image: "grafana/promtail:2.4.1"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
@@ -677,10 +677,11 @@ spec:
         []
       containers:
         - name: loki
-          image: "grafana/loki:2.2.1"
+          image: "grafana/loki:2.4.1"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/loki/loki.yaml"
+            - "-target=all,table-manager"
           volumeMounts:
             - name: config
               mountPath: /etc/loki

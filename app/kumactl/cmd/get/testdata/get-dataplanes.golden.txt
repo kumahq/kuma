@@ -1,3 +1,0 @@
-MESH      NAME         TAGS                                ADDRESS     AGE
-default   experiment   service=metrics,mobile version=v1   127.0.0.1   292y
-default   example      service=web version=v2              127.0.0.2   292y
