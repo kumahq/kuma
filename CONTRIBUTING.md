@@ -6,30 +6,6 @@ document is for you! Its intent is to be both an entry point for newcomers to
 the community (with various technical backgrounds), and a guide/reference for
 contributors and maintainers.
 
-Consult the Table of Contents below, and jump to the desired section.
-
-## Table of Contents
-
-- [Contributing to Kuma](#contributing-to-kuma)
-  - [Table of Contents](#table-of-contents)
-  - [Where to seek help?](#where-to-seek-help)
-  - [Where to report bugs?](#where-to-report-bugs)
-  - [Where to submit feature requests?](#where-to-submit-feature-requests)
-  - [Contributing](#contributing)
-    - [Improving the documentation](#improving-the-documentation)
-    - [Submitting a patch](#submitting-a-patch)
-      - [Git branches](#git-branches)
-      - [Commit atomicity](#commit-atomicity)
-      - [Commit message format](#commit-message-format)
-        - [Type](#type)
-        - [Scope](#scope)
-        - [Subject](#subject)
-        - [Body](#body)
-        - [Footer](#footer)
-        - [Examples](#examples)
-      - [Writing tests](#writing-tests)
-    - [Contributor T-shirt](#contributor-t-shirt)
-
 ## Where to seek help?
 
 [Slack](https://kuma-mesh.slack.com) is the main chat channel used by the
@@ -40,8 +16,6 @@ up for free.
 **Please avoid opening GitHub issues for general questions or help**, as those
 should be reserved for actual bug reports. The Kuma community is welcoming and
 more than willing to assist you on Slack!
-
-[Back to TOC](#table-of-contents)
 
 ## Where to report bugs?
 
@@ -58,8 +32,6 @@ If you wish, you are more than welcome to propose a patch to fix the issue!
 See the [Submit a patch](#submitting-a-patch) section for more information
 on how to best do so.
 
-[Back to TOC](#table-of-contents)
-
 ## Where to submit feature requests?
 
 You can [submit an issue](https://github.com/kumahq/kuma/issues/new) for feature
@@ -67,8 +39,6 @@ requests. Please add as much detail as you can when doing so.
 
 You are also welcome to propose patches adding new features. See the section
 on [Submitting a patch](#submitting-a-patch) for details.
-
-[Back to TOC](#table-of-contents)
 
 ## Contributing
 
@@ -88,8 +58,6 @@ make without coding:
 If you wish to contribute code (features or bug fixes), see the [Submitting a
 patch](#submitting-a-patch) section.
 
-[Back to TOC](#table-of-contents)
-
 ### Improving the documentation
 
 The documentation hosted at https://kuma.io/docs is open source and built
@@ -97,9 +65,11 @@ with [Netlify](https://www.netlify.com/). You are welcome to propose changes to 
 (correct typos, add examples or clarifications...)!
 
 The repository is also hosted on GitHub at:
-https://github.com/kumahq/kuma-website
+[kumahq/kuma-website](https://github.com/kumahq/kuma-website)
 
-[Back to TOC](#table-of-contents)
+### Improving the GUI
+
+The GUI code is in the [kumahq/kuma-gui](https://github.com/kumahq/kuma-gui) repository.
 
 ### Submitting a patch
 
@@ -143,23 +113,14 @@ your very own [Contributor T-shirt](#contributor-t-shirt)!
 Your change will be included in the subsequent release Changelog, and we will
 not forget to include your name if you are an external contributor. :wink:
 
-[Back to TOC](#table-of-contents)
+#### Writing tests
 
-#### Git branches
+We use [Ginkgo](https://github.com/onsi/ginkgo) to write our tests. Your patch
+should include the related test updates or additions, in the appropriate test
+suite.
+Checkout [DEVELOPER.md](DEVELOPER.md) for some extra info related to tests.
 
-As a best practice to keep your development environment as organized as possible, create local branches to work within. These should also be created directly off of the master branch. If you have write access to the GitHub repository, please follow the following
-naming scheme when pushing your branch(es):
-
-- `feat/foo-bar` for new features
-- `fix/foo-bar` for bug fixes
-- `tests/foo-bar` when the change concerns only the test suite
-- `refactor/foo-bar` when refactoring code without any behavior change
-- `style/foo-bar` when addressing some style issue
-- `docs/foo-bar` for updates to the README.md, this file, or similar documents
-
-[Back to TOC](#table-of-contents)
-
-### Sign Your Work
+#### Sign Your Work
 
 The sign-off is a simple line at the end of the explanation for a commit. All
 commits needs to be signed. Your signature certifies that you wrote the patch or
@@ -197,8 +158,6 @@ shouldn't!
 
 Writing meaningful commit messages that follow our commit message format will
 also help you respect this mantra (see the below section).
-
-[Back to TOC](#table-of-contents)
 
 #### Commit message format
 
@@ -285,22 +244,25 @@ return 405 on such user errors.
 Fix #678
 ```
 
-[Back to TOC](#table-of-contents)
+#### Backporting
 
-#### Writing tests
+We have a strict policy on backporting changes to stable branches.
+We apply this policy to simplify upgrades between patch versions by keeping the delta between patch versions as small as possible.
 
-We use [Ginkgo](https://github.com/onsi/ginkgo) to write our tests. Your patch
-should include the related test updates or additions, in the appropriate test
-suite.
+Changes that are to be backported should only be critical bug fixes of one of these types:
 
-[Back to TOC](#table-of-contents)
+- Loss of data
+- Memory corruption
+- Panic, crash, hang
+- Security
+
+If you think your PR applies and should be backported please add the label `backport-to-stable` and it will receive extra scrutiny.
+Once the PR is approved and merged mergifyio will open a new PR with the backport, a contributor will work on getting it merged and included in a future patch release.
 
 ### Contributor T-shirt
 
-If your Pull Request to [Kong/kuma](https://github.com/kumahq/kuma) was
+If your Pull Request to [kumahq/kuma](https://github.com/kumahq/kuma) was
 accepted, and it fixes a bug, adds functionality, or makes it significantly
 easier to use or understand Kuma, congratulations! You are eligible to
 receive the very special Contributor T-shirt! Go ahead and fill out the
 [Contributors Submissions form](https://goo.gl/forms/5w6mxLaE4tz2YM0L2).
-
-[Back to TOC](#table-of-contents)
