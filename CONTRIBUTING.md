@@ -69,7 +69,7 @@ The repository is also hosted on GitHub at:
 
 ### Improving the GUI
 
-The GUI code is in a different repo: [kumahq/kuma-gui](https://github.com/kumahq/kuma-gui)
+The GUI code is in the [kumahq/kuma-gui](https://github.com/kumahq/kuma-gui) repository.
 
 ### Submitting a patch
 
