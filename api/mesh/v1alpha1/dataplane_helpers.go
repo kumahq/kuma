@@ -415,6 +415,17 @@ func (d *Dataplane) TagSet() MultiValueTagSet {
 	return tags
 }
 
+func (d *Dataplane) SingleValueTagSets() []SingleValueTagSet {
+	var sets []SingleValueTagSet
+	for _, inbound := range d.GetNetworking().GetInbound() {
+		sets = append(sets, SingleValueTagSet(inbound.Tags))
+	}
+	if gateway := d.GetNetworking().GetGateway(); gateway != nil {
+		sets = append(sets, gateway.GetTags())
+	}
+	return sets
+}
+
 func (d *Dataplane) GetIdentifyingService() string {
 	services := d.TagSet().Values(ServiceTag)
 	if len(services) > 0 {
