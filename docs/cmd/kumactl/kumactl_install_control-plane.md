@@ -45,7 +45,8 @@ kumactl install control-plane [flags]
       --tls-api-server-client-certs-secret string   Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
       --tls-api-server-secret string                Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS
       --tls-general-ca-bundle string                Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
-      --tls-general-secret string                   Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication
+      --tls-general-ca-secret string                Secret that contains ca.crt for protecting Kuma in-cluster communication (ca.crt present in this secret have precedence over the one provided in --tls-general-secret)
+      --tls-general-secret string                   Secret that contains tls.crt, key.crt [and ca.crt when no --tls-general-ca-secret specified] for protecting Kuma in-cluster communication
       --tls-kds-global-server-secret string         Secret that contains tls.crt, key.crt for protecting cross cluster communication
       --tls-kds-zone-client-secret string           Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
       --use-node-port                               use NodePort instead of LoadBalancer

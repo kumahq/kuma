@@ -57,7 +57,16 @@ var _ = Describe("kumactl install control-plane", func() {
 
 			// given
 			rootCmd := cmd.NewRootCmd(rootCtx)
-			rootCmd.SetArgs(append([]string{"install", "control-plane", "--tls-general-secret", "general-tls-secret", "--tls-general-ca-bundle", "XYZ"}, given.extraArgs...))
+			rootCmd.SetArgs(append(
+				[]string{
+					"install",
+					"control-plane",
+					"--tls-general-secret", "general-tls-secret",
+					"--tls-general-ca-secret", "general-tls-secret-ca",
+					"--tls-general-ca-bundle", "XYZ",
+				},
+				given.extraArgs...,
+			))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
 

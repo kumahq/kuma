@@ -12,7 +12,7 @@ A Helm chart for the Kuma Control Plane
 |-----|------|---------|-------------|
 | global.image.registry | string | `"docker.io/kumahq"` | Default registry for all Kuma Images |
 | global.image.tag | string | `nil` | The default tag for all Kuma images, which itself defaults to .Chart.AppVersion |
-| patchSystemNamespace | bool | `true` | Whether or not to patch the target namespace with the system label |
+| patchSystemNamespace | bool | `true` | Whether to patch the target namespace with the system label |
 | installCrdsOnUpgrade | object | `{"enabled":true,"imagePullSecrets":[]}` | Whether ot not install new CRDs before upgrade  (if any were introduced    with the new version of Kuma) |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,zone,global |
@@ -35,9 +35,10 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
 | controlPlane.globalZoneSyncService.annotations | object | `{}` | Additional annotations to put on the Global Zone Sync Service |
 | controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
-| controlPlane.defaults.skipMeshCreation | bool | `false` | Whether or not to skip creating the default Mesh |
+| controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
 | controlPlane.resources | string | `nil` | Optionally override the resource spec |
-| controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication |
+| controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, key.crt [and ca.crt when no controlPlane.tls.general.coSecretName specified] for protecting Kuma in-cluster communication |
+| controlPlane.tls.general.caSecretName | string | `""` | Secret that contains ca.crt for protecting Kuma in-cluster communication (ca.crt present in this secret have precedence over the one provided in the controlPlane.tls.general.secretName) |
 | controlPlane.tls.general.caBundle | string | `""` | Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt) |
 | controlPlane.tls.apiServer.secretName | string | `""` | Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS |
 | controlPlane.tls.apiServer.clientCertsSecretName | string | `""` | Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS |
