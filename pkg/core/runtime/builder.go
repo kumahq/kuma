@@ -15,7 +15,6 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -49,7 +48,7 @@ type BuilderContext interface {
 	XDSHooks() *xds_hooks.Hooks
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
-	MeshValidator() core_managers.MeshValidator
+	ResourceValidators() ResourceValidators
 	KDSContext() *kds_context.Context
 	APIServerAuthenticator() authn.Authenticator
 	Access() Access
@@ -81,7 +80,7 @@ type Builder struct {
 	cap      secrets.CaProvider
 	dps      *dp_server.DpServer
 	kdsctx   *kds_context.Context
-	mv       core_managers.MeshValidator
+	rv       ResourceValidators
 	au       authn.Authenticator
 	acc      Access
 	appCtx   context.Context
@@ -215,8 +214,8 @@ func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
 	return b
 }
 
-func (b *Builder) WithMeshValidator(mv core_managers.MeshValidator) *Builder {
-	b.mv = mv
+func (b *Builder) WithResourceValidators(rv ResourceValidators) *Builder {
+	b.rv = rv
 	return b
 }
 
@@ -287,8 +286,8 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.kdsctx == nil {
 		return nil, errors.Errorf("KDSContext has not been configured")
 	}
-	if b.mv == nil {
-		return nil, errors.Errorf("MeshValidator has not been configured")
+	if b.rv == (ResourceValidators{}) {
+		return nil, errors.Errorf("ResourceValidators have not been configured")
 	}
 	if b.au == nil {
 		return nil, errors.Errorf("API Server Authenticator has not been configured")
@@ -319,7 +318,7 @@ func (b *Builder) Build() (Runtime, error) {
 			cap:      b.cap,
 			dps:      b.dps,
 			kdsctx:   b.kdsctx,
-			mv:       b.mv,
+			rv:       b.rv,
 			au:       b.au,
 			acc:      b.acc,
 			appCtx:   b.appCtx,
@@ -391,8 +390,8 @@ func (b *Builder) DpServer() *dp_server.DpServer {
 func (b *Builder) KDSContext() *kds_context.Context {
 	return b.kdsctx
 }
-func (b *Builder) MeshValidator() core_managers.MeshValidator {
-	return b.mv
+func (b *Builder) ResourceValidators() ResourceValidators {
+	return b.rv
 }
 func (b *Builder) APIServerAuthenticator() authn.Authenticator {
 	return b.au
