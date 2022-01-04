@@ -24,7 +24,7 @@ import (
 func unregisteredCRD(scheme *kube_runtime.Scheme, chartFile *data.File) bool {
 	types := scheme.AllKnownTypes()
 
-	if !strings.HasPrefix(chartFile.FullPath, "crds/") {
+	if !strings.Contains(chartFile.FullPath, "crds/") {
 		return false
 	}
 
