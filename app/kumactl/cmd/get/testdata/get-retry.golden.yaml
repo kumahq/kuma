@@ -1,3 +1,8 @@
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: retry-1
+type: Retry
 conf:
   http:
     backOff:
@@ -8,14 +13,9 @@ conf:
     retriableStatusCodes:
     - 500
     - 501
-creationTime: "0001-01-01T00:00:00Z"
 destinations:
 - match:
     service: backend
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: retry-1
 sources:
 - match:
     service: web
-type: Retry

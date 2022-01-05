@@ -1,3 +1,8 @@
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: circuit-breaker-1
+type: CircuitBreaker
 conf:
   baseEjectionTime: 5s
   detectors:
@@ -8,15 +13,10 @@ conf:
     totalErrors: {}
   interval: 5s
   maxEjectionPercent: 50
-creationTime: "0001-01-01T00:00:00Z"
 destinations:
 - match:
     service: backend
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: circuit-breaker-1
 sources:
 - match:
     service: frontend
     version: "0.1"
-type: CircuitBreaker
