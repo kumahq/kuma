@@ -52,7 +52,9 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	class, err := getGatewayClass(ctx, r.Client, gateway.Spec.GatewayClassName)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to retrieve GatewayClass referenced by Gateway")
-	} else if class == nil {
+	}
+
+	if class.Spec.ControllerName != controllerName {
 		return kube_ctrl.Result{}, nil
 	}
 

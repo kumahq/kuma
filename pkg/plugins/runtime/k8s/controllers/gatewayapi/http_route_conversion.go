@@ -77,8 +77,6 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 		hostnames = append(hostnames, string(hn))
 	}
 
-	var blockerCondition *kube_meta.Condition
-
 	var rules []*mesh_proto.GatewayRoute_HttpRoute_Rule
 
 	for _, rule := range route.Spec.Rules {
@@ -87,28 +85,10 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 			return nil, nil, errors.Wrap(err, "couldn't convert HTTPRoute to Kuma GatewayRoute")
 		}
 		if condition != nil {
-			blockerCondition = condition
-			break
+			return nil, []kube_meta.Condition{*condition}, nil
 		}
 
 		rules = append(rules, &kumaRule)
-	}
-
-	if blockerCondition != nil {
-		// We complete the rest of the condition
-		blockerCondition.LastTransitionTime = kube_meta.Now()
-		blockerCondition.ObservedGeneration = route.GetGeneration()
-
-		return nil, []kube_meta.Condition{
-			*blockerCondition,
-			routeCondition(
-				route,
-				gatewayapi.ConditionRouteAccepted,
-				kube_meta.ConditionFalse,
-				"ConversionFailed",
-				fmt.Sprintf("Prevented by %s Condition", blockerCondition.Type),
-			),
-		}, nil
 	}
 
 	routeConf := mesh_proto.GatewayRoute_Conf{
@@ -284,20 +264,20 @@ func (r *HTTPRouteReconciler) gapiToKumaFilter(
 	case gatewayapi.HTTPRouteFilterRequestHeaderModifier:
 		filter := filter.RequestHeaderModifier
 
-		var kumaInnerFilter mesh_proto.GatewayRoute_HttpRoute_Filter_RequestHeader
+		var requestHeader mesh_proto.GatewayRoute_HttpRoute_Filter_RequestHeader
 
 		for _, set := range filter.Set {
-			kumaInnerFilter.Set = append(kumaInnerFilter.Set, k8sToKumaHeader(set))
+			requestHeader.Set = append(requestHeader.Set, k8sToKumaHeader(set))
 		}
 
 		for _, add := range filter.Add {
-			kumaInnerFilter.Add = append(kumaInnerFilter.Add, k8sToKumaHeader(add))
+			requestHeader.Add = append(requestHeader.Add, k8sToKumaHeader(add))
 		}
 
-		kumaInnerFilter.Remove = filter.Remove
+		requestHeader.Remove = filter.Remove
 
 		kumaFilter.Filter = &mesh_proto.GatewayRoute_HttpRoute_Filter_RequestHeader_{
-			RequestHeader: &kumaInnerFilter,
+			RequestHeader: &requestHeader,
 		}
 	case gatewayapi.HTTPRouteFilterRequestMirror:
 		filter := filter.RequestMirror
@@ -307,7 +287,7 @@ func (r *HTTPRouteReconciler) gapiToKumaFilter(
 			return nil, condition, err
 		}
 
-		kumaInnerFilter := mesh_proto.GatewayRoute_HttpRoute_Filter_Mirror{
+		mirror := mesh_proto.GatewayRoute_HttpRoute_Filter_Mirror{
 			Backend: &mesh_proto.GatewayRoute_Backend{
 				Destination: destinationRef,
 			},
@@ -315,34 +295,34 @@ func (r *HTTPRouteReconciler) gapiToKumaFilter(
 		}
 
 		kumaFilter.Filter = &mesh_proto.GatewayRoute_HttpRoute_Filter_Mirror_{
-			Mirror: &kumaInnerFilter,
+			Mirror: &mirror,
 		}
 	case gatewayapi.HTTPRouteFilterRequestRedirect:
 		filter := filter.RequestRedirect
 
-		kumaInnerFilter := mesh_proto.GatewayRoute_HttpRoute_Filter_Redirect{}
+		redirect := mesh_proto.GatewayRoute_HttpRoute_Filter_Redirect{}
 
 		if s := filter.Scheme; s != nil {
-			kumaInnerFilter.Scheme = *s
+			redirect.Scheme = *s
 		}
 
 		if h := filter.Hostname; h != nil {
-			kumaInnerFilter.Hostname = string(*h)
+			redirect.Hostname = string(*h)
 		}
 
 		if p := filter.Port; p != nil {
-			kumaInnerFilter.Port = uint32(*p)
+			redirect.Port = uint32(*p)
 		}
 
 		if sc := filter.StatusCode; sc != nil {
-			kumaInnerFilter.StatusCode = uint32(*sc)
+			redirect.StatusCode = uint32(*sc)
 		}
 
 		kumaFilter.Filter = &mesh_proto.GatewayRoute_HttpRoute_Filter_Redirect_{
-			Redirect: &kumaInnerFilter,
+			Redirect: &redirect,
 		}
 	default:
-		return nil, nil, fmt.Errorf("unsupported filter type %v", filter.Type)
+		return nil, nil, fmt.Errorf("unsupported filter type %q", filter.Type)
 	}
 
 	return &kumaFilter, nil, nil

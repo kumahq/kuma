@@ -35,8 +35,8 @@ func getReadyCondition(instance *mesh_k8s.GatewayInstance) *kube_meta.ConditionS
 }
 
 func setConditions(gateway *gatewayapi.Gateway, instance *mesh_k8s.GatewayInstance) {
-	readinessStatus := kube_meta.ConditionUnknown                   //nolint:ineffassign
-	readinessReason := gatewayapi.GatewayConditionReason("Unknown") //nolint:ineffassign
+	readinessStatus := kube_meta.ConditionFalse
+	readinessReason := gatewayapi.GatewayReasonListenersNotReady
 
 	// TODO(michaelbeaumont) it'd be nice to get more up to date info from the
 	// kuma-dp instance to tell whether listeners are _really_ ready
@@ -46,9 +46,6 @@ func setConditions(gateway *gatewayapi.Gateway, instance *mesh_k8s.GatewayInstan
 	} else if ready := getReadyCondition(instance); ready != nil && *ready == kube_meta.ConditionTrue {
 		readinessStatus = kube_meta.ConditionTrue
 		readinessReason = gatewayapi.GatewayReasonReady
-	} else {
-		readinessStatus = kube_meta.ConditionFalse
-		readinessReason = gatewayapi.GatewayReasonListenersNotReady
 	}
 
 	gateway.Status.Conditions = []kube_meta.Condition{
