@@ -21,6 +21,9 @@ default:
       name: triage/duplicated
       description: "already exists"
     - color: ffaa00
+      name: triage/needs-reproducing
+      description: "Someone else should try to reproduce this"
+    - color: ffaa00
       name: triage/not-reproducible
       description: "Couldn't reproduce this issue. If you add information remove this label and reopen the issue"
     - color: c7def8
