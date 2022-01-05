@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	kube_ctrlr "sigs.k8s.io/controller-runtime/pkg/controller"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -74,8 +75,21 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 		return err
 	}
 
-	b.WithComponentManager(&kubeComponentManager{mgr, systemNamespace, nil})
-	b.WithExtensions(k8s_extensions.NewManagerContext(b.Extensions(), mgr))
+	// We can't pass kubeComponentManager into NewManagerContext because of
+	// conflicting method signatures.
+	kubeManagerWrapper := &kubeManagerWrapper{
+		Manager:     mgr,
+		controllers: nil,
+	}
+	b.WithExtensions(k8s_extensions.NewManagerContext(b.Extensions(), kubeManagerWrapper))
+
+	kcm := &kubeComponentManager{
+		kubeManagerWrapper:         kubeManagerWrapper,
+		oldLeaderElectionNamespace: systemNamespace,
+		leaderComponents:           nil,
+	}
+	b.WithComponentManager(kcm)
+
 	b.WithExtensions(k8s_extensions.NewSecretClientContext(b.Extensions(), secretClient))
 	if expTime := b.Config().Runtime.Kubernetes.MarshalingCacheExpirationTime; expTime > 0 {
 		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewCachingConverter(expTime)))
@@ -146,8 +160,35 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 	return nil
 }
 
-type kubeComponentManager struct {
+// kubeManagerWrapper exists in order to intercept Manager.Add calls on
+// controllers so that we can start them independently of Manager.Start.
+type kubeManagerWrapper struct {
 	kube_ctrl.Manager
+	controllers []kube_ctrlr.Controller
+}
+
+// Add calls Manager.Add and passes the runnable.
+// If the runnable is a Controller, it will not be immediately Added.
+// Controllers must be explicitly added by calling AddControllers.
+func (kmw *kubeManagerWrapper) Add(runnable kube_manager.Runnable) error {
+	if ctrler, ok := runnable.(kube_ctrlr.Controller); ok {
+		kmw.controllers = append(kmw.controllers, ctrler)
+		return nil
+	}
+	return kmw.Manager.Add(runnable)
+}
+
+// AddControllers calls Manager.Add on any accumulated controllers.
+func (kmw *kubeManagerWrapper) AddControllersToManager() {
+	for _, c := range kmw.controllers {
+		if err := kmw.Manager.Add(c); err != nil {
+			log.Error(err, "add controller error")
+		}
+	}
+}
+
+type kubeComponentManager struct {
+	*kubeManagerWrapper
 	oldLeaderElectionNamespace string
 	leaderComponents           []component.Component
 }
@@ -177,6 +218,18 @@ func makeOldLockAnnotation() string {
 
 	annotJson, _ := json.Marshal(annot)
 	return string(annotJson)
+}
+
+// startLeaderComponents adds all components that need leader election to the
+// Manager. The Manager should be running already, any components added after
+// that are started immediately.
+func (cm *kubeComponentManager) startLeaderComponents() {
+	for _, c := range cm.leaderComponents {
+		if err := cm.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
+			log.Error(err, "add component error")
+		}
+	}
+	cm.kubeManagerWrapper.AddControllersToManager()
 }
 
 // Previous versions of kuma-cp used a timeout lock for leader election. We now
@@ -276,11 +329,7 @@ func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 			log.Error(err, "error attempting to clean up deprecated lock")
 			os.Exit(1)
 		}
-		for _, c := range cm.leaderComponents {
-			if err := cm.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
-				log.Error(err, "add component error")
-			}
-		}
+		cm.startLeaderComponents()
 	}()
 	return cm.Manager.Start(ctx)
 }
