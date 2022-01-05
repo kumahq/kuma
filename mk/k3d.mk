@@ -3,25 +3,28 @@ CI_K3S_VERSION ?= v1.21.1-k3s1
 
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
-PORT_PREFIX := $$(( $(subst kuma-,30,$(KIND_CLUSTER_NAME)) - 1 ))
+PORT_PREFIX:=300
+ifeq ($(KIND_CLUSTER_NAME), kuma-2)
+PORT_PREFIX=301
+endif
 
 .PHONY: k3d/network/create
 k3d/network/create:
 	@touch $(BUILD_DIR)/k3d_network.lock
-	@flock -x $(BUILD_DIR)/k3d_network.lock -c 'docker network create -d=bridge -o com.docker.network.bridge.enable_ip_masquerade=true --ipv6 --subnet "fd00:fd12:3456::0/64" kind || true;' \
-		|| docker network create -d=bridge -o com.docker.network.bridge.enable_ip_masquerade=true --ipv6 --subnet "fd00:fd12:3456::0/64" kind || true
+	@if [[ `which flock` ]]; then flock -x $(BUILD_DIR)/k3d_network.lock -c 'docker network create -d=bridge -o com.docker.network.bridge.enable_ip_masquerade=true --ipv6 --subnet "fd00:fd12:3456::0/64" kind || true'; \
+		else docker network create -d=bridge -o com.docker.network.bridge.enable_ip_masquerade=true --ipv6 --subnet "fd00:fd12:3456::0/64" kind || true; fi
 	@rm -f $(BUILD_DIR)/k3d_network.lock
 
 .PHONY: k3d/start
 k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
-	@KUBECONFIG=$(KIND_KUBECONFIG)  \
-		 k3d cluster create "$(KIND_CLUSTER_NAME)" \
-		 	  -i rancher/k3s:$(CI_K3S_VERSION) \
-			  --k3s-arg '--no-deploy=traefik@server:0' \
-			  --k3s-arg '--disable=metrics-server@server:0' \
-			  --network kind \
-			  --port "$(PORT_PREFIX)80-$(PORT_PREFIX)89:30080-30089@server:0" \
-			  --timeout 120s && \
+	@KUBECONFIG=$(KIND_KUBECONFIG) \
+		k3d cluster create "$(KIND_CLUSTER_NAME)" \
+			-i rancher/k3s:$(CI_K3S_VERSION) \
+			--k3s-arg '--no-deploy=traefik@server:0' \
+			--k3s-arg '--disable=metrics-server@server:0' \
+			--network kind \
+			--port "$(PORT_PREFIX)80-$(PORT_PREFIX)89:30080-30089@server:0" \
+			--timeout 120s && \
 	$(MAKE) k3d/wait
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
