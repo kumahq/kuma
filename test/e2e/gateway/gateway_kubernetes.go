@@ -271,7 +271,7 @@ spec:
 				return mesh
 			})
 
-			DeployCluster(append(KumaUniversalDeployOpts, mtls)...)
+			DeployCluster(append(KumaK8sDeployOpts, mtls)...)
 		})
 
 		It("should proxy simple HTTP requests", ProxySimpleRequests("/", "kubernetes"))
