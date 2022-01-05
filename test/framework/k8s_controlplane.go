@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
@@ -382,15 +381,10 @@ func (c *K8sControlPlane) UpdateObject(
 		return err
 	}
 
-	KubectlReplaceFromStringE := func(t testing.TestingT, options *k8s.KubectlOptions, configData string) error {
-		tmpfile, err := k8s.StoreConfigToTempFileE(t, configData)
-		if err != nil {
-			return err
-		}
-		defer os.Remove(tmpfile)
-
-		return k8s.RunKubectlE(t, options, "replace", "-f", tmpfile)
+	if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), string(yaml)); err != nil {
+		return errors.Wrapf(err, "failed to update %s object %q with: %q",
+			typeName, objectName, yaml)
 	}
 
-	return KubectlReplaceFromStringE(c.t, c.GetKubectlOptions(), string(yaml))
+	return nil
 }
