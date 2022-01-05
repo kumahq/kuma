@@ -772,7 +772,7 @@ spec:
       serviceAccountName: prometheus-node-exporter
       containers:
         - name: prometheus-node-exporter
-          image: "prom/node-exporter:v1.2.2"
+          image: "prom/node-exporter:v1.3.1"
           imagePullPolicy: "IfNotPresent"
           args:
             - --path.procfs=/host/proc
@@ -858,7 +858,7 @@ spec:
       serviceAccountName: prometheus-pushgateway
       containers:
         - name: prometheus-pushgateway
-          image: "prom/pushgateway:v1.4.1"
+          image: "prom/pushgateway:v1.4.2"
           imagePullPolicy: "IfNotPresent"
           args:
           ports:
@@ -893,7 +893,7 @@ spec:
       serviceAccountName: prometheus-server
       containers:
         - name: prometheus-server-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.5.0"
+          image: "jimmidyson/configmap-reload:v0.6.1"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
@@ -905,7 +905,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v2.29.1"
+          image: "prom/prometheus:v2.32.1"
           imagePullPolicy: "IfNotPresent"
           args:
             - --storage.tsdb.retention.time=15d
@@ -961,7 +961,7 @@ spec:
       serviceAccountName: prometheus-alertmanager
       containers:
         - name: prometheus-alertmanager
-          image: "prom/alertmanager:v0.22.2"
+          image: "prom/alertmanager:v0.23.0"
           imagePullPolicy: "IfNotPresent"
           env:
             - name: POD_IP
@@ -985,7 +985,7 @@ spec:
               mountPath: "/data"
               subPath: ""
         - name: prometheus-alertmanager-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.5.0"
+          image: "jimmidyson/configmap-reload:v0.6.1"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
