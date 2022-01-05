@@ -14,6 +14,8 @@ help: ## Display this help screen
 	done
 
 include mk/dev.mk
+
+include mk/api.mk
 include mk/build.mk
 include mk/check.mk
 include mk/test.mk

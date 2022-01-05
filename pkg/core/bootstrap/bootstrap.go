@@ -85,7 +85,11 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	if err := initializeDNSResolver(cfg, builder); err != nil {
 		return nil, err
 	}
-	builder.WithMeshValidator(mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()))
+	builder.WithResourceValidators(core_runtime.ResourceValidators{
+		Dataplane: dataplane.NewMembershipValidator(),
+		Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
+	})
+
 	if err := initializeResourceManager(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -338,7 +342,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	customizableManager.Customize(
 		mesh.MeshType,
-		mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.MeshValidator()),
+		mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.ResourceValidators().Mesh),
 	)
 
 	rateLimitValidator := ratelimit_managers.RateLimitValidator{
@@ -359,7 +363,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	customizableManager.Customize(
 		mesh.DataplaneType,
-		dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Zone.Name),
+		dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Zone.Name, builder.ResourceValidators().Dataplane),
 	)
 
 	customizableManager.Customize(

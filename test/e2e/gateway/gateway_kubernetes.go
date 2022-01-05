@@ -271,9 +271,33 @@ spec:
 				return mesh
 			})
 
-			DeployCluster(append(KumaUniversalDeployOpts, mtls)...)
+			DeployCluster(append(KumaK8sDeployOpts, mtls)...)
 		})
 
 		It("should proxy simple HTTP requests", ProxySimpleRequests("/", "kubernetes"))
+
+		// In mTLS mode, only the presence of TrafficPermission rules allow services to receive
+		// traffic, so removing the permission should cause requests to fail. We use this to
+		// prove that mTLS is enabled
+		It("should fail without TrafficPermission", func() {
+			Expect(k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(),
+				"delete", "trafficpermission", "allow-all-default")).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				target := fmt.Sprintf("http://%s/%s",
+					net.JoinHostPort(GatewayInstanceAddress("edge-gateway"), "8080"),
+					path.Join("test", url.PathEscape(GinkgoT().Name())),
+				)
+
+				status, err := testutil.CollectFailure(
+					cluster, "gateway-client", target,
+					testutil.FromKubernetesPod(ClientNamespace, "gateway-client"),
+					testutil.WithHeader("Host", "example.kuma.io"),
+				)
+
+				g.Expect(err).To(Succeed())
+				g.Expect(status.ResponseCode).To(Equal(503))
+			}, "30s", "1s").Should(Succeed())
+		})
 	})
 }

@@ -364,8 +364,8 @@ func (c *K8sControlPlane) UpdateObject(
 		return err
 	}
 
-	if err := scheme.Convert(u, obj, nil); err != nil {
-		return nil
+	if err := scheme.Convert(&u, obj, nil); err != nil {
+		return err
 	}
 
 	obj = update(obj)

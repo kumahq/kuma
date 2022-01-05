@@ -1,15 +1,3 @@
-.PHONY: help clean generate build test check \
-		dev/tools install/protoc install/protoc-gen-go install/protoc-gen-validate \
-		install/protobuf-wellknown-types install/data-plane-api \
-		protoc protoc/mesh/v1alpha1 protoc/observability/v1alpha1 protoc/system/v1alpha1
-
-CI_TOOLS_DIR ?= $(HOME)/bin
-GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
-GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
-export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
-
-PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
-PROTOBUF_WKT_DIR := $(CI_TOOLS_DIR)/protobuf.d
 
 #
 # Re-usable snippets
@@ -19,9 +7,6 @@ define go_mod_latest_version
 	find $(GOPATH_DIR)/pkg/mod/$(1) -maxdepth 1 -name '$(2)@*' | xargs -L 1 basename | sort -r | head -1 | awk -F@ '{print $$2}'
 endef
 
-PROTOC_VERSION := 3.14.0
-PROTOC_PGV_VERSION := v0.4.1
-GOLANG_PROTOBUF_VERSION := v1.5.2
 DATAPLANE_API_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/envoyproxy,data-plane-api))
 UDPA_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/cncf,udpa))
 GOOGLEAPIS_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/googleapis,googleapis))
@@ -96,34 +81,17 @@ PROTOC_KUMADOC := $(PROTOC) \
 	--kumadoc_out=$(DOCS_OUTPUT_PATH) \
 	$(additional_params)
 
-PROTOC_OS=unknown
-PROTOC_ARCH=$(shell uname -m)
-
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S), Linux)
-	PROTOC_OS=linux
-else
-	ifeq ($(UNAME_S), Darwin)
-		PROTOC_OS=osx
-	endif
-endif
-
-help: ## Display this help screen
-	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
-generate: protoc/mesh protoc/mesh/v1alpha1 protoc/observability/v1 protoc/system/v1alpha1 ## Process .proto definitions
-
 protoc/mesh:
-	$(PROTOC_GO) mesh/*.proto
+	cd api && $(PROTOC_GO) mesh/*.proto
 
 protoc/mesh/v1alpha1:
-	$(PROTOC_GO) mesh/v1alpha1/*.proto
+	cd api && $(PROTOC_GO) mesh/v1alpha1/*.proto
 
 protoc/observability/v1:
-	$(PROTOC_GO) observability/v1/*.proto
+	cd api && $(PROTOC_GO) observability/v1/*.proto
 
 protoc/system/v1alpha1:
-	$(PROTOC_GO) system/v1alpha1/*.proto
+	cd api && $(PROTOC_GO) system/v1alpha1/*.proto
 
-generate/docs:
-	$(PROTOC_KUMADOC) mesh/v1alpha1/*.proto
+protodoc/mesh/v1alpha1: ## Generate Mesh API reference
+	cd api && $(PROTOC_KUMADOC) mesh/v1alpha1/*.proto

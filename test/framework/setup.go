@@ -125,9 +125,9 @@ func WaitService(namespace, service string) InstallFunc {
 	}
 }
 
-func WaitNumPods(num int, app string) InstallFunc {
+func WaitNumPods(namespace string, num int, app string) InstallFunc {
 	return func(c Cluster) error {
-		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(),
+		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(namespace),
 			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", app),
 			}, num, DefaultRetries, DefaultTimeout)
@@ -225,7 +225,7 @@ spec:
 `
 	return Combine(
 		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage())),
-		WaitNumPods(1, name),
+		WaitNumPods(TestNamespace, 1, name),
 		WaitPodsAvailable(TestNamespace, name),
 	)
 }

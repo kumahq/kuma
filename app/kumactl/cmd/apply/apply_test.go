@@ -414,9 +414,9 @@ var _ = Describe("kumactl apply", func() {
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: sample
+type: Dataplane
 networking:
   address: 2.2.2.2
-type: Dataplane
 `))
 	})
 
@@ -461,7 +461,8 @@ type: Dataplane
 			err := rootCmd.Execute()
 
 			// then
-			Expect(err).To(MatchError(given.err))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(given.err))
 		},
 		Entry("no mesh", testCase{
 			resource: `
@@ -485,7 +486,7 @@ mesh: default
 networking:
   inbound: 0 # should be a string
 `,
-			err: "YAML contains invalid resource: invalid Dataplane object \"dp-1\": json: cannot unmarshal number into Go value of type []json.RawMessage",
+			err: `YAML contains invalid resource: invalid Dataplane object "dp-1"`,
 		}),
 		Entry("no resource", testCase{
 			resource: ``,
