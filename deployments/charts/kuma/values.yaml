@@ -98,7 +98,7 @@ controlPlane:
   tls:
     general:
       # -- Secret that contains tls.crt, key.crt [and ca.crt when no
-      # controlPlane.tls.general.coSecretName specified] for protecting
+      # controlPlane.tls.general.caSecretName specified] for protecting
       # Kuma in-cluster communication
       secretName: ""
       # -- Secret that contains ca.crt for protecting Kuma in-cluster communication
