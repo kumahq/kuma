@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
@@ -18,7 +19,7 @@ import (
 // which reconcile Dataplane's state. In scope of one mesh ClusterLoadAssignment
 // will be the same for each service so no need to reconcile for each dataplane.
 type Cache struct {
-	cache  *once.Cache
+	cache *once.Cache
 }
 
 func NewCache(
@@ -30,7 +31,7 @@ func NewCache(
 		return nil, err
 	}
 	return &Cache{
-		cache:  c,
+		cache: c,
 	}, nil
 }
 
@@ -41,9 +42,15 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster e
 		// For the majority of cases we don't have custom tags, we can just take a slice
 		endpoints := endpointMap[cluster.Service()]
 		if len(cluster.Tags()) > 0 {
+			matchTags := map[string]string{}
+			for tag, val := range cluster.Tags() {
+				if tag != mesh_proto.ServiceTag {
+					matchTags[tag] = val
+				}
+			}
 			endpoints = []xds.Endpoint{}
 			for _, endpoint := range endpointMap[cluster.Service()] {
-				if endpoint.ContainsTags(cluster.Tags()) {
+				if endpoint.ContainsTags(matchTags) {
 					endpoints = append(endpoints, endpoint)
 				}
 			}

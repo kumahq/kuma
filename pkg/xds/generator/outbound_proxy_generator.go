@@ -307,7 +307,7 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *me
 				envoy_common.WithName(name),
 				envoy_common.WithWeight(destination.GetWeight().GetValue()),
 				envoy_common.WithTags(destination.Destination),
-				envoy_common.WithoutTag(mesh_proto.ServiceTag),
+				//envoy_common.WithoutTag(mesh_proto.ServiceTag),
 				envoy_common.WithTimeout(timeoutConf),
 				envoy_common.WithLB(route.Spec.GetConf().GetLoadBalancer()),
 				envoy_common.WithExternalService(isExternalService),
