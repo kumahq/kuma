@@ -29,12 +29,12 @@ coverage: ${COVERAGE_PROFILE}
 
 .PHONY: test/kuma-cp
 test/kuma-cp: PKG_LIST=./app/kuma-cp/... ./pkg/config/app/kuma-cp/...
-test/kuma-cp: test/kuma ## Dev: Run `kuma-cp` tests only
+test/kuma-cp: test ## Dev: Run `kuma-cp` tests only
 
 .PHONY: test/kuma-dp
 test/kuma-dp: PKG_LIST=./app/kuma-dp/... ./pkg/config/app/kuma-dp/...
-test/kuma-dp: test/kuma ## Dev: Run `kuma-dp` tests only
+test/kuma-dp: test ## Dev: Run `kuma-dp` tests only
 
 .PHONY: test/kumactl
 test/kumactl: PKG_LIST=./app/kumactl/... ./pkg/config/app/kumactl/...
-test/kumactl: test/kuma ## Dev: Run `kumactl` tests only
+test/kumactl: test ## Dev: Run `kumactl` tests only
