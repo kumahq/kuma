@@ -365,6 +365,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 			// when
 			metrics, err := core_metrics.NewMetrics("Standalone")
+			Expect(err).ToNot(HaveOccurred())
 			given.ctx.Mesh.EndpointMap = outboundTargets
 			given.ctx.ControlPlane.CLACache, err = cla.NewCache(0*time.Second, metrics)
 			Expect(err).ToNot(HaveOccurred())
