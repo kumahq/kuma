@@ -361,7 +361,10 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 
 	for _, dpOverview := range dpOverviews.Items {
 		dpInsight := dpOverview.Spec.DataplaneInsight
-		dpSubscription, _ := dpInsight.GetLatestSubscription()
+		dpSubscription, ok := dpInsight.GetLastSubscription().(*mesh_proto.DiscoverySubscription)
+		if !ok {
+			dpSubscription = nil
+		}
 		kumaDpVersion := getOrDefault(dpSubscription.GetVersion().GetKumaDp().GetVersion())
 		envoyVersion := getOrDefault(dpSubscription.GetVersion().GetEnvoy().GetVersion())
 		networking := dpOverview.Spec.GetDataplane().GetNetworking()
