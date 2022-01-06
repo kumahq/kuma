@@ -2,29 +2,22 @@
   "total": 2,
   "items": [
     {
-      "metrics": {
-        "enabledBackend": "prometheus-1",
+      "type": "Mesh",
+      "name": "mesh1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "mtls": {
+        "enabledBackend": "builtin-1",
         "backends": [
           {
-            "name": "prometheus-1",
-            "type": "prometheus",
-            "conf": {
-              "port": 1234,
-              "path": "/non-standard-path"
-            }
+            "name": "builtin-1",
+            "type": "builtin"
           },
           {
-            "name": "prometheus-2",
-            "type": "prometheus",
-            "conf": {
-              "port": 1235,
-              "path": "/non-standard-path"
-            }
+            "name": "builtin-2",
+            "type": "builtin"
           }
         ]
-      },
-      "routing": {
-        "localityAwareLoadBalancing": true
       },
       "tracing": {
         "backends": [
@@ -62,32 +55,39 @@
           }
         ]
       },
-      "mtls": {
-        "enabledBackend": "builtin-1",
+      "metrics": {
+        "enabledBackend": "prometheus-1",
         "backends": [
           {
-            "name": "builtin-1",
-            "type": "builtin"
+            "name": "prometheus-1",
+            "type": "prometheus",
+            "conf": {
+              "path": "/non-standard-path",
+              "port": 1234
+            }
           },
           {
-            "name": "builtin-2",
-            "type": "builtin"
+            "name": "prometheus-2",
+            "type": "prometheus",
+            "conf": {
+              "path": "/non-standard-path",
+              "port": 1235
+            }
           }
         ]
       },
-      "name": "mesh1",
-      "type": "Mesh",
-      "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
+      "routing": {
+        "localityAwareLoadBalancing": true
+      }
     },
     {
-      "metrics": {},
+      "type": "Mesh",
+      "name": "mesh2",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
       "tracing": {},
       "logging": {},
-      "name": "mesh2",
-      "type": "Mesh",
-      "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z"
+      "metrics": {}
     }
   ],
   "next": null
