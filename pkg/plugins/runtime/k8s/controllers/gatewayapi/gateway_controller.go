@@ -15,14 +15,10 @@ import (
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 // GatewayReconciler reconciles a GatewayAPI Gateway object.
@@ -31,7 +27,7 @@ type GatewayReconciler struct {
 	Log logr.Logger
 
 	Scheme          *kube_runtime.Scheme
-	Converter       k8s_common.Converter
+	TypeRegistry    k8s_registry.TypeRegistry
 	SystemNamespace string
 	ProxyFactory    containers.DataplaneProxyFactory
 	ResourceManager manager.ResourceManager
@@ -43,7 +39,8 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	gateway := &gatewayapi.Gateway{}
 	if err := r.Get(ctx, req.NamespacedName, gateway); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return kube_ctrl.Result{}, nil
+			err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, &mesh_proto.Gateway{}, nil)
+			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned Gateway.kuma.io")
 		}
 
 		return kube_ctrl.Result{}, err
@@ -58,25 +55,18 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, nil
 	}
 
-	coreName := util_k8s.K8sNamespacedNameToCoreName(gateway.Name, gateway.Namespace)
-	mesh := k8s_util.MeshFor(gateway)
+	gatewaySpec, err := r.gapiToKumaGateway(gateway)
+	if err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "error generating Gateway.kuma.io")
+	}
 
-	resource := core_mesh.NewGatewayResource()
-
-	if err := manager.Upsert(r.ResourceManager, model.ResourceKey{Mesh: mesh, Name: coreName}, resource, func(resource model.Resource) error {
-		gatewaySpec, err := r.gapiToKumaGateway(gateway)
-		if err != nil {
-			return errors.Wrap(err, "could not create Kuma Gateway spec")
-		}
-
-		return resource.SetSpec(gatewaySpec)
-	}); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not upsert Gateway")
+	if err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, &mesh_proto.Gateway{}, gatewaySpec); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned Gateway.kuma.io")
 	}
 
 	gatewayInstance, err := r.createOrUpdateInstance(ctx, gateway)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to create GatewayInstance")
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile GatewayInstance")
 	}
 
 	if err := r.updateStatus(ctx, gateway, gatewayInstance); err != nil {
