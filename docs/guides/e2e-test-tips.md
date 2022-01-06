@@ -102,4 +102,3 @@ $ make dev/envrc
 direnv: loading ~/upstream/konghq/kuma/.envrc
 direnv: export +CI_TOOLS_DIR +KUBECONFIG
 ```
-
