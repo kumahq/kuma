@@ -112,7 +112,7 @@ spec:
       serviceAccountName: prometheus-alertmanager
       containers:
         - name: prometheus-alertmanager
-          image: "prom/alertmanager:v0.22.2"
+          image: "prom/alertmanager:v0.23.0"
           imagePullPolicy: "IfNotPresent"
           env:
             - name: POD_IP
@@ -136,7 +136,7 @@ spec:
               mountPath: "/data"
               subPath: ""
         - name: prometheus-alertmanager-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.5.0"
+          image: "jimmidyson/configmap-reload:v0.6.1"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
