@@ -575,6 +575,10 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 						panic(err.Error())
 					}
 
+					// Note that at this point we might have lost some Kubernetes
+					// resource metadata. That probably doesn't matter for Mesh objects
+					// though.
+
 					return meshObj
 				})
 			if err != nil {
