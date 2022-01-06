@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -48,10 +49,12 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster e
 					matchTags[tag] = val
 				}
 			}
-			endpoints = []xds.Endpoint{}
-			for _, endpoint := range endpointMap[cluster.Service()] {
-				if endpoint.ContainsTags(matchTags) {
-					endpoints = append(endpoints, endpoint)
+			if len(matchTags) > 0 {
+				endpoints = []xds.Endpoint{}
+				for _, endpoint := range endpointMap[cluster.Service()] {
+					if endpoint.ContainsTags(matchTags) {
+						endpoints = append(endpoints, endpoint)
+					}
 				}
 			}
 		}

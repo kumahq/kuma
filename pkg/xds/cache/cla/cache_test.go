@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/test/matchers"
-	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/xds"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 )
 
 var _ = Describe("ClusterLoadAssignment Cache", func() {
@@ -36,7 +36,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 			"backend": []xds.Endpoint{
 				{
 					Target: "192.168.0.1",
-					Port: uint32(1000),
+					Port:   uint32(1000),
 				},
 			},
 		}
@@ -55,13 +55,13 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 			"backend": []xds.Endpoint{
 				{
 					Target: "192.168.0.1",
-					Port: uint32(1000),
+					Port:   uint32(1000),
 				},
 			},
 			"web": []xds.Endpoint{
 				{
 					Target: "192.168.0.2",
-					Port: uint32(1000),
+					Port:   uint32(1000),
 				},
 			},
 		}
@@ -91,14 +91,14 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 			"backend": []xds.Endpoint{
 				{
 					Target: "192.168.0.1",
-					Port: uint32(1000),
+					Port:   uint32(1000),
 					Tags: map[string]string{
 						"version": "v1",
 					},
 				},
 				{
 					Target: "192.168.0.2",
-					Port: uint32(1000),
+					Port:   uint32(1000),
 					Tags: map[string]string{
 						"version": "v2",
 					},

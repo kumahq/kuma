@@ -11,8 +11,8 @@ import (
 )
 
 type Context struct {
-	ControlPlane     *ControlPlaneContext
-	Mesh             *MeshContext
+	ControlPlane *ControlPlaneContext
+	Mesh         *MeshContext
 }
 
 type ConnectionInfo struct {
