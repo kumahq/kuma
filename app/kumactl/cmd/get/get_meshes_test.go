@@ -165,10 +165,8 @@ var _ = Describe("kumactl get meshes", func() {
 					ExecuteRootCommand(rootCmd, "meshes", given.outputFormat, given.pagination),
 				).To(Succeed())
 
-				// when
-				expected := given.goldenFile
 				// then
-				Expect(buf.String()).To(given.matcher("testdata", expected))
+				Expect(buf.String()).To(given.matcher("testdata", given.goldenFile))
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",

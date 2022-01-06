@@ -2,6 +2,7 @@
   "total": 2,
   "items": [
     {
+      "type": "TrafficTrace",
       "mesh": "default",
       "name": "web1",
       "creationTime": "0001-01-01T00:00:00Z",
@@ -16,10 +17,10 @@
       ],
       "conf": {
         "backend": "zipkin"
-      },
-      "type": "TrafficTrace"
+      }
     },
     {
+      "type": "TrafficTrace",
       "mesh": "default",
       "name": "web2",
       "creationTime": "0001-01-01T00:00:00Z",
@@ -34,8 +35,7 @@
       ],
       "conf": {
         "backend": "zipkin"
-      },
-      "type": "TrafficTrace"
+      }
     }
   ],
   "next": null

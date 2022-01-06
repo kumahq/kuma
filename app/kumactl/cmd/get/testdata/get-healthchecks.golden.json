@@ -2,16 +2,16 @@
   "total": 2,
   "items": [
     {
+      "type": "HealthCheck",
       "mesh": "default",
       "name": "web-to-backend",
-      "type": "HealthCheck",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z"
     },
     {
+      "type": "HealthCheck",
       "mesh": "default",
       "name": "backend-to-db",
-      "type": "HealthCheck",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z"
     }

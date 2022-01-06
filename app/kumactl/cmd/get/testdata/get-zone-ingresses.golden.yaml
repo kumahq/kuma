@@ -1,42 +1,42 @@
 items:
-  - availableServices:
-      - mesh: mesh-1
-        tags:
-          kuma.io/service: svc-1
-      - mesh: mesh-2
-        tags:
-          kuma.io/service: svc-2
-      - mesh: mesh-3
-        tags:
-          kuma.io/service: svc-3
-    creationTime: "0001-01-01T00:00:00Z"
-    modificationTime: "0001-01-01T00:00:00Z"
-    name: ingress-zone-1
-    networking:
-      address: 1.1.1.1
-      advertisedAddress: 2.2.2.2
-      advertisedPort: 20002
-      port: 10001
-    type: ZoneIngress
-  - availableServices:
-      - mesh: mesh-3
-        tags:
-          kuma.io/service: svc-2
-      - mesh: mesh-4
-        tags:
-          kuma.io/service: svc-3
-      - mesh: mesh-5
-        tags:
-          kuma.io/service: svc-4
-    creationTime: "0001-01-01T00:00:00Z"
-    modificationTime: "0001-01-01T00:00:00Z"
-    name: ingress-zone-2
-    networking:
-      address: 3.3.3.3
-      advertisedAddress: 4.4.4.4
-      advertisedPort: 40004
-      port: 30003
-    type: ZoneIngress
-    zone: us-east
+- availableServices:
+  - mesh: mesh-1
+    tags:
+      kuma.io/service: svc-1
+  - mesh: mesh-2
+    tags:
+      kuma.io/service: svc-2
+  - mesh: mesh-3
+    tags:
+      kuma.io/service: svc-3
+  creationTime: "0001-01-01T00:00:00Z"
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: ingress-zone-1
+  networking:
+    address: 1.1.1.1
+    advertisedAddress: 2.2.2.2
+    advertisedPort: 20002
+    port: 10001
+  type: ZoneIngress
+- availableServices:
+  - mesh: mesh-3
+    tags:
+      kuma.io/service: svc-2
+  - mesh: mesh-4
+    tags:
+      kuma.io/service: svc-3
+  - mesh: mesh-5
+    tags:
+      kuma.io/service: svc-4
+  creationTime: "0001-01-01T00:00:00Z"
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: ingress-zone-2
+  networking:
+    address: 3.3.3.3
+    advertisedAddress: 4.4.4.4
+    advertisedPort: 40004
+    port: 30003
+  type: ZoneIngress
+  zone: us-east
 next: null
 total: 2
