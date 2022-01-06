@@ -76,6 +76,8 @@ endif
 TEST_NAMES = $(shell ls -1 ./test/e2e)
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)
+GINKGO_E2E_FLAGS ?=
+GO_TEST_E2E:=ginkgo $(GOFLAGS) $(LD_FLAGS) $(GINKGO_E2E_FLAGS)
 
 ifdef K3D
 K8S_CLUSTER_TOOL=k3d
@@ -141,7 +143,7 @@ test/e2e/debug: build/kumactl images test/e2e/k8s/start
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 	$(ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
-		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
+		$(GO_TEST_E2E) --failFast $(E2E_PKG_LIST)
 	$(MAKE) test/e2e/k8s/stop
 
 # test/e2e/debug-fast is an experimental target tested with K3D=true.
@@ -158,7 +160,7 @@ test/e2e/debug-fast:
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 	$(ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
-		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
+		$(GO_TEST_E2E) --failFast $(E2E_PKG_LIST)
 	$(MAKE) test/e2e/k8s/stop
 
 # test/e2e/debug-universal is the same target as 'test/e2e/debug' but builds only 'kuma-universal' image
@@ -169,7 +171,7 @@ test/e2e/debug-universal: build/kumactl images/test
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 	$(ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
-		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
+		$(GO_TEST_E2E) --failFast $(E2E_PKG_LIST)
 
 
 .PHONY: test/e2e

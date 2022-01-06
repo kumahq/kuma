@@ -10,8 +10,6 @@ import (
 	"github.com/kumahq/kuma/test/framework"
 )
 
-var _ = Describe("Test Matching on Universal", matching.Universal)
-
 func TestE2EMatching(t *testing.T) {
 	if framework.IsK8sClustersStarted() {
 		test.RunSpecs(t, "E2E Retry Suite")
@@ -19,3 +17,5 @@ func TestE2EMatching(t *testing.T) {
 		t.SkipNow()
 	}
 }
+
+var _ = Describe("Test Matching on Universal", matching.Universal)

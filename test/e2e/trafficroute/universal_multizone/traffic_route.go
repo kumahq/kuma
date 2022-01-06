@@ -8,8 +8,8 @@ import (
 	"github.com/onsi/gomega/types"
 
 	"github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
+	. "github.com/kumahq/kuma/test/framework/client"
 )
 
 func KumaMultizone() {
@@ -240,8 +240,8 @@ conf:
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(v1Weight, 10)),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(v2Weight, 10)),
+				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", v1Weight, 10)),
+				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", v2Weight, 10)),
 			),
 		)
 	})
@@ -351,8 +351,8 @@ conf:
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(5, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(5, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 5, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 5, 1)),
 				),
 			)
 
@@ -361,8 +361,8 @@ conf:
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(2, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(8, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 2, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 8, 1)),
 				),
 			)
 		})
@@ -380,10 +380,10 @@ conf:
 					HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil())),
 					HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil())),
 					// todo(jakubdyszkiewicz) uncomment when https://github.com/kumahq/kuma/issues/2563 is fixed
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(10, 1)),
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(10, 1)),
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), ApproximatelyEqual(10, 1)),
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), ApproximatelyEqual(10, 1)),
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 10, 1)),
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 10, 1)),
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), BeNumerically("~", 10, 1)),
+					// HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), BeNumerically("~", 10, 1)),
 				),
 			)
 		})
