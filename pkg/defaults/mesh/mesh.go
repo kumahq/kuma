@@ -23,12 +23,12 @@ var log = core.Log.WithName("defaults").WithName("mesh")
 // 2 invocation can check that TrafficPermission is absent, but it was just created, so it tries to created it which results in error
 var ensureMux = sync.Mutex{}
 
-func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName string) error {
+func EnsureDefaultMeshResources(ctx context.Context, resManager manager.ResourceManager, meshName string) error {
 	ensureMux.Lock()
 	defer ensureMux.Unlock()
 	log.Info("ensuring default resources for Mesh exist", "mesh", meshName)
 
-	err, created := ensureDefaultResource(resManager, defaultTrafficPermissionResource, defaultTrafficPermissionKey(meshName))
+	err, created := ensureDefaultResource(ctx, resManager, defaultTrafficPermissionResource, defaultTrafficPermissionKey(meshName))
 	if err != nil {
 		return errors.Wrap(err, "could not create default TrafficPermission")
 	}
@@ -38,7 +38,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default TrafficPermission already exist", "mesh", meshName, "name", defaultTrafficPermissionKey(meshName).Name)
 	}
 
-	err, created = ensureDefaultResource(resManager, defaultTrafficRouteResource, defaultTrafficRouteKey(meshName))
+	err, created = ensureDefaultResource(ctx, resManager, defaultTrafficRouteResource, defaultTrafficRouteKey(meshName))
 	if err != nil {
 		return errors.Wrap(err, "could not create default TrafficRoute")
 	}
@@ -48,7 +48,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default TrafficRoute already exist", "mesh", meshName, "name", defaultTrafficRouteKey(meshName).Name)
 	}
 
-	err, created = ensureDefaultResource(resManager, defaultTimeoutResource, defaultTimeoutKey(meshName))
+	err, created = ensureDefaultResource(ctx, resManager, defaultTimeoutResource, defaultTimeoutKey(meshName))
 	if err != nil {
 		return errors.Wrap(err, "could not create default Timeout")
 	}
@@ -58,7 +58,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default Timeout already exist", "mesh", meshName, "name", defaultTimeoutKey(meshName).Name)
 	}
 
-	err, created = ensureDefaultResource(resManager, defaultCircuitBreakerResource, defaultCircuitBreakerKey(meshName))
+	err, created = ensureDefaultResource(ctx, resManager, defaultCircuitBreakerResource, defaultCircuitBreakerKey(meshName))
 	if err != nil {
 		return errors.Wrap(err, "could not create default CircuitBreaker")
 	}
@@ -68,7 +68,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default CircuitBreaker already exist", "mesh", meshName, "name", defaultCircuitBreakerKey(meshName).Name)
 	}
 
-	err, created = ensureDefaultResource(resManager, defaultRetryResource, defaultRetryKey(meshName))
+	err, created = ensureDefaultResource(ctx, resManager, defaultRetryResource, defaultRetryKey(meshName))
 	if err != nil {
 		return errors.Wrap(err, "could not create default Retry")
 	}
@@ -78,7 +78,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default Retry already exist", "mesh", meshName, "name", defaultRetryKey(meshName).Name)
 	}
 
-	created, err = ensureDataplaneTokenSigningKey(resManager, meshName)
+	created, err = ensureDataplaneTokenSigningKey(ctx, resManager, meshName)
 	if err != nil {
 		return errors.Wrap(err, "could not create default Dataplane Token Signing Key")
 	}
@@ -91,15 +91,15 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 	return nil
 }
 
-func ensureDefaultResource(resManager manager.ResourceManager, res model.Resource, resourceKey model.ResourceKey) (err error, created bool) {
-	err = resManager.Get(context.Background(), res, store.GetBy(resourceKey))
+func ensureDefaultResource(ctx context.Context, resManager manager.ResourceManager, res model.Resource, resourceKey model.ResourceKey) (err error, created bool) {
+	err = resManager.Get(ctx, res, store.GetBy(resourceKey))
 	if err == nil {
 		return nil, false
 	}
 	if !store.IsResourceNotFound(err) {
 		return errors.Wrap(err, "could not retrieve a resource"), false
 	}
-	if err := resManager.Create(context.Background(), res, store.CreateBy(resourceKey)); err != nil {
+	if err := resManager.Create(ctx, res, store.CreateBy(resourceKey)); err != nil {
 		return errors.Wrap(err, "could not create a resource"), false
 	}
 	return nil, true

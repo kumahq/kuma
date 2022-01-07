@@ -8,8 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
-func ensureDataplaneTokenSigningKey(resManager manager.ResourceManager, meshName string) (created bool, err error) {
-	ctx := context.Background()
+func ensureDataplaneTokenSigningKey(ctx context.Context, resManager manager.ResourceManager, meshName string) (created bool, err error) {
 	signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, issuer.DataplaneTokenSigningKeyPrefix(meshName), meshName)
 	_, _, err = signingKeyManager.GetLatestSigningKey(ctx)
 	if err == nil {
