@@ -10,8 +10,8 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var (
-	defaultTimeout = &mesh_proto.Timeout{
+var defaultTimeoutResource = &core_mesh.TimeoutResource{
+	Spec: &mesh_proto.Timeout{
 		Sources: []*mesh_proto.Selector{{
 			Match: mesh_proto.MatchAnyService(),
 		}},
@@ -31,11 +31,8 @@ var (
 				StreamIdleTimeout: util_proto.Duration(5 * time.Minute),
 			},
 		},
-	}
-	defaultTimeoutResource = &core_mesh.TimeoutResource{
-		Spec: defaultTimeout,
-	}
-)
+	},
+}
 
 // Timeout needs to contain mesh name inside it. Otherwise if the name is the same (ex. "allow-all") creating new mesh would fail because there is already resource of name "allow-all" which is unique key on K8S
 func defaultTimeoutKey(meshName string) model.ResourceKey {

@@ -8,8 +8,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-var (
-	defaultTrafficRoute = &mesh_proto.TrafficRoute{
+var defaultTrafficRouteResource = &core_mesh.TrafficRouteResource{
+	Spec: &mesh_proto.TrafficRoute{
 		Sources: []*mesh_proto.Selector{{
 			Match: mesh_proto.MatchAnyService(),
 		}},
@@ -22,11 +22,8 @@ var (
 				LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
 			},
 		},
-	}
-	defaultTrafficRouteResource = &core_mesh.TrafficRouteResource{
-		Spec: defaultTrafficRoute,
-	}
-)
+	},
+}
 
 // TrafficRoute needs to contain mesh name inside it. Otherwise if the name is the same (ex. "allow-all") creating new mesh would fail because there is already resource of name "allow-all" which is unique key on K8S
 func defaultTrafficRouteKey(meshName string) model.ResourceKey {

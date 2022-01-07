@@ -10,8 +10,8 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var (
-	defaultRetry = &mesh_proto.Retry{
+var defaultRetryResource = &core_mesh.RetryResource{
+	Spec: &mesh_proto.Retry{
 		Sources: []*mesh_proto.Selector{
 			{
 				Match: map[string]string{
@@ -47,11 +47,8 @@ var (
 				},
 			},
 		},
-	}
-	defaultRetryResource = &core_mesh.RetryResource{
-		Spec: defaultRetry,
-	}
-)
+	},
+}
 
 // Retry needs to contain mesh name inside it. Otherwise if the name is the
 //  same (ex. "retry-all") creating new mesh would fail because there is already

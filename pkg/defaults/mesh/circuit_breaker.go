@@ -9,8 +9,8 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var (
-	defaultCircuitBreaker = &mesh_proto.CircuitBreaker{
+var defaultCircuitBreakerResource = &core_mesh.CircuitBreakerResource{
+	Spec: &mesh_proto.CircuitBreaker{
 		Sources: []*mesh_proto.Selector{{
 			Match: mesh_proto.MatchAnyService(),
 		}},
@@ -25,11 +25,8 @@ var (
 				MaxRetries:         util_proto.UInt32(3),
 			},
 		},
-	}
-	defaultCircuitBreakerResource = &core_mesh.CircuitBreakerResource{
-		Spec: defaultCircuitBreaker,
-	}
-)
+	},
+}
 
 // CircuitBreaker needs to contain mesh name inside it. Otherwise if the name is the same (ex. "allow-all") creating new mesh would fail because there is already resource of name "allow-all" which is unique key on K8S
 func defaultCircuitBreakerKey(meshName string) model.ResourceKey {

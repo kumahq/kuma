@@ -8,8 +8,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-var (
-	defaultTrafficPermission = &mesh_proto.TrafficPermission{
+var defaultTrafficPermissionResource = &core_mesh.TrafficPermissionResource{
+	Spec: &mesh_proto.TrafficPermission{
 		Sources: []*mesh_proto.Selector{
 			{
 				Match: map[string]string{
@@ -24,11 +24,8 @@ var (
 				},
 			},
 		},
-	}
-	defaultTrafficPermissionResource = &core_mesh.TrafficPermissionResource{
-		Spec: defaultTrafficPermission,
-	}
-)
+	},
+}
 
 // TrafficPermission needs to contain mesh name inside it. Otherwise if the name is the same (ex. "allow-all") creating new mesh would fail because there is already resource of name "allow-all" which is unique key on K8S
 func defaultTrafficPermissionKey(meshName string) model.ResourceKey {
