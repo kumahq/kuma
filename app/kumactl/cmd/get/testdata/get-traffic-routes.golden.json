@@ -2,16 +2,16 @@
   "total": 2,
   "items": [
     {
+      "type": "TrafficRoute",
       "mesh": "default",
       "name": "web-to-backend",
-      "type": "TrafficRoute",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z"
     },
     {
+      "type": "TrafficRoute",
       "mesh": "default",
       "name": "backend-to-db",
-      "type": "TrafficRoute",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z"
     }

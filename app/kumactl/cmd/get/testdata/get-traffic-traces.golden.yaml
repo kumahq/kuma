@@ -1,25 +1,25 @@
-total: 2
 items:
-  - mesh: default
-    modificationTime: 0001-01-01T00:00:00Z
-    name: web1
-    selectors:
-    - match:
-        service: web1
-        version: "1.0"
-    conf:
-      backend: zipkin
-    creationTime: 0001-01-01T00:00:00Z
-    type: TrafficTrace
-  - mesh: default
-    modificationTime: 0001-01-01T00:00:00Z
-    name: web2
-    selectors:
-    - match:
-        service: web2
-        version: "1.0"
-    conf:
-      backend: zipkin
-    creationTime: 0001-01-01T00:00:00Z
-    type: TrafficTrace
+- conf:
+    backend: zipkin
+  creationTime: "0001-01-01T00:00:00Z"
+  mesh: default
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: web1
+  selectors:
+  - match:
+      service: web1
+      version: "1.0"
+  type: TrafficTrace
+- conf:
+    backend: zipkin
+  creationTime: "0001-01-01T00:00:00Z"
+  mesh: default
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: web2
+  selectors:
+  - match:
+      service: web2
+      version: "1.0"
+  type: TrafficTrace
 next: null
+total: 2
