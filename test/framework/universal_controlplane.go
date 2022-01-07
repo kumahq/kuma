@@ -49,7 +49,7 @@ func (c *UniversalControlPlane) GetKDSServerAddress() string {
 	return "grpcs://" + net.JoinHostPort(c.cluster.apps[AppModeCP].ip, "5685")
 }
 
-func (c *UniversalControlPlane) GetGlobaStatusAPI() string {
+func (c *UniversalControlPlane) GetGlobalStatusAPI() string {
 	panic("not implemented")
 }
 

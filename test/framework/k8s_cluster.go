@@ -5,8 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,9 +23,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -41,9 +36,7 @@ type K8sCluster struct {
 	name                string
 	kubeconfig          string
 	controlplane        *K8sControlPlane
-	loPort              uint32
-	hiPort              uint32
-	forwardedPortsChans map[uint32]chan struct{}
+	forwardedPortsChans []chan struct{}
 	verbose             bool
 	deployments         map[string]Deployment
 	defaultTimeout      time.Duration
@@ -57,9 +50,7 @@ func NewK8sCluster(t *TestingT, clusterName string, verbose bool) *K8sCluster {
 		t:                   t,
 		name:                clusterName,
 		kubeconfig:          os.ExpandEnv(fmt.Sprintf(defaultKubeConfigPathPattern, clusterName)),
-		loPort:              uint32(kumaCPAPIPortFwdBase + 1000),
-		hiPort:              uint32(kumaCPAPIPortFwdBase + 1999),
-		forwardedPortsChans: map[uint32]chan struct{}{},
+		forwardedPortsChans: []chan struct{}{},
 		verbose:             verbose,
 		deployments:         map[string]Deployment{},
 		defaultRetries:      GetDefaultRetries(),
@@ -148,77 +139,6 @@ func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 			}
 			return "Namespace available " + namespace, fmt.Errorf("Namespace %s still active", namespace)
 		})
-}
-
-func (c *K8sCluster) PortForwardPod(namespace string, podName string, localPort, remotePort uint32) {
-	config, err := clientcmd.BuildConfigFromFlags("", c.kubeconfig)
-	if err != nil {
-		fmt.Printf("Error building config %v", err)
-		return
-	}
-
-	roundTripper, upgrader, err := spdy.RoundTripperFor(config)
-	if err != nil {
-		fmt.Printf("Error port forwarding %v", err)
-		return
-	}
-
-	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", namespace, podName)
-	hostIP := strings.TrimLeft(config.Host, "htps:/")
-	serverURL := url.URL{
-		Scheme: "https",
-		Path:   path,
-		Host:   hostIP,
-	}
-
-	stopChan, readyChan := make(chan struct{}, 1), make(chan struct{}, 1)
-	stdOut, stdErr := new(bytes.Buffer), new(bytes.Buffer)
-
-	dialer := spdy.NewDialer(upgrader,
-		&http.Client{
-			Transport: roundTripper,
-		},
-		http.MethodPost, &serverURL)
-
-	localPortStr := strconv.FormatUint(uint64(localPort), 10)
-	remotePortStr := strconv.FormatUint(uint64(remotePort), 10)
-	ports := []string{localPortStr + ":" + remotePortStr}
-
-	forwarder, err := portforward.New(dialer, ports,
-		stopChan, readyChan,
-		stdOut, stdErr)
-	if err != nil {
-		panic(err)
-	}
-
-	go func() {
-		// Kubernetes will close this channel when it has something to tell us.
-		for range readyChan {
-		}
-
-		if len(stdErr.String()) != 0 {
-			panic(stdErr.String())
-		} else if len(stdOut.String()) != 0 {
-			fmt.Println(stdOut.String())
-		}
-	}()
-
-	go func() {
-		err := forwarder.ForwardPorts()
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	c.forwardedPortsChans[localPort] = stopChan
-}
-
-func (c *K8sCluster) CleanupPortForwards() {
-	for _, stop := range c.forwardedPortsChans {
-		close(stop)
-	}
-
-	c.forwardedPortsChans = map[uint32]chan struct{}{}
 }
 
 func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
@@ -499,7 +419,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 
 	// backwards compatibility, check for 1.3.x localhost is admin env variable.
 	localhostIsAdmin := opts.env["KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST"] == "true"
-	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.loPort, c.hiPort, c.verbose, replicas, localhostIsAdmin)
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas, localhostIsAdmin)
 
 	switch mode {
 	case core.Zone:
@@ -777,8 +697,9 @@ func (c *K8sCluster) DeleteKuma(opt ...KumaDeploymentOption) error {
 
 	opts.apply(opt...)
 
-	c.CleanupPortForwards()
-
+	if c.controlplane.portFwd.localAPITunnel != nil {
+		c.controlplane.portFwd.localAPITunnel.Close()
+	}
 	var err error
 	switch opts.installationMode {
 	case HelmInstallationMode:
