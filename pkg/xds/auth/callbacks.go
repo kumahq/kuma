@@ -139,8 +139,7 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 			return errors.Errorf("unsupported proxy type %q", md.GetProxyType())
 		}
 
-		backoff, _ := retry.NewConstant(a.dpNotFoundRetry.Backoff)
-		backoff = retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), backoff)
+		backoff := retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff))
 		err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 			err := a.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
 			if core_store.IsResourceNotFound(err) {
