@@ -1,12 +1,15 @@
 package mesh
 
 import (
+	"context"
 	"sync"
 
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
@@ -25,7 +28,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 	defer ensureMux.Unlock()
 	log.Info("ensuring default resources for Mesh exist", "mesh", meshName)
 
-	err, created := ensureDefaultTrafficPermission(resManager, meshName)
+	err, created := ensureDefaultResource(resManager, defaultTrafficPermissionResource, defaultTrafficPermissionKey(meshName))
 	if err != nil {
 		return errors.Wrap(err, "could not create default TrafficPermission")
 	}
@@ -35,7 +38,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default TrafficPermission already exist", "mesh", meshName, "name", defaultTrafficPermissionKey(meshName).Name)
 	}
 
-	err, created = ensureDefaultTrafficRoute(resManager, meshName)
+	err, created = ensureDefaultResource(resManager, defaultTrafficRouteResource, defaultTrafficRouteKey(meshName))
 	if err != nil {
 		return errors.Wrap(err, "could not create default TrafficRoute")
 	}
@@ -45,7 +48,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default TrafficRoute already exist", "mesh", meshName, "name", defaultTrafficRouteKey(meshName).Name)
 	}
 
-	err, created = ensureDefaultTimeout(resManager, meshName)
+	err, created = ensureDefaultResource(resManager, defaultTimeoutResource, defaultTimeoutKey(meshName))
 	if err != nil {
 		return errors.Wrap(err, "could not create default Timeout")
 	}
@@ -55,7 +58,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default Timeout already exist", "mesh", meshName, "name", defaultTimeoutKey(meshName).Name)
 	}
 
-	err, created = ensureDefaultCircuitBreaker(resManager, meshName)
+	err, created = ensureDefaultResource(resManager, defaultCircuitBreakerResource, defaultCircuitBreakerKey(meshName))
 	if err != nil {
 		return errors.Wrap(err, "could not create default CircuitBreaker")
 	}
@@ -65,7 +68,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default CircuitBreaker already exist", "mesh", meshName, "name", defaultCircuitBreakerKey(meshName).Name)
 	}
 
-	err, created = ensureDefaultRetry(resManager, meshName)
+	err, created = ensureDefaultResource(resManager, defaultRetryResource, defaultRetryKey(meshName))
 	if err != nil {
 		return errors.Wrap(err, "could not create default Retry")
 	}
@@ -86,4 +89,18 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("Dataplane Token Signing Key already exists", "mesh", meshName)
 	}
 	return nil
+}
+
+func ensureDefaultResource(resManager manager.ResourceManager, res model.Resource, resourceKey model.ResourceKey) (err error, created bool) {
+	err = resManager.Get(context.Background(), res, store.GetBy(resourceKey))
+	if err == nil {
+		return nil, false
+	}
+	if !store.IsResourceNotFound(err) {
+		return errors.Wrap(err, "could not retrieve a resource"), false
+	}
+	if err := resManager.Create(context.Background(), res, store.CreateBy(resourceKey)); err != nil {
+		return errors.Wrap(err, "could not create a resource"), false
+	}
+	return nil, true
 }
