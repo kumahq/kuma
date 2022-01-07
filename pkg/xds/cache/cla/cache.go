@@ -40,21 +40,20 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster e
 	key := sha256.Hash(fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, cluster.Hash(), meshHash))
 
 	elt, err := c.cache.GetOrRetrieve(ctx, key, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
+		matchTags := map[string]string{}
+		for tag, val := range cluster.Tags() {
+			if tag != mesh_proto.ServiceTag {
+				matchTags[tag] = val
+			}
+		}
+
 		// For the majority of cases we don't have custom tags, we can just take a slice
 		endpoints := endpointMap[cluster.Service()]
-		if len(cluster.Tags()) > 0 {
-			matchTags := map[string]string{}
-			for tag, val := range cluster.Tags() {
-				if tag != mesh_proto.ServiceTag {
-					matchTags[tag] = val
-				}
-			}
-			if len(matchTags) > 0 {
-				endpoints = []xds.Endpoint{}
-				for _, endpoint := range endpointMap[cluster.Service()] {
-					if endpoint.ContainsTags(matchTags) {
-						endpoints = append(endpoints, endpoint)
-					}
+		if len(matchTags) > 0 {
+			endpoints = []xds.Endpoint{}
+			for _, endpoint := range endpointMap[cluster.Service()] {
+				if endpoint.ContainsTags(matchTags) {
+					endpoints = append(endpoints, endpoint)
 				}
 			}
 		}
