@@ -9,6 +9,7 @@ import (
 
 	"github.com/operator-framework/operator-lib/leader"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	kube_core "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -179,12 +180,13 @@ func (kmw *kubeManagerWrapper) Add(runnable kube_manager.Runnable) error {
 }
 
 // AddControllers calls Manager.Add on any accumulated controllers.
-func (kmw *kubeManagerWrapper) AddControllersToManager() {
+func (kmw *kubeManagerWrapper) AddControllersToManager() error {
 	for _, c := range kmw.controllers {
 		if err := kmw.Manager.Add(c); err != nil {
-			log.Error(err, "add controller error")
+			return errors.Wrap(err, "add controller error")
 		}
 	}
+	return nil
 }
 
 type kubeComponentManager struct {
@@ -223,13 +225,13 @@ func makeOldLockAnnotation() string {
 // startLeaderComponents adds all components that need leader election to the
 // Manager. The Manager should be running already, any components added after
 // that are started immediately.
-func (cm *kubeComponentManager) startLeaderComponents() {
+func (cm *kubeComponentManager) startLeaderComponents() error {
 	for _, c := range cm.leaderComponents {
 		if err := cm.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
-			log.Error(err, "add component error")
+			return errors.Wrap(err, "add component error")
 		}
 	}
-	cm.kubeManagerWrapper.AddControllersToManager()
+	return cm.kubeManagerWrapper.AddControllersToManager()
 }
 
 // Previous versions of kuma-cp used a timeout lock for leader election. We now
@@ -312,26 +314,42 @@ func (cm *kubeComponentManager) forceTakeOldLock(ctx context.Context) error {
 }
 
 func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
-	ctx, cancel := context.WithCancel(context.Background())
+	baseCtx, cancel := context.WithCancel(context.Background())
 	go func() {
 		defer cancel()
 		<-done
 	}()
 
-	go func() {
-		if err := leader.Become(ctx, "cp-leader"); err != nil {
-			log.Error(err, "leader lock failure")
-			os.Exit(1)
+	eg, ctx := errgroup.WithContext(baseCtx)
+
+	eg.Go(func() error {
+		return cm.Manager.Start(ctx)
+	})
+
+	eg.Go(func() error {
+		// The manager is always elected but this lets us wait until we're sure
+		// the other components have started, so we can wait until the Manager
+		// _would_ do leader election
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-cm.Manager.Elected():
 		}
+
+		if err := leader.Become(ctx, "cp-leader"); err != nil {
+			return errors.Wrap(err, "leader lock failure")
+		}
+
 		// This CP will now be leader. But first, destroy deprecated leader lock,
 		// forcing any old leaders to restart as non-leaders.
 		if err := cm.forceTakeOldLock(ctx); err != nil {
-			log.Error(err, "error attempting to clean up deprecated lock")
-			os.Exit(1)
+			return errors.Wrap(err, "error attempting to clean up deprecated lock")
 		}
-		cm.startLeaderComponents()
-	}()
-	return cm.Manager.Start(ctx)
+
+		return cm.startLeaderComponents()
+	})
+
+	return errors.Wrap(eg.Wait(), "error running Kubernetes Manager")
 }
 
 // Extra check that component.Component implements LeaderElectionRunnable so the leader election works so we won't break leader election on K8S when refactoring component.Component
