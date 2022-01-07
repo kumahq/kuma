@@ -3,7 +3,9 @@ package testutil
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
+	"path"
 	"strings"
 	"sync"
 
@@ -17,6 +19,7 @@ import (
 
 type CollectResponsesOpts struct {
 	NumberOfRequests int
+	URL              string
 	Method           string
 	Headers          map[string]string
 
@@ -56,6 +59,19 @@ func WithMethod(method string) CollectResponsesOptsFn {
 func WithHeader(key, value string) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.Headers[key] = value
+	}
+}
+
+// WithPathPrefix injects prefix at the start of the target URL path.
+func WithPathPrefix(prefix string) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		u, err := url.Parse(opts.URL)
+		if err != nil {
+			panic(fmt.Sprintf("bad URL %q: %s", opts.URL, err))
+		}
+
+		u.Path = path.Join(prefix, u.Path)
+		opts.URL = u.String()
 	}
 }
 
@@ -104,7 +120,7 @@ func OutputFormat(format string) CollectResponsesOptsFn {
 		opts.Flags = append(opts.Flags,
 			"--silent",
 			"--output", os.DevNull,
-			"--write-out", ShellEscape(format),
+			"--write-out", opts.ShellEscaped(format),
 		)
 	}
 }
@@ -129,8 +145,9 @@ func FromKubernetesPod(namespace string, application string) CollectResponsesOpt
 	}
 }
 
-func collectOptions(options ...CollectResponsesOptsFn) CollectResponsesOpts {
+func collectOptions(requestURL string, options ...CollectResponsesOptsFn) CollectResponsesOpts {
 	opts := DefaultCollectResponsesOpts()
+	opts.URL = requestURL
 
 	for _, o := range options {
 		o(&opts)
@@ -160,11 +177,11 @@ func CollectResponse(
 	destination string,
 	fn ...CollectResponsesOptsFn,
 ) (types.EchoResponse, error) {
-	opts := collectOptions(fn...)
+	opts := collectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
-		opts.ShellEscaped(destination),
+		opts.ShellEscaped(opts.URL),
 	)
 
 	var pod string
@@ -190,7 +207,7 @@ func CollectResponse(
 
 	response := &types.EchoResponse{}
 	if err := json.Unmarshal([]byte(stdout), response); err != nil {
-		return types.EchoResponse{}, err
+		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", stdout)
 	}
 
 	return *response, nil
@@ -220,7 +237,7 @@ type FailureResponse struct {
 // Curl JSON output is returned so the caller can inspect the failure to
 // see whether it was what was expected.
 func CollectFailure(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (FailureResponse, error) {
-	opts := collectOptions(fn...)
+	opts := collectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
@@ -229,7 +246,7 @@ func CollectFailure(cluster framework.Cluster, source, destination string, fn ..
 		// Silence output so that we don't try to parse it. A future refactor could try to address this
 		// by using "%{stderr}%{json}", but that needs a bit more investigation.
 		"--output", os.DevNull,
-		opts.ShellEscaped(destination),
+		opts.ShellEscaped(opts.URL),
 	)
 
 	var pod string
@@ -277,10 +294,7 @@ func CollectFailure(cluster framework.Cluster, source, destination string, fn ..
 }
 
 func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) ([]types.EchoResponse, error) {
-	opts := DefaultCollectResponsesOpts()
-	for _, f := range fn {
-		f(&opts)
-	}
+	opts := collectOptions(destination, fn...)
 
 	mut := sync.Mutex{}
 	var responses []types.EchoResponse
