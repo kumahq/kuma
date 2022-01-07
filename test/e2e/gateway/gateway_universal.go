@@ -5,15 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/url"
-	"path"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/shell"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
@@ -21,6 +18,8 @@ import (
 
 func GatewayOnUniversal() {
 	var cluster *UniversalCluster
+
+	const GatewayPort = "8080"
 
 	EchoServerApp := func(name string) InstallFunc {
 		return func(cluster Cluster) error {
@@ -124,6 +123,10 @@ networking:
 		)
 	}
 
+	GatewayAddress := func(appName string) string {
+		return cluster.GetApp(appName).GetIP()
+	}
+
 	// Before each test, verify the cluster is up and stable.
 	JustBeforeEach(func() {
 		Expect(cluster.VerifyKuma()).To(Succeed())
@@ -186,75 +189,33 @@ conf:
 		Expect(cluster.DismissCluster()).ToNot(HaveOccurred())
 	})
 
-	// ProxySimpleRequests tests that basic HTTP requests are proxied to the echo-server.
-	ProxySimpleRequests := func(prefix string, instance string) func() {
-		return func() {
-			Eventually(func(g Gomega) {
-				target := fmt.Sprintf("http://%s/%s",
-					net.JoinHostPort(cluster.GetApp("gateway-proxy").GetIP(), "8080"),
-					path.Join(prefix, "test", url.PathEscape(GinkgoT().Name())),
-				)
-
-				response, err := testutil.CollectResponse(
-					cluster, "gateway-client", target,
-					testutil.WithHeader("Host", "example.kuma.io"),
-				)
-
-				g.Expect(err).To(Succeed())
-				g.Expect(response.Instance).To(Equal(instance))
-				g.Expect(response.Received.Headers["Host"]).To(ContainElement("example.kuma.io"))
-			}, "30s", "1s").Should(Succeed())
-		}
-	}
-
 	Context("when mTLS is disabled", func() {
 		BeforeEach(func() {
 			DeployCluster(KumaUniversalDeployOpts...)
 		})
 
-		It("should proxy simple HTTP requests", ProxySimpleRequests("/", "universal"))
+		It("should proxy simple HTTP requests", func() {
+			ProxySimpleRequests(cluster, "universal",
+				net.JoinHostPort(GatewayAddress("gateway-proxy"), GatewayPort))
+		})
 	})
 
 	Context("when mTLS is enabled", func() {
 		BeforeEach(func() {
-			mtls := WithMeshUpdate("default", func(mesh *mesh_proto.Mesh) *mesh_proto.Mesh {
-				mesh.Mtls = &mesh_proto.Mesh_Mtls{
-					EnabledBackend: "builtin",
-					Backends: []*mesh_proto.CertificateAuthorityBackend{
-						{Name: "builtin", Type: "builtin"},
-					},
-				}
-				return mesh
-			})
-
-			DeployCluster(append(KumaUniversalDeployOpts, mtls)...)
+			DeployCluster(append(KumaUniversalDeployOpts, OptEnableMeshMTLS)...)
 		})
 
-		It("should proxy simple HTTP requests", ProxySimpleRequests("/", "universal"))
+		It("should proxy simple HTTP requests", func() {
+			ProxySimpleRequests(cluster, "universal",
+				net.JoinHostPort(GatewayAddress("gateway-proxy"), GatewayPort))
+		})
 
 		// In mTLS mode, only the presence of TrafficPermission rules allow services to receive
 		// traffic, so removing the permission should cause requests to fail. We use this to
 		// prove that mTLS is enabled
 		It("should fail without TrafficPermission", func() {
-			Expect(
-				cluster.GetKumactlOptions().KumactlDelete(
-					"traffic-permission", "allow-all-default", "default"),
-			).To(Succeed())
-
-			Eventually(func(g Gomega) {
-				target := fmt.Sprintf("http://%s/%s",
-					net.JoinHostPort(cluster.GetApp("gateway-proxy").GetIP(), "8080"),
-					path.Join("test", url.PathEscape(GinkgoT().Name())),
-				)
-
-				status, err := testutil.CollectFailure(
-					cluster, "gateway-client", target,
-					testutil.WithHeader("Host", "example.kuma.io"),
-				)
-
-				g.Expect(err).To(Succeed())
-				g.Expect(status.ResponseCode).To(Equal(503))
-			}, "30s", "1s").Should(Succeed())
+			ProxyRequestsWithMissingPermission(cluster,
+				net.JoinHostPort(GatewayAddress("gateway-proxy"), GatewayPort))
 		})
 	})
 
@@ -307,8 +268,11 @@ networking:
 			).To(Succeed())
 		})
 
-		It("should proxy simple HTTP requests",
-			ProxySimpleRequests("/external", "external-echo"))
+		It("should proxy simple HTTP requests", func() {
+			ProxySimpleRequests(cluster, "external-echo",
+				net.JoinHostPort(GatewayAddress("gateway-proxy"), GatewayPort),
+				testutil.WithPathPrefix("/external"))
+		})
 	})
 
 	Context("when targeting a HTTPS gateway", func() {
@@ -366,23 +330,9 @@ data: %s
 		})
 
 		It("should proxy simple HTTPS requests", func() {
-			Eventually(func(g Gomega) {
-				target := fmt.Sprintf("https://%s/%s",
-					net.JoinHostPort("example.kuma.io", "8080"),
-					path.Join("https", "test", url.PathEscape(GinkgoT().Name())),
-				)
-
-				response, err := testutil.CollectResponse(
-					cluster, "gateway-client", target,
-					testutil.Insecure(),
-					testutil.Resolve("example.kuma.io", 8080, cluster.GetApp("gateway-proxy").GetIP()),
-					testutil.WithHeader("Host", "example.kuma.io"),
-				)
-
-				g.Expect(err).To(Succeed())
-				g.Expect(response.Instance).To(Equal("universal"))
-				g.Expect(response.Received.Headers["Host"]).To(ContainElement("example.kuma.io"))
-			}, "30s", "1s").Should(Succeed())
+			ProxySecureRequests(cluster, "universal",
+				net.JoinHostPort("example.kuma.io", GatewayPort),
+				testutil.Resolve("example.kuma.io", 8080, GatewayAddress("gateway-proxy")))
 		})
 	})
 
@@ -396,7 +346,7 @@ data: %s
 				cluster.GetKumactlOptions().KumactlApplyFromString(`
 type: RateLimit
 mesh: default
-name: external-routes
+name: echo-rate-limit
 sources:
 - match:
     kuma.io/service: edge-gateway
@@ -412,22 +362,8 @@ conf:
 		})
 
 		It("should be rate limited", func() {
-			Eventually(func(g Gomega) {
-				target := fmt.Sprintf("http://%s/%s",
-					net.JoinHostPort(cluster.GetApp("gateway-proxy").GetIP(), "8080"),
-					path.Join("/", "test", url.PathEscape(GinkgoT().Name())),
-				)
-
-				response, err := testutil.CollectResponse(
-					cluster, "gateway-client", target,
-					testutil.NoFail(),
-					testutil.OutputFormat(`{ "received": { "status": %{response_code} } }`),
-					testutil.WithHeader("Host", "example.kuma.io"),
-				)
-
-				g.Expect(err).To(Succeed())
-				g.Expect(response.Received.StatusCode).To(Equal(429))
-			}, "30s", "1s").Should(Succeed())
+			ProxyRequestsWithRateLimit(cluster,
+				net.JoinHostPort(GatewayAddress("gateway-proxy"), GatewayPort))
 		})
 	})
 }
