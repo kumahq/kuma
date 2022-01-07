@@ -22,13 +22,10 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
-	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
 type PortFwd struct {
-	lowFwdPort   uint32
-	hiFwdPort    uint32
-	localAPIPort uint32
+	localAPITunnel *k8s.Tunnel
 }
 
 type K8sControlPlane struct {
@@ -50,8 +47,6 @@ func NewK8sControlPlane(
 	clusterName string,
 	kubeconfig string,
 	cluster *K8sCluster,
-	loPort uint32,
-	hiPort uint32,
 	verbose bool,
 	replicas int,
 	localhostIsAdmin bool,
@@ -59,15 +54,12 @@ func NewK8sControlPlane(
 	name := clusterName + "-" + mode
 	kumactl, _ := NewKumactlOptions(t, name, verbose)
 	return &K8sControlPlane{
-		t:          t,
-		mode:       mode,
-		name:       name,
-		kubeconfig: kubeconfig,
-		kumactl:    kumactl,
-		cluster:    cluster,
-		portFwd: PortFwd{
-			localAPIPort: loPort,
-		},
+		t:                t,
+		mode:             mode,
+		name:             name,
+		kubeconfig:       kubeconfig,
+		kumactl:          kumactl,
+		cluster:          cluster,
 		verbose:          verbose,
 		replicas:         replicas,
 		localhostIsAdmin: localhostIsAdmin,
@@ -98,15 +90,8 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 
 	kumacpPodName := kumacpPods[0].Name
 
-	// API
-	apiPort, err := util_net.PickTCPPort("", c.portFwd.lowFwdPort+1, c.portFwd.hiFwdPort)
-	if err != nil {
-		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
-	}
-
-	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
-	c.portFwd.localAPIPort = apiPort
-
+	c.portFwd.localAPITunnel = k8s.NewTunnel(c.GetKubectlOptions(KumaNamespace), k8s.ResourceTypePod, kumacpPodName, 0, kumaCPAPIPort)
+	c.portFwd.localAPITunnel.ForwardPort(c.t)
 	return nil
 }
 
@@ -129,7 +114,7 @@ func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
 }
 
 func (c *K8sControlPlane) VerifyKumaCtl() error {
-	if c.portFwd.localAPIPort == 0 {
+	if c.portFwd.localAPITunnel == nil {
 		return errors.Errorf("API port not forwarded")
 	}
 
@@ -140,13 +125,9 @@ func (c *K8sControlPlane) VerifyKumaCtl() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaREST() error {
-	if c.portFwd.localAPIPort == 0 {
-		return errors.Errorf("API port not forwarded")
-	}
-
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c.t,
-		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10),
+		c.GetGlobalStatusAPI(),
 		&tls.Config{},
 		DefaultRetries,
 		DefaultTimeout,
@@ -163,7 +144,7 @@ func (c *K8sControlPlane) VerifyKumaGUI() error {
 
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c.t,
-		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)+"/gui",
+		c.GetAPIServerAddress()+"/gui",
 		&tls.Config{},
 		3,
 		DefaultTimeout,
@@ -269,15 +250,18 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 }
 
 func (c *K8sControlPlane) GetAPIServerAddress() string {
-	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)
+	if c.portFwd.localAPITunnel == nil {
+		panic("Port forward wasn't setup!")
+	}
+	return "http://" + c.portFwd.localAPITunnel.Endpoint()
 }
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {
 	panic("not implemented")
 }
 
-func (c *K8sControlPlane) GetGlobaStatusAPI() string {
-	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
+func (c *K8sControlPlane) GetGlobalStatusAPI() string {
+	return c.GetAPIServerAddress() + "/status/zones"
 }
 
 func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
@@ -296,7 +280,7 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
-		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
+		c.GetAPIServerAddress()+"/tokens",
 		[]byte(fmt.Sprintf(`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, dpType, service)),
 		map[string]string{
 			"content-type":  "application/json",
@@ -321,7 +305,7 @@ func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) 
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
-		fmt.Sprintf("http://localhost:%d/tokens/zone-ingress", c.portFwd.localAPIPort),
+		c.GetAPIServerAddress()+"/tokens/zone-ingress",
 		[]byte(fmt.Sprintf(`{"zone": "%s"}`, zone)),
 		map[string]string{
 			"content-type":  "application/json",
