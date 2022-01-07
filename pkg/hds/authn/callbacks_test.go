@@ -130,7 +130,7 @@ var _ = Describe("Authn Callbacks", func() {
 		})
 
 		// then
-		Expect(err).To(MatchError("retryable: dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
+		Expect(err).To(MatchError("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
 	})
 
 	It("should throw an error on authentication fail", func() {
