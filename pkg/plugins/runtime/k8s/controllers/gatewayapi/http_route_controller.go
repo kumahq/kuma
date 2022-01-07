@@ -94,7 +94,6 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 	// Convert GAPI parent refs into selectors
 	for i, ref := range route.Spec.ParentRefs {
-		// TODO support listeners here
 		if handle, err := r.shouldHandleParentRef(ctx, route, ref); err != nil {
 			return nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
 		} else if !handle {
@@ -137,18 +136,24 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 func (r *HTTPRouteReconciler) shouldHandleParentRef(
 	ctx context.Context, route kube_client.Object, ref gatewayapi.ParentRef,
 ) (bool, error) {
+	name := string(ref.Name)
+	// Group and Kind both have default values
+	group := string(*ref.Group)
+	kind := string(*ref.Kind)
+
 	namespace := route.GetNamespace()
 	if ns := ref.Namespace; ns != nil {
 		namespace = string(*ns)
 	}
 
 	gateway := &gatewayapi.Gateway{}
+	gatewayKind := "Gateway"
 
-	if *ref.Group != gatewayapi.Group(gatewayapi.GroupName) || *ref.Kind != gatewayapi.Kind(reflect.TypeOf(gateway).Elem().Name()) {
+	if group != gatewayapi.GroupName || kind != gatewayKind {
 		return false, nil
 	}
 
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}, gateway); err != nil {
+	if err := r.Client.Get(ctx, kube_types.NamespacedName{Namespace: namespace, Name: name}, gateway); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			return false, nil
 		} else {
@@ -185,8 +190,8 @@ func reconcileLabelledObject(
 		return err
 	}
 
-	if len(list.Items) > 1 {
-		return fmt.Errorf("expected either zero or one owned items")
+	if l := len(list.Items); l > 1 {
+		return fmt.Errorf("internal error: found %d items labeled as owned by this object, expected either zero or one", l)
 	}
 
 	var existing *mesh_k8s.GatewayRoute
@@ -254,9 +259,9 @@ func (r *HTTPRouteReconciler) mergeStatus(ctx context.Context, route *gatewayapi
 
 		// Look through previous statuses for one belonging to the same ref
 		// go abusing pointers as option types makes it very painful
-		for _, candidatePreviouStatus := range previousStatuses {
-			if reflect.DeepEqual(candidatePreviouStatus.ParentRef, ref) {
-				previousStatus = candidatePreviouStatus
+		for _, candidatePreviousStatus := range previousStatuses {
+			if reflect.DeepEqual(candidatePreviousStatus.ParentRef, ref) {
+				previousStatus = candidatePreviousStatus
 			}
 		}
 

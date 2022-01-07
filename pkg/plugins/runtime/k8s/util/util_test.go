@@ -582,7 +582,7 @@ var _ = Describe("Util", func() {
 			}
 
 			// then
-			Expect(util.ServiceTagFor(svc, &svc.Spec.Ports[0])).To(Equal("example_demo_svc_80"))
+			Expect(util.ServiceTagFor(svc, &svc.Spec.Ports[0].Port)).To(Equal("example_demo_svc_80"))
 		})
 	})
 })
