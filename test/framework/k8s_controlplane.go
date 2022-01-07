@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -328,47 +329,50 @@ func (c *K8sControlPlane) UpdateObject(
 	if err != nil {
 		return err
 	}
-
-	out, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", typeName, objectName, "-o", "yaml")
-	if err != nil {
-		return err
-	}
-
-	decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
-	into := map[string]interface{}{}
-
-	if err := decoder.Decode(&into); err != nil {
-		return err
-	}
-
-	u := unstructured.Unstructured{Object: into}
-	obj, err := scheme.New(u.GroupVersionKind())
-	if err != nil {
-		return err
-	}
-
-	if err := scheme.Convert(&u, obj, nil); err != nil {
-		return err
-	}
-
-	obj = update(obj)
-
 	codecs := serializer.NewCodecFactory(scheme)
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
 	if !ok {
 		return errors.Errorf("no serializer for %q", runtime.ContentTypeYAML)
 	}
 
-	encoder := codecs.EncoderForVersion(info.Serializer, obj.GetObjectKind().GroupVersionKind().GroupVersion())
-	yaml, err := runtime.Encode(encoder, obj)
+	_, err = retry.DoWithRetryableErrorsE(c.t, "update object", map[string]string{"conflict": "Error from server \\(Conflict\\)"}, 5, time.Second, func() (string, error) {
+		out, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", typeName, objectName, "-o", "yaml")
+		if err != nil {
+			return "", err
+		}
+
+		decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
+		into := map[string]interface{}{}
+
+		if err := decoder.Decode(&into); err != nil {
+			return "", err
+		}
+
+		u := unstructured.Unstructured{Object: into}
+		obj, err := scheme.New(u.GroupVersionKind())
+		if err != nil {
+			return "", err
+		}
+
+		if err := scheme.Convert(&u, obj, nil); err != nil {
+			return "", err
+		}
+
+		obj = update(obj)
+		encoder := codecs.EncoderForVersion(info.Serializer, obj.GetObjectKind().GroupVersionKind().GroupVersion())
+		yml, err := runtime.Encode(encoder, obj)
+		if err != nil {
+			return "", err
+		}
+
+		if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), string(yml)); err != nil {
+			return "", err
+		}
+		return "", nil
+	})
+
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to update %s object %q", typeName, objectName)
 	}
-
-	if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), string(yaml)); err != nil {
-		return errors.Wrapf(err, "failed to update %s object %q with: %q",
-			typeName, objectName, yaml)
-	}
-
 	return nil
 }
