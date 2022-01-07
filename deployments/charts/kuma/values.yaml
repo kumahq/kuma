@@ -134,6 +134,21 @@ controlPlane:
   # -- Additional environment variables that will be passed to the control plane
   envVars: { }
 
+  # -- Additional config maps to mount into the control plane, with optional inline values
+  extraConfigMaps: [ ]
+#    - name: extra-config
+#      mountPath: /etc/extra-config
+#      readOnly: true
+#      values:
+#        extra-config-key: |
+#          extra-config-value
+
+  # -- Additional secrets to mount into the control plane
+  extraSecrets: [ ]
+#    - name: extra-config
+#      mountPath: /etc/extra-config
+#      readOnly: true
+
   webhooks:
     validator:
       # -- Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma.
