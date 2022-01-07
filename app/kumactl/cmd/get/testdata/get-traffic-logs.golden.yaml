@@ -1,33 +1,33 @@
-total: 2
 items:
-  - creationTime: 0001-01-01T00:00:00Z
-    mesh: default
-    modificationTime: 0001-01-01T00:00:00Z
-    name: web1-to-backend1
-    destinations:
-    - match:
-        env: dev
-        service: backend1
-    sources:
-    - match:
-        service: web1
-        version: "1.0"
-    conf:
-      backend: file
-    type: TrafficLog
-  - creationTime: 0001-01-01T00:00:00Z
-    mesh: default
-    modificationTime: 0001-01-01T00:00:00Z
-    name: web2-to-backend2
-    destinations:
-    - match:
-        env: dev
-        service: backend2
-    sources:
-    - match:
-        service: web2
-        version: "1.0"
-    conf:
-      backend: logstash
-    type: TrafficLog
+- conf:
+    backend: file
+  creationTime: "0001-01-01T00:00:00Z"
+  destinations:
+  - match:
+      env: dev
+      service: backend1
+  mesh: default
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: web1-to-backend1
+  sources:
+  - match:
+      service: web1
+      version: "1.0"
+  type: TrafficLog
+- conf:
+    backend: logstash
+  creationTime: "0001-01-01T00:00:00Z"
+  destinations:
+  - match:
+      env: dev
+      service: backend2
+  mesh: default
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: web2-to-backend2
+  sources:
+  - match:
+      service: web2
+      version: "1.0"
+  type: TrafficLog
 next: null
+total: 2
