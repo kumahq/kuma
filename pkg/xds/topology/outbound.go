@@ -31,7 +31,7 @@ func BuildEndpointMap(
 	externalServices []*core_mesh.ExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
-	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses)
+	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses, "", nil)
 	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
 	return outbound
 }
@@ -41,6 +41,8 @@ func BuildEdsEndpointMap(
 	zone string,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
+	outboundServiceFilter string,
+	tagsFilter map[string]string,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zone, mesh)
@@ -48,7 +50,7 @@ func BuildEdsEndpointMap(
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
 	}
-	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight)
+	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight, outboundServiceFilter, tagsFilter)
 	return outbound
 }
 
@@ -72,10 +74,20 @@ func BuildEdsEndpointMap(
 //    * backend-zone1-2 - weight: 2
 //    * ingress-zone2-1 - weight: 3
 //    * ingress-zone2-2 - weight: 3
-func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, endpointWeight uint32) {
+func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, endpointWeight uint32, outboundServiceFilter string, tagsFilter map[string]string) {
 	for _, dataplane := range dataplanes {
+	HEALTHY_OUTBOUNDS:
 		for _, inbound := range dataplane.Spec.GetNetworking().GetHealthyInbounds() {
 			service := inbound.Tags[mesh_proto.ServiceTag]
+			if outboundServiceFilter != "" && outboundServiceFilter != service {
+				continue
+			}
+			for otherKey, otherValue := range tagsFilter {
+				endpointValue, ok := inbound.Tags[otherKey]
+				if !ok || otherValue != endpointValue {
+					continue HEALTHY_OUTBOUNDS
+				}
+			}
 			iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?
