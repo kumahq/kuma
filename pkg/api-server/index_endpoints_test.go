@@ -72,7 +72,8 @@ var _ = Describe("Index Endpoints", func() {
 			"tagline": "Kuma",
 			"version": "1.2.3",
 			"instanceId": "instance-id",
-			"clusterId": "cluster-id"
+			"clusterId": "cluster-id",
+			"gui": "The gui is available at /gui"
 		}`, hostname)
 
 		Expect(body).To(MatchJSON(expected))
