@@ -104,6 +104,10 @@ const (
 	AnnotationFalse    = "false"
 )
 
+const (
+	errValueCastFailed = "value of annotation %q can't be casted: %s"
+)
+
 type Annotations map[string]string
 
 func (a Annotations) GetEnabled(key string) (bool, bool, error) {
@@ -128,7 +132,7 @@ func (a Annotations) GetUint32(key string) (uint32, bool, error) {
 	}
 	u, err := strconv.ParseUint(value, 10, 32)
 	if err != nil {
-		return 0, true, err
+		return 0, true, errors.Errorf(errValueCastFailed, key, err.Error())
 	}
 	return uint32(u), true, nil
 }
@@ -148,7 +152,7 @@ func (a Annotations) GetBool(key string) (bool, bool, error) {
 	}
 	b, err := strconv.ParseBool(value)
 	if err != nil {
-		return false, false, err
+		return false, false, errors.Errorf(errValueCastFailed, key, err.Error())
 	}
 	return b, true, nil
 }
