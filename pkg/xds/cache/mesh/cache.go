@@ -25,6 +25,8 @@ type Cache struct {
 	types  []core_model.ResourceType
 	ipFunc lookup.LookupIPFunc
 	zone   string
+
+	latestMeshContext *xds_context.MeshContext
 }
 
 func NewCache(
@@ -54,6 +56,10 @@ func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh st
 		if err != nil {
 			return nil, err
 		}
+		snapshotHash := snapshot.hash()
+		if c.latestMeshContext != nil && c.latestMeshContext.Hash == snapshotHash {
+			return c.latestMeshContext, nil
+		}
 
 		dataplanesList := snapshot.resources[core_mesh.DataplaneType].(*core_mesh.DataplaneResourceList)
 		dataplanes := xds_topology.ResolveAddresses(syncLog, c.ipFunc, dataplanesList.Items)
@@ -61,12 +67,14 @@ func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh st
 		zoneIngressList := snapshot.resources[core_mesh.ZoneIngressType].(*core_mesh.ZoneIngressResourceList)
 		zoneIngresses := xds_topology.ResolveZoneIngressAddresses(syncLog, c.ipFunc, zoneIngressList.Items)
 
-		return &xds_context.MeshContext{
+		meshCtx := &xds_context.MeshContext{
 			Resource:    snapshot.mesh,
 			Dataplanes:  dataplanesList,
-			Hash:        snapshot.hash(),
+			Hash:        snapshotHash,
 			EndpointMap: xds_topology.BuildEdsEndpointMap(snapshot.mesh, c.zone, dataplanes, zoneIngresses),
-		}, nil
+		}
+		c.latestMeshContext = meshCtx
+		return meshCtx, nil
 	}))
 	if err != nil {
 		return nil, err
