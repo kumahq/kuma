@@ -96,7 +96,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 					},
 				},
 			},
-			ctx: xds_context.Context{Mesh: &xds_context.MeshContext{
+			ctx: xds_context.Context{Mesh: xds_context.MeshContext{
 				Resource: &core_mesh.MeshResource{Spec: &mesh_proto.Mesh{
 					Tracing: &mesh_proto.Tracing{
 						Backends: []*mesh_proto.TracingBackend{
@@ -139,7 +139,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 					},
 				},
 			},
-			ctx: xds_context.Context{Mesh: &xds_context.MeshContext{
+			ctx: xds_context.Context{Mesh: xds_context.MeshContext{
 				Resource: &core_mesh.MeshResource{Spec: &mesh_proto.Mesh{
 					Tracing: &mesh_proto.Tracing{
 						Backends: []*mesh_proto.TracingBackend{
@@ -181,7 +181,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 					},
 				},
 			},
-			ctx: xds_context.Context{Mesh: &xds_context.MeshContext{
+			ctx: xds_context.Context{Mesh: xds_context.MeshContext{
 				Resource: &core_mesh.MeshResource{Spec: &mesh_proto.Mesh{
 					Tracing: &mesh_proto.Tracing{
 						Backends: []*mesh_proto.TracingBackend{

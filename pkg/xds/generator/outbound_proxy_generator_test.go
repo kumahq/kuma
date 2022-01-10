@@ -47,7 +47,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 	}
 	plainCtx := xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{},
-		Mesh: &xds_context.MeshContext{
+		Mesh: xds_context.MeshContext{
 			Resource: &core_mesh.MeshResource{
 				Meta: meta,
 				Spec: &mesh_proto.Mesh{
@@ -61,7 +61,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		ControlPlane: &xds_context.ControlPlaneContext{
 			Secrets: &xds.TestSecrets{},
 		},
-		Mesh: &xds_context.MeshContext{
+		Mesh: xds_context.MeshContext{
 			Resource: &core_mesh.MeshResource{
 				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{

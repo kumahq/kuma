@@ -120,7 +120,7 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 func (d *DataplaneWatchdog) syncIngress() error {
 	envoyCtx := &xds_context.Context{
 		ControlPlane: d.envoyCpCtx,
-		Mesh:         nil, // ZoneIngress does not need MeshContext
+		Mesh:         xds_context.MeshContext{}, // ZoneIngress does not need MeshContext
 	}
 	proxy, err := d.ingressProxyBuilder.build(d.key)
 	if err != nil {

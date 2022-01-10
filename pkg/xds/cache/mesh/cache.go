@@ -50,7 +50,7 @@ func NewCache(
 	}, nil
 }
 
-func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh string) (*xds_context.MeshContext, error) {
+func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh string) (xds_context.MeshContext, error) {
 	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
 		snapshot, err := GetMeshSnapshot(ctx, key, c.rm, c.types, c.ipFunc)
 		if err != nil {
@@ -58,7 +58,7 @@ func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh st
 		}
 		snapshotHash := snapshot.hash()
 		if c.latestMeshContext != nil && c.latestMeshContext.Hash == snapshotHash {
-			return c.latestMeshContext, nil
+			return *c.latestMeshContext, nil
 		}
 
 		dataplanesList := snapshot.resources[core_mesh.DataplaneType].(*core_mesh.DataplaneResourceList)
@@ -67,17 +67,17 @@ func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh st
 		zoneIngressList := snapshot.resources[core_mesh.ZoneIngressType].(*core_mesh.ZoneIngressResourceList)
 		zoneIngresses := xds_topology.ResolveZoneIngressAddresses(syncLog, c.ipFunc, zoneIngressList.Items)
 
-		meshCtx := &xds_context.MeshContext{
+		meshCtx := xds_context.MeshContext{
 			Resource:    snapshot.mesh,
 			Dataplanes:  dataplanesList,
 			Hash:        snapshotHash,
 			EndpointMap: xds_topology.BuildEdsEndpointMap(snapshot.mesh, c.zone, dataplanes, zoneIngresses),
 		}
-		c.latestMeshContext = meshCtx
+		c.latestMeshContext = &meshCtx
 		return meshCtx, nil
 	}))
 	if err != nil {
-		return nil, err
+		return xds_context.MeshContext{}, err
 	}
-	return elt.(*xds_context.MeshContext), nil
+	return elt.(xds_context.MeshContext), nil
 }

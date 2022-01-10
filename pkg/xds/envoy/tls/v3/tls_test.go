@@ -20,7 +20,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 		It("should return `nil`", func() {
 			// given
 			ctx := xds_context.Context{
-				Mesh: &xds_context.MeshContext{
+				Mesh: xds_context.MeshContext{
 					Resource: core_mesh.NewMeshResource(),
 				},
 			}
@@ -44,7 +44,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			func(given testCase) {
 				// given
 				ctx := xds_context.Context{
-					Mesh: &xds_context.MeshContext{
+					Mesh: xds_context.MeshContext{
 						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "default",
@@ -105,7 +105,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 		It("should return `nil`", func() {
 			// given
 			ctx := xds_context.Context{
-				Mesh: &xds_context.MeshContext{
+				Mesh: xds_context.MeshContext{
 					Resource: core_mesh.NewMeshResource(),
 				},
 			}
@@ -130,7 +130,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			func(given testCase) {
 				// given
 				ctx := xds_context.Context{
-					Mesh: &xds_context.MeshContext{
+					Mesh: xds_context.MeshContext{
 						Resource: &core_mesh.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "default",

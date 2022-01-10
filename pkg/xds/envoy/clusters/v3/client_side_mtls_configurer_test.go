@@ -44,7 +44,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			clusterName:   "testCluster",
 			clientService: "backend",
 			ctx: xds_context.Context{
-				Mesh: &xds_context.MeshContext{
+				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
@@ -98,7 +98,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			clusterName:   "testCluster",
 			clientService: "backend",
 			ctx: xds_context.Context{
-				Mesh: &xds_context.MeshContext{
+				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
@@ -191,7 +191,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			clusterName:   "testCluster",
 			clientService: "backend",
 			ctx: xds_context.Context{
-				Mesh: &xds_context.MeshContext{
+				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",

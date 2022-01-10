@@ -12,7 +12,7 @@ import (
 
 type Context struct {
 	ControlPlane *ControlPlaneContext
-	Mesh         *MeshContext
+	Mesh         MeshContext
 }
 
 type ConnectionInfo struct {

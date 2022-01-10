@@ -58,7 +58,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			)},
 			ctx: xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{},
-				Mesh: &xds_context.MeshContext{
+				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
@@ -121,7 +121,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 						KeyPEM:  []byte("key"),
 					},
 				},
-				Mesh: &xds_context.MeshContext{
+				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",

@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 type countingResourcesManager struct {
@@ -224,7 +225,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		meshCtx, err := meshCache.GetMeshContext(context.Background(), logr.Discard(), "mesh-0")
 		Expect(countingManager.getQueries).To(Equal(1)) // should be the same
 		Expect(err).To(HaveOccurred())
-		Expect(meshCtx).To(BeNil())
+		Expect(meshCtx).To(Equal(xds_context.MeshContext{}))
 
 		By("getting Hash calls again")
 		_, err = meshCache.GetMeshContext(context.Background(), logr.Discard(), "mesh-0")

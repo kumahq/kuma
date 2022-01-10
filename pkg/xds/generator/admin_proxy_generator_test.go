@@ -43,7 +43,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 						KeyPEM:  []byte("LS0=="),
 					},
 				},
-				Mesh: &context.MeshContext{},
+				Mesh: context.MeshContext{},
 			}
 
 			proxy := &xds.Proxy{
