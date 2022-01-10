@@ -159,7 +159,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 				Type:    string(gatewayapi.ConditionRouteResolvedRefs),
 				Status:  kube_meta.ConditionFalse,
 				Reason:  RefNotPermitted,
-				Message: fmt.Sprintf("reference to %s %s/%s not permitted by any ReferencePolicy", targetGK.String(), namespace, ref.Name),
+				Message: fmt.Sprintf("reference to %s %s/%s not permitted by any ReferencePolicy", targetGK.String(), policyRef.ToNamespace(), ref.Name),
 			},
 			nil
 	}

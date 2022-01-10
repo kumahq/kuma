@@ -5,12 +5,12 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
-var httpRouteGK = kube_schema.GroupKind{Group: gatewayapi.GroupName, Kind: "HTTPRoute"}
+var httpRouteKind = gatewayapi.Kind("HTTPRoute")
+var gatewayKind = gatewayapi.Kind("Gateway")
 
 type PolicyReference struct {
 	from        gatewayapi.ReferencePolicyFrom
@@ -22,10 +22,18 @@ func (pr *PolicyReference) ToNamespace() string {
 	return string(pr.toNamespace)
 }
 
+func FromGatewayIn(namespace string) gatewayapi.ReferencePolicyFrom {
+	return gatewayapi.ReferencePolicyFrom{
+		Kind:      gatewayKind,
+		Group:     gatewayapi.Group(gatewayapi.GroupName),
+		Namespace: gatewayapi.Namespace(namespace),
+	}
+}
+
 func FromHTTPRouteIn(namespace string) gatewayapi.ReferencePolicyFrom {
 	return gatewayapi.ReferencePolicyFrom{
-		Kind:      gatewayapi.Kind(httpRouteGK.Kind),
-		Group:     gatewayapi.Group(httpRouteGK.Group),
+		Kind:      httpRouteKind,
+		Group:     gatewayapi.Group(gatewayapi.GroupName),
 		Namespace: gatewayapi.Namespace(namespace),
 	}
 }
