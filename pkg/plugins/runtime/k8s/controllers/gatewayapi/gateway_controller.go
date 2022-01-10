@@ -79,9 +79,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to create GatewayInstance")
 	}
 
-	r.updateStatus(gateway, gatewayInstance)
-
-	if err := r.Client.Status().Update(ctx, gateway); err != nil {
+	if err := r.updateStatus(ctx, gateway, gatewayInstance); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update Gateway status")
 	}
 
@@ -148,25 +146,6 @@ func (r *GatewayReconciler) gapiToKumaGateway(gateway *gatewayapi.Gateway) (*mes
 			Listeners: listeners,
 		},
 	}, nil
-}
-
-func (r *GatewayReconciler) updateStatus(gateway *gatewayapi.Gateway, instance *mesh_k8s.GatewayInstance) {
-	ipType := gatewayapi.IPAddressType
-
-	var addrs []gatewayapi.GatewayAddress
-
-	if lb := instance.Status.LoadBalancer; lb != nil {
-		for _, addr := range instance.Status.LoadBalancer.Ingress {
-			addrs = append(addrs, gatewayapi.GatewayAddress{
-				Type:  &ipType,
-				Value: addr.IP,
-			})
-		}
-	}
-
-	gateway.Status.Addresses = addrs
-
-	setConditions(gateway, instance)
 }
 
 func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
