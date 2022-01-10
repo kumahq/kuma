@@ -1,12 +1,10 @@
 package mesh
 
 import (
-	"fmt"
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -48,14 +46,4 @@ var defaultRetryResource = &core_mesh.RetryResource{
 			},
 		},
 	},
-}
-
-// Retry needs to contain mesh name inside it. Otherwise if the name is the
-//  same (ex. "retry-all") creating new mesh would fail because there is already
-//  resource of name "retry-all" which is unique key on K8S
-func defaultRetryKey(meshName string) model.ResourceKey {
-	return model.ResourceKey{
-		Mesh: meshName,
-		Name: fmt.Sprintf("retry-all-%s", meshName),
-	}
 }
