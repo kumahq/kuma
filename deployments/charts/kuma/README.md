@@ -37,12 +37,12 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
 | controlPlane.resources | string | `nil` | Optionally override the resource spec |
-| controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, key.crt [and ca.crt when no controlPlane.tls.general.caSecretName specified] for protecting Kuma in-cluster communication |
+| controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, tls.key [and ca.crt when no controlPlane.tls.general.caSecretName specified] for protecting Kuma in-cluster communication |
 | controlPlane.tls.general.caSecretName | string | `""` | Secret that contains ca.crt for protecting Kuma in-cluster communication (ca.crt present in this secret have precedence over the one provided in the controlPlane.tls.general.secretName) |
 | controlPlane.tls.general.caBundle | string | `""` | Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt) |
-| controlPlane.tls.apiServer.secretName | string | `""` | Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS |
+| controlPlane.tls.apiServer.secretName | string | `""` | Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS |
 | controlPlane.tls.apiServer.clientCertsSecretName | string | `""` | Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS |
-| controlPlane.tls.kdsGlobalServer.secretName | string | `""` | Secret that contains tls.crt, key.crt for protecting cross cluster communication |
+| controlPlane.tls.kdsGlobalServer.secretName | string | `""` | Secret that contains tls.crt, tls.key for protecting cross cluster communication |
 | controlPlane.tls.kdsZoneClient.secretName | string | `""` | Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification |
 | controlPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma CP ImagePullPolicy |
 | controlPlane.image.repository | string | `"kuma-cp"` | Kuma CP image repository |

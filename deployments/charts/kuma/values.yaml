@@ -97,7 +97,7 @@ controlPlane:
   # TLS for various servers
   tls:
     general:
-      # -- Secret that contains tls.crt, key.crt [and ca.crt when no
+      # -- Secret that contains tls.crt, tls.key [and ca.crt when no
       # controlPlane.tls.general.caSecretName specified] for protecting
       # Kuma in-cluster communication
       secretName: ""
@@ -108,12 +108,12 @@ controlPlane:
       # -- Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
       caBundle: ""
     apiServer:
-      # -- Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS
+      # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""
       # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
       clientCertsSecretName: ""
     kdsGlobalServer:
-      # -- Secret that contains tls.crt, key.crt for protecting cross cluster communication
+      # -- Secret that contains tls.crt, tls.key for protecting cross cluster communication
       secretName: ""
     kdsZoneClient:
       # -- Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
