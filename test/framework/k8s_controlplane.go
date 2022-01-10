@@ -333,7 +333,7 @@ func (c *K8sControlPlane) UpdateObject(
 		return errors.Errorf("no serializer for %q", runtime.ContentTypeYAML)
 	}
 
-	_, err = retry.DoWithRetryableErrorsE(c.t, "update object", map[string]string{"conflict": "Error from server \\(Conflict\\)"}, 5, time.Second, func() (string, error) {
+	_, err = retry.DoWithRetryableErrorsE(c.t, "update object", map[string]string{"Error from server \\(Conflict\\)": "object conflict"}, 5, time.Second, func() (string, error) {
 		out, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", typeName, objectName, "-o", "yaml")
 		if err != nil {
 			return "", err
