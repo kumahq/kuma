@@ -101,9 +101,9 @@ controlPlane:
       # controlPlane.tls.general.caSecretName specified] for protecting
       # Kuma in-cluster communication
       secretName: ""
-      # -- Secret that contains ca.crt for protecting Kuma in-cluster communication
-      # (ca.crt present in this secret have precedence over the one provided in
-      # the controlPlane.tls.general.secretName)
+      # -- Secret that contains ca.crt that was used to sign cert for protecting
+      # Kuma in-cluster communication (ca.crt present in this secret
+      # have precedence over the one provided in the controlPlane.tls.general.secretName)
       caSecretName: ""
       # -- Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
       caBundle: ""
