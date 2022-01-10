@@ -5,68 +5,95 @@
   "matchedPolicies": {
    "FaultInjection": [
     {
-     "conf": {
-      "abort": {
-       "httpStatus": 500,
-       "percentage": 80
-      }
+     "meta": {
+      "type": "FaultInjection",
+      "mesh": "default",
+      "name": "fi-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
      },
-     "destinations": [
-      {
-       "match": {
-        "kuma.io/protocol": "http",
-        "kuma.io/service": "backend"
+     "spec": {
+      "conf": {
+       "delay": {
+        "percentage": 90,
+        "value": "5s"
        }
-      }
-     ],
-     "sources": [
-      {
-       "match": {
-        "kuma.io/service": "*"
+      },
+      "destinations": [
+       {
+        "match": {
+         "kuma.io/protocol": "http",
+         "kuma.io/service": "backend"
+        }
        }
-      }
-     ]
+      ],
+      "sources": [
+       {
+        "match": {
+         "kuma.io/service": "*"
+        }
+       }
+      ]
+     }
     },
     {
-     "conf": {
-      "delay": {
-       "percentage": 90,
-       "value": "5s"
-      }
+     "meta": {
+      "type": "FaultInjection",
+      "mesh": "default",
+      "name": "fi-2",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
      },
-     "destinations": [
-      {
-       "match": {
-        "kuma.io/protocol": "http",
-        "kuma.io/service": "backend"
+     "spec": {
+      "conf": {
+       "abort": {
+        "httpStatus": 500,
+        "percentage": 80
        }
-      }
-     ],
-     "sources": [
-      {
-       "match": {
-        "kuma.io/service": "*"
+      },
+      "destinations": [
+       {
+        "match": {
+         "kuma.io/protocol": "http",
+         "kuma.io/service": "backend"
+        }
        }
-      }
-     ]
+      ],
+      "sources": [
+       {
+        "match": {
+         "kuma.io/service": "*"
+        }
+       }
+      ]
+     }
     }
    ],
    "TrafficPermission": [
     {
-     "destinations": [
-      {
-       "match": {
-        "kuma.io/service": "*"
+     "meta": {
+      "type": "TrafficPermission",
+      "mesh": "default",
+      "name": "tp-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
+     },
+     "spec": {
+      "destinations": [
+       {
+        "match": {
+         "kuma.io/service": "*"
+        }
        }
-      }
-     ],
-     "sources": [
-      {
-       "match": {
-        "kuma.io/service": "*"
+      ],
+      "sources": [
+       {
+        "match": {
+         "kuma.io/service": "*"
+        }
        }
-      }
-     ]
+      ]
+     }
     }
    ]
   }
@@ -77,34 +104,43 @@
   "matchedPolicies": {
    "Timeout": [
     {
-     "conf": {
-      "connectTimeout": "5s",
-      "grpc": {
-       "maxStreamDuration": "5s",
-       "streamIdleTimeout": "5s"
-      },
-      "http": {
-       "idleTimeout": "5s",
-       "requestTimeout": "5s"
-      },
-      "tcp": {
-       "idleTimeout": "5s"
-      }
+     "meta": {
+      "type": "Timeout",
+      "mesh": "default",
+      "name": "t-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
      },
-     "destinations": [
-      {
-       "match": {
-        "kuma.io/service": "redis"
+     "spec": {
+      "conf": {
+       "connectTimeout": "5s",
+       "grpc": {
+        "maxStreamDuration": "5s",
+        "streamIdleTimeout": "5s"
+       },
+       "http": {
+        "idleTimeout": "5s",
+        "requestTimeout": "5s"
+       },
+       "tcp": {
+        "idleTimeout": "5s"
        }
-      }
-     ],
-     "sources": [
-      {
-       "match": {
-        "kuma.io/service": "*"
+      },
+      "destinations": [
+       {
+        "match": {
+         "kuma.io/service": "redis"
+        }
        }
-      }
-     ]
+      ],
+      "sources": [
+       {
+        "match": {
+         "kuma.io/service": "*"
+        }
+       }
+      ]
+     }
     }
    ]
   }
@@ -115,26 +151,35 @@
   "matchedPolicies": {
    "HealthCheck": [
     {
-     "conf": {
-      "healthyThreshold": 9,
-      "interval": "5s",
-      "timeout": "7s",
-      "unhealthyThreshold": 11
+     "meta": {
+      "type": "HealthCheck",
+      "mesh": "default",
+      "name": "hc-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
      },
-     "destinations": [
-      {
-       "match": {
-        "kuma.io/service": "*"
+     "spec": {
+      "conf": {
+       "healthyThreshold": 9,
+       "interval": "5s",
+       "timeout": "7s",
+       "unhealthyThreshold": 11
+      },
+      "destinations": [
+       {
+        "match": {
+         "kuma.io/service": "*"
+        }
        }
-      }
-     ],
-     "sources": [
-      {
-       "match": {
-        "kuma.io/service": "backend"
+      ],
+      "sources": [
+       {
+        "match": {
+         "kuma.io/service": "backend"
+        }
        }
-      }
-     ]
+      ]
+     }
     }
    ]
   }
@@ -145,26 +190,35 @@
   "matchedPolicies": {
    "HealthCheck": [
     {
-     "conf": {
-      "healthyThreshold": 9,
-      "interval": "5s",
-      "timeout": "7s",
-      "unhealthyThreshold": 11
+     "meta": {
+      "type": "HealthCheck",
+      "mesh": "default",
+      "name": "hc-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
      },
-     "destinations": [
-      {
-       "match": {
-        "kuma.io/service": "*"
+     "spec": {
+      "conf": {
+       "healthyThreshold": 9,
+       "interval": "5s",
+       "timeout": "7s",
+       "unhealthyThreshold": 11
+      },
+      "destinations": [
+       {
+        "match": {
+         "kuma.io/service": "*"
+        }
        }
-      }
-     ],
-     "sources": [
-      {
-       "match": {
-        "kuma.io/service": "backend"
+      ],
+      "sources": [
+       {
+        "match": {
+         "kuma.io/service": "backend"
+        }
        }
-      }
-     ]
+      ]
+     }
     }
    ]
   }
@@ -175,26 +229,35 @@
   "matchedPolicies": {
    "HealthCheck": [
     {
-     "conf": {
-      "healthyThreshold": 9,
-      "interval": "5s",
-      "timeout": "7s",
-      "unhealthyThreshold": 11
+     "meta": {
+      "type": "HealthCheck",
+      "mesh": "default",
+      "name": "hc-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
      },
-     "destinations": [
-      {
-       "match": {
-        "kuma.io/service": "*"
+     "spec": {
+      "conf": {
+       "healthyThreshold": 9,
+       "interval": "5s",
+       "timeout": "7s",
+       "unhealthyThreshold": 11
+      },
+      "destinations": [
+       {
+        "match": {
+         "kuma.io/service": "*"
+        }
        }
-      }
-     ],
-     "sources": [
-      {
-       "match": {
-        "kuma.io/service": "backend"
+      ],
+      "sources": [
+       {
+        "match": {
+         "kuma.io/service": "backend"
+        }
        }
-      }
-     ]
+      ]
+     }
     }
    ]
   }
@@ -205,26 +268,35 @@
   "matchedPolicies": {
    "HealthCheck": [
     {
-     "conf": {
-      "healthyThreshold": 9,
-      "interval": "5s",
-      "timeout": "7s",
-      "unhealthyThreshold": 11
+     "meta": {
+      "type": "HealthCheck",
+      "mesh": "default",
+      "name": "hc-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z"
      },
-     "destinations": [
-      {
-       "match": {
-        "kuma.io/service": "*"
+     "spec": {
+      "conf": {
+       "healthyThreshold": 9,
+       "interval": "5s",
+       "timeout": "7s",
+       "unhealthyThreshold": 11
+      },
+      "destinations": [
+       {
+        "match": {
+         "kuma.io/service": "*"
+        }
        }
-      }
-     ],
-     "sources": [
-      {
-       "match": {
-        "kuma.io/service": "backend"
+      ],
+      "sources": [
+       {
+        "match": {
+         "kuma.io/service": "backend"
+        }
        }
-      }
-     ]
+      ]
+     }
     }
    ]
   }

@@ -15,6 +15,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -106,9 +107,12 @@ var _ = Describe("Inspect WS", func() {
 			metrics, err := metrics.NewMetrics("Standalone")
 			Expect(err).ToNot(HaveOccurred())
 
+			core.Now = func() time.Time { return time.Time{} }
+
 			rm := manager.NewResourceManager(resourceStore)
 			for _, resource := range given.resources {
-				err = rm.Create(context.Background(), resource, store.CreateBy(core_model.MetaToResourceKey(resource.GetMeta())))
+				err = rm.Create(context.Background(), resource,
+					store.CreateBy(core_model.MetaToResourceKey(resource.GetMeta())))
 				Expect(err).ToNot(HaveOccurred())
 			}
 

@@ -3,7 +3,6 @@ package xds
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -14,13 +13,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
-
-func init() {
-	matchedPoliciesType := reflect.TypeOf(MatchedPolicies{})
-	if err := ValidateMatchedPoliciesType(matchedPoliciesType); err != nil {
-		panic(errors.Wrapf(err, "type %s doesn't pass validation", matchedPoliciesType.Name()))
-	}
-}
 
 // StreamID represents a stream opened by XDS
 type StreamID = int64
