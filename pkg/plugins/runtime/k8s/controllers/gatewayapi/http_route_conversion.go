@@ -8,6 +8,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
@@ -15,6 +16,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/policy"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -144,6 +146,22 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	namespace := objectNamespace
 	if ref.Namespace != nil {
 		namespace = string(*ref.Namespace)
+	}
+
+	policyRef := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(objectNamespace), ref)
+
+	if permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
+		return nil, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
+	} else if !permitted {
+		targetGK := kube_schema.GroupKind{Group: string(*ref.Group), Kind: string(*ref.Kind)}
+		return nil,
+			&kube_meta.Condition{
+				Type:    string(gatewayapi.ConditionRouteResolvedRefs),
+				Status:  kube_meta.ConditionFalse,
+				Reason:  RefNotPermitted,
+				Message: fmt.Sprintf("reference to %s %s/%s not permitted by any ReferencePolicy", targetGK.String(), namespace, ref.Name),
+			},
+			nil
 	}
 
 	switch {

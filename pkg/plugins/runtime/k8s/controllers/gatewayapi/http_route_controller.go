@@ -36,6 +36,7 @@ const (
 	ObjectTypeUnknownOrInvalid = "ObjectTypeUnknownOrInvalid"
 	ObjectNotFound             = "ObjectNotFound"
 	RefInvalid                 = "RefInvalid"
+	RefNotPermitted            = "RefNotPermitted"
 )
 
 const ownerLabel = "gateways.kuma.io/owner"
