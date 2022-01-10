@@ -22,6 +22,11 @@ export KUMACTL_DOCKER_IMAGE ?= $(KUMACTL_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION
 export KUMA_INIT_DOCKER_IMAGE ?= $(KUMA_INIT_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_PROMETHEUS_SD_DOCKER_IMAGE ?= $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_UNIVERSAL_DOCKER_IMAGE ?= $(DOCKER_REGISTRY)/kuma-universal:$(BUILD_INFO_VERSION)
+KUMA_IMAGES ?= $(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) $(KUMACTL_DOCKER_IMAGE) $(KUMA_INIT_DOCKER_IMAGE) $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) $(KUMA_UNIVERSAL_DOCKER_IMAGE)
+
+IMAGES_TARGETS ?= images/release images/test
+DOCKER_SAVE_TARGETS ?= docker/save/release docker/save/test
+DOCKER_LOAD_TARGETS ?= docker/load/release docker/load/test
 
 # Always use Docker BuildKit, see
 # https://docs.docker.com/develop/develop-images/build_enhancements/
@@ -53,7 +58,7 @@ image/kuma-universal: build/linux-amd64
 	docker tag kuma-universal $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
 .PHONY: images
-images: images/release images/test ## Dev: Rebuild release and tesst Docker images
+images: $(IMAGES_TARGETS) ## Dev: Rebuild release and tesst Docker images
 
 .PHONY: images/release
 images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd ## Dev: Rebuild release Docker images
@@ -65,7 +70,7 @@ ${BUILD_DOCKER_IMAGES_DIR}:
 	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}
 
 .PHONY: docker/save
-docker/save: docker/save/release docker/save/test
+docker/save: $(DOCKER_SAVE_TARGETS)
 
 .PHONY: docker/save/release
 docker/save/release: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-prometheus-sd
@@ -98,7 +103,7 @@ docker/save/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}
 	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
 .PHONY: docker/load
-docker/load: docker/load/release docker/load/test
+docker/load: $(DOCKER_LOAD_TARGETS)
 
 .PHONY: docker/load/release
 docker/load/release: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-init docker/load/kuma-prometheus-sd
@@ -150,7 +155,7 @@ docker/tag/kuma-init:
 docker/tag/kuma-universal:
 	docker tag $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-universal:$(KUMA_VERSION)
 
-.PHONY: docker/docker
+.PHONY: docker/purge
 docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
 	for c in `docker ps -q`; do docker kill $$c; done
 	docker system prune --all --volumes --force

@@ -50,11 +50,7 @@ k3d/stop/all:
 
 .PHONY: k3d/load/images
 k3d/load/images:
-	@k3d image import \
-    	$(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) \
-    	$(KUMA_INIT_DOCKER_IMAGE) $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) \
-    	$(KUMACTL_DOCKER_IMAGE) $(KUMA_UNIVERSAL_DOCKER_IMAGE) \
-    	--cluster=$(KIND_CLUSTER_NAME) --verbose
+	@k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose
 
 .PHONY: k3d/load
 k3d/load: images k3d/load/images

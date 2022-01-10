@@ -210,10 +210,13 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *kumaDeploymentOptio
 
 func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *kumaDeploymentOptions) (string, error) {
 	argsMap := map[string]string{
-		"--namespace":               KumaNamespace,
-		"--control-plane-registry":  KumaImageRegistry,
-		"--dataplane-registry":      KumaImageRegistry,
-		"--dataplane-init-registry": KumaImageRegistry,
+		"--namespace":                 KumaNamespace,
+		"--control-plane-registry":    KumaImageRegistry,
+		"--control-plane-repository":  KumaCPImageRepo,
+		"--dataplane-registry":        KumaImageRegistry,
+		"--dataplane-repository":      KumaDPImageRepo,
+		"--dataplane-init-registry":   KumaImageRegistry,
+		"--dataplane-init-repository": KumaInitImageRepo,
 	}
 
 	if HasGlobalImageRegistry() {
