@@ -57,7 +57,7 @@ var _ = Describe("Kubernetes Annotations", func() {
 			}
 
 			_, _, err := metadata.Annotations(annotations).GetUint32("key1")
-			Expect(err.Error()).To(ContainSubstring("value of annotation \"key1\" can't be casted: strconv.ParseUint: parsing \"dummy\": invalid syntax"))
+			Expect(err.Error()).To(ContainSubstring("failed to parse annotation \"key1\": strconv.ParseUint: parsing \"dummy\": invalid syntax"))
 		})
 	})
 
@@ -79,7 +79,7 @@ var _ = Describe("Kubernetes Annotations", func() {
 			}
 
 			_, _, err := metadata.Annotations(annotations).GetBool("key1")
-			Expect(err.Error()).To(ContainSubstring("value of annotation \"key1\" can't be casted: strconv.ParseBool: parsing \"dummy\": invalid syntax"))
+			Expect(err.Error()).To(ContainSubstring("failed to parse annotation \"key1\": strconv.ParseBool: parsing \"dummy\": invalid syntax"))
 		})
 	})
 
