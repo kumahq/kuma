@@ -6,10 +6,10 @@ source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
 
 [ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="docker.io"
 [ -z "$KUMA_DOCKER_REPO_ORG" ] && KUMA_DOCKER_REPO_ORG=${KUMA_DOCKER_REPO}/kumahq
-[ -z "$KUMA_COMPONENTS" ] && KUMA_COMPONENTS=("kuma-cp" "kuma-dp" "kumactl" "kuma-init" "kuma-prometheus-sd")
+[ -z "$KUMA_COMPONENTS" ] && KUMA_COMPONENTS="kuma-cp kuma-dp kumactl kuma-init kuma-prometheus-sd"
 
 function build() {
-  for component in "${KUMA_COMPONENTS[@]}"; do
+  for component in ${KUMA_COMPONENTS}; do
     msg "Building $component..."
     docker build --build-arg KUMA_ROOT="$(pwd)" -t $KUMA_DOCKER_REPO_ORG/"$component":"$KUMA_VERSION" \
       -f tools/releases/dockerfiles/Dockerfile."$component" .
@@ -29,7 +29,7 @@ function docker_logout() {
 function push() {
   docker_login
 
-  for component in "${KUMA_COMPONENTS[@]}"; do
+  for component in ${KUMA_COMPONENTS}; do
     msg "Pushing $component:$KUMA_VERSION ..."
     docker push $KUMA_DOCKER_REPO_ORG/"$component":"$KUMA_VERSION"
     msg_green "... done!"
