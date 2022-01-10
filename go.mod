@@ -65,7 +65,7 @@ require (
 	k8s.io/client-go v0.23.1
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
 	sigs.k8s.io/controller-runtime v0.11.0
-	sigs.k8s.io/controller-tools v0.7.0
+	sigs.k8s.io/controller-tools v0.8.0
 	sigs.k8s.io/gateway-api v0.4.0
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
