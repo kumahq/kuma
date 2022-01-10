@@ -83,17 +83,17 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) PortForwardKumaCP() error {
-	kumacpPods := c.GetKumaCPPods()
-	if len(kumacpPods) < 1 {
-		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
+func (c *K8sControlPlane) PortForwardKumaCP() {
+	kumaCpPods := c.GetKumaCPPods()
+	// There could be multiple pods still starting so pick one that's available already
+	for i := range kumaCpPods {
+		if k8s.IsPodAvailable(&kumaCpPods[i]) {
+			c.portFwd.localAPITunnel = k8s.NewTunnel(c.GetKubectlOptions(KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, kumaCPAPIPort)
+			c.portFwd.localAPITunnel.ForwardPort(c.t)
+			return
+		}
 	}
-
-	kumacpPodName := kumacpPods[0].Name
-
-	c.portFwd.localAPITunnel = k8s.NewTunnel(c.GetKubectlOptions(KumaNamespace), k8s.ResourceTypePod, kumacpPodName, 0, kumaCPAPIPort)
-	c.portFwd.localAPITunnel.ForwardPort(c.t)
-	return nil
+	c.t.Fatalf("Failed finding an available pod, allPods: %v", kumaCpPods)
 }
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
@@ -176,9 +176,7 @@ func (c *K8sControlPlane) GetKumaCPLogs() (string, error) {
 }
 
 func (c *K8sControlPlane) FinalizeAdd() error {
-	if err := c.PortForwardKumaCP(); err != nil {
-		return err
-	}
+	c.PortForwardKumaCP()
 	var token string
 	if !c.localhostIsAdmin {
 		t, err := c.retrieveAdminToken()
