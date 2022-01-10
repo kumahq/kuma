@@ -1,0 +1,118 @@
+package gatewayapi
+
+import (
+	"context"
+	"fmt"
+
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/policy"
+)
+
+type ListenerConditions map[gatewayapi.SectionName][]kube_meta.Condition
+
+func (r *GatewayReconciler) gapiToKumaGateway(
+	ctx context.Context, gateway *gatewayapi.Gateway,
+) (*mesh_proto.Gateway, ListenerConditions, error) {
+	var listeners []*mesh_proto.Gateway_Listener
+
+	listenerConditions := ListenerConditions{}
+
+	for _, l := range gateway.Spec.Listeners {
+		listener := &mesh_proto.Gateway_Listener{
+			Port: uint32(l.Port),
+			Tags: map[string]string{
+				// gateway-api routes are configured using direct references to
+				// Gateways, so just create a tag specifically for this listener
+				mesh_proto.ListenerTag: string(l.Name),
+			},
+		}
+
+		if protocol, ok := mesh_proto.Gateway_Listener_Protocol_value[string(l.Protocol)]; ok {
+			listener.Protocol = mesh_proto.Gateway_Listener_Protocol(protocol)
+		} else if l.Protocol != "" {
+			// TODO admission webhook should prevent this
+			listenerConditions[l.Name] = append(listenerConditions[l.Name],
+				kube_meta.Condition{
+					Type:    string(gatewayapi.ListenerConditionReady),
+					Status:  kube_meta.ConditionFalse,
+					Reason:  string(gatewayapi.ListenerReasonInvalid),
+					Message: fmt.Sprintf("unexpected protocol %s", l.Protocol),
+				},
+			)
+			continue
+		}
+
+		listener.Hostname = "*"
+		if l.Hostname != nil {
+			listener.Hostname = string(*l.Hostname)
+		}
+
+		refsPermitted := true
+
+		for _, certRef := range l.TLS.CertificateRefs {
+			ref := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), *certRef)
+
+			permitted, err := policy.IsReferencePermitted(ctx, r.Client, ref)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			refsPermitted = refsPermitted && permitted
+
+			var resolvedCondition []kube_meta.Condition
+
+			if permitted {
+				resolvedCondition = []kube_meta.Condition{
+					{
+						Type:   string(gatewayapi.ListenerConditionResolvedRefs),
+						Status: kube_meta.ConditionTrue,
+						Reason: string(gatewayapi.ListenerReasonResolvedRefs),
+					},
+					{
+						Type:   string(gatewayapi.ListenerConditionReady),
+						Status: kube_meta.ConditionTrue,
+						Reason: string(gatewayapi.ListenerConditionReady),
+					},
+				}
+			} else {
+				targetGK := kube_schema.GroupKind{Group: string(*certRef.Group), Kind: string(*certRef.Kind)}
+				resolvedCondition = []kube_meta.Condition{
+					{
+						Type:    string(gatewayapi.ListenerConditionResolvedRefs),
+						Status:  kube_meta.ConditionFalse,
+						Reason:  string(gatewayapi.ListenerReasonRefNotPermitted),
+						Message: fmt.Sprintf("reference to %s %s/%s not permitted by any ReferencePolicy", targetGK.String(), ref.ToNamespace(), certRef.Name),
+					},
+					{
+						Type:    string(gatewayapi.ListenerConditionReady),
+						Status:  kube_meta.ConditionFalse,
+						Reason:  string(gatewayapi.ListenerReasonInvalid),
+						Message: "unable to resolve refs",
+					},
+				}
+			}
+
+			listenerConditions[l.Name] = append(listenerConditions[l.Name], resolvedCondition...)
+		}
+
+		if refsPermitted {
+			listeners = append(listeners, listener)
+		}
+	}
+
+	match := serviceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
+
+	return &mesh_proto.Gateway{
+		Selectors: []*mesh_proto.Selector{
+			{Match: match},
+		},
+		Conf: &mesh_proto.Gateway_Conf{
+			Listeners: listeners,
+		},
+	}, listenerConditions, nil
+}
