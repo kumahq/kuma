@@ -80,47 +80,12 @@ kind/stop/all:
 	@kind delete clusters --all
 	@rm -f $(KUBECONFIG_DIR)/kind-kuma-*
 
-.PHONY: kind/load/control-plane
-kind/load/control-plane:
-	@kind load docker-image $(KUMA_CP_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
-
-.PHONY: kind/load/kuma-dp
-kind/load/kuma-dp:
-	@kind load docker-image $(KUMA_DP_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
-
-.PHONY: kind/load/kuma-init
-kind/load/kuma-init:
-	@kind load docker-image $(KUMA_INIT_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
-
-.PHONY: kind/load/kuma-prometheus-sd
-kind/load/kuma-prometheus-sd:
-	@kind load docker-image $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
-
-.PHONY: kind/load/kumactl
-kind/load/kumactl:
-	@kind load docker-image $(KUMACTL_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
-
-.PHONY: kind/load/kuma-universal
-kind/load/kuma-universal:
-	@kind load docker-image $(KUMA_UNIVERSAL_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
-
 .PHONY: kind/load/images
-kind/load/images: kind/load/images/release kind/load/images/test
-
-.PHONY: kind/load/images/release
-kind/load/images/release: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl
-
-.PHONY: kind/load/images/test
-kind/load/images/test: kind/load/kuma-universal
+kind/load/images:
+	for image in ${KUMA_IMAGES}; do kind load docker-image $$image --name=$(KIND_CLUSTER_NAME); done
 
 .PHONY: kind/load
-kind/load: kind/load/release kind/load/test
-
-.PHONY: kind/load/release
-kind/load/release: images/release kind/load/images/release
-
-.PHONY: kind/load/test
-kind/load/test: images/test kind/load/images/test
+kind/load: images kind/load/images
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load

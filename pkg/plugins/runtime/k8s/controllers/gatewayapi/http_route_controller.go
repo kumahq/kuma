@@ -3,12 +3,10 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -53,10 +51,9 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 		return kube_ctrl.Result{}, err
 	}
-
 	mesh := k8s_util.MeshFor(httpRoute)
 
-	spec, status, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
+	spec, conditions, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating GatewayRoute")
 	}
@@ -65,9 +62,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not CreateOrUpdate GatewayRoutes")
 	}
 
-	httpRoute.Status = r.mergeStatus(ctx, httpRoute, status)
-
-	if err := r.Client.Status().Update(ctx, httpRoute); err != nil {
+	if err := r.updateStatus(ctx, httpRoute, conditions); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update HTTPRoute status")
 	}
 
@@ -124,13 +119,13 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 	kumaRoute.Conf = routeConf
 
-	status := ParentConditions{}
+	conditions := ParentConditions{}
 
 	for _, ref := range refRoutes {
-		status[ref] = routeConditions
+		conditions[ref] = routeConditions
 	}
 
-	return kumaRoute, status, nil
+	return kumaRoute, conditions, nil
 }
 
 func (r *HTTPRouteReconciler) shouldHandleParentRef(
@@ -232,52 +227,6 @@ func reconcileLabelledObject(
 	}
 
 	return nil
-}
-
-// mergeStatus handles updating the route status with the list of conditions for
-// each parent ref.
-func (r *HTTPRouteReconciler) mergeStatus(ctx context.Context, route *gatewayapi.HTTPRoute, parentConditions ParentConditions) gatewayapi.HTTPRouteStatus {
-	var mergedStatuses []gatewayapi.RouteParentStatus
-	var previousStatuses []gatewayapi.RouteParentStatus
-
-	// partition statuses based on whether we control them
-	for _, status := range route.Status.Parents {
-		if status.ControllerName != controllerName {
-			mergedStatuses = append(mergedStatuses, status)
-		} else {
-			previousStatuses = append(previousStatuses, status)
-		}
-	}
-
-	// for each new parentstatus, either add it to the list or update the
-	// existing one
-	for ref, conditions := range parentConditions {
-		previousStatus := gatewayapi.RouteParentStatus{
-			ParentRef:      ref,
-			ControllerName: controllerName,
-		}
-
-		// Look through previous statuses for one belonging to the same ref
-		// go abusing pointers as option types makes it very painful
-		for _, candidatePreviousStatus := range previousStatuses {
-			if reflect.DeepEqual(candidatePreviousStatus.ParentRef, ref) {
-				previousStatus = candidatePreviousStatus
-			}
-		}
-
-		for _, condition := range conditions {
-			condition.ObservedGeneration = route.GetGeneration()
-			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, condition)
-		}
-
-		mergedStatuses = append(mergedStatuses, previousStatus)
-	}
-
-	return gatewayapi.HTTPRouteStatus{
-		RouteStatus: gatewayapi.RouteStatus{
-			Parents: mergedStatuses,
-		},
-	}
 }
 
 func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {

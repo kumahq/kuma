@@ -55,6 +55,7 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 
 		return kube_ctrl.Result{}, err
 	}
+	orig := gatewayInstance.DeepCopyObject().(kube_client.Object)
 
 	svc, err := r.createOrUpdateService(ctx, gatewayInstance)
 	if err != nil {
@@ -71,7 +72,10 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 
 	updateStatus(gatewayInstance, svc, deployment)
 
-	if err := r.Client.Status().Update(ctx, gatewayInstance); err != nil {
+	if err := r.Client.Status().Patch(ctx, gatewayInstance, kube_client.MergeFrom(orig)); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return kube_ctrl.Result{}, nil
+		}
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update GatewayInstance status")
 	}
 
