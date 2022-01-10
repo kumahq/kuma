@@ -49,7 +49,7 @@ func (x *ZoneInsight) GetSubscription(id string) (int, *KDSSubscription) {
 
 func (x *ZoneInsight) GetLastSubscription() generic.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
-		return nil
+		return (*KDSSubscription)(nil)
 	}
 	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
 }

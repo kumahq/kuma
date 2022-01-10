@@ -78,7 +78,7 @@ func (x *ZoneIngressInsight) IsOnline() bool {
 
 func (x *ZoneIngressInsight) GetLastSubscription() generic.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
-		return nil
+		return (*DiscoverySubscription)(nil)
 	}
 	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
 }
