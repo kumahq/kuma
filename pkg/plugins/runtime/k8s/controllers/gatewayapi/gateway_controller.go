@@ -2,7 +2,6 @@ package gatewayapi
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -10,7 +9,6 @@ import (
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -26,8 +24,6 @@ import (
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
-
-const controllerName = "gateways.kuma.io/controller"
 
 // GatewayReconciler reconciles a GatewayAPI Gateway object.
 type GatewayReconciler struct {
@@ -53,10 +49,12 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, err
 	}
 
-	class, err := r.getGatewayClass(ctx, gateway.Spec.GatewayClassName)
+	class, err := getGatewayClass(ctx, r.Client, gateway.Spec.GatewayClassName)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to retrieve GatewayClass referenced by Gateway")
-	} else if class == nil {
+	}
+
+	if class.Spec.ControllerName != controllerName {
 		return kube_ctrl.Result{}, nil
 	}
 
@@ -111,31 +109,6 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, gateway 
 	}
 
 	return instance, nil
-}
-
-func (r *GatewayReconciler) getGatewayClass(ctx context.Context, name gatewayapi.ObjectName) (*gatewayapi.GatewayClass, error) {
-	class := &gatewayapi.GatewayClass{}
-	classObjectKey := kube_types.NamespacedName{Name: string(name)}
-
-	if err := r.Client.Get(ctx, classObjectKey, class); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			return nil, nil
-		}
-
-		return nil, errors.Wrapf(err, "failed to get GatewayClass %s", classObjectKey)
-	}
-
-	if class.Spec.ControllerName != controllerName {
-		return nil, nil
-	}
-
-	return class, nil
-}
-
-func serviceTagForGateway(name kube_types.NamespacedName) map[string]string {
-	return map[string]string{
-		mesh_proto.ServiceTag: fmt.Sprintf("%s_%s_gateway", name.Name, name.Namespace),
-	}
 }
 
 func (r *GatewayReconciler) gapiToKumaGateway(gateway *gatewayapi.Gateway) (*mesh_proto.Gateway, error) {

@@ -37,7 +37,7 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
-	github.com/sethvargo/go-retry v0.1.0
+	github.com/sethvargo/go-retry v0.2.1
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.3.0
@@ -47,8 +47,9 @@ require (
 	github.com/spiffe/spire v1.1.2
 	github.com/testcontainers/testcontainers-go v0.12.0
 	go.uber.org/multierr v1.7.0
-	go.uber.org/zap v1.19.1
+	go.uber.org/zap v1.20.0
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa

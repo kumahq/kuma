@@ -943,6 +943,7 @@ rules:
       - gateway.networking.k8s.io
     resources:
       - gateways/status
+      - httproutes/status
     verbs:
       - get
       - patch

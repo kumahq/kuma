@@ -686,7 +686,7 @@ jobs:
     - run:
         name: "Run unit tests"
         command: |
-          GO_TEST_OPTS='-p 2' make test
+          make test
 
   go_cache:
     executor: golang
@@ -809,6 +809,10 @@ jobs:
         description: use IPv6
         type: boolean
         default: false
+      k3sVersion:
+        description: version of k3s to use
+        type: string
+        default: v1.21.7-k3s1
     parallelism: 8
     environment:
       GOPATH: /home/circleci/.go-kuma-go
@@ -873,6 +877,7 @@ jobs:
             - run:
                 name: "Run IPv4 E2E tests"
                 command: |
+                  export CI_K3S_VERSION=<< parameters.k3sVersion >>
                   export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
@@ -960,128 +965,6 @@ jobs:
         paths:
         - docker-images
 
-  example_docker-compose:
-    executor: vm
-    parameters:
-      use_local_kuma_images:
-        description: Use local Docker images from CircleCI workspace instead of downloading ones from docker.io.
-        type: boolean
-        default: true
-    environment:
-      KUMACTL_INSTALL_USE_LOCAL_IMAGES: << parameters.use_local_kuma_images >>
-    steps:
-    - checkout
-    # Mount files from the upstream jobs
-    - attach_workspace:
-        at: build
-    - when:
-        condition: << parameters.use_local_kuma_images >>
-        steps:
-        - run:
-            name: Load Docker images
-            command: make load/example/docker-compose
-    - run:
-        name: Start Docker Compose setup
-        command: make deploy/example/docker-compose DOCKER_COMPOSE_OPTIONS=--detach
-    - run:
-        name: Wait until Envoy listener gets configured
-        command: make wait/example/docker-compose
-    - run:
-        name: Make test requests via Envoy
-        command: make curl/example/docker-compose
-    - run:
-        name: Verify Envoy stats
-        command: make verify/example/docker-compose
-    - run:
-        name: Verify traffic routing without mTLS
-        command: make verify/traffic-routing/docker-compose/without-mtls
-    - run:
-        name: Verify traffic routing with mTLS
-        command: make verify/traffic-routing/docker-compose/with-mtls
-
-  example_minikube:
-    executor: vm
-    parameters:
-      kubernetes_version:
-        description: The version of Kubernetes to test on.
-        type: string
-        default: "v1.20.0"
-      use_local_kuma_images:
-        description: Use local Docker images from CircleCI workspace instead of downloading ones from docker.io.
-        type: boolean
-        default: true
-    environment:
-      KUMACTL_INSTALL_USE_LOCAL_IMAGES: << parameters.use_local_kuma_images >>
-    steps:
-    - checkout
-    # Mount files from the upstream jobs
-    - attach_workspace:
-        at: build
-    - run:
-        name: Install Minikube
-        command: make dev/install/minikube
-    - run:
-        name: Install Kubectl
-        command: make dev/install/kubectl
-    - run:
-        name: Install Conntrack # need for minikube on Ubuntu with --vm-driver=non
-        command: |
-          sudo apt-get update
-          sudo apt-get install -y conntrack
-    - run:
-        name: Start Minikube
-        command: $HOME/bin/minikube start --vm-driver=docker --kubernetes-version=<< parameters.kubernetes_version >>
-    - when:
-        condition: << parameters.use_local_kuma_images >>
-        steps:
-        - run:
-            name: Load Docker images into Minikube
-            command: make load/example/minikube
-    - unless:
-        condition: << parameters.use_local_kuma_images >>
-        steps:
-        - attach_workspace:
-            at: docker-images
-    - run:
-        name: Deploy example setup
-        command: make deploy/example/minikube
-    - run:
-        name: Wait until Envoy listener gets configured
-        command: make wait/example/minikube
-    - run:
-        name: Make test requests via Envoy
-        command: make curl/example/minikube
-    - run:
-        name: Verify Envoy stats
-        command: make verify/example/minikube
-    - run:
-        name: Enable mTLS
-        command: make apply/example/minikube/mtls
-    - run:
-        name: Wait until Envoy is configured for mTLS
-        command: make wait/example/minikube/mtls
-    - run:
-        name: Make test requests via Envoy with mTLS
-        command: make curl/example/minikube
-    - run:
-        name: Verify Envoy mTLS stats
-        command: make verify/example/minikube/mtls
-    - run:
-        name: Verify kumactl workflow
-        command: make kumactl/example/minikube
-    - run:
-        name: Undeploy example setup
-        command: make undeploy/example/minikube
-    - run:
-        name: Deploy example setup for traffic routing
-        command: make deploy/traffic-routing/minikube
-    - run:
-        name: Verify traffic routing without mTLS
-        command: make verify/traffic-routing/minikube/without-mtls
-    - run:
-        name: Verify traffic routing with mTLS
-        command: make verify/traffic-routing/minikube/with-mtls
-
   release:
     executor: vm
     steps:
@@ -1158,39 +1041,19 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - build
-    - example_docker-compose:
-        <<: *commit_workflow_filters
-        name: docker-compose
-        requires:
-        - images
-        - check
-        # custom parameters
-        use_local_kuma_images: true
-    - example_minikube:
-        <<: *commit_workflow_filters
-        name: minikube_v1_18
-        requires:
-          - images
-          - check
-        # custom parameters
-        kubernetes_version: v1.18.20
-        use_local_kuma_images: true
-    - example_minikube:
-        <<: *commit_workflow_filters
-        name: minikube_v1_20
-        requires:
-          - images
-          - check
-        # custom parameters
-        kubernetes_version: v1.20.13
-        use_local_kuma_images: true
     - e2e:
         <<: *commit_workflow_filters
         name: test/e2e-ipv4
         requires:
           - images
           - check
-# keep this one disabled and enable only for development
+    - e2e:
+        <<: *commit_workflow_filters
+        name: test/e2e-ipv4-oldk8s
+        k3sVersion: v1.19.16-k3s1
+        requires:
+          - images
+          - check
     - e2e:
         <<: *commit_workflow_filters
         name: test/e2e-ipv6
@@ -1295,50 +1158,6 @@ workflows:
           <<: *master_workflow_filters
           requires:
             - build
-      - example_docker-compose:
-          <<: *master_workflow_filters
-          name: docker-compose
-          requires:
-            - images
-            - check
-          # custom parameters
-          use_local_kuma_images: true
-      - example_minikube:
-          <<: *master_workflow_filters
-          name: minikube_v1_17
-          requires:
-            - images
-            - check
-          # custom parameters
-          kubernetes_version: v1.17.17
-          use_local_kuma_images: true
-      - example_minikube:
-          <<: *master_workflow_filters
-          name: minikube_v1_18
-          requires:
-            - images
-            - check
-          # custom parameters
-          kubernetes_version: v1.18.16
-          use_local_kuma_images: true
-      - example_minikube:
-          <<: *master_workflow_filters
-          name: minikube_v1_19
-          requires:
-            - images
-            - check
-          # custom parameters
-          kubernetes_version: v1.19.8
-          use_local_kuma_images: true
-      - example_minikube:
-          <<: *master_workflow_filters
-          name: minikube_v1_20
-          requires:
-            - images
-            - check
-          # custom parameters
-          kubernetes_version: v1.20.4
-          use_local_kuma_images: true
       - e2e:
           <<: *master_workflow_filters
           name: test/e2e
@@ -1383,50 +1202,3 @@ workflows:
         <<: *helm_release_workflow_filters
         requires:
         - release
-    - example_docker-compose:
-        <<: *release_workflow_filters
-        name: docker-compose
-        requires:
-        - images-kumactl
-        - release
-        # custom parameters
-        # docker images for a release build must be downloaded from a public Docker registry
-        use_local_kuma_images: false
-    - example_minikube:
-        <<: *release_workflow_filters
-        name: minikube_v1_17
-        requires:
-        - images-kumactl
-        - release
-        # custom parameters
-        kubernetes_version: v1.17.17
-        # docker images for a release build must be downloaded from a public Docker registry
-        use_local_kuma_images: false
-    - example_minikube:
-        <<: *release_workflow_filters
-        name: minikube_v1_18
-        requires:
-        - images-kumactl
-        - release
-        # custom parameters
-        kubernetes_version: v1.18.16
-        # docker images for a release build must be downloaded from a public Docker registry
-        use_local_kuma_images: false
-    - example_minikube:
-        <<: *release_workflow_filters
-        name: minikube_v1_19
-        requires:
-        - images-kumactl
-        - release
-        # custom parameters
-        kubernetes_version: v1.19.8
-        use_local_kuma_images: false
-    - example_minikube:
-        <<: *release_workflow_filters
-        name: minikube_v1_20
-        requires:
-        - images-kumactl
-        - release
-        # custom parameters
-        kubernetes_version: v1.20.4
-        use_local_kuma_images: false

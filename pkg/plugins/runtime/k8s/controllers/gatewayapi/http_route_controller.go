@@ -2,10 +2,14 @@ package gatewayapi
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -13,14 +17,10 @@ import (
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 // HTTPRouteReconciler reconciles a GatewayAPI object into Kuma-native objects
@@ -34,6 +34,14 @@ type HTTPRouteReconciler struct {
 	ResourceManager manager.ResourceManager
 }
 
+const (
+	ObjectTypeUnknownOrInvalid = "ObjectTypeUnknownOrInvalid"
+	ObjectNotFound             = "ObjectNotFound"
+	RefInvalid                 = "RefInvalid"
+)
+
+const ownerLabel = "gateways.kuma.io/owner"
+
 // Reconcile handles transforming a gateway-api HTTPRoute into a Kuma
 // GatewayRoute and managing the status of the gateway-api objects.
 func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -46,124 +54,230 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, err
 	}
 
-	// TODO check that gateways exist etc
-	// TODO set status on gapi resources
-
-	coreName := util_k8s.K8sNamespacedNameToCoreName(httpRoute.Name, httpRoute.Namespace)
 	mesh := k8s_util.MeshFor(httpRoute)
 
-	resource := core_mesh.NewGatewayRouteResource()
-
-	if err := manager.Upsert(r.ResourceManager, model.ResourceKey{Mesh: mesh, Name: coreName}, resource, func(resource model.Resource) error {
-		spec, err := r.gapiToKumaRoute(ctx, mesh, httpRoute.Namespace, httpRoute)
-		if err != nil {
-			return errors.Wrap(err, "error generating GatewayRoute")
-		}
-
-		return resource.SetSpec(spec)
-	}); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not upsert GatewayRoute")
-	}
-
-	var err error
-
-	resource.Spec, err = r.gapiToKumaRoute(ctx, mesh, httpRoute.Namespace, httpRoute)
+	spec, status, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
 	if err != nil {
-		return kube_ctrl.Result{}, err
+		return kube_ctrl.Result{}, errors.Wrap(err, "error generating GatewayRoute")
 	}
 
-	err = r.ResourceManager.Update(ctx, resource, store.ModifiedAt(core.Now()))
+	if err := reconcileLabelledObject(ctx, r.Client, req.NamespacedName, spec); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "could not CreateOrUpdate GatewayRoutes")
+	}
 
-	return kube_ctrl.Result{}, errors.Wrap(err, "could not update GatewayRoute resource")
+	httpRoute.Status = r.mergeStatus(ctx, httpRoute, status)
+
+	if err := r.Client.Status().Update(ctx, httpRoute); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update HTTPRoute status")
+	}
+
+	return kube_ctrl.Result{}, nil
 }
 
-func (r *HTTPRouteReconciler) gapiToKumaRoute(ctx context.Context, mesh string, namespace string, route *gatewayapi.HTTPRoute) (*mesh_proto.GatewayRoute, error) {
-	var selectors []*mesh_proto.Selector
+type ParentConditions map[gatewayapi.ParentRef][]kube_meta.Condition
 
-	// Convert GAPI parent refs into Kuma tag matchers
-	for _, ref := range route.Spec.ParentRefs {
-		namespace := route.Namespace
+// gapiToKumaRoutes returns some number of GatewayRoutes that should be created
+// for this HTTPRoute along with any statuses to be set on the HTTPRoute.
+// Only unexpected errors are returned as error.
+func (r *HTTPRouteReconciler) gapiToKumaRoutes(
+	ctx context.Context,
+	mesh string,
+	route *gatewayapi.HTTPRoute,
+) (
+	*mesh_proto.GatewayRoute,
+	ParentConditions,
+	error,
+) {
+	var refRoutes []gatewayapi.ParentRef
+
+	kumaRoute := &mesh_proto.GatewayRoute{}
+
+	// Convert GAPI parent refs into selectors
+	for i, ref := range route.Spec.ParentRefs {
+		if handle, err := r.shouldHandleParentRef(ctx, route, ref); err != nil {
+			return nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
+		} else if !handle {
+			continue
+		}
+		refRoutes = append(refRoutes, ref)
+
+		refNamespace := route.Namespace
 		if ns := ref.Namespace; ns != nil {
-			namespace = string(*ns)
+			refNamespace = string(*ns)
 		}
 
-		match := serviceTagForGateway(kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)})
+		match := serviceTagForGateway(kube_types.NamespacedName{Namespace: refNamespace, Name: string(ref.Name)})
 
 		if ref.SectionName != nil {
 			match[mesh_proto.ListenerTag] = string(*ref.SectionName)
 		}
 
-		selectors = append(selectors, &mesh_proto.Selector{
+		kumaRoute.Selectors = append(kumaRoute.Selectors, &mesh_proto.Selector{
 			Match: match,
 		})
 	}
 
-	var hostnames []string
-
-	for _, hn := range route.Spec.Hostnames {
-		hostnames = append(hostnames, string(hn))
+	routeConf, routeConditions, err := r.gapiToKumaRouteConf(ctx, mesh, route)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	var rules []*mesh_proto.GatewayRoute_HttpRoute_Rule
+	kumaRoute.Conf = routeConf
 
-	for _, rule := range route.Spec.Rules {
-		var backends []*mesh_proto.GatewayRoute_Backend
+	status := ParentConditions{}
 
-		for _, backend := range rule.BackendRefs {
-			ref := backend.BackendObjectReference
-
-			destination, err := r.gapiToKumaRef(ctx, mesh, namespace, ref)
-			if err != nil {
-				return nil, err
-			}
-
-			backends = append(backends, &mesh_proto.GatewayRoute_Backend{
-				// Weight has a default of 1
-				Weight:      uint32(*backend.Weight),
-				Destination: destination,
-			})
-		}
-
-		var matches []*mesh_proto.GatewayRoute_HttpRoute_Match
-
-		for _, match := range rule.Matches {
-			kumaMatch, err := gapiToKumaMatch(match)
-			if err != nil {
-				return nil, errors.Wrap(err, "couldn't convert match")
-			}
-
-			matches = append(matches, kumaMatch)
-		}
-
-		var filters []*mesh_proto.GatewayRoute_HttpRoute_Filter
-
-		for _, filter := range rule.Filters {
-			kumaFilter, err := r.gapiToKumaFilter(ctx, mesh, namespace, filter)
-			if err != nil {
-				return nil, err
-			}
-
-			filters = append(filters, kumaFilter)
-		}
-
-		rules = append(rules, &mesh_proto.GatewayRoute_HttpRoute_Rule{
-			Matches:  matches,
-			Filters:  filters,
-			Backends: backends,
-		})
+	for _, ref := range refRoutes {
+		status[ref] = routeConditions
 	}
 
-	return &mesh_proto.GatewayRoute{
-		Selectors: selectors,
-		Conf: &mesh_proto.GatewayRoute_Conf{
-			Route: &mesh_proto.GatewayRoute_Conf_Http{
-				Http: &mesh_proto.GatewayRoute_HttpRoute{
-					Hostnames: hostnames,
-					Rules:     rules,
-				},
+	return kumaRoute, status, nil
+}
+
+func (r *HTTPRouteReconciler) shouldHandleParentRef(
+	ctx context.Context, route kube_client.Object, ref gatewayapi.ParentRef,
+) (bool, error) {
+	name := string(ref.Name)
+	// Group and Kind both have default values
+	group := string(*ref.Group)
+	kind := string(*ref.Kind)
+
+	namespace := route.GetNamespace()
+	if ns := ref.Namespace; ns != nil {
+		namespace = string(*ns)
+	}
+
+	gateway := &gatewayapi.Gateway{}
+	gatewayKind := "Gateway"
+
+	if group != gatewayapi.GroupName || kind != gatewayKind {
+		return false, nil
+	}
+
+	if err := r.Client.Get(ctx, kube_types.NamespacedName{Namespace: namespace, Name: name}, gateway); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+
+	class, err := getGatewayClass(ctx, r.Client, gateway.Spec.GatewayClassName)
+	if err != nil {
+		return false, err
+	}
+
+	return class.Spec.ControllerName == controllerName, nil
+}
+
+// reconcileLabelledObjectSet manages a set of owned objects based on labeling
+// with the owner key and indexed by the service tag and listener tag.
+func reconcileLabelledObject(
+	ctx context.Context,
+	client kube_client.Client,
+	owner kube_types.NamespacedName,
+	routeSpec *mesh_proto.GatewayRoute,
+) error {
+	// First we list which existing objects are owned by this route.
+	// We expect either 0 or 1 and depending on whether routeSpec is nil
+	// we either create an object or update or delete the existing
+	ownerLabelValue := fmt.Sprintf("%s-%s", owner.Namespace, owner.Name)
+	labels := kube_client.MatchingLabels{
+		ownerLabel: ownerLabelValue,
+	}
+
+	list := &mesh_k8s.GatewayRouteList{}
+	if err := client.List(ctx, list, labels); err != nil {
+		return err
+	}
+
+	if l := len(list.Items); l > 1 {
+		return fmt.Errorf("internal error: found %d items labeled as owned by this object, expected either zero or one", l)
+	}
+
+	var existing *mesh_k8s.GatewayRoute
+	if len(list.Items) == 1 {
+		existing = &list.Items[0]
+	}
+
+	if routeSpec == nil {
+		if existing != nil {
+			if err := client.Delete(ctx, existing); err != nil && !kube_apierrs.IsNotFound(err) {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if existing != nil {
+		existing.Spec = routeSpec
+
+		if err := client.Update(ctx, existing); err != nil {
+			return errors.Wrap(err, "could not update GatewayRoute")
+		}
+		return nil
+	}
+
+	route := &mesh_k8s.GatewayRoute{
+		ObjectMeta: kube_meta.ObjectMeta{
+			GenerateName: fmt.Sprintf("%s-", ownerLabelValue),
+			Labels: map[string]string{
+				ownerLabel: ownerLabelValue,
 			},
 		},
-	}, nil
+		Spec: routeSpec,
+	}
+
+	if err := client.Create(ctx, route); err != nil {
+		return errors.Wrap(err, "could not create GatewayRoute")
+	}
+
+	return nil
+}
+
+// mergeStatus handles updating the route status with the list of conditions for
+// each parent ref.
+func (r *HTTPRouteReconciler) mergeStatus(ctx context.Context, route *gatewayapi.HTTPRoute, parentConditions ParentConditions) gatewayapi.HTTPRouteStatus {
+	var mergedStatuses []gatewayapi.RouteParentStatus
+	var previousStatuses []gatewayapi.RouteParentStatus
+
+	// partition statuses based on whether we control them
+	for _, status := range route.Status.Parents {
+		if status.ControllerName != controllerName {
+			mergedStatuses = append(mergedStatuses, status)
+		} else {
+			previousStatuses = append(previousStatuses, status)
+		}
+	}
+
+	// for each new parentstatus, either add it to the list or update the
+	// existing one
+	for ref, conditions := range parentConditions {
+		previousStatus := gatewayapi.RouteParentStatus{
+			ParentRef:      ref,
+			ControllerName: controllerName,
+		}
+
+		// Look through previous statuses for one belonging to the same ref
+		// go abusing pointers as option types makes it very painful
+		for _, candidatePreviousStatus := range previousStatuses {
+			if reflect.DeepEqual(candidatePreviousStatus.ParentRef, ref) {
+				previousStatus = candidatePreviousStatus
+			}
+		}
+
+		for _, condition := range conditions {
+			condition.ObservedGeneration = route.GetGeneration()
+			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, condition)
+		}
+
+		mergedStatuses = append(mergedStatuses, previousStatus)
+	}
+
+	return gatewayapi.HTTPRouteStatus{
+		RouteStatus: gatewayapi.RouteStatus{
+			Parents: mergedStatuses,
+		},
+	}
 }
 
 func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {

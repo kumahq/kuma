@@ -31,7 +31,11 @@ func (d *defaultSigningKeyComponent) Start(stop <-chan struct{}) error {
 	errChan := make(chan error)
 	go func() {
 		defer close(errChan)
-		if err := doWithRetry(ctx, d.createDefaultSigningKeyIfNotExist); err != nil {
+		backoff := retry.WithMaxDuration(10*time.Minute, retry.NewConstant(5*time.Second)) // if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
+		err := retry.Do(ctx, backoff, func(ctx context.Context) error {
+			return retry.RetryableError(d.createDefaultSigningKeyIfNotExist(ctx)) // retry all errors
+		})
+		if err != nil {
 			// Retry this operation since on Kubernetes, secrets are validated.
 			// This code can execute before the control plane is ready therefore hooks can fail.
 			errChan <- errors.Wrap(err, "could not create the default signing key")
@@ -65,12 +69,4 @@ func (d *defaultSigningKeyComponent) createDefaultSigningKeyIfNotExist(ctx conte
 
 func (d *defaultSigningKeyComponent) NeedLeaderElection() bool {
 	return true
-}
-
-func doWithRetry(ctx context.Context, fn func(context.Context) error) error {
-	backoff, _ := retry.NewConstant(5 * time.Second)
-	backoff = retry.WithMaxDuration(10*time.Minute, backoff) // if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
-	return retry.Do(ctx, backoff, func(ctx context.Context) error {
-		return retry.RetryableError(fn(ctx)) // retry all errors
-	})
 }

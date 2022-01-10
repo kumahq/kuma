@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"path/filepath"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -239,7 +238,7 @@ var _ = Describe("kumactl inspect zones", func() {
 		type testCase struct {
 			outputFormat string
 			goldenFile   string
-			matcher      func(interface{}) gomega_types.GomegaMatcher
+			matcher      func(path ...string) gomega_types.GomegaMatcher
 		}
 
 		DescribeTable("kumactl inspect zones -o table|json|yaml",
@@ -258,26 +257,22 @@ var _ = Describe("kumactl inspect zones", func() {
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
 				goldenFile:   "inspect-zones.golden.txt",
-				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
-					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
-				},
+				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "inspect-zones.golden.txt",
-				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
-					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
-				},
+				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support JSON output", testCase{
 				outputFormat: "-ojson",
 				goldenFile:   "inspect-zones.golden.json",
-				matcher:      MatchJSON,
+				matcher:      matchers.MatchGoldenJSON,
 			}),
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
 				goldenFile:   "inspect-zone.golden.yaml",
-				matcher:      MatchYAML,
+				matcher:      matchers.MatchGoldenYAML,
 			}),
 		)
 	})

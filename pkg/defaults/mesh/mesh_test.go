@@ -31,7 +31,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 
 	It("should create default resources", func() {
 		// when
-		err := mesh.EnsureDefaultMeshResources(resManager, model.DefaultMesh)
+		err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then default TrafficPermission for the mesh exist
@@ -53,11 +53,11 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 
 	It("should ignore subsequent calls to EnsureDefaultMeshResources", func() {
 		// given already ensured default resources
-		err := mesh.EnsureDefaultMeshResources(resManager, model.DefaultMesh)
+		err := mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when ensuring again
-		err = mesh.EnsureDefaultMeshResources(resManager, model.DefaultMesh)
+		err = mesh.EnsureDefaultMeshResources(context.Background(), resManager, model.DefaultMesh)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

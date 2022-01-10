@@ -3,9 +3,6 @@ package get_test
 import (
 	"bytes"
 	"context"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -21,6 +18,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -82,7 +80,7 @@ var _ = Describe("kumactl get secrets", func() {
 		type testCase struct {
 			outputFormat string
 			goldenFile   string
-			matcher      func(interface{}) gomega_types.GomegaMatcher
+			matcher      func(path ...string) gomega_types.GomegaMatcher
 		}
 
 		DescribeTable("kumactl get secrets -o table|json|yaml",
@@ -92,36 +90,28 @@ var _ = Describe("kumactl get secrets", func() {
 					ExecuteRootCommand(rootCmd, "secrets", given.outputFormat, ""),
 				).To(Succeed())
 
-				// when
-				expected, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
 				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(buf.String()).To(given.matcher(expected))
+				Expect(buf.String()).To(given.matcher("testdata", given.goldenFile))
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
 				goldenFile:   "get-secrets.golden.txt",
-				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
-					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
-				},
+				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "get-secrets.golden.txt",
-				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
-					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
-				},
+				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support JSON output", testCase{
 				outputFormat: "-ojson",
 				goldenFile:   "get-secrets.golden.json",
-				matcher:      MatchJSON,
+				matcher:      matchers.MatchGoldenJSON,
 			}),
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
 				goldenFile:   "get-secrets.golden.yaml",
-				matcher:      MatchYAML,
+				matcher:      matchers.MatchGoldenYAML,
 			}),
 		)
 	})
