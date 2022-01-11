@@ -3,6 +3,7 @@ package gatewayapi
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -52,9 +53,14 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			listener.Hostname = string(*l.Hostname)
 		}
 
-		refsPermitted := true
+		var certificateRefs []*gatewayapi.SecretObjectReference
+		if l.TLS != nil {
+			certificateRefs = l.TLS.CertificateRefs
+		}
 
-		for _, certRef := range l.TLS.CertificateRefs {
+		var unresolvableRefs []string
+
+		for _, certRef := range certificateRefs {
 			ref := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), *certRef)
 
 			permitted, err := policy.IsReferencePermitted(ctx, r.Client, ref)
@@ -62,47 +68,48 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 				return nil, nil, err
 			}
 
-			refsPermitted = refsPermitted && permitted
-
-			var resolvedCondition []kube_meta.Condition
-
-			if permitted {
-				resolvedCondition = []kube_meta.Condition{
-					{
-						Type:   string(gatewayapi.ListenerConditionResolvedRefs),
-						Status: kube_meta.ConditionTrue,
-						Reason: string(gatewayapi.ListenerReasonResolvedRefs),
-					},
-					{
-						Type:   string(gatewayapi.ListenerConditionReady),
-						Status: kube_meta.ConditionTrue,
-						Reason: string(gatewayapi.ListenerConditionReady),
-					},
-				}
-			} else {
+			if !permitted {
 				targetGK := kube_schema.GroupKind{Group: string(*certRef.Group), Kind: string(*certRef.Kind)}
-				resolvedCondition = []kube_meta.Condition{
-					{
-						Type:    string(gatewayapi.ListenerConditionResolvedRefs),
-						Status:  kube_meta.ConditionFalse,
-						Reason:  string(gatewayapi.ListenerReasonRefNotPermitted),
-						Message: fmt.Sprintf("reference to %s %s/%s not permitted by any ReferencePolicy", targetGK.String(), ref.ToNamespace(), certRef.Name),
-					},
-					{
-						Type:    string(gatewayapi.ListenerConditionReady),
-						Status:  kube_meta.ConditionFalse,
-						Reason:  string(gatewayapi.ListenerReasonInvalid),
-						Message: "unable to resolve refs",
-					},
-				}
+				message := fmt.Sprintf("%s %s/%s", targetGK.String(), ref.ToNamespace(), certRef.Name)
+				unresolvableRefs = append(unresolvableRefs, message)
 			}
-
-			listenerConditions[l.Name] = append(listenerConditions[l.Name], resolvedCondition...)
 		}
 
-		if refsPermitted {
+		var changedListenerConditions []kube_meta.Condition
+
+		if len(unresolvableRefs) == 0 {
 			listeners = append(listeners, listener)
+
+			changedListenerConditions = []kube_meta.Condition{
+				{
+					Type:   string(gatewayapi.ListenerConditionResolvedRefs),
+					Status: kube_meta.ConditionTrue,
+					Reason: string(gatewayapi.ListenerReasonResolvedRefs),
+				},
+				{
+					Type:   string(gatewayapi.ListenerConditionReady),
+					Status: kube_meta.ConditionTrue,
+					Reason: string(gatewayapi.ListenerConditionReady),
+				},
+			}
+		} else {
+			changedListenerConditions = []kube_meta.Condition{
+				{
+					Type:    string(gatewayapi.ListenerConditionResolvedRefs),
+					Status:  kube_meta.ConditionFalse,
+					Reason:  string(gatewayapi.ListenerReasonRefNotPermitted),
+					Message: fmt.Sprintf("references to %s not permitted by any ReferencePolicy", strings.Join(unresolvableRefs, ", ")),
+				},
+				{
+					Type:    string(gatewayapi.ListenerConditionReady),
+					Status:  kube_meta.ConditionFalse,
+					Reason:  string(gatewayapi.ListenerReasonInvalid),
+					Message: "unable to resolve refs",
+				},
+			}
 		}
+
+		listenerConditions[l.Name] = append(listenerConditions[l.Name], changedListenerConditions...)
 	}
 
 	match := serviceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
