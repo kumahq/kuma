@@ -2,6 +2,7 @@ package generator_test
 
 import (
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -10,10 +11,12 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -154,6 +157,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						Target: "192.168.0.3",
 						Port:   5432,
 						Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.3",
+						Port:   5433,
+						Tags:   map[string]string{"kuma.io/service": "db", "role": "replica"},
 						Weight: 1,
 					},
 				},
@@ -355,7 +364,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			}
 
 			// when
-			given.ctx.ControlPlane.CLACache = &dummyCLACache{outboundTargets: outboundTargets}
+			metrics, err := core_metrics.NewMetrics("Standalone")
+			Expect(err).ToNot(HaveOccurred())
+			given.ctx.Mesh.EndpointMap = outboundTargets
+			given.ctx.ControlPlane.CLACache, err = cla.NewCache(0*time.Second, metrics)
+			Expect(err).ToNot(HaveOccurred())
 			rs, err := gen.Generate(given.ctx, proxy)
 
 			// then
