@@ -16,11 +16,12 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 var meshCacheLog = core.Log.WithName("mesh-cache")
 
-// meshSnapshot represents all resources that belong to Mesh and allows to calculate hash.
+// MeshSnapshot represents all resources that belong to Mesh and allows to calculate hash.
 // Calculating and comparing hashes is much faster than call 'equal' for xDS resources. So
 // meshSnapshot reduces costs on reconciling Envoy config when resources in the store are
 // not changing
@@ -30,7 +31,36 @@ type meshSnapshot struct {
 	ipFunc    lookup.LookupIPFunc
 }
 
-func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyResourceManager, types []core_model.ResourceType, ipFunc lookup.LookupIPFunc) (*meshSnapshot, error) {
+func (m *meshSnapshot) Mesh() *core_mesh.MeshResource {
+	return m.mesh
+}
+
+func (m *meshSnapshot) Resources(resourceType core_model.ResourceType) core_model.ResourceList {
+	list, ok := m.resources[resourceType]
+	if !ok {
+		list, err := registry.Global().NewList(resourceType)
+		if err != nil {
+			panic(err)
+		}
+		return list
+	}
+	return list
+}
+
+func (m *meshSnapshot) Resource(typ core_model.ResourceType, key core_model.ResourceKey) (core_model.Resource, bool) {
+	// potential way to optimize this is to change m.resources to be map[type]map[resourceKey]Resource
+	list := m.Resources(typ)
+	for _, item := range list.GetItems() {
+		if core_model.MetaToResourceKey(item.GetMeta()) == key {
+			return item, true
+		}
+	}
+	return nil, false
+}
+
+var _ xds_context.MeshSnapshot = &meshSnapshot{}
+
+func BuildMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyResourceManager, types []core_model.ResourceType, ipFunc lookup.LookupIPFunc) (xds_context.MeshSnapshot, error) {
 	snapshot := &meshSnapshot{
 		resources: map[core_model.ResourceType]core_model.ResourceList{},
 		ipFunc:    ipFunc,
@@ -101,7 +131,7 @@ func configInHash(configName string, meshName string) bool {
 	return configName == vips.ConfigKey(meshName)
 }
 
-func (m *meshSnapshot) hash() string {
+func (m *meshSnapshot) Hash() string {
 	resources := []core_model.Resource{
 		m.mesh,
 	}

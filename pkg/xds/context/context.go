@@ -2,9 +2,9 @@ package context
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/tls"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
@@ -27,10 +27,20 @@ type ControlPlaneContext struct {
 }
 
 type MeshContext struct {
-	Resource    *core_mesh.MeshResource
-	Dataplanes  *core_mesh.DataplaneResourceList
-	Hash        string
-	EndpointMap xds.EndpointMap
+	Resource     *core_mesh.MeshResource          // todo remove resource? You can access it via MeshContext.Snapshot.Mesh()
+	Dataplanes   *core_mesh.DataplaneResourceList // todo remove resource? You can access it via MeshContext.Snapshot.Resources(DataplaneType) but this list has IP resolved
+	Snapshot     MeshSnapshot
+	Hash         string // todo technically we can get rid of this if Snapshot does not count Hash every time
+	EndpointMap  xds.EndpointMap
+	VIPDomains   []xds.VIPDomains
+	VIPOutbounds []*mesh_proto.Dataplane_Networking_Outbound
+}
+
+type MeshSnapshot interface {
+	Hash() string
+	Mesh() *core_mesh.MeshResource
+	Resources(core_model.ResourceType) core_model.ResourceList
+	Resource(core_model.ResourceType, core_model.ResourceKey) (core_model.Resource, bool)
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
@@ -63,11 +73,7 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	}
 }
 
-func BuildControlPlaneContext(
-	config kuma_cp.Config,
-	claCache xds.CLACache,
-	secrets secrets.Secrets,
-) (*ControlPlaneContext, error) {
+func BuildControlPlaneContext(claCache xds.CLACache, secrets secrets.Secrets) (*ControlPlaneContext, error) {
 	adminKeyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, tls.DefaultKeyType, "localhost")
 	if err != nil {
 		return nil, err

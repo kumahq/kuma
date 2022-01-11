@@ -191,7 +191,6 @@ var _ = Describe("Match", func() {
 		DescribeTable("should find the policy",
 			func(given testCase) {
 				manager := core_manager.NewResourceManager(memory.NewStore())
-				matcher := permissions.TrafficPermissionsMatcher{ResourceManager: manager}
 
 				err := manager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 				Expect(err).ToNot(HaveOccurred())
@@ -204,7 +203,10 @@ var _ = Describe("Match", func() {
 				es := &core_mesh.ExternalServiceResourceList{
 					Items: given.externalServices,
 				}
-				matchedEs, err := matcher.MatchExternalServices(context.Background(), given.dataplane, es)
+				tp := &core_mesh.TrafficPermissionResourceList{
+					Items: given.policies,
+				}
+				matchedEs, err := permissions.MatchExternalServices(given.dataplane, es, tp)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(given.expected).To(HaveLen(len(matchedEs)))

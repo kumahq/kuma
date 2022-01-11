@@ -265,7 +265,7 @@ var _ = Describe("Retry", func() {
 					expectedRetries = nil
 				}
 				// when
-				retries, _ := BuildRetryMap(given.dataplane, given.retries, given.destinations)
+				retries := BuildRetryMap(given.dataplane, given.retries, given.destinations)
 				// expect
 				Expect(retries).Should(Equal(expectedRetries))
 			},

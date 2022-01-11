@@ -25,10 +25,10 @@ func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *core_mesh.Datap
 		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not retrieve ratelimits")
 	}
 
-	return buildRateLimitMap(dataplane, mesh, splitPoliciesBySourceMatch(ratelimits.Items))
+	return BuildRateLimitMap(dataplane, mesh, splitPoliciesBySourceMatch(ratelimits.Items))
 }
 
-func buildRateLimitMap(
+func BuildRateLimitMap(
 	dataplane *core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
 	rateLimits []*core_mesh.RateLimitResource,

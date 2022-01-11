@@ -13,10 +13,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
@@ -92,15 +94,20 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		metrics, err = core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 
+		core_manager.NewResourceManager(s)
+
+		lookupIPFunc := func(s string) ([]net.IP, error) {
+			return []net.IP{net.ParseIP(s)}, nil
+		}
+		meshContextBuilder := mesh.NewMeshContextBuilder(lookupIPFunc, "zone-1", vips.NewPersistence(core_manager.NewResourceManager(s), manager.NewConfigManager(s)), "mesh")
 		meshCache, err = mesh.NewCache(
 			countingManager,
 			expiration,
 			[]core_model.ResourceType{core_mesh.DataplaneType, core_mesh.TrafficRouteType, core_mesh.ZoneIngressType},
-			func(s string) ([]net.IP, error) {
-				return []net.IP{net.ParseIP(s)}, nil
-			},
-			"zone-1",
-			metrics)
+			lookupIPFunc,
+			meshContextBuilder,
+			metrics,
+		)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

@@ -8,6 +8,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
@@ -30,7 +31,7 @@ var (
 	}
 )
 
-func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.ResourceType {
+func MeshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.ResourceType {
 	types := []core_model.ResourceType{}
 	for _, desc := range registry.Global().ObjectDescriptors() {
 		if desc.Scope == core_model.ScopeMesh && !exclude[desc.Name] {
@@ -54,12 +55,18 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
+	meshContextBuilder := mesh.NewMeshContextBuilder(
+		rt.LookupIP(),
+		rt.Config().Multizone.Zone.Name,
+		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
+		rt.Config().DNSServer.Domain,
+	)
 	meshSnapshotCache, err := mesh.NewCache(
 		rt.ReadOnlyResourceManager(),
 		rt.Config().Store.Cache.ExpirationTime,
-		meshResourceTypes(HashMeshExcludedResources),
+		MeshResourceTypes(HashMeshExcludedResources),
 		rt.LookupIP(),
-		rt.Config().Multizone.Zone.Name,
+		meshContextBuilder,
 		rt.Metrics(),
 	)
 	if err != nil {
@@ -79,7 +86,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache, secrets)
+	envoyCpCtx, err := xds_context.BuildControlPlaneContext(claCache, secrets)
 	if err != nil {
 		return err
 	}
