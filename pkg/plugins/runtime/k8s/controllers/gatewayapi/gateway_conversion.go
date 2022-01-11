@@ -70,7 +70,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 
 			if !permitted {
 				targetGK := kube_schema.GroupKind{Group: string(*certRef.Group), Kind: string(*certRef.Kind)}
-				message := fmt.Sprintf("%s %s/%s", targetGK.String(), ref.ToNamespace(), certRef.Name)
+				message := fmt.Sprintf("%q %q/%q", targetGK.String(), ref.ToNamespace(), certRef.Name)
 				unresolvableRefs = append(unresolvableRefs, message)
 			}
 		}
