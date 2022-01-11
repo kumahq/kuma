@@ -62,8 +62,11 @@ func mergeGatewayListenerStatuses(gateway *gatewayapi.Gateway, conditions Listen
 	// existing one
 	for name, conditions := range conditions {
 		previousStatus := gatewayapi.ListenerStatus{
-			Name:           name,
+			Name: name,
+			// TODO it's difficult to determine this number with Kuma, so we
+			// leave it at 0
 			AttachedRoutes: 0,
+			SupportedKinds: []gatewayapi.RouteGroupKind{{Kind: httpRouteKind}},
 		}
 
 		if prev, ok := previousStatuses[name]; ok {

@@ -9,9 +9,6 @@ import (
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
-var httpRouteKind = gatewayapi.Kind("HTTPRoute")
-var gatewayKind = gatewayapi.Kind("Gateway")
-
 type PolicyReference struct {
 	from        gatewayapi.ReferencePolicyFrom
 	toNamespace gatewayapi.Namespace
@@ -24,7 +21,7 @@ func (pr *PolicyReference) ToNamespace() string {
 
 func FromGatewayIn(namespace string) gatewayapi.ReferencePolicyFrom {
 	return gatewayapi.ReferencePolicyFrom{
-		Kind:      gatewayKind,
+		Kind:      gatewayapi.Kind("Gateway"),
 		Group:     gatewayapi.Group(gatewayapi.GroupName),
 		Namespace: gatewayapi.Namespace(namespace),
 	}
@@ -32,7 +29,7 @@ func FromGatewayIn(namespace string) gatewayapi.ReferencePolicyFrom {
 
 func FromHTTPRouteIn(namespace string) gatewayapi.ReferencePolicyFrom {
 	return gatewayapi.ReferencePolicyFrom{
-		Kind:      httpRouteKind,
+		Kind:      gatewayapi.Kind("HTTPRoute"),
 		Group:     gatewayapi.Group(gatewayapi.GroupName),
 		Namespace: gatewayapi.Namespace(namespace),
 	}
