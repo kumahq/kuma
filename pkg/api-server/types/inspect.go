@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
@@ -18,7 +19,7 @@ type PolicyInspectEntry struct {
 
 type DataplaneInspectEntry struct {
 	AttachmentEntry
-	MatchedPolicies map[core_model.ResourceType][]core_model.ResourceSpec `json:"matchedPolicies"`
+	MatchedPolicies map[core_model.ResourceType][]core_model.Resource `json:"matchedPolicies"`
 }
 
 type AttachmentEntry struct {
@@ -35,40 +36,87 @@ type intermediateDataplaneInspectEntry struct {
 	// Intermediate representation is needed to preserve the order of the fields.
 	// If use 'map[string]interface{}' as intermediate representation then the fields
 	// will be sorted lexicographically.
-	Type            string                 `json:"type"`
-	Name            string                 `json:"name"`
-	MatchedPolicies map[string]interface{} `json:"matchedPolicies"`
+	Type            string                             `json:"type"`
+	Name            string                             `json:"name"`
+	MatchedPolicies map[string][]*intermediateResource `json:"matchedPolicies"`
+}
+
+type intermediateResource struct {
+	Meta rest.ResourceMeta      `json:"meta"`
+	Spec map[string]interface{} `json:"spec"`
 }
 
 var _ json.Marshaler = &DataplaneInspectEntry{}
 var _ json.Unmarshaler = &DataplaneInspectEntry{}
 
 func (r *DataplaneInspectEntry) MarshalJSON() ([]byte, error) {
-	result := intermediateDataplaneInspectEntry{}
+	intermediate, err := r.toIntermediate()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(intermediate)
+}
 
-	result.Type = r.Type
-	result.Name = r.Name
+func (r *DataplaneInspectEntry) toIntermediate() (*intermediateDataplaneInspectEntry, error) {
+	result := &intermediateDataplaneInspectEntry{
+		Type: r.Type,
+		Name: r.Name,
+	}
+	matchedPolicies, err := r.matchedPoliciesMapToIntermediate()
+	if err != nil {
+		return nil, err
+	}
+	result.MatchedPolicies = matchedPolicies
+	return result, nil
+}
 
-	matchedPolicyMap := map[string]interface{}{}
+func (r *DataplaneInspectEntry) matchedPoliciesMapToIntermediate() (map[string][]*intermediateResource, error) {
+	matchedPolicyMap := map[string][]*intermediateResource{}
 	for resType, matchedPolicies := range r.MatchedPolicies {
-		list := []interface{}{}
-		for _, item := range matchedPolicies {
-			var buf bytes.Buffer
-			if err := (&jsonpb.Marshaler{}).Marshal(&buf, item); err != nil {
-				return nil, err
-			}
-			out := map[string]interface{}{}
-			if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
-				return nil, err
-			}
-			list = append(list, out)
+		resources, err := r.resourcesToIntermediate(matchedPolicies)
+		if err != nil {
+			return nil, err
 		}
-		matchedPolicyMap[string(resType)] = list
+		matchedPolicyMap[string(resType)] = resources
 	}
-	if len(matchedPolicyMap) != 0 {
-		result.MatchedPolicies = matchedPolicyMap
+	if len(matchedPolicyMap) == 0 {
+		return nil, nil
 	}
-	return json.Marshal(result)
+	return matchedPolicyMap, nil
+}
+
+func (r *DataplaneInspectEntry) resourcesToIntermediate(rs []core_model.Resource) ([]*intermediateResource, error) {
+	list := []*intermediateResource{}
+	for _, item := range rs {
+		intermRes, err := r.resourceToIntermediate(item)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, intermRes)
+	}
+	return list, nil
+}
+
+func (r *DataplaneInspectEntry) resourceToIntermediate(resource core_model.Resource) (*intermediateResource, error) {
+	intermediate := &intermediateResource{
+		Meta: rest.ResourceMeta{
+			Type:             string(resource.Descriptor().Name),
+			Mesh:             resource.GetMeta().GetMesh(),
+			Name:             resource.GetMeta().GetName(),
+			CreationTime:     resource.GetMeta().GetCreationTime(),
+			ModificationTime: resource.GetMeta().GetModificationTime(),
+		},
+	}
+	var buf bytes.Buffer
+	if err := (&jsonpb.Marshaler{}).Marshal(&buf, resource.GetSpec()); err != nil {
+		return nil, err
+	}
+	spec := map[string]interface{}{}
+	if err := json.Unmarshal(buf.Bytes(), &spec); err != nil {
+		return nil, err
+	}
+	intermediate.Spec = spec
+	return intermediate, nil
 }
 
 func (r *DataplaneInspectEntry) UnmarshalJSON(data []byte) error {
@@ -78,9 +126,9 @@ func (r *DataplaneInspectEntry) UnmarshalJSON(data []byte) error {
 	}
 
 	if intermediate.MatchedPolicies != nil {
-		r.MatchedPolicies = map[core_model.ResourceType][]core_model.ResourceSpec{}
+		r.MatchedPolicies = map[core_model.ResourceType][]core_model.Resource{}
 
-		for resTypeRaw, matchedPolicyRaw := range intermediate.MatchedPolicies {
+		for resTypeRaw, intermResources := range intermediate.MatchedPolicies {
 			var resType core_model.ResourceType
 			if resTypeRaw == "" {
 				return errors.New("MatchedPolicies key is empty")
@@ -88,23 +136,20 @@ func (r *DataplaneInspectEntry) UnmarshalJSON(data []byte) error {
 				resType = core_model.ResourceType(resTypeRaw)
 			}
 
-			items, ok := matchedPolicyRaw.([]interface{})
-			if !ok {
-				return errors.Errorf("MatchedPolicies[%s] is not a list", resType)
-			}
-			for _, item := range items {
+			for _, item := range intermResources {
 				res, err := registry.Global().NewObject(resType)
 				if err != nil {
 					return err
 				}
-				mItem, err := json.Marshal(item)
+				mItem, err := json.Marshal(item.Spec)
 				if err != nil {
 					return err
 				}
 				if err := (&jsonpb.Unmarshaler{}).Unmarshal(bytes.NewReader(mItem), res.GetSpec()); err != nil {
 					return err
 				}
-				r.MatchedPolicies[resType] = append(r.MatchedPolicies[resType], res.GetSpec())
+				res.SetMeta(&item.Meta)
+				r.MatchedPolicies[resType] = append(r.MatchedPolicies[resType], res)
 			}
 		}
 	}

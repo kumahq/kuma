@@ -62,6 +62,7 @@ func (s *simpleMatchedPolicyGetter) Get(ctx context.Context, dataplaneKey core_m
 		return nil, err
 	}
 
+	// todo(lobkovilya): share DataplaneProxyBuilder with xDS code (instead of creating a new one)
 	proxyBuilder := sync.DefaultDataplaneProxyBuilder(s.resManager, s.resManager, net.LookupIP,
 		datasource.NewDataSourceLoader(s.resManager), *s.cfg, s.cfgManager, &fakeMetadataTracker{}, envoy.APIV3)
 	proxy, err := proxyBuilder.Build(core_model.MetaToResourceKey(dataplane.GetMeta()), &xds_context.Context{Mesh: xds_context.MeshContext{
@@ -203,12 +204,7 @@ func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies) []ap
 				Type: attachment.Type.String(),
 				Name: attachment.Name,
 			},
-			MatchedPolicies: map[core_model.ResourceType][]core_model.ResourceSpec{},
-		}
-		for resType, policies := range policyMap {
-			for _, policy := range policies {
-				entry.MatchedPolicies[resType] = append(entry.MatchedPolicies[resType], policy.GetSpec())
-			}
+			MatchedPolicies: policyMap,
 		}
 		entries = append(entries, entry)
 	}
