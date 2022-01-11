@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
@@ -61,16 +60,15 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 		var unresolvableRefs []string
 
 		for _, certRef := range certificateRefs {
-			ref := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), *certRef)
+			policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), *certRef)
 
-			permitted, err := policy.IsReferencePermitted(ctx, r.Client, ref)
+			permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef)
 			if err != nil {
 				return nil, nil, err
 			}
 
 			if !permitted {
-				targetGK := kube_schema.GroupKind{Group: string(*certRef.Group), Kind: string(*certRef.Kind)}
-				message := fmt.Sprintf("%q %q/%q", targetGK.String(), ref.ToNamespace(), certRef.Name)
+				message := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
 				unresolvableRefs = append(unresolvableRefs, message)
 			}
 		}
