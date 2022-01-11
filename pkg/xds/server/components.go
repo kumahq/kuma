@@ -56,15 +56,20 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		return err
 	}
 	meshContextBuilder := xds_context.NewMeshContextBuilder(
-		rt.ReadOnlyResourceManager(),
-		MeshResourceTypes(HashMeshExcludedResources),
 		rt.LookupIP(),
 		rt.Config().Multizone.Zone.Name,
 		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
 		rt.Config().DNSServer.Domain,
 	)
+
+	meshSnapshotBuilder := xds_context.NewMeshSnapshotBuilder(
+		rt.ReadOnlyResourceManager(),
+		MeshResourceTypes(HashMeshExcludedResources),
+		rt.LookupIP(),
+	)
 	meshSnapshotCache, err := mesh.NewCache(
 		rt.Config().Store.Cache.ExpirationTime,
+		meshSnapshotBuilder,
 		meshContextBuilder,
 		rt.Metrics(),
 	)

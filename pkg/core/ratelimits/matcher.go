@@ -7,7 +7,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -25,12 +24,7 @@ func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *core_mesh.Datap
 		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not retrieve ratelimits")
 	}
 
-	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
-	if err != nil {
-		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not fetch additional inbounds")
-	}
-	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
-	return BuildRateLimitMap(dataplane, inbounds, splitPoliciesBySourceMatch(ratelimits.Items)), nil
+	return BuildRateLimitMap(dataplane, mesh, splitPoliciesBySourceMatch(ratelimits.Items))
 }
 
 func BuildRateLimitMap(
