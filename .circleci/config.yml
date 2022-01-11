@@ -1062,6 +1062,11 @@ workflows:
           - check
         # custom parameters
         ipv6: true
+    - release:
+        <<: *commit_workflow_filters
+        requires:
+          - check
+          - test
 
   clean-eks:
     when: << pipeline.parameters.run_workflow_clean_eks >>
