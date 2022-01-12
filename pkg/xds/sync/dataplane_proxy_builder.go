@@ -1,8 +1,6 @@
 package sync
 
 import (
-	"context"
-
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -35,24 +33,22 @@ type DataplaneProxyBuilder struct {
 }
 
 func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *xds_context.Context) (*xds.Proxy, error) {
-	ctx := context.Background()
+	dp, found := envoyContext.Mesh.Dataplane(key.Name)
+	if !found {
+		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
+	}
 
-	dp, err := p.resolveDataplane(ctx, key, envoyContext.Mesh.Snapshot)
+	routing, destinations, err := p.resolveRouting(envoyContext.Mesh, dp)
 	if err != nil {
 		return nil, err
 	}
 
-	routing, destinations, err := p.resolveRouting(ctx, envoyContext.Mesh, dp)
+	matchedPolicies, err := p.matchPolicies(envoyContext.Mesh, dp, destinations)
 	if err != nil {
 		return nil, err
 	}
 
-	matchedPolicies, err := p.matchPolicies(ctx, envoyContext.Mesh, dp, destinations)
-	if err != nil {
-		return nil, err
-	}
-
-	tlsReady, err := p.resolveTLSReadiness(ctx, key, envoyContext)
+	tlsReady, err := p.resolveTLSReadiness(key, envoyContext.Mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't determine TLS readiness of services")
 	}
@@ -69,34 +65,9 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *
 	return proxy, nil
 }
 
-func (p *DataplaneProxyBuilder) resolveDataplane(ctx context.Context, key core_model.ResourceKey, snapshot xds_context.MeshSnapshot) (*core_mesh.DataplaneResource, error) {
-	// we use non-cached ResourceManager to always fetch fresh version of the Dataplane.
-	// Otherwise, technically MeshCache can use newer version because it uses List operation instead of Get
-	resource, found := snapshot.Resource(core_mesh.DataplaneType, key)
-	if !found {
-		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
-	}
-	dataplane := resource.(*core_mesh.DataplaneResource)
-
-	// todo move resolve address to mesh snapshot?
-	// Envoy requires IPs instead of Hostname therefore we need to resolve an address. Consider moving this outside of this component.
-	resolvedDp, err := xds_topology.ResolveAddress(p.LookupIP, dataplane)
-	if err != nil {
-		return nil, err
-	}
-	return resolvedDp, nil
-}
-
-func (p *DataplaneProxyBuilder) resolveRouting(
-	ctx context.Context,
-	meshContext xds_context.MeshContext,
-	dataplane *core_mesh.DataplaneResource,
-) (*xds.Routing, xds.DestinationMap, error) {
+func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*xds.Routing, xds.DestinationMap, error) {
 	externalServices := meshContext.Snapshot.Resources(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
 	trafficPermissions := meshContext.Snapshot.Resources(core_mesh.TrafficPermissionType).(*core_mesh.TrafficPermissionResourceList)
-
-	zoneIngresses := meshContext.Snapshot.Resources(core_mesh.ZoneIngressType).(*core_mesh.ZoneIngressResourceList)
-	zoneIngresses.Items = xds_topology.ResolveZoneIngressAddresses(syncLog, p.LookupIP, zoneIngresses.Items) // todo resolve in mesh snapshot?
 
 	matchedExternalServices, err := permissions.MatchExternalServices(dataplane, externalServices, trafficPermissions)
 	if err != nil {
@@ -127,7 +98,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 	// resolve all endpoints that match given selectors
-	outbound := xds_topology.BuildEndpointMap(meshContext.Resource, p.Zone, meshContext.Dataplanes.Items, zoneIngresses.Items, matchedExternalServices, p.DataSourceLoader)
+	outbound := xds_topology.BuildEndpointMap(meshContext.Resource, p.Zone, meshContext.Dataplanes.Items, meshContext.ZoneIngresses.Items, matchedExternalServices, p.DataSourceLoader)
 
 	routing := &xds.Routing{
 		TrafficRoutes:   routes,
@@ -136,7 +107,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	return routing, destinations, nil
 }
 
-func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors xds.DestinationMap) (*xds.MatchedPolicies, error) {
+func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors xds.DestinationMap) (*xds.MatchedPolicies, error) {
 	// todo should those be moved to functions in MeshSnapshot?
 	healthChecks := meshContext.Snapshot.Resources(core_mesh.HealthCheckType).(*core_mesh.HealthCheckResourceList).Items
 	circuitBreakers := meshContext.Snapshot.Resources(core_mesh.CircuitBreakerType).(*core_mesh.CircuitBreakerResourceList).Items
@@ -178,19 +149,17 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext x
 	return matchedPolicies, nil
 }
 
-func (p *DataplaneProxyBuilder) resolveTLSReadiness(
-	ctx context.Context, key core_model.ResourceKey, envoyContext *xds_context.Context,
-) (map[string]bool, error) {
+func (p *DataplaneProxyBuilder) resolveTLSReadiness(key core_model.ResourceKey, meshContext xds_context.MeshContext) (map[string]bool, error) {
 	tlsReady := map[string]bool{}
 
-	backend := envoyContext.Mesh.Resource.GetEnabledCertificateAuthorityBackend()
+	backend := meshContext.Resource.GetEnabledCertificateAuthorityBackend()
 	// TLS readiness is irrelevant unless we are using PERMISSIVE TLS, so skip
 	// checking ServiceInsights if we aren't.
 	if backend == nil || backend.Mode != mesh_proto.CertificateAuthorityBackend_PERMISSIVE {
 		return tlsReady, nil
 	}
 
-	resource, found := envoyContext.Mesh.Snapshot.Resource(core_mesh.ServiceInsightType, insights.ServiceInsightKey(key.Mesh))
+	resource, found := meshContext.Snapshot.Resource(core_mesh.ServiceInsightType, insights.ServiceInsightKey(key.Mesh))
 	if !found {
 		// Nothing about the TLS readiness has been reported yet
 		syncLog.Info("could not determine service TLS readiness, ServiceInsight is not yet present")

@@ -115,6 +115,9 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	dataplanes := core_mesh.DataplaneResourceList{}
 	Expect(rt.ResourceManager().List(context.TODO(), &dataplanes, store.ListByMesh(key.Mesh))).
 		To(Succeed())
+	zoneIngresses := core_mesh.ZoneIngressResourceList{}
+	Expect(rt.ResourceManager().List(context.TODO(), &zoneIngresses)).
+		To(Succeed())
 
 	cache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime, rt.Metrics())
 	Expect(err).To(Succeed())
@@ -135,10 +138,11 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	ctx := xds_context.Context{
 		ControlPlane: control,
 		Mesh: xds_context.MeshContext{
-			Resource:    mesh,
-			Dataplanes:  &dataplanes,
-			EndpointMap: xds_topology.BuildEdsEndpointMap(mesh, rt.Config().Multizone.Zone.Name, dataplanes.Items, []*core_mesh.ZoneIngressResource{}),
-			Snapshot:    snapshot,
+			Resource:      mesh,
+			Dataplanes:    &dataplanes,
+			ZoneIngresses: &zoneIngresses,
+			EndpointMap:   xds_topology.BuildEdsEndpointMap(mesh, rt.Config().Multizone.Zone.Name, dataplanes.Items, []*core_mesh.ZoneIngressResource{}),
+			Snapshot:      snapshot,
 		},
 	}
 

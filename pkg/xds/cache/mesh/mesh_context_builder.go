@@ -46,8 +46,13 @@ func (m *meshContextBuilder) Build(snapshot xds_context.MeshSnapshot) (xds_conte
 	domains, outbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain)
 
 	return xds_context.MeshContext{
-		Resource:     snapshot.Mesh(),
-		Dataplanes:   dataplanesList,
+		Resource: snapshot.Mesh(),
+		Dataplanes: &core_mesh.DataplaneResourceList{
+			Items: dataplanes,
+		},
+		ZoneIngresses: &core_mesh.ZoneIngressResourceList{
+			Items: zoneIngresses,
+		},
 		Hash:         snapshot.Hash(),
 		EndpointMap:  xds_topology.BuildEdsEndpointMap(snapshot.Mesh(), m.zone, dataplanes, zoneIngresses),
 		VIPOutbounds: outbounds,

@@ -27,13 +27,14 @@ type ControlPlaneContext struct {
 }
 
 type MeshContext struct {
-	Resource     *core_mesh.MeshResource          // todo remove resource? You can access it via MeshContext.Snapshot.Mesh()
-	Dataplanes   *core_mesh.DataplaneResourceList // todo remove resource? You can access it via MeshContext.Snapshot.Resources(DataplaneType) but this list has IP resolved
-	Snapshot     MeshSnapshot
-	Hash         string // todo technically we can get rid of this if Snapshot does not count Hash every time
-	EndpointMap  xds.EndpointMap
-	VIPDomains   []xds.VIPDomains
-	VIPOutbounds []*mesh_proto.Dataplane_Networking_Outbound
+	Resource      *core_mesh.MeshResource          // todo remove resource? You can access it via MeshContext.Snapshot.Mesh()
+	Dataplanes    *core_mesh.DataplaneResourceList // todo remove resource? You can access it via MeshContext.Snapshot.Resources(DataplaneType) but this list has IP resolved
+	ZoneIngresses *core_mesh.ZoneIngressResourceList
+	Snapshot      MeshSnapshot
+	Hash          string // todo technically we can get rid of this if Snapshot does not count Hash every time
+	EndpointMap   xds.EndpointMap
+	VIPDomains    []xds.VIPDomains
+	VIPOutbounds  []*mesh_proto.Dataplane_Networking_Outbound
 }
 
 type MeshSnapshot interface {
@@ -71,6 +72,15 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	} else {
 		return lb
 	}
+}
+
+func (mc *MeshContext) Dataplane(name string) (*core_mesh.DataplaneResource, bool) {
+	for _, dp := range mc.Dataplanes.Items {
+		if dp.Meta.GetName() == name {
+			return dp, true
+		}
+	}
+	return nil, false
 }
 
 func BuildControlPlaneContext(claCache xds.CLACache, secrets secrets.Secrets) (*ControlPlaneContext, error) {
