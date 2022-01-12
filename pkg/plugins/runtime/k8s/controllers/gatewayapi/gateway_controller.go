@@ -55,7 +55,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, nil
 	}
 
-	gatewaySpec, err := r.gapiToKumaGateway(gateway)
+	gatewaySpec, listenerConditions, err := r.gapiToKumaGateway(ctx, gateway)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating Gateway.kuma.io")
 	}
@@ -69,7 +69,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile GatewayInstance")
 	}
 
-	if err := r.updateStatus(ctx, gateway, gatewayInstance); err != nil {
+	if err := r.updateStatus(ctx, gateway, gatewayInstance, listenerConditions); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update Gateway status")
 	}
 
@@ -97,45 +97,6 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, gateway 
 	}
 
 	return instance, nil
-}
-
-func (r *GatewayReconciler) gapiToKumaGateway(gateway *gatewayapi.Gateway) (*mesh_proto.Gateway, error) {
-	var listeners []*mesh_proto.Gateway_Listener
-
-	for _, l := range gateway.Spec.Listeners {
-		listener := &mesh_proto.Gateway_Listener{
-			Port: uint32(l.Port),
-			Tags: map[string]string{
-				// gateway-api routes are configured using direct references to
-				// Gateways, so just create a tag specifically for this listener
-				mesh_proto.ListenerTag: string(l.Name),
-			},
-		}
-
-		if protocol, ok := mesh_proto.Gateway_Listener_Protocol_value[string(l.Protocol)]; ok {
-			listener.Protocol = mesh_proto.Gateway_Listener_Protocol(protocol)
-		} else if l.Protocol != "" {
-			return nil, errors.Errorf("unexpected protocol %s", l.Protocol)
-		}
-
-		listener.Hostname = "*"
-		if l.Hostname != nil {
-			listener.Hostname = string(*l.Hostname)
-		}
-
-		listeners = append(listeners, listener)
-	}
-
-	match := serviceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
-
-	return &mesh_proto.Gateway{
-		Selectors: []*mesh_proto.Selector{
-			{Match: match},
-		},
-		Conf: &mesh_proto.Gateway_Conf{
-			Listeners: listeners,
-		},
-	}, nil
 }
 
 func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {

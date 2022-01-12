@@ -17,7 +17,10 @@ import (
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-const controllerName = gatewayapi.GatewayController("gateways.kuma.io/controller")
+const (
+	controllerName = gatewayapi.GatewayController("gateways.kuma.io/controller")
+	httpRouteKind  = gatewayapi.Kind("HTTPRoute")
+)
 
 func getGatewayClass(ctx context.Context, client kube_client.Client, name gatewayapi.ObjectName) (*gatewayapi.GatewayClass, error) {
 	class := &gatewayapi.GatewayClass{}
