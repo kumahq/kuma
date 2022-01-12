@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
@@ -42,8 +43,6 @@ const (
 	RefNotPermitted            = "RefNotPermitted"
 )
 
-const ownerLabel = "gateways.kuma.io/gateway.networking.k8s.io-owner"
-
 // Reconcile handles transforming a gateway-api HTTPRoute into a Kuma
 // GatewayRoute and managing the status of the gateway-api objects.
 func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -52,7 +51,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		if kube_apierrs.IsNotFound(err) {
 			// We don't know the mesh, but we don't need it to delete our
 			// object.
-			err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.GatewayRoute{}, nil)
+			err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.GatewayRoute{}, nil)
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned GatewayRoute.kuma.io")
 		}
 
@@ -71,7 +70,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating GatewayRoute.kuma.io")
 	}
 
-	if err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.GatewayRoute{}, spec); err != nil {
+	if err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.GatewayRoute{}, spec); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned GatewayRoute.kuma.io")
 	}
 
@@ -114,7 +113,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 			refNamespace = string(*ns)
 		}
 
-		match := serviceTagForGateway(kube_types.NamespacedName{Namespace: refNamespace, Name: string(ref.Name)})
+		match := common.ServiceTagForGateway(kube_types.NamespacedName{Namespace: refNamespace, Name: string(ref.Name)})
 
 		if ref.SectionName != nil {
 			match[mesh_proto.ListenerTag] = string(*ref.SectionName)
@@ -169,12 +168,12 @@ func (r *HTTPRouteReconciler) shouldHandleParentRef(
 		}
 	}
 
-	class, err := getGatewayClass(ctx, r.Client, gateway.Spec.GatewayClassName)
+	class, err := common.GetGatewayClass(ctx, r.Client, gateway.Spec.GatewayClassName)
 	if err != nil {
 		return false, err
 	}
 
-	return class.Spec.ControllerName == controllerName, nil
+	return class.Spec.ControllerName == common.ControllerName, nil
 }
 
 // routesForGateway returns a function that calculates which routes might

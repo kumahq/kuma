@@ -10,6 +10,7 @@ import (
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/policy"
 )
 
@@ -110,7 +111,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 		listenerConditions[l.Name] = append(listenerConditions[l.Name], changedListenerConditions...)
 	}
 
-	match := serviceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
+	match := common.ServiceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
 
 	return &mesh_proto.Gateway{
 		Selectors: []*mesh_proto.Selector{
