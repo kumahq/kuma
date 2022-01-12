@@ -1,7 +1,12 @@
 BUILD_INFO_GIT_TAG ?= $(shell git describe --tags 2>/dev/null || echo unknown)
 BUILD_INFO_GIT_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 BUILD_INFO_BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" || echo unknown)
-BUILD_INFO_VERSION ?= $(shell prefix=$$(echo $(BUILD_INFO_GIT_TAG) | cut -c 1); if [ "$${prefix}" = "v" ]; then echo $(BUILD_INFO_GIT_TAG) | cut -c 2- ; else echo $(BUILD_INFO_GIT_TAG) ; fi)
+BUILD_LAST_GIT_TAG ?= $(shell git describe --abbrev=0 --tags)
+BUILD_INFO_VERSION ?= $(shell if git describe --exact-match --tags &> /dev/null; then echo "$(BUILD_LAST_GIT_TAG)"; else echo "$(BUILD_LAST_GIT_TAG)+$$(git rev-parse --short HEAD)" ; fi)
+
+.PHONY: build/version
+build/version:
+	@echo "$(BUILD_INFO_VERSION)"
 
 build_info_fields := \
 	version=$(BUILD_INFO_VERSION) \
