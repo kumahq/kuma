@@ -31,6 +31,10 @@ func FromHTTPRouteIn(namespace string) gatewayapi.ReferencePolicyFrom {
 }
 
 func PolicyReferenceBackend(from gatewayapi.ReferencePolicyFrom, to gatewayapi.BackendObjectReference) PolicyReference {
+	ns := from.Namespace
+	if to.Namespace != nil {
+		ns = *to.Namespace
+	}
 	return PolicyReference{
 		from: from,
 		to: gatewayapi.ReferencePolicyTo{
@@ -38,11 +42,15 @@ func PolicyReferenceBackend(from gatewayapi.ReferencePolicyFrom, to gatewayapi.B
 			Group: *to.Group,
 			Name:  &to.Name,
 		},
-		toNamespace: *to.Namespace,
+		toNamespace: ns,
 	}
 }
 
 func PolicyReferenceSecret(from gatewayapi.ReferencePolicyFrom, to gatewayapi.SecretObjectReference) PolicyReference {
+	ns := from.Namespace
+	if to.Namespace != nil {
+		ns = *to.Namespace
+	}
 	return PolicyReference{
 		from: from,
 		to: gatewayapi.ReferencePolicyTo{
@@ -50,7 +58,7 @@ func PolicyReferenceSecret(from gatewayapi.ReferencePolicyFrom, to gatewayapi.Se
 			Group: *to.Group,
 			Name:  &to.Name,
 		},
-		toNamespace: *to.Namespace,
+		toNamespace: ns,
 	}
 }
 
