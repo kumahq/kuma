@@ -149,7 +149,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 				Type:    string(gatewayapi.ConditionRouteResolvedRefs),
 				Status:  kube_meta.ConditionFalse,
 				Reason:  RefNotPermitted,
-				Message: fmt.Sprintf("reference to %s %s not permitted by any ReferencePolicy", gk, namespacedName),
+				Message: fmt.Sprintf("reference to %s %q not permitted by any ReferencePolicy", gk, namespacedName),
 			},
 			nil
 	}
@@ -179,7 +179,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 						Type:    string(gatewayapi.ConditionRouteResolvedRefs),
 						Status:  kube_meta.ConditionFalse,
 						Reason:  ObjectNotFound,
-						Message: fmt.Sprintf("backend reference references a non-existent Service %s", namespacedName.String()),
+						Message: fmt.Sprintf("backend reference references a non-existent Service %q", namespacedName.String()),
 					},
 					nil
 			}
@@ -198,7 +198,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 						Type:    string(gatewayapi.ConditionRouteResolvedRefs),
 						Status:  kube_meta.ConditionFalse,
 						Reason:  ObjectNotFound,
-						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %s", namespacedName.Name),
+						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %q", namespacedName.Name),
 					},
 					nil
 			}
