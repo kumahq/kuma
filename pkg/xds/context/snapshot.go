@@ -1,4 +1,4 @@
-package mesh
+package context
 
 import (
 	"context"
@@ -16,7 +16,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 var meshCacheLog = core.Log.WithName("mesh-cache")
@@ -58,9 +57,9 @@ func (m *meshSnapshot) Resource(typ core_model.ResourceType, key core_model.Reso
 	return nil, false
 }
 
-var _ xds_context.MeshSnapshot = &meshSnapshot{}
+var _ MeshSnapshot = &meshSnapshot{}
 
-func BuildMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyResourceManager, types []core_model.ResourceType, ipFunc lookup.LookupIPFunc) (xds_context.MeshSnapshot, error) {
+func BuildMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyResourceManager, types []core_model.ResourceType, ipFunc lookup.LookupIPFunc) (MeshSnapshot, error) {
 	snapshot := &meshSnapshot{
 		resources: map[core_model.ResourceType]core_model.ResourceList{},
 		ipFunc:    ipFunc,

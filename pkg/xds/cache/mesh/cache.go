@@ -50,7 +50,7 @@ func NewCache(
 
 func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh string) (xds_context.MeshContext, error) {
 	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
-		snapshot, err := BuildMeshSnapshot(ctx, key, c.rm, c.types, c.ipFunc)
+		snapshot, err := xds_context.BuildMeshSnapshot(ctx, key, c.rm, c.types, c.ipFunc)
 		if err != nil {
 			return nil, err
 		}

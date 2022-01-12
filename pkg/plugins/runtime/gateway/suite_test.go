@@ -30,7 +30,6 @@ import (
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
-	cache_mesh "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
@@ -131,7 +130,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	control, err := xds_context.BuildControlPlaneContext(cache, secrets)
 	Expect(err).To(Succeed())
 
-	snapshot, err := cache_mesh.BuildMeshSnapshot(context.TODO(), key.Mesh, rt.ReadOnlyResourceManager(), server.MeshResourceTypes(server.HashMeshExcludedResources), rt.LookupIP())
+	snapshot, err := xds_context.BuildMeshSnapshot(context.TODO(), key.Mesh, rt.ReadOnlyResourceManager(), server.MeshResourceTypes(server.HashMeshExcludedResources), rt.LookupIP())
 	Expect(err).To(Succeed())
 
 	ctx := xds_context.Context{
