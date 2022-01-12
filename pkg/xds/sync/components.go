@@ -79,17 +79,15 @@ func DefaultDataplaneWatchdogFactory(
 		metadataTracker,
 		apiVersion)
 	ingressProxyBuilder := defaultIngressProxyBuilder(rt, metadataTracker, apiVersion)
-	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, rt.ReadOnlyResourceManager(), rt.LookupIP(), rt.EnvoyAdminClient())
 
 	deps := DataplaneWatchdogDependencies{
 		dataplaneProxyBuilder: dataplaneProxyBuilder,
 		dataplaneReconciler:   dataplaneReconciler,
 		ingressProxyBuilder:   ingressProxyBuilder,
 		ingressReconciler:     ingressReconciler,
-		xdsContextBuilder:     xdsContextBuilder,
+		envoyCpCtx:            envoyCpCtx,
 		meshCache:             meshSnapshotCache,
 		metadataTracker:       metadataTracker,
-		secrets:               envoyCpCtx.Secrets,
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,

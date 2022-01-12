@@ -118,6 +118,9 @@ func validateAddress(path validators.PathBuilder, address string) validators.Val
 		err.AddViolationAt(path.Field("address"), "address can't be empty")
 		return err
 	}
+	if address == "0.0.0.0" || address == "::" {
+		err.AddViolationAt(path.Field("address"), "must not be 0.0.0.0 or ::")
+	}
 	if !govalidator.IsIP(address) && !govalidator.IsDNSName(address) {
 		err.AddViolationAt(path.Field("address"), "address has to be valid IP address or domain name")
 	}

@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -82,17 +83,17 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) PortForwardKumaCP() error {
-	kumacpPods := c.GetKumaCPPods()
-	if len(kumacpPods) < 1 {
-		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
+func (c *K8sControlPlane) PortForwardKumaCP() {
+	kumaCpPods := c.GetKumaCPPods()
+	// There could be multiple pods still starting so pick one that's available already
+	for i := range kumaCpPods {
+		if k8s.IsPodAvailable(&kumaCpPods[i]) {
+			c.portFwd.localAPITunnel = k8s.NewTunnel(c.GetKubectlOptions(KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, kumaCPAPIPort)
+			c.portFwd.localAPITunnel.ForwardPort(c.t)
+			return
+		}
 	}
-
-	kumacpPodName := kumacpPods[0].Name
-
-	c.portFwd.localAPITunnel = k8s.NewTunnel(c.GetKubectlOptions(KumaNamespace), k8s.ResourceTypePod, kumacpPodName, 0, kumaCPAPIPort)
-	c.portFwd.localAPITunnel.ForwardPort(c.t)
-	return nil
+	c.t.Fatalf("Failed finding an available pod, allPods: %v", kumaCpPods)
 }
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
@@ -175,9 +176,7 @@ func (c *K8sControlPlane) GetKumaCPLogs() (string, error) {
 }
 
 func (c *K8sControlPlane) FinalizeAdd() error {
-	if err := c.PortForwardKumaCP(); err != nil {
-		return err
-	}
+	c.PortForwardKumaCP()
 	var token string
 	if !c.localhostIsAdmin {
 		t, err := c.retrieveAdminToken()
@@ -328,47 +327,50 @@ func (c *K8sControlPlane) UpdateObject(
 	if err != nil {
 		return err
 	}
-
-	out, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", typeName, objectName, "-o", "yaml")
-	if err != nil {
-		return err
-	}
-
-	decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
-	into := map[string]interface{}{}
-
-	if err := decoder.Decode(&into); err != nil {
-		return err
-	}
-
-	u := unstructured.Unstructured{Object: into}
-	obj, err := scheme.New(u.GroupVersionKind())
-	if err != nil {
-		return err
-	}
-
-	if err := scheme.Convert(&u, obj, nil); err != nil {
-		return err
-	}
-
-	obj = update(obj)
-
 	codecs := serializer.NewCodecFactory(scheme)
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
 	if !ok {
 		return errors.Errorf("no serializer for %q", runtime.ContentTypeYAML)
 	}
 
-	encoder := codecs.EncoderForVersion(info.Serializer, obj.GetObjectKind().GroupVersionKind().GroupVersion())
-	yaml, err := runtime.Encode(encoder, obj)
+	_, err = retry.DoWithRetryableErrorsE(c.t, "update object", map[string]string{"Error from server \\(Conflict\\)": "object conflict"}, 5, time.Second, func() (string, error) {
+		out, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", typeName, objectName, "-o", "yaml")
+		if err != nil {
+			return "", err
+		}
+
+		decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
+		into := map[string]interface{}{}
+
+		if err := decoder.Decode(&into); err != nil {
+			return "", err
+		}
+
+		u := unstructured.Unstructured{Object: into}
+		obj, err := scheme.New(u.GroupVersionKind())
+		if err != nil {
+			return "", err
+		}
+
+		if err := scheme.Convert(&u, obj, nil); err != nil {
+			return "", err
+		}
+
+		obj = update(obj)
+		encoder := codecs.EncoderForVersion(info.Serializer, obj.GetObjectKind().GroupVersionKind().GroupVersion())
+		yml, err := runtime.Encode(encoder, obj)
+		if err != nil {
+			return "", err
+		}
+
+		if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), string(yml)); err != nil {
+			return "", err
+		}
+		return "", nil
+	})
+
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to update %s object %q", typeName, objectName)
 	}
-
-	if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), string(yaml)); err != nil {
-		return errors.Wrapf(err, "failed to update %s object %q with: %q",
-			typeName, objectName, yaml)
-	}
-
 	return nil
 }

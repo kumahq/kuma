@@ -53,12 +53,12 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *
 		return nil, err
 	}
 
-	routing, destinations, err := p.resolveRouting(ctx, &envoyContext.Mesh, dp)
+	routing, destinations, err := p.resolveRouting(ctx, envoyContext.Mesh, dp)
 	if err != nil {
 		return nil, err
 	}
 
-	matchedPolicies, err := p.matchPolicies(ctx, &envoyContext.Mesh, dp, destinations)
+	matchedPolicies, err := p.matchPolicies(ctx, envoyContext.Mesh, dp, destinations)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (p *DataplaneProxyBuilder) resolveDataplane(ctx context.Context, key core_m
 
 func (p *DataplaneProxyBuilder) resolveRouting(
 	ctx context.Context,
-	meshContext *xds_context.MeshContext,
+	meshContext xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
 ) (*xds.Routing, xds.DestinationMap, error) {
 	externalServices := &core_mesh.ExternalServiceResourceList{}
@@ -162,7 +162,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	return routing, destinations, nil
 }
 
-func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors xds.DestinationMap) (*xds.MatchedPolicies, error) {
+func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors xds.DestinationMap) (*xds.MatchedPolicies, error) {
 	healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, outboundSelectors, p.CachingResManager)
 	if err != nil {
 		return nil, err

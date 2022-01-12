@@ -38,6 +38,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 	"github.com/kumahq/kuma/pkg/xds/sync"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 func TestGateway(t *testing.T) {
@@ -131,11 +132,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	Expect(rt.ResourceManager().List(context.TODO(), &dataplanes, store.ListByMesh(key.Mesh))).
 		To(Succeed())
 
-	cache, err := cla.NewCache(
-		rt.ReadOnlyResourceManager(),
-		rt.Config().Multizone.Zone.Name,
-		rt.Config().Store.Cache.ExpirationTime,
-		rt.LookupIP(), rt.Metrics())
+	cache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime, rt.Metrics())
 	Expect(err).To(Succeed())
 
 	secrets, err := secrets.NewSecrets(
@@ -151,10 +148,10 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	ctx := xds_context.Context{
 		ControlPlane: control,
 		Mesh: xds_context.MeshContext{
-			Resource:   mesh,
-			Dataplanes: &dataplanes,
+			Resource:    mesh,
+			Dataplanes:  &dataplanes,
+			EndpointMap: xds_topology.BuildEdsEndpointMap(mesh, rt.Config().Multizone.Zone.Name, dataplanes.Items, []*core_mesh.ZoneIngressResource{}),
 		},
-		EnvoyAdminClient: nil,
 	}
 
 	proxy, err := b.Build(key, &ctx)

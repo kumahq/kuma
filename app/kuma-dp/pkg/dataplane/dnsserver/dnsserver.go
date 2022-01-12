@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"text/template"
 
@@ -15,6 +13,7 @@ import (
 	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 var (
@@ -50,47 +49,12 @@ const DefaultCoreFileTemplate = `.:{{ .CoreDNSPort }} {
     }
 }`
 
-func getSelfPath() (string, error) {
-	ex, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Dir(ex), nil
-}
-
-func lookupBinaryPath(candidatePaths []string) (string, error) {
-	for _, candidatePath := range candidatePaths {
-		path, err := exec.LookPath(candidatePath)
-		if err == nil {
-			return path, nil
-		}
-	}
-
-	return "", errors.Errorf("could not find binary in any of the following paths: %v", candidatePaths)
-}
-
 func lookupDNSServerPath(configuredPath string) (string, error) {
-	selfPath, err := getSelfPath()
-	if err != nil {
-		return "", err
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	path, err := lookupBinaryPath([]string{
-		configuredPath,
-		selfPath + "/coredns",
-		cwd + "/coredns",
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
+	return files.LookupBinaryPath(
+		files.LookupInPath(configuredPath),
+		files.LookupInCurrentDirectory("coredns"),
+		files.LookupNextToCurrentExecutable("coredns"),
+	)
 }
 
 func New(opts *Opts) (*DNSServer, error) {
