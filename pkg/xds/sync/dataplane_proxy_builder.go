@@ -132,7 +132,6 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	routing := &xds.Routing{
 		TrafficRoutes:   routes,
 		OutboundTargets: outbound,
-		VipDomains:      meshContext.VIPDomains, // todo this can be removed since it's available in MeshContext#VIPs domains
 	}
 	return routing, destinations, nil
 }
