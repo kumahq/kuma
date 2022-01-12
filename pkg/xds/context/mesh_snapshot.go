@@ -130,17 +130,6 @@ func (m *MeshSnapshot) Resources(resourceType core_model.ResourceType) core_mode
 	return list
 }
 
-func (m *MeshSnapshot) Resource(typ core_model.ResourceType, key core_model.ResourceKey) (core_model.Resource, bool) {
-	// potential way to optimize this is to change m.resources to be map[type]map[resourceKey]Resource
-	list := m.Resources(typ)
-	for _, item := range list.GetItems() {
-		if core_model.MetaToResourceKey(item.GetMeta()) == key {
-			return item, true
-		}
-	}
-	return nil, false
-}
-
 func configInHash(configName string, meshName string) bool {
 	return configName == vips.ConfigKey(meshName)
 }

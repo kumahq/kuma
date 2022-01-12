@@ -1,12 +1,9 @@
 package context
 
 import (
-	"fmt"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/tls"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
@@ -115,15 +112,11 @@ func (mc *MeshContext) CircuitBreakers() *core_mesh.CircuitBreakerResourceList {
 }
 
 func (mc *MeshContext) ServiceInsight() (*core_mesh.ServiceInsightResource, bool) {
-	key := core_model.ResourceKey{ // we cannot use insights.ServiceInsightKey because there is an import cycle
-		Name: fmt.Sprintf("all-services-%s", mc.Resource.Meta.GetName()),
-		Mesh: mc.Resource.Meta.GetName(),
+	resources := mc.Snapshot.Resources(core_mesh.ServiceInsightType).(*core_mesh.ServiceInsightResourceList)
+	if len(resources.Items) > 0 {
+		return resources.Items[0], true // there is only one service insight for mesh
 	}
-	res, found := mc.Snapshot.Resource(core_mesh.ServiceInsightType, key)
-	if !found {
-		return nil, false
-	}
-	return res.(*core_mesh.ServiceInsightResource), true
+	return nil, false
 }
 
 func BuildControlPlaneContext(claCache xds.CLACache, secrets secrets.Secrets) (*ControlPlaneContext, error) {
