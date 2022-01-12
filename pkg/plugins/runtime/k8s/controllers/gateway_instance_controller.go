@@ -23,6 +23,7 @@ import (
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -92,7 +93,12 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	ctx context.Context,
 	gatewayInstance *mesh_k8s.GatewayInstance,
 ) (*kube_core.Service, error) {
-	gateway := match.Gateway(r.ResourceManager, func(selector mesh_proto.TagSelector) bool {
+	gatewayList := &core_mesh.GatewayResourceList{}
+	if err := r.ResourceManager.List(context.Background(), gatewayList); err != nil {
+		// XXX handle not found differently?
+		return nil, err
+	}
+	gateway := match.Gateway(gatewayList, func(selector mesh_proto.TagSelector) bool {
 		return selector.Matches(gatewayInstance.Spec.Tags)
 	})
 

@@ -50,7 +50,6 @@ func NewProxyProfile(rt core_runtime.Runtime) generator.ResourceGenerator {
 		generator.DNSGenerator{},
 
 		Generator{
-			ResourceManager: rt.ReadOnlyResourceManager(),
 			Generators: []GatewayHostGenerator{
 				// The order here matters because generators can
 				// depend on state created by a previous generator.

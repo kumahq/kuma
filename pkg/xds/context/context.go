@@ -125,6 +125,14 @@ func (mc *MeshContext) ServiceInsight() (*core_mesh.ServiceInsightResource, bool
 	return nil, false
 }
 
+func (mc *MeshContext) Gateways() *core_mesh.GatewayResourceList {
+	return mc.Snapshot.Resources(core_mesh.GatewayType).(*core_mesh.GatewayResourceList)
+}
+
+func (mc *MeshContext) GatewayRoutes() *core_mesh.GatewayRouteResourceList {
+	return mc.Snapshot.Resources(core_mesh.GatewayRouteType).(*core_mesh.GatewayRouteResourceList)
+}
+
 func BuildControlPlaneContext(claCache xds.CLACache, secrets secrets.Secrets) (*ControlPlaneContext, error) {
 	adminKeyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, tls.DefaultKeyType, "localhost")
 	if err != nil {
