@@ -30,7 +30,7 @@ type DataplaneProxyBuilder struct {
 }
 
 func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *xds_context.Context) (*xds.Proxy, error) {
-	dp, found := envoyContext.Mesh.Dataplane(key.Name)
+	dp, found := envoyContext.Mesh.DataplanesByName[key.Name]
 	if !found {
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
 	}

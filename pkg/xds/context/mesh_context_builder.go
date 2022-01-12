@@ -34,6 +34,11 @@ func (m *meshContextBuilder) Build(snapshot *MeshSnapshot) (MeshContext, error) 
 	dataplanesList := snapshot.Resources(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList)
 	dataplanes := xds_topology.ResolveAddresses(logger, m.ipFunc, dataplanesList.Items)
 
+	dataplanesByName := map[string]*core_mesh.DataplaneResource{}
+	for _, dp := range dataplanes {
+		dataplanesByName[dp.Meta.GetName()] = dp
+	}
+
 	zoneIngressList := snapshot.Resources(core_mesh.ZoneIngressType).(*core_mesh.ZoneIngressResourceList)
 	zoneIngresses := xds_topology.ResolveZoneIngressAddresses(logger, m.ipFunc, zoneIngressList.Items)
 
@@ -49,6 +54,7 @@ func (m *meshContextBuilder) Build(snapshot *MeshSnapshot) (MeshContext, error) 
 		Dataplanes: &core_mesh.DataplaneResourceList{
 			Items: dataplanes,
 		},
+		DataplanesByName: dataplanesByName,
 		ZoneIngresses: &core_mesh.ZoneIngressResourceList{
 			Items: zoneIngresses,
 		},

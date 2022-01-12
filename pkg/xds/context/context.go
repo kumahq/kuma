@@ -29,14 +29,15 @@ type ControlPlaneContext struct {
 }
 
 type MeshContext struct {
-	Resource      *core_mesh.MeshResource
-	Dataplanes    *core_mesh.DataplaneResourceList
-	ZoneIngresses *core_mesh.ZoneIngressResourceList
-	Snapshot      *MeshSnapshot
-	Hash          string
-	EndpointMap   xds.EndpointMap
-	VIPDomains    []xds.VIPDomains
-	VIPOutbounds  []*mesh_proto.Dataplane_Networking_Outbound
+	Resource         *core_mesh.MeshResource
+	Dataplanes       *core_mesh.DataplaneResourceList
+	DataplanesByName map[string]*core_mesh.DataplaneResource
+	ZoneIngresses    *core_mesh.ZoneIngressResourceList
+	Snapshot         *MeshSnapshot
+	Hash             string
+	EndpointMap      xds.EndpointMap
+	VIPDomains       []xds.VIPDomains
+	VIPOutbounds     []*mesh_proto.Dataplane_Networking_Outbound
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
@@ -67,15 +68,6 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	} else {
 		return lb
 	}
-}
-
-func (mc *MeshContext) Dataplane(name string) (*core_mesh.DataplaneResource, bool) {
-	for _, dp := range mc.Dataplanes.Items {
-		if dp.Meta.GetName() == name {
-			return dp, true
-		}
-	}
-	return nil, false
 }
 
 func (mc *MeshContext) ExternalServices() *core_mesh.ExternalServiceResourceList {
