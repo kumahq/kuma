@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"context"
 	"fmt"
 	"sort"
 
@@ -9,9 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
@@ -189,19 +186,6 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 	}
 
 	return resources.Get(), nil
-}
-
-func listResources(mgr core_manager.ReadOnlyResourceManager, t model.ResourceType) (model.ResourceList, error) {
-	list, err := registry.Global().NewList(t)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := mgr.List(context.Background(), list); err != nil {
-		return nil, err
-	}
-
-	return list, nil
 }
 
 // MakeGatewayListener converts a collapsed set of listener configurations

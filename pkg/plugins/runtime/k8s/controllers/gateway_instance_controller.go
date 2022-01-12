@@ -94,7 +94,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	gatewayInstance *mesh_k8s.GatewayInstance,
 ) (*kube_core.Service, error) {
 	gatewayList := &core_mesh.GatewayResourceList{}
-	if err := r.ResourceManager.List(context.Background(), gatewayList); err != nil {
+	if err := r.ResourceManager.List(ctx, gatewayList); err != nil {
 		// XXX handle not found differently?
 		return nil, err
 	}
