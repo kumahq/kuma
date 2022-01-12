@@ -30,15 +30,24 @@ func (r *GatewayReconciler) updateStatus(ctx context.Context, gateway *gatewayap
 // mergeGatewayStatus updates the status by mutating the given Gateway.
 func mergeGatewayStatus(gateway *gatewayapi.Gateway, instance *mesh_k8s.GatewayInstance) {
 	ipType := gatewayapi.IPAddressType
+	hostnameType := gatewayapi.HostnameAddressType
 
 	var addrs []gatewayapi.GatewayAddress
 
 	if lb := instance.Status.LoadBalancer; lb != nil {
 		for _, addr := range instance.Status.LoadBalancer.Ingress {
-			addrs = append(addrs, gatewayapi.GatewayAddress{
-				Type:  &ipType,
-				Value: addr.IP,
-			})
+			if addr.IP != "" {
+				addrs = append(addrs, gatewayapi.GatewayAddress{
+					Type:  &ipType,
+					Value: addr.IP,
+				})
+			}
+			if addr.Hostname != "" {
+				addrs = append(addrs, gatewayapi.GatewayAddress{
+					Type:  &hostnameType,
+					Value: addr.Hostname,
+				})
+			}
 		}
 	}
 
