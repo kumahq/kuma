@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/xds/topology"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ = Describe("Timeout", func() {

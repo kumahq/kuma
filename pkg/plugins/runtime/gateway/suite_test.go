@@ -11,7 +11,6 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/proto"
-	"github.com/kumahq/kuma/pkg/dns/vips"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -27,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/test"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -119,7 +119,12 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	control, err := xds_context.BuildControlPlaneContext(cache, secrets)
 	Expect(err).To(Succeed())
 
-	snapshot, err := xds_context.BuildMeshSnapshot(context.TODO(), key.Mesh, rt.ReadOnlyResourceManager(), server.MeshResourceTypes(server.HashMeshExcludedResources), rt.LookupIP())
+	meshSnapshotBuilder := xds_context.NewMeshSnapshotBuilder(
+		rt.ReadOnlyResourceManager(),
+		server.MeshResourceTypes(server.HashMeshExcludedResources),
+		rt.LookupIP(),
+	)
+	snapshot, err := meshSnapshotBuilder.Build(context.TODO(), key.Mesh)
 	Expect(err).To(Succeed())
 
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(
@@ -134,7 +139,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 
 	ctx := xds_context.Context{
 		ControlPlane: control,
-		Mesh: meshCtx,
+		Mesh:         meshCtx,
 	}
 
 	proxy, err := b.Build(key, &ctx)

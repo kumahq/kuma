@@ -6,9 +6,6 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -18,20 +15,16 @@ import (
 // reconcile Dataplane's state. Calculating hash is a heavy operation
 // that requires fetching all the resources belonging to the Mesh.
 type Cache struct {
-	cache              *once.Cache
-	rm                 manager.ReadOnlyResourceManager
-	types              []core_model.ResourceType
-	ipFunc             lookup.LookupIPFunc
-	meshContextBuilder xds_context.MeshContextBuilder
+	cache               *once.Cache
+	meshSnapshotBuilder xds_context.MeshSnapshotBuilder
+	meshContextBuilder  xds_context.MeshContextBuilder
 
 	latestMeshContext *xds_context.MeshContext
 }
 
 func NewCache(
-	rm manager.ReadOnlyResourceManager,
 	expirationTime time.Duration,
-	types []core_model.ResourceType,
-	ipFunc lookup.LookupIPFunc,
+	meshSnapshotBuilder xds_context.MeshSnapshotBuilder,
 	meshContextBuilder xds_context.MeshContextBuilder,
 	metrics metrics.Metrics,
 ) (*Cache, error) {
@@ -40,17 +33,15 @@ func NewCache(
 		return nil, err
 	}
 	return &Cache{
-		rm:                 rm,
-		types:              types,
-		ipFunc:             ipFunc,
-		cache:              c,
-		meshContextBuilder: meshContextBuilder,
+		cache:               c,
+		meshSnapshotBuilder: meshSnapshotBuilder,
+		meshContextBuilder:  meshContextBuilder,
 	}, nil
 }
 
 func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh string) (xds_context.MeshContext, error) {
 	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
-		snapshot, err := xds_context.BuildMeshSnapshot(ctx, key, c.rm, c.types, c.ipFunc)
+		snapshot, err := c.meshSnapshotBuilder.Build(ctx, mesh)
 		if err != nil {
 			return nil, err
 		}

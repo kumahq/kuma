@@ -3,7 +3,6 @@ package topology_test
 import (
 	"net"
 
-	"github.com/kumahq/kuma/pkg/xds/topology"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -11,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ = Describe("Resolve Dataplane address", func() {

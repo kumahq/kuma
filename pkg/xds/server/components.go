@@ -61,11 +61,15 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
 		rt.Config().DNSServer.Domain,
 	)
-	meshSnapshotCache, err := mesh.NewCache(
+
+	meshSnapshotBuilder := xds_context.NewMeshSnapshotBuilder(
 		rt.ReadOnlyResourceManager(),
-		rt.Config().Store.Cache.ExpirationTime,
 		MeshResourceTypes(HashMeshExcludedResources),
 		rt.LookupIP(),
+	)
+	meshSnapshotCache, err := mesh.NewCache(
+		rt.Config().Store.Cache.ExpirationTime,
+		meshSnapshotBuilder,
 		meshContextBuilder,
 		rt.Metrics(),
 	)

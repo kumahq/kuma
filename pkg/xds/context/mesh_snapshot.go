@@ -30,6 +30,94 @@ type MeshSnapshot struct {
 	ipFunc    lookup.LookupIPFunc
 }
 
+type MeshSnapshotBuilder interface {
+	Build(ctx context.Context, meshName string) (*MeshSnapshot, error)
+}
+
+func NewMeshSnapshotBuilder(rm manager.ReadOnlyResourceManager, types []core_model.ResourceType, ipFunc lookup.LookupIPFunc) MeshSnapshotBuilder {
+	return &meshSnapshotBuilder{
+		rm:     rm,
+		types:  types,
+		ipFunc: ipFunc,
+	}
+}
+
+type meshSnapshotBuilder struct {
+	rm     manager.ReadOnlyResourceManager
+	types  []core_model.ResourceType
+	ipFunc lookup.LookupIPFunc
+}
+
+var _ MeshSnapshotBuilder = &meshSnapshotBuilder{}
+
+func (m *meshSnapshotBuilder) Build(ctx context.Context, meshName string) (*MeshSnapshot, error) {
+	snapshot := &MeshSnapshot{
+		resources: map[core_model.ResourceType]core_model.ResourceList{},
+		ipFunc:    m.ipFunc,
+	}
+
+	mesh := core_mesh.NewMeshResource()
+	if err := m.rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
+		return nil, err
+	}
+	snapshot.mesh = mesh
+
+	for _, typ := range m.types {
+		switch typ {
+		case core_mesh.DataplaneType:
+			dataplanes := &core_mesh.DataplaneResourceList{}
+			if err := m.rm.List(ctx, dataplanes, core_store.ListByMesh(meshName)); err != nil {
+				return nil, err
+			}
+			snapshot.resources[typ] = dataplanes
+		case core_mesh.ZoneIngressType:
+			zoneIngresses := &core_mesh.ZoneIngressResourceList{}
+			if err := m.rm.List(ctx, zoneIngresses); err != nil {
+				return nil, err
+			}
+			snapshot.resources[typ] = zoneIngresses
+		case system.ConfigType:
+			configs := &system.ConfigResourceList{}
+			var items []*system.ConfigResource
+			if err := m.rm.List(ctx, configs); err != nil {
+				return nil, err
+			}
+			for _, config := range configs.Items {
+				if configInHash(config.Meta.GetName(), meshName) {
+					items = append(items, config)
+				}
+			}
+			configs.Items = items
+			snapshot.resources[typ] = configs
+		case core_mesh.ServiceInsightType:
+			// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
+			// This information is only useful when mTLS is enabled with PERMISSIVE mode.
+			// Not including this into mesh hash for other cases saves us unnecessary XDS config generations.
+			if backend := snapshot.mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
+				break
+			}
+
+			insights := &core_mesh.ServiceInsightResourceList{}
+			if err := m.rm.List(ctx, insights, core_store.ListByMesh(meshName)); err != nil {
+				return nil, err
+			}
+
+			snapshot.resources[typ] = insights
+		default:
+			rlist, err := registry.Global().NewList(typ)
+			if err != nil {
+				return nil, err
+			}
+			if err := m.rm.List(ctx, rlist, core_store.ListByMesh(meshName)); err != nil {
+				return nil, err
+			}
+			snapshot.resources[typ] = rlist
+		}
+	}
+
+	return snapshot, nil
+}
+
 func (m *MeshSnapshot) Resources(resourceType core_model.ResourceType) core_model.ResourceList {
 	list, ok := m.resources[resourceType]
 	if !ok {
@@ -51,73 +139,6 @@ func (m *MeshSnapshot) Resource(typ core_model.ResourceType, key core_model.Reso
 		}
 	}
 	return nil, false
-}
-
-func BuildMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyResourceManager, types []core_model.ResourceType, ipFunc lookup.LookupIPFunc) (*MeshSnapshot, error) {
-	snapshot := &MeshSnapshot{
-		resources: map[core_model.ResourceType]core_model.ResourceList{},
-		ipFunc:    ipFunc,
-	}
-
-	mesh := core_mesh.NewMeshResource()
-	if err := rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
-		return nil, err
-	}
-	snapshot.mesh = mesh
-
-	for _, typ := range types {
-		switch typ {
-		case core_mesh.DataplaneType:
-			dataplanes := &core_mesh.DataplaneResourceList{}
-			if err := rm.List(ctx, dataplanes, core_store.ListByMesh(meshName)); err != nil {
-				return nil, err
-			}
-			snapshot.resources[typ] = dataplanes
-		case core_mesh.ZoneIngressType:
-			zoneIngresses := &core_mesh.ZoneIngressResourceList{}
-			if err := rm.List(ctx, zoneIngresses); err != nil {
-				return nil, err
-			}
-			snapshot.resources[typ] = zoneIngresses
-		case system.ConfigType:
-			configs := &system.ConfigResourceList{}
-			var items []*system.ConfigResource
-			if err := rm.List(ctx, configs); err != nil {
-				return nil, err
-			}
-			for _, config := range configs.Items {
-				if configInHash(config.Meta.GetName(), meshName) {
-					items = append(items, config)
-				}
-			}
-			configs.Items = items
-			snapshot.resources[typ] = configs
-		case core_mesh.ServiceInsightType:
-			// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
-			// This information is only useful when mTLS is enabled with PERMISSIVE mode.
-			// Not including this into mesh hash for other cases saves us unnecessary XDS config generations.
-			if backend := snapshot.mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
-				break
-			}
-
-			insights := &core_mesh.ServiceInsightResourceList{}
-			if err := rm.List(ctx, insights, core_store.ListByMesh(meshName)); err != nil {
-				return nil, err
-			}
-
-			snapshot.resources[typ] = insights
-		default:
-			rlist, err := registry.Global().NewList(typ)
-			if err != nil {
-				return nil, err
-			}
-			if err := rm.List(ctx, rlist, core_store.ListByMesh(meshName)); err != nil {
-				return nil, err
-			}
-			snapshot.resources[typ] = rlist
-		}
-	}
-	return snapshot, nil
 }
 
 func configInHash(configName string, meshName string) bool {

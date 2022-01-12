@@ -100,11 +100,10 @@ var _ = Describe("MeshSnapshot Cache", func() {
 			return []net.IP{net.ParseIP(s)}, nil
 		}
 		meshContextBuilder := xds_context.NewMeshContextBuilder(lookupIPFunc, "zone-1", vips.NewPersistence(core_manager.NewResourceManager(s), manager.NewConfigManager(s)), "mesh")
+		meshSnapshotBuilder := xds_context.NewMeshSnapshotBuilder(countingManager, []core_model.ResourceType{core_mesh.DataplaneType, core_mesh.TrafficRouteType, core_mesh.ZoneIngressType}, lookupIPFunc)
 		meshCache, err = mesh.NewCache(
-			countingManager,
 			expiration,
-			[]core_model.ResourceType{core_mesh.DataplaneType, core_mesh.TrafficRouteType, core_mesh.ZoneIngressType},
-			lookupIPFunc,
+			meshSnapshotBuilder,
 			meshContextBuilder,
 			metrics,
 		)
