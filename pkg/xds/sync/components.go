@@ -4,7 +4,6 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -17,14 +16,12 @@ var (
 )
 
 func DefaultDataplaneProxyBuilder(
-	lookupIP lookup.LookupIPFunc,
 	dataSourceLoader datasource.Loader,
 	config kuma_cp.Config,
 	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
 ) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
-		LookupIP:         lookupIP,
 		DataSourceLoader: dataSourceLoader,
 		MetadataTracker:  metadataTracker,
 		Zone:             config.Multizone.Zone.Name,
@@ -53,7 +50,6 @@ func DefaultDataplaneWatchdogFactory(
 	apiVersion envoy.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
-		rt.LookupIP(),
 		rt.DataSourceLoader(),
 		rt.Config(),
 		metadataTracker,

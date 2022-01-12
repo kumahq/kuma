@@ -1,6 +1,8 @@
 package context
 
 import (
+	"fmt"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -81,6 +83,62 @@ func (mc *MeshContext) Dataplane(name string) (*core_mesh.DataplaneResource, boo
 		}
 	}
 	return nil, false
+}
+
+func (mc *MeshContext) ExternalServices() *core_mesh.ExternalServiceResourceList {
+	return mc.Snapshot.Resources(core_mesh.ExternalServiceType).(*core_mesh.ExternalServiceResourceList)
+}
+
+func (mc *MeshContext) HealthChecks() *core_mesh.HealthCheckResourceList {
+	return mc.Snapshot.Resources(core_mesh.HealthCheckType).(*core_mesh.HealthCheckResourceList)
+}
+
+func (mc *MeshContext) TrafficTraces() *core_mesh.TrafficTraceResourceList {
+	return mc.Snapshot.Resources(core_mesh.TrafficTraceType).(*core_mesh.TrafficTraceResourceList)
+}
+
+func (mc *MeshContext) TrafficRoutes() *core_mesh.TrafficRouteResourceList {
+	return mc.Snapshot.Resources(core_mesh.TrafficRouteType).(*core_mesh.TrafficRouteResourceList)
+}
+
+func (mc *MeshContext) Retries() *core_mesh.RetryResourceList {
+	return mc.Snapshot.Resources(core_mesh.RetryType).(*core_mesh.RetryResourceList)
+}
+
+func (mc *MeshContext) TrafficPermissions() *core_mesh.TrafficPermissionResourceList {
+	return mc.Snapshot.Resources(core_mesh.TrafficPermissionType).(*core_mesh.TrafficPermissionResourceList)
+}
+
+func (mc *MeshContext) TrafficLogs() *core_mesh.TrafficLogResourceList {
+	return mc.Snapshot.Resources(core_mesh.TrafficLogType).(*core_mesh.TrafficLogResourceList)
+}
+
+func (mc *MeshContext) FaultInjections() *core_mesh.FaultInjectionResourceList {
+	return mc.Snapshot.Resources(core_mesh.FaultInjectionType).(*core_mesh.FaultInjectionResourceList)
+}
+
+func (mc *MeshContext) Timeouts() *core_mesh.TimeoutResourceList {
+	return mc.Snapshot.Resources(core_mesh.TimeoutType).(*core_mesh.TimeoutResourceList)
+}
+
+func (mc *MeshContext) RateLimits() *core_mesh.RateLimitResourceList {
+	return mc.Snapshot.Resources(core_mesh.RateLimitType).(*core_mesh.RateLimitResourceList)
+}
+
+func (mc *MeshContext) CircuitBreakers() *core_mesh.CircuitBreakerResourceList {
+	return mc.Snapshot.Resources(core_mesh.CircuitBreakerType).(*core_mesh.CircuitBreakerResourceList)
+}
+
+func (mc *MeshContext) ServiceInsight() (*core_mesh.ServiceInsightResource, bool) {
+	key := core_model.ResourceKey{ // we cannot use insights.ServiceInsightKey because there is an import cycle
+		Name: fmt.Sprintf("all-services-%s", mc.Resource.Meta.GetName()),
+		Mesh: mc.Resource.Meta.GetName(),
+	}
+	res, found := mc.Snapshot.Resource(core_mesh.ServiceInsightType, key)
+	if !found {
+		return nil, false
+	}
+	return res.(*core_mesh.ServiceInsightResource), true
 }
 
 func BuildControlPlaneContext(claCache xds.CLACache, secrets secrets.Secrets) (*ControlPlaneContext, error) {

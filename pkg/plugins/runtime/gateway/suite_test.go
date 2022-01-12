@@ -101,7 +101,6 @@ func (m mockMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.Da
 
 func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_context.Context, *core_xds.Proxy) {
 	b := sync.DataplaneProxyBuilder{
-		LookupIP:         rt.LookupIP(),
 		DataSourceLoader: rt.DataSourceLoader(),
 		MetadataTracker:  mockMetadataTracker{},
 		Zone:             rt.Config().Multizone.Zone.Name,
