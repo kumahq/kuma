@@ -109,7 +109,7 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 	}
 
 	// only Pods with injected Kuma need a Dataplane descriptor
-	injected, exist, err := metadata.Annotations(pod.Annotations).GetBool(metadata.KumaSidecarInjectedAnnotation)
+	injected, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectedAnnotation)
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}

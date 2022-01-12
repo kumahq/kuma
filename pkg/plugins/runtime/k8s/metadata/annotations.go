@@ -117,7 +117,7 @@ func (a Annotations) GetEnabled(key string) (bool, bool, error) {
 	case AnnotationDisabled, AnnotationFalse:
 		return false, true, nil
 	default:
-		return false, true, errors.Errorf("annotation \"%s\" has wrong value \"%s\", available values are: \"enabled\", \"disabled\"", key, value)
+		return false, true, errors.Errorf("annotation \"%s\" has wrong value \"%s\"", key, value)
 	}
 }
 
@@ -139,18 +139,6 @@ func (a Annotations) GetString(key string) (string, bool) {
 		return "", false
 	}
 	return value, true
-}
-
-func (a Annotations) GetBool(key string) (bool, bool, error) {
-	value, ok := a[key]
-	if !ok {
-		return false, false, nil
-	}
-	b, err := strconv.ParseBool(value)
-	if err != nil {
-		return false, false, errors.Errorf("failed to parse annotation %q: %s", key, err.Error())
-	}
-	return b, true, nil
 }
 
 // GetMap returns map from annotation. Example: "kuma.io/sidecar-env-vars: TEST1=1;TEST2=2"

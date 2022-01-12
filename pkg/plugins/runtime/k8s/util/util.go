@@ -46,7 +46,7 @@ func Ignored() ServicePredicate {
 		if svc.Annotations == nil {
 			return false
 		}
-		ignore, _, _ := metadata.Annotations(svc.Annotations).GetBool(metadata.KumaIgnoreAnnotation)
+		ignore, _, _ := metadata.Annotations(svc.Annotations).GetEnabled(metadata.KumaIgnoreAnnotation)
 		return ignore
 	}
 }

@@ -9,11 +9,13 @@ import (
 
 var _ = Describe("Kubernetes Annotations", func() {
 
-	Context("GetEnabled()", func() {
+	Describe("GetEnabled()", func() {
 		It("should parse value to bool", func() {
 			annotations := map[string]string{
 				"key1": "enabled",
 				"key2": "disabled",
+				"key3": "true",
+				"key4": "false",
 			}
 			enabled, exist, err := metadata.Annotations(annotations).GetEnabled("key1")
 			Expect(err).ToNot(HaveOccurred())
@@ -24,6 +26,16 @@ var _ = Describe("Kubernetes Annotations", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(enabled).To(BeFalse())
 			Expect(exist).To(BeTrue())
+
+			val, exist, err := metadata.Annotations(annotations).GetEnabled("key3")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(val).To(BeTrue())
+			Expect(exist).To(BeTrue())
+
+			val, exist, err = metadata.Annotations(annotations).GetEnabled("key4")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(val).To(BeFalse())
+			Expect(exist).To(BeTrue())
 		})
 
 		It("should return error if value is wrong", func() {
@@ -32,7 +44,7 @@ var _ = Describe("Kubernetes Annotations", func() {
 			}
 			enabled, exist, err := metadata.Annotations(annotations).GetEnabled("key1")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("annotation \"key1\" has wrong value \"not-enabled-at-all\", available values are: \"enabled\", \"disabled\""))
+			Expect(err.Error()).To(ContainSubstring("annotation \"key1\" has wrong value \"not-enabled-at-all\""))
 			Expect(enabled).To(BeFalse())
 			Expect(exist).To(BeTrue())
 		})
@@ -58,28 +70,6 @@ var _ = Describe("Kubernetes Annotations", func() {
 
 			_, _, err := metadata.Annotations(annotations).GetUint32("key1")
 			Expect(err.Error()).To(ContainSubstring("failed to parse annotation \"key1\": strconv.ParseUint: parsing \"dummy\": invalid syntax"))
-		})
-	})
-
-	Context("GetBool()", func() {
-		It("should parse value to bool", func() {
-			annotations := map[string]string{
-				"key1": "true",
-			}
-
-			val, hasKey, err := metadata.Annotations(annotations).GetBool("key1")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(hasKey).To(Equal(true))
-			Expect(val).To(Equal(true))
-		})
-
-		It("should return error if value has wrong format", func() {
-			annotations := map[string]string{
-				"key1": "dummy",
-			}
-
-			_, _, err := metadata.Annotations(annotations).GetBool("key1")
-			Expect(err.Error()).To(ContainSubstring("failed to parse annotation \"key1\": strconv.ParseBool: parsing \"dummy\": invalid syntax"))
 		})
 	})
 
