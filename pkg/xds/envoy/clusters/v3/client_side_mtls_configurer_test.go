@@ -83,12 +83,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                       matchSubjectAltNames:
                       - exact: spiffe://default/backend
                     validationContextSdsSecretConfig:
-                      name: mesh_ca
+                      name: mesh_ca_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
+                  - name: identity_cert_default
                     sdsConfig:
                       ads: {}
                       resourceApiVersion: V3
@@ -150,12 +150,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                         matchSubjectAltNames:
                         - exact: spiffe://default/backend
                       validationContextSdsSecretConfig:
-                        name: mesh_ca
+                        name: mesh_ca_default
                         sdsConfig:
                           ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert
+                    - name: identity_cert_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
@@ -175,12 +175,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                         matchSubjectAltNames:
                         - exact: spiffe://default/backend
                       validationContextSdsSecretConfig:
-                        name: mesh_ca
+                        name: mesh_ca_default
                         sdsConfig:
                           ads: {}
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert
+                    - name: identity_cert_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
@@ -235,12 +235,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
                       matchSubjectAltNames:
                       - exact: spiffe://default/backend
                     validationContextSdsSecretConfig:
-                      name: mesh_ca
+                      name: mesh_ca_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
+                  - name: identity_cert_default
                     sdsConfig:
                       ads: {}
                       resourceApiVersion: V3

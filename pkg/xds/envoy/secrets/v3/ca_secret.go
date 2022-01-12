@@ -10,9 +10,14 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-func CreateCaSecret(secret *core_xds.CaSecret) *envoy_auth.Secret {
+func CreateCaSecret(secret *core_xds.CaSecret, mesh string) *envoy_auth.Secret {
+	name := tls.MeshCaResource
+	if mesh != "" {
+		name += "_" + mesh
+	}
+
 	return &envoy_auth.Secret{
-		Name: tls.MeshCaResource,
+		Name: name,
 		Type: &envoy_auth.Secret_ValidationContext{
 			ValidationContext: &envoy_auth.CertificateValidationContext{
 				TrustedCa: &envoy_core.DataSource{

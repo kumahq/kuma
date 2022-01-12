@@ -10,9 +10,14 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-func CreateIdentitySecret(secret *core_xds.IdentitySecret) *envoy_auth.Secret {
+func CreateIdentitySecret(secret *core_xds.IdentitySecret, mesh string) *envoy_auth.Secret {
+	name := tls.IdentityCertResource
+	if mesh != "" {
+		name += "_" + mesh
+	}
+
 	return &envoy_auth.Secret{
-		Name: tls.IdentityCertResource,
+		Name: name,
 		Type: &envoy_auth.Secret_TlsCertificate{
 			TlsCertificate: &envoy_auth.TlsCertificate{
 				CertificateChain: &envoy_core.DataSource{

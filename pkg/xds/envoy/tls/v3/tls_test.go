@@ -83,12 +83,12 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                       matchSubjectAltNames:
                       - prefix: spiffe://default/
                     validationContextSdsSecretConfig:
-                      name: mesh_ca
+                      name: mesh_ca_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
+                  - name: identity_cert_default
                     sdsConfig:
                       ads: {}
                       resourceApiVersion: V3
@@ -172,12 +172,12 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                       matchSubjectAltNames:
                       - exact: spiffe://default/backend
                     validationContextSdsSecretConfig:
-                      name: mesh_ca
+                      name: mesh_ca_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
+                  - name: identity_cert_default
                     sdsConfig:
                       ads: {}
                       resourceApiVersion: V3`,

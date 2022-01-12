@@ -19,7 +19,7 @@ func CreateDownstreamTlsContext(ctx xds_context.Context) (*envoy_tls.DownstreamT
 		return nil, nil
 	}
 	validationSANMatcher := MeshSpiffeIDPrefixMatcher(ctx.Mesh.Resource.Meta.GetName())
-	commonTlsContext, err := createCommonTlsContext(validationSANMatcher)
+	commonTlsContext, err := createCommonTlsContext(ctx, validationSANMatcher)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, upstreamService string, s
 	} else {
 		validationSANMatcher = ServiceSpiffeIDMatcher(ctx.Mesh.Resource.Meta.GetName(), upstreamService)
 	}
-	commonTlsContext, err := createCommonTlsContext(validationSANMatcher)
+	commonTlsContext, err := createCommonTlsContext(ctx, validationSANMatcher)
 	if err != nil {
 		return nil, err
 	}
@@ -57,9 +57,14 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, upstreamService string, s
 	}, nil
 }
 
-func createCommonTlsContext(validationSANMatcher *envoy_type_matcher.StringMatcher) (*envoy_tls.CommonTlsContext, error) {
-	meshCaSecret := NewSecretConfigSource(xds_tls.MeshCaResource)
-	identitySecret := NewSecretConfigSource(xds_tls.IdentityCertResource)
+func createCommonTlsContext(
+	ctx xds_context.Context,
+	validationSANMatcher *envoy_type_matcher.StringMatcher,
+) (*envoy_tls.CommonTlsContext, error) {
+	meshName := ctx.Mesh.Resource.GetMeta().GetName()
+	meshCaSecret := NewSecretConfigSource(xds_tls.MeshCaResource + "_" + meshName)
+	identitySecret := NewSecretConfigSource(xds_tls.IdentityCertResource + "_" + meshName)
+
 	return &envoy_tls.CommonTlsContext{
 		ValidationContextType: &envoy_tls.CommonTlsContext_CombinedValidationContext{
 			CombinedValidationContext: &envoy_tls.CommonTlsContext_CombinedCertificateValidationContext{

@@ -95,7 +95,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
                   commonTlsContext:
                     tlsCertificateSdsSecretConfigs:
-                    - name: identity_cert
+                    - name: identity_cert_default
                       sdsConfig:
                         ads: {}
                         resourceApiVersion: V3
