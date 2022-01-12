@@ -18,7 +18,7 @@ type meshContextBuilder struct {
 }
 
 type MeshContextBuilder interface {
-	Build(snapshot MeshSnapshot) (MeshContext, error)
+	Build(snapshot *MeshSnapshot) (MeshContext, error)
 }
 
 func NewMeshContextBuilder(ipFunc lookup.LookupIPFunc, zone string, vipsPersistence *vips.Persistence, topLevelDomain string) MeshContextBuilder {
@@ -30,14 +30,14 @@ func NewMeshContextBuilder(ipFunc lookup.LookupIPFunc, zone string, vipsPersiste
 	}
 }
 
-func (m *meshContextBuilder) Build(snapshot MeshSnapshot) (MeshContext, error) {
+func (m *meshContextBuilder) Build(snapshot *MeshSnapshot) (MeshContext, error) {
 	dataplanesList := snapshot.Resources(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList)
 	dataplanes := xds_topology.ResolveAddresses(logger, m.ipFunc, dataplanesList.Items)
 
 	zoneIngressList := snapshot.Resources(core_mesh.ZoneIngressType).(*core_mesh.ZoneIngressResourceList)
 	zoneIngresses := xds_topology.ResolveZoneIngressAddresses(logger, m.ipFunc, zoneIngressList.Items)
 
-	virtualOutboundView, err := m.vipsPersistence.GetByMesh(snapshot.Mesh().GetMeta().GetName())
+	virtualOutboundView, err := m.vipsPersistence.GetByMesh(snapshot.mesh.GetMeta().GetName())
 	if err != nil {
 		return MeshContext{}, err
 	}
@@ -45,7 +45,7 @@ func (m *meshContextBuilder) Build(snapshot MeshSnapshot) (MeshContext, error) {
 	domains, outbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain)
 
 	return MeshContext{
-		Resource: snapshot.Mesh(),
+		Resource: snapshot.mesh,
 		Dataplanes: &core_mesh.DataplaneResourceList{
 			Items: dataplanes,
 		},
@@ -53,7 +53,7 @@ func (m *meshContextBuilder) Build(snapshot MeshSnapshot) (MeshContext, error) {
 			Items: zoneIngresses,
 		},
 		Hash:         snapshot.Hash(),
-		EndpointMap:  xds_topology.BuildEdsEndpointMap(snapshot.Mesh(), m.zone, dataplanes, zoneIngresses),
+		EndpointMap:  xds_topology.BuildEdsEndpointMap(snapshot.mesh, m.zone, dataplanes, zoneIngresses),
 		VIPOutbounds: outbounds,
 		VIPDomains:   domains,
 		Snapshot:     snapshot,

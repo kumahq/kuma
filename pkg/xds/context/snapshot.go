@@ -24,17 +24,13 @@ var meshCacheLog = core.Log.WithName("mesh-cache")
 // Calculating and comparing hashes is much faster than call 'equal' for xDS resources. So
 // meshSnapshot reduces costs on reconciling Envoy config when resources in the store are
 // not changing
-type meshSnapshot struct {
+type MeshSnapshot struct {
 	mesh      *core_mesh.MeshResource
 	resources map[core_model.ResourceType]core_model.ResourceList
 	ipFunc    lookup.LookupIPFunc
 }
 
-func (m *meshSnapshot) Mesh() *core_mesh.MeshResource {
-	return m.mesh
-}
-
-func (m *meshSnapshot) Resources(resourceType core_model.ResourceType) core_model.ResourceList {
+func (m *MeshSnapshot) Resources(resourceType core_model.ResourceType) core_model.ResourceList {
 	list, ok := m.resources[resourceType]
 	if !ok {
 		list, err := registry.Global().NewList(resourceType)
@@ -46,7 +42,7 @@ func (m *meshSnapshot) Resources(resourceType core_model.ResourceType) core_mode
 	return list
 }
 
-func (m *meshSnapshot) Resource(typ core_model.ResourceType, key core_model.ResourceKey) (core_model.Resource, bool) {
+func (m *MeshSnapshot) Resource(typ core_model.ResourceType, key core_model.ResourceKey) (core_model.Resource, bool) {
 	// potential way to optimize this is to change m.resources to be map[type]map[resourceKey]Resource
 	list := m.Resources(typ)
 	for _, item := range list.GetItems() {
@@ -57,10 +53,8 @@ func (m *meshSnapshot) Resource(typ core_model.ResourceType, key core_model.Reso
 	return nil, false
 }
 
-var _ MeshSnapshot = &meshSnapshot{}
-
-func BuildMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyResourceManager, types []core_model.ResourceType, ipFunc lookup.LookupIPFunc) (MeshSnapshot, error) {
-	snapshot := &meshSnapshot{
+func BuildMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyResourceManager, types []core_model.ResourceType, ipFunc lookup.LookupIPFunc) (*MeshSnapshot, error) {
+	snapshot := &MeshSnapshot{
 		resources: map[core_model.ResourceType]core_model.ResourceList{},
 		ipFunc:    ipFunc,
 	}
@@ -130,7 +124,7 @@ func configInHash(configName string, meshName string) bool {
 	return configName == vips.ConfigKey(meshName)
 }
 
-func (m *meshSnapshot) Hash() string {
+func (m *MeshSnapshot) Hash() string {
 	resources := []core_model.Resource{
 		m.mesh,
 	}
@@ -140,7 +134,7 @@ func (m *meshSnapshot) Hash() string {
 	return sha256.Hash(m.hashResources(resources...))
 }
 
-func (m *meshSnapshot) hashResources(rs ...core_model.Resource) string {
+func (m *MeshSnapshot) hashResources(rs ...core_model.Resource) string {
 	hashes := []string{}
 	for _, r := range rs {
 		hashes = append(hashes, m.hashResource(r))
@@ -149,7 +143,7 @@ func (m *meshSnapshot) hashResources(rs ...core_model.Resource) string {
 	return strings.Join(hashes, ",")
 }
 
-func (m *meshSnapshot) hashResource(r core_model.Resource) string {
+func (m *MeshSnapshot) hashResource(r core_model.Resource) string {
 	switch v := r.(type) {
 	// In case of hashing Dataplane we are also adding '.Spec.Networking.Address' and `.Spec.Networking.Ingress.PublicAddress` into hash.
 	// The address could be a domain name and right now we resolve it right after fetching
@@ -183,7 +177,7 @@ func (m *meshSnapshot) hashResource(r core_model.Resource) string {
 
 // We need to hash all the resolved IPs, not only the first one, because hostname can be resolved to two IPs (ex. LoadBalancer on AWS)
 // If we were to pick only the first one, DNS returns addresses in different order, so we could constantly get different hashes.
-func (m *meshSnapshot) hashResolvedIPs(address string) string {
+func (m *MeshSnapshot) hashResolvedIPs(address string) string {
 	if address == "" {
 		return ""
 	}

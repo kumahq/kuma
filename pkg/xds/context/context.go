@@ -29,21 +29,14 @@ type ControlPlaneContext struct {
 }
 
 type MeshContext struct {
-	Resource      *core_mesh.MeshResource          // todo remove resource? You can access it via MeshContext.Snapshot.Mesh()
-	Dataplanes    *core_mesh.DataplaneResourceList // todo remove resource? You can access it via MeshContext.Snapshot.Resources(DataplaneType) but this list has IP resolved
+	Resource      *core_mesh.MeshResource
+	Dataplanes    *core_mesh.DataplaneResourceList
 	ZoneIngresses *core_mesh.ZoneIngressResourceList
-	Snapshot      MeshSnapshot
-	Hash          string // todo technically we can get rid of this if Snapshot does not count Hash every time
+	Snapshot      *MeshSnapshot
+	Hash          string
 	EndpointMap   xds.EndpointMap
 	VIPDomains    []xds.VIPDomains
 	VIPOutbounds  []*mesh_proto.Dataplane_Networking_Outbound
-}
-
-type MeshSnapshot interface {
-	Hash() string
-	Mesh() *core_mesh.MeshResource
-	Resources(core_model.ResourceType) core_model.ResourceList
-	Resource(core_model.ResourceType, core_model.ResourceKey) (core_model.Resource, bool)
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {

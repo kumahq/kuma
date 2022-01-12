@@ -106,17 +106,17 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 }
 
 func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors xds.DestinationMap) (*xds.MatchedPolicies, error) {
-	matchedPermissions, err := permissions.BuildTrafficPermissionMap(dataplane, meshContext.Snapshot.Mesh(), meshContext.TrafficPermissions().Items)
+	matchedPermissions, err := permissions.BuildTrafficPermissionMap(dataplane, meshContext.Resource, meshContext.TrafficPermissions().Items)
 	if err != nil {
 		return nil, err
 	}
 
-	faultInjection, err := faultinjections.BuildFaultInjectionMap(dataplane, meshContext.Snapshot.Mesh(), meshContext.FaultInjections().Items)
+	faultInjection, err := faultinjections.BuildFaultInjectionMap(dataplane, meshContext.Resource, meshContext.FaultInjections().Items)
 	if err != nil {
 		return nil, err
 	}
 
-	ratelimits, err := ratelimits.BuildRateLimitMap(dataplane, meshContext.Snapshot.Mesh(), meshContext.RateLimits().Items)
+	ratelimits, err := ratelimits.BuildRateLimitMap(dataplane, meshContext.Resource, meshContext.RateLimits().Items)
 	if err != nil {
 		return nil, err
 	}
