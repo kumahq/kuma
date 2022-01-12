@@ -14,7 +14,7 @@ PULP_HOST="https://api.pulp.konnect-prod.konghq.com"
 PULP_PACKAGE_TYPE="mesh"
 PULP_DIST_NAME="alpine"
 [ -z "$RELEASE_NAME" ] && RELEASE_NAME="kuma"
-ENVOY_VERSION=v1.20.0
+ENVOY_VERSION=1.18.4
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 
 function get_envoy() {
