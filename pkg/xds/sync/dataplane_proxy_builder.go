@@ -103,21 +103,21 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		return nil, nil, err
 	}
 
-	outbounds := dataplane.Spec.Networking.Outbound
 	if dataplane.Spec.Networking.GetTransparentProxying() != nil {
 		// Update the outbound of the dataplane with the generatedVips
 		generatedVips := map[string]bool{}
 		for _, ob := range meshContext.VIPOutbounds {
 			generatedVips[ob.Address] = true
 		}
+		outbounds := meshContext.VIPOutbounds
 		for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 			if generatedVips[outbound.Address] { // Useful while we still have resources with computed vip outbounds
 				continue
 			}
 			outbounds = append(outbounds, outbound)
 		}
+		dataplane.Spec.Networking.Outbound = outbounds
 	}
-	dataplane.Spec.Networking.Outbound = outbounds
 
 	// pick a single the most specific route for each outbound interface
 	trafficRoutes := meshContext.Snapshot.Resources(core_mesh.TrafficRouteType).(*core_mesh.TrafficRouteResourceList)
