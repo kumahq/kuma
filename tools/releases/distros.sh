@@ -96,7 +96,7 @@ function release() {
       artifact="build/artifacts-$system-$arch/$RELEASE_NAME-$KUMA_VERSION-$distro-$arch.tar.gz"
       [ ! -f "$artifact" ] && msg_yellow "Package '$artifact' not found, skipping..." && continue
 
-      msg_green "Releasing Kuma for '$os', '$arch'..."
+      msg_green "Releasing Kuma for '$os', '$arch', '$KUMA_VERSION'..."
 
       docker run --rm \
         -e PULP_USERNAME="${PULP_USERNAME}" -e PULP_PASSWORD="${PULP_PASSWORD}" \

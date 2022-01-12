@@ -7,11 +7,12 @@ source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
 [ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="docker.io"
 [ -z "$KUMA_DOCKER_REPO_ORG" ] && KUMA_DOCKER_REPO_ORG=${KUMA_DOCKER_REPO}/kumahq
 [ -z "$KUMA_COMPONENTS" ] && KUMA_COMPONENTS="kuma-cp kuma-dp kumactl kuma-init kuma-prometheus-sd"
+ENVOY_VERSION=1.18.4
 
 function build() {
   for component in ${KUMA_COMPONENTS}; do
     msg "Building $component..."
-    docker build --build-arg KUMA_ROOT="$(pwd)" -t $KUMA_DOCKER_REPO_ORG/"$component":"$KUMA_VERSION" \
+    docker build --build-arg KUMA_ROOT="$(pwd)" --build-arg ENVOY_VERSION=$ENVOY_VERSION -t $KUMA_DOCKER_REPO_ORG/"$component":"$KUMA_VERSION" \
       -f tools/releases/dockerfiles/Dockerfile."$component" .
     docker tag $KUMA_DOCKER_REPO_ORG/"$component":"$KUMA_VERSION" $KUMA_DOCKER_REPO_ORG/"$component":latest
     msg_green "... done!"
