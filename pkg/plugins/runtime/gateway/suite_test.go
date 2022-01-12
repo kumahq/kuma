@@ -11,6 +11,7 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/proto"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -35,7 +36,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 	"github.com/kumahq/kuma/pkg/xds/server"
 	"github.com/kumahq/kuma/pkg/xds/sync"
-	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 func TestGateway(t *testing.T) {
@@ -106,17 +106,6 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		APIVersion:       envoy.APIV3,
 	}
 
-	mesh := core_mesh.NewMeshResource()
-	Expect(rt.ReadOnlyResourceManager().Get(context.TODO(), mesh, store.GetByKey(key.Mesh, core_model.NoMesh))).
-		To(Succeed())
-
-	dataplanes := core_mesh.DataplaneResourceList{}
-	Expect(rt.ResourceManager().List(context.TODO(), &dataplanes, store.ListByMesh(key.Mesh))).
-		To(Succeed())
-	zoneIngresses := core_mesh.ZoneIngressResourceList{}
-	Expect(rt.ResourceManager().List(context.TODO(), &zoneIngresses)).
-		To(Succeed())
-
 	cache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime, rt.Metrics())
 	Expect(err).To(Succeed())
 
@@ -133,15 +122,19 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	snapshot, err := xds_context.BuildMeshSnapshot(context.TODO(), key.Mesh, rt.ReadOnlyResourceManager(), server.MeshResourceTypes(server.HashMeshExcludedResources), rt.LookupIP())
 	Expect(err).To(Succeed())
 
+	meshCtxBuilder := xds_context.NewMeshContextBuilder(
+		rt.LookupIP(),
+		rt.Config().Multizone.Zone.Name,
+		vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
+		rt.Config().DNSServer.Domain,
+	)
+
+	meshCtx, err := meshCtxBuilder.Build(snapshot)
+	Expect(err).To(Succeed())
+
 	ctx := xds_context.Context{
 		ControlPlane: control,
-		Mesh: xds_context.MeshContext{
-			Resource:      mesh,
-			Dataplanes:    &dataplanes,
-			ZoneIngresses: &zoneIngresses,
-			EndpointMap:   xds_topology.BuildEdsEndpointMap(mesh, rt.Config().Multizone.Zone.Name, dataplanes.Items, []*core_mesh.ZoneIngressResource{}),
-			Snapshot:      snapshot,
-		},
+		Mesh: meshCtx,
 	}
 
 	proxy, err := b.Build(key, &ctx)
