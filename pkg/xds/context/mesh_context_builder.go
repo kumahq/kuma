@@ -1,15 +1,14 @@
-package mesh
+package context
 
 import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
-var logger = core.Log.WithName("xds").WithName("mesh")
+var logger = core.Log.WithName("xds").WithName("context")
 
 type meshContextBuilder struct {
 	ipFunc          lookup.LookupIPFunc
@@ -18,8 +17,8 @@ type meshContextBuilder struct {
 	topLevelDomain  string
 }
 
-type MeshContextBuilder interface { // todo move to xds/context
-	Build(snapshot xds_context.MeshSnapshot) (xds_context.MeshContext, error)
+type MeshContextBuilder interface {
+	Build(snapshot MeshSnapshot) (MeshContext, error)
 }
 
 func NewMeshContextBuilder(ipFunc lookup.LookupIPFunc, zone string, vipsPersistence *vips.Persistence, topLevelDomain string) MeshContextBuilder {
@@ -31,7 +30,7 @@ func NewMeshContextBuilder(ipFunc lookup.LookupIPFunc, zone string, vipsPersiste
 	}
 }
 
-func (m *meshContextBuilder) Build(snapshot xds_context.MeshSnapshot) (xds_context.MeshContext, error) {
+func (m *meshContextBuilder) Build(snapshot MeshSnapshot) (MeshContext, error) {
 	dataplanesList := snapshot.Resources(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList)
 	dataplanes := xds_topology.ResolveAddresses(logger, m.ipFunc, dataplanesList.Items)
 
@@ -40,12 +39,12 @@ func (m *meshContextBuilder) Build(snapshot xds_context.MeshSnapshot) (xds_conte
 
 	virtualOutboundView, err := m.vipsPersistence.GetByMesh(snapshot.Mesh().GetMeta().GetName())
 	if err != nil {
-		return xds_context.MeshContext{}, err
+		return MeshContext{}, err
 	}
 	// resolve all the domains
 	domains, outbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain)
 
-	return xds_context.MeshContext{
+	return MeshContext{
 		Resource: snapshot.Mesh(),
 		Dataplanes: &core_mesh.DataplaneResourceList{
 			Items: dataplanes,

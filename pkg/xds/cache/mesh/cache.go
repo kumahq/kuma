@@ -22,7 +22,7 @@ type Cache struct {
 	rm                 manager.ReadOnlyResourceManager
 	types              []core_model.ResourceType
 	ipFunc             lookup.LookupIPFunc
-	meshContextBuilder MeshContextBuilder
+	meshContextBuilder xds_context.MeshContextBuilder
 
 	latestMeshContext *xds_context.MeshContext
 }
@@ -32,7 +32,7 @@ func NewCache(
 	expirationTime time.Duration,
 	types []core_model.ResourceType,
 	ipFunc lookup.LookupIPFunc,
-	meshContextBuilder MeshContextBuilder,
+	meshContextBuilder xds_context.MeshContextBuilder,
 	metrics metrics.Metrics,
 ) (*Cache, error) {
 	c, err := once.New(expirationTime, "mesh_cache", metrics)

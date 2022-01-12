@@ -55,7 +55,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	meshContextBuilder := mesh.NewMeshContextBuilder(
+	meshContextBuilder := xds_context.NewMeshContextBuilder(
 		rt.LookupIP(),
 		rt.Config().Multizone.Zone.Name,
 		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
