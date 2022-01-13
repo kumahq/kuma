@@ -157,8 +157,8 @@ var _ = Describe("SecretsGenerator", func() {
 					},
 				},
 				APIVersion: envoy_common.APIV3,
-				GetMeshes: func() *core_mesh.MeshResourceList {
-					return &core_mesh.MeshResourceList{
+				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
+					Meshes: &core_mesh.MeshResourceList{
 						Items: []*core_mesh.MeshResource{
 							{
 								Meta: &test_model.ResourceMeta{
@@ -242,7 +242,7 @@ var _ = Describe("SecretsGenerator", func() {
 							},
 						},
 						Pagination: model.Pagination{},
-					}
+					},
 				},
 			},
 			expected: "envoy-config-egress.golden.yaml",

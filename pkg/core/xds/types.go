@@ -131,7 +131,12 @@ type Proxy struct {
 	Routing             Routing
 	Policies            MatchedPolicies
 	ServiceTLSReadiness map[string]bool
-	GetMeshes           func() *core_mesh.MeshResourceList
+
+	ZoneEgressProxy *ZoneEgressProxy
+}
+
+type ZoneEgressProxy struct {
+	Meshes *core_mesh.MeshResourceList
 }
 
 type VIPDomains struct {
