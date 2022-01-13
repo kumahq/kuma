@@ -57,7 +57,7 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *
 }
 
 func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*xds.Routing, xds.DestinationMap, error) {
-	matchedExternalServices, err := permissions.MatchExternalServices(dataplane, meshContext.ExternalServices(), meshContext.TrafficPermissions())
+	matchedExternalServices, err := permissions.MatchExternalServices(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -65,13 +65,19 @@ func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshConte
 	p.resolveVIPOutbounds(meshContext, dataplane)
 
 	// pick a single the most specific route for each outbound interface
-	routes := xds_topology.BuildRouteMap(dataplane, meshContext.TrafficRoutes().Items)
+	routes := xds_topology.BuildRouteMap(dataplane, meshContext.Resources.TrafficRoutes().Items)
 
 	// create creates a map of selectors to match other dataplanes reachable via given routes
 	destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 	// resolve all endpoints that match given selectors
-	outbound := xds_topology.BuildEndpointMap(meshContext.Resource, p.Zone, meshContext.Dataplanes.Items, meshContext.ZoneIngresses.Items, matchedExternalServices, p.DataSourceLoader)
+	outbound := xds_topology.BuildEndpointMap(
+		meshContext.Resource,
+		p.Zone,
+		meshContext.Resources.Dataplanes().Items,
+		meshContext.Resources.ZoneIngresses().Items,
+		matchedExternalServices, p.DataSourceLoader,
+	)
 
 	routing := &xds.Routing{
 		TrafficRoutes:   routes,
@@ -106,16 +112,17 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
 
-	ratelimits := ratelimits.BuildRateLimitMap(dataplane, inbounds, meshContext.RateLimits().Items)
+	resources := meshContext.Resources
+	ratelimits := ratelimits.BuildRateLimitMap(dataplane, inbounds, resources.RateLimits().Items)
 	matchedPolicies := &xds.MatchedPolicies{
-		TrafficPermissions: permissions.BuildTrafficPermissionMap(dataplane, inbounds, meshContext.TrafficPermissions().Items),
-		TrafficLogs:        logs.BuildTrafficLogMap(dataplane, meshContext.TrafficLogs().Items),
-		HealthChecks:       xds_topology.BuildHealthCheckMap(dataplane, outboundSelectors, meshContext.HealthChecks().Items),
-		CircuitBreakers:    xds_topology.BuildCircuitBreakerMap(dataplane, outboundSelectors, meshContext.CircuitBreakers().Items),
-		TrafficTrace:       xds_topology.SelectTrafficTrace(dataplane, meshContext.TrafficTraces().Items),
-		FaultInjections:    faultinjections.BuildFaultInjectionMap(dataplane, inbounds, meshContext.FaultInjections().Items),
-		Retries:            xds_topology.BuildRetryMap(dataplane, meshContext.Retries().Items, outboundSelectors),
-		Timeouts:           xds_topology.BuildTimeoutMap(dataplane, meshContext.Timeouts().Items),
+		TrafficPermissions: permissions.BuildTrafficPermissionMap(dataplane, inbounds, resources.TrafficPermissions().Items),
+		TrafficLogs:        logs.BuildTrafficLogMap(dataplane, resources.TrafficLogs().Items),
+		HealthChecks:       xds_topology.BuildHealthCheckMap(dataplane, outboundSelectors, resources.HealthChecks().Items),
+		CircuitBreakers:    xds_topology.BuildCircuitBreakerMap(dataplane, outboundSelectors, resources.CircuitBreakers().Items),
+		TrafficTrace:       xds_topology.SelectTrafficTrace(dataplane, resources.TrafficTraces().Items),
+		FaultInjections:    faultinjections.BuildFaultInjectionMap(dataplane, inbounds, resources.FaultInjections().Items),
+		Retries:            xds_topology.BuildRetryMap(dataplane, resources.Retries().Items, outboundSelectors),
+		Timeouts:           xds_topology.BuildTimeoutMap(dataplane, resources.Timeouts().Items),
 		RateLimitsInbound:  ratelimits.Inbound,
 		RateLimitsOutbound: ratelimits.Outbound,
 	}
