@@ -6,15 +6,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/tls"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 type Context struct {
-	ControlPlane     *ControlPlaneContext
-	Mesh             MeshContext
-	EnvoyAdminClient admin.EnvoyAdminClient
+	ControlPlane *ControlPlaneContext
+	Mesh         MeshContext
 }
 
 type ConnectionInfo struct {
@@ -29,9 +27,10 @@ type ControlPlaneContext struct {
 }
 
 type MeshContext struct {
-	Resource   *core_mesh.MeshResource
-	Dataplanes *core_mesh.DataplaneResourceList
-	Hash       string
+	Resource    *core_mesh.MeshResource
+	Dataplanes  *core_mesh.DataplaneResourceList
+	Hash        string
+	EndpointMap xds.EndpointMap
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {

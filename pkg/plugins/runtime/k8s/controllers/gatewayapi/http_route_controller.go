@@ -2,7 +2,6 @@ package gatewayapi
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -16,8 +15,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
@@ -27,7 +25,7 @@ type HTTPRouteReconciler struct {
 	Log logr.Logger
 
 	Scheme          *kube_runtime.Scheme
-	Converter       k8s_common.Converter
+	TypeRegistry    k8s_registry.TypeRegistry
 	SystemNamespace string
 	ResourceManager manager.ResourceManager
 }
@@ -36,9 +34,10 @@ const (
 	ObjectTypeUnknownOrInvalid = "ObjectTypeUnknownOrInvalid"
 	ObjectNotFound             = "ObjectNotFound"
 	RefInvalid                 = "RefInvalid"
+	RefNotPermitted            = "RefNotPermitted"
 )
 
-const ownerLabel = "gateways.kuma.io/owner"
+const ownerLabel = "gateways.kuma.io/gateway.networking.k8s.io-owner"
 
 // Reconcile handles transforming a gateway-api HTTPRoute into a Kuma
 // GatewayRoute and managing the status of the gateway-api objects.
@@ -46,7 +45,8 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	httpRoute := &gatewayapi.HTTPRoute{}
 	if err := r.Get(ctx, req.NamespacedName, httpRoute); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return kube_ctrl.Result{}, nil
+			err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, &mesh_proto.GatewayRoute{}, nil)
+			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned GatewayRoute.kuma.io")
 		}
 
 		return kube_ctrl.Result{}, err
@@ -55,11 +55,11 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	spec, conditions, err := r.gapiToKumaRoutes(ctx, mesh, httpRoute)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "error generating GatewayRoute")
+		return kube_ctrl.Result{}, errors.Wrap(err, "error generating GatewayRoute.kuma.io")
 	}
 
-	if err := reconcileLabelledObject(ctx, r.Client, req.NamespacedName, spec); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not CreateOrUpdate GatewayRoutes")
+	if err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, &mesh_proto.GatewayRoute{}, spec); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned GatewayRoute.kuma.io")
 	}
 
 	if err := r.updateStatus(ctx, httpRoute, conditions); err != nil {
@@ -162,71 +162,6 @@ func (r *HTTPRouteReconciler) shouldHandleParentRef(
 	}
 
 	return class.Spec.ControllerName == controllerName, nil
-}
-
-// reconcileLabelledObjectSet manages a set of owned objects based on labeling
-// with the owner key and indexed by the service tag and listener tag.
-func reconcileLabelledObject(
-	ctx context.Context,
-	client kube_client.Client,
-	owner kube_types.NamespacedName,
-	routeSpec *mesh_proto.GatewayRoute,
-) error {
-	// First we list which existing objects are owned by this route.
-	// We expect either 0 or 1 and depending on whether routeSpec is nil
-	// we either create an object or update or delete the existing
-	ownerLabelValue := fmt.Sprintf("%s-%s", owner.Namespace, owner.Name)
-	labels := kube_client.MatchingLabels{
-		ownerLabel: ownerLabelValue,
-	}
-
-	list := &mesh_k8s.GatewayRouteList{}
-	if err := client.List(ctx, list, labels); err != nil {
-		return err
-	}
-
-	if l := len(list.Items); l > 1 {
-		return fmt.Errorf("internal error: found %d items labeled as owned by this object, expected either zero or one", l)
-	}
-
-	var existing *mesh_k8s.GatewayRoute
-	if len(list.Items) == 1 {
-		existing = &list.Items[0]
-	}
-
-	if routeSpec == nil {
-		if existing != nil {
-			if err := client.Delete(ctx, existing); err != nil && !kube_apierrs.IsNotFound(err) {
-				return err
-			}
-		}
-		return nil
-	}
-
-	if existing != nil {
-		existing.Spec = routeSpec
-
-		if err := client.Update(ctx, existing); err != nil {
-			return errors.Wrap(err, "could not update GatewayRoute")
-		}
-		return nil
-	}
-
-	route := &mesh_k8s.GatewayRoute{
-		ObjectMeta: kube_meta.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", ownerLabelValue),
-			Labels: map[string]string{
-				ownerLabel: ownerLabelValue,
-			},
-		},
-		Spec: routeSpec,
-	}
-
-	if err := client.Create(ctx, route); err != nil {
-		return errors.Wrap(err, "could not create GatewayRoute")
-	}
-
-	return nil
 }
 
 func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {

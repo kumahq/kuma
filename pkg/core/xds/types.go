@@ -111,7 +111,7 @@ type RateLimitsMap struct {
 }
 
 type CLACache interface {
-	GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error)
+	GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion, endpointMap EndpointMap) (proto.Message, error)
 }
 
 // SocketAddressProtocol is the L4 protocol the listener should bind to

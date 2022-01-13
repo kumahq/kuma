@@ -253,7 +253,7 @@ resources:
 - name: db-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: db
+    clusterName: db-_0_
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -271,21 +271,21 @@ resources:
 - name: db-_1_
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: db
+    clusterName: db-_1_
     endpoints:
     - lbEndpoints:
       - endpoint:
           address:
             socketAddress:
               address: 192.168.0.3
-              portValue: 5432
+              portValue: 5433
         loadBalancingWeight: 1
         metadata:
           filterMetadata:
             envoy.lb:
-              role: master
+              role: replica
             envoy.transport_socket_match:
-              role: master
+              role: replica
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
