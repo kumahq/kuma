@@ -13,6 +13,8 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/types"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -39,12 +41,12 @@ var _ = Describe("Marshal InspectEntry", func() {
 			input: &types.InspectEntry{
 				Type: "inbound",
 				Name: "192.168.0.1:80",
-				MatchedPolicies: map[model.ResourceType][]model.Resource{
+				MatchedPolicies: map[model.ResourceType][]*rest.Resource{
 					core_mesh.TimeoutType: {
-						&core_mesh.TimeoutResource{
+						rest.From.Resource(&core_mesh.TimeoutResource{
 							Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "t-1"},
 							Spec: samples.Timeout,
-						},
+						}),
 					},
 				},
 			},
@@ -68,9 +70,13 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 			bytes, err := ioutil.ReadAll(inputFile)
 			Expect(err).ToNot(HaveOccurred())
 
-			unmarshaledInspectEntry := &types.InspectEntry{}
-			err = json.Unmarshal(bytes, unmarshaledInspectEntry)
+			receiver := &types.InspectEntryReceiver{
+				NewResource: registry.Global().NewObject,
+			}
+			err = json.Unmarshal(bytes, receiver)
 			Expect(err).ToNot(HaveOccurred())
+
+			unmarshaledInspectEntry := receiver.InspectEntry
 
 			Expect(unmarshaledInspectEntry.Name).To(Equal(given.output.Name))
 			Expect(unmarshaledInspectEntry.Type).To(Equal(given.output.Type))
@@ -79,7 +85,7 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 				Expect(given.output.MatchedPolicies[resType]).ToNot(BeNil())
 				Expect(mp).To(HaveLen(len(given.output.MatchedPolicies[resType])))
 				for i, item := range mp {
-					Expect(item.GetSpec()).To(MatchProto(given.output.MatchedPolicies[resType][i].GetSpec()))
+					Expect(item.Spec).To(MatchProto(given.output.MatchedPolicies[resType][i].Spec))
 				}
 			}
 		},
@@ -92,12 +98,12 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 			output: &types.InspectEntry{
 				Type: "inbound",
 				Name: "192.168.0.1:80",
-				MatchedPolicies: map[model.ResourceType][]model.Resource{
+				MatchedPolicies: map[model.ResourceType][]*rest.Resource{
 					core_mesh.TimeoutType: {
-						&core_mesh.TimeoutResource{
+						rest.From.Resource(&core_mesh.TimeoutResource{
 							Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "t-1"},
 							Spec: samples.Timeout,
-						},
+						}),
 					},
 				},
 			},
@@ -107,7 +113,7 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 			output: &types.InspectEntry{
 				Type:            "inbound",
 				Name:            "192.168.0.1:80",
-				MatchedPolicies: map[model.ResourceType][]model.Resource{},
+				MatchedPolicies: map[model.ResourceType][]*rest.Resource{},
 			},
 		}),
 	)
@@ -119,22 +125,16 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 			bytes, err := ioutil.ReadAll(inputFile)
 			Expect(err).ToNot(HaveOccurred())
 
-			unmarshalledInspectEntry := &types.InspectEntry{}
-			err = json.Unmarshal(bytes, unmarshalledInspectEntry)
+			receiver := &types.InspectEntryReceiver{
+				NewResource: registry.Global().NewObject,
+			}
+			err = json.Unmarshal(bytes, receiver)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(given.errMsg))
 		},
-		Entry("matchedPolicies has wrong type", testCase{
-			inputFile: "error.matched_policies_wrong_type.json",
-			errMsg:    "json: cannot unmarshal array into Go struct field intermediateInspectEntry.matchedPolicies of type map[string][]*types.intermediateResource",
-		}),
 		Entry("matchedPolicies key is empty", testCase{
 			inputFile: "error.matched_policies_empty_key.json",
-			errMsg:    "MatchedPolicies key is empty",
-		}),
-		Entry("matchedPolicies value is not a list", testCase{
-			inputFile: "error.matched_policies_value_not_list.json",
-			errMsg:    "json: cannot unmarshal object into Go struct field intermediateInspectEntry.matchedPolicies of type []*types.intermediateResource",
+			errMsg:    `invalid resource type ""`,
 		}),
 	)
 })

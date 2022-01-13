@@ -15,6 +15,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -115,12 +116,17 @@ func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies) []ap
 	sort.Stable(core_xds.AttachmentList(attachments))
 
 	for _, attachment := range attachments {
-		policyMap := attachmentMap[attachment]
 		entry := api_server_types.InspectEntry{
 			Type:            attachment.Type.String(),
 			Name:            attachment.Name,
-			MatchedPolicies: policyMap,
+			MatchedPolicies: map[core_model.ResourceType][]*rest.Resource{},
 		}
+		for typ, resList := range attachmentMap[attachment] {
+			for _, res := range resList {
+				entry.MatchedPolicies[typ] = append(entry.MatchedPolicies[typ], rest.From.Resource(res))
+			}
+		}
+
 		entries = append(entries, entry)
 	}
 
