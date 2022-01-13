@@ -83,7 +83,7 @@ type Generator struct {
 }
 
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	gateway := match.Gateway(ctx.Mesh.Gateways(), proxy.Dataplane.Spec.Matches)
+	gateway := match.Gateway(ctx.Mesh.Resources.Gateways(), proxy.Dataplane.Spec.Matches)
 
 	if gateway == nil {
 		log.V(1).Info("no matching gateway for dataplane",
@@ -119,7 +119,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 	resources := ResourceAggregator{core_xds.NewResourceSet()}
 
 	// Cache external services since multiple listeners might need them.
-	externalServices := ctx.Mesh.ExternalServices()
+	externalServices := ctx.Mesh.Resources.ExternalServices()
 
 	for port, listeners := range collapsed {
 		// Force all listeners on the same port to have the same protocol.
@@ -197,7 +197,6 @@ func MakeGatewayListener(
 	listeners []*mesh_proto.Gateway_Listener,
 ) (GatewayListener, []GatewayHost, error) {
 	hostsByName := map[string]GatewayHost{}
-	resourcesByType := map[model.ResourceType]model.ResourceList{}
 
 	listener := GatewayListener{
 		Port:     listeners[0].GetPort(),
@@ -207,16 +206,6 @@ func MakeGatewayListener(
 			listeners[0].GetProtocol().String(),
 			listeners[0].GetPort(),
 		),
-	}
-
-	// XXX TODO find better way to do this
-	for _, t := range RoutePolicyTypes {
-		resourcesByType[t] = meshContext.Snapshot.Resources(t)
-	}
-
-	// XXX TODO find better way to do this
-	for _, t := range ConnectionPolicyTypes {
-		resourcesByType[t] = meshContext.Snapshot.Resources(t)
 	}
 
 	// Hostnames must be unique to a listener to remove ambiguity
@@ -242,7 +231,7 @@ func MakeGatewayListener(
 		case mesh_proto.Gateway_Listener_HTTP,
 			mesh_proto.Gateway_Listener_HTTPS:
 			host.Routes = append(host.Routes,
-				match.Routes(meshContext.GatewayRoutes(), l.GetTags())...)
+				match.Routes(meshContext.Resources.GatewayRoutes(), l.GetTags())...)
 		default:
 			// TODO(jpeach) match other route types that are appropriate to the protocol.
 		}
@@ -250,7 +239,7 @@ func MakeGatewayListener(
 		for _, t := range ConnectionPolicyTypes {
 			matches := match.ConnectionPoliciesBySource(
 				l.GetTags(),
-				match.ToConnectionPolicies(resourcesByType[t]))
+				match.ToConnectionPolicies(meshContext.Resources[t]))
 			host.Policies[t] = matches
 		}
 
