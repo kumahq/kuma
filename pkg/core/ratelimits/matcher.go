@@ -24,7 +24,12 @@ func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *core_mesh.Datap
 		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not retrieve ratelimits")
 	}
 
-	return BuildRateLimitMap(dataplane, mesh, splitPoliciesBySourceMatch(ratelimits.Items))
+	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
+	if err != nil {
+		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not fetch additional inbounds")
+	}
+	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
+	return BuildRateLimitMap(dataplane, inbounds, splitPoliciesBySourceMatch(ratelimits.Items)), nil
 }
 
 func BuildRateLimitMap(

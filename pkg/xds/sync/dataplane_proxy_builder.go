@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
+	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -44,11 +45,6 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *
 		return nil, err
 	}
 
-	tlsReady, err := p.resolveTLSReadiness(key, envoyContext.Mesh)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't determine TLS readiness of services")
-	}
-
 	proxy := &xds.Proxy{
 		Id:         xds.FromResourceKey(key),
 		APIVersion: p.APIVersion,
@@ -61,7 +57,7 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *
 }
 
 func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*xds.Routing, xds.DestinationMap, error) {
-	matchedExternalServices, err := permissions.MatchExternalServices(dataplane, meshContext.ExternalServices(), meshContext.TrafficPermissions())
+	matchedExternalServices, err := permissions.MatchExternalServices(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -69,13 +65,19 @@ func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshConte
 	p.resolveVIPOutbounds(meshContext, dataplane)
 
 	// pick a single the most specific route for each outbound interface
-	routes := xds_topology.BuildRouteMap(dataplane, meshContext.TrafficRoutes().Items)
+	routes := xds_topology.BuildRouteMap(dataplane, meshContext.Resources.TrafficRoutes().Items)
 
 	// create creates a map of selectors to match other dataplanes reachable via given routes
 	destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 	// resolve all endpoints that match given selectors
-	outbound := xds_topology.BuildEndpointMap(meshContext.Resource, p.Zone, meshContext.Dataplanes.Items, meshContext.ZoneIngresses.Items, matchedExternalServices, p.DataSourceLoader)
+	outbound := xds_topology.BuildEndpointMap(
+		meshContext.Resource,
+		p.Zone,
+		meshContext.Resources.Dataplanes().Items,
+		meshContext.Resources.ZoneIngresses().Items,
+		matchedExternalServices, p.DataSourceLoader,
+	)
 
 	routing := &xds.Routing{
 		TrafficRoutes:   routes,
@@ -104,17 +106,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 }
 
 func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors xds.DestinationMap) (*xds.MatchedPolicies, error) {
-	matchedPermissions, err := permissions.BuildTrafficPermissionMap(dataplane, meshContext.Resource, meshContext.TrafficPermissions().Items)
-	if err != nil {
-		return nil, err
-	}
-
-	faultInjection, err := faultinjections.BuildFaultInjectionMap(dataplane, meshContext.Resource, meshContext.FaultInjections().Items)
-	if err != nil {
-		return nil, err
-	}
-
-	ratelimits, err := ratelimits.BuildRateLimitMap(dataplane, meshContext.Resource, meshContext.RateLimits().Items)
+	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, meshContext.Resource)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
 	}
@@ -123,38 +115,16 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 	resources := meshContext.Resources
 	ratelimits := ratelimits.BuildRateLimitMap(dataplane, inbounds, resources.RateLimits().Items)
 	matchedPolicies := &xds.MatchedPolicies{
-		TrafficPermissions: matchedPermissions,
-		TrafficLogs:        logs.BuildTrafficLogMap(dataplane, meshContext.TrafficLogs().Items),
-		HealthChecks:       xds_topology.BuildHealthCheckMap(dataplane, outboundSelectors, meshContext.HealthChecks().Items),
-		CircuitBreakers:    xds_topology.BuildCircuitBreakerMap(dataplane, outboundSelectors, meshContext.CircuitBreakers().Items),
-		TrafficTrace:       xds_topology.SelectTrafficTrace(dataplane, meshContext.TrafficTraces().Items),
-		FaultInjections:    faultInjection,
-		Retries:            xds_topology.BuildRetryMap(dataplane, meshContext.Retries().Items, outboundSelectors),
-		Timeouts:           xds_topology.BuildTimeoutMap(dataplane, meshContext.Timeouts().Items),
+		TrafficPermissions: permissions.BuildTrafficPermissionMap(dataplane, inbounds, resources.TrafficPermissions().Items),
+		TrafficLogs:        logs.BuildTrafficLogMap(dataplane, resources.TrafficLogs().Items),
+		HealthChecks:       xds_topology.BuildHealthCheckMap(dataplane, outboundSelectors, resources.HealthChecks().Items),
+		CircuitBreakers:    xds_topology.BuildCircuitBreakerMap(dataplane, outboundSelectors, resources.CircuitBreakers().Items),
+		TrafficTrace:       xds_topology.SelectTrafficTrace(dataplane, resources.TrafficTraces().Items),
+		FaultInjections:    faultinjections.BuildFaultInjectionMap(dataplane, inbounds, resources.FaultInjections().Items),
+		Retries:            xds_topology.BuildRetryMap(dataplane, resources.Retries().Items, outboundSelectors),
+		Timeouts:           xds_topology.BuildTimeoutMap(dataplane, resources.Timeouts().Items),
 		RateLimitsInbound:  ratelimits.Inbound,
 		RateLimitsOutbound: ratelimits.Outbound,
 	}
 	return matchedPolicies, nil
-}
-
-func (p *DataplaneProxyBuilder) resolveTLSReadiness(key core_model.ResourceKey, meshContext xds_context.MeshContext) (map[string]bool, error) {
-	tlsReady := map[string]bool{}
-
-	backend := meshContext.Resource.GetEnabledCertificateAuthorityBackend()
-	// TLS readiness is irrelevant unless we are using PERMISSIVE TLS, so skip
-	// checking ServiceInsights if we aren't.
-	if backend == nil || backend.Mode != mesh_proto.CertificateAuthorityBackend_PERMISSIVE {
-		return tlsReady, nil
-	}
-
-	serviceInsight, found := meshContext.ServiceInsight()
-	if !found {
-		// Nothing about the TLS readiness has been reported yet
-		syncLog.Info("could not determine service TLS readiness, ServiceInsight is not yet present")
-		return tlsReady, nil
-	}
-	for svc, insight := range serviceInsight.Spec.GetServices() {
-		tlsReady[svc] = insight.IssuedBackends[backend.Name] == insight.Dataplanes.Total
-	}
-	return tlsReady, nil
 }
