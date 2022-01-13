@@ -2,6 +2,7 @@ package metadata_test
 
 import (
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -10,33 +11,39 @@ import (
 var _ = Describe("Kubernetes Annotations", func() {
 
 	Describe("GetEnabled()", func() {
-		It("should parse value to bool", func() {
-			annotations := map[string]string{
-				"key1": "enabled",
-				"key2": "disabled",
-				"key3": "true",
-				"key4": "false",
-			}
-			enabled, exist, err := metadata.Annotations(annotations).GetEnabled("key1")
+		type testCase struct {
+			input    string
+			expected bool
+		}
+		annotations := map[string]string{
+			"key1": "enabled",
+			"key2": "disabled",
+			"key3": "true",
+			"key4": "false",
+		}
+		DescribeTable("should parse value to bool", func(given testCase) {
+			enabled, exist, err := metadata.Annotations(annotations).GetEnabled(given.input)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(enabled).To(BeTrue())
+			Expect(enabled).To(Equal(given.expected))
 			Expect(exist).To(BeTrue())
-
-			enabled, exist, err = metadata.Annotations(annotations).GetEnabled("key2")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(enabled).To(BeFalse())
-			Expect(exist).To(BeTrue())
-
-			val, exist, err := metadata.Annotations(annotations).GetEnabled("key3")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(val).To(BeTrue())
-			Expect(exist).To(BeTrue())
-
-			val, exist, err = metadata.Annotations(annotations).GetEnabled("key4")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(val).To(BeFalse())
-			Expect(exist).To(BeTrue())
-		})
+		},
+			Entry("enabled", testCase{
+				input:    "key1",
+				expected: true,
+			}),
+			Entry("disabled", testCase{
+				input:    "key2",
+				expected: false,
+			}),
+			Entry("true", testCase{
+				input:    "key3",
+				expected: true,
+			}),
+			Entry("false", testCase{
+				input:    "key4",
+				expected: false,
+			}),
+		)
 
 		It("should return error if value is wrong", func() {
 			annotations := map[string]string{
