@@ -16,9 +16,11 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
+	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 // GatewayReconciler reconciles a GatewayAPI Gateway object.
@@ -39,7 +41,9 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	gateway := &gatewayapi.Gateway{}
 	if err := r.Get(ctx, req.NamespacedName, gateway); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, &mesh_proto.Gateway{}, nil)
+			// We don't know the mesh, but we don't need it to delete our
+			// object.
+			err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.Gateway{}, nil)
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned Gateway.kuma.io")
 		}
 
@@ -60,7 +64,9 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating Gateway.kuma.io")
 	}
 
-	if err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, &mesh_proto.Gateway{}, gatewaySpec); err != nil {
+	mesh := k8s_util.MeshFor(gateway)
+
+	if err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.Gateway{}, gatewaySpec); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned Gateway.kuma.io")
 	}
 
