@@ -188,23 +188,7 @@ func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.Map
 		var requests []kube_reconcile.Request
 		for _, route := range routes.Items {
 			for _, parentRef := range route.Spec.ParentRefs {
-				// We're looking at all HTTPRoutes, at some point one may
-				// reference a different kind of object.
-				matches := *parentRef.Group == gatewayapi.GroupName &&
-					*parentRef.Kind == "Gateway"
-
-				referencedNamespace := route.Namespace
-				if parentRef.Namespace != nil {
-					referencedNamespace = string(*parentRef.Namespace)
-				}
-
-				matches = matches &&
-					(referencedNamespace == gateway.Namespace) &&
-					(string(parentRef.Name) == gateway.Name)
-
-				// We don't care whether a specific listener is referenced
-
-				if matches {
+				if parentRefMatchesGateway(route.Namespace, parentRef, gateway) {
 					requests = append(requests, kube_reconcile.Request{
 						NamespacedName: kube_client.ObjectKeyFromObject(&route),
 					})
@@ -214,6 +198,23 @@ func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.Map
 
 		return requests
 	}
+}
+
+// parentRefMatchesGateway checks whether a ref could potentially attach to at least one
+// listener of Gateway.
+func parentRefMatchesGateway(routeNamespace string, parentRef gatewayapi.ParentRef, gateway *gatewayapi.Gateway) bool {
+	referencedNamespace := routeNamespace
+	if parentRef.Namespace != nil {
+		referencedNamespace = string(*parentRef.Namespace)
+	}
+
+	// We're looking at all HTTPRoutes, at some point one may
+	// reference a non-Gateway object.
+	// We don't care whether a specific listener is referenced
+	return *parentRef.Group == gatewayapi.GroupName &&
+		*parentRef.Kind == "Gateway" &&
+		referencedNamespace == gateway.Namespace &&
+		string(parentRef.Name) == gateway.Name
 }
 
 func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
