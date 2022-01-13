@@ -951,6 +951,7 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
+      - gatewayclasses/status
       - gateways/status
       - httproutes/status
     verbs:

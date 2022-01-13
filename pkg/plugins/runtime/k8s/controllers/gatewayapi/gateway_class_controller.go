@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,8 +54,15 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		controllerutil.RemoveFinalizer(class, gatewayapi.GatewayClassFinalizerGatewaysExist)
 	}
 
+	if err := r.Update(ctx, class); err != nil {
+		return kube_ctrl.Result{}, err
+	}
+
+	// Prepare modified object for patching status
+	updated := class.DeepCopy()
+
 	kube_apimeta.SetStatusCondition(
-		&class.Status.Conditions,
+		&updated.Status.Conditions,
 		kube_meta.Condition{
 			Type:               string(gatewayapi.GatewayClassConditionStatusAccepted),
 			Status:             kube_meta.ConditionTrue,
@@ -63,8 +71,11 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		},
 	)
 
-	if err := r.Update(ctx, class); err != nil {
-		return kube_ctrl.Result{}, err
+	if err := r.Client.Status().Patch(ctx, updated, kube_client.MergeFrom(class)); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return kube_ctrl.Result{}, nil
+		}
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update status subresource")
 	}
 
 	return kube_ctrl.Result{}, nil
