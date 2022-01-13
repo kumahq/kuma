@@ -102,6 +102,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
+			namespace := kube_core.Namespace{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Name: pod.Namespace,
+				},
+			}
+
 			// other services
 			var serviceGetter kube_client.Reader
 			if given.otherServices != "" {
@@ -133,7 +139,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(context.Background(), dataplane, pod, services, otherDataplanes)
+			err = converter.PodToDataplane(context.Background(), dataplane, pod, &namespace, services, otherDataplanes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -322,13 +328,19 @@ var _ = Describe("PodToDataplane(..)", func() {
 				err := yaml.Unmarshal([]byte(given.pod), pod)
 				Expect(err).ToNot(HaveOccurred())
 
+				namespace := kube_core.Namespace{
+					ObjectMeta: kube_meta.ObjectMeta{
+						Name: pod.Namespace,
+					},
+				}
+
 				services, err := ParseServices(given.services)
 				Expect(err).ToNot(HaveOccurred())
 
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(context.Background(), dataplane, pod, services, nil)
+				err = converter.PodToDataplane(context.Background(), dataplane, pod, &namespace, services, nil)
 
 				// then
 				Expect(err).To(HaveOccurred())

@@ -135,13 +135,17 @@ func CopyStringMap(in map[string]string) map[string]string {
 	return out
 }
 
-func MeshFor(obj kube_meta.Object) string {
-	mesh, exist := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation)
-	if !exist || mesh == "" {
-		return model.DefaultMesh
+// MeshOf returns the mesh of the given object according to its own annotations
+// or those of its namespace.
+func MeshOf(obj kube_meta.Object, namespace *kube_core.Namespace) string {
+	if mesh, exists := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
+		return mesh
+	}
+	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
+		return mesh
 	}
 
-	return mesh
+	return model.DefaultMesh
 }
 
 // ServiceTagFor returns the canonical service name for a Kubernetes service,

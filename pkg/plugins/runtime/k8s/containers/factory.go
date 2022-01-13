@@ -8,10 +8,11 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 type EnvVarsByName []kube_core.EnvVar
@@ -47,21 +48,14 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 	return ncpu, nil
 }
 
-func meshName(annotations map[string]string, ns *kube_core.Namespace) string {
-	if mesh, exist := metadata.Annotations(annotations).GetString(metadata.KumaMeshAnnotation); exist {
-		return mesh
-	}
-	if mesh, exist := metadata.Annotations(ns.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
-		return mesh
-	}
-	return core_model.DefaultMesh
-}
-
 func (i *DataplaneProxyFactory) NewContainer(
-	annotations map[string]string,
+	owner kube_client.Object,
 	ns *kube_core.Namespace,
 ) (kube_core.Container, error) {
-	mesh := meshName(annotations, ns)
+	mesh := k8s_util.MeshOf(owner, ns)
+
+	annotations := owner.GetAnnotations()
+
 	env, err := i.sidecarEnvVars(mesh, annotations)
 	if err != nil {
 		return kube_core.Container{}, err

@@ -183,10 +183,11 @@ var _ = Describe("Util", func() {
 		),
 	)
 
-	Describe("MeshFor(..)", func() {
+	Describe("MeshOf(..)", func() {
 
 		type testCase struct {
 			podAnnotations map[string]string
+			nsAnnotations  map[string]string
 			expected       string
 		}
 
@@ -198,9 +199,14 @@ var _ = Describe("Util", func() {
 						Annotations: given.podAnnotations,
 					},
 				}
+				ns := &kube_core.Namespace{
+					ObjectMeta: kube_meta.ObjectMeta{
+						Annotations: given.nsAnnotations,
+					},
+				}
 
 				// then
-				Expect(util.MeshFor(pod)).To(Equal(given.expected))
+				Expect(util.MeshOf(pod, ns)).To(Equal(given.expected))
 			},
 			Entry("Pod without annotations", testCase{
 				podAnnotations: nil,
@@ -214,6 +220,15 @@ var _ = Describe("Util", func() {
 			}),
 			Entry("Pod with non-empty `kuma.io/mesh` annotation", testCase{
 				podAnnotations: map[string]string{
+					"kuma.io/mesh": "demo",
+				},
+				expected: "demo",
+			}),
+			Entry("Pod with empty `kuma.io/mesh` annotation, Namespace with annotation", testCase{
+				podAnnotations: map[string]string{
+					"kuma.io/mesh": "",
+				},
+				nsAnnotations: map[string]string{
 					"kuma.io/mesh": "demo",
 				},
 				expected: "demo",
