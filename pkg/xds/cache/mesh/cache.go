@@ -45,8 +45,7 @@ func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh st
 		if err != nil {
 			return nil, err
 		}
-		snapshotHash := snapshot.Hash()
-		if c.latestMeshContext != nil && c.latestMeshContext.Hash == snapshotHash {
+		if c.latestMeshContext != nil && c.latestMeshContext.Hash == snapshot.Hash {
 			return *c.latestMeshContext, nil
 		}
 

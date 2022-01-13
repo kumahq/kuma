@@ -19,12 +19,18 @@ type ConnectionInfo struct {
 	Authority string
 }
 
+// ControlPlaneContext contains shared global data and components that are required for generating XDS
+// This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
 	AdminProxyKeyPair *tls.KeyPair
 	CLACache          xds.CLACache
 	Secrets           secrets.Secrets
 }
 
+// MeshContext contains shared data within one mesh that is required for generating XDS config.
+// This data is the same for all data plane proxies within one mesh.
+// If there is an information that can be precomputed and shared between all data plane proxies
+// it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
 	Resource         *core_mesh.MeshResource
 	Dataplanes       *core_mesh.DataplaneResourceList

@@ -27,7 +27,7 @@ var meshCacheLog = core.Log.WithName("mesh-cache")
 type MeshSnapshot struct {
 	mesh      *core_mesh.MeshResource
 	resources map[core_model.ResourceType]core_model.ResourceList
-	ipFunc    lookup.LookupIPFunc
+	Hash      string
 }
 
 type MeshSnapshotBuilder interface {
@@ -51,31 +51,21 @@ type meshSnapshotBuilder struct {
 var _ MeshSnapshotBuilder = &meshSnapshotBuilder{}
 
 func (m *meshSnapshotBuilder) Build(ctx context.Context, meshName string) (*MeshSnapshot, error) {
-	snapshot := &MeshSnapshot{
-		resources: map[core_model.ResourceType]core_model.ResourceList{},
-		ipFunc:    m.ipFunc,
-	}
+	resources := map[core_model.ResourceType]core_model.ResourceList{}
 
 	mesh := core_mesh.NewMeshResource()
 	if err := m.rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
 		return nil, err
 	}
-	snapshot.mesh = mesh
 
 	for _, typ := range m.types {
 		switch typ {
-		case core_mesh.DataplaneType:
-			dataplanes := &core_mesh.DataplaneResourceList{}
-			if err := m.rm.List(ctx, dataplanes, core_store.ListByMesh(meshName)); err != nil {
-				return nil, err
-			}
-			snapshot.resources[typ] = dataplanes
 		case core_mesh.ZoneIngressType:
 			zoneIngresses := &core_mesh.ZoneIngressResourceList{}
 			if err := m.rm.List(ctx, zoneIngresses); err != nil {
 				return nil, err
 			}
-			snapshot.resources[typ] = zoneIngresses
+			resources[typ] = zoneIngresses
 		case system.ConfigType:
 			configs := &system.ConfigResourceList{}
 			var items []*system.ConfigResource
@@ -88,12 +78,12 @@ func (m *meshSnapshotBuilder) Build(ctx context.Context, meshName string) (*Mesh
 				}
 			}
 			configs.Items = items
-			snapshot.resources[typ] = configs
+			resources[typ] = configs
 		case core_mesh.ServiceInsightType:
 			// ServiceInsights in XDS generation are only used to check whether the destination is ready to receive mTLS traffic.
 			// This information is only useful when mTLS is enabled with PERMISSIVE mode.
 			// Not including this into mesh hash for other cases saves us unnecessary XDS config generations.
-			if backend := snapshot.mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
+			if backend := mesh.GetEnabledCertificateAuthorityBackend(); backend == nil || backend.Mode == mesh_proto.CertificateAuthorityBackend_STRICT {
 				break
 			}
 
@@ -102,7 +92,7 @@ func (m *meshSnapshotBuilder) Build(ctx context.Context, meshName string) (*Mesh
 				return nil, err
 			}
 
-			snapshot.resources[typ] = insights
+			resources[typ] = insights
 		default:
 			rlist, err := registry.Global().NewList(typ)
 			if err != nil {
@@ -111,11 +101,15 @@ func (m *meshSnapshotBuilder) Build(ctx context.Context, meshName string) (*Mesh
 			if err := m.rm.List(ctx, rlist, core_store.ListByMesh(meshName)); err != nil {
 				return nil, err
 			}
-			snapshot.resources[typ] = rlist
+			resources[typ] = rlist
 		}
 	}
 
-	return snapshot, nil
+	return &MeshSnapshot{
+		mesh:      mesh,
+		resources: resources,
+		Hash:      m.hash(mesh, resources),
+	}, nil
 }
 
 func (m *MeshSnapshot) Resources(resourceType core_model.ResourceType) core_model.ResourceList {
@@ -134,17 +128,17 @@ func configInHash(configName string, meshName string) bool {
 	return configName == vips.ConfigKey(meshName)
 }
 
-func (m *MeshSnapshot) Hash() string {
+func (m *meshSnapshotBuilder) hash(mesh *core_mesh.MeshResource, resourcesByType map[core_model.ResourceType]core_model.ResourceList) string {
 	resources := []core_model.Resource{
-		m.mesh,
+		mesh,
 	}
-	for _, rl := range m.resources {
+	for _, rl := range resourcesByType {
 		resources = append(resources, rl.GetItems()...)
 	}
 	return sha256.Hash(m.hashResources(resources...))
 }
 
-func (m *MeshSnapshot) hashResources(rs ...core_model.Resource) string {
+func (m *meshSnapshotBuilder) hashResources(rs ...core_model.Resource) string {
 	hashes := []string{}
 	for _, r := range rs {
 		hashes = append(hashes, m.hashResource(r))
@@ -153,7 +147,7 @@ func (m *MeshSnapshot) hashResources(rs ...core_model.Resource) string {
 	return strings.Join(hashes, ",")
 }
 
-func (m *MeshSnapshot) hashResource(r core_model.Resource) string {
+func (m *meshSnapshotBuilder) hashResource(r core_model.Resource) string {
 	switch v := r.(type) {
 	// In case of hashing Dataplane we are also adding '.Spec.Networking.Address' and `.Spec.Networking.Ingress.PublicAddress` into hash.
 	// The address could be a domain name and right now we resolve it right after fetching
@@ -187,7 +181,7 @@ func (m *MeshSnapshot) hashResource(r core_model.Resource) string {
 
 // We need to hash all the resolved IPs, not only the first one, because hostname can be resolved to two IPs (ex. LoadBalancer on AWS)
 // If we were to pick only the first one, DNS returns addresses in different order, so we could constantly get different hashes.
-func (m *MeshSnapshot) hashResolvedIPs(address string) string {
+func (m *meshSnapshotBuilder) hashResolvedIPs(address string) string {
 	if address == "" {
 		return ""
 	}

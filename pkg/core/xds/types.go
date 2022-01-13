@@ -122,6 +122,8 @@ const (
 	SocketAddressProtocolUDP SocketAddressProtocol = 1
 )
 
+// Proxy contains required data for generating XDS config that is specific to a data plane proxy.
+// The data that is specific for the whole mesh should go into MeshContext.
 type Proxy struct {
 	Id                  ProxyId
 	APIVersion          envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.

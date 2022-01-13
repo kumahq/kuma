@@ -58,7 +58,7 @@ func (m *meshContextBuilder) Build(snapshot *MeshSnapshot) (MeshContext, error) 
 		ZoneIngresses: &core_mesh.ZoneIngressResourceList{
 			Items: zoneIngresses,
 		},
-		Hash:         snapshot.Hash(),
+		Hash:         snapshot.Hash,
 		EndpointMap:  xds_topology.BuildEdsEndpointMap(snapshot.mesh, m.zone, dataplanes, zoneIngresses),
 		VIPOutbounds: outbounds,
 		VIPDomains:   domains,

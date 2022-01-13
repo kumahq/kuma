@@ -3,6 +3,7 @@ package permissions
 import (
 	"context"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/pkg/errors"
 
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -23,31 +24,30 @@ func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *core_m
 		return nil, errors.Wrap(err, "could not retrieve traffic permissions")
 	}
 
-	return BuildTrafficPermissionMap(dataplane, mesh, permissions.Items)
-}
-
-func BuildTrafficPermissionMap(
-	dataplane *core_mesh.DataplaneResource,
-	mesh *core_mesh.MeshResource,
-	trafficPermissions []*core_mesh.TrafficPermissionResource,
-) (core_xds.TrafficPermissionMap, error) {
-	policies := make([]policy.ConnectionPolicy, len(trafficPermissions))
-	for i, permission := range trafficPermissions {
-		policies[i] = permission
-	}
-
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
+	return BuildTrafficPermissionMap(dataplane, inbounds, permissions.Items), nil
+}
+
+func BuildTrafficPermissionMap(
+	dataplane *core_mesh.DataplaneResource,
+	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
+	trafficPermissions []*core_mesh.TrafficPermissionResource,
+) core_xds.TrafficPermissionMap {
+	policies := make([]policy.ConnectionPolicy, len(trafficPermissions))
+	for i, permission := range trafficPermissions {
+		policies[i] = permission
+	}
 	policyMap := policy.SelectInboundConnectionPolicies(dataplane, inbounds, policies)
 
 	result := core_xds.TrafficPermissionMap{}
 	for inbound, connectionPolicy := range policyMap {
 		result[inbound] = connectionPolicy.(*core_mesh.TrafficPermissionResource)
 	}
-	return result, nil
+	return result
 }
 
 func MatchExternalServices(
