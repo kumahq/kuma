@@ -1,14 +1,13 @@
 package sync
 
 import (
-	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
+	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -47,13 +46,12 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *
 	}
 
 	proxy := &xds.Proxy{
-		Id:                  xds.FromResourceKey(key),
-		APIVersion:          p.APIVersion,
-		Dataplane:           dp,
-		Metadata:            p.MetadataTracker.Metadata(key),
-		Routing:             *routing,
-		Policies:            *matchedPolicies,
-		ServiceTLSReadiness: p.resolveTLSReadiness(envoyContext.Mesh),
+		Id:         xds.FromResourceKey(key),
+		APIVersion: p.APIVersion,
+		Dataplane:  dp,
+		Metadata:   p.MetadataTracker.Metadata(key),
+		Routing:    *routing,
+		Policies:   *matchedPolicies,
 	}
 	return proxy, nil
 }
@@ -122,26 +120,4 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		RateLimitsOutbound: ratelimits.Outbound,
 	}
 	return matchedPolicies, nil
-}
-
-func (p *DataplaneProxyBuilder) resolveTLSReadiness(meshContext xds_context.MeshContext) map[string]bool {
-	tlsReady := map[string]bool{}
-
-	backend := meshContext.Resource.GetEnabledCertificateAuthorityBackend()
-	// TLS readiness is irrelevant unless we are using PERMISSIVE TLS, so skip
-	// checking ServiceInsights if we aren't.
-	if backend == nil || backend.Mode != mesh_proto.CertificateAuthorityBackend_PERMISSIVE {
-		return tlsReady
-	}
-
-	serviceInsight, found := meshContext.ServiceInsight()
-	if !found {
-		// Nothing about the TLS readiness has been reported yet
-		syncLog.Info("could not determine service TLS readiness, ServiceInsight is not yet present")
-		return tlsReady
-	}
-	for svc, insight := range serviceInsight.Spec.GetServices() {
-		tlsReady[svc] = insight.IssuedBackends[backend.Name] == insight.Dataplanes.Total
-	}
-	return tlsReady
 }

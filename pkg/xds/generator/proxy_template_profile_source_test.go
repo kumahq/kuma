@@ -85,6 +85,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						},
 						Spec: &mesh_proto.Mesh{},
 					},
+					ServiceTLSReadiness: map[string]bool{
+						"db":      true,
+						"elastic": true,
+					},
 				},
 			}
 
@@ -156,10 +160,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 							Version: "1.2.0",
 						},
 					},
-				},
-				ServiceTLSReadiness: map[string]bool{
-					"db":      true,
-					"elastic": true,
 				},
 			}
 

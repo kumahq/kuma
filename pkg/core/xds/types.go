@@ -125,14 +125,13 @@ const (
 // Proxy contains required data for generating XDS config that is specific to a data plane proxy.
 // The data that is specific for the whole mesh should go into MeshContext.
 type Proxy struct {
-	Id                  ProxyId
-	APIVersion          envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
-	Dataplane           *core_mesh.DataplaneResource
-	ZoneIngress         *core_mesh.ZoneIngressResource
-	Metadata            *DataplaneMetadata
-	Routing             Routing
-	Policies            MatchedPolicies
-	ServiceTLSReadiness map[string]bool
+	Id          ProxyId
+	APIVersion  envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
+	Dataplane   *core_mesh.DataplaneResource
+	ZoneIngress *core_mesh.ZoneIngressResource
+	Metadata    *DataplaneMetadata
+	Routing     Routing
+	Policies    MatchedPolicies
 }
 
 type VIPDomains struct {
