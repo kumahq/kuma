@@ -287,7 +287,8 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 		gateway := obj.(*mesh_k8s.Gateway)
 
 		var serviceNames []string
-		for _, selector := range gateway.Spec.GetSelectors() {
+		spec := gateway.GetSpec().(*mesh_proto.Gateway)
+		for _, selector := range spec.GetSelectors() {
 			if tagValue, ok := selector.Match[mesh_proto.ServiceTag]; ok {
 				serviceNames = append(serviceNames, tagValue)
 			}
