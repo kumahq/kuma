@@ -151,7 +151,7 @@ func inspectPolicies(
 			return
 		}
 
-		result := []api_server_types.PolicyInspectEntry{}
+		result := &api_server_types.PolicyInspectEntryList{}
 
 		for _, dp := range dataplanes.Items {
 			dpKey := core_model.MetaToResourceKey(dp.GetMeta())
@@ -169,7 +169,7 @@ func inspectPolicies(
 							Name: attachment.Name,
 						})
 					}
-					result = append(result, api_server_types.PolicyInspectEntry{
+					result.Items = append(result.Items, &api_server_types.PolicyInspectEntry{
 						DataplaneKey: api_server_types.ResourceKeyEntry{
 							Mesh: dpKey.Mesh,
 							Name: dpKey.Name,
@@ -179,6 +179,8 @@ func inspectPolicies(
 				}
 			}
 		}
+
+		result.Total = uint32(len(result.Items))
 
 		if err := response.WriteAsJson(result); err != nil {
 			rest_errors.HandleError(response, err, "Could not write response")

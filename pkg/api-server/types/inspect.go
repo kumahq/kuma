@@ -24,6 +24,11 @@ type PolicyInspectEntry struct {
 	Attachments  []AttachmentEntry `json:"attachments"`
 }
 
+type PolicyInspectEntryList struct {
+	Total uint32                `json:"total"`
+	Items []*PolicyInspectEntry `json:"items"`
+}
+
 type DataplaneInspectEntry struct {
 	AttachmentEntry
 	MatchedPolicies map[core_model.ResourceType][]*rest.Resource `json:"matchedPolicies"`

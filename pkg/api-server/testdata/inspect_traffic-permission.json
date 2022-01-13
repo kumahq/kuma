@@ -1,38 +1,41 @@
-[
- {
-  "dataplane": {
-   "mesh": "default",
-   "name": "backend-1"
+{
+ "total": 3,
+ "items": [
+  {
+   "dataplane": {
+    "mesh": "default",
+    "name": "backend-1"
+   },
+   "attachments": [
+    {
+     "type": "inbound",
+     "name": "192.168.0.1:80:81"
+    }
+   ]
   },
-  "attachments": [
-   {
-    "type": "inbound",
-    "name": "192.168.0.1:80:81"
-   }
-  ]
- },
- {
-  "dataplane": {
-   "mesh": "default",
-   "name": "redis-1"
+  {
+   "dataplane": {
+    "mesh": "default",
+    "name": "redis-1"
+   },
+   "attachments": [
+    {
+     "type": "inbound",
+     "name": "192.168.0.1:80:81"
+    }
+   ]
   },
-  "attachments": [
-   {
-    "type": "inbound",
-    "name": "192.168.0.1:80:81"
-   }
-  ]
- },
- {
-  "dataplane": {
-   "mesh": "default",
-   "name": "gateway-1"
-  },
-  "attachments": [
-   {
-    "type": "inbound",
-    "name": "192.168.0.1:80:81"
-   }
-  ]
- }
-]
+  {
+   "dataplane": {
+    "mesh": "default",
+    "name": "gateway-1"
+   },
+   "attachments": [
+    {
+     "type": "inbound",
+     "name": "192.168.0.1:80:81"
+    }
+   ]
+  }
+ ]
+}
