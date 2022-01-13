@@ -5,6 +5,8 @@ import (
 
 	"github.com/go-logr/logr"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,17 +47,21 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		return kube_ctrl.Result{}, err
 	}
 
-	inUse := len(gateways.Items) > 0
-
-	if controllerutil.ContainsFinalizer(class, gatewayapi.GatewayClassFinalizerGatewaysExist) == inUse {
-		return kube_ctrl.Result{}, nil
-	}
-
-	if inUse {
+	if len(gateways.Items) > 0 {
 		controllerutil.AddFinalizer(class, gatewayapi.GatewayClassFinalizerGatewaysExist)
 	} else {
 		controllerutil.RemoveFinalizer(class, gatewayapi.GatewayClassFinalizerGatewaysExist)
 	}
+
+	kube_apimeta.SetStatusCondition(
+		&class.Status.Conditions,
+		kube_meta.Condition{
+			Type:               string(gatewayapi.GatewayClassConditionStatusAccepted),
+			Status:             kube_meta.ConditionTrue,
+			Reason:             string(gatewayapi.GatewayClassReasonAccepted),
+			ObservedGeneration: class.GetGeneration(),
+		},
+	)
 
 	if err := r.Update(ctx, class); err != nil {
 		return kube_ctrl.Result{}, err
