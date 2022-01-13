@@ -64,16 +64,16 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	return kube_ctrl.Result{}, nil
 }
 
-// GatewayToClassMapper maps a Gateway object event to a list of GatewayClasses.
-func GatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
-	l = l.WithName("gateway-to-gateway-class-mapper")
+// gatewayToClassMapper maps a Gateway object event to a list of GatewayClasses.
+func gatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("gatewayToClassMapper")
 
 	return func(obj kube_client.Object) []kube_reconcile.Request {
 		// If we don't have an object, we need to reconcile all GatewayClasses
 		if obj == nil {
 			classes := &gatewayapi.GatewayClassList{}
 			if err := client.List(context.Background(), classes); err != nil {
-				l.Error(err, "failed to fetch GatewayInstances")
+				l.Error(err, "failed to list GatewayClasses")
 			}
 
 			var req []kube_reconcile.Request
@@ -81,15 +81,19 @@ func GatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler
 				if class.Spec.ControllerName != controllerName {
 					continue
 				}
+
 				req = append(req, kube_reconcile.Request{
-					NamespacedName: kube_types.NamespacedName{Namespace: class.Namespace, Name: class.Name},
+					NamespacedName: kube_client.ObjectKeyFromObject(&class),
 				})
 			}
 
 			return req
 		}
 
-		gateway := obj.(*gatewayapi.Gateway)
+		gateway, ok := obj.(*gatewayapi.Gateway)
+		if !ok {
+			l.Error(nil, "could not convert to Gateway", "object", obj)
+		}
 
 		return []kube_reconcile.Request{
 			{NamespacedName: kube_types.NamespacedName{Name: string(gateway.Spec.GatewayClassName)}},
@@ -99,11 +103,21 @@ func GatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler
 
 func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	// Add an index to Gateways for use in Reconcile
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &gatewayapi.Gateway{}, gatewayClassKey, func(obj kube_client.Object) []string {
-		instance := obj.(*gatewayapi.Gateway)
+	indexLog := r.Log.WithName("gatewayClassNameIndexer")
 
-		return []string{string(instance.Spec.GatewayClassName)}
-	}); err != nil {
+	gatewayClassNameIndexer := func(obj kube_client.Object) []string {
+		gateway, ok := obj.(*gatewayapi.Gateway)
+		if !ok {
+			indexLog.Error(nil, "could not convert to Gateway", "object", obj)
+			return []string{}
+		}
+
+		return []string{string(gateway.Spec.GatewayClassName)}
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(
+		context.Background(), &gatewayapi.Gateway{}, gatewayClassKey, gatewayClassNameIndexer,
+	); err != nil {
 		return err
 	}
 
@@ -111,6 +125,6 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		For(&gatewayapi.GatewayClass{}).
 		// When something changes with Gateways, we want to reconcile
 		// GatewayClasses
-		Watches(&kube_source.Kind{Type: &gatewayapi.Gateway{}}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToClassMapper(r.Log, mgr.GetClient()))).
+		Watches(&kube_source.Kind{Type: &gatewayapi.Gateway{}}, kube_handler.EnqueueRequestsFromMapFunc(gatewayToClassMapper(r.Log, r.Client))).
 		Complete(r)
 }
