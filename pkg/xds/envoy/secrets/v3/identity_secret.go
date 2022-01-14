@@ -7,17 +7,13 @@ import (
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 func CreateIdentitySecret(secret *core_xds.IdentitySecret, mesh string) *envoy_auth.Secret {
-	name := tls.IdentityCertResource
-	if mesh != "" {
-		name += "_" + mesh
-	}
-
 	return &envoy_auth.Secret{
-		Name: name,
+		Name: names.GetSecretName(tls.IdentityCertResource, "secret", mesh),
 		Type: &envoy_auth.Secret_TlsCertificate{
 			TlsCertificate: &envoy_auth.TlsCertificate{
 				CertificateChain: &envoy_core.DataSource{

@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
@@ -62,8 +63,8 @@ func createCommonTlsContext(
 	validationSANMatcher *envoy_type_matcher.StringMatcher,
 ) (*envoy_tls.CommonTlsContext, error) {
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
-	meshCaSecret := NewSecretConfigSource(xds_tls.MeshCaResource + "_" + meshName)
-	identitySecret := NewSecretConfigSource(xds_tls.IdentityCertResource + "_" + meshName)
+	meshCaSecret := NewSecretConfigSource(names.GetSecretName(xds_tls.MeshCaResource, "secret", meshName))
+	identitySecret := NewSecretConfigSource(names.GetSecretName(xds_tls.IdentityCertResource, "secret", meshName))
 
 	return &envoy_tls.CommonTlsContext{
 		ValidationContextType: &envoy_tls.CommonTlsContext_CombinedValidationContext{

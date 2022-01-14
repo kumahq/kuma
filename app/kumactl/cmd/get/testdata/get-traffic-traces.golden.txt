@@ -1,3 +1,0 @@
-MESH      NAME   AGE
-default   web1   292y
-default   web2   292y

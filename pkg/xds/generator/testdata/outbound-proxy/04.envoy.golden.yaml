@@ -26,12 +26,12 @@ resources:
               matchSubjectAltNames:
               - exact: spiffe://mesh1/api-http
             validationContextSdsSecretConfig:
-              name: mesh_ca_mesh1
+              name: mesh_ca:secret:mesh1
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert_mesh1
+          - name: identity_cert:secret:mesh1
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
@@ -68,12 +68,12 @@ resources:
               matchSubjectAltNames:
               - exact: spiffe://mesh1/api-tcp
             validationContextSdsSecretConfig:
-              name: mesh_ca_mesh1
+              name: mesh_ca:secret:mesh1
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert_mesh1
+          - name: identity_cert:secret:mesh1
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
@@ -106,12 +106,12 @@ resources:
               matchSubjectAltNames:
               - exact: spiffe://mesh1/backend
             validationContextSdsSecretConfig:
-              name: mesh_ca_mesh1
+              name: mesh_ca:secret:mesh1
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert_mesh1
+          - name: identity_cert:secret:mesh1
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
@@ -143,12 +143,12 @@ resources:
               matchSubjectAltNames:
               - exact: spiffe://mesh1/db
             validationContextSdsSecretConfig:
-              name: mesh_ca_mesh1
+              name: mesh_ca:secret:mesh1
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert_mesh1
+          - name: identity_cert:secret:mesh1
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
@@ -180,12 +180,12 @@ resources:
               matchSubjectAltNames:
               - exact: spiffe://mesh1/db
             validationContextSdsSecretConfig:
-              name: mesh_ca_mesh1
+              name: mesh_ca:secret:mesh1
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
-          - name: identity_cert_mesh1
+          - name: identity_cert:secret:mesh1
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
