@@ -6,10 +6,11 @@ import (
 	"sort"
 
 	"github.com/emicklei/go-restful"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/xds/server"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -22,7 +23,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/sync"
-	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 type simpleMatchedPolicyGetter struct {
@@ -52,23 +52,26 @@ func (s *simpleMatchedPolicyGetter) Get(ctx context.Context, dataplaneKey core_m
 		return nil, err
 	}
 
-	mesh := core_mesh.NewMeshResource()
-	if err := s.resManager.Get(ctx, mesh, store.GetByKey(dataplaneKey.Mesh, core_model.NoMesh)); err != nil {
-		return nil, err
-	}
+	meshContextBuilder := xds_context.NewMeshContextBuilder(
+		s.resManager,
+		server.MeshResourceTypes(server.HashMeshExcludedResources),
+		net.LookupIP,
+		s.cfg.Multizone.Zone.Name,
+		vips.NewPersistence(s.resManager, s.cfgManager),
+		s.cfg.DNSServer.Domain,
+	)
 
-	dataplanes, err := xds_topology.GetDataplanes(core.Log, ctx, s.resManager, net.LookupIP, dataplaneKey.Mesh)
+	meshContext, err := meshContextBuilder.Build(ctx, dataplaneKey.Mesh)
 	if err != nil {
 		return nil, err
 	}
 
 	// todo(lobkovilya): share DataplaneProxyBuilder with xDS code (instead of creating a new one)
-	proxyBuilder := sync.DefaultDataplaneProxyBuilder(s.resManager, s.resManager, net.LookupIP,
-		datasource.NewDataSourceLoader(s.resManager), *s.cfg, s.cfgManager, &fakeMetadataTracker{}, envoy.APIV3)
-	proxy, err := proxyBuilder.Build(core_model.MetaToResourceKey(dataplane.GetMeta()), &xds_context.Context{Mesh: xds_context.MeshContext{
-		Resource:   mesh,
-		Dataplanes: dataplanes,
-	}})
+	proxyBuilder := sync.DefaultDataplaneProxyBuilder(datasource.NewDataSourceLoader(s.resManager),
+		*s.cfg, &fakeMetadataTracker{}, envoy.APIV3)
+	proxy, err := proxyBuilder.Build(core_model.MetaToResourceKey(dataplane.GetMeta()), &xds_context.Context{
+		Mesh: meshContext,
+	})
 	if err != nil {
 		return nil, err
 	}
