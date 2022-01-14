@@ -102,10 +102,15 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 		return kube_ctrl.Result{}, nil
 	}
 
+	ns := kube_core.Namespace{}
+	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: pod.Namespace}, &ns); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace for Pod")
+	}
+
 	// If we are using a builtin gateway, we want to generate a builtin gateway
 	// dataplane.
 	if name, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaGatewayAnnotation); name == metadata.AnnotationBuiltin {
-		return kube_ctrl.Result{}, r.createorUpdateBuiltinGatewayDataplane(ctx, pod)
+		return kube_ctrl.Result{}, r.createorUpdateBuiltinGatewayDataplane(ctx, pod, &ns)
 	}
 
 	// only Pods with injected Kuma need a Dataplane descriptor
@@ -122,14 +127,14 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 		return kube_ctrl.Result{}, err
 	}
 
-	others, err := r.findOtherDataplanes(ctx, pod)
+	others, err := r.findOtherDataplanes(ctx, pod, &ns)
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
 	r.Log.WithValues("req", req).V(1).Info("other dataplanes", "others", others)
 
-	if err := r.createOrUpdateDataplane(ctx, pod, services, others); err != nil {
+	if err := r.createOrUpdateDataplane(ctx, pod, &ns, services, others); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
@@ -168,7 +173,7 @@ func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core
 	return matchingServices, nil
 }
 
-func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.Pod) ([]*mesh_k8s.Dataplane, error) {
+func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) ([]*mesh_k8s.Dataplane, error) {
 	// List all Dataplanes
 	allDataplanes := &mesh_k8s.DataplaneList{}
 	if err := r.List(ctx, allDataplanes); err != nil {
@@ -178,7 +183,7 @@ func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.
 	}
 
 	// only consider Dataplanes in the same Mesh as Pod
-	mesh := util_k8s.MeshFor(pod)
+	mesh := util_k8s.MeshOf(pod, ns)
 	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
 	for i := range allDataplanes.Items {
 		dataplane := allDataplanes.Items[i]
@@ -198,6 +203,7 @@ func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.
 func (r *PodReconciler) createOrUpdateDataplane(
 	ctx context.Context,
 	pod *kube_core.Pod,
+	ns *kube_core.Namespace,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
@@ -208,7 +214,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others); err != nil {
+		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, ns, services, others); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {

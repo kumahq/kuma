@@ -30,7 +30,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	ctrls_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/util"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 // GatewayInstanceReconciler reconciles a GatewayInstance object.
@@ -168,7 +168,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				deployment = obj.(*kube_apps.Deployment)
 			}
 
-			container, err := r.ProxyFactory.NewContainer(gatewayInstance.Annotations, &ns)
+			container, err := r.ProxyFactory.NewContainer(gatewayInstance, &ns)
 			if err != nil {
 				return nil, errors.Wrap(err, "unable to create gateway container")
 			}
@@ -177,7 +177,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				container.Resources = *res
 			}
 
-			container.Name = util_k8s.KumaGatewayContainerName
+			container.Name = k8s_util.KumaGatewayContainerName
 
 			podSpec := kube_core.PodSpec{
 				Containers: []kube_core.Container{container},
@@ -191,7 +191,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			annotations := map[string]string{
 				metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
 				metadata.KumaTagsAnnotation:    string(jsonTags),
-				metadata.KumaMeshAnnotation:    util_k8s.MeshFor(gatewayInstance),
+				metadata.KumaMeshAnnotation:    k8s_util.MeshOf(gatewayInstance, &ns),
 			}
 
 			labels := k8sSelector(gatewayInstance.Name)
