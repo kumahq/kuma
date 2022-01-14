@@ -12,6 +12,9 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -174,8 +177,62 @@ func (r *HTTPRouteReconciler) shouldHandleParentRef(
 	return class.Spec.ControllerName == controllerName, nil
 }
 
+// routesForGateway returns a function that calculates which routes might
+// be affected by changes in a Gateway so they can be reconciled.
+func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("routesForGateway")
+
+	return func(obj kube_client.Object) []kube_reconcile.Request {
+		gateway, ok := obj.(*gatewayapi.Gateway)
+		if !ok {
+			l.Error(nil, "unexpected error converting to be mapped %T object to Gateway", obj)
+			return nil
+		}
+
+		var routes gatewayapi.HTTPRouteList
+		if err := client.List(context.Background(), &routes); err != nil {
+			l.Error(err, "unexpected error listing HTTPRoutes in cluster")
+			return nil
+		}
+
+		var requests []kube_reconcile.Request
+		for _, route := range routes.Items {
+			for _, parentRef := range route.Spec.ParentRefs {
+				if parentRefMatchesGateway(route.Namespace, parentRef, gateway) {
+					requests = append(requests, kube_reconcile.Request{
+						NamespacedName: kube_client.ObjectKeyFromObject(&route),
+					})
+				}
+			}
+		}
+
+		return requests
+	}
+}
+
+// parentRefMatchesGateway checks whether a ref could potentially attach to at least one
+// listener of Gateway.
+func parentRefMatchesGateway(routeNamespace string, parentRef gatewayapi.ParentRef, gateway *gatewayapi.Gateway) bool {
+	referencedNamespace := routeNamespace
+	if parentRef.Namespace != nil {
+		referencedNamespace = string(*parentRef.Namespace)
+	}
+
+	// We're looking at all HTTPRoutes, at some point one may
+	// reference a non-Gateway object.
+	// We don't care whether a specific listener is referenced
+	return *parentRef.Group == gatewayapi.GroupName &&
+		*parentRef.Kind == "Gateway" &&
+		referencedNamespace == gateway.Namespace &&
+		string(parentRef.Name) == gateway.Name
+}
+
 func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayapi.HTTPRoute{}).
+		Watches(
+			&kube_source.Kind{Type: &gatewayapi.Gateway{}},
+			kube_handler.EnqueueRequestsFromMapFunc(routesForGateway(r.Log, r.Client)),
+		).
 		Complete(r)
 }
