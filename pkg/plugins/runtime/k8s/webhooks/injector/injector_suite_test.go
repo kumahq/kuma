@@ -43,7 +43,7 @@ var _ = BeforeSuite(test.Within(time.Minute, func() {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
-			filepath.Join("..", "..", "..", "..", "resources", "k8s", "native", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "..", "..", "..", test.CustomResourceDir),
 		},
 	}
 

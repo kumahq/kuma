@@ -16,9 +16,11 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
+	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 // GatewayReconciler reconciles a GatewayAPI Gateway object.
@@ -39,7 +41,9 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	gateway := &gatewayapi.Gateway{}
 	if err := r.Get(ctx, req.NamespacedName, gateway); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, &mesh_proto.Gateway{}, nil)
+			// We don't know the mesh, but we don't need it to delete our
+			// object.
+			err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.Gateway{}, nil)
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned Gateway.kuma.io")
 		}
 
@@ -55,12 +59,14 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, nil
 	}
 
-	gatewaySpec, err := r.gapiToKumaGateway(gateway)
+	gatewaySpec, listenerConditions, err := r.gapiToKumaGateway(ctx, gateway)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating Gateway.kuma.io")
 	}
 
-	if err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, &mesh_proto.Gateway{}, gatewaySpec); err != nil {
+	mesh := k8s_util.MeshFor(gateway)
+
+	if err := reconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.Gateway{}, gatewaySpec); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned Gateway.kuma.io")
 	}
 
@@ -69,7 +75,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile GatewayInstance")
 	}
 
-	if err := r.updateStatus(ctx, gateway, gatewayInstance); err != nil {
+	if err := r.updateStatus(ctx, gateway, gatewayInstance, listenerConditions); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update Gateway status")
 	}
 
@@ -97,45 +103,6 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, gateway 
 	}
 
 	return instance, nil
-}
-
-func (r *GatewayReconciler) gapiToKumaGateway(gateway *gatewayapi.Gateway) (*mesh_proto.Gateway, error) {
-	var listeners []*mesh_proto.Gateway_Listener
-
-	for _, l := range gateway.Spec.Listeners {
-		listener := &mesh_proto.Gateway_Listener{
-			Port: uint32(l.Port),
-			Tags: map[string]string{
-				// gateway-api routes are configured using direct references to
-				// Gateways, so just create a tag specifically for this listener
-				mesh_proto.ListenerTag: string(l.Name),
-			},
-		}
-
-		if protocol, ok := mesh_proto.Gateway_Listener_Protocol_value[string(l.Protocol)]; ok {
-			listener.Protocol = mesh_proto.Gateway_Listener_Protocol(protocol)
-		} else if l.Protocol != "" {
-			return nil, errors.Errorf("unexpected protocol %s", l.Protocol)
-		}
-
-		listener.Hostname = "*"
-		if l.Hostname != nil {
-			listener.Hostname = string(*l.Hostname)
-		}
-
-		listeners = append(listeners, listener)
-	}
-
-	match := serviceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
-
-	return &mesh_proto.Gateway{
-		Selectors: []*mesh_proto.Selector{
-			{Match: match},
-		},
-		Conf: &mesh_proto.Gateway_Conf{
-			Listeners: listeners,
-		},
-	}, nil
 }
 
 func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {

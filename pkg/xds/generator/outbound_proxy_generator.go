@@ -44,7 +44,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		return resources, nil
 	}
 
-	servicesAcc := envoy_common.NewServicesAccumulator(proxy.ServiceTLSReadiness)
+	servicesAcc := envoy_common.NewServicesAccumulator(ctx.Mesh.ServiceTLSReadiness)
 	splitCounter := &splitCounter{}
 
 	for _, outbound := range outbounds {
@@ -234,7 +234,7 @@ func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, services en
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !services[serviceName].HasExternalService() {
 			for _, cluster := range services[serviceName].Clusters() {
-				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion)
+				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion, ctx.Mesh.EndpointMap)
 				if err != nil {
 					return nil, errors.Wrapf(err, "could not get ClusterLoadAssignment for %s", serviceName)
 				}

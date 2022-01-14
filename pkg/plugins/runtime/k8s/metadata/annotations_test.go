@@ -38,6 +38,51 @@ var _ = Describe("Kubernetes Annotations", func() {
 		})
 	})
 
+	Context("GetUint32()", func() {
+		It("should parse value to uint32", func() {
+			// given
+			annotations := map[string]string{
+				"key1": "100",
+			}
+
+			val, hasKey, err := metadata.Annotations(annotations).GetUint32("key1")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hasKey).To(Equal(true))
+			Expect(val).To(Equal(uint32(100)))
+		})
+
+		It("should return error if value has wrong format", func() {
+			annotations := map[string]string{
+				"key1": "dummy",
+			}
+
+			_, _, err := metadata.Annotations(annotations).GetUint32("key1")
+			Expect(err.Error()).To(ContainSubstring("failed to parse annotation \"key1\": strconv.ParseUint: parsing \"dummy\": invalid syntax"))
+		})
+	})
+
+	Context("GetBool()", func() {
+		It("should parse value to bool", func() {
+			annotations := map[string]string{
+				"key1": "true",
+			}
+
+			val, hasKey, err := metadata.Annotations(annotations).GetBool("key1")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hasKey).To(Equal(true))
+			Expect(val).To(Equal(true))
+		})
+
+		It("should return error if value has wrong format", func() {
+			annotations := map[string]string{
+				"key1": "dummy",
+			}
+
+			_, _, err := metadata.Annotations(annotations).GetBool("key1")
+			Expect(err.Error()).To(ContainSubstring("failed to parse annotation \"key1\": strconv.ParseBool: parsing \"dummy\": invalid syntax"))
+		})
+	})
+
 	Context("GetMap()", func() {
 		It("should parse value to map", func() {
 			// given

@@ -148,6 +148,16 @@ spec:
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
           {{- end }}
+          {{- range $extraConfigMap := .Values.controlPlane.extraConfigMaps }}
+            - name: {{ $extraConfigMap.name }}
+              mountPath: {{ $extraConfigMap.mountPath }}
+              readOnly: {{ $extraConfigMap.readOnly }}
+          {{- end }}
+          {{- range $extraSecret := .Values.controlPlane.extraSecrets }}
+            - name: {{ $extraSecret.name }}
+              mountPath: {{ $extraSecret.mountPath }}
+              readOnly: {{ $extraSecret.readOnly }}
+          {{- end }}
       volumes:
         {{- if .Values.controlPlane.tls.general.secretName }}
         - name: general-tls-cert
@@ -186,3 +196,13 @@ spec:
         - name: {{ include "kuma.name" . }}-control-plane-config
           configMap:
             name: {{ include "kuma.name" . }}-control-plane-config
+        {{- range $extraConfigMap := .Values.controlPlane.extraConfigMaps }}
+        - name: {{ $extraConfigMap.name }}
+          configMap:
+            name: {{ $extraConfigMap.name }}
+        {{- end }}
+        {{- range $extraSecret := .Values.controlPlane.extraSecrets }}
+        - name: {{ $extraSecret.name }}
+          secret:
+            secretName: {{ $extraSecret.name }}
+        {{- end }}

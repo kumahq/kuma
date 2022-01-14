@@ -33,7 +33,7 @@ var _ = BeforeSuite(func() {
 	// setup K8S with Kuma CRDs
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
-			filepath.Join("..", "..", "..", "resources", "k8s", "native", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "..", "..", test.CustomResourceDir),
 		},
 	}
 	cfg, err := testEnv.Start()

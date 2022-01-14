@@ -2,8 +2,6 @@ package v1alpha1
 
 import (
 	"time"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func (x *Timeout_Conf) GetConnectTimeoutOrDefault(defaultConnectTimeout time.Duration) time.Duration {
@@ -15,23 +13,4 @@ func (x *Timeout_Conf) GetConnectTimeoutOrDefault(defaultConnectTimeout time.Dur
 		return defaultConnectTimeout
 	}
 	return connectTimeout.AsDuration()
-}
-
-func (m *Timeout) UnmarshalJSON(data []byte) error {
-	return util_proto.FromJSON(data, m)
-}
-
-func (m *Timeout) MarshalJSON() ([]byte, error) {
-	return util_proto.ToJSON(m)
-}
-func (t *Timeout) DeepCopyInto(out *Timeout) {
-	util_proto.Merge(out, t)
-}
-func (t *Timeout) DeepCopy() *Timeout {
-	if t == nil {
-		return nil
-	}
-	out := new(Timeout)
-	t.DeepCopyInto(out)
-	return out
 }

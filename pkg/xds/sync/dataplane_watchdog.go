@@ -11,7 +11,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
-	"github.com/kumahq/kuma/pkg/xds/secrets"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 type DataplaneWatchdogDependencies struct {
@@ -19,10 +19,9 @@ type DataplaneWatchdogDependencies struct {
 	dataplaneReconciler   SnapshotReconciler
 	ingressProxyBuilder   *IngressProxyBuilder
 	ingressReconciler     SnapshotReconciler
-	xdsContextBuilder     *xdsContextBuilder
+	envoyCpCtx            *xds_context.ControlPlaneContext
 	meshCache             *mesh.Cache
 	metadataTracker       DataplaneMetadataTracker
-	secrets               secrets.Secrets
 }
 
 type DataplaneWatchdog struct {
@@ -69,7 +68,7 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
-		d.secrets.Cleanup(d.key)
+		d.envoyCpCtx.Secrets.Cleanup(d.key)
 		return d.dataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
 		return d.ingressReconciler.Clear(&proxyID)
@@ -81,46 +80,47 @@ func (d *DataplaneWatchdog) Cleanup() error {
 // syncDataplane syncs state of the Dataplane.
 // It uses Mesh Hash to decide if we need to regenerate configuration or not.
 func (d *DataplaneWatchdog) syncDataplane() error {
-	snapshotHash, err := d.meshCache.GetHash(context.Background(), d.key.Mesh)
+	meshCtx, err := d.meshCache.GetMeshContext(context.Background(), syncLog, d.key.Mesh)
 	if err != nil {
 		return err
 	}
-	certInfo := d.secrets.Info(d.key)
+
+	certInfo := d.envoyCpCtx.Secrets.Info(d.key)
 	syncForCert := certInfo != nil && certInfo.ExpiringSoon() // check if we need to regenerate config because identity cert is expiring soon.
-	syncForConfig := snapshotHash != d.lastHash               // check if we need to regenerate config because Kuma policies has changed.
+	syncForConfig := meshCtx.Hash != d.lastHash               // check if we need to regenerate config because Kuma policies has changed.
 	if !syncForCert && !syncForConfig {
 		return nil
 	}
 	if syncForConfig {
-		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", snapshotHash)
+		d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", meshCtx.Hash)
 	}
 	if syncForCert {
 		d.log.V(1).Info("certs expiring soon, reconcile")
 	}
 
-	envoyCtx, err := d.xdsContextBuilder.buildMeshedContext(d.key, d.lastHash)
-	if err != nil {
-		return err
+	envoyCtx := &xds_context.Context{
+		ControlPlane: d.envoyCpCtx,
+		Mesh:         meshCtx,
 	}
 	proxy, err := d.dataplaneProxyBuilder.Build(d.key, envoyCtx)
 	if err != nil {
 		return err
 	}
 	if !envoyCtx.Mesh.Resource.MTLSEnabled() {
-		d.secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
+		d.envoyCpCtx.Secrets.Cleanup(d.key) // we need to cleanup secrets if mtls is disabled
 	}
 	if err := d.dataplaneReconciler.Reconcile(*envoyCtx, proxy); err != nil {
 		return err
 	}
-	d.lastHash = snapshotHash
+	d.lastHash = meshCtx.Hash
 	return nil
 }
 
 // syncIngress synces state of Ingress Dataplane. Notice that it does not use Mesh Hash yet because Ingress supports many Meshes.
 func (d *DataplaneWatchdog) syncIngress() error {
-	envoyCtx, err := d.xdsContextBuilder.buildContext(d.key)
-	if err != nil {
-		return err
+	envoyCtx := &xds_context.Context{
+		ControlPlane: d.envoyCpCtx,
+		Mesh:         xds_context.MeshContext{}, // ZoneIngress does not need MeshContext
 	}
 	proxy, err := d.ingressProxyBuilder.build(d.key)
 	if err != nil {
