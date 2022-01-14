@@ -5,24 +5,36 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/proto"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type CircuitBreaker struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                     `json:"mesh,omitempty"`
-	Spec *mesh_proto.CircuitBreaker `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma CircuitBreaker resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type CircuitBreakerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -50,11 +62,27 @@ func (cb *CircuitBreaker) SetMesh(mesh string) {
 }
 
 func (cb *CircuitBreaker) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.CircuitBreaker{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *CircuitBreaker) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.CircuitBreaker)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.CircuitBreaker); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *CircuitBreaker) Scope() model.Scope {
@@ -85,15 +113,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type Dataplane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                `json:"mesh,omitempty"`
-	Spec *mesh_proto.Dataplane `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma Dataplane resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type DataplaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -121,11 +157,27 @@ func (cb *Dataplane) SetMesh(mesh string) {
 }
 
 func (cb *Dataplane) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.Dataplane{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Dataplane) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.Dataplane)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.Dataplane); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Dataplane) Scope() model.Scope {
@@ -156,15 +208,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type DataplaneInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh   string                       `json:"mesh,omitempty"`
-	Status *mesh_proto.DataplaneInsight `json:"status,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Status is the status the Kuma resource.
+	// +kubebuilder:validation:Optional
+	Status *apiextensionsv1.JSON `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type DataplaneInsightList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -192,11 +252,29 @@ func (cb *DataplaneInsight) SetMesh(mesh string) {
 }
 
 func (cb *DataplaneInsight) GetSpec() proto.Message {
-	return cb.Status
+	spec := cb.Status
+	m := mesh_proto.DataplaneInsight{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *DataplaneInsight) SetSpec(spec proto.Message) {
-	cb.Status = proto.Clone(spec).(*mesh_proto.DataplaneInsight)
+	if spec == nil {
+		cb.Status = nil
+
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.DataplaneInsight); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+
 }
 
 func (cb *DataplaneInsight) Scope() model.Scope {
@@ -227,15 +305,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type ExternalService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                      `json:"mesh,omitempty"`
-	Spec *mesh_proto.ExternalService `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma ExternalService resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type ExternalServiceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -263,11 +349,27 @@ func (cb *ExternalService) SetMesh(mesh string) {
 }
 
 func (cb *ExternalService) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.ExternalService{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ExternalService) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.ExternalService)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.ExternalService); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ExternalService) Scope() model.Scope {
@@ -298,15 +400,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type FaultInjection struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                     `json:"mesh,omitempty"`
-	Spec *mesh_proto.FaultInjection `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma FaultInjection resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type FaultInjectionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -334,11 +444,27 @@ func (cb *FaultInjection) SetMesh(mesh string) {
 }
 
 func (cb *FaultInjection) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.FaultInjection{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *FaultInjection) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.FaultInjection)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.FaultInjection); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *FaultInjection) Scope() model.Scope {
@@ -369,15 +495,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type Gateway struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string              `json:"mesh,omitempty"`
-	Spec *mesh_proto.Gateway `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma Gateway resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type GatewayList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -401,15 +535,31 @@ func (cb *Gateway) SetMesh(mesh string) {
 }
 
 func (cb *Gateway) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.Gateway{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Gateway) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.Gateway)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.Gateway); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Gateway) Scope() model.Scope {
-	return model.ScopeNamespace
+	return model.ScopeCluster
 }
 
 func (l *GatewayList) GetItems() []model.KubernetesObject {
@@ -421,15 +571,23 @@ func (l *GatewayList) GetItems() []model.KubernetesObject {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type GatewayRoute struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                   `json:"mesh,omitempty"`
-	Spec *mesh_proto.GatewayRoute `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma GatewayRoute resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type GatewayRouteList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -453,15 +611,31 @@ func (cb *GatewayRoute) SetMesh(mesh string) {
 }
 
 func (cb *GatewayRoute) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.GatewayRoute{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *GatewayRoute) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.GatewayRoute)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.GatewayRoute); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *GatewayRoute) Scope() model.Scope {
-	return model.ScopeNamespace
+	return model.ScopeCluster
 }
 
 func (l *GatewayRouteList) GetItems() []model.KubernetesObject {
@@ -473,15 +647,23 @@ func (l *GatewayRouteList) GetItems() []model.KubernetesObject {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type HealthCheck struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                  `json:"mesh,omitempty"`
-	Spec *mesh_proto.HealthCheck `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma HealthCheck resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type HealthCheckList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -509,11 +691,27 @@ func (cb *HealthCheck) SetMesh(mesh string) {
 }
 
 func (cb *HealthCheck) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.HealthCheck{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *HealthCheck) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.HealthCheck)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.HealthCheck); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *HealthCheck) Scope() model.Scope {
@@ -544,15 +742,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type Mesh struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string           `json:"mesh,omitempty"`
-	Spec *mesh_proto.Mesh `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma Mesh resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type MeshList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -580,11 +786,27 @@ func (cb *Mesh) SetMesh(mesh string) {
 }
 
 func (cb *Mesh) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.Mesh{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Mesh) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.Mesh)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.Mesh); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Mesh) Scope() model.Scope {
@@ -615,15 +837,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type MeshInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                  `json:"mesh,omitempty"`
-	Spec *mesh_proto.MeshInsight `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma MeshInsight resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type MeshInsightList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -651,11 +881,27 @@ func (cb *MeshInsight) SetMesh(mesh string) {
 }
 
 func (cb *MeshInsight) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.MeshInsight{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *MeshInsight) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.MeshInsight)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.MeshInsight); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *MeshInsight) Scope() model.Scope {
@@ -686,15 +932,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type ProxyTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                    `json:"mesh,omitempty"`
-	Spec *mesh_proto.ProxyTemplate `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma ProxyTemplate resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type ProxyTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -722,11 +976,27 @@ func (cb *ProxyTemplate) SetMesh(mesh string) {
 }
 
 func (cb *ProxyTemplate) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.ProxyTemplate{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ProxyTemplate) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.ProxyTemplate)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.ProxyTemplate); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ProxyTemplate) Scope() model.Scope {
@@ -757,15 +1027,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type RateLimit struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                `json:"mesh,omitempty"`
-	Spec *mesh_proto.RateLimit `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma RateLimit resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type RateLimitList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -793,11 +1071,27 @@ func (cb *RateLimit) SetMesh(mesh string) {
 }
 
 func (cb *RateLimit) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.RateLimit{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *RateLimit) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.RateLimit)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.RateLimit); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *RateLimit) Scope() model.Scope {
@@ -828,15 +1122,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type Retry struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string            `json:"mesh,omitempty"`
-	Spec *mesh_proto.Retry `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma Retry resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type RetryList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -864,11 +1166,27 @@ func (cb *Retry) SetMesh(mesh string) {
 }
 
 func (cb *Retry) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.Retry{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Retry) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.Retry)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.Retry); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Retry) Scope() model.Scope {
@@ -899,15 +1217,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type ServiceInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                     `json:"mesh,omitempty"`
-	Spec *mesh_proto.ServiceInsight `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma ServiceInsight resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type ServiceInsightList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -935,11 +1261,27 @@ func (cb *ServiceInsight) SetMesh(mesh string) {
 }
 
 func (cb *ServiceInsight) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.ServiceInsight{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ServiceInsight) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.ServiceInsight)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.ServiceInsight); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ServiceInsight) Scope() model.Scope {
@@ -970,15 +1312,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type Timeout struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string              `json:"mesh,omitempty"`
-	Spec *mesh_proto.Timeout `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma Timeout resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type TimeoutList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -1006,11 +1356,27 @@ func (cb *Timeout) SetMesh(mesh string) {
 }
 
 func (cb *Timeout) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.Timeout{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *Timeout) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.Timeout)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.Timeout); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *Timeout) Scope() model.Scope {
@@ -1041,15 +1407,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type TrafficLog struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                 `json:"mesh,omitempty"`
-	Spec *mesh_proto.TrafficLog `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma TrafficLog resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type TrafficLogList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -1077,11 +1451,27 @@ func (cb *TrafficLog) SetMesh(mesh string) {
 }
 
 func (cb *TrafficLog) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.TrafficLog{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *TrafficLog) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.TrafficLog)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.TrafficLog); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *TrafficLog) Scope() model.Scope {
@@ -1112,15 +1502,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type TrafficPermission struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                        `json:"mesh,omitempty"`
-	Spec *mesh_proto.TrafficPermission `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma TrafficPermission resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type TrafficPermissionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -1148,11 +1546,27 @@ func (cb *TrafficPermission) SetMesh(mesh string) {
 }
 
 func (cb *TrafficPermission) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.TrafficPermission{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *TrafficPermission) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.TrafficPermission)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.TrafficPermission); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *TrafficPermission) Scope() model.Scope {
@@ -1183,15 +1597,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type TrafficRoute struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                   `json:"mesh,omitempty"`
-	Spec *mesh_proto.TrafficRoute `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma TrafficRoute resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type TrafficRouteList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -1219,11 +1641,27 @@ func (cb *TrafficRoute) SetMesh(mesh string) {
 }
 
 func (cb *TrafficRoute) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.TrafficRoute{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *TrafficRoute) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.TrafficRoute)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.TrafficRoute); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *TrafficRoute) Scope() model.Scope {
@@ -1254,15 +1692,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type TrafficTrace struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                   `json:"mesh,omitempty"`
-	Spec *mesh_proto.TrafficTrace `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma TrafficTrace resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type TrafficTraceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -1290,11 +1736,27 @@ func (cb *TrafficTrace) SetMesh(mesh string) {
 }
 
 func (cb *TrafficTrace) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.TrafficTrace{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *TrafficTrace) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.TrafficTrace)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.TrafficTrace); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *TrafficTrace) Scope() model.Scope {
@@ -1325,15 +1787,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type VirtualOutbound struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                      `json:"mesh,omitempty"`
-	Spec *mesh_proto.VirtualOutbound `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma VirtualOutbound resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type VirtualOutboundList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -1361,11 +1831,27 @@ func (cb *VirtualOutbound) SetMesh(mesh string) {
 }
 
 func (cb *VirtualOutbound) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.VirtualOutbound{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *VirtualOutbound) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.VirtualOutbound)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.VirtualOutbound); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *VirtualOutbound) Scope() model.Scope {
@@ -1396,15 +1882,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type ZoneIngress struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                  `json:"mesh,omitempty"`
-	Spec *mesh_proto.ZoneIngress `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma ZoneIngress resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type ZoneIngressList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -1432,11 +1926,27 @@ func (cb *ZoneIngress) SetMesh(mesh string) {
 }
 
 func (cb *ZoneIngress) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.ZoneIngress{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ZoneIngress) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.ZoneIngress)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.ZoneIngress); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ZoneIngress) Scope() model.Scope {
@@ -1467,15 +1977,23 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type ZoneIngressInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string                         `json:"mesh,omitempty"`
-	Spec *mesh_proto.ZoneIngressInsight `json:"spec,omitempty"`
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma ZoneIngressInsight resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type ZoneIngressInsightList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -1503,11 +2021,27 @@ func (cb *ZoneIngressInsight) SetMesh(mesh string) {
 }
 
 func (cb *ZoneIngressInsight) GetSpec() proto.Message {
-	return cb.Spec
+	spec := cb.Spec
+	m := mesh_proto.ZoneIngressInsight{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *ZoneIngressInsight) SetSpec(spec proto.Message) {
-	cb.Spec = proto.Clone(spec).(*mesh_proto.ZoneIngressInsight)
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.ZoneIngressInsight); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 }
 
 func (cb *ZoneIngressInsight) Scope() model.Scope {

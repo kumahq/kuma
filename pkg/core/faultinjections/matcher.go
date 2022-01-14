@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -22,20 +23,24 @@ func (f *FaultInjectionMatcher) Match(ctx context.Context, dataplane *core_mesh.
 	if err := f.ResourceManager.List(ctx, faultInjections, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve fault injections")
 	}
-	return BuildFaultInjectionMap(dataplane, mesh, faultInjections.Items)
-}
-
-func BuildFaultInjectionMap(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, faultInjections []*core_mesh.FaultInjectionResource) (core_xds.FaultInjectionMap, error) {
-	policies := make([]policy.ConnectionPolicy, len(faultInjections))
-	for i, faultInjection := range faultInjections {
-		policies[i] = faultInjection
-	}
-
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
+	return BuildFaultInjectionMap(dataplane, inbounds, faultInjections.Items), nil
+}
+
+func BuildFaultInjectionMap(
+	dataplane *core_mesh.DataplaneResource,
+	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
+	faultInjections []*core_mesh.FaultInjectionResource,
+) core_xds.FaultInjectionMap {
+	policies := make([]policy.ConnectionPolicy, len(faultInjections))
+	for i, faultInjection := range faultInjections {
+		policies[i] = faultInjection
+	}
+
 	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies)
 
 	result := core_xds.FaultInjectionMap{}
@@ -44,5 +49,5 @@ func BuildFaultInjectionMap(dataplane *core_mesh.DataplaneResource, mesh *core_m
 			result[inbound] = append(result[inbound], connectionPolicy.(*core_mesh.FaultInjectionResource))
 		}
 	}
-	return result, nil
+	return result
 }

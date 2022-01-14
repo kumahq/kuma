@@ -4,28 +4,26 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/go-logr/logr"
+
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 // Cache is needed to share and cache Hashes among goroutines which
 // reconcile Dataplane's state. Calculating hash is a heavy operation
 // that requires fetching all the resources belonging to the Mesh.
 type Cache struct {
-	cache  *once.Cache
-	rm     manager.ReadOnlyResourceManager
-	types  []core_model.ResourceType
-	ipFunc lookup.LookupIPFunc
+	cache              *once.Cache
+	meshContextBuilder xds_context.MeshContextBuilder
+
+	latestMeshContext *xds_context.MeshContext
 }
 
 func NewCache(
-	rm manager.ReadOnlyResourceManager,
 	expirationTime time.Duration,
-	types []core_model.ResourceType,
-	ipFunc lookup.LookupIPFunc,
+	meshContextBuilder xds_context.MeshContextBuilder,
 	metrics metrics.Metrics,
 ) (*Cache, error) {
 	c, err := once.New(expirationTime, "mesh_cache", metrics)
@@ -33,23 +31,32 @@ func NewCache(
 		return nil, err
 	}
 	return &Cache{
-		rm:     rm,
-		types:  types,
-		ipFunc: ipFunc,
-		cache:  c,
+		cache:              c,
+		meshContextBuilder: meshContextBuilder,
 	}, nil
 }
 
-func (c *Cache) GetHash(ctx context.Context, mesh string) (string, error) {
+func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh string) (xds_context.MeshContext, error) {
 	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
-		snapshot, err := GetMeshSnapshot(ctx, key, c.rm, c.types, c.ipFunc)
-		if err != nil {
-			return nil, err
+		if c.latestMeshContext == nil {
+			meshCtx, err := c.meshContextBuilder.Build(ctx, mesh)
+			if err != nil {
+				return xds_context.MeshContext{}, err
+			}
+			c.latestMeshContext = &meshCtx
+		} else {
+			meshCtx, err := c.meshContextBuilder.BuildIfChanged(ctx, mesh, c.latestMeshContext.Hash)
+			if err != nil {
+				return xds_context.MeshContext{}, err
+			}
+			if meshCtx != nil {
+				c.latestMeshContext = meshCtx
+			}
 		}
-		return snapshot.hash(), nil
+		return *c.latestMeshContext, nil
 	}))
 	if err != nil {
-		return "", err
+		return xds_context.MeshContext{}, err
 	}
-	return elt.(string), nil
+	return elt.(xds_context.MeshContext), nil
 }

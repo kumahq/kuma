@@ -12,14 +12,15 @@ import (
 	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -27,6 +28,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
+	ctrls_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/util"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
@@ -53,20 +55,27 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 
 		return kube_ctrl.Result{}, err
 	}
-
-	deployment, err := r.createOrUpdateDeployment(ctx, gatewayInstance)
-	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to create Deployment for Gateway")
-	}
+	orig := gatewayInstance.DeepCopyObject().(kube_client.Object)
 
 	svc, err := r.createOrUpdateService(ctx, gatewayInstance)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to create Service for Gateway")
 	}
 
+	var deployment *kube_apps.Deployment
+	if svc != nil {
+		deployment, err = r.createOrUpdateDeployment(ctx, gatewayInstance)
+		if err != nil {
+			return kube_ctrl.Result{}, errors.Wrap(err, "unable to create Deployment for Gateway")
+		}
+	}
+
 	updateStatus(gatewayInstance, svc, deployment)
 
-	if err := r.Client.Status().Update(ctx, gatewayInstance); err != nil {
+	if err := r.Client.Status().Patch(ctx, gatewayInstance, kube_client.MergeFrom(orig)); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return kube_ctrl.Result{}, nil
+		}
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update GatewayInstance status")
 	}
 
@@ -77,77 +86,8 @@ func k8sSelector(name string) map[string]string {
 	return map[string]string{"app": name}
 }
 
-const controllerKey string = ".metadata.controller"
-
-func indexController(mgr kube_ctrl.Manager, ownerGVK kube_schema.GroupVersionKind, objType kube_client.Object) error {
-	ownerKind := ownerGVK.Kind
-	ownerGV := ownerGVK.GroupVersion().String()
-
-	return mgr.GetFieldIndexer().IndexField(context.Background(), objType, controllerKey, func(rawObj kube_client.Object) []string {
-		owner := kube_meta.GetControllerOf(rawObj)
-		if owner == nil || owner.APIVersion != ownerGV || owner.Kind != ownerKind {
-			return nil
-		}
-
-		return []string{owner.Name}
-	})
-}
-
-// createOrUpdateControlled either creates an object to be controlled by the
-// given object or updates the existing one.
-func (r *GatewayInstanceReconciler) createOrUpdateControlled(
-	ctx context.Context, owner kube_meta.Object, objectList kube_client.ObjectList, mutate func(kube_client.Object) (kube_client.Object, error),
-) (kube_client.Object, error) {
-	if err := r.Client.List(
-		ctx, objectList, kube_client.InNamespace(owner.GetNamespace()), kube_client.MatchingFields{controllerKey: owner.GetName()},
-	); err != nil {
-		return nil, errors.Wrap(err, "unable to list objects")
-	}
-
-	items, err := kube_apimeta.ExtractList(objectList)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to extract list of runtime.Objects")
-	}
-
-	switch len(items) {
-	case 0:
-		obj, err := mutate(nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "couldn't mutate object for creation")
-		}
-
-		if err := kube_controllerutil.SetControllerReference(owner, obj, r.Scheme); err != nil {
-			return nil, errors.Wrap(err, "unable to set object's controller reference")
-		}
-
-		if err := r.Client.Create(ctx, obj); err != nil {
-			return nil, errors.Wrap(err, "couldn't create object")
-		}
-		return obj, nil
-	case 1:
-		item, ok := items[0].(kube_client.Object)
-		if !ok {
-			return nil, fmt.Errorf("expected runtime.Object to be client.Object")
-		}
-
-		obj, err := mutate(item)
-		if err != nil {
-			return nil, errors.Wrap(err, "couldn't mutate object for update")
-		}
-
-		if err := kube_controllerutil.SetControllerReference(owner, obj, r.Scheme); err != nil {
-			return nil, errors.Wrap(err, "unable to set object's controller reference")
-		}
-
-		if err := r.Client.Update(ctx, obj); err != nil {
-			return nil, errors.Wrap(err, "couldn't update object")
-		}
-		return obj, nil
-	default:
-		return nil, fmt.Errorf("expected a maximum of one item controlled by %s/%s", owner.GetNamespace(), owner.GetName())
-	}
-}
-
+// createOrUpdateService can either return an error, a created Service or
+// neither if reconciliation shouldn't continue.
 func (r *GatewayInstanceReconciler) createOrUpdateService(
 	ctx context.Context,
 	gatewayInstance *mesh_k8s.GatewayInstance,
@@ -156,13 +96,14 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		return selector.Matches(gatewayInstance.Spec.Tags)
 	})
 
-	if gateway == nil {
-		return nil, fmt.Errorf("no matching Gateway")
-	}
-
-	obj, err := r.createOrUpdateControlled(
-		ctx, gatewayInstance, &kube_core.ServiceList{},
+	obj, err := ctrls_util.ManageControlledObject(
+		ctx, r.Client, gatewayInstance, &kube_core.ServiceList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
+			// If we don't have a gateway, we don't want our Service anymore
+			if gateway == nil {
+				return nil, nil
+			}
+
 			service := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace:    gatewayInstance.Namespace,
@@ -196,9 +137,15 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		return nil, errors.Wrap(err, "unable to create or update Service for GatewayInstance")
 	}
 
+	if obj == nil {
+		return nil, nil
+	}
+
 	return obj.(*kube_core.Service), nil
 }
 
+// createOrUpdateDeployment can either return an error, a created Deployment or
+// neither if reconciliation shouldn't continue.
 func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 	ctx context.Context,
 	gatewayInstance *mesh_k8s.GatewayInstance,
@@ -208,8 +155,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 		return nil, errors.Wrap(err, "unable to get Namespace for GatewayInstance")
 	}
 
-	obj, err := r.createOrUpdateControlled(
-		ctx, gatewayInstance, &kube_apps.DeploymentList{},
+	obj, err := ctrls_util.ManageControlledObject(
+		ctx, r.Client, gatewayInstance, &kube_apps.DeploymentList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
 			deployment := &kube_apps.Deployment{
 				ObjectMeta: kube_meta.ObjectMeta{
@@ -287,24 +234,83 @@ func getCombinedReadiness(svc *kube_core.Service, deployment *kube_apps.Deployme
 		}
 	}
 
-	if len(svc.Status.LoadBalancer.Ingress) > 0 {
-		return kube_meta.ConditionTrue, mesh_k8s.GatewayInstanceReady
-	} else {
-		return kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceAddressNotReady
+	switch svc.Spec.Type {
+	case kube_core.ServiceTypeNodePort, kube_core.ServiceTypeClusterIP:
+		// If we have any IP addresses assigned, the service is probably OK.
+		for _, ip := range svc.Spec.ClusterIPs {
+			if ip != kube_core.ClusterIPNone && ip != "" {
+				return kube_meta.ConditionTrue, mesh_k8s.GatewayInstanceReady
+			}
+		}
+	case kube_core.ServiceTypeLoadBalancer:
+		if len(svc.Status.LoadBalancer.Ingress) > 0 {
+			return kube_meta.ConditionTrue, mesh_k8s.GatewayInstanceReady
+		}
 	}
+
+	return kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceAddressNotReady
 }
 
-func updateStatus(gatewayInstance *mesh_k8s.GatewayInstance, svc *kube_core.Service, deployment *kube_apps.Deployment) {
-	status, reason := getCombinedReadiness(svc, deployment)
+const noGateway = "No Gateway matched by tags"
 
-	readiness := kube_meta.Condition{
-		Type: mesh_k8s.GatewayInstanceReady, Status: status, Reason: reason, LastTransitionTime: kube_meta.Now(), ObservedGeneration: gatewayInstance.GetGeneration(),
+func updateStatus(gatewayInstance *mesh_k8s.GatewayInstance, svc *kube_core.Service, deployment *kube_apps.Deployment) {
+	var status kube_meta.ConditionStatus
+	var reason string
+	var message string
+
+	if svc == nil {
+		status, reason, message = kube_meta.ConditionFalse, mesh_k8s.GatewayInstanceNoGatewayMatched, noGateway
+	} else {
+		status, reason = getCombinedReadiness(svc, deployment)
+		gatewayInstance.Status.LoadBalancer = &svc.Status.LoadBalancer
 	}
 
-	gatewayInstance.Status.LoadBalancer = &svc.Status.LoadBalancer
+	readiness := kube_meta.Condition{
+		Type: mesh_k8s.GatewayInstanceReady, Status: status, Reason: reason, Message: message, LastTransitionTime: kube_meta.Now(), ObservedGeneration: gatewayInstance.GetGeneration(),
+	}
 
 	gatewayInstance.Status.Conditions = []kube_meta.Condition{
 		readiness,
+	}
+}
+
+const serviceKey string = ".metadata.service"
+
+// GatewayToInstanceMapper maps a Gateway object to GatewayInstance objects by
+// using the service tag to list GatewayInstances with a matching index.
+// The index is set up on GatewayInstance in SetupWithManager and holds the service
+// tag from the GatewayInstance tags.
+func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("gateway-to-gateway-instance-mapper")
+
+	return func(obj kube_client.Object) []kube_reconcile.Request {
+		gateway := obj.(*mesh_k8s.Gateway)
+
+		var serviceNames []string
+		spec := gateway.GetSpec().(*mesh_proto.Gateway)
+		for _, selector := range spec.GetSelectors() {
+			if tagValue, ok := selector.Match[mesh_proto.ServiceTag]; ok {
+				serviceNames = append(serviceNames, tagValue)
+			}
+		}
+
+		var req []kube_reconcile.Request
+		for _, serviceName := range serviceNames {
+			instances := &mesh_k8s.GatewayInstanceList{}
+			if err := client.List(
+				context.Background(), instances, kube_client.MatchingFields{serviceKey: serviceName},
+			); err != nil {
+				l.WithValues("gateway", obj.GetName()).Error(err, "failed to fetch GatewayInstances")
+			}
+
+			for _, instance := range instances.Items {
+				req = append(req, kube_reconcile.Request{
+					NamespacedName: kube_types.NamespacedName{Namespace: instance.Namespace, Name: instance.Name},
+				})
+			}
+		}
+
+		return req
 	}
 }
 
@@ -315,11 +321,21 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		Kind:    reflect.TypeOf(mesh_k8s.GatewayInstance{}).Name(),
 	}
 
-	if err := indexController(mgr, gatewayInstanceGVK, &kube_core.Service{}); err != nil {
+	if err := ctrls_util.IndexControllerOf(mgr, gatewayInstanceGVK, &kube_core.Service{}); err != nil {
 		return err
 	}
 
-	if err := indexController(mgr, gatewayInstanceGVK, &kube_apps.Deployment{}); err != nil {
+	if err := ctrls_util.IndexControllerOf(mgr, gatewayInstanceGVK, &kube_apps.Deployment{}); err != nil {
+		return err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &mesh_k8s.GatewayInstance{}, serviceKey, func(obj kube_client.Object) []string {
+		instance := obj.(*mesh_k8s.GatewayInstance)
+
+		serviceName := instance.Spec.Tags[mesh_proto.ServiceTag]
+
+		return []string{serviceName}
+	}); err != nil {
 		return err
 	}
 
@@ -327,5 +343,10 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		For(&mesh_k8s.GatewayInstance{}).
 		Owns(&kube_core.Service{}).
 		Owns(&kube_apps.Deployment{}).
+		// On Update events our mapper function is called with the object both
+		// before the event as well as the object after. In the case of
+		// unbinding a Gateway from one Instance to another, we end up
+		// reconciling both Instances.
+		Watches(&kube_source.Kind{Type: &mesh_k8s.Gateway{}}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient()))).
 		Complete(r)
 }

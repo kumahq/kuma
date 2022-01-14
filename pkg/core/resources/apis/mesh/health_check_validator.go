@@ -17,7 +17,7 @@ func (d *HealthCheckResource) Validate() error {
 func (d *HealthCheckResource) validateSources() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateSelectorOpts: ValidateSelectorOpts{
+		ValidateTagsOpts: ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
 			RequireService:       true,
 		},

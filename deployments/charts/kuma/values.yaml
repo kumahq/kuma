@@ -5,7 +5,7 @@ global:
     # -- The default tag for all Kuma images, which itself defaults to .Chart.AppVersion
     tag:
 
-# -- Whether or not to patch the target namespace with the system label
+# -- Whether to patch the target namespace with the system label
 patchSystemNamespace: true
 
 # -- Whether ot not install new CRDs before upgrade  (if any were introduced
@@ -84,7 +84,7 @@ controlPlane:
     port: 5685
 
   defaults:
-    # -- Whether or not to skip creating the default Mesh
+    # -- Whether to skip creating the default Mesh
     skipMeshCreation: false
 
   # -- Optionally override the resource spec
@@ -97,17 +97,23 @@ controlPlane:
   # TLS for various servers
   tls:
     general:
-      # -- Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication
+      # -- Secret that contains tls.crt, tls.key [and ca.crt when no
+      # controlPlane.tls.general.caSecretName specified] for protecting
+      # Kuma in-cluster communication
       secretName: ""
+      # -- Secret that contains ca.crt that was used to sign cert for protecting
+      # Kuma in-cluster communication (ca.crt present in this secret
+      # have precedence over the one provided in the controlPlane.tls.general.secretName)
+      caSecretName: ""
       # -- Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
       caBundle: ""
     apiServer:
-      # -- Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS
+      # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""
       # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
       clientCertsSecretName: ""
     kdsGlobalServer:
-      # -- Secret that contains tls.crt, key.crt for protecting cross cluster communication
+      # -- Secret that contains tls.crt, tls.key for protecting cross cluster communication
       secretName: ""
     kdsZoneClient:
       # -- Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
@@ -127,6 +133,21 @@ controlPlane:
 
   # -- Additional environment variables that will be passed to the control plane
   envVars: { }
+
+  # -- Additional config maps to mount into the control plane, with optional inline values
+  extraConfigMaps: [ ]
+#    - name: extra-config
+#      mountPath: /etc/extra-config
+#      readOnly: true
+#      values:
+#        extra-config-key: |
+#          extra-config-value
+
+  # -- Additional secrets to mount into the control plane
+  extraSecrets: [ ]
+#    - name: extra-config
+#      mountPath: /etc/extra-config
+#      readOnly: true
 
   webhooks:
     validator:

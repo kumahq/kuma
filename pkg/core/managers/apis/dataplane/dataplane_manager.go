@@ -13,18 +13,20 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func NewDataplaneManager(store core_store.ResourceStore, zone string) core_manager.ResourceManager {
+func NewDataplaneManager(store core_store.ResourceStore, zone string, validator Validator) core_manager.ResourceManager {
 	return &dataplaneManager{
 		ResourceManager: core_manager.NewResourceManager(store),
 		store:           store,
 		zone:            zone,
+		validator:       validator,
 	}
 }
 
 type dataplaneManager struct {
 	core_manager.ResourceManager
-	store core_store.ResourceStore
-	zone  string
+	store     core_store.ResourceStore
+	zone      string
+	validator Validator
 }
 
 func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
@@ -46,6 +48,14 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		return core_manager.MeshNotFound(opts.Mesh)
 	}
 
+	key := core_model.ResourceKey{
+		Mesh: opts.Mesh,
+		Name: opts.Name,
+	}
+	if err := m.validator.ValidateCreate(ctx, key, dp, owner); err != nil {
+		return err
+	}
+
 	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()))...)
 }
 
@@ -57,6 +67,14 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 
 	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
+
+	owner := core_mesh.NewMeshResource()
+	if err := m.store.Get(ctx, owner, core_store.GetByKey(resource.GetMeta().GetMesh(), core_model.NoMesh)); err != nil {
+		return core_manager.MeshNotFound(resource.GetMeta().GetMesh())
+	}
+	if err := m.validator.ValidateUpdate(ctx, dp, owner); err != nil {
+		return err
+	}
 
 	return m.ResourceManager.Update(ctx, resource, fs...)
 }

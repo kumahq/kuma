@@ -25,6 +25,6 @@ function msg() {
 }
 
 function msg_err() {
-  msg_red $@
+  msg_red "$@"
   exit 1
 }

@@ -1,34 +1,34 @@
 {
-    "total": 2,
-    "items": [
-      {
-        "mesh": "default",
-        "name": "experiment",
-        "creationTime": "0001-01-01T00:00:00Z",
-        "modificationTime": "0001-01-01T00:00:00Z",
-        "networking": {
-          "address": "127.0.0.1"
-        },
-        "tags": {
-          "service": "mobile",
-          "version": "v1"
-        },
-        "type": "ExternalService"
+  "total": 2,
+  "items": [
+    {
+      "type": "ExternalService",
+      "mesh": "default",
+      "name": "experiment",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "networking": {
+        "address": "127.0.0.1"
       },
-      {
-        "mesh": "default",
-        "name": "example",
-        "creationTime": "0001-01-01T00:00:00Z",
-        "modificationTime": "0001-01-01T00:00:00Z",
-        "networking": {
-          "address": "127.0.0.2"
-        },
-        "tags": {
-          "service": "web",
-          "version": "v2"
-        },
-        "type": "ExternalService"
+      "tags": {
+        "service": "mobile",
+        "version": "v1"
       }
-    ],
-    "next": null
+    },
+    {
+      "type": "ExternalService",
+      "mesh": "default",
+      "name": "example",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "networking": {
+        "address": "127.0.0.2"
+      },
+      "tags": {
+        "service": "web",
+        "version": "v2"
+      }
+    }
+  ],
+  "next": null
 }

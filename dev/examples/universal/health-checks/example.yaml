@@ -1,0 +1,14 @@
+type: HealthCheck
+name: web-to-backend
+mesh: default
+sources:
+- match:
+    kuma.io/service: web
+destinations:
+- match:
+    kuma.io/service: backend
+conf:
+  interval: 10s
+  timeout: 2s
+  unhealthyThreshold: 3
+  healthyThreshold: 1

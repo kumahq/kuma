@@ -16,20 +16,20 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-type SelectorValidatorFunc func(path validators.PathBuilder, selector map[string]string) validators.ValidationError
+type TagsValidatorFunc func(path validators.PathBuilder, selector map[string]string) validators.ValidationError
 type TagKeyValidatorFunc func(path validators.PathBuilder, key string) validators.ValidationError
 type TagValueValidatorFunc func(path validators.PathBuilder, key, value string) validators.ValidationError
 
-type ValidateSelectorOpts struct {
+type ValidateTagsOpts struct {
 	RequireAtLeastOneTag    bool
 	RequireService          bool
-	ExtraSelectorValidators []SelectorValidatorFunc
+	ExtraTagsValidators     []TagsValidatorFunc
 	ExtraTagKeyValidators   []TagKeyValidatorFunc
 	ExtraTagValueValidators []TagValueValidatorFunc
 }
 
 type ValidateSelectorsOpts struct {
-	ValidateSelectorOpts
+	ValidateTagsOpts
 	RequireAtLeastOneSelector bool
 }
 
@@ -42,19 +42,47 @@ func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Select
 		err.AddViolationAt(path, "must have at least one element")
 	}
 	for i, selector := range sources {
-		err.Add(ValidateSelector(path.Index(i).Field("match"), selector.GetMatch(), opts.ValidateSelectorOpts))
+		err.Add(ValidateSelector(path.Index(i).Field("match"), selector.GetMatch(), opts.ValidateTagsOpts))
 	}
 	return
 }
 
-func ValidateSelector(path validators.PathBuilder, selector map[string]string, opts ValidateSelectorOpts) (err validators.ValidationError) {
-	if opts.RequireAtLeastOneTag && len(selector) == 0 {
+func ValidateSelector(path validators.PathBuilder, tags map[string]string, opts ValidateTagsOpts) (err validators.ValidationError) {
+	opts.ExtraTagValueValidators = append([]TagValueValidatorFunc{
+		func(path validators.PathBuilder, key, value string) validators.ValidationError {
+			var err validators.ValidationError
+			if !selectorCharacterSet.MatchString(value) {
+				err.AddViolationAt(path.Key(key), `tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"`)
+			}
+			return err
+		},
+	}, opts.ExtraTagValueValidators...)
+
+	return validateTagKeyValues(path, tags, opts)
+}
+
+func ValidateTags(path validators.PathBuilder, tags map[string]string, opts ValidateTagsOpts) (err validators.ValidationError) {
+	opts.ExtraTagValueValidators = append([]TagValueValidatorFunc{
+		func(path validators.PathBuilder, key, value string) validators.ValidationError {
+			var err validators.ValidationError
+			if !tagValueCharacterSet.MatchString(value) {
+				err.AddViolationAt(path.Key(key), `tag value must consist of alphanumeric characters, dots, dashes and underscores`)
+			}
+			return err
+		},
+	}, opts.ExtraTagValueValidators...)
+
+	return validateTagKeyValues(path, tags, opts)
+}
+
+func validateTagKeyValues(path validators.PathBuilder, keyValues map[string]string, opts ValidateTagsOpts) (err validators.ValidationError) {
+	if opts.RequireAtLeastOneTag && len(keyValues) == 0 {
 		err.AddViolationAt(path, "must have at least one tag")
 	}
-	for _, validate := range opts.ExtraSelectorValidators {
-		err.Add(validate(path, selector))
+	for _, validate := range opts.ExtraTagsValidators {
+		err.Add(validate(path, keyValues))
 	}
-	for _, key := range Keys(selector) {
+	for _, key := range Keys(keyValues) {
 		if key == "" {
 			err.AddViolationAt(path, "tag name must be non-empty")
 		}
@@ -65,18 +93,15 @@ func ValidateSelector(path validators.PathBuilder, selector map[string]string, o
 			err.Add(validate(path, key))
 		}
 
-		value := selector[key]
+		value := keyValues[key]
 		if value == "" {
 			err.AddViolationAt(path.Key(key), "tag value must be non-empty")
-		}
-		if !selectorCharacterSet.MatchString(value) {
-			err.AddViolationAt(path.Key(key), `tag value must consist of alphanumeric characters, dots, dashes, slashes and underscores or be "*"`)
 		}
 		for _, validate := range opts.ExtraTagValueValidators {
 			err.Add(validate(path, key, value))
 		}
 	}
-	_, defined := selector[mesh_proto.ServiceTag]
+	_, defined := keyValues[mesh_proto.ServiceTag]
 	if opts.RequireService && !defined {
 		err.AddViolationAt(path, fmt.Sprintf("mandatory tag %q is missing", mesh_proto.ServiceTag))
 	}
@@ -85,9 +110,9 @@ func ValidateSelector(path validators.PathBuilder, selector map[string]string, o
 
 var OnlyServiceTagAllowed = ValidateSelectorsOpts{
 	RequireAtLeastOneSelector: true,
-	ValidateSelectorOpts: ValidateSelectorOpts{
+	ValidateTagsOpts: ValidateTagsOpts{
 		RequireService: true,
-		ExtraSelectorValidators: []SelectorValidatorFunc{
+		ExtraTagsValidators: []TagsValidatorFunc{
 			func(path validators.PathBuilder, selector map[string]string) (err validators.ValidationError) {
 				_, defined := selector[mesh_proto.ServiceTag]
 				if len(selector) != 1 || !defined {
@@ -188,7 +213,7 @@ func AllowedValuesHint(values ...string) string {
 	return fmt.Sprintf("Allowed values: %s", options)
 }
 
-func ProtocolValidator(protocols ...string) SelectorValidatorFunc {
+func ProtocolValidator(protocols ...string) TagsValidatorFunc {
 	return func(path validators.PathBuilder, selector map[string]string) (err validators.ValidationError) {
 		v, defined := selector[mesh_proto.ProtocolTag]
 		if !defined {

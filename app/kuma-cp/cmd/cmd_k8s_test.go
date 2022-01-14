@@ -28,7 +28,7 @@ var _ = XDescribe("K8S CMD test", func() {
 	BeforeEach(test.Within(time.Minute, func() {
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths:        []string{filepath.Join("..", "..", "..", "pkg", "plugins", "resources", "k8s", "native", "config", "crd", "bases")},
+			CRDDirectoryPaths:        []string{filepath.Join("..", "..", "..", test.CustomResourceDir)},
 			ControlPlaneStartTimeout: 60 * time.Second,
 			ControlPlaneStopTimeout:  60 * time.Second,
 		}

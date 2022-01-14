@@ -1,4 +1,4 @@
-package topology
+package topology_test
 
 import (
 	"net"
@@ -10,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var _ = Describe("Resolve Dataplane address", func() {
@@ -43,7 +44,7 @@ var _ = Describe("Resolve Dataplane address", func() {
 			}
 
 			// when
-			resolvedDp, err := ResolveAddress(lif, dp)
+			resolvedDp, err := topology.ResolveAddress(lif, dp)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -70,7 +71,7 @@ var _ = Describe("Resolve Dataplane address", func() {
 				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.2", AdvertisedAddress: "192.0.2.2"}}},
 			}
 
-			actual := ResolveAddresses(core.Log, lif, given)
+			actual := topology.ResolveAddresses(core.Log, lif, given)
 			Expect(actual).To(HaveLen(4))
 			Expect(actual).To(Equal(expected))
 		})
@@ -88,7 +89,7 @@ var _ = Describe("Resolve Dataplane address", func() {
 				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.1"}}},
 				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.2", AdvertisedAddress: "192.0.2.2"}}},
 			}
-			actual := ResolveAddresses(core.Log, lif, given)
+			actual := topology.ResolveAddresses(core.Log, lif, given)
 			Expect(actual).To(HaveLen(3))
 			Expect(actual).To(Equal(expected))
 		})

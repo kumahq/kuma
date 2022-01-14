@@ -15,6 +15,7 @@ type InstallControlPlaneArgs struct {
 	ControlPlane_image_tag                       string            `helm:"controlPlane.image.tag"`
 	ControlPlane_service_name                    string            `helm:"controlPlane.service.name"`
 	ControlPlane_tls_general_secret              string            `helm:"controlPlane.tls.general.secretName"`
+	ControlPlane_tls_general_ca_secret           string            `helm:"controlPlane.tls.general.caSecretName"`
 	ControlPlane_tls_general_caBundle            string            `helm:"controlPlane.tls.general.caBundle"`
 	ControlPlane_tls_apiServer_secret            string            `helm:"controlPlane.tls.apiServer.secretName"`
 	ControlPlane_tls_apiServer_clientCertsSecret string            `helm:"controlPlane.tls.apiServer.clientCertsSecretName"`

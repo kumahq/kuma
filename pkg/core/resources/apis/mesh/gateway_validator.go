@@ -14,7 +14,7 @@ func (g *GatewayResource) Validate() error {
 		g.Spec.GetSelectors(),
 		ValidateSelectorsOpts{
 			RequireAtLeastOneSelector: true,
-			ValidateSelectorOpts: ValidateSelectorOpts{
+			ValidateTagsOpts: ValidateTagsOpts{
 				RequireAtLeastOneTag: true,
 				RequireService:       true,
 			},
@@ -26,7 +26,7 @@ func (g *GatewayResource) Validate() error {
 	err.Add(ValidateSelector(
 		validators.RootedAt("tags"),
 		g.Spec.GetTags(),
-		ValidateSelectorOpts{
+		ValidateTagsOpts{
 			ExtraTagKeyValidators: []TagKeyValidatorFunc{
 				SelectorKeyNotInSet(
 					mesh_proto.ExternalServiceTag,
@@ -116,7 +116,7 @@ func validateGatewayConf(path validators.PathBuilder, conf *mesh_proto.Gateway_C
 		err.Add(ValidateSelector(
 			path.Index(i).Field("tags"),
 			l.GetTags(),
-			ValidateSelectorOpts{
+			ValidateTagsOpts{
 				ExtraTagKeyValidators: []TagKeyValidatorFunc{
 					SelectorKeyNotInSet(
 						mesh_proto.ExternalServiceTag,

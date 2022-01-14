@@ -2,6 +2,7 @@
   "total": 2,
   "items": [
     {
+      "type": "TrafficLog",
       "mesh": "default",
       "name": "web1-to-backend1",
       "creationTime": "0001-01-01T00:00:00Z",
@@ -17,17 +18,17 @@
       "destinations": [
         {
           "match": {
-            "service": "backend1",
-            "env": "dev"
+            "env": "dev",
+            "service": "backend1"
           }
         }
       ],
       "conf": {
         "backend": "file"
-      },
-      "type": "TrafficLog"
+      }
     },
     {
+      "type": "TrafficLog",
       "mesh": "default",
       "name": "web2-to-backend2",
       "creationTime": "0001-01-01T00:00:00Z",
@@ -43,15 +44,14 @@
       "destinations": [
         {
           "match": {
-            "service": "backend2",
-            "env": "dev"
+            "env": "dev",
+            "service": "backend2"
           }
         }
       ],
       "conf": {
         "backend": "logstash"
-      },
-      "type": "TrafficLog"
+      }
     }
   ],
   "next": null

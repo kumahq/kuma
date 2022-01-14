@@ -1,16 +1,16 @@
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: healthcheck-1
+type: HealthCheck
 conf:
   healthyThreshold: 1
   interval: 10s
   timeout: 2s
   unhealthyThreshold: 3
-creationTime: "0001-01-01T00:00:00Z"
 destinations:
 - match:
     service: backend
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: healthcheck-1
 sources:
 - match:
     service: web
-type: HealthCheck

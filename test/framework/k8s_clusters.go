@@ -28,10 +28,8 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 
 	clusters := map[string]*K8sCluster{}
 
-	for i, name := range clusterNames {
+	for _, name := range clusterNames {
 		clusters[name] = NewK8sCluster(t, name, verbose)
-		clusters[name].loPort = uint32(kumaCPAPIPortFwdBase + i*1000)
-		clusters[name].hiPort = uint32(kumaCPAPIPortFwdBase + (i+1)*1000 - 1)
 	}
 
 	return &K8sClusters{

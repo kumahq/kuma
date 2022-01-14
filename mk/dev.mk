@@ -281,4 +281,5 @@ dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 	@for prog in $(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES) ; do \
 		echo "PATH_add $(BUILD_ARTIFACTS_DIR)/$$prog" ; \
 	done >> .envrc
+	@echo 'export KUBEBUILDER_ASSETS=$${CI_TOOLS_DIR}' >> .envrc
 	@direnv allow

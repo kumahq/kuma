@@ -16,7 +16,7 @@ var _ = Describe("DataplaneToMeshMapper", func() {
 		mapper := DataplaneToMeshMapper(l, "ns", k8s.NewSimpleConverter())
 		requests := mapper(&mesh_k8s.Dataplane{
 			Mesh: "mesh-1",
-			Spec: &mesh_proto.Dataplane{
+			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "10.20.1.2",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -26,7 +26,7 @@ var _ = Describe("DataplaneToMeshMapper", func() {
 						},
 					},
 				},
-			},
+			}),
 		})
 		requestsStr := []string{}
 		for _, r := range requests {

@@ -13,3 +13,23 @@ data:
     {{ if .Values.controlPlane.config }}
     {{ .Values.controlPlane.config | nindent 4 }}
     {{ end }}
+
+{{- $kumaLabels := include "kuma.labels" . -}}
+{{- $releaseNamespace := .Release.Namespace}}
+{{- range $extraConfigMap := .Values.controlPlane.extraConfigMaps }}
+{{- if $extraConfigMap.values }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $extraConfigMap.name }}
+  namespace: {{ $releaseNamespace }}
+  labels:
+  {{- $kumaLabels | nindent 4 }}
+data:
+  {{- range $fileName, $fileContents := $extraConfigMap.values }}
+  {{- $fileName | nindent 2 }}: |
+  {{- $fileContents | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}

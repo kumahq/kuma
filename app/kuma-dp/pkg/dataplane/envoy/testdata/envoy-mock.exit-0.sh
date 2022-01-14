@@ -7,4 +7,4 @@ then
 fi
 
 # print arguments to verify in the test
-echo $@
+echo "$@"

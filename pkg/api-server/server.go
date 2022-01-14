@@ -122,7 +122,7 @@ func NewApiServer(
 	addInspectEndpoints(ws, matchedPolicyGetter)
 	container.Add(ws)
 
-	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId); err != nil {
+	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
 	configWs, err := configWs(cfg)

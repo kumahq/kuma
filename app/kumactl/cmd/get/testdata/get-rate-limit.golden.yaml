@@ -1,13 +1,13 @@
 creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: rate-limit-1
+type: RateLimit
 destinations:
 - match:
     env: dev
     service: backend1
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: rate-limit-1
 sources:
 - match:
     service: web1
     version: "1.0"
-type: RateLimit

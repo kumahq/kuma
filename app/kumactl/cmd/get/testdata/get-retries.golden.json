@@ -2,16 +2,16 @@
   "total": 2,
   "items": [
     {
+      "type": "Retry",
       "mesh": "default",
       "name": "web-to-backend",
-      "type": "Retry",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z"
     },
     {
+      "type": "Retry",
       "mesh": "default",
       "name": "backend-to-db",
-      "type": "Retry",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z"
     }

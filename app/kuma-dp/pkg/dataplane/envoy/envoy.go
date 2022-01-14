@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -21,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	pkg_log "github.com/kumahq/kuma/pkg/log"
+	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 var (
@@ -73,47 +72,12 @@ func (e *Envoy) NeedLeaderElection() bool {
 	return false
 }
 
-func getSelfPath() (string, error) {
-	ex, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Dir(ex), nil
-}
-
-func lookupBinaryPath(candidatePaths []string) (string, error) {
-	for _, candidatePath := range candidatePaths {
-		path, err := exec.LookPath(candidatePath)
-		if err == nil {
-			return path, nil
-		}
-	}
-
-	return "", errors.Errorf("could not find binary in any of the following paths: %v", candidatePaths)
-}
-
 func lookupEnvoyPath(configuredPath string) (string, error) {
-	selfPath, err := getSelfPath()
-	if err != nil {
-		return "", err
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	path, err := lookupBinaryPath([]string{
-		configuredPath,
-		selfPath + "/envoy",
-		cwd + "/envoy",
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
+	return files.LookupBinaryPath(
+		files.LookupInPath(configuredPath),
+		files.LookupInCurrentDirectory("envoy"),
+		files.LookupNextToCurrentExecutable("envoy"),
+	)
 }
 
 func (e *Envoy) Start(stop <-chan struct{}) error {

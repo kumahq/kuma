@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -e
 
 run() {
-    command=$@
+    command=$*
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-    echo '$' $command
+    echo '$' "$command"
     echo
     $command
     echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -68,11 +68,11 @@ workflow() {
     run kumactl inspect dataplanes -oyaml
     run kumactl inspect dataplanes -ojson
 
-    run test $(run kumactl inspect dataplanes | tail +4 | grep -v '<<<<<' | grep -v -e '^$' | wc -l) -eq 3
+    run test "$(run kumactl inspect dataplanes | tail +4 | grep -v '<<<<<' | grep -v -e '^$' -c) -eq 3"
 }
 
 # Killing the kubectl port-forward at the end of the script -- regardless of exit status
-trap "killall kubectl && rm $HOME/kubectl" EXIT
+trap 'killall kubectl && rm $HOME/kubectl' EXIT
 
 # Print version
 run kumactl version
@@ -84,13 +84,13 @@ run kumactl config view
 run kumactl config control-planes list
 
 # Install kubectl
-run curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/${GOOS:-linux}/${GOARCH:-amd64}/kubectl
+run curl -LO https://storage.googleapis.com/kubernetes-release/release/"$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"/bin/"${GOOS:-linux}"/"${GOARCH:-amd64}"/kubectl
 run chmod +x kubectl
 
-run export PATH=.:$PATH
+run export PATH=.:"$PATH"
 
 # Forward CP API server from k8s onto localhost
-run kubectl port-forward -n kuma-system $(kubectl get pods -n kuma-system -l app=kuma-control-plane -o=jsonpath='{.items[0].metadata.name}') 15681:5681 2>&1 >/dev/null &
+run kubectl port-forward -n kuma-system "$(kubectl get pods -n kuma-system -l app=kuma-control-plane -o=jsonpath='{.items[0].metadata.name}')" 15681:5681 >/dev/null 2>&1 &
 
 # Give port-forward 10 seconds to come alive -- else you won't be able to connect to the control plane
 run curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:15681
@@ -105,7 +105,7 @@ workflow
 run killall kubectl
 
 # Forward CP API server from k8s onto localhost
-run kubectl proxy 2>&1 >/dev/null &
+run kubectl proxy >/dev/null 2>&1 &
 
 # Give the proxy 10 seconds to come alive -- else you won't be able to connect to the control plane
 run curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:8001

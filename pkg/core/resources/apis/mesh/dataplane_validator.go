@@ -118,6 +118,9 @@ func validateAddress(path validators.PathBuilder, address string) validators.Val
 		err.AddViolationAt(path.Field("address"), "address can't be empty")
 		return err
 	}
+	if address == "0.0.0.0" || address == "::" {
+		err.AddViolationAt(path.Field("address"), "must not be 0.0.0.0 or ::")
+	}
 	if !govalidator.IsIP(address) && !govalidator.IsDNSName(address) {
 		err.AddViolationAt(path.Field("address"), "address has to be valid IP address or domain name")
 	}
@@ -150,13 +153,24 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 			}
 		}
 	}
-	if value, exist := inbound.Tags[mesh_proto.ProtocolTag]; exist {
-		if ParseProtocol(value) == ProtocolUnknown {
-			result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(SupportedProtocols.Strings()...)))
+
+	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
+		var result validators.ValidationError
+		if value, exist := selector[mesh_proto.ProtocolTag]; exist {
+			if ParseProtocol(value) == ProtocolUnknown {
+				result.AddViolationAt(
+					path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(SupportedProtocols.Strings()...)),
+				)
+			}
 		}
+		return result
 	}
-	result.Add(validateTags(inbound.Tags))
+	result.Add(ValidateTags(validators.RootedAt("tags"), inbound.Tags, ValidateTagsOpts{
+		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
+	}))
+
 	result.Add(validateServiceProbe(inbound.ServiceProbe))
+
 	return result
 }
 
@@ -192,13 +206,12 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 	if len(outbound.Tags) == 0 {
 		// nolint:staticcheck
 		if outbound.Service == "" {
-			result.AddViolation("kuma.io/service", "cannot be empty")
+			result.AddViolationAt(validators.RootedAt("tags"), `mandatory tag "kuma.io/service" is missing`)
 		}
 	} else {
-		if _, exist := outbound.Tags[mesh_proto.ServiceTag]; !exist {
-			result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
-		}
-		result.Add(validateTags(outbound.Tags))
+		result.Add(ValidateTags(validators.RootedAt("tags"), outbound.Tags, ValidateTagsOpts{
+			RequireService: true,
+		}))
 	}
 
 	return result
@@ -206,30 +219,20 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 
 func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validators.ValidationError {
 	var result validators.ValidationError
-	if _, exist := gateway.Tags[mesh_proto.ServiceTag]; !exist {
-		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
-	}
-	if protocol, exist := gateway.Tags[mesh_proto.ProtocolTag]; exist {
-		if protocol != ProtocolTCP {
-			result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), `other values than TCP are not allowed`)
-		}
-	}
-	result.Add(validateTags(gateway.Tags))
-	return result
-}
 
-func validateTags(tags map[string]string) validators.ValidationError {
-	var result validators.ValidationError
-	for name, value := range tags {
-		if value == "" {
-			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value cannot be empty`)
+	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
+		var result validators.ValidationError
+		if protocol, exist := selector[mesh_proto.ProtocolTag]; exist {
+			if protocol != ProtocolTCP {
+				result.AddViolationAt(path.Key(mesh_proto.ProtocolTag), `other values than TCP are not allowed`)
+			}
 		}
-		if !tagNameCharacterSet.MatchString(name) {
-			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores`)
-		}
-		if !tagValueCharacterSet.MatchString(value) {
-			result.AddViolationAt(validators.RootedAt("tags").Key(name), `tag value must consist of alphanumeric characters, dots, dashes and underscores`)
-		}
+		return result
 	}
+	result.Add(ValidateTags(validators.RootedAt("tags"), gateway.Tags, ValidateTagsOpts{
+		RequireService:      true,
+		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol}}),
+	)
+
 	return result
 }

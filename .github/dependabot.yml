@@ -6,14 +6,6 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
-  - package-ecosystem: "gomod"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "dependencies"
-      - "release-1.4"
-    target-branch: "release-1.4"
   - package-ecosystem: "docker"
     directory: "/tools/releases/dockerfiles"
     schedule:

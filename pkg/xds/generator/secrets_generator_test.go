@@ -40,6 +40,11 @@ var _ = Describe("SecretsGenerator", func() {
 			Expect(rs).To(BeNil())
 		},
 		Entry("Mesh has no mTLS configuration", testCase{
+			ctx: xds_context.Context{
+				Mesh: xds_context.MeshContext{
+					Resource: &core_mesh.MeshResource{},
+				},
+			},
 			proxy: &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
 				Dataplane: &core_mesh.DataplaneResource{
