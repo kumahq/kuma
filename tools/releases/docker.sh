@@ -7,7 +7,7 @@ source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
 [ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="docker.io"
 [ -z "$KUMA_DOCKER_REPO_ORG" ] && KUMA_DOCKER_REPO_ORG=${KUMA_DOCKER_REPO}/kumahq
 [ -z "$KUMA_COMPONENTS" ] && KUMA_COMPONENTS="kuma-cp kuma-dp kumactl kuma-init kuma-prometheus-sd"
-ENVOY_VERSION=1.18.4
+[ -z "$ENVOY_VERSION" ] && ENVOY_VERSION=1.20.1-dev-b16d390f
 
 function build() {
   for component in ${KUMA_COMPONENTS}; do
