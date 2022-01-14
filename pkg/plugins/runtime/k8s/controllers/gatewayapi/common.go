@@ -45,6 +45,7 @@ func serviceTagForGateway(name kube_types.NamespacedName) map[string]string {
 
 // reconcileLabelledObjectSet manages a set of owned kuma objects based on
 // labels with the owner key.
+// ownerMesh can be empty if the ownedSpec is nil.
 // ownedType tells us what type the owned object is.
 // ownedSpec should be set to nil if the object shouldn't exist.
 func reconcileLabelledObject(
@@ -52,6 +53,7 @@ func reconcileLabelledObject(
 	registry k8s_registry.TypeRegistry,
 	client kube_client.Client,
 	owner kube_types.NamespacedName,
+	ownerMesh string,
 	ownedType k8s_registry.ResourceType,
 	ownedSpec proto.Message,
 ) error {
@@ -90,6 +92,11 @@ func reconcileLabelledObject(
 		return nil
 	}
 
+	// We need a mesh when creating the object
+	if ownerMesh == "" {
+		return fmt.Errorf("could not reconcile object, owner mesh must not be empty")
+	}
+
 	if existing != nil {
 		existing.SetSpec(ownedSpec)
 
@@ -103,6 +110,8 @@ func reconcileLabelledObject(
 	if err != nil {
 		return errors.Wrapf(err, "could not get new %T from registry", ownedType)
 	}
+
+	owned.SetMesh(ownerMesh)
 
 	owned.SetObjectMeta(
 		&kube_meta.ObjectMeta{
