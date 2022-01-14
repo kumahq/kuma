@@ -6,4 +6,4 @@ then
   exit 0
 fi
 # print arguments to verify in the test
-echo $@
+echo "$@"

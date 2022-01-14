@@ -12,10 +12,9 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/test/runtime"
 	"github.com/kumahq/kuma/pkg/test/xds"
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -26,14 +25,14 @@ import (
 )
 
 type dummyCLACache struct {
-	outboundTargets model.EndpointMap
+	outboundTargets core_xds.EndpointMap
 }
 
-func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, version envoy_common.APIVersion) (proto.Message, error) {
+func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion, endpointMap core_xds.EndpointMap) (proto.Message, error) {
 	return endpoints.CreateClusterLoadAssignment(cluster.Service(), d.outboundTargets[cluster.Service()]), nil
 }
 
-var _ model.CLACache = &dummyCLACache{}
+var _ core_xds.CLACache = &dummyCLACache{}
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
 
@@ -52,8 +51,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 
 			// given
-			outboundTargets := model.EndpointMap{
-				"db": []model.Endpoint{
+			outboundTargets := core_xds.EndpointMap{
+				"db": []core_xds.Endpoint{
 					{
 						Target: "192.168.0.3",
 						Port:   5432,
@@ -61,7 +60,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						Weight: 1,
 					},
 				},
-				"elastic": []model.Endpoint{
+				"elastic": []core_xds.Endpoint{
 					{
 						Target: "192.168.0.4",
 						Port:   9200,
@@ -87,7 +86,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						Spec: &mesh_proto.Mesh{},
 					},
 				},
-				EnvoyAdminClient: &runtime.DummyEnvoyAdminClient{},
 			}
 
 			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
@@ -95,8 +93,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			dataplane := &mesh_proto.Dataplane{}
 			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
-			proxy := &model.Proxy{
-				Id: *model.BuildProxyId("", "demo.backend-01"),
+			proxy := &core_xds.Proxy{
+				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name:    "backend-01",
@@ -106,8 +104,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					Spec: dataplane,
 				},
 				APIVersion: envoy_common.APIV3,
-				Routing: model.Routing{
-					TrafficRoutes: model.RouteMap{
+				Routing: core_xds.Routing{
+					TrafficRoutes: core_xds.RouteMap{
 						mesh_proto.OutboundInterface{
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 54321,
@@ -131,8 +129,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 					OutboundTargets: outboundTargets,
 				},
-				Policies: model.MatchedPolicies{
-					HealthChecks: model.HealthCheckMap{
+				Policies: core_xds.MatchedPolicies{
+					HealthChecks: core_xds.HealthCheckMap{
 						"elastic": &core_mesh.HealthCheckResource{
 							Spec: &mesh_proto.HealthCheck{
 								Sources: []*mesh_proto.Selector{
@@ -151,7 +149,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						},
 					},
 				},
-				Metadata: &model.DataplaneMetadata{
+				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort: 9902,
 					Version: &mesh_proto.Version{
 						KumaDp: &mesh_proto.KumaDpVersion{

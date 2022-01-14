@@ -32,7 +32,7 @@ func (c *CircuitBreakerResource) Validate() error {
 func (c *CircuitBreakerResource) validateSources() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("sources"), c.Spec.Sources, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateSelectorOpts: ValidateSelectorOpts{
+		ValidateTagsOpts: ValidateTagsOpts{
 			RequireAtLeastOneTag: true,
 			RequireService:       true,
 		},

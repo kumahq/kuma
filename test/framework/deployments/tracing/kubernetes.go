@@ -7,12 +7,11 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/framework"
 )
 
 type k8SDeployment struct {
-	port uint32
+	jaegerApiTunnel *k8s.Tunnel
 }
 
 var _ Deployment = &k8SDeployment{}
@@ -22,7 +21,7 @@ func (t *k8SDeployment) ZipkinCollectorURL() string {
 }
 
 func (t *k8SDeployment) TracedServices() ([]string, error) {
-	return tracedServices(fmt.Sprintf("http://localhost:%d", t.port))
+	return tracedServices(fmt.Sprintf("http://%s", t.jaegerApiTunnel.Endpoint()))
 }
 
 func (t *k8SDeployment) Name() string {
@@ -67,13 +66,8 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		framework.DefaultRetries,
 		framework.DefaultTimeout)
 
-	port, err := test.FindFreePort("")
-	if err != nil {
-		return err
-	}
-	t.port = port
-
-	cluster.(*framework.K8sCluster).PortForwardPod(framework.DefaultTracingNamespace, pods[0].Name, port, 16686)
+	t.jaegerApiTunnel = k8s.NewTunnel(cluster.GetKubectlOptions(framework.DefaultTracingNamespace), k8s.ResourceTypePod, pods[0].Name, 0, 16686)
+	t.jaegerApiTunnel.ForwardPort(cluster.GetTesting())
 	return nil
 }
 

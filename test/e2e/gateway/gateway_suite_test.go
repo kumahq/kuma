@@ -11,6 +11,7 @@ import (
 )
 
 var _ = Describe("Test Gateway on Universal", gateway.GatewayOnUniversal)
+var _ = Describe("Test Gateway on Kubernetes", gateway.GatewayOnKubernetes)
 
 func TestE2EGateway(t *testing.T) {
 	if framework.IsK8sClustersStarted() {

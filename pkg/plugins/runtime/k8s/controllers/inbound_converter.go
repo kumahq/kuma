@@ -147,7 +147,7 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	tags[KubeNamespaceTag] = pod.Namespace
 	tags[KubeServiceTag] = svc.Name
 	tags[KubePortTag] = strconv.Itoa(int(svcPort.Port))
-	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTagFor(svc, svcPort)
+	tags[mesh_proto.ServiceTag] = util_k8s.ServiceTagFor(svc, &svcPort.Port)
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
 	}

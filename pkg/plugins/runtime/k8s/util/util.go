@@ -146,10 +146,10 @@ func MeshFor(obj kube_meta.Object) string {
 
 // ServiceTagFor returns the canonical service name for a Kubernetes service,
 // optionally with a specific port.
-func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
+func ServiceTagFor(svc *kube_core.Service, svcPort *int32) string {
 	port := ""
 	if svcPort != nil {
-		port = fmt.Sprintf("_%d", svcPort.Port)
+		port = fmt.Sprintf("_%d", *svcPort)
 	}
 	return fmt.Sprintf("%s_%s_svc%s", svc.Name, svc.Namespace, port)
 }

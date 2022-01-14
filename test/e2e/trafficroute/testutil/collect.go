@@ -3,11 +3,15 @@ package testutil
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
+	"path"
 	"strings"
 	"sync"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/server/types"
@@ -15,10 +19,15 @@ import (
 
 type CollectResponsesOpts struct {
 	NumberOfRequests int
+	URL              string
 	Method           string
 	Headers          map[string]string
 
-	Flags []string
+	Flags        []string
+	ShellEscaped func(string) string
+
+	namespace   string
+	application string
 }
 
 func DefaultCollectResponsesOpts() CollectResponsesOpts {
@@ -26,6 +35,7 @@ func DefaultCollectResponsesOpts() CollectResponsesOpts {
 		NumberOfRequests: 10,
 		Method:           "GET",
 		Headers:          map[string]string{},
+		ShellEscaped:     ShellEscape,
 		Flags: []string{
 			"--fail",
 		},
@@ -49,6 +59,19 @@ func WithMethod(method string) CollectResponsesOptsFn {
 func WithHeader(key, value string) CollectResponsesOptsFn {
 	return func(opts *CollectResponsesOpts) {
 		opts.Headers[key] = value
+	}
+}
+
+// WithPathPrefix injects prefix at the start of the target URL path.
+func WithPathPrefix(prefix string) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		u, err := url.Parse(opts.URL)
+		if err != nil {
+			panic(fmt.Sprintf("bad URL %q: %s", opts.URL, err))
+		}
+
+		u.Path = path.Join(prefix, u.Path)
+		opts.URL = u.String()
 	}
 }
 
@@ -97,34 +120,96 @@ func OutputFormat(format string) CollectResponsesOptsFn {
 		opts.Flags = append(opts.Flags,
 			"--silent",
 			"--output", os.DevNull,
-			"--write-out", ShellEscape(format),
+			"--write-out", opts.ShellEscaped(format),
 		)
 	}
 }
 
-func CollectResponse(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (types.EchoResponse, error) {
-	opts := DefaultCollectResponsesOpts()
-	for _, f := range fn {
-		f(&opts)
+// FromKubernetesPod executes the curl command from a pod belonging to
+// the specified Kubernetes deployment. The cluster must be a Kubernetes
+// cluster, and the deployment must have an "app" label that matches the
+// application parameter.
+//
+// Note that the caller of CollectResponse still needs to specify the
+// source container name within the Pod.
+func FromKubernetesPod(namespace string, application string) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.namespace = namespace
+		opts.application = application
+
+		// For universal clusters, the curl exec is done in the shell,
+		// so we need to quote arguments. For Kubernetes cluster, the
+		// exec used the API without the shell, so we must not quote
+		// anything.
+		opts.ShellEscaped = func(s string) string { return s }
 	}
-	cmd := []string{
-		"curl",
+}
+
+func collectOptions(requestURL string, options ...CollectResponsesOptsFn) CollectResponsesOpts {
+	opts := DefaultCollectResponsesOpts()
+	opts.URL = requestURL
+
+	for _, o := range options {
+		o(&opts)
+	}
+
+	return opts
+}
+
+func collectCommand(opts CollectResponsesOpts, arg0 string, args ...string) []string {
+	var cmd []string
+
+	cmd = append(cmd, arg0)
+
+	for key, value := range opts.Headers {
+		cmd = append(cmd, "--header", opts.ShellEscaped(fmt.Sprintf("%s: %s", key, value)))
+	}
+
+	cmd = append(cmd, opts.Flags...)
+	cmd = append(cmd, args...)
+
+	return cmd
+}
+
+func CollectResponse(
+	cluster framework.Cluster,
+	container string,
+	destination string,
+	fn ...CollectResponsesOptsFn,
+) (types.EchoResponse, error) {
+	opts := collectOptions(destination, fn...)
+	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
+		opts.ShellEscaped(opts.URL),
+	)
+
+	var pod string
+	if opts.namespace != "" && opts.application != "" {
+		pods, err := k8s.ListPodsE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(opts.namespace),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", opts.application),
+			},
+		)
+		if err != nil {
+			return types.EchoResponse{}, errors.Wrap(err, "failed to list pods")
+		}
+
+		pod = pods[0].Name
 	}
-	for key, value := range opts.Headers {
-		cmd = append(cmd, "--header", ShellEscape(fmt.Sprintf("%s: %s", key, value)))
-	}
-	cmd = append(cmd, opts.Flags...)
-	cmd = append(cmd, ShellEscape(destination))
-	stdout, _, err := cluster.ExecWithRetries("", "", source, cmd...)
+
+	stdout, _, err := cluster.ExecWithRetries(opts.namespace, pod, container, cmd...)
 	if err != nil {
 		return types.EchoResponse{}, err
 	}
+
 	response := &types.EchoResponse{}
 	if err := json.Unmarshal([]byte(stdout), response); err != nil {
-		return types.EchoResponse{}, err
+		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", stdout)
 	}
+
 	return *response, nil
 }
 
@@ -152,13 +237,8 @@ type FailureResponse struct {
 // Curl JSON output is returned so the caller can inspect the failure to
 // see whether it was what was expected.
 func CollectFailure(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (FailureResponse, error) {
-	opts := DefaultCollectResponsesOpts()
-	for _, f := range fn {
-		f(&opts)
-	}
-
-	cmd := []string{
-		"curl",
+	opts := collectOptions(destination, fn...)
+	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
 		"--max-time", "3",
 		"--silent",               // Suppress human-readable errors.
@@ -166,14 +246,26 @@ func CollectFailure(cluster framework.Cluster, source, destination string, fn ..
 		// Silence output so that we don't try to parse it. A future refactor could try to address this
 		// by using "%{stderr}%{json}", but that needs a bit more investigation.
 		"--output", os.DevNull,
+		opts.ShellEscaped(opts.URL),
+	)
+
+	var pod string
+	if opts.namespace != "" && opts.application != "" {
+		pods, err := k8s.ListPodsE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(opts.namespace),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", opts.application),
+			},
+		)
+		if err != nil {
+			return FailureResponse{}, errors.Wrap(err, "failed to list pods")
+		}
+
+		pod = pods[0].Name
 	}
 
-	for key, value := range opts.Headers {
-		cmd = append(cmd, "--header", ShellEscape(fmt.Sprintf("%s: %s", key, value)))
-	}
-
-	cmd = append(cmd, ShellEscape(destination))
-	stdout, _, err := cluster.Exec("", "", source, cmd...)
+	stdout, _, err := cluster.Exec(opts.namespace, pod, source, cmd...)
 
 	// 1. If we fail to decode the JSON status, return the JSON error,
 	// but prefer the original error if we have it.
@@ -202,10 +294,7 @@ func CollectFailure(cluster framework.Cluster, source, destination string, fn ..
 }
 
 func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) ([]types.EchoResponse, error) {
-	opts := DefaultCollectResponsesOpts()
-	for _, f := range fn {
-		f(&opts)
-	}
+	opts := collectOptions(destination, fn...)
 
 	mut := sync.Mutex{}
 	var responses []types.EchoResponse

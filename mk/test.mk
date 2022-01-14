@@ -10,10 +10,10 @@ BUILD_COVERAGE_DIR ?= $(BUILD_DIR)/coverage
 COVERAGE_PROFILE := $(BUILD_COVERAGE_DIR)/coverage.out
 COVERAGE_REPORT_HTML := $(BUILD_COVERAGE_DIR)/coverage.html
 
-# exports below are required for K8S unit tests
-export TEST_ASSET_KUBE_APISERVER=$(KUBE_APISERVER_PATH)
-export TEST_ASSET_ETCD=$(ETCD_PATH)
-export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
+# This environment variable sets where the kubebuilder envtest framework looks
+# for etcd and other tools that is consumes. The `dev/install/kubebuilder` make
+# target guaranteed to link these tools into $CI_TOOLS_DIR.
+export KUBEBUILDER_ASSETS=$(CI_TOOLS_DIR)
 
 .PHONY: test
 test: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
@@ -29,12 +29,12 @@ coverage: ${COVERAGE_PROFILE}
 
 .PHONY: test/kuma-cp
 test/kuma-cp: PKG_LIST=./app/kuma-cp/... ./pkg/config/app/kuma-cp/...
-test/kuma-cp: test/kuma ## Dev: Run `kuma-cp` tests only
+test/kuma-cp: test ## Dev: Run `kuma-cp` tests only
 
 .PHONY: test/kuma-dp
 test/kuma-dp: PKG_LIST=./app/kuma-dp/... ./pkg/config/app/kuma-dp/...
-test/kuma-dp: test/kuma ## Dev: Run `kuma-dp` tests only
+test/kuma-dp: test ## Dev: Run `kuma-dp` tests only
 
 .PHONY: test/kumactl
 test/kumactl: PKG_LIST=./app/kumactl/... ./pkg/config/app/kumactl/...
-test/kumactl: test/kuma ## Dev: Run `kumactl` tests only
+test/kumactl: test ## Dev: Run `kumactl` tests only

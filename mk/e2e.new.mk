@@ -1,6 +1,8 @@
 K8SCLUSTERS = kuma-1 kuma-2
 K8SCLUSTERS_START_TARGETS = $(addprefix test/e2e/k8s/start/cluster/, $(K8SCLUSTERS))
 K8SCLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/k8s/stop/cluster/, $(K8SCLUSTERS))
+K8SCLUSTERS_LOAD_IMAGES_TARGETS  = $(addprefix test/e2e/k8s/load/images/, $(K8SCLUSTERS))
+K8SCLUSTERS_WAIT_TARGETS  = $(addprefix test/e2e/k8s/wait/, $(K8SCLUSTERS))
 API_VERSION ?= v3
 # export `IPV6=true` to enable IPv6 testing
 
@@ -91,8 +93,14 @@ test/e2e/k8s/start/cluster/$1:
 	KIND_CONFIG=$(TOP)/test/kind/cluster$(KIND_CONFIG_IPV6)-$1.yaml \
 	KIND_CLUSTER_NAME=$1 \
 		$(MAKE) $(K8S_CLUSTER_TOOL)/start
-	KIND_CLUSTER_NAME=$1 \
-		$(MAKE) $(K8S_CLUSTER_TOOL)/load/images
+
+.PHONY: test/e2e/k8s/load/images/$1
+test/e2e/k8s/load/images/$1:
+	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/load/images
+
+.PHONY: test/e2e/k8s/wait/$1
+test/e2e/k8s/wait/$1:
+	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/wait
 
 .PHONY: test/e2e/k8s/stop/cluster/$1
 test/e2e/k8s/stop/cluster/$1:
@@ -108,6 +116,7 @@ test/e2e/list:
 
 .PHONY: test/e2e/k8s/start
 test/e2e/k8s/start: $(K8SCLUSTERS_START_TARGETS)
+	$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS) # execute after start targets
 
 .PHONY: test/e2e/k8s/stop
 test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
@@ -130,17 +139,35 @@ test/e2e/test:
 test/e2e/debug: build/kumactl images test/e2e/k8s/start
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
-	API_VERSION="$(API_VERSION)" \
+	$(ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
 		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
+	$(MAKE) test/e2e/k8s/stop
+
+# test/e2e/debug-fast is an experimental target tested with K3D=true.
+# test/e2e/debug-fast is an equivalent of test/e2e/debug, but with the goal to minimize time for test to start running.
+# Run only with -j and K3D=true
+.PHONY: test/e2e/debug-fast
+test/e2e/debug-fast:
+	$(MAKE) $(K8SCLUSTERS_START_TARGETS) & # start K8S clusters in the background since it takes the most time
+	$(MAKE) images
+	$(MAKE) build/kumactl
+	$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS) # K3D is able to load images before the cluster is ready. It retries if cluster is not able to handle images yet.
+	$(MAKE) $(K8SCLUSTERS_WAIT_TARGETS) # there is no easy way of waiting for processes in the background so just wait for K8S clusters
+	K8SCLUSTERS="$(K8SCLUSTERS)" \
+	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
+	$(ENV_VARS) \
+	GINKGO_EDITOR_INTEGRATION=true \
+		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
+	$(MAKE) test/e2e/k8s/stop
 
 # test/e2e/debug-universal is the same target as 'test/e2e/debug' but builds only 'kuma-universal' image
 # and doesn't start Kind clusters
 .PHONY: test/e2e/debug-universal
 test/e2e/debug-universal: build/kumactl images/test
-	K8SCLUSTERS="$(K8SCLUSTERS)" \
+	K8SCLUSTERS="" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
-	API_VERSION="$(API_VERSION)" \
+	$(ENV_VARS) \
 	GINKGO_EDITOR_INTEGRATION=true \
 		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
 

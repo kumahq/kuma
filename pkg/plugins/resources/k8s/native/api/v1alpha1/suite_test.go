@@ -43,7 +43,9 @@ func TestAPIs(t *testing.T) {
 var _ = BeforeSuite(test.Within(time.Minute, func() {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "..", "..", "..", "..", "..", test.CustomResourceDir),
+		},
 	}
 
 	err := SchemeBuilder.AddToScheme(scheme.Scheme)

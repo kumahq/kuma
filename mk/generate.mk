@@ -1,21 +1,6 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
 PROTO_DIRS := ./pkg/config ./api
 
-protoc_search_go_packages := \
-	github.com/golang/protobuf@$(GOLANG_PROTOBUF_VERSION) \
-	github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
-
-protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(GOPATH_DIR)/pkg/mod/$(go_package))
-
-# Protobuf-specifc configuration
-PROTOC_GO := protoc \
-	--proto_path=$(PROTOBUF_WKT_DIR)/include \
-	--proto_path=./api \
-	--proto_path=. \
-	$(protoc_search_go_paths) \
-	--go_opt=paths=source_relative \
-	--go_out=plugins=grpc,Msystem/v1alpha1/datasource.proto=github.com/kumahq/kuma/api/system/v1alpha1:.
-
 .PHONY: clean/proto
 clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.go' -delete
@@ -40,8 +25,8 @@ protoc/pkg/test/apis/sample/v1alpha1:
 
 .PHONY: protoc/plugins
 protoc/plugins:
-	$(PROTOC_GO) pkg/plugins/ca/provided/config/*.proto
-	$(PROTOC_GO) pkg/plugins/ca/builtin/config/*.proto
+	$(PROTOC_GO) --proto_path=./api pkg/plugins/ca/provided/config/*.proto
+	$(PROTOC_GO) --proto_path=./api pkg/plugins/ca/builtin/config/*.proto
 
 KUMA_GUI_GIT=https://github.com/kumahq/kuma-gui.git
 KUMA_GUI_VERSION=master
@@ -70,5 +55,4 @@ generate/kubernetes:
 	$(MAKE) -C pkg/plugins/resources/k8s/native generate
 
 .PHONY: generate/api
-generate/api:
-	$(MAKE) -C api generate
+generate/api: protoc/mesh protoc/mesh/v1alpha1 protoc/observability/v1 protoc/system/v1alpha1 ## Process Kuma API .proto definitions

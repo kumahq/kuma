@@ -110,7 +110,7 @@ func (a *authCallbacks) credential(streamID core_xds.StreamID) (Credential, erro
 	if !exists {
 		return "", errors.Errorf("there is no context for stream ID %d", streamID)
 	}
-	credential, err := extractCredential(ctx)
+	credential, err := ExtractCredential(ctx)
 	if err != nil {
 		return "", errors.Wrap(err, "could not extract credential from DiscoveryRequest")
 	}
@@ -139,8 +139,7 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 			return errors.Errorf("unsupported proxy type %q", md.GetProxyType())
 		}
 
-		backoff, _ := retry.NewConstant(a.dpNotFoundRetry.Backoff)
-		backoff = retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), backoff)
+		backoff := retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff))
 		err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 			err := a.resManager.Get(ctx, resource, core_store.GetBy(proxyId.ToResourceKey()))
 			if core_store.IsResourceNotFound(err) {
@@ -159,7 +158,7 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 		"authentication failed")
 }
 
-func extractCredential(ctx context.Context) (Credential, error) {
+func ExtractCredential(ctx context.Context) (Credential, error) {
 	metadata, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return "", errors.Errorf("request has no metadata")

@@ -1,15 +1,15 @@
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: traffic-log-1
+type: TrafficLog
 conf:
   backend: file
-creationTime: "0001-01-01T00:00:00Z"
 destinations:
 - match:
     env: dev
     service: backend1
-mesh: default
-modificationTime: "0001-01-01T00:00:00Z"
-name: traffic-log-1
 sources:
 - match:
     service: web1
     version: "1.0"
-type: TrafficLog

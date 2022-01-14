@@ -145,9 +145,7 @@ func (a *authn) authenticate(credential xds_auth.Credential, nodeID string) erro
 	// Retry on DP not found because HDS is initiated in the parallel with XDS.
 	// It is very likely that Dataplane is not yet created.
 	// We could just close the stream with an error and Envoy would retry, but to have better UX (not printing confusing logs) it's better to retry
-	backoff, _ := retry.NewConstant(a.dpNotFoundRetry.Backoff)
-	backoff = retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), backoff)
-	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+	err = retry.Do(context.Background(), retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), retry.NewConstant(a.dpNotFoundRetry.Backoff)), func(ctx context.Context) error {
 		err := a.resManager.Get(ctx, dataplane, core_store.GetBy(proxyId.ToResourceKey()))
 		if core_store.IsResourceNotFound(err) {
 			return retry.RetryableError(errors.New("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))

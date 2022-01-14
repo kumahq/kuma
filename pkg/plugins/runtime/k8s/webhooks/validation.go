@@ -51,6 +51,12 @@ func (h *validatingHandler) InjectDecoder(d *admission.Decoder) error {
 func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
 	resType := core_model.ResourceType(req.Kind.Kind)
 
+	_, err := h.coreRegistry.DescriptorFor(resType)
+	if err != nil {
+		// we only care about types in the registry for this handler
+		return admission.Allowed("")
+	}
+
 	if resp := h.isOperationAllowed(resType, req.UserInfo, req.Operation); !resp.Allowed {
 		return resp
 	}

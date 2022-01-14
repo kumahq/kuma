@@ -50,7 +50,7 @@ var _ = Describe("selector tag keys", func() {
 	DescribeTable("should validate",
 		func(given testCase) {
 			err := ValidateSelector(validators.RootedAt("given"), given.tags,
-				ValidateSelectorOpts{
+				ValidateTagsOpts{
 					ExtraTagKeyValidators: []TagKeyValidatorFunc{given.validator},
 				},
 			)

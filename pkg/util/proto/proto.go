@@ -3,6 +3,7 @@ package proto
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
@@ -36,9 +37,26 @@ func ToJSON(pb proto.Message) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func MustMarshalJSON(in proto.Message) []byte {
+	content, err := ToJSON(in)
+	if err != nil {
+		panic(fmt.Sprintf("failed to marshal %T: %s", in, err))
+	}
+
+	return content
+}
+
 func FromJSON(content []byte, out proto.Message) error {
 	unmarshaler := &jsonpb.Unmarshaler{AllowUnknownFields: true}
 	return unmarshaler.Unmarshal(bytes.NewReader(content), out)
+}
+
+func MustUnmarshalJSON(content []byte, out proto.Message) proto.Message {
+	if err := FromJSON(content, out); err != nil {
+		panic(fmt.Sprintf("failed to unmarshal %T: %s", out, err))
+	}
+
+	return out
 }
 
 func ToMap(pb proto.Message) (map[string]interface{}, error) {
@@ -95,4 +113,8 @@ func MustToStruct(message proto.Message) *structpb.Struct {
 		panic(err)
 	}
 	return str
+}
+
+func IsEmpty(message proto.Message) bool {
+	return proto.Size(message) == 0
 }
