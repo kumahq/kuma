@@ -22,6 +22,7 @@ message TrafficTrace {
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "traffic-trace";
+  option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of selectors to match dataplanes.
   repeated Selector selectors = 1 [ (doc.required) = true ];

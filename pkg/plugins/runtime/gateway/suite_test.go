@@ -136,7 +136,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		Mesh:         meshCtx,
 	}
 
-	proxy, err := b.Build(key, &ctx)
+	proxy, err := b.Build(key, meshCtx)
 	Expect(err).To(Succeed())
 
 	return &ctx, proxy

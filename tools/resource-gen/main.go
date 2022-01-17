@@ -308,6 +308,7 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		WsPath: "{{.WsPath}}",
 		KumactlArg: "{{.KumactlSingular}}",
 		KumactlListArg: "{{.KumactlPlural}}",
+		AllowToInspect: {{.AllowToInspect}},
 	}
 
 {{- if not .SkipRegistration}}
@@ -363,6 +364,7 @@ type ResourceInfo struct {
 	WsAdminOnly            bool
 	WsPath                 string
 	KdsDirection           string
+	AllowToInspect         bool
 }
 
 func ToResourceInfo(m protoreflect.MessageType) ResourceInfo {
@@ -378,6 +380,7 @@ func ToResourceInfo(m protoreflect.MessageType) ResourceInfo {
 		SkipValidation:         r.SkipValidation,
 		Global:                 r.Global,
 		ScopeNamespace:         r.ScopeNamespace,
+		AllowToInspect:         r.AllowToInspect,
 	}
 	if r.Ws != nil {
 		pluralResourceName := r.Ws.Plural

@@ -10,22 +10,16 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
-
-type fakeMetadataTracker struct {
-}
-
-func (f fakeMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.DataplaneMetadata {
-	return nil
-}
 
 type fakeDataSourceLoader struct {
 }
@@ -38,32 +32,17 @@ func getMatchedPolicies(cfg *kuma_cp.Config, meshContext xds_context.MeshContext
 	proxyBuilder := sync.DefaultDataplaneProxyBuilder(
 		&fakeDataSourceLoader{},
 		*cfg,
-		&fakeMetadataTracker{},
+		callbacks.NewDataplaneMetadataTracker(),
 		envoy.APIV3)
-	if proxy, err := proxyBuilder.Build(dataplaneKey, &xds_context.Context{
-		Mesh: meshContext,
-	}); err != nil {
+	if proxy, err := proxyBuilder.Build(dataplaneKey, meshContext); err != nil {
 		return nil, err
 	} else {
 		return &proxy.Policies, nil
 	}
 }
 
-var policies = map[core_model.ResourceType]bool{
-	core_mesh.TrafficPermissionType: true,
-	core_mesh.FaultInjectionType:    true,
-	core_mesh.RateLimitType:         true,
-	core_mesh.TrafficLogType:        true,
-	core_mesh.HealthCheckType:       true,
-	core_mesh.CircuitBreakerType:    true,
-	core_mesh.RetryType:             true,
-	core_mesh.TimeoutType:           true,
-	core_mesh.TrafficTraceType:      true,
-}
-
 func addInspectEndpoints(
 	ws *restful.WebService,
-	defs []core_model.ResourceTypeDescriptor,
 	cfg *kuma_cp.Config,
 	builder xds_context.MeshContextBuilder,
 ) {
@@ -75,12 +54,9 @@ func addInspectEndpoints(
 			Returns(200, "OK", nil),
 	)
 
-	for _, def := range defs {
-		if !policies[def.Name] {
-			continue
-		}
+	for _, desc := range registry.Global().ObjectDescriptors(core_model.AllowedToInspect()) {
 		ws.Route(
-			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", def.WsPath)).To(inspectPolicies(def.Name, builder, cfg)).
+			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", desc.WsPath)).To(inspectPolicies(desc.Name, builder, cfg)).
 				Doc("inspect policies").
 				Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 				Param(ws.PathParameter("name", "resource name").DataType("string")).

@@ -536,7 +536,7 @@ var _ = Describe("Inspect WS", func() {
 		}),
 	)
 
-	Describe("should change response if state changed", func() {
+	It("should change response if state changed", func() {
 		// setup
 		resourceStore := memory.NewStore()
 		metrics, err := metrics.NewMetrics("Standalone")
