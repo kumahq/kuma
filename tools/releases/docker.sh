@@ -45,6 +45,8 @@ function usage() {
 }
 
 function main() {
+  KUMA_VERSION=$($(dirname -- "${BASH_SOURCE[0]}")/version.sh)
+
   while [[ $# -gt 0 ]]; do
     flag=$1
     case $flag in
@@ -57,10 +59,6 @@ function main() {
     --push)
       op="push"
       ;;
-    --version)
-      KUMA_VERSION=$2
-      shift
-      ;;
     *)
       usage
       break
@@ -71,7 +69,6 @@ function main() {
 
   [ -z "$DOCKER_USERNAME" ] && msg_err "\$DOCKER_USERNAME required"
   [ -z "$DOCKER_API_KEY" ] && msg_err "\$DOCKER_API_KEY required"
-  [ -z "$KUMA_VERSION" ] && msg_err "Error: --version required"
 
   case $op in
   build)

@@ -74,7 +74,7 @@ function package() {
       msg ">>> Packaging Kuma for $distro ($system-$arch)..."
       msg
 
-      make GOOS="$system" GOARCH="$arch" BUILD_INFO_GIT_TAG="$KUMA_VERSION" BUILD_INFO_GIT_COMMIT="$KUMA_COMMIT" build
+      make GOOS="$system" GOARCH="$arch" build
       create_tarball "$system" "$arch" "$distro" "$envoy_distro"
 
       msg
@@ -114,6 +114,8 @@ function usage() {
 }
 
 function main() {
+  KUMA_VERSION=$($(dirname -- "${BASH_SOURCE[0]}")/version.sh)
+
   while [[ $# -gt 0 ]]; do
     flag=$1
     case $flag in
@@ -126,14 +128,6 @@ function main() {
     --release)
       op="release"
       ;;
-    --version)
-      KUMA_VERSION=$2
-      shift
-      ;;
-    --sha)
-      KUMA_COMMIT=$2
-      shift
-      ;;
     *)
       usage
       break
@@ -144,7 +138,6 @@ function main() {
 
   [ -z "$PULP_USERNAME" ] && msg_err "PULP_USERNAME required"
   [ -z "$PULP_PASSWORD" ] && msg_err "PULP_PASSWORD required"
-  [ -z "$KUMA_VERSION" ] && msg_err "Error: --version required"
 
   case $op in
   package)
