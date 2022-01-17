@@ -1,7 +1,6 @@
 package xds
 
 import (
-	"context"
 	"fmt"
 	"sort"
 
@@ -28,10 +27,6 @@ type MatchedPolicies struct {
 
 	// Dataplane -> Policy
 	TrafficTrace *core_mesh.TrafficTraceResource
-}
-
-type MatchedPoliciesGetter interface {
-	Get(ctx context.Context, dataplaneKey core_model.ResourceKey) (*MatchedPolicies, error)
 }
 
 type AttachmentType int64

@@ -136,6 +136,7 @@ var _ = Describe("Inspect WS", func() {
 			apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
 
 			stop := make(chan struct{})
+			defer close(stop)
 			go func() {
 				defer GinkgoRecover()
 				err := apiServer.Start(stop)
@@ -534,4 +535,87 @@ var _ = Describe("Inspect WS", func() {
 			},
 		}),
 	)
+
+	Describe("should change response if state changed", func() {
+		// setup
+		resourceStore := memory.NewStore()
+		metrics, err := metrics.NewMetrics("Standalone")
+		Expect(err).ToNot(HaveOccurred())
+		rm := manager.NewResourceManager(resourceStore)
+		apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
+
+		stop := make(chan struct{})
+		defer close(stop)
+		go func() {
+			defer GinkgoRecover()
+			err := apiServer.Start(stop)
+			Expect(err).ToNot(HaveOccurred())
+		}()
+
+		// when init the state
+		// TrafficPermission that selects 2 DPPs
+		initState := []core_model.Resource{
+			newMesh("default"),
+			&core_mesh.TrafficPermissionResource{
+				Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
+				Spec: &mesh_proto.TrafficPermission{
+					Sources: anyService(),
+					Destinations: selectors{
+						serviceSelector("backend", "http"),
+						serviceSelector("redis", "http"),
+					},
+				},
+			},
+			newDataplane().
+				meta("backend-1", "default").
+				inbound("backend", "192.168.0.1", 80, 81).
+				outbound("redis", "192.168.0.2", 8080).
+				outbound("gateway", "192.168.0.3", 8080).
+				build(),
+			newDataplane().
+				meta("redis-1", "default").
+				inbound("redis", "192.168.0.1", 80, 81).
+				outbound("backend", "192.168.0.2", 8080).
+				outbound("gateway", "192.168.0.3", 8080).
+				build(),
+		}
+		for _, resource := range initState {
+			err = rm.Create(context.Background(), resource,
+				store.CreateBy(core_model.MetaToResourceKey(resource.GetMeta())))
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		// then
+		var resp *http.Response
+		Eventually(func() error {
+			r, err := http.Get((&url.URL{
+				Scheme: "http",
+				Host:   apiServer.Address(),
+				Path:   "/meshes/default/traffic-permissions/tp-1/dataplanes",
+			}).String())
+			resp = r
+			return err
+		}, "3s").ShouldNot(HaveOccurred())
+		bytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "inspect_changed_state_before.json")))
+
+		// when change the state
+		err = rm.Delete(context.Background(), core_mesh.NewDataplaneResource(), store.DeleteByKey("backend-1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Eventually(func() error {
+			r, err := http.Get((&url.URL{
+				Scheme: "http",
+				Host:   apiServer.Address(),
+				Path:   "/meshes/default/traffic-permissions/tp-1/dataplanes",
+			}).String())
+			resp = r
+			return err
+		}, "3s").ShouldNot(HaveOccurred())
+		bytes, err = io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "inspect_changed_state_after.json")))
+	})
 })

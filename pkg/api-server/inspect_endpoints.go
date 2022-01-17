@@ -3,42 +3,22 @@ package api_server
 import (
 	"context"
 	"fmt"
-	"net"
 	"sort"
 
 	"github.com/emicklei/go-restful"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns/vips"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/server"
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
-
-type simpleMatchedPolicyGetter struct {
-	cfg        *kuma_cp.Config
-	resManager core_manager.ResourceManager
-	cfgManager config_manager.ConfigManager
-}
-
-func NewSimpleMatchedPolicyGetter(cfg *kuma_cp.Config, resManager core_manager.ResourceManager, cfgManager config_manager.ConfigManager) core_xds.MatchedPoliciesGetter {
-	return &simpleMatchedPolicyGetter{
-		cfg:        cfg,
-		resManager: resManager,
-		cfgManager: cfgManager,
-	}
-}
 
 type fakeMetadataTracker struct {
 }
@@ -47,36 +27,26 @@ func (f fakeMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.Da
 	return nil
 }
 
-func (s *simpleMatchedPolicyGetter) Get(ctx context.Context, dataplaneKey core_model.ResourceKey) (*core_xds.MatchedPolicies, error) {
-	dataplane := core_mesh.NewDataplaneResource()
-	if err := s.resManager.Get(ctx, dataplane, store.GetBy(dataplaneKey)); err != nil {
-		return nil, err
-	}
+type fakeDataSourceLoader struct {
+}
 
-	meshContextBuilder := xds_context.NewMeshContextBuilder(
-		s.resManager,
-		server.MeshResourceTypes(server.HashMeshExcludedResources),
-		net.LookupIP,
-		s.cfg.Multizone.Zone.Name,
-		vips.NewPersistence(s.resManager, s.cfgManager),
-		s.cfg.DNSServer.Domain,
-	)
+func (f fakeDataSourceLoader) Load(ctx context.Context, mesh string, source *system_proto.DataSource) ([]byte, error) {
+	return []byte("secret"), nil
+}
 
-	meshContext, err := meshContextBuilder.Build(ctx, dataplaneKey.Mesh)
-	if err != nil {
-		return nil, err
-	}
-
-	// todo(lobkovilya): share DataplaneProxyBuilder with xDS code (instead of creating a new one)
-	proxyBuilder := sync.DefaultDataplaneProxyBuilder(datasource.NewDataSourceLoader(s.resManager),
-		*s.cfg, &fakeMetadataTracker{}, envoy.APIV3)
-	proxy, err := proxyBuilder.Build(core_model.MetaToResourceKey(dataplane.GetMeta()), &xds_context.Context{
+func getMatchedPolicies(cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey) (*core_xds.MatchedPolicies, error) {
+	proxyBuilder := sync.DefaultDataplaneProxyBuilder(
+		&fakeDataSourceLoader{},
+		*cfg,
+		&fakeMetadataTracker{},
+		envoy.APIV3)
+	if proxy, err := proxyBuilder.Build(dataplaneKey, &xds_context.Context{
 		Mesh: meshContext,
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
+	} else {
+		return &proxy.Policies, nil
 	}
-	return &proxy.Policies, nil
 }
 
 var policies = map[core_model.ResourceType]bool{
@@ -94,11 +64,11 @@ var policies = map[core_model.ResourceType]bool{
 func addInspectEndpoints(
 	ws *restful.WebService,
 	defs []core_model.ResourceTypeDescriptor,
-	resManager core_manager.ResourceManager,
-	mpg core_xds.MatchedPoliciesGetter,
+	cfg *kuma_cp.Config,
+	builder xds_context.MeshContextBuilder,
 ) {
 	ws.Route(
-		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(mpg)).
+		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(cfg, builder)).
 			Doc("inspect dataplane matched policies").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
@@ -110,7 +80,7 @@ func addInspectEndpoints(
 			continue
 		}
 		ws.Route(
-			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", def.WsPath)).To(inspectPolicies(def.Name, mpg, resManager)).
+			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", def.WsPath)).To(inspectPolicies(def.Name, builder, cfg)).
 				Doc("inspect policies").
 				Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 				Param(ws.PathParameter("name", "resource name").DataType("string")).
@@ -119,12 +89,18 @@ func addInspectEndpoints(
 	}
 }
 
-func inspectDataplane(mpg core_xds.MatchedPoliciesGetter) restful.RouteFunction {
+func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
 
-		matchedPolicies, err := mpg.Get(context.Background(), core_model.ResourceKey{Mesh: meshName, Name: dataplaneName})
+		meshContext, err := builder.Build(context.Background(), meshName)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not build MeshContext")
+			return
+		}
+
+		matchedPolicies, err := getMatchedPolicies(cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName})
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
 			return
@@ -141,24 +117,24 @@ func inspectDataplane(mpg core_xds.MatchedPoliciesGetter) restful.RouteFunction 
 
 func inspectPolicies(
 	resType core_model.ResourceType,
-	mpg core_xds.MatchedPoliciesGetter,
-	rm core_manager.ResourceManager,
+	builder xds_context.MeshContextBuilder,
+	cfg *kuma_cp.Config,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		meshName := request.PathParameter("mesh")
 		policyName := request.PathParameter("name")
 
-		dataplanes := &core_mesh.DataplaneResourceList{}
-		if err := rm.List(context.Background(), dataplanes, store.ListByMesh(meshName)); err != nil {
+		meshContext, err := builder.Build(context.Background(), meshName)
+		if err != nil {
 			rest_errors.HandleError(response, err, "Could not list Dataplanes")
 			return
 		}
 
 		result := &api_server_types.PolicyInspectEntryList{}
 
-		for _, dp := range dataplanes.Items {
+		for _, dp := range meshContext.Resources.Dataplanes().Items {
 			dpKey := core_model.MetaToResourceKey(dp.GetMeta())
-			matchedPolicies, err := mpg.Get(context.Background(), dpKey)
+			matchedPolicies, err := getMatchedPolicies(cfg, meshContext, dpKey)
 			if err != nil {
 				rest_errors.HandleError(response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return

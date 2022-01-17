@@ -32,13 +32,15 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/server"
 )
 
 var (
@@ -78,7 +80,7 @@ func init() {
 
 func NewApiServer(
 	resManager manager.ResourceManager,
-	matchedPolicyGetter xds.MatchedPoliciesGetter,
+	meshContextBuilder xds_context.MeshContextBuilder,
 	wsManager customization.APIInstaller,
 	defs []model.ResourceTypeDescriptor,
 	cfg *kuma_cp.Config,
@@ -119,7 +121,7 @@ func NewApiServer(
 		Produces(restful.MIME_JSON)
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess)
-	addInspectEndpoints(ws, defs, resManager, matchedPolicyGetter)
+	addInspectEndpoints(ws, defs, cfg, meshContextBuilder)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI); err != nil {
@@ -356,7 +358,14 @@ func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
 	apiServer, err := NewApiServer(
 		rt.ResourceManager(),
-		NewSimpleMatchedPolicyGetter(&cfg, rt.ResourceManager(), rt.ConfigManager()),
+		xds_context.NewMeshContextBuilder(
+			rt.ResourceManager(),
+			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			net.LookupIP,
+			cfg.Multizone.Zone.Name,
+			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
+			cfg.DNSServer.Domain,
+		),
 		rt.APIInstaller(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
