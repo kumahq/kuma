@@ -2,21 +2,12 @@ BUILD_INFO_GIT_TAG ?= $(shell git describe --tags 2>/dev/null || echo unknown)
 BUILD_INFO_GIT_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 BUILD_INFO_BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" || echo unknown)
 
-# Kuma version is built as follows:
-# 1) If a git tag is present on the current commit, then the version is a git tag
-# 2) If the branch starts with "release" (like "release-1.3"), then the version is $(last git tag)-$(short_git_hash) (for example: 1.4.1-450174242)
-# 3) If the branch does not start with "release", then the version is "dev-$(short_git_hash)" (for example: dev-450174242)
-LAST_GIT_TAG ?= $(shell git describe --abbrev=0 --tags)
-CURRENT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
-SNAPSHOT_PREFIX = $(shell case "$(CURRENT_BRANCH)" in (release*) echo "$(LAST_GIT_TAG)";; (*) echo "dev"; esac)
-BUILD_INFO_VERSION ?= $(shell if git describe --exact-match --tags > /dev/null 2>&1; then echo "$(LAST_GIT_TAG)"; else echo "$(SNAPSHOT_PREFIX)-$$(git rev-parse --short HEAD)" ; fi)
-
 .PHONY: build/version
 build/version:
-	@echo "$(BUILD_INFO_VERSION)"
+	@echo "$(shell $(TOOLS_DIR)/releases/version.sh)"
 
 build_info_fields := \
-	version=$(BUILD_INFO_VERSION) \
+	version=$(shell $(TOOLS_DIR)/releases/version.sh) \
 	gitTag=$(BUILD_INFO_GIT_TAG) \
 	gitCommit=$(BUILD_INFO_GIT_COMMIT) \
 	buildDate=$(BUILD_INFO_BUILD_DATE)
