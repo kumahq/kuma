@@ -1175,34 +1175,9 @@ workflows:
       - release:
           <<: *master_workflow_filters
           requires:
+            - test
             - test/e2e
-
-  kuma-release:
-    jobs:
-    - go_cache: *release_workflow_filters
-    - check:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
-    - build:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
-    - images-kumactl:
-        <<: *release_workflow_filters
-        requires:
-        - build
-    - test:
-        <<: *release_workflow_filters
-        requires:
-          - go_cache
-        target: test
-    - release:
-        <<: *release_workflow_filters
-        requires:
-        - check
-        - test
-    - helm-release:
-        <<: *helm_release_workflow_filters
-        requires:
-        - release
+      - helm-release:
+          <<: *helm_release_workflow_filters
+          requires:
+          - release
