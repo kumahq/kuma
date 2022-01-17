@@ -30,13 +30,14 @@ import (
 type RootArgs struct {
 	ConfigFile string
 	Mesh       string
+	ApiTimeout time.Duration
 }
 
 type RootRuntime struct {
 	Config                       config_proto.Configuration
 	Now                          func() time.Time
 	AuthnPlugins                 map[string]plugins.AuthnPlugin
-	NewBaseAPIServerClient       func(*config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error)
+	NewBaseAPIServerClient       func(*config_proto.ControlPlaneCoordinates_ApiServer, time.Duration) (util_http.Client, error)
 	NewResourceStore             func(util_http.Client) core_store.ResourceStore
 	NewDataplaneOverviewClient   func(util_http.Client) kumactl_resources.DataplaneOverviewClient
 	NewZoneIngressOverviewClient func(util_http.Client) kumactl_resources.ZoneIngressOverviewClient
@@ -155,7 +156,7 @@ func (rc *RootContext) BaseAPIServerClient() (util_http.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client, err := rc.Runtime.NewBaseAPIServerClient(controlPlane.Coordinates.ApiServer)
+	client, err := rc.Runtime.NewBaseAPIServerClient(controlPlane.Coordinates.ApiServer, rc.Args.ApiTimeout)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create a client for Control Plane %q", controlPlane.Name)
 	}

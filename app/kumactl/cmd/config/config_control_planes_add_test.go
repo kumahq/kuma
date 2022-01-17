@@ -18,7 +18,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	"github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/util/test"
 	"github.com/kumahq/kuma/pkg/version"
@@ -118,22 +117,18 @@ var _ = Describe("kumactl config control-planes add", func() {
 
 		It("should fail when CP timeouts", func() {
 			// setup
-			currentTimeout := config.DefaultApiServerTimeout
-			config.DefaultApiServerTimeout = 10 * time.Millisecond
-			defer func() {
-				config.DefaultApiServerTimeout = currentTimeout
-			}()
-			timeout := config.DefaultApiServerTimeout * 5 // so we are sure we exceed the timeout
 			server, port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
-				time.Sleep(timeout)
+				time.Sleep(time.Millisecond * 20)
 			})
 			defer server.Close()
 
 			// given
 			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
+				"--api-timeout", "10ms",
 				"config", "control-planes", "add",
 				"--name", "example",
-				"--address", fmt.Sprintf("http://localhost:%d", port)})
+				"--address", fmt.Sprintf("http://localhost:%d", port),
+			})
 			// when
 			err := rootCmd.Execute()
 
