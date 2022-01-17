@@ -162,8 +162,10 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.HealthCheck_Conf{
-			Interval: util_proto.Duration(time.Second * 5),
-			Timeout:  util_proto.Duration(time.Second * 7),
+			Interval:           util_proto.Duration(time.Second * 5),
+			Timeout:            util_proto.Duration(time.Second * 7),
+			HealthyThreshold:   9,
+			UnhealthyThreshold: 11,
 		},
 	}
 	TrafficLog = &mesh_proto.TrafficLog{
