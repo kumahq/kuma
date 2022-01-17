@@ -89,7 +89,9 @@ func attachedRoutesForListeners(
 	client kube_client.Client,
 ) (AttachedRoutesForListeners, error) {
 	var routes gatewayapi.HTTPRouteList
-	if err := client.List(ctx, &routes); err != nil {
+	if err := client.List(ctx, &routes, kube_client.MatchingFields{
+		gatewayIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
+	}); err != nil {
 		return nil, errors.Wrap(err, "unexpected error listing HTTPRoutes")
 	}
 
@@ -97,10 +99,6 @@ func attachedRoutesForListeners(
 
 	for _, route := range routes.Items {
 		for _, parentRef := range route.Spec.ParentRefs {
-			if !common.ParentRefMatchesGateway(route.Namespace, parentRef, gateway) {
-				continue
-			}
-
 			sectionName := everyListener
 			if parentRef.SectionName != nil {
 				sectionName = *parentRef.SectionName
