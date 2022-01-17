@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -60,7 +61,7 @@ func (d *collector) cleanup() error {
 		if di.Spec.IsOnline() {
 			continue
 		}
-		if s, _ := di.Spec.GetLatestSubscription(); s != nil {
+		if s := di.Spec.GetLastSubscription().(*mesh_proto.DiscoverySubscription); s != nil {
 			if err := s.GetDisconnectTime().CheckValid(); err != nil {
 				gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime())
 				continue

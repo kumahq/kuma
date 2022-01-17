@@ -28,29 +28,9 @@ func (x *ZoneInsight) GetSubscription(id string) (int, *KDSSubscription) {
 	return -1, nil
 }
 
-// todo(lobkovilya): delete GetLatestSubscription, use GetLastSubscription instead
-func (x *ZoneInsight) GetLatestSubscription() (*KDSSubscription, *time.Time) {
-	if len(x.GetSubscriptions()) == 0 {
-		return nil, nil
-	}
-	var idx = 0
-	var latest *time.Time
-	for i, s := range x.GetSubscriptions() {
-		if err := s.ConnectTime.CheckValid(); err != nil {
-			continue
-		}
-		t := s.ConnectTime.AsTime()
-		if latest == nil || latest.Before(t) {
-			idx = i
-			latest = &t
-		}
-	}
-	return x.Subscriptions[idx], latest
-}
-
 func (x *ZoneInsight) GetLastSubscription() generic.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
-		return nil
+		return (*KDSSubscription)(nil)
 	}
 	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
 }

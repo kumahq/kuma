@@ -115,29 +115,9 @@ func (x *DataplaneInsight) finalizeSubscriptions() {
 	}
 }
 
-// todo(lobkovilya): delete GetLatestSubscription, use GetLastSubscription instead
-func (x *DataplaneInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
-	if len(x.GetSubscriptions()) == 0 {
-		return nil, nil
-	}
-	var idx int = 0
-	var latest *time.Time
-	for i, s := range x.GetSubscriptions() {
-		if err := s.ConnectTime.CheckValid(); err != nil {
-			continue
-		}
-		t := s.ConnectTime.AsTime()
-		if latest == nil || latest.Before(t) {
-			idx = i
-			latest = &t
-		}
-	}
-	return x.Subscriptions[idx], latest
-}
-
 func (x *DataplaneInsight) GetLastSubscription() generic.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
-		return nil
+		return (*DiscoverySubscription)(nil)
 	}
 	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
 }

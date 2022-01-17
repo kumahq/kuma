@@ -96,7 +96,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 				dataplaneInsight := dataplaneOverviews.Items[i].Spec.DataplaneInsight
 				dataplaneOverview := dataplaneOverviews.Items[i]
 
-				lastSubscription, lastConnected := dataplaneInsight.GetLatestSubscription()
+				lastSubscription := dataplaneInsight.GetLastSubscription().(*mesh_proto.DiscoverySubscription)
 				totalResponsesSent := dataplaneInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
 					return s.GetStatus().GetTotal().GetResponsesSent()
 				})
@@ -104,6 +104,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 					return s.GetStatus().GetTotal().GetResponsesRejected()
 				})
 				status, errs := dataplaneOverview.GetStatus()
+				lastConnected := util_proto.MustTimestampFromProto(lastSubscription.GetConnectTime())
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
 				var certExpiration *time.Time
