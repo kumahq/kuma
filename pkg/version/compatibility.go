@@ -59,6 +59,9 @@ var CompatibilityMatrix = Compatibility{
 		"~1.4.0-1-anyprerelease": {
 			Envoy: "~1.18.4",
 		},
+		"~dev": {
+			Envoy: "~1.18.4",
+		},
 	},
 }
 

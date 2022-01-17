@@ -8,7 +8,7 @@ BUILD_INFO_BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" || echo unknown)
 # 3) If the branch does not start with "release", then the version is "dev-$(short_git_hash)" (for example: dev-450174242)
 LAST_GIT_TAG ?= $(shell git describe --abbrev=0 --tags)
 CURRENT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
-SNAPSHOT_PREFIX = $(shell if [[ "$(CURRENT_BRANCH)" =~ ^release.* ]]; then echo $(LAST_GIT_TAG); else echo "dev"; fi)
+SNAPSHOT_PREFIX = $(shell case "$(CURRENT_BRANCH)" in (release*) echo "$(LAST_GIT_TAG)";; (*) echo "dev"; esac)
 BUILD_INFO_VERSION ?= $(shell if git describe --exact-match --tags > /dev/null 2>&1; then echo "$(LAST_GIT_TAG)"; else echo "$(SNAPSHOT_PREFIX)-$$(git rev-parse --short HEAD)" ; fi)
 
 .PHONY: build/version
