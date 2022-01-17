@@ -11,6 +11,7 @@ import (
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 )
 
 func (r *GatewayReconciler) updateStatus(
@@ -75,7 +76,7 @@ func mergeGatewayListenerStatuses(gateway *gatewayapi.Gateway, conditions Listen
 			// TODO it's difficult to determine this number with Kuma, so we
 			// leave it at 0
 			AttachedRoutes: 0,
-			SupportedKinds: []gatewayapi.RouteGroupKind{{Kind: httpRouteKind}},
+			SupportedKinds: []gatewayapi.RouteGroupKind{{Kind: common.HTTPRouteKind}},
 		}
 
 		if prev, ok := previousStatuses[name]; ok {
