@@ -59,7 +59,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	if annotations == nil {
 		annotations = metadata.Annotations{}
 	}
-	ignored, _, err := annotations.GetBool(metadata.KumaIgnoreAnnotation)
+	ignored, _, err := annotations.GetEnabled(metadata.KumaIgnoreAnnotation)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to retrieve %s annotation for %s", metadata.KumaIgnoreAnnotation, svc.Name)
 	}
