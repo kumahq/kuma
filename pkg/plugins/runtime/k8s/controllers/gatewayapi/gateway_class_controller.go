@@ -16,6 +16,8 @@ import (
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 )
 
 // GatewayClassReconciler reconciles a GatewayAPI GatewayClass object.
@@ -37,7 +39,7 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		return kube_ctrl.Result{}, err
 	}
 
-	if class.Spec.ControllerName != controllerName {
+	if class.Spec.ControllerName != common.ControllerName {
 		return kube_ctrl.Result{}, nil
 	}
 
@@ -95,7 +97,7 @@ func gatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler
 
 			var req []kube_reconcile.Request
 			for _, class := range classes.Items {
-				if class.Spec.ControllerName != controllerName {
+				if class.Spec.ControllerName != common.ControllerName {
 					continue
 				}
 
