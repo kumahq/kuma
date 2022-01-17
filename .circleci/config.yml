@@ -1062,11 +1062,6 @@ workflows:
           - check
         # custom parameters
         ipv6: true
-    - release:
-        <<: *commit_workflow_filters
-        requires:
-          - check
-          - test
 
   clean-eks:
     when: << pipeline.parameters.run_workflow_clean_eks >>
@@ -1177,6 +1172,10 @@ workflows:
             - check
           # custom parameters
           ipv6: true
+      - release:
+          <<: *master_workflow_filters
+          requires:
+            - test/e2e
 
   kuma-release:
     jobs:
