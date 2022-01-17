@@ -57,7 +57,15 @@ var _ = Describe("kumactl install control-plane", func() {
 
 			// given
 			rootCmd := cmd.NewRootCmd(rootCtx)
-			rootCmd.SetArgs(append([]string{"install", "control-plane", "--tls-general-secret", "general-tls-secret", "--tls-general-ca-bundle", "XYZ"}, given.extraArgs...))
+			rootCmd.SetArgs(append(
+				[]string{
+					"install",
+					"control-plane",
+					"--tls-general-secret", "general-tls-secret",
+					"--tls-general-ca-bundle", "XYZ",
+				},
+				given.extraArgs...,
+			))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
 
@@ -101,6 +109,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--tls-api-server-client-certs-secret", "api-server-client-secret",
 				"--tls-kds-global-server-secret", "kds-global-secret",
 				"--tls-kds-zone-client-secret", "kds-ca-secret",
+				"--tls-general-ca-secret", "general-tls-secret-ca",
 				"--mode", "zone",
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--zone", "zone-1",

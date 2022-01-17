@@ -89,10 +89,8 @@ func (a *adminTokenBootstrap) generateTokenIfNotExist(ctx context.Context) error
 
 func (a *adminTokenBootstrap) generateAdminToken(ctx context.Context) (string, error) {
 	// we need retries because signing key may not be available yet
-	backoff, _ := retry.NewConstant(1 * time.Second)
-	backoff = retry.WithMaxDuration(10*time.Minute, backoff)
 	var token string
-	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
+	err := retry.Do(ctx, retry.WithMaxDuration(10*time.Minute, retry.NewConstant(time.Second)), func(ctx context.Context) error {
 		t, err := a.issuer.Generate(ctx, user.Admin, 24*365*10*time.Hour)
 		if err != nil {
 			return retry.RetryableError(err)

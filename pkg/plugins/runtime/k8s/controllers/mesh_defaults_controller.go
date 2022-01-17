@@ -42,7 +42,7 @@ func (r *MeshDefaultsReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 		return kube_ctrl.Result{}, nil
 	}
 
-	if err := defaults_mesh.EnsureDefaultMeshResources(r.ResourceManager, req.Name); err != nil {
+	if err := defaults_mesh.EnsureDefaultMeshResources(ctx, r.ResourceManager, req.Name); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not create default mesh resources")
 	}
 

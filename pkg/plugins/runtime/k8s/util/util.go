@@ -46,7 +46,7 @@ func Ignored() ServicePredicate {
 		if svc.Annotations == nil {
 			return false
 		}
-		ignore, _, _ := metadata.Annotations(svc.Annotations).GetBool(metadata.KumaIgnoreAnnotation)
+		ignore, _, _ := metadata.Annotations(svc.Annotations).GetEnabled(metadata.KumaIgnoreAnnotation)
 		return ignore
 	}
 }
@@ -135,21 +135,25 @@ func CopyStringMap(in map[string]string) map[string]string {
 	return out
 }
 
-func MeshFor(obj kube_meta.Object) string {
-	mesh, exist := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation)
-	if !exist || mesh == "" {
-		return model.DefaultMesh
+// MeshOf returns the mesh of the given object according to its own annotations
+// or those of its namespace.
+func MeshOf(obj kube_meta.Object, namespace *kube_core.Namespace) string {
+	if mesh, exists := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
+		return mesh
+	}
+	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
+		return mesh
 	}
 
-	return mesh
+	return model.DefaultMesh
 }
 
 // ServiceTagFor returns the canonical service name for a Kubernetes service,
 // optionally with a specific port.
-func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
+func ServiceTagFor(svc *kube_core.Service, svcPort *int32) string {
 	port := ""
 	if svcPort != nil {
-		port = fmt.Sprintf("_%d", svcPort.Port)
+		port = fmt.Sprintf("_%d", *svcPort)
 	}
 	return fmt.Sprintf("%s_%s_svc%s", svc.Name, svc.Namespace, port)
 }

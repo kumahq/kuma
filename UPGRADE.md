@@ -21,8 +21,9 @@ The new version still supports annotation, but to have a guarantee that applicat
 
 ### Universal
 
-We removed support for old Ingress (`Dataplane#networking.ingress`) from pre 1.2 days.
-If you are still using it, please migrate to `ZoneIngress` first (see `Upgrade to 1.2.0` section).
+- We removed support for old Ingress (`Dataplane#networking.ingress`) from pre 1.2 days.
+  If you are still using it, please migrate to `ZoneIngress` first (see `Upgrade to 1.2.0` section).
+- You can't use 0.0.0.0 or :: in `networking.address` most of the time using loopback is what people intended.
 
 ## Upgrade to `1.4.0`
 

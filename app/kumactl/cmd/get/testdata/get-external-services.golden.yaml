@@ -1,8 +1,7 @@
-total: 2
 items:
-- creationTime: 0001-01-01T00:00:00Z
+- creationTime: "0001-01-01T00:00:00Z"
   mesh: default
-  modificationTime: 0001-01-01T00:00:00Z
+  modificationTime: "0001-01-01T00:00:00Z"
   name: experiment
   networking:
     address: 127.0.0.1
@@ -10,9 +9,9 @@ items:
     service: mobile
     version: v1
   type: ExternalService
-- creationTime: 0001-01-01T00:00:00Z
+- creationTime: "0001-01-01T00:00:00Z"
   mesh: default
-  modificationTime: 0001-01-01T00:00:00Z
+  modificationTime: "0001-01-01T00:00:00Z"
   name: example
   networking:
     address: 127.0.0.2
@@ -21,3 +20,4 @@ items:
     version: v2
   type: ExternalService
 next: null
+total: 2

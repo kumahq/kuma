@@ -108,9 +108,9 @@ func ZoneAndGlobalWithHelmChart() {
 	It("Should deploy Zone and Global on 2 clusters", func() {
 		clustersStatus := api_server.Zones{}
 		Eventually(func() (bool, error) {
-			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
+			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobalStatusAPI(), nil)
 			if status != http.StatusOK {
-				return false, errors.Errorf("unable to contact server %s with status %d", global.GetGlobaStatusAPI(), status)
+				return false, errors.Errorf("unable to contact server %s with status %d", global.GetGlobalStatusAPI(), status)
 			}
 			err := json.Unmarshal([]byte(response), &clustersStatus)
 			if err != nil {

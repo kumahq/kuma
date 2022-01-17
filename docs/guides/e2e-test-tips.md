@@ -2,19 +2,34 @@
 
 E2E tests are less stable and slower than unit tests therefore it's useful to know some tricks
 
+## Mac M1 and ARM support
+
+Currently, we don't support ARM architecture when building docker images which we rely on for e2e tests.
+This is tracked in [#3252](https://github.com/kumahq/kuma/issues/3252) and [#237](https://github.com/kumahq/kuma/issues/237).
+
+## Using a VM
+
+If you are developing on a laptop e2e tests might be almost impossible to run.
+Most core devs use a VM to run e2e tests quickly ([Hetzner](https://hetzner.com) and [Scaleway](https://scaleway.com) have very cheap ones).
+
+If you are doing small patches relying on PR checks might be enough.
+
 ## Faster environment setup
 
 When e2e tests are executed here are the steps
 
 1) Build containers
-2) Start Kubernetes Cluster 2
+2) Start Kubernetes Cluster 1
 3) Start Kubernetes Cluster 2
 4) Execute tests
 
-If you use `-j` containers are build in parallel using all cores and 2) and 3) step is also parallelized.  Tests are executed as usual.
+## Use K3D instead of KIND
+
+K3D is faster than KIND, but it is still experimental addition to Kuma.
+To use K3D in E2E tests add `K3D=true`
 
 ```
-make -j test/e2e
+make test/e2e K3D=true
 ```
 
 ## Execute single test
@@ -38,7 +53,7 @@ In the case of failing tests, it can be useful to run one suit at a time, while 
 
 To do this, first create the test environment:
 ```
-make build/kumactl images test/e2e/k8s/start
+make images test/e2e/k8s/start
 ```
 
 Now you can run each test suite (exiting on any failures):
@@ -58,15 +73,6 @@ Even if you execute one test and it fails, our framework clean up the environmen
 When you use `make test/e2e/debug` and the test fails, execution will immediately stop and environment is not cleaned up.
 
 `test/e2e/debug` works with the same envs as `test/e2e` like `E2E_PKG_LIST`
-
-## Use K3D instead of KIND
-
-K3D is faster than KIND, but it is still experimental addition to Kuma.
-To use K3D in E2E tests add `K3D=true`
-
-```
-make test/e2e K3D=true 
-```
 
 ## Decide which Kubernetes clusters will be created
 
@@ -102,4 +108,3 @@ $ make dev/envrc
 direnv: loading ~/upstream/konghq/kuma/.envrc
 direnv: export +CI_TOOLS_DIR +KUBECONFIG
 ```
-

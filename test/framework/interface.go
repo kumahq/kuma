@@ -449,7 +449,7 @@ type ControlPlane interface {
 	GetKumaCPLogs() (string, error)
 	GetMetrics() (string, error)
 	GetKDSServerAddress() string
-	GetGlobaStatusAPI() string
+	GetGlobalStatusAPI() string
 	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)

@@ -686,7 +686,7 @@ jobs:
     - run:
         name: "Run unit tests"
         command: |
-          GO_TEST_OPTS='-p 2' make test
+          make test
 
   go_cache:
     executor: golang

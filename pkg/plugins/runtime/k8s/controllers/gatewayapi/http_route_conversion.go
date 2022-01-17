@@ -5,12 +5,17 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	kube_core "k8s.io/api/core/v1"
+	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/policy"
+	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -101,10 +106,18 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 	}
 
 	conditions := []kube_meta.Condition{
-		routeCondition(route, gatewayapi.ConditionRouteResolvedRefs, kube_meta.ConditionTrue, string(gatewayapi.ConditionRouteResolvedRefs)),
+		{
+			Type:   string(gatewayapi.ConditionRouteResolvedRefs),
+			Status: kube_meta.ConditionTrue,
+			Reason: string(gatewayapi.ConditionRouteResolvedRefs),
+		},
 		// TODO: reflect the true state from the actual gateway of this
 		// route
-		routeCondition(route, gatewayapi.ConditionRouteAccepted, kube_meta.ConditionTrue, string(gatewayapi.ConditionRouteAccepted)),
+		{
+			Type:   string(gatewayapi.ConditionRouteAccepted),
+			Status: kube_meta.ConditionTrue,
+			Reason: string(gatewayapi.ConditionRouteAccepted),
+		},
 	}
 
 	return &routeConf, conditions, nil
@@ -123,12 +136,26 @@ func k8sToKumaHeader(header gatewayapi.HTTPHeader) *mesh_proto.GatewayRoute_Http
 func (r *HTTPRouteReconciler) gapiToKumaRef(
 	ctx context.Context, mesh string, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (map[string]string, *kube_meta.Condition, error) {
-	switch *ref.Kind {
-	case "Service":
-		if *ref.Group != "" {
-			break
-		}
+	policyRef := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(objectNamespace), ref)
 
+	gk := policyRef.GroupKindReferredTo()
+	namespacedName := policyRef.NamespacedNameReferredTo()
+
+	if permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef); err != nil {
+		return nil, nil, errors.Wrap(err, "couldn't determine if backend reference is permitted")
+	} else if !permitted {
+		return nil,
+			&kube_meta.Condition{
+				Type:    string(gatewayapi.ConditionRouteResolvedRefs),
+				Status:  kube_meta.ConditionFalse,
+				Reason:  RefNotPermitted,
+				Message: fmt.Sprintf("reference to %s %q not permitted by any ReferencePolicy", gk, namespacedName),
+			},
+			nil
+	}
+
+	switch {
+	case gk.Kind == "Service" && gk.Group == "":
 		// References to Services are required by GAPI to include a port
 		// TODO remove when https://github.com/kubernetes-sigs/gateway-api/pull/944
 		// is released
@@ -142,43 +169,44 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 				},
 				nil
 		}
-		// TODO resolve it
+		port := int32(*ref.Port)
 
-		namespace := objectNamespace
-		if ref.Namespace != nil {
-			namespace = string(*ref.Namespace)
-		}
-
-		return map[string]string{
-			mesh_proto.ServiceTag: fmt.Sprintf("%s_%s_svc_%d", ref.Name, namespace, *ref.Port),
-		}, nil, nil
-	case "ExternalService":
-		if *ref.Group != "kuma.io" {
-			break
-		}
-
-		name := string(ref.Name)
-
-		resource := core_mesh.NewExternalServiceResource()
-		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(name, mesh)); err != nil {
-			// TODO this shouldn't be a fatal error
-			if store.IsResourceNotFound(err) {
+		svc := &kube_core.Service{}
+		if err := r.Client.Get(ctx, namespacedName, svc); err != nil {
+			if kube_apierrs.IsNotFound(err) {
 				return nil,
 					&kube_meta.Condition{
 						Type:    string(gatewayapi.ConditionRouteResolvedRefs),
 						Status:  kube_meta.ConditionFalse,
 						Reason:  ObjectNotFound,
-						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %s", name),
+						Message: fmt.Sprintf("backend reference references a non-existent Service %q", namespacedName.String()),
 					},
 					nil
 			}
 			return nil, nil, err
 		}
 
-		service := resource.Spec.GetService()
+		return map[string]string{
+			mesh_proto.ServiceTag: k8s_util.ServiceTagFor(svc, &port),
+		}, nil, nil
+	case gk.Kind == "ExternalService" && gk.Group == mesh_k8s.GroupVersion.Group:
+		resource := core_mesh.NewExternalServiceResource()
+		if err := r.ResourceManager.Get(ctx, resource, store.GetByKey(namespacedName.Name, mesh)); err != nil {
+			if store.IsResourceNotFound(err) {
+				return nil,
+					&kube_meta.Condition{
+						Type:    string(gatewayapi.ConditionRouteResolvedRefs),
+						Status:  kube_meta.ConditionFalse,
+						Reason:  ObjectNotFound,
+						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %q", namespacedName.Name),
+					},
+					nil
+			}
+			return nil, nil, err
+		}
 
 		return map[string]string{
-			mesh_proto.ServiceTag: service,
+			mesh_proto.ServiceTag: resource.Spec.GetService(),
 		}, nil, nil
 	}
 
@@ -196,7 +224,7 @@ func gapiToKumaMatch(match gatewayapi.HTTPRouteMatch) (*mesh_proto.GatewayRoute_
 	kumaMatch := &mesh_proto.GatewayRoute_HttpRoute_Match{}
 
 	if m := match.Method; m != nil {
-		if kumaMethod, ok := mesh_proto.HttpMethod_value[string(*m)]; ok {
+		if kumaMethod, ok := mesh_proto.HttpMethod_value[string(*m)]; ok && kumaMethod != int32(mesh_proto.HttpMethod_NONE) {
 			kumaMatch.Method = mesh_proto.HttpMethod(kumaMethod)
 		} else if *m != "" {
 			return nil, fmt.Errorf("unexpected HTTP method %s", *m)

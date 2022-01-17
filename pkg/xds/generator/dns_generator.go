@@ -27,7 +27,7 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 	ipV6Enabled := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetRedirectPortInboundV6() != 0
 
 	vips := map[string][]string{}
-	for _, dnsOutbound := range proxy.Routing.VipDomains {
+	for _, dnsOutbound := range ctx.Mesh.VIPDomains {
 		for _, domain := range dnsOutbound.Domains {
 			v6 := util_net.ToV6(dnsOutbound.Address)
 			if v6 != dnsOutbound.Address { // The address passed is not already v6

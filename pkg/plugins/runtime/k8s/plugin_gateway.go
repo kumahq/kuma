@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	gatewayapi_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi"
@@ -37,8 +37,8 @@ func crdsPresent(mgr kube_ctrl.Manager) bool {
 func gatewayPresent() bool {
 	// If we haven't registered our type, we're not reconciling GatewayInstance
 	// or gatewayapi objects.
-	if _, err := registry.Global().NewObject(&mesh_proto.Gateway{}); err != nil {
-		var unknownTypeError *registry.UnknownTypeError
+	if _, err := k8s_registry.Global().NewObject(&mesh_proto.Gateway{}); err != nil {
+		var unknownTypeError *k8s_registry.UnknownTypeError
 		if errors.As(err, &unknownTypeError) {
 			return false
 		}
@@ -102,7 +102,7 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		Client:          mgr.GetClient(),
 		Log:             core.Log.WithName("controllers").WithName("gatewayapi").WithName("Gateway"),
 		Scheme:          mgr.GetScheme(),
-		Converter:       converter,
+		TypeRegistry:    k8s_registry.Global(),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		ProxyFactory:    proxyFactory,
 		ResourceManager: rt.ResourceManager(),
@@ -115,7 +115,7 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		Client:          mgr.GetClient(),
 		Log:             core.Log.WithName("controllers").WithName("gatewayapi").WithName("HTTPRoute"),
 		Scheme:          mgr.GetScheme(),
-		Converter:       converter,
+		TypeRegistry:    k8s_registry.Global(),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceManager: rt.ResourceManager(),
 	}

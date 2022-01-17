@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
+	"time"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -23,13 +23,10 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
-	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
 type PortFwd struct {
-	lowFwdPort   uint32
-	hiFwdPort    uint32
-	localAPIPort uint32
+	localAPITunnel *k8s.Tunnel
 }
 
 type K8sControlPlane struct {
@@ -51,8 +48,6 @@ func NewK8sControlPlane(
 	clusterName string,
 	kubeconfig string,
 	cluster *K8sCluster,
-	loPort uint32,
-	hiPort uint32,
 	verbose bool,
 	replicas int,
 	localhostIsAdmin bool,
@@ -60,15 +55,12 @@ func NewK8sControlPlane(
 	name := clusterName + "-" + mode
 	kumactl, _ := NewKumactlOptions(t, name, verbose)
 	return &K8sControlPlane{
-		t:          t,
-		mode:       mode,
-		name:       name,
-		kubeconfig: kubeconfig,
-		kumactl:    kumactl,
-		cluster:    cluster,
-		portFwd: PortFwd{
-			localAPIPort: loPort,
-		},
+		t:                t,
+		mode:             mode,
+		name:             name,
+		kubeconfig:       kubeconfig,
+		kumactl:          kumactl,
+		cluster:          cluster,
 		verbose:          verbose,
 		replicas:         replicas,
 		localhostIsAdmin: localhostIsAdmin,
@@ -91,24 +83,17 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) PortForwardKumaCP() error {
-	kumacpPods := c.GetKumaCPPods()
-	if len(kumacpPods) < 1 {
-		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
+func (c *K8sControlPlane) PortForwardKumaCP() {
+	kumaCpPods := c.GetKumaCPPods()
+	// There could be multiple pods still starting so pick one that's available already
+	for i := range kumaCpPods {
+		if k8s.IsPodAvailable(&kumaCpPods[i]) {
+			c.portFwd.localAPITunnel = k8s.NewTunnel(c.GetKubectlOptions(KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, kumaCPAPIPort)
+			c.portFwd.localAPITunnel.ForwardPort(c.t)
+			return
+		}
 	}
-
-	kumacpPodName := kumacpPods[0].Name
-
-	// API
-	apiPort, err := util_net.PickTCPPort("", c.portFwd.lowFwdPort+1, c.portFwd.hiFwdPort)
-	if err != nil {
-		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
-	}
-
-	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
-	c.portFwd.localAPIPort = apiPort
-
-	return nil
+	c.t.Fatalf("Failed finding an available pod, allPods: %v", kumaCpPods)
 }
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
@@ -130,7 +115,7 @@ func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
 }
 
 func (c *K8sControlPlane) VerifyKumaCtl() error {
-	if c.portFwd.localAPIPort == 0 {
+	if c.portFwd.localAPITunnel == nil {
 		return errors.Errorf("API port not forwarded")
 	}
 
@@ -141,13 +126,9 @@ func (c *K8sControlPlane) VerifyKumaCtl() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaREST() error {
-	if c.portFwd.localAPIPort == 0 {
-		return errors.Errorf("API port not forwarded")
-	}
-
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c.t,
-		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10),
+		c.GetGlobalStatusAPI(),
 		&tls.Config{},
 		DefaultRetries,
 		DefaultTimeout,
@@ -164,7 +145,7 @@ func (c *K8sControlPlane) VerifyKumaGUI() error {
 
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c.t,
-		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)+"/gui",
+		c.GetAPIServerAddress()+"/gui",
 		&tls.Config{},
 		3,
 		DefaultTimeout,
@@ -195,9 +176,7 @@ func (c *K8sControlPlane) GetKumaCPLogs() (string, error) {
 }
 
 func (c *K8sControlPlane) FinalizeAdd() error {
-	if err := c.PortForwardKumaCP(); err != nil {
-		return err
-	}
+	c.PortForwardKumaCP()
 	var token string
 	if !c.localhostIsAdmin {
 		t, err := c.retrieveAdminToken()
@@ -270,15 +249,18 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 }
 
 func (c *K8sControlPlane) GetAPIServerAddress() string {
-	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)
+	if c.portFwd.localAPITunnel == nil {
+		panic("Port forward wasn't setup!")
+	}
+	return "http://" + c.portFwd.localAPITunnel.Endpoint()
 }
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {
 	panic("not implemented")
 }
 
-func (c *K8sControlPlane) GetGlobaStatusAPI() string {
-	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
+func (c *K8sControlPlane) GetGlobalStatusAPI() string {
+	return c.GetAPIServerAddress() + "/status/zones"
 }
 
 func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
@@ -297,7 +279,7 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
-		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
+		c.GetAPIServerAddress()+"/tokens",
 		[]byte(fmt.Sprintf(`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, dpType, service)),
 		map[string]string{
 			"content-type":  "application/json",
@@ -322,7 +304,7 @@ func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) 
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
-		fmt.Sprintf("http://localhost:%d/tokens/zone-ingress", c.portFwd.localAPIPort),
+		c.GetAPIServerAddress()+"/tokens/zone-ingress",
 		[]byte(fmt.Sprintf(`{"zone": "%s"}`, zone)),
 		map[string]string{
 			"content-type":  "application/json",
@@ -345,52 +327,50 @@ func (c *K8sControlPlane) UpdateObject(
 	if err != nil {
 		return err
 	}
-
-	out, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", typeName, objectName, "-o", "yaml")
-	if err != nil {
-		return err
-	}
-
-	decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
-	into := map[string]interface{}{}
-
-	if err := decoder.Decode(&into); err != nil {
-		return err
-	}
-
-	u := unstructured.Unstructured{Object: into}
-	obj, err := scheme.New(u.GroupVersionKind())
-	if err != nil {
-		return err
-	}
-
-	if err := scheme.Convert(&u, obj, nil); err != nil {
-		return err
-	}
-
-	obj = update(obj)
-
 	codecs := serializer.NewCodecFactory(scheme)
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
 	if !ok {
 		return errors.Errorf("no serializer for %q", runtime.ContentTypeYAML)
 	}
 
-	encoder := codecs.EncoderForVersion(info.Serializer, obj.GetObjectKind().GroupVersionKind().GroupVersion())
-	yaml, err := runtime.Encode(encoder, obj)
-	if err != nil {
-		return err
-	}
-
-	KubectlReplaceFromStringE := func(t testing.TestingT, options *k8s.KubectlOptions, configData string) error {
-		tmpfile, err := k8s.StoreConfigToTempFileE(t, configData)
+	_, err = retry.DoWithRetryableErrorsE(c.t, "update object", map[string]string{"Error from server \\(Conflict\\)": "object conflict"}, 5, time.Second, func() (string, error) {
+		out, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", typeName, objectName, "-o", "yaml")
 		if err != nil {
-			return err
+			return "", err
 		}
-		defer os.Remove(tmpfile)
 
-		return k8s.RunKubectlE(t, options, "replace", "-f", tmpfile)
+		decoder := yaml.NewYAMLToJSONDecoder(bytes.NewReader([]byte(out)))
+		into := map[string]interface{}{}
+
+		if err := decoder.Decode(&into); err != nil {
+			return "", err
+		}
+
+		u := unstructured.Unstructured{Object: into}
+		obj, err := scheme.New(u.GroupVersionKind())
+		if err != nil {
+			return "", err
+		}
+
+		if err := scheme.Convert(&u, obj, nil); err != nil {
+			return "", err
+		}
+
+		obj = update(obj)
+		encoder := codecs.EncoderForVersion(info.Serializer, obj.GetObjectKind().GroupVersionKind().GroupVersion())
+		yml, err := runtime.Encode(encoder, obj)
+		if err != nil {
+			return "", err
+		}
+
+		if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), string(yml)); err != nil {
+			return "", err
+		}
+		return "", nil
+	})
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to update %s object %q", typeName, objectName)
 	}
-
-	return KubectlReplaceFromStringE(c.t, c.GetKubectlOptions(), string(yaml))
+	return nil
 }

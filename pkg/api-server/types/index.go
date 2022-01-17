@@ -6,4 +6,5 @@ type IndexResponse struct {
 	Version    string `json:"version"`
 	InstanceId string `json:"instanceId"`
 	ClusterId  string `json:"clusterId"`
+	GuiURL     string `json:"gui,omitempty"`
 }
