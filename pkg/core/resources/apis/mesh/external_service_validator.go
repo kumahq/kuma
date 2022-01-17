@@ -15,15 +15,19 @@ func (es *ExternalServiceResource) Validate() error {
 	var err validators.ValidationError
 	err.Add(validateExternalServiceNetworking(es.Spec.GetNetworking()))
 
-	err.Add(validateTags(es.Spec.Tags))
-	if _, exist := es.Spec.Tags[mesh_proto.ServiceTag]; !exist {
-		err.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
-	}
-	if value, exist := es.Spec.Tags[mesh_proto.ProtocolTag]; exist {
-		if ParseProtocol(value) == ProtocolUnknown {
-			err.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(SupportedProtocols.Strings()...)))
+	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
+		var result validators.ValidationError
+		if value, exist := selector[mesh_proto.ProtocolTag]; exist {
+			if ParseProtocol(value) == ProtocolUnknown {
+				err.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf("tag %q has an invalid value %q. %s", mesh_proto.ProtocolTag, value, AllowedValuesHint(SupportedProtocols.Strings()...)))
+			}
 		}
+		return result
 	}
+	err.Add(ValidateTags(validators.RootedAt("tags"), es.Spec.Tags, ValidateTagsOpts{
+		RequireService:      true,
+		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
+	}))
 
 	return err.OrNil()
 }

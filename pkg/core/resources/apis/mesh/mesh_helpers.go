@@ -58,7 +58,8 @@ func (m *MeshResource) GetTracingBackend(name string) *mesh_proto.TracingBackend
 func (m *MeshResource) GetLoggingBackends() string {
 	var backends []string
 	for _, backend := range m.Spec.GetLogging().GetBackends() {
-		backends = append(backends, backend.GetName())
+		backend := fmt.Sprintf("%s/%s", backend.GetType(), backend.GetName())
+		backends = append(backends, backend)
 	}
 	return strings.Join(backends, ", ")
 }
@@ -68,7 +69,8 @@ func (m *MeshResource) GetLoggingBackends() string {
 func (m *MeshResource) GetTracingBackends() string {
 	var backends []string
 	for _, backend := range m.Spec.GetTracing().GetBackends() {
-		backends = append(backends, backend.GetName())
+		backend := fmt.Sprintf("%s/%s", backend.GetType(), backend.GetName())
+		backends = append(backends, backend)
 	}
 	return strings.Join(backends, ", ")
 }

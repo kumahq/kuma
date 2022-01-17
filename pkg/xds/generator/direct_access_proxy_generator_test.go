@@ -74,8 +74,10 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 				ControlPlane: nil,
 				Mesh: context.MeshContext{
 					Resource: mesh,
-					Dataplanes: &core_mesh.DataplaneResourceList{
-						Items: dataplanes,
+					Resources: map[core_model.ResourceType]core_model.ResourceList{
+						core_mesh.DataplaneType: &core_mesh.DataplaneResourceList{
+							Items: dataplanes,
+						},
 					},
 				},
 			}

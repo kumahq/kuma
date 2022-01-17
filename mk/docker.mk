@@ -22,66 +22,43 @@ export KUMACTL_DOCKER_IMAGE ?= $(KUMACTL_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION
 export KUMA_INIT_DOCKER_IMAGE ?= $(KUMA_INIT_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_PROMETHEUS_SD_DOCKER_IMAGE ?= $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_UNIVERSAL_DOCKER_IMAGE ?= $(DOCKER_REGISTRY)/kuma-universal:$(BUILD_INFO_VERSION)
+KUMA_IMAGES ?= $(KUMA_CP_DOCKER_IMAGE) $(KUMA_DP_DOCKER_IMAGE) $(KUMACTL_DOCKER_IMAGE) $(KUMA_INIT_DOCKER_IMAGE) $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) $(KUMA_UNIVERSAL_DOCKER_IMAGE)
+
+IMAGES_TARGETS ?= images/release images/test
+DOCKER_SAVE_TARGETS ?= docker/save/release docker/save/test
+DOCKER_LOAD_TARGETS ?= docker/load/release docker/load/test
 
 # Always use Docker BuildKit, see
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 export DOCKER_BUILDKIT := 1
 
-.PHONY: docker/build
-docker/build: docker/build/release docker/build/test
-
-.PHONY: docker/build/release
-docker/build/release: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-init docker/build/kuma-prometheus-sd ## Dev: Build all Docker images using existing artifacts from build
-
-.PHONY: docker/build/test
-docker/build/test: docker/build/kuma-universal
-
-.PHONY: docker/build/kuma-cp
-docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp ## Dev: Build `kuma-cp` Docker image using existing artifact
+.PHONY: image/kuma-cp
+image/kuma-cp: build/kuma-cp/linux-amd64 ## Dev: Rebuild `kuma-cp` Docker image
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
 
-.PHONY: docker/build/kuma-dp
-docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/coredns/coredns build/artifacts-linux-amd64/envoy/envoy ## Dev: Build `kuma-dp` Docker image using existing artifact
+.PHONY: image/kuma-dp
+image/kuma-dp: build/kuma-dp/linux-amd64 build/coredns/linux-amd64 build/artifacts-linux-amd64/envoy/envoy ## Dev: Rebuild `kuma-dp` Docker image
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) --build-arg ENVOY_VERSION=${ENVOY_VERSION} -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
-.PHONY: docker/build/kumactl
-docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl ## Dev: Build `kumactl` Docker image using existing artifact
+.PHONY: image/kumactl
+image/kumactl: build/kumactl/linux-amd64 ## Dev: Rebuild `kumactl` Docker image
 	docker build -t $(KUMACTL_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kumactl .
 
-.PHONY: docker/build/kuma-init
-docker/build/kuma-init: ## Dev: Build `kuma-init` Docker image using existing artifact
+.PHONY: image/kuma-init
+image/kuma-init: build/kumactl/linux-amd64 ## Dev: Rebuild `kuma-init` Docker image
 	docker build -t $(KUMA_INIT_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-init .
 
-.PHONY: docker/build/kuma-prometheus-sd
-docker/build/kuma-prometheus-sd: build/artifacts-linux-amd64/kuma-prometheus-sd/kuma-prometheus-sd ## Dev: Build `kuma-prometheus-sd` Docker image using existing artifact
+.PHONY: image/kuma-prometheus-sd
+image/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-amd64 ## Dev: Rebuild `kuma-prometheus-sd` Docker image
 	docker build -t $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-prometheus-sd .
 
-.PHONY: docker/build/kuma-universal
-docker/build/kuma-universal: ## Dev: Build `kuma-universal` Docker image using existing artifact
-docker/build/kuma-universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/kumactl/kumactl build/artifacts-linux-amd64/test-server/test-server build/artifacts-linux-amd64/envoy/envoy
+.PHONY: image/kuma-universal
+image/kuma-universal: build/linux-amd64
 	docker build -t kuma-universal --build-arg ENVOY_VERSION=${ENVOY_VERSION}  -f test/dockerfiles/Dockerfile.universal .
 	docker tag kuma-universal $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
-.PHONY: image/kuma-cp
-image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
-
-.PHONY: image/kuma-dp
-image/kuma-dp: build/kuma-dp/linux-amd64 build/coredns/linux-amd64 build/artifacts-linux-amd64/envoy/envoy docker/build/kuma-dp ## Dev: Rebuild `kuma-dp` Docker image
-
-.PHONY: image/kumactl
-image/kumactl: build/kumactl/linux-amd64 docker/build/kumactl ## Dev: Rebuild `kumactl` Docker image
-
-.PHONY: image/kuma-init
-image/kuma-init: docker/build/kuma-init ## Dev: Rebuild `kuma-init` Docker image
-
-.PHONY: image/kuma-prometheus-sd
-image/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-amd64 docker/build/kuma-prometheus-sd ## Dev: Rebuild `kuma-prometheus-sd` Docker image
-
-.PHONY: image/kuma-universal
-image/kuma-universal: build/linux-amd64 docker/build/kuma-universal
-
 .PHONY: images
-images: images/release images/test ## Dev: Rebuild release and tesst Docker images
+images: $(IMAGES_TARGETS) ## Dev: Rebuild release and tesst Docker images
 
 .PHONY: images/release
 images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd ## Dev: Rebuild release Docker images
@@ -93,7 +70,7 @@ ${BUILD_DOCKER_IMAGES_DIR}:
 	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}
 
 .PHONY: docker/save
-docker/save: docker/save/release docker/save/test
+docker/save: $(DOCKER_SAVE_TARGETS)
 
 .PHONY: docker/save/release
 docker/save/release: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-prometheus-sd
@@ -126,7 +103,7 @@ docker/save/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}
 	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
 .PHONY: docker/load
-docker/load: docker/load/release docker/load/test
+docker/load: $(DOCKER_LOAD_TARGETS)
 
 .PHONY: docker/load/release
 docker/load/release: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-init docker/load/kuma-prometheus-sd
@@ -178,7 +155,7 @@ docker/tag/kuma-init:
 docker/tag/kuma-universal:
 	docker tag $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-universal:$(KUMA_VERSION)
 
-.PHONY: docker/docker
+.PHONY: docker/purge
 docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
 	for c in `docker ps -q`; do docker kill $$c; done
 	docker system prune --all --volumes --force

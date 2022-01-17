@@ -52,7 +52,7 @@ var _ = BeforeSuite(test.Within(time.Minute, func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("native", "test", "config", "crd", "bases"),
-			filepath.Join("native", "config", "crd", "bases"),
+			filepath.Join("..", "..", "..", "..", test.CustomResourceDir),
 		},
 	}
 

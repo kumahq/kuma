@@ -54,7 +54,9 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
+      - gatewayclasses/status
       - gateways/status
+      - httproutes/status
     verbs:
       - get
       - patch
@@ -84,6 +86,7 @@ rules:
       - services
     verbs:
       - get
+      - delete
       - list
       - watch
       - create

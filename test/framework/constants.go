@@ -34,8 +34,7 @@ const (
 
 	confPath = "/kuma/kuma-cp.conf"
 
-	kumaCPAPIPort        = 5681
-	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
+	kumaCPAPIPort = 5681
 
 	redirectPortInbound   = "15006"
 	redirectPortInboundV6 = "15010"

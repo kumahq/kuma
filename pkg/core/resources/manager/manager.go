@@ -148,8 +148,7 @@ func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resou
 	if opts.ConflictRetry.BaseBackoff <= 0 || opts.ConflictRetry.MaxTimes == 0 {
 		return upsert()
 	}
-	backoff, _ := retry.NewExponential(opts.ConflictRetry.BaseBackoff) // we can ignore error because RetryBaseBackoff > 0
-	backoff = retry.WithMaxRetries(uint64(opts.ConflictRetry.MaxTimes), backoff)
+	backoff := retry.WithMaxRetries(uint64(opts.ConflictRetry.MaxTimes), retry.NewExponential(opts.ConflictRetry.BaseBackoff))
 	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		resource.SetMeta(nil)
 		resource.GetSpec().Reset()

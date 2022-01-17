@@ -11,7 +11,8 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	managers_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
+	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -63,8 +64,8 @@ type RuntimeContext interface {
 	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
-	MeshValidator() core_managers.MeshValidator
 	APIServerAuthenticator() authn.Authenticator
+	ResourceValidators() ResourceValidators
 	Access() Access
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
@@ -73,6 +74,11 @@ type RuntimeContext interface {
 type Access struct {
 	ResourceAccess       resources_access.ResourceAccess
 	DataplaneTokenAccess tokens_access.DataplaneTokenAccess
+}
+
+type ResourceValidators struct {
+	Dataplane managers_dataplane.Validator
+	Mesh      managers_mesh.MeshValidator
 }
 
 var _ Runtime = &runtime{}
@@ -132,7 +138,7 @@ type runtimeContext struct {
 	cap      secrets.CaProvider
 	dps      *dp_server.DpServer
 	kdsctx   *kds_context.Context
-	mv       core_managers.MeshValidator
+	rv       ResourceValidators
 	au       authn.Authenticator
 	acc      Access
 	appCtx   context.Context
@@ -221,8 +227,8 @@ func (rc *runtimeContext) KDSContext() *kds_context.Context {
 	return rc.kdsctx
 }
 
-func (rc *runtimeContext) MeshValidator() core_managers.MeshValidator {
-	return rc.mv
+func (rc *runtimeContext) ResourceValidators() ResourceValidators {
+	return rc.rv
 }
 
 func (rc *runtimeContext) APIServerAuthenticator() authn.Authenticator {

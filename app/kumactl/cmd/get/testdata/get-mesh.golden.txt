@@ -1,2 +1,2 @@
-NAME     mTLS                METRICS                   LOGGING          TRACING                LOCALITY   AGE
-mesh-1   builtin/builtin-1   prometheus/prometheus-1   logstash, file   zipkin-us, zipkin-eu   on         292y
+NAME     mTLS                METRICS                   LOGGING                   TRACING                              LOCALITY   AGE
+mesh-1   builtin/builtin-1   prometheus/prometheus-1   tcp/logstash, file/file   zipkin/zipkin-us, zipkin/zipkin-eu   on         292y

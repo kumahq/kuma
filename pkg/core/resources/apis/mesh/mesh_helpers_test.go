@@ -195,7 +195,7 @@ var _ = Describe("MeshResource", func() {
 				},
 			}
 			backends := mesh.GetLoggingBackends()
-			Expect(backends).To(Equal("logstash-1, file-1"))
+			Expect(backends).To(Equal("logstash/logstash-1, file/file-1"))
 		})
 		It("should return default logging backend if logging backends is empty", func() {
 			mesh := &MeshResource{
@@ -237,7 +237,7 @@ var _ = Describe("MeshResource", func() {
 			}
 
 			backends := mesh.GetTracingBackends()
-			Expect(backends).To(Equal("zipkin-us, zipkin-eu"))
+			Expect(backends).To(Equal("zipkin/zipkin-us, zipkin/zipkin-eu"))
 		})
 		It("should return default tracing backend if tracing backends is empty", func() {
 			mesh := &MeshResource{

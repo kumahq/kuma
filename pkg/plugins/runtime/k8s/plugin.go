@@ -239,8 +239,11 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().Runtime.Kubernetes.ServiceAccountName)
 	composite.AddValidator(handler)
 
-	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.MeshValidator(), converter, rt.ResourceManager())
+	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.ResourceValidators().Mesh, converter)
 	composite.AddValidator(k8sMeshValidator)
+
+	k8sDataplaneValidator := k8s_webhooks.NewDataplaneValidatorWebhook(rt.ResourceValidators().Dataplane, converter, rt.ResourceManager())
+	composite.AddValidator(k8sDataplaneValidator)
 
 	rateLimitValidator := ratelimit.RateLimitValidator{
 		Store: rt.ResourceStore(),
@@ -257,6 +260,10 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	coreZoneValidator := zone.Validator{Store: rt.ResourceStore()}
 	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator)
 	composite.AddValidator(k8sZoneValidator)
+
+	for _, validator := range gatewayValidators(rt, converter) {
+		composite.AddValidator(validator)
+	}
 
 	path := "/validate-kuma-io-v1alpha1"
 	mgr.GetWebhookServer().Register(path, composite.WebHook())

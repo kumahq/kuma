@@ -411,9 +411,9 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "pod-with-kuma-sidecar-and-ip",
 			},
-			Spec: &mesh_proto.Dataplane{
+			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{},
-			},
+			}),
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -496,9 +496,9 @@ var _ = Describe("PodReconciler", func() {
 					Name:       "dp-1",
 				}},
 			},
-			Spec: &mesh_proto.Dataplane{
+			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{},
-			},
+			}),
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -513,9 +513,9 @@ var _ = Describe("PodReconciler", func() {
 					Name:       "dp-2",
 				}},
 			},
-			Spec: &mesh_proto.Dataplane{
+			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{},
-			},
+			}),
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -530,9 +530,9 @@ var _ = Describe("PodReconciler", func() {
 					Name:       "dp-3",
 				}},
 			},
-			Spec: &mesh_proto.Dataplane{
+			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{},
-			},
+			}),
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -544,14 +544,14 @@ var _ = Describe("PodReconciler", func() {
 				Namespace: "demo",
 				Name:      "es-1",
 			},
-			Spec: &mesh_proto.ExternalService{
+			Spec: mesh_k8s.ToSpec(&mesh_proto.ExternalService{
 				Networking: &mesh_proto.ExternalService_Networking{
 					Address: "httpbin.org:443",
 				},
 				Tags: map[string]string{
 					mesh_proto.ServiceTag: "httpbin",
 				},
-			},
+			}),
 		}
 		requests := mapper(es)
 		requestsStr := []string{}
@@ -574,11 +574,11 @@ var _ = Describe("PodReconciler", func() {
 					Name:       "pod-ingress",
 				}},
 			},
-			Spec: &mesh_proto.Dataplane{
+			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{},
 				//  XXX ingress not member of Dataplane protobuf
 				//		"ingress": map[string]interface{}{},
-			},
+			}),
 		})
 		Expect(err).NotTo(HaveOccurred())
 

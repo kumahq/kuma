@@ -215,7 +215,7 @@ func (k *KumactlOptions) KumactlUpdateObject(
 
 	resource, err := rest.UnmarshallToCore([]byte(out))
 	if err != nil {
-		return errors.Wrapf(err, "failed to unmarshal %q object %q", typeName, objectName)
+		return errors.Wrapf(err, "failed to unmarshal %q object %q: %q", typeName, objectName, out)
 	}
 
 	updated := rest.NewFromModel(update(resource))

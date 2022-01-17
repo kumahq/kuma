@@ -230,7 +230,7 @@ func validateResources(resources []*mesh_proto.ProxyTemplateRawResource) validat
 
 func validateSelectors(selectors []*mesh_proto.Selector) validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("selectors"), selectors, ValidateSelectorsOpts{
-		ValidateSelectorOpts: ValidateSelectorOpts{
+		ValidateTagsOpts: ValidateTagsOpts{
 			RequireService:       true,
 			RequireAtLeastOneTag: true,
 		},

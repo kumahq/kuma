@@ -1,4 +1,7 @@
 creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
+name: mesh-1
+type: Mesh
 logging:
   backends:
   - conf:
@@ -17,13 +20,11 @@ metrics:
     name: prometheus-1
     type: prometheus
   enabledBackend: prometheus-1
-modificationTime: "0001-01-01T00:00:00Z"
 mtls:
   backends:
   - name: builtin-1
     type: builtin
   enabledBackend: builtin-1
-name: mesh-1
 routing:
   localityAwareLoadBalancing: true
 tracing:
@@ -36,4 +37,3 @@ tracing:
       url: http://zipkin.eu:8080/v1/spans
     name: zipkin-eu
     type: zipkin
-type: Mesh
