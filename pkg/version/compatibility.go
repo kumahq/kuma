@@ -59,10 +59,12 @@ var CompatibilityMatrix = Compatibility{
 		"~1.4.0-1-anyprerelease": {
 			Envoy: "~1.18.4",
 		},
-		"~dev": {
-			Envoy: "~1.18.4",
-		},
 	},
+}
+
+var DevVersionPrefix = "dev"
+var DevDataplaneCompatibility = DataplaneCompatibility{
+	Envoy: "~1.18.4",
 }
 
 // DataplaneConstraints returns which Envoy should be used with given version of Kuma.
@@ -70,6 +72,10 @@ var CompatibilityMatrix = Compatibility{
 // Kuma ships with given Envoy version, but user can use their own Envoy version (especially on Universal)
 // therefore we need to inform them that they are not using compatible version.
 func (c Compatibility) DataplaneConstraints(version string) (*DataplaneCompatibility, error) {
+	if strings.HasPrefix(version, DevVersionPrefix) {
+		return &DevDataplaneCompatibility, nil
+	}
+
 	v, err := semver.NewVersion(version)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not build a constraint for Kuma version %s", version)
