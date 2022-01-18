@@ -118,7 +118,6 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 	resources := ResourceAggregator{core_xds.NewResourceSet()}
 
-	// Cache external services since multiple listeners might need them.
 	externalServices := ctx.Mesh.Resources.ExternalServices()
 
 	for port, listeners := range collapsed {
