@@ -34,6 +34,11 @@ type DataplaneInspectEntry struct {
 	MatchedPolicies map[core_model.ResourceType][]*rest.Resource `json:"matchedPolicies"`
 }
 
+type DataplaneInspectEntryList struct {
+	Total uint32                   `json:"total"`
+	Items []*DataplaneInspectEntry `json:"items"`
+}
+
 type DataplaneInspectEntryReceiver struct {
 	DataplaneInspectEntry
 	NewResource func(resourceType core_model.ResourceType) (core_model.Resource, error)

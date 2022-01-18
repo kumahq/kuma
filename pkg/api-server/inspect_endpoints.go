@@ -83,8 +83,12 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 		}
 
 		entries := newDataplaneInspectResponse(matchedPolicies)
+		result := &api_server_types.DataplaneInspectEntryList{
+			Items: entries,
+			Total: uint32(len(entries)),
+		}
 
-		if err := response.WriteAsJson(entries); err != nil {
+		if err := response.WriteAsJson(result); err != nil {
 			rest_errors.HandleError(response, err, "Could not write response")
 			return
 		}
@@ -144,10 +148,10 @@ func inspectPolicies(
 	}
 }
 
-func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies) []api_server_types.DataplaneInspectEntry {
+func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies) []*api_server_types.DataplaneInspectEntry {
 	attachmentMap := core_xds.GroupByAttachment(matchedPolicies)
 
-	entries := make([]api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
+	entries := make([]*api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
 	attachments := []core_xds.Attachment{}
 	for attachment := range attachmentMap {
 		attachments = append(attachments, attachment)
@@ -156,7 +160,7 @@ func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies) []ap
 	sort.Stable(core_xds.AttachmentList(attachments))
 
 	for _, attachment := range attachments {
-		entry := api_server_types.DataplaneInspectEntry{
+		entry := &api_server_types.DataplaneInspectEntry{
 			AttachmentEntry: api_server_types.AttachmentEntry{
 				Type: attachment.Type.String(),
 				Name: attachment.Name,
