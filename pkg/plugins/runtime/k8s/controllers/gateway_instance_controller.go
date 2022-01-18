@@ -59,14 +59,14 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 
 	svc, err := r.createOrUpdateService(ctx, gatewayInstance)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to create Service for Gateway")
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile Service for Gateway")
 	}
 
 	var deployment *kube_apps.Deployment
 	if svc != nil {
 		deployment, err = r.createOrUpdateDeployment(ctx, gatewayInstance)
 		if err != nil {
-			return kube_ctrl.Result{}, errors.Wrap(err, "unable to create Deployment for Gateway")
+			return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile Deployment for Gateway")
 		}
 	}
 
@@ -76,7 +76,7 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update GatewayInstance status")
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to patch GatewayInstance status")
 	}
 
 	return kube_ctrl.Result{}, nil
@@ -134,7 +134,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update Service for GatewayInstance")
+		return nil, err
 	}
 
 	if obj == nil {
@@ -213,7 +213,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create or update Service for GatewayInstance")
+		return nil, err
 	}
 
 	return obj.(*kube_apps.Deployment), nil
