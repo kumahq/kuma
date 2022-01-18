@@ -1,10 +1,13 @@
 package generator
 
 import (
+	"strings"
+
 	"github.com/Masterminds/semver/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/version"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -35,12 +38,16 @@ type AdminProxyGenerator struct {
 }
 
 // backwards compatibility with 1.3.x
-var HasCPValidationCtxInBootstrap = func(version *mesh_proto.Version) (bool, error) {
-	if version.GetKumaDp().GetVersion() == "" { // mostly for tests but also for very old version of Kuma
+var HasCPValidationCtxInBootstrap = func(ver *mesh_proto.Version) (bool, error) {
+	if ver.GetKumaDp().GetVersion() == "" { // mostly for tests but also for very old version of Kuma
 		return false, nil
 	}
 
-	semverVer, err := semver.NewVersion(version.KumaDp.GetVersion())
+	if strings.HasPrefix(ver.GetKumaDp().GetVersion(), version.DevVersionPrefix) {
+		return true, nil
+	}
+
+	semverVer, err := semver.NewVersion(ver.KumaDp.GetVersion())
 	if err != nil {
 		return false, err
 	}

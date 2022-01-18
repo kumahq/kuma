@@ -14,7 +14,7 @@ PULP_HOST="https://api.pulp.konnect-prod.konghq.com"
 PULP_PACKAGE_TYPE="mesh"
 PULP_DIST_NAME="alpine"
 [ -z "$RELEASE_NAME" ] && RELEASE_NAME="kuma"
-ENVOY_VERSION=1.20.0
+ENVOY_VERSION=1.20.1-dev-b16d390f
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 
 function get_envoy() {
@@ -74,7 +74,7 @@ function package() {
       msg ">>> Packaging Kuma for $distro ($system-$arch)..."
       msg
 
-      make GOOS="$system" GOARCH="$arch" BUILD_INFO_GIT_TAG="$KUMA_VERSION" BUILD_INFO_GIT_COMMIT="$KUMA_COMMIT" build
+      make GOOS="$system" GOARCH="$arch" build
       create_tarball "$system" "$arch" "$distro" "$envoy_distro"
 
       msg
@@ -96,7 +96,7 @@ function release() {
       artifact="build/artifacts-$system-$arch/$RELEASE_NAME-$KUMA_VERSION-$distro-$arch.tar.gz"
       [ ! -f "$artifact" ] && msg_yellow "Package '$artifact' not found, skipping..." && continue
 
-      msg_green "Releasing Kuma for '$os', '$arch'..."
+      msg_green "Releasing Kuma for '$os', '$arch', '$KUMA_VERSION'..."
 
       docker run --rm \
         -e PULP_USERNAME="${PULP_USERNAME}" -e PULP_PASSWORD="${PULP_PASSWORD}" \
@@ -114,6 +114,8 @@ function usage() {
 }
 
 function main() {
+  KUMA_VERSION=$($(dirname -- "${BASH_SOURCE[0]}")/version.sh)
+
   while [[ $# -gt 0 ]]; do
     flag=$1
     case $flag in
@@ -126,14 +128,6 @@ function main() {
     --release)
       op="release"
       ;;
-    --version)
-      KUMA_VERSION=$2
-      shift
-      ;;
-    --sha)
-      KUMA_COMMIT=$2
-      shift
-      ;;
     *)
       usage
       break
@@ -144,7 +138,6 @@ function main() {
 
   [ -z "$PULP_USERNAME" ] && msg_err "PULP_USERNAME required"
   [ -z "$PULP_PASSWORD" ] && msg_err "PULP_PASSWORD required"
-  [ -z "$KUMA_VERSION" ] && msg_err "Error: --version required"
 
   case $op in
   package)
