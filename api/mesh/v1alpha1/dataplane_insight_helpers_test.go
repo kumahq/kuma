@@ -153,21 +153,20 @@ var _ = Describe("DataplaneHelpers", func() {
 			})
 		})
 
-		Describe("GetLatestSubscription()", func() {
+		Describe("GetLastSubscription()", func() {
 
 			It("should return `nil` when there are no subscriptions", func() {
 				// given
 				status.Subscriptions = nil
 
 				// when
-				subscription, connectTime := status.GetLatestSubscription()
+				subscription := status.GetLastSubscription()
 
 				// then
 				Expect(subscription).To(BeNil())
-				Expect(connectTime).To(BeNil())
 			})
 
-			It("should return subscription with the most recent `ConnectTime`", func() {
+			It("should return last subscription", func() {
 				// given
 				status.Subscriptions = []*DiscoverySubscription{
 					{
@@ -185,11 +184,11 @@ var _ = Describe("DataplaneHelpers", func() {
 				}
 
 				// when
-				subscription, connectTime := status.GetLatestSubscription()
+				subscription := status.GetLastSubscription()
 
 				// then
-				Expect(subscription).To(BeIdenticalTo(status.Subscriptions[1]))
-				Expect(*connectTime).To(BeTemporally("==", t3))
+				Expect(subscription).To(BeIdenticalTo(status.Subscriptions[2]))
+				Expect(subscription.GetId()).To(Equal("2"))
 			})
 		})
 

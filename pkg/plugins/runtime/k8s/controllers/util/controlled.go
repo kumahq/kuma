@@ -62,6 +62,8 @@ func ManageControlledObject(
 			return nil, fmt.Errorf("expected runtime.Object to be client.Object")
 		}
 
+		original := item.DeepCopyObject().(kube_client.Object)
+
 		obj, err := mutate(item)
 		if err != nil {
 			return nil, errors.Wrap(err, "couldn't mutate object for update")
@@ -77,8 +79,8 @@ func ManageControlledObject(
 			return nil, errors.Wrap(err, "unable to set object's controller reference")
 		}
 
-		if err := client.Update(ctx, obj); err != nil {
-			return nil, errors.Wrap(err, "couldn't update object")
+		if err := client.Patch(ctx, obj, kube_client.MergeFrom(original)); err != nil {
+			return nil, errors.Wrap(err, "couldn't patch object")
 		}
 		return obj, nil
 	default:

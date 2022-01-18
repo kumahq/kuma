@@ -18,13 +18,13 @@ import (
 
 // createorUpdateBuiltinGatewayDataplane manages the dataplane for a pod
 // belonging to a built-in Kuma gateway.
-func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod) error {
+func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) error {
 	dataplane := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
 		},
-		Mesh: k8s_util.MeshFor(pod),
+		Mesh: k8s_util.MeshOf(pod, ns),
 	}
 
 	tagsAnnotation, ok := pod.Annotations[metadata.KumaTagsAnnotation]
@@ -54,7 +54,7 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 	}
 
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		dataplane.Spec = dataplaneProto
+		dataplane.SetSpec(dataplaneProto)
 
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
 			return errors.Wrap(err, "unable to set Dataplane's controller reference to Pod")

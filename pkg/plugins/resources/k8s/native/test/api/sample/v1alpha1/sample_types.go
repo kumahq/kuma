@@ -17,24 +17,23 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	test_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 )
 
-// TrafficRouteSpec defines the desired state of SampleTrafficRoute
-type TrafficRouteSpec = *test_proto.TrafficRoute
-
-// SampleTrafficRoute is the Schema for the proxytemplates API
+// SampleTrafficRoute is test object that wraps a sample TrafficRoute.
+// +kubebuilder:object:root=true
 type SampleTrafficRoute struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Mesh              string `json:"mesh"`
 
-	Spec TrafficRouteSpec `json:"spec,omitempty"`
+	Mesh string `json:"mesh"`
+
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
 // SampleTrafficRouteList contains a list of SampleTrafficRoute
+// +kubebuilder:object:root=true
 type SampleTrafficRouteList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

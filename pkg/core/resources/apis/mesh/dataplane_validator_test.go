@@ -215,6 +215,38 @@ var _ = Describe("Dataplane", func() {
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
 		},
+		Entry("networking.address: can't use 0.0.0.0", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 0.0.0.0
+                  inbound:
+                    - port: 8080
+                      tags:
+                        kuma.io/service: backend`,
+			expected: `
+                violations:
+                - field: networking.address
+                  message: 'must not be 0.0.0.0 or ::'`,
+		}),
+		Entry("networking.address: can't use ::", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: "::"
+                  inbound:
+                    - port: 8080
+                      tags:
+                        kuma.io/service: backend`,
+			expected: `
+                violations:
+                - field: networking.address
+                  message: 'must not be 0.0.0.0 or ::'`,
+		}),
 		Entry("networking: not enough inbound interfaces and no gateway", testCase{
 			dataplane: `
                 type: Dataplane

@@ -56,13 +56,11 @@ var (
 	svcKind   = gatewayapi.Kind("Service")
 	somePort  = gatewayapi.PortNumber(80)
 
-	toDefaultNs  = gatewayapi.Namespace(defaultNs)
-	toDefaultSvc = gatewayapi.BackendObjectReference{
-		Group:     &coreGroup,
-		Kind:      &svcKind,
-		Name:      "svc",
-		Namespace: &toDefaultNs,
-		Port:      &somePort,
+	toSameSvc = gatewayapi.BackendObjectReference{
+		Group: &coreGroup,
+		Kind:  &svcKind,
+		Name:  "svc",
+		Port:  &somePort,
 	}
 
 	toOtherNs  = gatewayapi.Namespace(otherNs)
@@ -90,7 +88,7 @@ var _ = Describe("ReferencePolicy support", func() {
 			&simplePolicy,
 		).Build()
 
-		ref := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(defaultNs), toDefaultSvc)
+		ref := policy.PolicyReferenceBackend(policy.FromHTTPRouteIn(defaultNs), toSameSvc)
 		permitted, err := policy.IsReferencePermitted(
 			context.Background(),
 			kubeClient,

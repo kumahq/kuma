@@ -39,6 +39,11 @@ var _ = Describe("DNSGenerator", func() {
 						},
 						Spec: &mesh_proto.Mesh{},
 					},
+					VIPDomains: []model.VIPDomains{
+						{Address: "240.0.0.1", Domains: []string{"httpbin.mesh"}},
+						{Address: "240.0.0.0", Domains: []string{"backend.test-ns.svc.8080.mesh", "backend_test-ns_svc_8080.mesh"}},
+						{Address: "2001:db8::ff00:42:8329", Domains: []string{"frontend.test-ns.svc.8080.mesh", "frontend_test-ns_svc_8080.mesh"}},
+					},
 				},
 			}
 
@@ -55,13 +60,7 @@ var _ = Describe("DNSGenerator", func() {
 					Spec: &dataplane,
 				},
 				APIVersion: envoy_common.APIV3,
-				Routing: model.Routing{
-					VipDomains: []model.VIPDomains{
-						{Address: "240.0.0.1", Domains: []string{"httpbin.mesh"}},
-						{Address: "240.0.0.0", Domains: []string{"backend.test-ns.svc.8080.mesh", "backend_test-ns_svc_8080.mesh"}},
-						{Address: "2001:db8::ff00:42:8329", Domains: []string{"frontend.test-ns.svc.8080.mesh", "frontend_test-ns_svc_8080.mesh"}},
-					},
-				},
+				Routing:    model.Routing{},
 				Metadata: &model.DataplaneMetadata{
 					DNSPort:      53001,
 					EmptyDNSPort: 53002,

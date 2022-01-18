@@ -9,20 +9,23 @@ import (
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
+	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
-	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
 
 // GatewayReconciler reconciles a GatewayAPI Gateway object.
@@ -31,7 +34,7 @@ type GatewayReconciler struct {
 	Log logr.Logger
 
 	Scheme          *kube_runtime.Scheme
-	Converter       k8s_common.Converter
+	TypeRegistry    k8s_registry.TypeRegistry
 	SystemNamespace string
 	ProxyFactory    containers.DataplaneProxyFactory
 	ResourceManager manager.ResourceManager
@@ -43,43 +46,46 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	gateway := &gatewayapi.Gateway{}
 	if err := r.Get(ctx, req.NamespacedName, gateway); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return kube_ctrl.Result{}, nil
+			// We don't know the mesh, but we don't need it to delete our
+			// object.
+			err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.Gateway{}, nil)
+			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned Gateway.kuma.io")
 		}
 
 		return kube_ctrl.Result{}, err
 	}
 
-	class, err := getGatewayClass(ctx, r.Client, gateway.Spec.GatewayClassName)
+	class, err := common.GetGatewayClass(ctx, r.Client, gateway.Spec.GatewayClassName)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to retrieve GatewayClass referenced by Gateway")
 	}
 
-	if class.Spec.ControllerName != controllerName {
+	if class.Spec.ControllerName != common.ControllerName {
 		return kube_ctrl.Result{}, nil
 	}
 
-	coreName := util_k8s.K8sNamespacedNameToCoreName(gateway.Name, gateway.Namespace)
-	mesh := k8s_util.MeshFor(gateway)
+	gatewaySpec, listenerConditions, err := r.gapiToKumaGateway(ctx, gateway)
+	if err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "error generating Gateway.kuma.io")
+	}
 
-	resource := core_mesh.NewGatewayResource()
+	ns := kube_core.Namespace{}
+	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gateway.Namespace}, &ns); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of Gateway")
+	}
 
-	if err := manager.Upsert(r.ResourceManager, model.ResourceKey{Mesh: mesh, Name: coreName}, resource, func(resource model.Resource) error {
-		gatewaySpec, err := r.gapiToKumaGateway(gateway)
-		if err != nil {
-			return errors.Wrap(err, "could not create Kuma Gateway spec")
-		}
+	mesh := k8s_util.MeshOf(gateway, &ns)
 
-		return resource.SetSpec(gatewaySpec)
-	}); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not upsert Gateway")
+	if err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.Gateway{}, gatewaySpec); err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned Gateway.kuma.io")
 	}
 
 	gatewayInstance, err := r.createOrUpdateInstance(ctx, gateway)
 	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to create GatewayInstance")
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile GatewayInstance")
 	}
 
-	if err := r.updateStatus(ctx, gateway, gatewayInstance); err != nil {
+	if err := r.updateStatus(ctx, gateway, gatewayInstance, listenerConditions); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update Gateway status")
 	}
 
@@ -97,7 +103,7 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, gateway 
 	if _, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, instance, func() error {
 		instance.Spec = mesh_k8s.GatewayInstanceSpec{
 			ServiceType: kube_core.ServiceTypeLoadBalancer,
-			Tags:        serviceTagForGateway(kube_client.ObjectKeyFromObject(gateway)),
+			Tags:        common.ServiceTagForGateway(kube_client.ObjectKeyFromObject(gateway)),
 		}
 
 		err := kube_controllerutil.SetControllerReference(gateway, instance, r.Scheme)
@@ -109,43 +115,35 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, gateway 
 	return instance, nil
 }
 
-func (r *GatewayReconciler) gapiToKumaGateway(gateway *gatewayapi.Gateway) (*mesh_proto.Gateway, error) {
-	var listeners []*mesh_proto.Gateway_Listener
+// gatewaysForRoute returns a function that calculates which Gateways might
+// be affected by changes in an HTTPRoute so they can be reconciled.
+func gatewaysForRoute(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("gatewaysForRoute")
 
-	for _, l := range gateway.Spec.Listeners {
-		listener := &mesh_proto.Gateway_Listener{
-			Port: uint32(l.Port),
-			Tags: map[string]string{
-				// gateway-api routes are configured using direct references to
-				// Gateways, so just create a tag specifically for this listener
-				mesh_proto.ListenerTag: string(l.Name),
-			},
+	return func(obj kube_client.Object) []kube_reconcile.Request {
+		route, ok := obj.(*gatewayapi.HTTPRoute)
+		if !ok {
+			l.Error(nil, "unexpected error converting to be mapped %T object to HTTPRoute", obj)
+			return nil
 		}
 
-		if protocol, ok := mesh_proto.Gateway_Listener_Protocol_value[string(l.Protocol)]; ok {
-			listener.Protocol = mesh_proto.Gateway_Listener_Protocol(protocol)
-		} else if l.Protocol != "" {
-			return nil, errors.Errorf("unexpected protocol %s", l.Protocol)
+		var requests []kube_reconcile.Request
+		for _, parentRef := range route.Spec.ParentRefs {
+			namespace := route.Namespace
+			if parentRef.Namespace != nil {
+				namespace = string(*parentRef.Namespace)
+			}
+
+			requests = append(
+				requests,
+				kube_reconcile.Request{
+					NamespacedName: kube_types.NamespacedName{Namespace: namespace, Name: string(parentRef.Name)},
+				},
+			)
 		}
 
-		listener.Hostname = "*"
-		if l.Hostname != nil {
-			listener.Hostname = string(*l.Hostname)
-		}
-
-		listeners = append(listeners, listener)
+		return requests
 	}
-
-	match := serviceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
-
-	return &mesh_proto.Gateway{
-		Selectors: []*mesh_proto.Selector{
-			{Match: match},
-		},
-		Conf: &mesh_proto.Gateway_Conf{
-			Listeners: listeners,
-		},
-	}, nil
 }
 
 func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
@@ -153,5 +151,9 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		For(&gatewayapi.Gateway{}).
 		Owns(&mesh_k8s.Gateway{}).
 		Owns(&mesh_k8s.GatewayInstance{}).
+		Watches(
+			&kube_source.Kind{Type: &gatewayapi.HTTPRoute{}},
+			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForRoute(r.Log, r.Client)),
+		).
 		Complete(r)
 }

@@ -31,12 +31,16 @@ var CustomResourceTemplate = template.Must(template.New("custom-resource").Parse
 package v1alpha1
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/proto"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	{{ $pkg }} "github.com/kumahq/kuma/api/{{ .Package }}/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 {{range .Resources}}
@@ -52,11 +56,20 @@ type {{.ResourceType}} struct {
 	metav1.TypeMeta   {{ $tk }}json:",inline"{{ $tk }}
 	metav1.ObjectMeta {{ $tk }}json:"metadata,omitempty"{{ $tk }}
 
-	Mesh   string                        {{ $tk }}json:"mesh,omitempty"{{ $tk }}
+    // Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+    // +kubebuilder:validation:Optional
+	Mesh string {{ $tk }}json:"mesh,omitempty"{{ $tk }}
+
 {{- if eq .ResourceType "DataplaneInsight" }}
-	Status   *{{ $pkg }}.{{.ProtoType}} {{ $tk }}json:"status,omitempty"{{ $tk }}
+	// Status is the status the Kuma resource.
+    // +kubebuilder:validation:Optional
+	Status   *apiextensionsv1.JSON {{ $tk }}json:"status,omitempty"{{ $tk }}
 {{- else}}
-	Spec   *{{ $pkg }}.{{.ProtoType}} {{ $tk }}json:"spec,omitempty"{{ $tk }}
+	// Spec is the specification of the Kuma {{ .ProtoType }} resource.
+    // +kubebuilder:validation:Optional
+	Spec   *apiextensionsv1.JSON {{ $tk }}json:"spec,omitempty"{{ $tk }}
 {{- end}}
 }
 
@@ -69,7 +82,7 @@ type {{.ResourceType}} struct {
 type {{.ResourceType}}List struct {
 	metav1.TypeMeta {{ $tk }}json:",inline"{{ $tk }}
 	metav1.ListMeta {{ $tk }}json:"metadata,omitempty"{{ $tk }}
-	Items           []{{.ProtoType}} {{ $tk }}json:"items"{{ $tk }}
+	Items           []{{.ResourceType}} {{ $tk }}json:"items"{{ $tk }}
 }
 
 {{- if not .SkipRegistration}}
@@ -96,17 +109,37 @@ func (cb *{{.ResourceType}}) SetMesh(mesh string) {
 
 func (cb *{{.ResourceType}}) GetSpec() proto.Message {
 {{- if eq .ResourceType "DataplaneInsight" }}
-	return cb.Status
+	spec := cb.Status
 {{- else}}
-	return cb.Spec
+	spec :=  cb.Spec
 {{- end}}
+	m := {{$pkg}}.{{.ProtoType}}{}
+
+    if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
 }
 
 func (cb *{{.ResourceType}}) SetSpec(spec proto.Message) {
+	if spec == nil {
 {{- if eq .ResourceType "DataplaneInsight" }}
-	cb.Status = proto.Clone(spec).(*{{ $pkg }}.{{.ProtoType}})
-{{- else}}
-	cb.Spec = proto.Clone(spec).(*{{ $pkg }}.{{.ProtoType}})
+		cb.Status = nil
+{{ else }}
+		cb.Spec = nil
+{{- end }}
+		return
+	}
+
+	if _, ok := spec.(*{{$pkg}}.{{.ProtoType}}); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+{{ if eq .ResourceType "DataplaneInsight" }}
+	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+{{ else}}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
 {{- end}}
 }
 
@@ -115,7 +148,7 @@ func (cb *{{.ResourceType}}) Scope() model.Scope {
 	return model.ScopeNamespace
 {{- else }}
 	return model.ScopeCluster
-{{- end}}
+{{- end }}
 }
 
 func (l *{{.ResourceType}}List) GetItems() []model.KubernetesObject {

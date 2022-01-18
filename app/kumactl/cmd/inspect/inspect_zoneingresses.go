@@ -61,7 +61,7 @@ func printZoneIngressOverviews(now time.Time, zoneIngressOverviews *mesh.ZoneIng
 				meta := zoneIngressOverviews.Items[i].Meta
 				zoneIngressInsight := zoneIngressOverviews.Items[i].Spec.ZoneIngressInsight
 
-				lastSubscription, lastConnected := zoneIngressInsight.GetLatestSubscription()
+				lastSubscription := zoneIngressInsight.GetLastSubscription().(*mesh_proto.DiscoverySubscription)
 				totalResponsesSent := zoneIngressInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
 					return s.GetStatus().GetTotal().GetResponsesSent()
 				})
@@ -72,6 +72,7 @@ func printZoneIngressOverviews(now time.Time, zoneIngressOverviews *mesh.ZoneIng
 				if zoneIngressInsight.IsOnline() {
 					onlineStatus = "Online"
 				}
+				lastConnected := util_proto.MustTimestampFromProto(lastSubscription.GetConnectTime())
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
 				var kumaDpVersion string

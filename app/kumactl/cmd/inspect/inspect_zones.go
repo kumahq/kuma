@@ -64,7 +64,7 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 				zone := zoneOverviews.Items[i].Spec.Zone
 				zoneInsight := zoneOverviews.Items[i].Spec.ZoneInsight
 
-				lastSubscription, lastConnected := zoneInsight.GetLatestSubscription()
+				lastSubscription := zoneInsight.GetLastSubscription().(*system_proto.KDSSubscription)
 				totalResponsesSent := zoneInsight.Sum(func(s *system_proto.KDSSubscription) uint64 {
 					return s.GetStatus().GetTotal().GetResponsesSent()
 				})
@@ -75,6 +75,7 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 				if zoneInsight.IsOnline() && zone.IsEnabled() {
 					onlineStatus = "Online"
 				}
+				lastConnected := util_proto.MustTimestampFromProto(lastSubscription.GetConnectTime())
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
 				var zoneCPVersion string

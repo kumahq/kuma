@@ -6,31 +6,47 @@ import (
 
 	"github.com/pkg/errors"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
+	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
-var httpRouteGK = kube_schema.GroupKind{Group: gatewayapi.GroupName, Kind: "HTTPRoute"}
-
 type PolicyReference struct {
 	from        gatewayapi.ReferencePolicyFrom
 	toNamespace gatewayapi.Namespace
-	to          gatewayapi.ReferencePolicyTo
+	// always set when created via the exported functions
+	to gatewayapi.ReferencePolicyTo
 }
 
-func (pr *PolicyReference) ToNamespace() string {
-	return string(pr.toNamespace)
+func (pr *PolicyReference) NamespacedNameReferredTo() kube_types.NamespacedName {
+	return kube_types.NamespacedName{Name: string(*pr.to.Name), Namespace: string(pr.toNamespace)}
+}
+
+func (pr *PolicyReference) GroupKindReferredTo() kube_schema.GroupKind {
+	return kube_schema.GroupKind{Kind: string(pr.to.Kind), Group: string(pr.to.Group)}
+}
+
+func FromGatewayIn(namespace string) gatewayapi.ReferencePolicyFrom {
+	return gatewayapi.ReferencePolicyFrom{
+		Kind:      gatewayapi.Kind("Gateway"),
+		Group:     gatewayapi.Group(gatewayapi.GroupName),
+		Namespace: gatewayapi.Namespace(namespace),
+	}
 }
 
 func FromHTTPRouteIn(namespace string) gatewayapi.ReferencePolicyFrom {
 	return gatewayapi.ReferencePolicyFrom{
-		Kind:      gatewayapi.Kind(httpRouteGK.Kind),
-		Group:     gatewayapi.Group(httpRouteGK.Group),
+		Kind:      gatewayapi.Kind("HTTPRoute"),
+		Group:     gatewayapi.Group(gatewayapi.GroupName),
 		Namespace: gatewayapi.Namespace(namespace),
 	}
 }
 
 func PolicyReferenceBackend(from gatewayapi.ReferencePolicyFrom, to gatewayapi.BackendObjectReference) PolicyReference {
+	ns := from.Namespace
+	if to.Namespace != nil {
+		ns = *to.Namespace
+	}
 	return PolicyReference{
 		from: from,
 		to: gatewayapi.ReferencePolicyTo{
@@ -38,11 +54,15 @@ func PolicyReferenceBackend(from gatewayapi.ReferencePolicyFrom, to gatewayapi.B
 			Group: *to.Group,
 			Name:  &to.Name,
 		},
-		toNamespace: *to.Namespace,
+		toNamespace: ns,
 	}
 }
 
 func PolicyReferenceSecret(from gatewayapi.ReferencePolicyFrom, to gatewayapi.SecretObjectReference) PolicyReference {
+	ns := from.Namespace
+	if to.Namespace != nil {
+		ns = *to.Namespace
+	}
 	return PolicyReference{
 		from: from,
 		to: gatewayapi.ReferencePolicyTo{
@@ -50,7 +70,7 @@ func PolicyReferenceSecret(from gatewayapi.ReferencePolicyFrom, to gatewayapi.Se
 			Group: *to.Group,
 			Name:  &to.Name,
 		},
-		toNamespace: *to.Namespace,
+		toNamespace: ns,
 	}
 }
 
