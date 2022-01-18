@@ -13,6 +13,9 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -112,10 +115,45 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, gateway 
 	return instance, nil
 }
 
+// gatewaysForRoute returns a function that calculates which Gateways might
+// be affected by changes in an HTTPRoute so they can be reconciled.
+func gatewaysForRoute(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("gatewaysForRoute")
+
+	return func(obj kube_client.Object) []kube_reconcile.Request {
+		route, ok := obj.(*gatewayapi.HTTPRoute)
+		if !ok {
+			l.Error(nil, "unexpected error converting to be mapped %T object to HTTPRoute", obj)
+			return nil
+		}
+
+		var requests []kube_reconcile.Request
+		for _, parentRef := range route.Spec.ParentRefs {
+			namespace := route.Namespace
+			if parentRef.Namespace != nil {
+				namespace = string(*parentRef.Namespace)
+			}
+
+			requests = append(
+				requests,
+				kube_reconcile.Request{
+					NamespacedName: kube_types.NamespacedName{Namespace: namespace, Name: string(parentRef.Name)},
+				},
+			)
+		}
+
+		return requests
+	}
+}
+
 func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayapi.Gateway{}).
 		Owns(&mesh_k8s.Gateway{}).
 		Owns(&mesh_k8s.GatewayInstance{}).
+		Watches(
+			&kube_source.Kind{Type: &gatewayapi.HTTPRoute{}},
+			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForRoute(r.Log, r.Client)),
+		).
 		Complete(r)
 }
