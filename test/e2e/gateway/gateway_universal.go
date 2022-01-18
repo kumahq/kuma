@@ -12,8 +12,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 )
 
 func GatewayOnUniversal() {
@@ -271,7 +271,7 @@ networking:
 		It("should proxy simple HTTP requests", func() {
 			ProxySimpleRequests(cluster, "external-echo",
 				net.JoinHostPort(GatewayAddress("gateway-proxy"), GatewayPort),
-				testutil.WithPathPrefix("/external"))
+				client.WithPathPrefix("/external"))
 		})
 	})
 
@@ -332,7 +332,7 @@ data: %s
 		It("should proxy simple HTTPS requests", func() {
 			ProxySecureRequests(cluster, "universal",
 				net.JoinHostPort("example.kuma.io", GatewayPort),
-				testutil.Resolve("example.kuma.io", 8080, GatewayAddress("gateway-proxy")))
+				client.Resolve("example.kuma.io", 8080, GatewayAddress("gateway-proxy")))
 		})
 	})
 
