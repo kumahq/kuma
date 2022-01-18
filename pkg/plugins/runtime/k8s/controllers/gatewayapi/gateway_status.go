@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
@@ -73,8 +73,8 @@ const everyListener = gatewayapi.SectionName("")
 type attachedRoutes struct {
 	// num is the number of allowed routes for a listener
 	num int32
-	// invalidRoute can be empty
-	invalidRoute kube_types.NamespacedName
+	// invalidRoutes can be empty
+	invalidRoutes []string
 }
 
 // AttachedRoutesForListeners tracks the relevant status for routes pointing to a
@@ -109,10 +109,8 @@ func attachedRoutesForListeners(
 					attached := attachedRoutes[sectionName]
 					attached.num++
 
-					// If this is the first route we see with unresolved refs
-					if kube_apimeta.IsStatusConditionFalse(refStatus.Conditions, string(gatewayapi.ConditionRouteResolvedRefs)) &&
-						attached.invalidRoute.Name == "" {
-						attached.invalidRoute = kube_client.ObjectKeyFromObject(&route)
+					if kube_apimeta.IsStatusConditionFalse(refStatus.Conditions, string(gatewayapi.ConditionRouteResolvedRefs)) {
+						attached.invalidRoutes = append(attached.invalidRoutes, kube_client.ObjectKeyFromObject(&route).String())
 					}
 
 					attachedRoutes[sectionName] = attached
@@ -166,22 +164,17 @@ func mergeGatewayListenerStatuses(
 
 		// If we can't resolve refs on a route and our listener condition
 		// ResolvedRefs is otherwise true, set it to false.
-		invalidRoute := ""
-		if r := attachedRouteStatuses[everyListener].invalidRoute; r.Name != "" {
-			invalidRoute = r.String()
-		}
-		if r := attachedRouteStatuses[name].invalidRoute; r.Name != "" {
-			invalidRoute = r.String()
-		}
+		invalidRoutes := append(attachedRouteStatuses[everyListener].invalidRoutes, attachedRouteStatuses[name].invalidRoutes...)
 
-		if invalidRoute != "" &&
+		if len(invalidRoutes) > 0 &&
 			kube_apimeta.IsStatusConditionTrue(previousStatus.Conditions, string(gatewayapi.ListenerConditionResolvedRefs)) {
-			// We don't set ready false
+			// We only set the ResolvedRefs condition and don't set ready false
+			message := fmt.Sprintf("Attached HTTPRoutes %s have unresolved BackendRefs", strings.Join(invalidRoutes, ", "))
 			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, kube_meta.Condition{
 				Type:               string(gatewayapi.ListenerConditionResolvedRefs),
 				Status:             kube_meta.ConditionFalse,
 				Reason:             string(gatewayapi.ListenerReasonRefNotPermitted),
-				Message:            fmt.Sprintf("HTTPRoute %q has ResolvedRefs false", invalidRoute),
+				Message:            message,
 				ObservedGeneration: gateway.GetGeneration(),
 			})
 		}
