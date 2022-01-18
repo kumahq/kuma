@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"context"
 	"fmt"
 	"sort"
 
@@ -9,9 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
@@ -82,14 +79,11 @@ type GatewayHostGenerator interface {
 
 // Generator generates xDS resources for an entire Gateway.
 type Generator struct {
-	ResourceManager core_manager.ReadOnlyResourceManager
-	Generators      []GatewayHostGenerator
+	Generators []GatewayHostGenerator
 }
 
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	mesh := ctx.Mesh.Resource.Meta.GetName()
-	manager := match.ManagerForMesh(g.ResourceManager, mesh)
-	gateway := match.Gateway(manager, proxy.Dataplane.Spec.Matches)
+	gateway := match.Gateway(ctx.Mesh.Resources.Gateways(), proxy.Dataplane.Spec.Matches)
 
 	if gateway == nil {
 		log.V(1).Info("no matching gateway for dataplane",
@@ -124,11 +118,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 	resources := ResourceAggregator{core_xds.NewResourceSet()}
 
-	// Cache external services since multiple listeners might need them.
-	externalServices, err := listResources(manager, core_mesh.ExternalServiceType)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list ExternalServices")
-	}
+	externalServices := ctx.Mesh.Resources.ExternalServices()
 
 	for port, listeners := range collapsed {
 		// Force all listeners on the same port to have the same protocol.
@@ -141,7 +131,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			}
 		}
 
-		listener, hosts, err := MakeGatewayListener(manager, gateway, listeners)
+		listener, hosts, err := MakeGatewayListener(ctx.Mesh, gateway, listeners)
 		if err != nil {
 			return nil, err
 		}
@@ -158,7 +148,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			Proxy:            proxy,
 			Dataplane:        proxy.Dataplane,
 			Gateway:          gateway,
-			ExternalServices: externalServices.(*core_mesh.ExternalServiceResourceList),
+			ExternalServices: externalServices,
 			Listener:         listener,
 		}
 
@@ -197,29 +187,15 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 	return resources.Get(), nil
 }
 
-func listResources(mgr core_manager.ReadOnlyResourceManager, t model.ResourceType) (model.ResourceList, error) {
-	list, err := registry.Global().NewList(t)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := mgr.List(context.Background(), list); err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
 // MakeGatewayListener converts a collapsed set of listener configurations
 // in to a single configuration with a matched set of route resources. The
 // given listeners must have a consistent protocol and port.
 func MakeGatewayListener(
-	manager *match.MeshedResourceManager,
+	meshContext xds_context.MeshContext,
 	gateway *core_mesh.GatewayResource,
 	listeners []*mesh_proto.Gateway_Listener,
 ) (GatewayListener, []GatewayHost, error) {
 	hostsByName := map[string]GatewayHost{}
-	resourcesByType := map[model.ResourceType]model.ResourceList{}
 
 	listener := GatewayListener{
 		Port:     listeners[0].GetPort(),
@@ -229,24 +205,6 @@ func MakeGatewayListener(
 			listeners[0].GetProtocol().String(),
 			listeners[0].GetPort(),
 		),
-	}
-
-	for _, t := range RoutePolicyTypes {
-		list, err := listResources(manager, t)
-		if err != nil {
-			return listener, nil, err
-		}
-
-		resourcesByType[t] = list
-	}
-
-	for _, t := range ConnectionPolicyTypes {
-		list, err := listResources(manager, t)
-		if err != nil {
-			return listener, nil, err
-		}
-
-		resourcesByType[t] = list
 	}
 
 	// Hostnames must be unique to a listener to remove ambiguity
@@ -272,7 +230,7 @@ func MakeGatewayListener(
 		case mesh_proto.Gateway_Listener_HTTP,
 			mesh_proto.Gateway_Listener_HTTPS:
 			host.Routes = append(host.Routes,
-				match.Routes(resourcesByType[core_mesh.GatewayRouteType], l.GetTags())...)
+				match.Routes(meshContext.Resources.GatewayRoutes(), l.GetTags())...)
 		default:
 			// TODO(jpeach) match other route types that are appropriate to the protocol.
 		}
@@ -280,7 +238,7 @@ func MakeGatewayListener(
 		for _, t := range ConnectionPolicyTypes {
 			matches := match.ConnectionPoliciesBySource(
 				l.GetTags(),
-				match.ToConnectionPolicies(resourcesByType[t]))
+				match.ToConnectionPolicies(meshContext.Resources[t]))
 			host.Policies[t] = matches
 		}
 

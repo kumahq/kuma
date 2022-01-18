@@ -75,3 +75,11 @@ func (r Resources) ZoneIngresses() *core_mesh.ZoneIngressResourceList {
 func (r Resources) Dataplanes() *core_mesh.DataplaneResourceList {
 	return r.ListOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList)
 }
+
+func (r Resources) Gateways() *core_mesh.GatewayResourceList {
+	return r.ListOrEmpty(core_mesh.GatewayType).(*core_mesh.GatewayResourceList)
+}
+
+func (r Resources) GatewayRoutes() *core_mesh.GatewayRouteResourceList {
+	return r.ListOrEmpty(core_mesh.GatewayRouteType).(*core_mesh.GatewayRouteResourceList)
+}
