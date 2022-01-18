@@ -10,14 +10,11 @@ import (
 
 func MembershipUniversal() {
 	var cluster Cluster
-	var deployOptsFuncs []KumaDeploymentOption
-
 	E2EBeforeSuite(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = cluster.VerifyKuma()
@@ -25,7 +22,7 @@ func MembershipUniversal() {
 	})
 
 	E2EAfterSuite(func() {
-		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 

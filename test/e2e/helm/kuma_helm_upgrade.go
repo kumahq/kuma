@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -14,21 +15,15 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var OldChart = "0.4.5"
-var UpstreamImageRegistry = "kumahq"
-
-var InitCluster = func(cluster Cluster) {}
-
 func UpgradingWithHelmChart() {
 	var cluster Cluster
-	var deployOptsFuncs = KumaK8sDeployOpts
 
 	AfterEach(func() {
 		if ShouldSkipCleanup() {
 			return
 		}
 
-		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
@@ -39,28 +34,31 @@ func UpgradingWithHelmChart() {
 	DescribeTable(
 		"should successfully upgrade Kuma via Helm",
 		func(given testCase) {
-			cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
+			t := NewTestingT()
+			cluster = NewK8sCluster(t, Kuma1, Silent).
 				WithTimeout(6 * time.Second).
 				WithRetries(60)
 
-			InitCluster(cluster)
+			// Sometimes it might be necessary to run some stuff on k8s first
+			if Config.SuiteConfig.Helm.ExtraYamlPath != "" {
+				k8s.KubectlApply(t, cluster.(*K8sCluster).GetKubectlOptions(), Config.SuiteConfig.Helm.ExtraYamlPath)
+			}
 
 			releaseName := fmt.Sprintf(
 				"kuma-%s",
 				strings.ToLower(random.UniqueId()),
 			)
 
-			deployOptsFuncs = append(deployOptsFuncs,
-				WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
-				WithInstallationMode(HelmInstallationMode),
-				WithHelmChartPath(HelmRepo),
-				WithHelmReleaseName(releaseName),
-				WithHelmChartVersion(given.initialChartVersion),
-				WithoutHelmOpt("global.image.tag"),
-				WithHelmOpt("global.image.registry", UpstreamImageRegistry))
-
 			err := NewClusterSetup().
-				Install(Kuma(core.Standalone, deployOptsFuncs...)).
+				Install(Kuma(core.Standalone,
+					WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
+					WithInstallationMode(HelmInstallationMode),
+					WithHelmChartPath(Config.HelmChartName),
+					WithHelmReleaseName(releaseName),
+					WithHelmChartVersion(given.initialChartVersion),
+					WithoutHelmOpt("global.image.tag"),
+					WithHelmOpt("global.image.registry", Config.KumaImageRegistry),
+				)).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -68,14 +66,17 @@ func UpgradingWithHelmChart() {
 
 			k8sCluster := cluster.(*K8sCluster)
 
-			upgradeOptsFuncs := append(KumaK8sDeployOpts,
-				WithHelmReleaseName(releaseName))
-
-			err = k8sCluster.UpgradeKuma(core.Standalone, upgradeOptsFuncs...)
+			err = k8sCluster.UpgradeKuma(core.Standalone, WithHelmReleaseName(releaseName))
 			Expect(err).ToNot(HaveOccurred())
 		},
-		Entry("should successfully upgrade from chart v"+OldChart, testCase{
-			initialChartVersion: OldChart,
-		}),
+		func() []TableEntry {
+			var out []TableEntry
+			for _, version := range Config.SuiteConfig.Helm.Versions {
+				out = append(out, Entry("should successfully upgrade from chart v"+version, testCase{
+					initialChartVersion: version,
+				}))
+			}
+			return out
+		}()...,
 	)
 }

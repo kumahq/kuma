@@ -1,6 +1,9 @@
 package framework
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 const (
 	Verbose = true
@@ -26,40 +29,14 @@ const (
 	defaultKumactlConfig         = "${HOME}/.kumactl/%s-config"
 	defaultKubeConfigPathPattern = "${HOME}/.kube/kind-%s-config"
 
-	envK8SCLUSTERS = "K8SCLUSTERS"
-	envAPIVersion  = "API_VERSION"
-	envIPv6        = "IPV6"
-
 	maxClusters = 4
-
-	confPath = "/kuma/kuma-cp.conf"
-
-	kumaCPAPIPort = 5681
 
 	redirectPortInbound   = "15006"
 	redirectPortInboundV6 = "15010"
 	redirectPortOutbound  = "15001"
-	cidrIPv6              = "fd00:fd00::/64"
 )
 
-var HelmRepo = "kuma/kuma"
-var HelmChartPath = "../../../deployments/charts/kuma"
-var HelmSubChartPrefix = ""
-
-var KumaNamespace = "kuma-system"
-var KumaServiceName = "kuma-control-plane"
-var KumaGlobalZoneSyncServiceName = "kuma-global-zone-sync"
-var DefaultTracingNamespace = "kuma-tracing"
-var DefaultGatewayNamespace = "kuma-gateway"
-
-var CNIApp = "kuma-cni"
-var CNINamespace = "kube-system"
-
-var KumaImageRegistry = "kumahq"
-var KumaCPImageRepo = "kuma-cp"
-var KumaDPImageRepo = "kuma-dp"
-var KumaInitImageRepo = "kuma-init"
-
-var KumaUniversalDeployOpts []KumaDeploymentOption
-var KumaK8sDeployOpts []KumaDeploymentOption
-var KumaZoneK8sDeployOpts []KumaDeploymentOption
+func IsK8sClustersStarted() bool {
+	_, ok := os.LookupEnv("K8SCLUSTERS")
+	return ok
+}

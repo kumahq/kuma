@@ -42,7 +42,7 @@ func GatewayOnKubernetes() {
 			Image     string
 			Namespace string
 		}{
-			name, GetUniversalImage(), ClientNamespace,
+			name, Config.GetUniversalImage(), ClientNamespace,
 		}
 
 		out := &bytes.Buffer{}
@@ -229,7 +229,7 @@ spec:
 
 	Context("when mTLS is disabled", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaK8sDeployOpts...)
+			DeployCluster()
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -241,7 +241,7 @@ spec:
 
 	Context("when mTLS is enabled", func() {
 		BeforeEach(func() {
-			DeployCluster(append(KumaK8sDeployOpts, OptEnableMeshMTLS)...)
+			DeployCluster(OptEnableMeshMTLS)
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -270,7 +270,7 @@ spec:
 
 	Context("when a rate limit is configured", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaK8sDeployOpts...)
+			DeployCluster()
 		})
 
 		JustBeforeEach(func() {

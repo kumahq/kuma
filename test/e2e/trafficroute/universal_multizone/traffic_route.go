@@ -30,8 +30,6 @@ routing:
 	const defaultMesh = "default"
 
 	var global, zone1, zone2 Cluster
-	var optsGlobal, optsZone1, optsZone2 = KumaUniversalDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
-
 	E2EBeforeSuite(func() {
 		clusters, err := NewUniversalClusters(
 			[]string{Kuma3, Kuma4, Kuma5},
@@ -41,7 +39,7 @@ routing:
 		// Global
 		global = clusters.GetCluster(Kuma5)
 		err = NewClusterSetup().
-			Install(Kuma(core.Global, optsGlobal...)).
+			Install(Kuma(core.Global)).
 			Install(YamlUniversal(meshMTLSOn(defaultMesh, "false"))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
@@ -59,12 +57,13 @@ routing:
 
 		// Cluster 1
 		zone1 = clusters.GetCluster(Kuma3)
-		optsZone1 = append(optsZone1, WithGlobalAddress(globalCP.GetKDSServerAddress()))
 		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone1...)).
+			Install(Kuma(core.Zone,
+				WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			)).
 			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true), WithConcurrency(8))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
@@ -78,12 +77,13 @@ routing:
 
 		// Cluster 2
 		zone2 = clusters.GetCluster(Kuma4)
-		optsZone2 = append(optsZone2, WithGlobalAddress(globalCP.GetKDSServerAddress()))
 		ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone2...)).
+			Install(Kuma(core.Zone,
+				WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			)).
 			Install(TestServerUniversal("dp-echo-2", defaultMesh, testServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v2"}),
 				WithServiceVersion("v2"),
@@ -124,13 +124,13 @@ routing:
 	})
 
 	E2EAfterSuite(func() {
-		Expect(zone1.DeleteKuma(optsZone1...)).To(Succeed())
+		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
 
-		Expect(zone2.DeleteKuma(optsZone2...)).To(Succeed())
+		Expect(zone2.DeleteKuma()).To(Succeed())
 		Expect(zone2.DismissCluster()).To(Succeed())
 
-		Expect(global.DeleteKuma(optsGlobal...)).To(Succeed())
+		Expect(global.DeleteKuma()).To(Succeed())
 		Expect(global.DismissCluster()).To(Succeed())
 	})
 

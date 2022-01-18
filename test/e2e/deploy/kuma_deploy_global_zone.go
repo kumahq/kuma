@@ -42,12 +42,11 @@ spec:
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, zone ControlPlane
-	var optsGlobal, optsZone = KumaK8sDeployOpts, KumaZoneK8sDeployOpts
-	var originalKumaNamespace = KumaNamespace
+	var originalKumaNamespace = Config.KumaNamespace
 
 	BeforeEach(func() {
 		// set the new namespace
-		KumaNamespace = "other-kuma-system"
+		Config.KumaNamespace = "other-kuma-system"
 		var err error
 		clusters, err = NewK8sClusters(
 			[]string{Kuma1, Kuma2},
@@ -57,7 +56,7 @@ spec:
 		c1 = clusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Global, optsGlobal...)).
+			Install(Kuma(core.Global)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -65,12 +64,12 @@ spec:
 		Expect(global).ToNot(BeNil())
 
 		c2 = clusters.GetCluster(Kuma2)
-		optsZone = append(optsZone,
-			WithIngress(),
-			WithGlobalAddress(global.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone...)).
+			Install(Kuma(core.Zone,
+				WithIngress(),
+				WithGlobalAddress(global.GetKDSServerAddress()),
+			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Setup(c2)
@@ -107,16 +106,16 @@ spec:
 
 		defer func() {
 			// restore the original namespace
-			KumaNamespace = originalKumaNamespace
+			Config.KumaNamespace = originalKumaNamespace
 		}()
 
 		err := c2.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = c1.DeleteKuma(optsGlobal...)
+		err = c1.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = c2.DeleteKuma(optsZone...)
+		err = c2.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(clusters.DismissCluster()).To(Succeed())
@@ -135,8 +134,8 @@ spec:
 			return output
 		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
 
-		policy_create := trafficRoutePolicy(KumaNamespace, "traffic-default", 100)
-		policy_update := trafficRoutePolicy(KumaNamespace, "traffic-default", 101)
+		policy_create := trafficRoutePolicy(Config.KumaNamespace, "traffic-default", 100)
+		policy_update := trafficRoutePolicy(Config.KumaNamespace, "traffic-default", 101)
 
 		// Deny policy CREATE on zone
 		err := k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)

@@ -13,7 +13,6 @@ import (
 
 func MembershipKubernetes() {
 	var cluster Cluster
-	var deployOptsFuncs []KumaDeploymentOption
 
 	const kumaTestDefaultNs = "kuma-test-default"
 	const kumaTestDemoNs = "kuma-test-demo"
@@ -33,7 +32,7 @@ spec:
 	BeforeEach(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone)).
 			Install(NamespaceWithSidecarInjection(kumaTestDefaultNs)).
 			Install(NamespaceWithSidecarInjection(kumaTestDemoNs)).
 			Setup(cluster)
@@ -43,7 +42,7 @@ spec:
 	E2EAfterEach(func() {
 		Expect(cluster.DeleteNamespace(kumaTestDefaultNs)).To(Succeed())
 		Expect(cluster.DeleteNamespace(kumaTestDemoNs)).To(Succeed())
-		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 

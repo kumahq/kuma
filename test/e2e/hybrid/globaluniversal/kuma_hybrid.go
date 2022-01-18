@@ -29,7 +29,6 @@ mtls:
 	}
 
 	var global, zone1, zone2, zone3, zone4 Cluster
-	var optsGlobal, optsZone1, optsZone2, optsZone3, optsZone4 = KumaUniversalDeployOpts, KumaZoneK8sDeployOpts, KumaZoneK8sDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
 	const nonDefaultMesh = "non-default"
 	const defaultMesh = "default"
@@ -49,7 +48,7 @@ mtls:
 		global = universalClusters.GetCluster(Kuma5)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Global, optsGlobal...)).
+			Install(Kuma(core.Global)).
 			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh))).
 			Install(YamlUniversal(meshMTLSOn(defaultMesh))).
 			Setup(global)
@@ -66,14 +65,13 @@ mtls:
 
 		// K8s Cluster 1
 		zone1 = k8sClusters.GetCluster(Kuma1)
-		optsZone1 = append(optsZone1,
-			WithIngress(),
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithCNI(),
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false")) // check if old resolving still works
-
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone1...)).
+			Install(Kuma(core.Zone,
+				WithIngress(),
+				WithGlobalAddress(globalCP.GetKDSServerAddress()),
+				WithCNI(),
+				WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false"), // check if old resolving still works
+			)).
 			Install(KumaDNS()).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s(nonDefaultMesh)).
@@ -84,13 +82,13 @@ mtls:
 
 		// K8s Cluster 2
 		zone2 = k8sClusters.GetCluster(Kuma2)
-		optsZone2 = append(optsZone2,
-			WithIngress(),
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false"))
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone2...)).
+			Install(Kuma(core.Zone,
+				WithIngress(),
+				WithGlobalAddress(globalCP.GetKDSServerAddress()),
+				WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false"),
+			)).
 			Install(KumaDNS()).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(testserver.Install(testserver.WithMesh(nonDefaultMesh), testserver.WithServiceAccount("sa-test"))).
@@ -102,13 +100,11 @@ mtls:
 
 		// Universal Cluster 3
 		zone3 = universalClusters.GetCluster(Kuma3)
-		optsZone3 = append(optsZone3,
-			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone3...)).
+			Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(TestServerUniversal("dp-echo", nonDefaultMesh, echoServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("test-server"),
@@ -122,13 +118,11 @@ mtls:
 
 		// Universal Cluster 4
 		zone4 = universalClusters.GetCluster(Kuma4)
-		optsZone4 = append(optsZone4,
-			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 		ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone4...)).
+			Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone4)
@@ -143,29 +137,29 @@ mtls:
 		}
 		err := zone1.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		err = zone1.DeleteKuma(optsZone1...)
+		err = zone1.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = zone1.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = zone2.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		err = zone2.DeleteKuma(optsZone2...)
+		err = zone2.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = zone2.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = zone3.DeleteKuma(optsZone3...)
+		err = zone3.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = zone3.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = zone4.DeleteKuma(optsZone4...)
+		err = zone4.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = zone4.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.DeleteKuma(optsGlobal...)
+		err = global.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = global.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
