@@ -32,11 +32,12 @@ func (p *PodConverter) PodToDataplane(
 	ctx context.Context,
 	dataplane *mesh_k8s.Dataplane,
 	pod *kube_core.Pod,
+	ns *kube_core.Namespace,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
-	dataplane.Mesh = util_k8s.MeshFor(pod)
-	dataplaneProto, err := p.DataplaneFor(ctx, pod, services, others)
+	dataplane.Mesh = util_k8s.MeshOf(pod, ns)
+	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 	return nil
 }
 
-func (p *PodConverter) DataplaneFor(
+func (p *PodConverter) dataplaneFor(
 	ctx context.Context,
 	pod *kube_core.Pod,
 	services []*kube_core.Service,

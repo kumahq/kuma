@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"time"
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/generic"
@@ -61,29 +59,9 @@ func (x *ZoneIngressInsight) IsOnline() bool {
 
 func (x *ZoneIngressInsight) GetLastSubscription() generic.Subscription {
 	if len(x.GetSubscriptions()) == 0 {
-		return nil
+		return (*DiscoverySubscription)(nil)
 	}
 	return x.GetSubscriptions()[len(x.GetSubscriptions())-1]
-}
-
-// todo(lobkovilya): delete GetLatestSubscription, use GetLastSubscription instead
-func (x *ZoneIngressInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {
-	if len(x.GetSubscriptions()) == 0 {
-		return nil, nil
-	}
-	var idx int = 0
-	var latest *time.Time
-	for i, s := range x.GetSubscriptions() {
-		if err := s.ConnectTime.CheckValid(); err != nil {
-			continue
-		}
-		t := s.ConnectTime.AsTime()
-		if latest == nil || latest.Before(t) {
-			idx = i
-			latest = &t
-		}
-	}
-	return x.Subscriptions[idx], latest
 }
 
 func (x *ZoneIngressInsight) Sum(v func(*DiscoverySubscription) uint64) uint64 {

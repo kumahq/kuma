@@ -10,8 +10,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 )
 
 // OptEnableMeshMTLS is a Kuma deployment option that enables mTLS on the default Mesh.
@@ -29,15 +29,15 @@ var OptEnableMeshMTLS = framework.WithMeshUpdate(
 )
 
 // ProxySimpleRequests tests that basic HTTP requests are proxied to the echo-server.
-func ProxySimpleRequests(cluster framework.Cluster, instance string, gateway string, opts ...testutil.CollectResponsesOptsFn) {
+func ProxySimpleRequests(cluster framework.Cluster, instance string, gateway string, opts ...client.CollectResponsesOptsFn) {
 	framework.Logf("expecting 200 response from %q", gateway)
 	Eventually(func(g Gomega) {
 		target := fmt.Sprintf("http://%s/%s",
 			gateway, path.Join("test", url.PathEscape(GinkgoT().Name())),
 		)
 
-		opts = append(opts, testutil.WithHeader("Host", "example.kuma.io"))
-		response, err := testutil.CollectResponse(cluster, "gateway-client", target, opts...)
+		opts = append(opts, client.WithHeader("Host", "example.kuma.io"))
+		response, err := client.CollectResponse(cluster, "gateway-client", target, opts...)
 
 		g.Expect(err).To(Succeed())
 		g.Expect(response.Instance).To(Equal(instance))
@@ -46,7 +46,7 @@ func ProxySimpleRequests(cluster framework.Cluster, instance string, gateway str
 }
 
 // ProxySecureRequests tests that basic HTTPS requests are proxied to the echo-server.
-func ProxySecureRequests(cluster framework.Cluster, instance string, gateway string, opts ...testutil.CollectResponsesOptsFn) {
+func ProxySecureRequests(cluster framework.Cluster, instance string, gateway string, opts ...client.CollectResponsesOptsFn) {
 	framework.Logf("expecting 200 response from %q", gateway)
 	Eventually(func(g Gomega) {
 		target := fmt.Sprintf("https://%s/%s",
@@ -54,9 +54,9 @@ func ProxySecureRequests(cluster framework.Cluster, instance string, gateway str
 		)
 
 		opts = append(opts,
-			testutil.Insecure(),
-			testutil.WithHeader("Host", "example.kuma.io"))
-		response, err := testutil.CollectResponse(cluster, "gateway-client", target, opts...)
+			client.Insecure(),
+			client.WithHeader("Host", "example.kuma.io"))
+		response, err := client.CollectResponse(cluster, "gateway-client", target, opts...)
 
 		g.Expect(err).To(Succeed())
 		g.Expect(response.Instance).To(Equal(instance))
@@ -70,7 +70,7 @@ func ProxySecureRequests(cluster framework.Cluster, instance string, gateway str
 // In mTLS mode, only the presence of TrafficPermission rules allow services to receive
 // traffic, so removing the permission should cause requests to fail. We use this to
 // prove that mTLS is enabled.
-func ProxyRequestsWithMissingPermission(cluster framework.Cluster, gateway string, opts ...testutil.CollectResponsesOptsFn) {
+func ProxyRequestsWithMissingPermission(cluster framework.Cluster, gateway string, opts ...client.CollectResponsesOptsFn) {
 	const PermissionName = "allow-all-default"
 
 	framework.Logf("deleting TrafficPermission %q", PermissionName)
@@ -90,8 +90,8 @@ func ProxyRequestsWithMissingPermission(cluster framework.Cluster, gateway strin
 			gateway, path.Join("test", url.PathEscape(GinkgoT().Name())),
 		)
 
-		opts = append(opts, testutil.WithHeader("Host", "example.kuma.io"))
-		status, err := testutil.CollectFailure(cluster, "gateway-client", target, opts...)
+		opts = append(opts, client.WithHeader("Host", "example.kuma.io"))
+		status, err := client.CollectFailure(cluster, "gateway-client", target, opts...)
 
 		g.Expect(err).To(Succeed())
 		g.Expect(status.ResponseCode).To(Equal(503))
@@ -99,7 +99,7 @@ func ProxyRequestsWithMissingPermission(cluster framework.Cluster, gateway strin
 }
 
 // ProxyRequestsWithRateLimit tests that requests to gateway are rate-limited with a 429 response.
-func ProxyRequestsWithRateLimit(cluster framework.Cluster, gateway string, opts ...testutil.CollectResponsesOptsFn) {
+func ProxyRequestsWithRateLimit(cluster framework.Cluster, gateway string, opts ...client.CollectResponsesOptsFn) {
 	framework.Logf("expecting 429 response from %q", gateway)
 	Eventually(func(g Gomega) {
 		target := fmt.Sprintf("http://%s/%s",
@@ -107,11 +107,11 @@ func ProxyRequestsWithRateLimit(cluster framework.Cluster, gateway string, opts 
 		)
 
 		opts = append(opts,
-			testutil.NoFail(),
-			testutil.OutputFormat(`{ "received": { "status": %{response_code} } }`),
-			testutil.WithHeader("Host", "example.kuma.io"),
+			client.NoFail(),
+			client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
+			client.WithHeader("Host", "example.kuma.io"),
 		)
-		response, err := testutil.CollectResponse(cluster, "gateway-client", target, opts...)
+		response, err := client.CollectResponse(cluster, "gateway-client", target, opts...)
 
 		g.Expect(err).To(Succeed())
 		g.Expect(response.Received.StatusCode).To(Equal(429))

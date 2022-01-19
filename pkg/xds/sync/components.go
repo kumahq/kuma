@@ -3,14 +3,7 @@ package sync
 import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-	"github.com/kumahq/kuma/pkg/core/faultinjections"
-	"github.com/kumahq/kuma/pkg/core/logs"
-	"github.com/kumahq/kuma/pkg/core/permissions"
-	"github.com/kumahq/kuma/pkg/core/ratelimits"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -23,29 +16,16 @@ var (
 )
 
 func DefaultDataplaneProxyBuilder(
-	cachingRm manager.ReadOnlyResourceManager,
-	nonCachingRm manager.ResourceManager,
-	lookupIP lookup.LookupIPFunc,
 	dataSourceLoader datasource.Loader,
 	config kuma_cp.Config,
-	configManager config_manager.ConfigManager,
 	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
 ) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
-		CachingResManager:     cachingRm,
-		NonCachingResManager:  nonCachingRm,
-		LookupIP:              lookupIP,
-		DataSourceLoader:      dataSourceLoader,
-		MetadataTracker:       metadataTracker,
-		PermissionMatcher:     permissions.TrafficPermissionsMatcher{ResourceManager: cachingRm},
-		LogsMatcher:           logs.TrafficLogsMatcher{ResourceManager: cachingRm},
-		FaultInjectionMatcher: faultinjections.FaultInjectionMatcher{ResourceManager: cachingRm},
-		RateLimitMatcher:      ratelimits.RateLimitMatcher{ResourceManager: cachingRm},
-		Zone:                  config.Multizone.Zone.Name,
-		APIVersion:            apiVersion,
-		ConfigManager:         configManager,
-		TopLevelDomain:        config.DNSServer.Domain,
+		DataSourceLoader: dataSourceLoader,
+		MetadataTracker:  metadataTracker,
+		Zone:             config.Multizone.Zone.Name,
+		APIVersion:       apiVersion,
 	}
 }
 
@@ -70,12 +50,8 @@ func DefaultDataplaneWatchdogFactory(
 	apiVersion envoy.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
-		rt.ReadOnlyResourceManager(),
-		rt.ResourceManager(),
-		rt.LookupIP(),
 		rt.DataSourceLoader(),
 		rt.Config(),
-		rt.ConfigManager(),
 		metadataTracker,
 		apiVersion)
 	ingressProxyBuilder := defaultIngressProxyBuilder(rt, metadataTracker, apiVersion)

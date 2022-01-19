@@ -29,16 +29,16 @@ func GetRetries(
 		return nil, err
 	}
 
-	return BuildRetryMap(dataplane, retries.Items, destinations)
+	return BuildRetryMap(dataplane, retries.Items, destinations), nil
 }
 
 func BuildRetryMap(
 	dataplane *core_mesh.DataplaneResource,
 	retries []*core_mesh.RetryResource,
 	destinations core_xds.DestinationMap,
-) (core_xds.RetryMap, error) {
+) core_xds.RetryMap {
 	if len(retries) == 0 || len(destinations) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	policies := make([]policy.ConnectionPolicy, len(retries))
@@ -57,5 +57,5 @@ func BuildRetryMap(
 		retriesMap[service] = singlePolicy.(*core_mesh.RetryResource)
 	}
 
-	return retriesMap, nil
+	return retriesMap
 }

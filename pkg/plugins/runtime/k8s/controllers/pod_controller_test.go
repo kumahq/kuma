@@ -37,6 +37,11 @@ var _ = Describe("PodReconciler", func() {
 
 	BeforeEach(func() {
 		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
+			&kube_core.Namespace{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Name: "demo",
+				},
+			},
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",

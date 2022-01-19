@@ -32,6 +32,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
@@ -77,6 +78,7 @@ func init() {
 
 func NewApiServer(
 	resManager manager.ResourceManager,
+	matchedPolicyGetter xds.MatchedPoliciesGetter,
 	wsManager customization.APIInstaller,
 	defs []model.ResourceTypeDescriptor,
 	cfg *kuma_cp.Config,
@@ -117,6 +119,7 @@ func NewApiServer(
 		Produces(restful.MIME_JSON)
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess)
+	addInspectEndpoints(ws, matchedPolicyGetter)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI); err != nil {
@@ -353,6 +356,7 @@ func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
 	apiServer, err := NewApiServer(
 		rt.ResourceManager(),
+		NewSimpleMatchedPolicyGetter(&cfg, rt.ResourceManager(), rt.ConfigManager()),
 		rt.APIInstaller(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

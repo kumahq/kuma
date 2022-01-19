@@ -1,0 +1,47 @@
+{
+  "matchedPolicies": {
+    "": [
+      {
+        "meta": {
+          "type": "Timeout",
+          "mesh": "mesh-1",
+          "name": "t-1",
+          "creationTime": "0001-01-01T00:00:00Z",
+          "modificationTime": "0001-01-01T00:00:00Z"
+        },
+        "spec": {
+          "conf": {
+            "connectTimeout": "5s",
+            "grpc": {
+              "maxStreamDuration": "5s",
+              "streamIdleTimeout": "5s"
+            },
+            "http": {
+              "idleTimeout": "5s",
+              "requestTimeout": "5s"
+            },
+            "tcp": {
+              "idleTimeout": "5s"
+            }
+          },
+          "destinations": [
+            {
+              "match": {
+                "service": "*"
+              }
+            }
+          ],
+          "sources": [
+            {
+              "match": {
+                "service": "*"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "name": "192.168.0.1:80",
+  "type": "inbound"
+}

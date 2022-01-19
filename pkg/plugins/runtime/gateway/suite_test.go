@@ -17,11 +17,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/faultinjections"
-	"github.com/kumahq/kuma/pkg/core/logs"
-	"github.com/kumahq/kuma/pkg/core/permissions"
 	"github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -30,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/test"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -37,8 +34,8 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
+	"github.com/kumahq/kuma/pkg/xds/server"
 	"github.com/kumahq/kuma/pkg/xds/sync"
-	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 func TestGateway(t *testing.T) {
@@ -103,34 +100,11 @@ func (m mockMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.Da
 
 func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_context.Context, *core_xds.Proxy) {
 	b := sync.DataplaneProxyBuilder{
-		CachingResManager:    rt.ReadOnlyResourceManager(),
-		NonCachingResManager: rt.ResourceManager(),
-		LookupIP:             rt.LookupIP(),
-		DataSourceLoader:     rt.DataSourceLoader(),
-		MetadataTracker:      mockMetadataTracker{},
-		PermissionMatcher: permissions.TrafficPermissionsMatcher{
-			ResourceManager: rt.ReadOnlyResourceManager(),
-		},
-		LogsMatcher: logs.TrafficLogsMatcher{
-			ResourceManager: rt.ReadOnlyResourceManager(),
-		},
-		FaultInjectionMatcher: faultinjections.FaultInjectionMatcher{
-			ResourceManager: rt.ReadOnlyResourceManager(),
-		},
-		RateLimitMatcher: ratelimits.RateLimitMatcher{
-			ResourceManager: rt.ReadOnlyResourceManager(),
-		},
-		Zone:       rt.Config().Multizone.Zone.Name,
-		APIVersion: envoy.APIV3,
+		DataSourceLoader: rt.DataSourceLoader(),
+		MetadataTracker:  mockMetadataTracker{},
+		Zone:             rt.Config().Multizone.Zone.Name,
+		APIVersion:       envoy.APIV3,
 	}
-
-	mesh := core_mesh.NewMeshResource()
-	Expect(rt.ReadOnlyResourceManager().Get(context.TODO(), mesh, store.GetByKey(key.Mesh, core_model.NoMesh))).
-		To(Succeed())
-
-	dataplanes := core_mesh.DataplaneResourceList{}
-	Expect(rt.ResourceManager().List(context.TODO(), &dataplanes, store.ListByMesh(key.Mesh))).
-		To(Succeed())
 
 	cache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime, rt.Metrics())
 	Expect(err).To(Succeed())
@@ -142,16 +116,24 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	)
 	Expect(err).To(Succeed())
 
-	control, err := xds_context.BuildControlPlaneContext(rt.Config(), cache, secrets)
+	control, err := xds_context.BuildControlPlaneContext(cache, secrets)
+	Expect(err).To(Succeed())
+
+	meshCtxBuilder := xds_context.NewMeshContextBuilder(
+		rt.ReadOnlyResourceManager(),
+		server.MeshResourceTypes(server.HashMeshExcludedResources),
+		rt.LookupIP(),
+		rt.Config().Multizone.Zone.Name,
+		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
+		rt.Config().DNSServer.Domain,
+	)
+
+	meshCtx, err := meshCtxBuilder.Build(context.TODO(), key.Mesh)
 	Expect(err).To(Succeed())
 
 	ctx := xds_context.Context{
 		ControlPlane: control,
-		Mesh: xds_context.MeshContext{
-			Resource:    mesh,
-			Dataplanes:  &dataplanes,
-			EndpointMap: xds_topology.BuildEdsEndpointMap(mesh, rt.Config().Multizone.Zone.Name, dataplanes.Items, []*core_mesh.ZoneIngressResource{}),
-		},
+		Mesh:         meshCtx,
 	}
 
 	proxy, err := b.Build(key, &ctx)

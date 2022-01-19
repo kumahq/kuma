@@ -976,19 +976,19 @@ jobs:
     - run:
         name: Build Packages
         command: |
-          ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
+          ./tools/releases/distros.sh --package
     - run:
         name: Push Packages
         command: |
-          ./tools/releases/distros.sh --release --version $CIRCLE_TAG
+          ./tools/releases/distros.sh --release
     - run:
         name: Build Docker
         command: |
-          ./tools/releases/docker.sh --build --version $CIRCLE_TAG
+          ./tools/releases/docker.sh --build
     - run:
         name: Push Docker
         command: |
-          ./tools/releases/docker.sh --push --version $CIRCLE_TAG
+          ./tools/releases/docker.sh --push
 
   helm-release:
     executor: golang
@@ -1172,33 +1172,12 @@ workflows:
             - check
           # custom parameters
           ipv6: true
-
-  kuma-release:
-    jobs:
-    - go_cache: *release_workflow_filters
-    - check:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
-    - build:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
-    - images-kumactl:
-        <<: *release_workflow_filters
-        requires:
-        - build
-    - test:
-        <<: *release_workflow_filters
-        requires:
-          - go_cache
-        target: test
-    - release:
-        <<: *release_workflow_filters
-        requires:
-        - check
-        - test
-    - helm-release:
-        <<: *helm_release_workflow_filters
-        requires:
-        - release
+      - release:
+          <<: *master_workflow_filters
+          requires:
+            - test
+            - test/e2e
+      - helm-release:
+          <<: *helm_release_workflow_filters
+          requires:
+          - release

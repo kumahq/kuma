@@ -18,13 +18,13 @@ import (
 
 // createorUpdateBuiltinGatewayDataplane manages the dataplane for a pod
 // belonging to a built-in Kuma gateway.
-func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod) error {
+func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) error {
 	dataplane := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
 		},
-		Mesh: k8s_util.MeshFor(pod),
+		Mesh: k8s_util.MeshOf(pod, ns),
 	}
 
 	tagsAnnotation, ok := pod.Annotations[metadata.KumaTagsAnnotation]

@@ -16,12 +16,11 @@ import (
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
 )
 
@@ -133,7 +132,7 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 	}
 
 	for _, container := range pod.Spec.Containers {
-		if container.Name == util.KumaSidecarContainerName {
+		if container.Name == k8s_util.KumaSidecarContainerName {
 			log.V(1).Info("pod already has Kuma sidecar")
 			return false, nil
 		}
@@ -200,18 +199,8 @@ func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
 	return false
 }
 
-func meshName(annotations map[string]string, ns *kube_core.Namespace) string {
-	if mesh, exist := metadata.Annotations(annotations).GetString(metadata.KumaMeshAnnotation); exist {
-		return mesh
-	}
-	if mesh, exist := metadata.Annotations(ns.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
-		return mesh
-	}
-	return core_model.DefaultMesh
-}
-
 func (i *KumaInjector) meshFor(pod *kube_core.Pod, ns *kube_core.Namespace) (*core_mesh.MeshResource, error) {
-	meshName := meshName(pod.Annotations, ns)
+	meshName := k8s_util.MeshOf(pod, ns)
 	mesh := &mesh_k8s.Mesh{}
 	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
 		return nil, err
@@ -239,7 +228,7 @@ func (i *KumaInjector) NewSidecarContainer(
 	pod *kube_core.Pod,
 	ns *kube_core.Namespace,
 ) (kube_core.Container, error) {
-	container, err := i.proxyFactory.NewContainer(pod.Annotations, ns)
+	container, err := i.proxyFactory.NewContainer(pod, ns)
 	if err != nil {
 		return container, err
 	}
@@ -250,7 +239,7 @@ func (i *KumaInjector) NewSidecarContainer(
 	// ServiceAccount volume mount into containers it creates.
 	container.VolumeMounts = i.NewVolumeMounts(pod)
 
-	container.Name = util.KumaSidecarContainerName
+	container.Name = k8s_util.KumaSidecarContainerName
 
 	return container, nil
 }
@@ -284,7 +273,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	}
 
 	return kube_core.Container{
-		Name:            util.KumaInitContainerName,
+		Name:            k8s_util.KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
