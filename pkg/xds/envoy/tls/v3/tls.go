@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
@@ -19,7 +20,7 @@ func CreateDownstreamTlsContext(ctx xds_context.Context) (*envoy_tls.DownstreamT
 		return nil, nil
 	}
 	validationSANMatcher := MeshSpiffeIDPrefixMatcher(ctx.Mesh.Resource.Meta.GetName())
-	commonTlsContext, err := createCommonTlsContext(validationSANMatcher)
+	commonTlsContext, err := createCommonTlsContext(ctx, validationSANMatcher)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,7 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, upstreamService string, s
 	} else {
 		validationSANMatcher = ServiceSpiffeIDMatcher(ctx.Mesh.Resource.Meta.GetName(), upstreamService)
 	}
-	commonTlsContext, err := createCommonTlsContext(validationSANMatcher)
+	commonTlsContext, err := createCommonTlsContext(ctx, validationSANMatcher)
 	if err != nil {
 		return nil, err
 	}
@@ -57,9 +58,14 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, upstreamService string, s
 	}, nil
 }
 
-func createCommonTlsContext(validationSANMatcher *envoy_type_matcher.StringMatcher) (*envoy_tls.CommonTlsContext, error) {
-	meshCaSecret := NewSecretConfigSource(xds_tls.MeshCaResource)
-	identitySecret := NewSecretConfigSource(xds_tls.IdentityCertResource)
+func createCommonTlsContext(
+	ctx xds_context.Context,
+	validationSANMatcher *envoy_type_matcher.StringMatcher,
+) (*envoy_tls.CommonTlsContext, error) {
+	meshName := ctx.Mesh.Resource.GetMeta().GetName()
+	meshCaSecret := NewSecretConfigSource(names.GetSecretName(xds_tls.MeshCaResource, "secret", meshName))
+	identitySecret := NewSecretConfigSource(names.GetSecretName(xds_tls.IdentityCertResource, "secret", meshName))
+
 	return &envoy_tls.CommonTlsContext{
 		ValidationContextType: &envoy_tls.CommonTlsContext_CombinedValidationContext{
 			CombinedValidationContext: &envoy_tls.CommonTlsContext_CombinedCertificateValidationContext{

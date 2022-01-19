@@ -79,12 +79,12 @@ resources:
                 matchSubjectAltNames:
                 - prefix: spiffe://demo/
               validationContextSdsSecretConfig:
-                name: mesh_ca
+                name: mesh_ca:secret:demo
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: identity_cert
+            - name: identity_cert:secret:demo
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3

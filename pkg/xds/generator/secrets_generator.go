@@ -1,6 +1,7 @@
 package generator
 
 import (
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
@@ -14,29 +15,55 @@ type SecretsProxyGenerator struct {
 
 var _ ResourceGenerator = SecretsProxyGenerator{}
 
-func (s SecretsProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	if !ctx.Mesh.Resource.MTLSEnabled() {
-		return nil, nil
-	}
-	identity, ca, err := ctx.ControlPlane.Secrets.Get(proxy.Dataplane, ctx.Mesh.Resource)
-	if err != nil {
-		return nil, err
+func createSecrets(
+	ctx xds_context.Context,
+	proxy *core_xds.Proxy,
+	meshes []*core_mesh.MeshResource,
+) (*core_xds.ResourceSet, error) {
+	var resources *core_xds.ResourceSet
+
+	for _, mesh := range meshes {
+		if !mesh.MTLSEnabled() {
+			continue
+		}
+
+		if resources == nil {
+			resources = core_xds.NewResourceSet()
+		}
+
+		identity, ca, err := ctx.ControlPlane.Secrets.Get(proxy.Dataplane, mesh)
+		if err != nil {
+			return nil, err
+		}
+
+		meshName := mesh.GetMeta().GetName()
+		identitySecret := envoy_secrets.CreateIdentitySecret(identity, meshName)
+		caSecret := envoy_secrets.CreateCaSecret(ca, meshName)
+
+		resources.Add(
+			&core_xds.Resource{
+				Name:     identitySecret.Name,
+				Origin:   OriginSecrets,
+				Resource: identitySecret,
+			},
+			&core_xds.Resource{
+				Name:     caSecret.Name,
+				Origin:   OriginSecrets,
+				Resource: caSecret,
+			},
+		)
 	}
 
-	resources := core_xds.NewResourceSet()
-	identitySecret := envoy_secrets.CreateIdentitySecret(identity)
-	caSecret := envoy_secrets.CreateCaSecret(ca)
-	resources.Add(
-		&core_xds.Resource{
-			Name:     identitySecret.Name,
-			Origin:   OriginSecrets,
-			Resource: identitySecret,
-		},
-		&core_xds.Resource{
-			Name:     caSecret.Name,
-			Origin:   OriginSecrets,
-			Resource: caSecret,
-		},
-	)
 	return resources, nil
+}
+
+func (s SecretsProxyGenerator) Generate(
+	ctx xds_context.Context,
+	proxy *core_xds.Proxy,
+) (*core_xds.ResourceSet, error) {
+	if proxy.ZoneEgressProxy != nil {
+		return createSecrets(ctx, proxy, proxy.ZoneEgressProxy.Meshes.Items)
+	}
+
+	return createSecrets(ctx, proxy, []*core_mesh.MeshResource{ctx.Mesh.Resource})
 }

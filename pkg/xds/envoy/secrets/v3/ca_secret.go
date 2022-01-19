@@ -7,12 +7,13 @@ import (
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-func CreateCaSecret(secret *core_xds.CaSecret) *envoy_auth.Secret {
+func CreateCaSecret(secret *core_xds.CaSecret, mesh string) *envoy_auth.Secret {
 	return &envoy_auth.Secret{
-		Name: tls.MeshCaResource,
+		Name: names.GetSecretName(tls.MeshCaResource, "secret", mesh),
 		Type: &envoy_auth.Secret_ValidationContext{
 			ValidationContext: &envoy_auth.CertificateValidationContext{
 				TrustedCa: &envoy_core.DataSource{

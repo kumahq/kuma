@@ -81,12 +81,12 @@ resources:
                 matchSubjectAltNames:
                 - prefix: spiffe://demo/
               validationContextSdsSecretConfig:
-                name: mesh_ca
+                name: mesh_ca:secret:demo
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: identity_cert
+            - name: identity_cert:secret:demo
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
@@ -136,12 +136,12 @@ resources:
                 matchSubjectAltNames:
                 - prefix: spiffe://demo/
               validationContextSdsSecretConfig:
-                name: mesh_ca
+                name: mesh_ca:secret:demo
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: identity_cert
+            - name: identity_cert:secret:demo
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
@@ -178,12 +178,12 @@ resources:
                 matchSubjectAltNames:
                 - prefix: spiffe://demo/
               validationContextSdsSecretConfig:
-                name: mesh_ca
+                name: mesh_ca:secret:demo
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: identity_cert
+            - name: identity_cert:secret:demo
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
@@ -220,12 +220,12 @@ resources:
                 matchSubjectAltNames:
                 - prefix: spiffe://demo/
               validationContextSdsSecretConfig:
-                name: mesh_ca
+                name: mesh_ca:secret:demo
                 sdsConfig:
                   ads: {}
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
-            - name: identity_cert
+            - name: identity_cert:secret:demo
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
@@ -266,19 +266,19 @@ resources:
     name: outbound:passthrough:ipv4
     trafficDirection: OUTBOUND
     useOriginalDst: true
-- name: identity_cert
+- name: identity_cert:secret:demo
   resource:
     '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
-    name: identity_cert
+    name: identity_cert:secret:demo
     tlsCertificate:
       certificateChain:
         inlineBytes: Q0VSVA==
       privateKey:
         inlineBytes: S0VZ
-- name: mesh_ca
+- name: mesh_ca:secret:demo
   resource:
     '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
-    name: mesh_ca
+    name: mesh_ca:secret:demo
     validationContext:
       trustedCa:
         inlineBytes: Q0E=

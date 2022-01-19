@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -84,6 +85,9 @@ var _ = Describe("SecretsGenerator", func() {
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
 						Spec: &mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "ca-1",
@@ -113,7 +117,135 @@ var _ = Describe("SecretsGenerator", func() {
 				},
 				APIVersion: envoy_common.APIV3,
 			},
-			expected: "envoy-config.golden.yaml",
+			expected: "envoy-config-zipkin.golden.yaml",
+		}),
+		Entry("should create secrets when multiple meshes present (egress)", testCase{
+			ctx: xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Secrets: &xds.TestSecrets{},
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
+						Spec: &mesh_proto.Mesh{
+							Mtls: &mesh_proto.Mesh_Mtls{
+								EnabledBackend: "ca-1",
+								Backends: []*mesh_proto.CertificateAuthorityBackend{
+									{
+										Name: "ca-1",
+										Type: "builtin",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			proxy: &core_xds.Proxy{
+				Id: *core_xds.BuildProxyId("", "demo.backend-01"),
+				Dataplane: &core_mesh.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "backend-01",
+						Mesh: "demo",
+					},
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "192.168.0.1",
+						},
+					},
+				},
+				APIVersion: envoy_common.APIV3,
+				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
+					Meshes: &core_mesh.MeshResourceList{
+						Items: []*core_mesh.MeshResource{
+							{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh-1",
+								},
+								Spec: &mesh_proto.Mesh{
+									Mtls: &mesh_proto.Mesh_Mtls{
+										EnabledBackend: "ca-1",
+										Backends: []*mesh_proto.CertificateAuthorityBackend{
+											{
+												Name: "ca-1",
+												Type: "builtin",
+											},
+										},
+									},
+								},
+							},
+							{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh-2",
+								},
+								Spec: &mesh_proto.Mesh{
+									Mtls: &mesh_proto.Mesh_Mtls{
+										EnabledBackend: "ca-1",
+										Backends: []*mesh_proto.CertificateAuthorityBackend{
+											{
+												Name: "ca-1",
+												Type: "builtin",
+											},
+										},
+									},
+								},
+							},
+							{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh-3",
+								},
+								Spec: &mesh_proto.Mesh{
+									Mtls: &mesh_proto.Mesh_Mtls{
+										EnabledBackend: "ca-1",
+										Backends: []*mesh_proto.CertificateAuthorityBackend{
+											{
+												Name: "ca-1",
+												Type: "builtin",
+											},
+										},
+									},
+								},
+							},
+							{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh-4",
+								},
+								Spec: &mesh_proto.Mesh{
+									Mtls: &mesh_proto.Mesh_Mtls{
+										EnabledBackend: "ca-1",
+										Backends: []*mesh_proto.CertificateAuthorityBackend{
+											{
+												Name: "ca-1",
+												Type: "builtin",
+											},
+										},
+									},
+								},
+							},
+							{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh-5",
+								},
+								Spec: &mesh_proto.Mesh{
+									Mtls: &mesh_proto.Mesh_Mtls{
+										EnabledBackend: "ca-1",
+										Backends: []*mesh_proto.CertificateAuthorityBackend{
+											{
+												Name: "ca-1",
+												Type: "builtin",
+											},
+										},
+									},
+								},
+							},
+						},
+						Pagination: model.Pagination{},
+					},
+				},
+			},
+			expected: "envoy-config-egress.golden.yaml",
 		}),
 	)
 })

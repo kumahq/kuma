@@ -132,6 +132,12 @@ type Proxy struct {
 	Metadata    *DataplaneMetadata
 	Routing     Routing
 	Policies    MatchedPolicies
+
+	ZoneEgressProxy *ZoneEgressProxy
+}
+
+type ZoneEgressProxy struct {
+	Meshes *core_mesh.MeshResourceList
 }
 
 type VIPDomains struct {
