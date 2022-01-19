@@ -15,7 +15,7 @@ kumactl generate zone-egress-token [flags]
 ```
 
 Generate token bound by zone
-$ kumactl generate zone-egress-token --zone zone-1 --valid-for 30d
+$ kumactl generate zone-egress-token --zone zone-1 --valid-for 24h
 
 ```
 
@@ -23,7 +23,7 @@ $ kumactl generate zone-egress-token --zone zone-1 --valid-for 30d
 
 ```
   -h, --help                 help for zone-egress-token
-      --valid-for duration   how long the token will be valid (for example "24h") (default 87600h0m0s)
+      --valid-for duration   how long the token will be valid (for example "24h")
       --zone string          name of the zone where egress resides
 ```
 
