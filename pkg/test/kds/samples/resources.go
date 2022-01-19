@@ -147,7 +147,9 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.CircuitBreaker_Conf{
-			Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{},
+			Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
+				TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: util_proto.UInt32(3)},
+			},
 		},
 	}
 	HealthCheck = &mesh_proto.HealthCheck{

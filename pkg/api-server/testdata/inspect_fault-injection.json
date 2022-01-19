@@ -1,0 +1,33 @@
+{
+ "total": 2,
+ "items": [
+  {
+   "dataplane": {
+    "mesh": "mesh-1",
+    "name": "backend-redis-1"
+   },
+   "attachments": [
+    {
+     "type": "inbound",
+     "name": "192.168.0.1:80:81"
+    },
+    {
+     "type": "inbound",
+     "name": "192.168.0.2:80:81"
+    }
+   ]
+  },
+  {
+   "dataplane": {
+    "mesh": "mesh-1",
+    "name": "gateway-1"
+   },
+   "attachments": [
+    {
+     "type": "inbound",
+     "name": "192.168.0.1:80:81"
+    }
+   ]
+  }
+ ]
+}

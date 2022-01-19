@@ -29,18 +29,18 @@ type DataplaneProxyBuilder struct {
 	APIVersion envoy.APIVersion
 }
 
-func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, envoyContext *xds_context.Context) (*xds.Proxy, error) {
-	dp, found := envoyContext.Mesh.DataplanesByName[key.Name]
+func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, meshContext xds_context.MeshContext) (*xds.Proxy, error) {
+	dp, found := meshContext.DataplanesByName[key.Name]
 	if !found {
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
 	}
 
-	routing, destinations, err := p.resolveRouting(envoyContext.Mesh, dp)
+	routing, destinations, err := p.resolveRouting(meshContext, dp)
 	if err != nil {
 		return nil, err
 	}
 
-	matchedPolicies, err := p.matchPolicies(envoyContext.Mesh, dp, destinations)
+	matchedPolicies, err := p.matchPolicies(meshContext, dp, destinations)
 	if err != nil {
 		return nil, err
 	}

@@ -20,27 +20,29 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
-var _ = Describe("Marshal InspectEntry", func() {
+var _ = Describe("Marshal DataplaneInspectEntry", func() {
 
 	type testCase struct {
-		input      *types.InspectEntry
+		input      *types.DataplaneInspectEntry
 		goldenFile string
 	}
 
-	DescribeTable("should marshal InspectEntry with jsonpb",
+	DescribeTable("should marshal DataplaneInspectEntry with jsonpb",
 		func(given testCase) {
 			actual, err := json.MarshalIndent(given.input, "", "  ")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchGoldenJSON(path.Join("testdata", given.goldenFile)))
 		},
 		Entry("empty", testCase{
-			input:      &types.InspectEntry{},
+			input:      &types.DataplaneInspectEntry{},
 			goldenFile: "empty.json",
 		}),
 		Entry("full example", testCase{
-			input: &types.InspectEntry{
-				Type: "inbound",
-				Name: "192.168.0.1:80",
+			input: &types.DataplaneInspectEntry{
+				AttachmentEntry: types.AttachmentEntry{
+					Type: "inbound",
+					Name: "192.168.0.1:80",
+				},
 				MatchedPolicies: map[model.ResourceType][]*rest.Resource{
 					core_mesh.TimeoutType: {
 						rest.From.Resource(&core_mesh.TimeoutResource{
@@ -55,28 +57,28 @@ var _ = Describe("Marshal InspectEntry", func() {
 	)
 })
 
-var _ = Describe("Unmarshal InspectEntry", func() {
+var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 
 	type testCase struct {
 		inputFile string
-		output    *types.InspectEntry
+		output    *types.DataplaneInspectEntry
 		errMsg    string
 	}
 
-	DescribeTable("should unmarshal InspectEntry with jsonpb",
+	DescribeTable("should unmarshal DataplaneInspectEntry with jsonpb",
 		func(given testCase) {
 			inputFile, err := os.Open(path.Join("testdata", given.inputFile))
 			Expect(err).ToNot(HaveOccurred())
 			bytes, err := ioutil.ReadAll(inputFile)
 			Expect(err).ToNot(HaveOccurred())
 
-			receiver := &types.InspectEntryReceiver{
+			receiver := &types.DataplaneInspectEntryReceiver{
 				NewResource: registry.Global().NewObject,
 			}
 			err = json.Unmarshal(bytes, receiver)
 			Expect(err).ToNot(HaveOccurred())
 
-			unmarshaledInspectEntry := receiver.InspectEntry
+			unmarshaledInspectEntry := receiver.DataplaneInspectEntry
 
 			Expect(unmarshaledInspectEntry.Name).To(Equal(given.output.Name))
 			Expect(unmarshaledInspectEntry.Type).To(Equal(given.output.Type))
@@ -91,13 +93,15 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 		},
 		Entry("empty", testCase{
 			inputFile: "empty.json",
-			output:    &types.InspectEntry{},
+			output:    &types.DataplaneInspectEntry{},
 		}),
 		Entry("full example", testCase{
 			inputFile: "full_example.json",
-			output: &types.InspectEntry{
-				Type: "inbound",
-				Name: "192.168.0.1:80",
+			output: &types.DataplaneInspectEntry{
+				AttachmentEntry: types.AttachmentEntry{
+					Type: "inbound",
+					Name: "192.168.0.1:80",
+				},
 				MatchedPolicies: map[model.ResourceType][]*rest.Resource{
 					core_mesh.TimeoutType: {
 						rest.From.Resource(&core_mesh.TimeoutResource{
@@ -110,9 +114,11 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 		}),
 		Entry("empty matched policies", testCase{
 			inputFile: "empty_matched_policies.json",
-			output: &types.InspectEntry{
-				Type:            "inbound",
-				Name:            "192.168.0.1:80",
+			output: &types.DataplaneInspectEntry{
+				AttachmentEntry: types.AttachmentEntry{
+					Type: "inbound",
+					Name: "192.168.0.1:80",
+				},
 				MatchedPolicies: map[model.ResourceType][]*rest.Resource{},
 			},
 		}),
@@ -125,7 +131,7 @@ var _ = Describe("Unmarshal InspectEntry", func() {
 			bytes, err := ioutil.ReadAll(inputFile)
 			Expect(err).ToNot(HaveOccurred())
 
-			receiver := &types.InspectEntryReceiver{
+			receiver := &types.DataplaneInspectEntryReceiver{
 				NewResource: registry.Global().NewObject,
 			}
 			err = json.Unmarshal(bytes, receiver)

@@ -24,6 +24,7 @@ message CircuitBreaker {
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "circuit-breaker";
+  option (kuma.mesh.resource).allow_to_inspect = true;
 
   // List of selectors to match dataplanes that are sources of traffic.
   repeated Selector sources = 1 [ (doc.required) = true ];

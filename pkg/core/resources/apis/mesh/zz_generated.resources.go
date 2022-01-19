@@ -114,6 +114,7 @@ var CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "circuit-breakers",
 	KumactlArg:     "circuit-breaker",
 	KumactlListArg: "circuit-breakers",
+	AllowToInspect: true,
 }
 
 func init() {
@@ -214,6 +215,7 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "dataplanes",
 	KumactlArg:     "dataplane",
 	KumactlListArg: "dataplanes",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -318,6 +320,7 @@ var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "dataplane-insights",
 	KumactlArg:     "",
 	KumactlListArg: "",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -421,6 +424,7 @@ var DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "",
 	KumactlArg:     "",
 	KumactlListArg: "",
+	AllowToInspect: false,
 }
 
 const (
@@ -517,6 +521,7 @@ var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "external-services",
 	KumactlArg:     "external-service",
 	KumactlListArg: "external-services",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -625,6 +630,7 @@ var FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "fault-injections",
 	KumactlArg:     "fault-injection",
 	KumactlListArg: "fault-injections",
+	AllowToInspect: true,
 }
 
 func init() {
@@ -729,6 +735,7 @@ var GatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "gateways",
 	KumactlArg:     "gateway",
 	KumactlListArg: "gateways",
+	AllowToInspect: false,
 }
 
 const (
@@ -829,6 +836,7 @@ var GatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "gateway-routes",
 	KumactlArg:     "gateway-route",
 	KumactlListArg: "gateway-routes",
+	AllowToInspect: false,
 }
 
 const (
@@ -933,6 +941,7 @@ var HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "health-checks",
 	KumactlArg:     "healthcheck",
 	KumactlListArg: "healthchecks",
+	AllowToInspect: true,
 }
 
 func init() {
@@ -1033,6 +1042,7 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "meshes",
 	KumactlArg:     "mesh",
 	KumactlListArg: "meshes",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -1136,6 +1146,7 @@ var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "mesh-insights",
 	KumactlArg:     "",
 	KumactlListArg: "",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -1240,6 +1251,7 @@ var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "proxytemplates",
 	KumactlArg:     "proxytemplate",
 	KumactlListArg: "proxytemplates",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -1348,6 +1360,7 @@ var RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "rate-limits",
 	KumactlArg:     "rate-limit",
 	KumactlListArg: "rate-limits",
+	AllowToInspect: true,
 }
 
 func init() {
@@ -1456,6 +1469,7 @@ var RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "retries",
 	KumactlArg:     "retry",
 	KumactlListArg: "retries",
+	AllowToInspect: true,
 }
 
 func init() {
@@ -1560,6 +1574,7 @@ var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "service-insights",
 	KumactlArg:     "",
 	KumactlListArg: "",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -1663,6 +1678,7 @@ var ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "",
 	KumactlArg:     "",
 	KumactlListArg: "",
+	AllowToInspect: false,
 }
 
 const (
@@ -1767,6 +1783,7 @@ var TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "timeouts",
 	KumactlArg:     "timeout",
 	KumactlListArg: "timeouts",
+	AllowToInspect: true,
 }
 
 func init() {
@@ -1875,6 +1892,7 @@ var TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "traffic-logs",
 	KumactlArg:     "traffic-log",
 	KumactlListArg: "traffic-logs",
+	AllowToInspect: true,
 }
 
 func init() {
@@ -1983,6 +2001,7 @@ var TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "traffic-permissions",
 	KumactlArg:     "traffic-permission",
 	KumactlListArg: "traffic-permissions",
+	AllowToInspect: true,
 }
 
 func init() {
@@ -2091,6 +2110,7 @@ var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "traffic-routes",
 	KumactlArg:     "traffic-route",
 	KumactlListArg: "traffic-routes",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -2195,6 +2215,7 @@ var TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "traffic-traces",
 	KumactlArg:     "traffic-trace",
 	KumactlListArg: "traffic-traces",
+	AllowToInspect: true,
 }
 
 func init() {
@@ -2299,6 +2320,7 @@ var VirtualOutboundResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "virtual-outbounds",
 	KumactlArg:     "virtual-outbound",
 	KumactlListArg: "virtual-outbounds",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -2399,6 +2421,7 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "zone-ingresses",
 	KumactlArg:     "zone-ingress",
 	KumactlListArg: "zone-ingresses",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -2503,6 +2526,7 @@ var ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "zone-ingress-insights",
 	KumactlArg:     "",
 	KumactlListArg: "",
+	AllowToInspect: false,
 }
 
 func init() {
@@ -2606,4 +2630,5 @@ var ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "",
 	KumactlArg:     "",
 	KumactlListArg: "",
+	AllowToInspect: false,
 }
