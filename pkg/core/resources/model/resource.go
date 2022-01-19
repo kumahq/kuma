@@ -88,6 +88,8 @@ type ResourceTypeDescriptor struct {
 	KumactlArg string
 	// KumactlListArg the name of the cmdline argument when doing `list`.
 	KumactlListArg string
+	// AllowToInspect if it's required to generate Inspect API endpoint for this type
+	AllowToInspect bool
 }
 
 func (d ResourceTypeDescriptor) NewObject() Resource {
@@ -136,6 +138,12 @@ func HasKumactlEnabled() TypeFilter {
 func HasWsEnabled() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.WsPath != ""
+	})
+}
+
+func AllowedToInspect() TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.AllowToInspect
 	})
 }
 

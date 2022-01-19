@@ -33,6 +33,9 @@ message KumaResourceOptions {
 
   // Whether to skip generation of native API helper functions.
   bool skip_kubernetes_wrappers = 12;
+
+  // Whether to generate Inspect API endpoint
+  bool allow_to_inspect = 13;
 }
 
 message KumaWsOptions {

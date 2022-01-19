@@ -44,7 +44,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		return resources, nil
 	}
 
-	servicesAcc := envoy_common.NewServicesAccumulator(proxy.ServiceTLSReadiness)
+	servicesAcc := envoy_common.NewServicesAccumulator(ctx.Mesh.ServiceTLSReadiness)
 	splitCounter := &splitCounter{}
 
 	for _, outbound := range outbounds {

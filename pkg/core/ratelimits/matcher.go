@@ -25,24 +25,24 @@ func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *core_mesh.Datap
 		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not retrieve ratelimits")
 	}
 
-	return buildRateLimitMap(dataplane, mesh, splitPoliciesBySourceMatch(ratelimits.Items))
-}
-
-func buildRateLimitMap(
-	dataplane *core_mesh.DataplaneResource,
-	mesh *core_mesh.MeshResource,
-	rateLimits []*core_mesh.RateLimitResource,
-) (core_xds.RateLimitsMap, error) {
-	policies := make([]policy.ConnectionPolicy, len(rateLimits))
-	for i, ratelimit := range rateLimits {
-		policies[i] = ratelimit
-	}
-
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
 	if err != nil {
 		return core_xds.RateLimitsMap{}, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
+	return BuildRateLimitMap(dataplane, inbounds, splitPoliciesBySourceMatch(ratelimits.Items)), nil
+}
+
+func BuildRateLimitMap(
+	dataplane *core_mesh.DataplaneResource,
+	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
+	rateLimits []*core_mesh.RateLimitResource,
+) core_xds.RateLimitsMap {
+	policies := make([]policy.ConnectionPolicy, len(rateLimits))
+	for i, ratelimit := range rateLimits {
+		policies[i] = ratelimit
+	}
+
 	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies)
 
 	result := core_xds.RateLimitsMap{
@@ -65,7 +65,7 @@ func buildRateLimitMap(
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 // We need to split policies with many sources into individual policies, because otherwise

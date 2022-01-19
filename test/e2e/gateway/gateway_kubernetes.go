@@ -12,8 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
@@ -235,7 +235,7 @@ spec:
 		It("should proxy simple HTTP requests", func() {
 			ProxySimpleRequests(cluster, "kubernetes",
 				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
-				testutil.FromKubernetesPod(ClientNamespace, "gateway-client"))
+				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
 		})
 	})
 
@@ -247,7 +247,7 @@ spec:
 		It("should proxy simple HTTP requests", func() {
 			ProxySimpleRequests(cluster, "kubernetes",
 				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
-				testutil.FromKubernetesPod(ClientNamespace, "gateway-client"))
+				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
 		})
 
 		// In mTLS mode, only the presence of TrafficPermission rules allow services to receive
@@ -256,7 +256,7 @@ spec:
 		It("should fail without TrafficPermission", func() {
 			ProxyRequestsWithMissingPermission(cluster,
 				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
-				testutil.FromKubernetesPod(ClientNamespace, "gateway-client"))
+				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
 		})
 	})
 
@@ -300,7 +300,7 @@ spec:
 		It("should be rate limited", func() {
 			ProxyRequestsWithRateLimit(cluster,
 				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
-				testutil.FromKubernetesPod(ClientNamespace, "gateway-client"))
+				client.FromKubernetesPod(ClientNamespace, "gateway-client"))
 		})
 	})
 }

@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
+	. "github.com/kumahq/kuma/test/framework/client"
 )
 
 func KumaStandalone() {
@@ -189,8 +189,8 @@ conf:
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
-				HaveKeyWithValue(Equal(`echo-v1`), ApproximatelyEqual(v1Weight, 1)),
-				HaveKeyWithValue(Equal(`echo-v2`), ApproximatelyEqual(v2Weight, 1)),
+				HaveKeyWithValue(Equal(`echo-v1`), BeNumerically("~", v1Weight, 1)),
+				HaveKeyWithValue(Equal(`echo-v2`), BeNumerically("~", v2Weight, 1)),
 			),
 		)
 	})
@@ -356,8 +356,8 @@ conf:
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(5, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(5, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 5, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 5, 1)),
 				),
 			)
 
@@ -366,8 +366,8 @@ conf:
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), ApproximatelyEqual(5, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), ApproximatelyEqual(5, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), BeNumerically("~", 5, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), BeNumerically("~", 5, 1)),
 				),
 			)
 		})
@@ -416,8 +416,8 @@ conf:
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(5, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(5, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 5, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 5, 1)),
 				),
 			)
 
@@ -426,8 +426,8 @@ conf:
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(2, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(8, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 2, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 8, 1)),
 				),
 			)
 		})

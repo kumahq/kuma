@@ -39,7 +39,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 
-	endpoints, err := directAccessEndpoints(proxy.Dataplane, ctx.Mesh.Dataplanes, ctx.Mesh.Resource)
+	endpoints, err := directAccessEndpoints(proxy.Dataplane, ctx.Mesh.Resources.Dataplanes(), ctx.Mesh.Resource)
 	if err != nil {
 		return nil, err
 	}

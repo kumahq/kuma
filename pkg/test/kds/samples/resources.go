@@ -147,7 +147,9 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.CircuitBreaker_Conf{
-			Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{},
+			Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
+				TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: util_proto.UInt32(3)},
+			},
 		},
 	}
 	HealthCheck = &mesh_proto.HealthCheck{
@@ -162,8 +164,10 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.HealthCheck_Conf{
-			Interval: util_proto.Duration(time.Second * 5),
-			Timeout:  util_proto.Duration(time.Second * 7),
+			Interval:           util_proto.Duration(time.Second * 5),
+			Timeout:            util_proto.Duration(time.Second * 7),
+			HealthyThreshold:   9,
+			UnhealthyThreshold: 11,
 		},
 	}
 	TrafficLog = &mesh_proto.TrafficLog{

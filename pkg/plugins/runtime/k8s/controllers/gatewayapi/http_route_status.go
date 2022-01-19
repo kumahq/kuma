@@ -9,6 +9,8 @@ import (
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 )
 
 func (r *HTTPRouteReconciler) updateStatus(ctx context.Context, route *gatewayapi.HTTPRoute, conditions ParentConditions) error {
@@ -33,7 +35,7 @@ func mergeHTTPRouteStatus(ctx context.Context, route *gatewayapi.HTTPRoute, pare
 
 	// partition statuses based on whether we control them
 	for _, status := range route.Status.Parents {
-		if status.ControllerName != controllerName {
+		if status.ControllerName != common.ControllerName {
 			mergedStatuses = append(mergedStatuses, status)
 		} else {
 			previousStatuses = append(previousStatuses, status)
@@ -45,7 +47,7 @@ func mergeHTTPRouteStatus(ctx context.Context, route *gatewayapi.HTTPRoute, pare
 	for ref, conditions := range parentConditions {
 		previousStatus := gatewayapi.RouteParentStatus{
 			ParentRef:      ref,
-			ControllerName: controllerName,
+			ControllerName: common.ControllerName,
 		}
 
 		// Look through previous statuses for one belonging to the same ref

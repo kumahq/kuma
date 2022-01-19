@@ -1,6 +1,7 @@
 package customization_test
 
 import (
+	"net"
 	"path/filepath"
 	"testing"
 
@@ -10,15 +11,19 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	resources_access "github.com/kumahq/kuma/pkg/core/resources/access"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/server"
 )
 
 func TestWs(t *testing.T) {
@@ -48,6 +53,14 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	cfg.ApiServer = config
 	apiServer, err := api_server.NewApiServer(
 		manager.NewResourceManager(store),
+		xds_context.NewMeshContextBuilder(
+			manager.NewResourceManager(store),
+			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			net.LookupIP,
+			cfg.Multizone.Zone.Name,
+			vips.NewPersistence(manager.NewResourceManager(store), config_manager.NewConfigManager(store)),
+			cfg.DNSServer.Domain,
+		),
 		wsManager,
 		registry.Global().ObjectDescriptors(core_model.HasWsEnabled()),
 		&cfg,

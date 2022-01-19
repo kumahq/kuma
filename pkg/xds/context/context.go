@@ -2,7 +2,6 @@ package context
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -20,17 +19,27 @@ type ConnectionInfo struct {
 	Authority string
 }
 
+// ControlPlaneContext contains shared global data and components that are required for generating XDS
+// This data is the same regardless of a data plane proxy and mesh we are generating the data for.
 type ControlPlaneContext struct {
 	AdminProxyKeyPair *tls.KeyPair
 	CLACache          xds.CLACache
 	Secrets           secrets.Secrets
 }
 
+// MeshContext contains shared data within one mesh that is required for generating XDS config.
+// This data is the same for all data plane proxies within one mesh.
+// If there is an information that can be precomputed and shared between all data plane proxies
+// it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	Resource    *core_mesh.MeshResource
-	Dataplanes  *core_mesh.DataplaneResourceList
-	Hash        string
-	EndpointMap xds.EndpointMap
+	Hash                string
+	Resource            *core_mesh.MeshResource
+	Resources           Resources
+	DataplanesByName    map[string]*core_mesh.DataplaneResource
+	EndpointMap         xds.EndpointMap
+	VIPDomains          []xds.VIPDomains
+	VIPOutbounds        []*mesh_proto.Dataplane_Networking_Outbound
+	ServiceTLSReadiness map[string]bool
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {
@@ -63,11 +72,7 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	}
 }
 
-func BuildControlPlaneContext(
-	config kuma_cp.Config,
-	claCache xds.CLACache,
-	secrets secrets.Secrets,
-) (*ControlPlaneContext, error) {
+func BuildControlPlaneContext(claCache xds.CLACache, secrets secrets.Secrets) (*ControlPlaneContext, error) {
 	adminKeyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, tls.DefaultKeyType, "localhost")
 	if err != nil {
 		return nil, err
