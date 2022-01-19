@@ -94,6 +94,7 @@ const (
 	RedirectAllDNSTraffic     = "redirect-all-dns-traffic"
 	AgentDNSListenerPort      = "agent-dns-listener-port"
 	DNSUpstreamTargetChain    = "dns-upstream-target-chain"
+	SkipDNSConntrackZoneSplit = "skip-dns-conntrack-zone-split"
 )
 
 const (

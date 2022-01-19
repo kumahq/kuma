@@ -126,6 +126,7 @@ func (iptConfigurator *IptablesConfigurator) logConfig() {
 	fmt.Printf("ISTIO_SERVICE_CIDR=%s\n", os.Getenv("ISTIO_SERVICE_CIDR"))
 	fmt.Printf("ISTIO_SERVICE_EXCLUDE_CIDR=%s\n", os.Getenv("ISTIO_SERVICE_EXCLUDE_CIDR"))
 	fmt.Printf("ISTIO_META_DNS_CAPTURE=%s\n", os.Getenv("ISTIO_META_DNS_CAPTURE"))
+	fmt.Printf("SKIP_CONNTRACK_ZONE_SPLIT=%s\n", os.Getenv("SKIP_CONNTRACK_ZONE_SPLIT"))
 	fmt.Println("")
 	iptConfigurator.cfg.Print()
 }
@@ -222,7 +223,7 @@ func (iptConfigurator *IptablesConfigurator) handleInboundIpv6Rules(ipv6RangesEx
 	// Use this chain also for redirecting inbound traffic to the common Envoy port
 	// when not using TPROXY.
 	iptConfigurator.iptables.AppendRuleV6(constants.ISTIOINREDIRECT, constants.NAT, "-p", constants.TCP, "-j",
-		constants.REDIRECT, "--to-ports", iptConfigurator.cfg.InboundCapturePortV6) //Kuma changed
+		constants.REDIRECT, "--to-ports", iptConfigurator.cfg.InboundCapturePortV6) // Kuma changed
 
 	// Handling of inbound ports. Traffic will be redirected to Envoy, which will process and forward
 	// to the local service. If not set, no inbound port will be intercepted by istio iptablesOrFail.
@@ -572,7 +573,9 @@ func (iptConfigurator *IptablesConfigurator) run() {
 			iptConfigurator.cfg.AgentDNSListenerPort,
 			iptConfigurator.cfg.DNSUpstreamTargetChain,
 			iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
-			iptConfigurator.cfg.DNSServersV4)
+			iptConfigurator.cfg.DNSServersV4,
+			iptConfigurator.cfg.RedirectAllDNSTraffic,
+			iptConfigurator.cfg.SkipDNSConntrackZoneSplit)
 
 		if iptConfigurator.cfg.EnableInboundIPv6 {
 			HandleDNSUDPv6(
@@ -602,7 +605,8 @@ func (iptConfigurator *IptablesConfigurator) run() {
 // This helps the creation logic of DNS UDP rules in sync with the deletion.
 func HandleDNSUDP(
 	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
-	cmd, agentDNSListenerPort, dnsUpstreamTargetChain, proxyUID, proxyGID string, dnsServersV4 []string) {
+	cmd, agentDNSListenerPort, dnsUpstreamTargetChain, proxyUID, proxyGID string, dnsServersV4 []string,
+	captureAllDNS bool, skipDNSConntrackZoneSplit bool) {
 	const paramIdxRaw = 4
 	var raw []string
 	opsStr := opsToString[ops]
@@ -668,8 +672,11 @@ func HandleDNSUDP(
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
 	}
-	// Split UDP DNS traffic to separate conntrack zones
-	addConntrackZoneDNSUDP(ops, iptables, ext, cmd, proxyUID, proxyGID, dnsServersV4, false)
+
+	if !skipDNSConntrackZoneSplit {
+		// Split UDP DNS traffic to separate conntrack zones
+		addConntrackZoneDNSUDP(ops, iptables, ext, cmd, proxyUID, proxyGID, dnsServersV4, captureAllDNS, agentDNSListenerPort)
+	}
 }
 
 // kuma changes start
@@ -680,7 +687,7 @@ func HandleDNSUDP(
 // DNS client to istio and vice versa goes to zone 2
 func addConntrackZoneDNSUDP(
 	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
-	cmd, proxyUID, proxyGID string, dnsServersV4 []string, captureAllDNS bool) {
+	cmd, proxyUID, proxyGID string, dnsServersV4 []string, captureAllDNS bool, agentDNSListenerPort string) {
 	const paramIdxRaw = 4
 	var raw []string
 	opsStr := opsToString[ops]
@@ -704,7 +711,7 @@ func addConntrackZoneDNSUDP(
 		// Packets with src port 15053 from istio to zone 2. These are Istio response packets to application clients
 		raw = []string{
 			"-t", table, opsStr, chainOUTPUT,
-			"-p", "udp", "--sport", "15053", "-m", "owner", "--uid-owner", uid, "-j", constants.CT, "--zone", "2",
+			"-p", "udp", "--sport", agentDNSListenerPort, "-m", "owner", "--uid-owner", uid, "-j", constants.CT, "--zone", "2",
 		}
 		switch ops {
 		case AppendOps:
@@ -728,7 +735,7 @@ func addConntrackZoneDNSUDP(
 		// Packets with src port 15053 from istio to zone 2. These are Istio response packets to application clients
 		raw = []string{
 			"-t", table, opsStr, chainOUTPUT,
-			"-p", "udp", "--sport", "15053", "-m", "owner", "--gid-owner", gid, "-j", constants.CT, "--zone", "2",
+			"-p", "udp", "--sport", agentDNSListenerPort, "-m", "owner", "--gid-owner", gid, "-j", constants.CT, "--zone", "2",
 		}
 		switch ops {
 		case AppendOps:
@@ -736,7 +743,6 @@ func addConntrackZoneDNSUDP(
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
-
 	}
 
 	if captureAllDNS {
@@ -945,6 +951,5 @@ func (iptConfigurator *IptablesConfigurator) executeCommands() {
 		iptConfigurator.executeIptablesCommands(iptConfigurator.iptables.BuildV4())
 		// Execute ip6tables commands
 		iptConfigurator.executeIptablesCommands(iptConfigurator.iptables.BuildV6())
-
 	}
 }
