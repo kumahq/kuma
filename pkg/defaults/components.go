@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/tokens"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneegress"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
@@ -25,8 +26,13 @@ var log = core.Log.WithName("defaults")
 func Setup(runtime runtime.Runtime) error {
 	defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
 
-	signingKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
-	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(signingKeyManager, log)); err != nil {
+	zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
+	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(zoneIngressSigningKeyManager, log)); err != nil {
+		return err
+	}
+
+	zoneEgressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneegress.ZoneEgressSigningKeyPrefix)
+	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(zoneEgressSigningKeyManager, log)); err != nil {
 		return err
 	}
 

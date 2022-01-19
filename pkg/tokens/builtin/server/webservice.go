@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneegress"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
@@ -22,17 +23,20 @@ var log = core.Log.WithName("dataplane-token-ws")
 type tokenWebService struct {
 	issuer            issuer.DataplaneTokenIssuer
 	zoneIngressIssuer zoneingress.TokenIssuer
+	zoneEgressIssuer  zoneegress.TokenIssuer
 	access            access.DataplaneTokenAccess
 }
 
 func NewWebservice(
 	issuer issuer.DataplaneTokenIssuer,
 	zoneIngressIssuer zoneingress.TokenIssuer,
+	zoneEgressIssuer zoneegress.TokenIssuer,
 	access access.DataplaneTokenAccess,
 ) *restful.WebService {
 	ws := tokenWebService{
 		issuer:            issuer,
 		zoneIngressIssuer: zoneIngressIssuer,
+		zoneEgressIssuer:  zoneEgressIssuer,
 		access:            access,
 	}
 	return ws.createWs()
@@ -45,7 +49,8 @@ func (d *tokenWebService) createWs() *restful.WebService {
 	ws.Path("/tokens").
 		Route(ws.POST("").To(d.handleIdentityRequest)). // backwards compatibility
 		Route(ws.POST("/dataplane").To(d.handleIdentityRequest)).
-		Route(ws.POST("/zone-ingress").To(d.handleZoneIngressIdentityRequest))
+		Route(ws.POST("/zone-ingress").To(d.handleZoneIngressIdentityRequest)).
+		Route(ws.POST("/zone-egress").To(d.handleZoneEgressIdentityRequest))
 	return ws
 }
 
@@ -144,6 +149,46 @@ func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Requ
 	}
 
 	token, err := d.zoneIngressIssuer.Generate(request.Request.Context(), zoneingress.Identity{
+		Zone: idReq.Zone,
+	}, validFor)
+	if err != nil {
+		errors.HandleError(response, err, "Could not issue a token")
+		return
+	}
+
+	response.Header().Set("content-type", "text/plain")
+	if _, err := response.Write([]byte(token)); err != nil {
+		log.Error(err, "Could not write a response")
+	}
+}
+
+func (d *tokenWebService) handleZoneEgressIdentityRequest(request *restful.Request, response *restful.Response) {
+	idReq := types.ZoneEgressTokenRequest{}
+	if err := request.ReadEntity(&idReq); err != nil {
+		log.Error(err, "Could not read a request")
+		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err := d.access.ValidateGenerateZoneEgressToken(idReq.Zone, user.FromCtx(request.Request.Context())); err != nil {
+		errors.HandleError(response, err, "Could not issue a token")
+		return
+	}
+
+	verr := validators.ValidationError{}
+	if idReq.Zone == "" {
+		verr.AddViolation("zone", "cannot be empty")
+	}
+
+	validForErr, validFor := validateValidFor(idReq.ValidFor)
+	verr.Add(validForErr)
+
+	if verr.HasViolations() {
+		errors.HandleError(response, verr.OrNil(), "Invalid request")
+		return
+	}
+
+	token, err := d.zoneEgressIssuer.Generate(request.Request.Context(), zoneegress.Identity{
 		Zone: idReq.Zone,
 	}, validFor)
 	if err != nil {

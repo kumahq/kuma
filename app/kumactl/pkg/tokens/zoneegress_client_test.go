@@ -14,22 +14,21 @@ import (
 	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneegress"
 )
 
-type staticTokenIssuer struct {
+type zoneEgressStaticTokenIssuer struct {
 }
 
-var _ issuer.DataplaneTokenIssuer = &staticTokenIssuer{}
+var _ zoneegress.TokenIssuer = &zoneEgressStaticTokenIssuer{}
 
-func (s *staticTokenIssuer) Generate(ctx context.Context, identity issuer.DataplaneIdentity, validFor time.Duration) (core_tokens.Token, error) {
-	return fmt.Sprintf("token-for-%s-%s", identity.Name, identity.Mesh), nil
+func (z *zoneEgressStaticTokenIssuer) Generate(ctx context.Context, identity zoneegress.Identity, validFor time.Duration) (zoneegress.Token, error) {
+	return fmt.Sprintf("token-for-%s", identity.Zone), nil
 }
 
-var _ = Describe("Tokens Client", func() {
+var _ = Describe("Zone Egress Tokens Client", func() {
 
 	var server *httptest.Server
 
@@ -54,20 +53,20 @@ var _ = Describe("Tokens Client", func() {
 			Url: server.URL,
 		})
 		Expect(err).ToNot(HaveOccurred())
-		client := tokens.NewDataplaneTokenClient(baseClient)
+		client := tokens.NewZoneEgressTokenClient(baseClient)
 
 		// wait for server
 		Eventually(func() error {
-			_, err := client.Generate("example", "default", nil, "dataplane", 24*time.Hour)
+			_, err := client.Generate("my-zone-1", 24*time.Hour)
 			return err
 		}, "5s", "100ms").ShouldNot(HaveOccurred())
 
 		// when
-		token, err := client.Generate("example", "default", nil, "dataplane", 24*time.Hour)
+		token, err := client.Generate("my-zone-1", 24*time.Hour)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(token).To(Equal("token-for-example-default"))
+		Expect(token).To(Equal("token-for-my-zone-1"))
 	})
 
 	It("should return an error when status code is different than 200", func() {
@@ -75,7 +74,7 @@ var _ = Describe("Tokens Client", func() {
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
 		defer server.Close()
-		mux.HandleFunc("/tokens", func(writer http.ResponseWriter, req *http.Request) {
+		mux.HandleFunc("/tokens/zone-egress", func(writer http.ResponseWriter, req *http.Request) {
 			defer GinkgoRecover()
 			writer.WriteHeader(500)
 			_, err := writer.Write([]byte("Internal Server Error"))
@@ -85,11 +84,11 @@ var _ = Describe("Tokens Client", func() {
 			Url: server.URL,
 		})
 		Expect(err).ToNot(HaveOccurred())
-		client := tokens.NewDataplaneTokenClient(baseClient)
+		client := tokens.NewZoneEgressTokenClient(baseClient)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = client.Generate("example", "default", nil, "dataplane", 24*time.Hour)
+		_, err = client.Generate("my-zone-2", 24*time.Hour)
 
 		// then
 		Expect(err).To(MatchError("(500): Internal Server Error"))

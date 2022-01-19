@@ -44,6 +44,7 @@ type RootRuntime struct {
 	NewServiceOverviewClient     func(util_http.Client) kumactl_resources.ServiceOverviewClient
 	NewDataplaneTokenClient      func(util_http.Client) tokens.DataplaneTokenClient
 	NewZoneIngressTokenClient    func(util_http.Client) tokens.ZoneIngressTokenClient
+	NewZoneEgressTokenClient     func(util_http.Client) tokens.ZoneEgressTokenClient
 	NewAPIServerClient           func(util_http.Client) kumactl_resources.ApiServerClient
 	Registry                     registry.TypeRegistry
 }
@@ -90,6 +91,7 @@ func DefaultRootContext() *RootContext {
 			NewServiceOverviewClient:     kumactl_resources.NewServiceOverviewClient,
 			NewDataplaneTokenClient:      tokens.NewDataplaneTokenClient,
 			NewZoneIngressTokenClient:    tokens.NewZoneIngressTokenClient,
+			NewZoneEgressTokenClient:     tokens.NewZoneEgressTokenClient,
 			NewAPIServerClient:           kumactl_resources.NewAPIServerClient,
 		},
 		InstallCpContext:                    install_context.DefaultInstallCpContext(),
@@ -228,6 +230,14 @@ func (rc *RootContext) CurrentZoneIngressTokenClient() (tokens.ZoneIngressTokenC
 		return nil, err
 	}
 	return rc.Runtime.NewZoneIngressTokenClient(client), nil
+}
+
+func (rc *RootContext) CurrentZoneEgressTokenClient() (tokens.ZoneEgressTokenClient, error) {
+	client, err := rc.BaseAPIServerClient()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewZoneEgressTokenClient(client), nil
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {

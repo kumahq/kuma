@@ -820,6 +820,5 @@ func (iptConfigurator *IptablesConfigurator) executeCommands() {
 		iptConfigurator.executeIptablesCommands(iptConfigurator.iptables.BuildV4())
 		// Execute ip6tables commands
 		iptConfigurator.executeIptablesCommands(iptConfigurator.iptables.BuildV6())
-
 	}
 }

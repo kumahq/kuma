@@ -34,7 +34,12 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 
 	BeforeEach(func() {
 		container := restful.NewContainer()
-		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}, access.NoopDpTokenAccess{}))
+		container.Add(tokens_server.NewWebservice(
+			&staticTokenIssuer{},
+			&zoneIngressStaticTokenIssuer{},
+			&zoneEgressStaticTokenIssuer{},
+			access.NoopDpTokenAccess{},
+		))
 		server = httptest.NewServer(container.ServeMux)
 	})
 
