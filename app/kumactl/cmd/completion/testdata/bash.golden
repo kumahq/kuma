@@ -996,6 +996,7 @@ _kumactl_generate_zone-egress-token()
     flags+=("--no-config")
 
     must_have_one_flag=()
+    must_have_one_flag+=("--valid-for=")
     must_have_one_noun=()
     noun_aliases=()
 }

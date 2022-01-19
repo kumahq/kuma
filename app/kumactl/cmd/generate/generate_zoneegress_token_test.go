@@ -79,11 +79,11 @@ var _ = Describe("kumactl generate zone-egress-token", func() {
 			Expect(buf.String()).To(Equal(given.result))
 		},
 		Entry("for zone", testCase{
-			args:   []string{"generate", "zone-egress-token", "--zone=my-zone"},
+			args:   []string{"generate", "zone-egress-token", "--zone=my-zone", "--valid-for=24h"},
 			result: "token-for-my-zone",
 		}),
 		Entry("for empty zone", testCase{
-			args:   []string{"generate", "zone-egress-token"},
+			args:   []string{"generate", "zone-egress-token", "--valid-for=24h"},
 			result: "token-for-",
 		}),
 	)
@@ -93,7 +93,7 @@ var _ = Describe("kumactl generate zone-egress-token", func() {
 		generator.err = errors.New("could not connect to API")
 
 		// when
-		rootCmd.SetArgs([]string{"generate", "zone-egress-token", "--zone=example"})
+		rootCmd.SetArgs([]string{"generate", "zone-egress-token", "--zone=example", "--valid-for=24h"})
 		err := rootCmd.Execute()
 
 		// then
