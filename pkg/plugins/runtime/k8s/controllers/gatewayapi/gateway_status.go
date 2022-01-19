@@ -2,6 +2,9 @@ package gatewayapi
 
 import (
 	"context"
+	"fmt"
+	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -21,7 +24,13 @@ func (r *GatewayReconciler) updateStatus(
 	listenerConditions ListenerConditions,
 ) error {
 	updated := gateway.DeepCopy()
-	mergeGatewayStatus(updated, gatewayInstance, listenerConditions)
+
+	attachedListeners, err := attachedRoutesForListeners(ctx, gateway, r.Client)
+	if err != nil {
+		return err
+	}
+
+	mergeGatewayStatus(updated, gatewayInstance, listenerConditions, attachedListeners)
 
 	if err := r.Client.Status().Patch(ctx, updated, kube_client.MergeFrom(gateway)); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -33,7 +42,7 @@ func (r *GatewayReconciler) updateStatus(
 	return nil
 }
 
-func gatewayAddresses(gateway *gatewayapi.Gateway, instance *mesh_k8s.GatewayInstance) []gatewayapi.GatewayAddress {
+func gatewayAddresses(instance *mesh_k8s.GatewayInstance) []gatewayapi.GatewayAddress {
 	ipType := gatewayapi.IPAddressType
 	hostnameType := gatewayapi.HostnameAddressType
 
@@ -59,7 +68,68 @@ func gatewayAddresses(gateway *gatewayapi.Gateway, instance *mesh_k8s.GatewayIns
 	return addrs
 }
 
-func mergeGatewayListenerStatuses(gateway *gatewayapi.Gateway, conditions ListenerConditions) []gatewayapi.ListenerStatus {
+const everyListener = gatewayapi.SectionName("")
+
+type attachedRoutes struct {
+	// num is the number of allowed routes for a listener
+	num int32
+	// invalidRoutes can be empty
+	invalidRoutes []string
+}
+
+// AttachedRoutesForListeners tracks the relevant status for routes pointing to a
+// listener.
+type AttachedRoutesForListeners map[gatewayapi.SectionName]attachedRoutes
+
+// attachedRoutesForListeners returns a function that calculates the
+// conditions for routes attached to a Gateway.
+func attachedRoutesForListeners(
+	ctx context.Context,
+	gateway *gatewayapi.Gateway,
+	client kube_client.Client,
+) (AttachedRoutesForListeners, error) {
+	var routes gatewayapi.HTTPRouteList
+	if err := client.List(ctx, &routes, kube_client.MatchingFields{
+		gatewayIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
+	}); err != nil {
+		return nil, errors.Wrap(err, "unexpected error listing HTTPRoutes")
+	}
+
+	attachedRoutes := AttachedRoutesForListeners{}
+
+	for _, route := range routes.Items {
+		for _, parentRef := range route.Spec.ParentRefs {
+			sectionName := everyListener
+			if parentRef.SectionName != nil {
+				sectionName = *parentRef.SectionName
+			}
+
+			for _, refStatus := range route.Status.Parents {
+				if reflect.DeepEqual(refStatus.ParentRef, parentRef) {
+					attached := attachedRoutes[sectionName]
+					attached.num++
+
+					if kube_apimeta.IsStatusConditionFalse(refStatus.Conditions, string(gatewayapi.ConditionRouteResolvedRefs)) {
+						attached.invalidRoutes = append(attached.invalidRoutes, kube_client.ObjectKeyFromObject(&route).String())
+					}
+
+					attachedRoutes[sectionName] = attached
+				}
+			}
+		}
+	}
+
+	return attachedRoutes, nil
+}
+
+// mergeGatewayListenerStatuses takes the statuses of the attached Routes and
+// the other calculated conditions for this listener and returns a
+// ListenerStatus.
+func mergeGatewayListenerStatuses(
+	gateway *gatewayapi.Gateway,
+	conditions ListenerConditions,
+	attachedRouteStatuses AttachedRoutesForListeners,
+) []gatewayapi.ListenerStatus {
 	previousStatuses := map[gatewayapi.SectionName]gatewayapi.ListenerStatus{}
 
 	for _, status := range gateway.Status.Listeners {
@@ -72,10 +142,10 @@ func mergeGatewayListenerStatuses(gateway *gatewayapi.Gateway, conditions Listen
 	// existing one
 	for name, conditions := range conditions {
 		previousStatus := gatewayapi.ListenerStatus{
-			Name: name,
-			// TODO it's difficult to determine this number with Kuma, so we
-			// leave it at 0
+			Name:           name,
 			AttachedRoutes: 0,
+			// TODO this should be Listener.AllowedRoutes with invalid kinds
+			// removed, i.e. it may be empty
 			SupportedKinds: []gatewayapi.RouteGroupKind{{Kind: common.HTTPRouteKind}},
 		}
 
@@ -88,6 +158,27 @@ func mergeGatewayListenerStatuses(gateway *gatewayapi.Gateway, conditions Listen
 			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, condition)
 		}
 
+		// Check resolved status for routes for this listener and for
+		// non-specific parents.
+		previousStatus.AttachedRoutes = attachedRouteStatuses[name].num + attachedRouteStatuses[everyListener].num
+
+		// If we can't resolve refs on a route and our listener condition
+		// ResolvedRefs is otherwise true, set it to false.
+		invalidRoutes := append(attachedRouteStatuses[everyListener].invalidRoutes, attachedRouteStatuses[name].invalidRoutes...)
+
+		if len(invalidRoutes) > 0 &&
+			kube_apimeta.IsStatusConditionTrue(previousStatus.Conditions, string(gatewayapi.ListenerConditionResolvedRefs)) {
+			// We only set the ResolvedRefs condition and don't set ready false
+			message := fmt.Sprintf("Attached HTTPRoutes %s have unresolved BackendRefs", strings.Join(invalidRoutes, ", "))
+			kube_apimeta.SetStatusCondition(&previousStatus.Conditions, kube_meta.Condition{
+				Type:               string(gatewayapi.ListenerConditionResolvedRefs),
+				Status:             kube_meta.ConditionFalse,
+				Reason:             string(gatewayapi.ListenerReasonRefNotPermitted),
+				Message:            message,
+				ObservedGeneration: gateway.GetGeneration(),
+			})
+		}
+
 		statuses = append(statuses, previousStatus)
 	}
 
@@ -95,10 +186,15 @@ func mergeGatewayListenerStatuses(gateway *gatewayapi.Gateway, conditions Listen
 }
 
 // mergeGatewayStatus updates the status by mutating the given Gateway.
-func mergeGatewayStatus(gateway *gatewayapi.Gateway, instance *mesh_k8s.GatewayInstance, listenerConditions ListenerConditions) {
-	gateway.Status.Addresses = gatewayAddresses(gateway, instance)
+func mergeGatewayStatus(
+	gateway *gatewayapi.Gateway,
+	instance *mesh_k8s.GatewayInstance,
+	listenerConditions ListenerConditions,
+	attachedListeners AttachedRoutesForListeners,
+) {
+	gateway.Status.Addresses = gatewayAddresses(instance)
 
-	gateway.Status.Listeners = mergeGatewayListenerStatuses(gateway, listenerConditions)
+	gateway.Status.Listeners = mergeGatewayListenerStatuses(gateway, listenerConditions, attachedListeners)
 
 	readinessStatus := kube_meta.ConditionFalse
 	readinessReason := gatewayapi.GatewayReasonListenersNotReady

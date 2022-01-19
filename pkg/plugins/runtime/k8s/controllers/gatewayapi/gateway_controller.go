@@ -115,6 +115,8 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, gateway 
 	return instance, nil
 }
 
+const gatewayIndexField = ".metadata.gateway"
+
 // gatewaysForRoute returns a function that calculates which Gateways might
 // be affected by changes in an HTTPRoute so they can be reconciled.
 func gatewaysForRoute(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
@@ -147,6 +149,30 @@ func gatewaysForRoute(l logr.Logger, client kube_client.Client) kube_handler.Map
 }
 
 func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
+	// This index helps us list routes that point to a Gateway in
+	// attachedListenersForGateway.
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &gatewayapi.HTTPRoute{}, gatewayIndexField, func(obj kube_client.Object) []string {
+		route := obj.(*gatewayapi.HTTPRoute)
+
+		var names []string
+
+		for _, parentRef := range route.Spec.ParentRefs {
+			namespace := route.Namespace
+			if parentRef.Namespace != nil {
+				namespace = string(*parentRef.Namespace)
+			}
+
+			names = append(
+				names,
+				kube_types.NamespacedName{Namespace: namespace, Name: string(parentRef.Name)}.String(),
+			)
+		}
+
+		return names
+	}); err != nil {
+		return err
+	}
+
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayapi.Gateway{}).
 		Owns(&mesh_k8s.Gateway{}).
