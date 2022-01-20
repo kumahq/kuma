@@ -47,6 +47,7 @@ type InstallControlPlaneArgs struct {
 	Ingress_drainTime                            string            `helm:"ingress.drainTime"`
 	Ingress_service_type                         string            `helm:"ingress.service.type"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
+	ExperimentalGateway                          bool              `helm:"experimental.gateway"`
 }
 
 type ImageEnvSecret struct {

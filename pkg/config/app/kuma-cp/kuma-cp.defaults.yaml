@@ -419,3 +419,8 @@ access:
       users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS
       # List of groups that are allowed to generate user token
       groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS
+
+# Configuration of experimental features of Kuma
+experimental:
+  # If true, experimental built-in gateway is enabled
+  gateway: false # ENV: KUMA_EXPERIMENTAL_GATEWAY

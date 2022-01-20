@@ -202,17 +202,23 @@ func StoreFixture(mgr manager.ResourceManager, r core_model.Resource) error {
 // BuildRuntime returns a fabricated test Runtime instance with which
 // the gateway plugin is registered.
 func BuildRuntime() (runtime.Runtime, error) {
-	builder, err := test_runtime.BuilderFor(context.Background(), kuma_cp.DefaultConfig())
+	config := kuma_cp.DefaultConfig()
+	config.Experimental.Gateway = true
+	builder, err := test_runtime.BuilderFor(context.Background(), config)
 	if err != nil {
+		return nil, err
+	}
+
+	plugin := plugins.Plugins().BootstrapPlugins()["gateway"]
+	if err := plugin.BeforeBootstrap(builder, nil); err != nil {
+		return nil, err
+	}
+	if err := plugin.AfterBootstrap(builder, nil); err != nil {
 		return nil, err
 	}
 
 	rt, err := builder.Build()
 	if err != nil {
-		return nil, err
-	}
-
-	if err := plugins.Plugins().RuntimePlugins()["gateway"].Customize(rt); err != nil {
 		return nil, err
 	}
 
@@ -310,6 +316,6 @@ func (d *DataplaneGenerator) generate(
 var _ = BeforeSuite(func() {
 	// Ensure that the plugin is registered so that tests at least
 	// have a chance of working.
-	_, registered := plugins.Plugins().RuntimePlugins()["gateway"]
+	_, registered := plugins.Plugins().BootstrapPlugins()["gateway"]
 	Expect(registered).To(BeTrue(), "gateway plugin is registered")
 })

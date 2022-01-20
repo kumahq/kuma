@@ -81,6 +81,7 @@ A Helm chart for the Kuma Control Plane
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
 | kubectl.image.tag | string | `"1.20"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
+| experimental.gateway | bool | `false` | If true, it installs experimental built-in Gateway support |
 
 ## Custom Resource Definitions
 

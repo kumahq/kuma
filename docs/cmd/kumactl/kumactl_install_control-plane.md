@@ -33,6 +33,7 @@ kumactl install control-plane [flags]
       --dataplane-repository string                 repository for the image of the Kuma DataPlane component (default "kuma-dp")
       --dataplane-version string                    version of the image of the Kuma DataPlane component (default "unknown")
       --env-var stringToString                      environment variables that will be passed to the control plane (default [])
+      --experimental-gateway                        install experimental built-in Gateway support
   -h, --help                                        help for control-plane
       --image-pull-policy string                    image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --ingress-drain-time string                   drain time for Envoy proxy (default "30s")

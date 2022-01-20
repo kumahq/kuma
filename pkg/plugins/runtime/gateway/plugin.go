@@ -1,9 +1,12 @@
 package gateway
 
 import (
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
@@ -17,9 +20,27 @@ var (
 
 type plugin struct{}
 
-var _ core_plugins.RuntimePlugin = &plugin{}
+var _ core_plugins.BootstrapPlugin = &plugin{}
 
-func (p *plugin) Customize(rt core_runtime.Runtime) error {
+func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
+	if !context.Config().Experimental.Gateway {
+		log.V(1).Info("gateway plugin is disabled")
+		return nil
+	}
+
+	register.RegisterGatewayTypes()
+	if context.Config().Environment == config_core.KubernetesEnvironment {
+		mesh_k8s.RegisterK8SGatewayTypes()
+	}
+	return nil
+}
+
+func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
+	if !context.Config().Experimental.Gateway {
+		log.V(1).Info("gateway plugin is disabled")
+		return nil
+	}
+
 	// Insert our resolver before the default so that we can intercept
 	// builtin gateway dataplanes.
 	generator.DefaultTemplateResolver = template.SequentialResolver(
@@ -27,9 +48,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		generator.DefaultTemplateResolver,
 	)
 
-	generator.RegisterProfile(ProfileGatewayProxy, NewProxyProfile(rt))
-
-	// TODO(jpeach) As new gateway resources are added, register them here.
+	generator.RegisterProfile(ProfileGatewayProxy, NewProxyProfile(context.Config().Multizone.Zone.Name, context.DataSourceLoader()))
 
 	log.Info("registered gateway plugin")
 	return nil
@@ -40,7 +59,7 @@ const ProfileGatewayProxy = "gateway-proxy"
 
 // NewProxyProfile returns a new resource generator profile for builtin
 // gateway dataplanes.
-func NewProxyProfile(rt core_runtime.Runtime) generator.ResourceGenerator {
+func NewProxyProfile(zone string, dataSourceLoader datasource.Loader) generator.ResourceGenerator {
 	return generator.CompositeResourceGenerator{
 		generator.AdminProxyGenerator{},
 		generator.PrometheusEndpointGenerator{},
@@ -56,14 +75,14 @@ func NewProxyProfile(rt core_runtime.Runtime) generator.ResourceGenerator {
 				&ListenerGenerator{},
 				&HTTPFilterChainGenerator{},
 				&HTTPSFilterChainGenerator{
-					DataSourceLoader: rt.DataSourceLoader(),
+					DataSourceLoader: dataSourceLoader,
 				},
 				&RouteConfigurationGenerator{},
 				&GatewayRouteGenerator{},
 				&ConnectionPolicyGenerator{},
 				&ClusterGenerator{
-					DataSourceLoader: rt.DataSourceLoader(),
-					Zone:             rt.Config().Multizone.Zone.Name,
+					DataSourceLoader: dataSourceLoader,
+					Zone:             zone,
 				},
 				&RouteTableGenerator{},
 			},

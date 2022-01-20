@@ -1,6 +1,3 @@
-//go:build gateway
-// +build gateway
-
 package gateway
 
 import (

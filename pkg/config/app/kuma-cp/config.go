@@ -141,6 +141,8 @@ type Config struct {
 	DpServer *dp_server.DpServerConfig `yaml:"dpServer"`
 	// Access Control configuration
 	Access access.AccessConfig `yaml:"access"`
+	// Configuration of experimental features
+	Experimental ExperimentalConfig `yaml:"experimental"`
 }
 
 func (c *Config) Sanitize() {
@@ -196,6 +198,9 @@ var DefaultConfig = func() Config {
 		Diagnostics: diagnostics.DefaultDiagnosticsConfig(),
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
+		Experimental: ExperimentalConfig{
+			Gateway: false,
+		},
 	}
 }
 
@@ -305,4 +310,9 @@ func DefaultGeneralConfig() *GeneralConfig {
 		DNSCacheTTL: 10 * time.Second,
 		WorkDir:     "",
 	}
+}
+
+type ExperimentalConfig struct {
+	// If true, experimental built-in gateway is enabled.
+	Gateway bool `yaml:"gateway" envconfig:"kuma_experimental_gateway"`
 }

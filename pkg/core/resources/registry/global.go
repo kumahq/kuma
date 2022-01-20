@@ -13,3 +13,14 @@ func RegisterType(res model.ResourceTypeDescriptor) {
 		panic(err)
 	}
 }
+
+func RegisterTypeIfAbsent(res model.ResourceTypeDescriptor) {
+	for _, typ := range global.ObjectTypes() {
+		if typ == res.Name {
+			return
+		}
+	}
+	if err := global.RegisterType(res); err != nil {
+		panic(err)
+	}
+}

@@ -16,7 +16,7 @@ export KUBEBUILDER_ASSETS=$(CI_TOOLS_DIR)
 
 .PHONY: test
 test: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
-	$(GO_TEST) $(GO_TEST_OPTS) --tags=gateway -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $$(go list $(PKG_LIST) | grep -E -v "$(VENDORED_PKGS)")
+	$(GO_TEST) $(GO_TEST_OPTS) -race -covermode=atomic -coverpkg=./... -coverprofile="$(COVERAGE_PROFILE)" $$(go list $(PKG_LIST) | grep -E -v "$(VENDORED_PKGS)")
 	$(MAKE) coverage
 
 ${COVERAGE_PROFILE}:

@@ -36,14 +36,6 @@ BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-prometheus-sd coredns env
 # List of binaries that we have test build roles for.
 BUILD_TEST_BINARIES := test-server
 
-# Setting this variable to any value other than 'N', enables the experimental Kuma
-# gateway plugin. Experimental means "for experiments", NOT "for production".
-BUILD_WITH_EXPERIMENTAL_GATEWAY ?= N
-
-ifneq ($(BUILD_WITH_EXPERIMENTAL_GATEWAY),N)
-GO_BUILD += -tags gateway
-endif
-
 # Build_Go_Application is a build command for the Kuma Go applications.
 Build_Go_Application = $(GO_BUILD) -o $(BUILD_ARTIFACTS_DIR)/$(notdir $@)/$(notdir $@)
 
