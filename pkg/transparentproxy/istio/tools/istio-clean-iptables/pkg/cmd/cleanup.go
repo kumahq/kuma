@@ -42,7 +42,7 @@ func removeOldChains(cfg *config.Config, ext dep.Dependencies, cmd string) {
 		common.HandleDNSUDP(common.DeleteOps, builder.NewIptablesBuilder(), ext, cmd,
 			cfg.AgentDNSListenerPort,
 			cfg.DNSUpstreamTargetChain,
-			cfg.ProxyUID, cfg.ProxyGID, cfg.DNSServersV4)
+			cfg.ProxyUID, cfg.ProxyGID, cfg.DNSServersV4, cfg.RedirectAllDNSTraffic, cfg.SkipDNSConntrackZoneSplit)
 		common.HandleDNSUDPv6(common.DeleteOps, builder.NewIptablesBuilder(), ext, cmd,
 			cfg.AgentDNSListenerPort,
 			constants.RETURN, // we cannot use iptConfigurator.cfg.DNSUpstreamTargetChain because the target might be available only in IP V4

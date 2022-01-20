@@ -23,35 +23,36 @@ import (
 // Command line options
 // nolint: maligned
 type Config struct {
-	ProxyPort               string        `json:"PROXY_PORT"`
-	InboundCapturePort      string        `json:"INBOUND_CAPTURE_PORT"`
-	InboundCapturePortV6    string        `json:"INBOUND_CAPTURE_PORT_V6"`
-	InboundTunnelPort       string        `json:"INBOUND_TUNNEL_PORT"`
-	ProxyUID                string        `json:"PROXY_UID"`
-	ProxyGID                string        `json:"PROXY_GID"`
-	InboundInterceptionMode string        `json:"INBOUND_INTERCEPTION_MODE"`
-	InboundTProxyMark       string        `json:"INBOUND_TPROXY_MARK"`
-	InboundTProxyRouteTable string        `json:"INBOUND_TPROXY_ROUTE_TABLE"`
-	InboundPortsInclude     string        `json:"INBOUND_PORTS_INCLUDE"`
-	InboundPortsExclude     string        `json:"INBOUND_PORTS_EXCLUDE"`
-	OutboundPortsInclude    string        `json:"OUTBOUND_PORTS_INCLUDE"`
-	OutboundPortsExclude    string        `json:"OUTBOUND_PORTS_EXCLUDE"`
-	OutboundIPRangesInclude string        `json:"OUTBOUND_IPRANGES_INCLUDE"`
-	OutboundIPRangesExclude string        `json:"OUTBOUND_IPRANGES_EXCLUDE"`
-	KubevirtInterfaces      string        `json:"KUBEVIRT_INTERFACES"`
-	IptablesProbePort       uint16        `json:"IPTABLES_PROBE_PORT"`
-	ProbeTimeout            time.Duration `json:"PROBE_TIMEOUT"`
-	DryRun                  bool          `json:"DRY_RUN"`
-	RestoreFormat           bool          `json:"RESTORE_FORMAT"`
-	SkipRuleApply           bool          `json:"SKIP_RULE_APPLY"`
-	RunValidation           bool          `json:"RUN_VALIDATION"`
-	RedirectDNS             bool          `json:"REDIRECT_DNS"`
-	RedirectAllDNSTraffic   bool          `json:"REDIRECT_ALL_DNS_TRAFFIC"`
-	EnableInboundIPv6       bool          `json:"ENABLE_INBOUND_IPV6"`
-	DNSServersV4            []string      `json:"DNS_SERVERS_V4"`
-	DNSServersV6            []string      `json:"DNS_SERVERS_V6"`
-	AgentDNSListenerPort    string        `json:"AGENT_DNS_LISTENER_PORT"`
-	DNSUpstreamTargetChain  string        `json:"DNS_UPSTREAM_TARGET_CHAIN"`
+	ProxyPort                 string        `json:"PROXY_PORT"`
+	InboundCapturePort        string        `json:"INBOUND_CAPTURE_PORT"`
+	InboundCapturePortV6      string        `json:"INBOUND_CAPTURE_PORT_V6"`
+	InboundTunnelPort         string        `json:"INBOUND_TUNNEL_PORT"`
+	ProxyUID                  string        `json:"PROXY_UID"`
+	ProxyGID                  string        `json:"PROXY_GID"`
+	InboundInterceptionMode   string        `json:"INBOUND_INTERCEPTION_MODE"`
+	InboundTProxyMark         string        `json:"INBOUND_TPROXY_MARK"`
+	InboundTProxyRouteTable   string        `json:"INBOUND_TPROXY_ROUTE_TABLE"`
+	InboundPortsInclude       string        `json:"INBOUND_PORTS_INCLUDE"`
+	InboundPortsExclude       string        `json:"INBOUND_PORTS_EXCLUDE"`
+	OutboundPortsInclude      string        `json:"OUTBOUND_PORTS_INCLUDE"`
+	OutboundPortsExclude      string        `json:"OUTBOUND_PORTS_EXCLUDE"`
+	OutboundIPRangesInclude   string        `json:"OUTBOUND_IPRANGES_INCLUDE"`
+	OutboundIPRangesExclude   string        `json:"OUTBOUND_IPRANGES_EXCLUDE"`
+	KubevirtInterfaces        string        `json:"KUBEVIRT_INTERFACES"`
+	IptablesProbePort         uint16        `json:"IPTABLES_PROBE_PORT"`
+	ProbeTimeout              time.Duration `json:"PROBE_TIMEOUT"`
+	DryRun                    bool          `json:"DRY_RUN"`
+	RestoreFormat             bool          `json:"RESTORE_FORMAT"`
+	SkipRuleApply             bool          `json:"SKIP_RULE_APPLY"`
+	RunValidation             bool          `json:"RUN_VALIDATION"`
+	RedirectDNS               bool          `json:"REDIRECT_DNS"`
+	RedirectAllDNSTraffic     bool          `json:"REDIRECT_ALL_DNS_TRAFFIC"`
+	EnableInboundIPv6         bool          `json:"ENABLE_INBOUND_IPV6"`
+	DNSServersV4              []string      `json:"DNS_SERVERS_V4"`
+	DNSServersV6              []string      `json:"DNS_SERVERS_V6"`
+	AgentDNSListenerPort      string        `json:"AGENT_DNS_LISTENER_PORT"`
+	DNSUpstreamTargetChain    string        `json:"DNS_UPSTREAM_TARGET_CHAIN"`
+	SkipDNSConntrackZoneSplit bool          `json:"SKIP_DNS_CONNTRACK_ZONE_SPLIT"`
 }
 
 func (c *Config) String() string {
@@ -87,5 +88,6 @@ func (c *Config) Print() {
 	fmt.Printf("DNS_SERVERS=%s,%s\n", c.DNSServersV4, c.DNSServersV6)
 	fmt.Printf("AGENT_DNS_LISTENER_PORT=%s\n", c.AgentDNSListenerPort)
 	fmt.Printf("DNS_UPSTREAM_TARGET_CHAIN=%s\n", c.DNSUpstreamTargetChain)
+	fmt.Printf("SKIP_DNS_CONNTRACK_ZONE_SPLIT=%t\n", c.SkipDNSConntrackZoneSplit)
 	fmt.Println("")
 }
