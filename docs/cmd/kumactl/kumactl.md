@@ -9,7 +9,7 @@ Management tool for Kuma.
 ### Options
 
 ```
-      --api-timeout duration   the timeout for api calls (default 1m0s)
+      --api-timeout duration   the timeout for api calls. It includes connection time, any redirects, and reading the response body. A timeout of zero means no timeout (default 1m0s)
       --config-file string     path to the configuration file to use
   -h, --help                   help for kumactl
       --log-level string       log level: one of off|info|debug (default "off")
