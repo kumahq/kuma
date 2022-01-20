@@ -137,6 +137,12 @@ var _ = Describe("GroupByAttachment", func() {
 					outbound("192.168.0.2", 90): {Spec: samples.RateLimit},
 					outbound("192.168.0.4", 90): {Spec: samples.RateLimit},
 				},
+				TrafficRoutes: core_xds.RouteMap{
+					outbound("192.168.0.1", 80): {Spec: samples.TrafficRoute},
+					outbound("192.168.0.2", 80): {Spec: samples.TrafficRoute},
+					outbound("192.168.0.2", 90): {Spec: samples.TrafficRoute},
+					outbound("192.168.0.4", 90): {Spec: samples.TrafficRoute},
+				},
 			},
 			expected: core_xds.AttachmentMap{
 				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.1:80"}: {
@@ -146,6 +152,9 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.RateLimitType: []core_model.Resource{
 						&core_mesh.RateLimitResource{Spec: samples.RateLimit},
 					},
+					core_mesh.TrafficRouteType: []core_model.Resource{
+						&core_mesh.TrafficRouteResource{Spec: samples.TrafficRoute},
+					},
 				},
 				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.2:80"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
@@ -154,6 +163,9 @@ var _ = Describe("GroupByAttachment", func() {
 					core_mesh.RateLimitType: []core_model.Resource{
 						&core_mesh.RateLimitResource{Spec: samples.RateLimit},
 					},
+					core_mesh.TrafficRouteType: []core_model.Resource{
+						&core_mesh.TrafficRouteResource{Spec: samples.TrafficRoute},
+					},
 				},
 				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.2:90"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
@@ -161,6 +173,9 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 					core_mesh.RateLimitType: []core_model.Resource{
 						&core_mesh.RateLimitResource{Spec: samples.RateLimit},
+					},
+					core_mesh.TrafficRouteType: []core_model.Resource{
+						&core_mesh.TrafficRouteResource{Spec: samples.TrafficRoute},
 					},
 				},
 				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.3:90"}: {
@@ -171,6 +186,9 @@ var _ = Describe("GroupByAttachment", func() {
 				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.4:90"}: {
 					core_mesh.RateLimitType: []core_model.Resource{
 						&core_mesh.RateLimitResource{Spec: samples.RateLimit},
+					},
+					core_mesh.TrafficRouteType: []core_model.Resource{
+						&core_mesh.TrafficRouteResource{Spec: samples.TrafficRoute},
 					},
 				},
 			},
