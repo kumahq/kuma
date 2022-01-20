@@ -47,7 +47,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 			Runtime: kumactl_cmd.RootRuntime{
 				Registry: registry.Global(),
 				Now:      func() time.Time { return rootTime },
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 					return nil, nil
 				},
 				NewResourceStore: func(util_http.Client) core_store.ResourceStore {

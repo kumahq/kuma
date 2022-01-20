@@ -47,7 +47,7 @@ var _ = Describe("Tokens Client", func() {
 		// given
 		baseClient, err := kumactl_client.ApiServerClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
-		})
+		}, time.Second)
 		Expect(err).ToNot(HaveOccurred())
 		client := tokens.NewDataplaneTokenClient(baseClient)
 
@@ -78,7 +78,7 @@ var _ = Describe("Tokens Client", func() {
 		})
 		baseClient, err := kumactl_client.ApiServerClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
-		})
+		}, time.Second)
 		Expect(err).ToNot(HaveOccurred())
 		client := tokens.NewDataplaneTokenClient(baseClient)
 		Expect(err).ToNot(HaveOccurred())

@@ -11,19 +11,14 @@ import (
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
-const (
-	// Time limit for requests to the Control Plane API Server.
-	Timeout = 60 * time.Second
-)
-
-func ApiServerClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+func ApiServerClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer, timeout time.Duration) (util_http.Client, error) {
 	headers := make(map[string]string)
 	baseURL, err := url.Parse(coordinates.Url)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
 	}
 	client := &http.Client{
-		Timeout: Timeout,
+		Timeout: timeout,
 	}
 	if err := util_http.ConfigureMTLS(client, coordinates.CaCertFile, coordinates.ClientCertFile, coordinates.ClientKeyFile); err != nil {
 		return nil, errors.Wrap(err, "could not configure HTTP client with TLS")

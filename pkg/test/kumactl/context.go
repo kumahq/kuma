@@ -23,7 +23,7 @@ func MakeRootContext(now time.Time, resourceStore store.ResourceStore, res ...mo
 		Runtime: kumactl_cmd.RootRuntime{
 			Registry: reg,
 			Now:      func() time.Time { return now },
-			NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+			NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 				return nil, nil
 			},
 			NewResourceStore: func(util_http.Client) store.ResourceStore {
