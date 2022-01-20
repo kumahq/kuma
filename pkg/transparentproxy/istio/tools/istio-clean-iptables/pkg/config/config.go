@@ -22,15 +22,16 @@ import (
 // Command line options
 // nolint: maligned
 type Config struct {
-	DryRun                 bool     `json:"DRY_RUN"`
-	ProxyUID               string   `json:"PROXY_UID"`
-	ProxyGID               string   `json:"PROXY_GID"`
-	RedirectDNS            bool     `json:"REDIRECT_DNS"`
-	RedirectAllDNSTraffic  bool     `json:"REDIRECT_ALL_DNS_TRAFFIC"`
-	DNSServersV4           []string `json:"DNS_SERVERS_V4"`
-	DNSServersV6           []string `json:"DNS_SERVERS_V6"`
-	AgentDNSListenerPort   string   `json:"AGENT_DNS_LISTENER_PORT"`
-	DNSUpstreamTargetChain string   `json:"DNS_UPSTREAM_TARGET_CHAIN"`
+	DryRun                    bool     `json:"DRY_RUN"`
+	ProxyUID                  string   `json:"PROXY_UID"`
+	ProxyGID                  string   `json:"PROXY_GID"`
+	RedirectDNS               bool     `json:"REDIRECT_DNS"`
+	RedirectAllDNSTraffic     bool     `json:"REDIRECT_ALL_DNS_TRAFFIC"`
+	DNSServersV4              []string `json:"DNS_SERVERS_V4"`
+	DNSServersV6              []string `json:"DNS_SERVERS_V6"`
+	AgentDNSListenerPort      string   `json:"AGENT_DNS_LISTENER_PORT"`
+	DNSUpstreamTargetChain    string   `json:"DNS_UPSTREAM_TARGET_CHAIN"`
+	SkipDNSConntrackZoneSplit bool     `json:"SKIP_DNS_CONNTRACK_ZONE_SPLIT"`
 }
 
 func (c *Config) String() string {
@@ -51,5 +52,6 @@ func (c *Config) Print() {
 	fmt.Printf("DNS_SERVERS=%s,%s\n", c.DNSServersV4, c.DNSServersV6)
 	fmt.Printf("AGENT_DNS_LISTENER_PORT=%s\n", c.AgentDNSListenerPort)
 	fmt.Printf("DNS_UPSTREAM_TARGET_CHAIN=%s\n", c.DNSUpstreamTargetChain)
+	fmt.Printf("SKIP_DNS_CONNTRACK_ZONE_SPLIT=%t\n", c.SkipDNSConntrackZoneSplit)
 	fmt.Println("")
 }
