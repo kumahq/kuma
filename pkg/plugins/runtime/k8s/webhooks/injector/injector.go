@@ -295,6 +295,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 			Capabilities: &kube_core.Capabilities{
 				Add: []kube_core.Capability{
 					kube_core.Capability("NET_ADMIN"),
+					kube_core.Capability("NET_RAW"),
 				},
 			},
 		},
