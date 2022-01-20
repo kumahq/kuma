@@ -177,14 +177,14 @@ networking:
 var defaultDockerOptions = docker.RunOptions{
 	Command: nil,
 	Detach:  true,
-	//Entrypoint:           "",
+	// Entrypoint:           "",
 	EnvironmentVariables: nil,
 	Init:                 false,
-	//Name:                 "",
+	// Name:                 "",
 	Privileged: false,
 	Remove:     true,
 	Tty:        false,
-	//User:                 "",
+	// User:                 "",
 	Volumes:      nil,
 	OtherOptions: []string{},
 	Logger:       nil,
@@ -440,6 +440,7 @@ func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool) {
 		"/usr/bin/kumactl", "install", "transparent-proxy",
 		"--kuma-dp-user", "kuma-dp",
 		"--kuma-cp-ip", cpIp,
+		"--skip-dns-conntrack-zone-split",
 	}
 
 	if builtindns {

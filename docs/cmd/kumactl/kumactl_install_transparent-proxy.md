@@ -79,6 +79,7 @@ kumactl install transparent-proxy [flags]
       --redirect-inbound-port networking.transparentProxying.redirectPortInbound        inbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortInbound (default "15006")
       --redirect-inbound-port-v6 networking.transparentProxying.redirectPortInboundV6   IPv6 inbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortInboundV6 (default "15010")
       --redirect-outbound-port networking.transparentProxying.redirectPortOutbound      outbound port redirected to Envoy, as specified in dataplane's networking.transparentProxying.redirectPortOutbound (default "15001")
+      --skip-dns-conntrack-zone-split                                                   skip applying conntrack zone splitting iptables rules
       --skip-resolv-conf /etc/resolv.conf                                               skip modifying the host /etc/resolv.conf
       --store-firewalld                                                                 store the iptables changes with firewalld
       --verbose                                                                         verbose

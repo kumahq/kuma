@@ -151,6 +151,7 @@ spec:
       capabilities:
         add:
         - NET_ADMIN
+        - NET_RAW
       runAsGroup: 0
       runAsUser: 0
   volumes:
