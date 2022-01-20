@@ -2,6 +2,7 @@ package zoneegress
 
 import (
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
@@ -26,7 +27,7 @@ func (c *zoneEgressClaims) ID() string {
 }
 
 func (c *zoneEgressClaims) KeyIDFallback() (int, error) {
-	return 0, nil
+	return 0, errors.New("missing Key ID")
 }
 
 func (c *zoneEgressClaims) SetRegisteredClaims(claims jwt.RegisteredClaims) {
