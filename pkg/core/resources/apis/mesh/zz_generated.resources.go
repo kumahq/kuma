@@ -2110,7 +2110,7 @@ var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "traffic-routes",
 	KumactlArg:     "traffic-route",
 	KumactlListArg: "traffic-routes",
-	AllowToInspect: false,
+	AllowToInspect: true,
 }
 
 func init() {
