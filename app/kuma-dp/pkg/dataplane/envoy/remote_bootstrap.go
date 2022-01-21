@@ -13,12 +13,12 @@ import (
 	"strings"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )

@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 
-	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
+	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -167,12 +167,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			opts := envoy.Opts{
-				Config: *cfg,
+				Config:    *cfg,
 				Dataplane: rest.NewFromModel(proxyResource),
-				Stdout:   cmd.OutOrStdout(),
-				Stderr:   cmd.OutOrStderr(),
-				Quit:     shouldQuit,
-				LogLevel: rootCtx.LogLevel,
+				Stdout:    cmd.OutOrStdout(),
+				Stderr:    cmd.OutOrStderr(),
+				Quit:      shouldQuit,
+				LogLevel:  rootCtx.LogLevel,
 			}
 
 			if cfg.DNS.Enabled && cfg.Dataplane.ProxyType != string(mesh_proto.IngressProxyType) {

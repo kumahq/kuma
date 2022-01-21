@@ -4,12 +4,12 @@ import (
 	"sort"
 	"strconv"
 
-	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
+	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )

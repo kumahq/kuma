@@ -4,9 +4,10 @@ import (
 	"os"
 	"strings"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 )
 
 var _ = Describe("Deprecate", func() {

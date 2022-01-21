@@ -13,7 +13,6 @@ kuma-dp run [flags]
 ### Options
 
 ```
-      --admin-port portOrRange                    Port (or range of ports to choose from) for Envoy Admin API to listen on. Empty value indicates that Envoy Admin API should not be exposed over TCP. Format: "9901 | 9901-9999 | 9901- | -9901" (default 30001-65535)
       --binary-path string                        Binary path of Envoy executable (default "envoy")
       --ca-cert-file string                       Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used
       --concurrency uint32                        Number of Envoy worker threads

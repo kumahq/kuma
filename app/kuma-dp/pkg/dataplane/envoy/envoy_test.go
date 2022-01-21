@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/test"
 )

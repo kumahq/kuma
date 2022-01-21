@@ -153,7 +153,7 @@ type DataplaneContainer struct {
 	UID int64 `yaml:"uid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_uid"`
 	// Group ID.
 	GID int64 `yaml:"gid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_gui"`
-	// DEPRECATED: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.
+	// Deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.
 	AdminPort uint32 `yaml:"adminPort,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_admin_port"`
 	// Drain time for listeners.
 	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_drain_time"`

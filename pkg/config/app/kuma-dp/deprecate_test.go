@@ -4,10 +4,11 @@ import (
 	"os"
 	"strings"
 
-	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/config/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/pkg/config/types"
 )
 
 var _ = Describe("Deprecate", func() {
