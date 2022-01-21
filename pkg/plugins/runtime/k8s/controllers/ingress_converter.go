@@ -58,6 +58,15 @@ func (p *PodConverter) IngressFor(
 		zoneIngress.Networking.AdvertisedAddress = coords.address
 		zoneIngress.Networking.AdvertisedPort = coords.port
 	}
+
+	adminPort, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaEnvoyAdminPort)
+	if err != nil {
+		return err
+	}
+	if exist {
+		zoneIngress.Networking.Admin = &mesh_proto.ZoneIngress_Networking_Admin{Port: adminPort}
+	}
+
 	return nil
 }
 

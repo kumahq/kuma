@@ -54,6 +54,9 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				runLog.Error(err, "could not load the configuration")
 				return err
 			}
+
+			kuma_cp.PrintDeprecations(&cfg, cmd.OutOrStdout())
+
 			ctx := opts.SetupSignalHandler()
 			rt, err := bootstrap.Bootstrap(ctx, cfg)
 			if err != nil {

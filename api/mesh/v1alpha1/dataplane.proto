@@ -152,6 +152,11 @@ message Dataplane {
           [ (validate.rules).uint32 = {lte : 65535} ];
     }
 
+    message Admin {
+      // Port on which Envoy Admin API server will be listening
+      uint32 port = 1;
+    }
+
     // Gateway describes configuration of gateway of the dataplane.
     Gateway gateway = 3;
 
@@ -163,6 +168,9 @@ message Dataplane {
 
     // TransparentProxying describes configuration for transparent proxying.
     TransparentProxying transparent_proxying = 4;
+
+    // Admin contains configuration related to Envoy Admin API
+    Admin admin = 8;
   }
 
   // Networking describes inbound and outbound interfaces of the dataplane.

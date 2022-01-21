@@ -37,6 +37,7 @@ func NewDefaultBootstrapGenerator(
 	dpServerCertFile string,
 	dpAuthEnabled bool,
 	hdsEnabled bool,
+	defaultAdminPort uint32,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -46,22 +47,24 @@ func NewDefaultBootstrapGenerator(
 		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", config.Params.XdsHost, hostsAndIps.slice())
 	}
 	return &bootstrapGenerator{
-		resManager:    resManager,
-		config:        config,
-		xdsCertFile:   dpServerCertFile,
-		dpAuthEnabled: dpAuthEnabled,
-		hostsAndIps:   hostsAndIps,
-		hdsEnabled:    hdsEnabled,
+		resManager:       resManager,
+		config:           config,
+		xdsCertFile:      dpServerCertFile,
+		dpAuthEnabled:    dpAuthEnabled,
+		hostsAndIps:      hostsAndIps,
+		hdsEnabled:       hdsEnabled,
+		defaultAdminPort: defaultAdminPort,
 	}, nil
 }
 
 type bootstrapGenerator struct {
-	resManager    core_manager.ResourceManager
-	config        *bootstrap_config.BootstrapServerConfig
-	dpAuthEnabled bool
-	xdsCertFile   string
-	hostsAndIps   SANSet
-	hdsEnabled    bool
+	resManager       core_manager.ResourceManager
+	config           *bootstrap_config.BootstrapServerConfig
+	dpAuthEnabled    bool
+	xdsCertFile      string
+	hostsAndIps      SANSet
+	hdsEnabled       bool
+	defaultAdminPort uint32
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
@@ -73,7 +76,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	params := configParameters{
 		Id:                 proxyId.String(),
 		AdminAddress:       b.config.Params.AdminAddress,
-		AdminPort:          b.config.Params.AdminPort,
 		AdminAccessLogPath: b.config.Params.AdminAccessLogPath,
 		XdsHost:            b.xdsHost(request),
 		XdsPort:            b.config.Params.XdsPort,
@@ -95,9 +97,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if params.ProxyType == "" {
 		params.ProxyType = string(mesh_proto.DataplaneProxyType)
 	}
-	if request.AdminPort != 0 {
-		params.AdminPort = request.AdminPort
-	}
 
 	switch mesh_proto.ProxyType(params.ProxyType) {
 	case mesh_proto.IngressProxyType:
@@ -105,17 +104,42 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if err != nil {
 			return nil, err
 		}
+
+		params.Service = "ingress"
+		if adminPort := zoneIngress.Spec.GetNetworking().GetAdmin().GetPort(); adminPort != 0 {
+			params.AdminPort = adminPort
+		} else {
+			if request.AdminPort != 0 {
+				// backwards compatibility, Inspect API may not work properly
+				params.AdminPort = request.AdminPort
+			} else {
+				params.AdminPort = b.defaultAdminPort
+			}
+		}
+
 		// The admin port in kuma-dp is always bound to 127.0.0.1
 		if zoneIngress.UsesInboundInterface(core_mesh.IPv4Loopback, params.AdminPort) {
 			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", params.AdminPort)
 		}
-		params.Service = "ingress"
 	case mesh_proto.DataplaneProxyType, "":
 		params.HdsEnabled = b.hdsEnabled
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
 		if err != nil {
 			return nil, err
 		}
+
+		params.Service = dataplane.Spec.GetIdentifyingService()
+		if adminPort := dataplane.Spec.GetNetworking().GetAdmin().GetPort(); adminPort != 0 {
+			params.AdminPort = adminPort
+		} else {
+			if request.AdminPort != 0 {
+				// backwards compatibility, Inspect API may not work properly
+				params.AdminPort = request.AdminPort
+			} else {
+				params.AdminPort = b.defaultAdminPort
+			}
+		}
+
 		// The admin port in kuma-dp is always bound to 127.0.0.1
 		if dataplane.UsesInboundInterface(core_mesh.IPv4Loopback, params.AdminPort) {
 			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", params.AdminPort)
@@ -123,7 +147,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if dataplane.UsesOutboundInterface(core_mesh.IPv4Loopback, params.AdminPort) {
 			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", params.AdminPort)
 		}
-		params.Service = dataplane.Spec.GetIdentifyingService()
 	default:
 		return nil, errors.Errorf("unknown proxy type %v", params.ProxyType)
 	}

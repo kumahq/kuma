@@ -39,6 +39,14 @@ message ZoneIngress {
     // AdvertisedPort defines port on which ZoneIngress is accessible to other
     // Kuma clusters.
     uint32 advertisedPort = 4;
+
+    message Admin {
+      // Port on which Envoy Admin API server will be listening
+      uint32 port = 1;
+    }
+
+    // Admin contains configuration related to Envoy Admin API
+    Admin admin = 5;
   }
 
   // Networking defines the address and port of the Ingress to listen on.

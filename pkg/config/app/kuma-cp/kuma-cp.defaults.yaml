@@ -75,7 +75,7 @@ bootstrapServer:
     # Address of Envoy Admin
     adminAddress: 127.0.0.1 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS
     # Port of Envoy Admin
-    adminPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
+    adminPort: 9901 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
     # Path to access log file of Envoy Admin
     adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
     # Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
@@ -198,8 +198,6 @@ runtime:
         uid: 5678 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_UID
         # Group ID.
         gid: 5678 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_GUI
-        # Admin port.
-        adminPort: 9901 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT
         # Drain time for listeners.
         drainTime: 30s # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_DRAIN_TIME
         # Readiness probe.

@@ -63,7 +63,10 @@ node:
                 "kuma.io/service": "backend"
               }
             },
-          ]
+          ],
+          "admin": {
+            "port": 1234
+          }
         }
       }
     dynamicMetadata:

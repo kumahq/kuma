@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     docs: Documentation
+    kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
     kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123
     kuma.io/sidecar-injected: "true"
@@ -70,8 +71,6 @@ spec:
         -----END CERTIFICATE-----
     - name: KUMA_CONTROL_PLANE_URL
       value: http://kuma-control-plane.kuma-system:5681
-    - name: KUMA_DATAPLANE_ADMIN_PORT
-      value: "9901"
     - name: KUMA_DATAPLANE_DRAIN_TIME
       value: 5s
     - name: KUMA_DATAPLANE_MESH

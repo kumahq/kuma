@@ -78,6 +78,7 @@ const (
 	KumaSidecarInjectedAnnotation                  = "kuma.io/sidecar-injected"
 	KumaIgnoreAnnotation                           = "kuma.io/ignore"
 	KumaSidecarUID                                 = "kuma.io/sidecar-uid"
+	KumaEnvoyAdminPort                             = "kuma.io/envoy-admin-port"
 	KumaTransparentProxyingAnnotation              = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingInboundPortAnnotation   = "kuma.io/transparent-proxying-inbound-port"
 	KumaTransparentProxyingInboundPortAnnotationV6 = "kuma.io/transparent-proxying-inbound-v6-port"

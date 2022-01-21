@@ -23,8 +23,7 @@ var DefaultConfig = func() Config {
 		},
 		Dataplane: Dataplane{
 			Mesh:      "",
-			Name:      "",                                                      // Dataplane name must be set explicitly
-			AdminPort: config_types.MustPortRange(30001, config_types.MaxPort), // by default, automatically choose a free port for Envoy Admin interface
+			Name:      "", // Dataplane name must be set explicitly
 			DrainTime: 30 * time.Second,
 			ProxyType: "dataplane",
 		},
@@ -116,6 +115,7 @@ type Dataplane struct {
 	// Port (or range of ports to choose from) for Envoy Admin API to listen on.
 	// Empty value indicates that Envoy Admin API should not be exposed over TCP.
 	// Format: "9901 | 9901-9999 | 9901- | -9901".
+	// Deprecated
 	AdminPort config_types.PortRange `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
 	// Drain time for listeners.
 	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
