@@ -2,11 +2,7 @@ package zone
 
 import (
 	"context"
-	"encoding/json"
 	"time"
-
-	"github.com/pkg/errors"
-	"github.com/thediveo/enumflag"
 
 	"github.com/kumahq/kuma/pkg/core/tokens"
 )
@@ -15,7 +11,7 @@ type Token = string
 
 type Identity struct {
 	Zone  string
-	Scope Scope
+	Scope []Scope
 }
 
 // TokenIssuer issues Zone Tokens used then for proving identity of the zone egresses.
@@ -45,66 +41,17 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, identity Identity, validF
 	return j.issuer.Generate(ctx, claims, validFor)
 }
 
-type ScopeItem enumflag.Flag
+type Scope string
 
 const (
-	// TODO (bartsmykla): remove comment bellow when Zone Token will be available for
-	//  dataplanes and ingresses
-	//
-	// Zone Token can currently be used to prove Egress identity only, but I want
-	// the Dataplane to be representend by int(0), Ingress as int(1) and Egress as int(2)
-	// so I'm leaving them all here
-	Dataplane ScopeItem = iota
-	Ingress
-	Egress
-)
-
-var ScopeItemsIds = map[ScopeItem][]string{
 	// TODO (bartsmykla): uncomment when Zone Token will be available for dataplanes
 	// 	and ingresses
-	// Dataplane: {"dataplane"},
-	// Ingress:   {"ingress"},
-	Egress: {"egress"},
-}
+	// Dataplane Scope = "dataplane
+	// Ingress Scope = "ingress"
+	Egress Scope = "egress"
+)
 
-type Scope []ScopeItem
-
-func (s Scope) MarshalJSON() ([]byte, error) {
-	var values []string
-
-	for _, item := range s {
-		ids, ok := ScopeItemsIds[item]
-		if !ok || len(ids) < 1 {
-			return nil, errors.Errorf("missing mapping of item id: %d to string name", item)
-		}
-
-		values = append(values, ids[0])
-	}
-
-	return json.Marshal(values)
-}
-
-func (s *Scope) ContainsAtLeastOneOf(items ...ScopeItem) bool {
-	for _, item := range items {
-		if s.contains(item) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (s Scope) contains(item ScopeItem) bool {
-	for _, a := range s {
-		if a == item {
-			return true
-		}
-	}
-
-	return false
-}
-
-var FullScope Scope = []ScopeItem{
+var FullScope = []Scope{
 	// TODO (bartsmykla): uncomment when Zone Token will be available for dataplanes
 	// 	and ingresses
 	// Dataplane,

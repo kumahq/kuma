@@ -22,7 +22,7 @@ $ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope egress
 
 ```
   -h, --help                 help for zone-token
-      --scope scope...       scope of the token; can be 'egress' (default [egress])
+      --scope scope          scope of resources which the token will be able to identify (can be 'egress') (default [egress])
       --valid-for duration   how long the token will be valid (for example "24h")
       --zone string          name of the zone where resides
 ```

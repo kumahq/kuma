@@ -18,7 +18,7 @@ var TokenRevocationsGlobalSecretKey = core_model.ResourceKey{
 
 type zoneClaims struct {
 	Zone  string
-	Scope Scope
+	Scope []Scope
 	jwt.RegisteredClaims
 }
 

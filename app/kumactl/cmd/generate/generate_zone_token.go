@@ -1,11 +1,12 @@
 package generate
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/thediveo/enumflag"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
@@ -19,8 +20,36 @@ type generateZoneTokenContext struct {
 
 type generateZoneTokenContextArgs struct {
 	zone     string
-	scope    zone.Scope
+	scope    scopes
 	validFor time.Duration
+}
+
+type scopes []zone.Scope
+
+func (s *scopes) String() string {
+	var strs []string
+
+	for _, scope := range *s {
+		strs = append(strs, string(scope))
+	}
+
+	return fmt.Sprintf("[%s]", strings.Join(strs, ", "))
+}
+
+func (s *scopes) Set(v string) error {
+	switch v {
+	// TODO (bartsmykla): add ingress and egress cases when Zone Token will be
+	//  available for these resources
+	case string(zone.Egress):
+		*s = append(*s, zone.Scope(v))
+		return nil
+	default:
+		return errors.Errorf("must be one of: %s", scopes(zone.FullScope))
+	}
+}
+
+func (s *scopes) Type() string {
+	return "scope"
 }
 
 func NewGenerateZoneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -55,12 +84,7 @@ $ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope egress`,
 	}
 
 	cmd.Flags().StringVar(&ctx.args.zone, "zone", "", "name of the zone where resides")
-	cmd.Flags().Var(
-		enumflag.NewSlice(&ctx.args.scope, "scope...", zone.ScopeItemsIds, enumflag.EnumCaseInsensitive),
-		"scope",
-		// TODO (bartsmykla): update usage when this token will be able to
-		//  be used to prove identities of zone dataplanes and ingresses as well
-		"scope of the token; can be 'egress'")
+	cmd.Flags().Var(&ctx.args.scope, "scope", "scope of resources which the token will be able to identify (can be 'egress')")
 	cmd.Flags().DurationVar(&ctx.args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
 
 	_ = cmd.MarkFlagRequired("valid-for")

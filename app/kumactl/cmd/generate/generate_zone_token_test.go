@@ -29,7 +29,7 @@ var _ tokens.ZoneTokenClient = &staticZoneTokenGenerator{}
 
 func (s *staticZoneTokenGenerator) Generate(
 	zone string,
-	_ zone.Scope,
+	_ []zone.Scope,
 	_ time.Duration,
 ) (string, error) {
 	if s.err != nil {

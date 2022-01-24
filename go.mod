@@ -46,7 +46,6 @@ require (
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v1.1.3
 	github.com/testcontainers/testcontainers-go v0.12.0
-	github.com/thediveo/enumflag v0.10.1
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.20.0
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63
