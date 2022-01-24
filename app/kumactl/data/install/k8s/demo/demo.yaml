@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ .Namespace }}
-  annotations:
+  labels:
     kuma.io/sidecar-injection: enabled
 ---
 apiVersion: apps/v1

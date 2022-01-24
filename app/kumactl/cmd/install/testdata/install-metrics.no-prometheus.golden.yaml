@@ -4,8 +4,9 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: kuma-metrics
-  annotations:
+  labels:
     kuma.io/sidecar-injection: enabled
+  annotations:
     kuma.io/mesh: default
 ---
 apiVersion: policy/v1beta1

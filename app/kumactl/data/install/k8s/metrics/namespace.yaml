@@ -4,6 +4,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ .Namespace }}
-  annotations:
+  labels:
     kuma.io/sidecar-injection: enabled
+  annotations:
     kuma.io/mesh: {{ .Mesh }}
