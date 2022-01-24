@@ -15,6 +15,6 @@ func (n NoopDpTokenAccess) ValidateGenerateZoneIngressToken(zone string, user us
 	return nil
 }
 
-func (n NoopDpTokenAccess) ValidateGenerateZoneEgressToken(zone string, user user.User) error {
+func (n NoopDpTokenAccess) ValidateGenerateZoneToken(zone string, user user.User) error {
 	return nil
 }

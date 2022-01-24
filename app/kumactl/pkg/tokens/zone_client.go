@@ -11,50 +11,58 @@ import (
 
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
-func NewZoneEgressTokenClient(client util_http.Client) ZoneEgressTokenClient {
-	return &httpZoneEgressTokenClient{
+func NewZoneTokenClient(client util_http.Client) ZoneTokenClient {
+	return &httpZoneTokenClient{
 		client: client,
 	}
 }
 
-type ZoneEgressTokenClient interface {
-	Generate(zone string, validFor time.Duration) (string, error)
+type ZoneTokenClient interface {
+	Generate(zone string, scope zone.Scope, validFor time.Duration) (string, error)
 }
 
-type httpZoneEgressTokenClient struct {
+type httpZoneTokenClient struct {
 	client util_http.Client
 }
 
-var _ ZoneEgressTokenClient = &httpZoneEgressTokenClient{}
+var _ ZoneTokenClient = &httpZoneTokenClient{}
 
-func (h *httpZoneEgressTokenClient) Generate(zone string, validFor time.Duration) (string, error) {
-	tokenReq := &types.ZoneEgressTokenRequest{
+func (h *httpZoneTokenClient) Generate(zone string, scope zone.Scope, validFor time.Duration) (string, error) {
+	tokenReq := &types.ZoneTokenRequest{
 		Zone:     zone,
+		Scope:    scope,
 		ValidFor: validFor.String(),
 	}
+
 	reqBytes, err := json.Marshal(tokenReq)
 	if err != nil {
 		return "", errors.Wrap(err, "could not marshal token request to json")
 	}
-	req, err := http.NewRequest("POST", "/tokens/zone-egress", bytes.NewReader(reqBytes))
+
+	req, err := http.NewRequest(http.MethodPost, "/tokens/zone", bytes.NewReader(reqBytes))
 	if err != nil {
 		return "", errors.Wrap(err, "could not construct the request")
 	}
+
 	req.Header.Set("content-type", "application/json")
+
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return "", errors.Wrap(err, "could not execute the request")
 	}
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", errors.Wrap(err, "could not read a body of the request")
 	}
-	if resp.StatusCode != 200 {
-		kumaErr := error_types.Error{}
+
+	if resp.StatusCode != http.StatusOK {
+		var kumaErr error_types.Error
 		if err := json.Unmarshal(body, &kumaErr); err == nil {
 			if kumaErr.Title != "" && kumaErr.Details != "" {
 				return "", &kumaErr
@@ -62,5 +70,6 @@ func (h *httpZoneEgressTokenClient) Generate(zone string, validFor time.Duration
 		}
 		return "", errors.Errorf("(%d): %s", resp.StatusCode, body)
 	}
+
 	return string(body), nil
 }

@@ -35,3 +35,17 @@ func IsPEMBytes(b []byte) bool {
 	block, _ := pem.Decode(b)
 	return block != nil && block.Type == rsaBlockType
 }
+
+func FromPrivateKeyToPublicKeyPEMBytes(key *rsa.PrivateKey) ([]byte, error) {
+	pubASN1, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	pubBytes := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PUBLIC KEY",
+		Bytes: pubASN1,
+	})
+
+	return pubBytes, nil
+}

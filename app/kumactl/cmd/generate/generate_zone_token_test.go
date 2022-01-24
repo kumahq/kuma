@@ -16,39 +16,45 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 	"github.com/kumahq/kuma/pkg/util/test"
 )
 
-type staticZoneEgressTokenGenerator struct {
+type staticZoneTokenGenerator struct {
 	err error
 }
 
-var _ tokens.ZoneEgressTokenClient = &staticZoneEgressTokenGenerator{}
+var _ tokens.ZoneTokenClient = &staticZoneTokenGenerator{}
 
-func (s *staticZoneEgressTokenGenerator) Generate(zone string, validFor time.Duration) (string, error) {
+func (s *staticZoneTokenGenerator) Generate(
+	zone string,
+	_ zone.Scope,
+	_ time.Duration,
+) (string, error) {
 	if s.err != nil {
 		return "", s.err
 	}
+
 	return fmt.Sprintf("token-for-%s", zone), nil
 }
 
-var _ = Describe("kumactl generate zone-egress-token", func() {
+var _ = Describe("kumactl generate zone-token", func() {
 
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
-	var generator *staticZoneEgressTokenGenerator
+	var generator *staticZoneTokenGenerator
 	var ctx *kumactl_cmd.RootContext
 
 	BeforeEach(func() {
-		generator = &staticZoneEgressTokenGenerator{}
+		generator = &staticZoneTokenGenerator{}
 		ctx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
 				Registry: registry.NewTypeRegistry(),
 				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
 					return nil, nil
 				},
-				NewZoneEgressTokenClient: func(util_http.Client) tokens.ZoneEgressTokenClient {
+				NewZoneTokenClient: func(util_http.Client) tokens.ZoneTokenClient {
 					return generator
 				},
 				NewAPIServerClient: test.GetMockNewAPIServerClient(),
@@ -79,12 +85,8 @@ var _ = Describe("kumactl generate zone-egress-token", func() {
 			Expect(buf.String()).To(Equal(given.result))
 		},
 		Entry("for zone", testCase{
-			args:   []string{"generate", "zone-egress-token", "--zone=my-zone", "--valid-for=24h"},
+			args:   []string{"generate", "zone-token", "--zone=my-zone", "--valid-for=24h"},
 			result: "token-for-my-zone",
-		}),
-		Entry("for empty zone", testCase{
-			args:   []string{"generate", "zone-egress-token", "--valid-for=24h"},
-			result: "token-for-",
 		}),
 	)
 
@@ -93,14 +95,14 @@ var _ = Describe("kumactl generate zone-egress-token", func() {
 		generator.err = errors.New("could not connect to API")
 
 		// when
-		rootCmd.SetArgs([]string{"generate", "zone-egress-token", "--zone=example", "--valid-for=24h"})
+		rootCmd.SetArgs([]string{"generate", "zone-token", "--zone=example", "--valid-for=24h"})
 		err := rootCmd.Execute()
 
 		// then
 		Expect(err).To(HaveOccurred())
 
 		// and
-		Expect(buf.String()).To(Equal("Error: failed to generate a zone egress token: could not connect to API\n"))
+		Expect(buf.String()).To(Equal("Error: failed to generate a zone token: could not connect to API\n"))
 	})
 
 })

@@ -37,7 +37,7 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 		container.Add(tokens_server.NewWebservice(
 			&staticTokenIssuer{},
 			&zoneIngressStaticTokenIssuer{},
-			&zoneEgressStaticTokenIssuer{},
+			&zoneStaticTokenIssuer{},
 			access.NoopDpTokenAccess{},
 		))
 		server = httptest.NewServer(container.ServeMux)

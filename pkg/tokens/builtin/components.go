@@ -4,7 +4,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneegress"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
@@ -24,10 +24,10 @@ func NewZoneIngressTokenIssuer(resManager manager.ResourceManager) zoneingress.T
 	)
 }
 
-func NewZoneEgressTokenIssuer(resManager manager.ResourceManager) zoneegress.TokenIssuer {
-	return zoneegress.NewTokenIssuer(
+func NewZoneTokenIssuer(resManager manager.ResourceManager) zone.TokenIssuer {
+	return zone.NewTokenIssuer(
 		tokens.NewTokenIssuer(
-			tokens.NewSigningKeyManager(resManager, zoneegress.ZoneEgressSigningKeyPrefix),
+			tokens.NewSigningKeyManager(resManager, zone.SigningKeyPrefix),
 		),
 	)
 }
@@ -50,11 +50,11 @@ func NewZoneIngressTokenValidator(resManager manager.ResourceManager) zoneingres
 	)
 }
 
-func NewZoneEgressTokenValidator(resManager manager.ResourceManager) zoneegress.Validator {
-	return zoneegress.NewValidator(
+func NewZoneTokenValidator(resManager manager.ResourceManager) zone.Validator {
+	return zone.NewValidator(
 		tokens.NewValidator(
-			tokens.NewSigningKeyAccessor(resManager, zoneegress.ZoneEgressSigningKeyPrefix),
-			tokens.NewRevocations(resManager, zoneegress.ZoneEgressTokenRevocationsGlobalSecretKey),
+			tokens.NewSigningKeyAccessor(resManager, zone.SigningKeyPrefix),
+			tokens.NewRevocations(resManager, zone.TokenRevocationsGlobalSecretKey),
 		),
 	)
 }

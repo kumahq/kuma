@@ -16,15 +16,15 @@ import (
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneegress"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 )
 
-type zoneEgressStaticTokenIssuer struct {
+type zoneStaticTokenIssuer struct {
 }
 
-var _ zoneegress.TokenIssuer = &zoneEgressStaticTokenIssuer{}
+var _ zone.TokenIssuer = &zoneStaticTokenIssuer{}
 
-func (z *zoneEgressStaticTokenIssuer) Generate(ctx context.Context, identity zoneegress.Identity, validFor time.Duration) (zoneegress.Token, error) {
+func (z *zoneStaticTokenIssuer) Generate(ctx context.Context, identity zone.Identity, validFor time.Duration) (zone.Token, error) {
 	return fmt.Sprintf("token-for-%s", identity.Zone), nil
 }
 
@@ -37,7 +37,7 @@ var _ = Describe("Zone Egress Tokens Client", func() {
 		container.Add(tokens_server.NewWebservice(
 			&staticTokenIssuer{},
 			&zoneIngressStaticTokenIssuer{},
-			&zoneEgressStaticTokenIssuer{},
+			&zoneStaticTokenIssuer{},
 			access.NoopDpTokenAccess{},
 		))
 		server = httptest.NewServer(container.ServeMux)
@@ -53,16 +53,16 @@ var _ = Describe("Zone Egress Tokens Client", func() {
 			Url: server.URL,
 		})
 		Expect(err).ToNot(HaveOccurred())
-		client := tokens.NewZoneEgressTokenClient(baseClient)
+		client := tokens.NewZoneTokenClient(baseClient)
 
 		// wait for server
 		Eventually(func() error {
-			_, err := client.Generate("my-zone-1", 24*time.Hour)
+			_, err := client.Generate("my-zone-1", zone.FullScope, 24*time.Hour)
 			return err
 		}, "5s", "100ms").ShouldNot(HaveOccurred())
 
 		// when
-		token, err := client.Generate("my-zone-1", 24*time.Hour)
+		token, err := client.Generate("my-zone-1", zone.FullScope, 24*time.Hour)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -74,7 +74,7 @@ var _ = Describe("Zone Egress Tokens Client", func() {
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
 		defer server.Close()
-		mux.HandleFunc("/tokens/zone-egress", func(writer http.ResponseWriter, req *http.Request) {
+		mux.HandleFunc("/tokens/zone", func(writer http.ResponseWriter, req *http.Request) {
 			defer GinkgoRecover()
 			writer.WriteHeader(500)
 			_, err := writer.Write([]byte("Internal Server Error"))
@@ -84,11 +84,11 @@ var _ = Describe("Zone Egress Tokens Client", func() {
 			Url: server.URL,
 		})
 		Expect(err).ToNot(HaveOccurred())
-		client := tokens.NewZoneEgressTokenClient(baseClient)
+		client := tokens.NewZoneTokenClient(baseClient)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = client.Generate("my-zone-2", 24*time.Hour)
+		_, err = client.Generate("my-zone-2", zone.FullScope, 24*time.Hour)
 
 		// then
 		Expect(err).To(MatchError("(500): Internal Server Error"))

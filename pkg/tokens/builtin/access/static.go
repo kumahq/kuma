@@ -35,7 +35,7 @@ func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateZoneIngressToken(zo
 	return s.validateAccess(user)
 }
 
-func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateZoneEgressToken(zone string, user user.User) error {
+func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateZoneToken(zone string, user user.User) error {
 	return s.validateAccess(user)
 }
 

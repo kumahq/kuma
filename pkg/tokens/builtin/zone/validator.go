@@ -1,4 +1,4 @@
-package zoneegress
+package zone
 
 import (
 	"context"
@@ -23,11 +23,14 @@ func NewValidator(validator core_tokens.Validator) Validator {
 }
 
 func (j *jwtValidator) Validate(ctx context.Context, token Token) (Identity, error) {
-	claims := &zoneEgressClaims{}
+	claims := &zoneClaims{}
+
 	if err := j.validator.ParseWithValidation(ctx, token, claims); err != nil {
 		return Identity{}, err
 	}
+
 	return Identity{
-		Zone: claims.Zone,
+		Zone:  claims.Zone,
+		Scope: claims.Scope,
 	}, nil
 }

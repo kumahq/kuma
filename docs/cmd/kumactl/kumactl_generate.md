@@ -28,6 +28,6 @@ Generate resources, tokens, etc.
 * [kumactl generate signing-key](kumactl_generate_signing-key.md)	 - Generate signing keys
 * [kumactl generate tls-certificate](kumactl_generate_tls-certificate.md)	 - Generate a TLS certificate
 * [kumactl generate user-token](kumactl_generate_user-token.md)	 - Generate User Token
-* [kumactl generate zone-egress-token](kumactl_generate_zone-egress-token.md)	 - Generate Zone Egress Token
 * [kumactl generate zone-ingress-token](kumactl_generate_zone-ingress-token.md)	 - Generate Zone Ingress Token
+* [kumactl generate zone-token](kumactl_generate_zone-token.md)	 - Generate Zone Token
 

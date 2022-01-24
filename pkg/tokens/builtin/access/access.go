@@ -7,5 +7,5 @@ import (
 type DataplaneTokenAccess interface {
 	ValidateGenerateDataplaneToken(name string, mesh string, tags map[string][]string, user user.User) error
 	ValidateGenerateZoneIngressToken(zone string, user user.User) error
-	ValidateGenerateZoneEgressToken(zone string, user user.User) error
+	ValidateGenerateZoneToken(zone string, user user.User) error
 }
