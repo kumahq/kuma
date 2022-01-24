@@ -11,7 +11,6 @@ import (
 
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
@@ -22,7 +21,7 @@ func NewZoneTokenClient(client util_http.Client) ZoneTokenClient {
 }
 
 type ZoneTokenClient interface {
-	Generate(zone string, scope []zone.Scope, validFor time.Duration) (string, error)
+	Generate(zone string, scope []string, validFor time.Duration) (string, error)
 }
 
 type httpZoneTokenClient struct {
@@ -31,7 +30,7 @@ type httpZoneTokenClient struct {
 
 var _ ZoneTokenClient = &httpZoneTokenClient{}
 
-func (h *httpZoneTokenClient) Generate(zone string, scope []zone.Scope, validFor time.Duration) (string, error) {
+func (h *httpZoneTokenClient) Generate(zone string, scope []string, validFor time.Duration) (string, error) {
 	tokenReq := &types.ZoneTokenRequest{
 		Zone:     zone,
 		Scope:    scope,

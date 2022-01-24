@@ -1,8 +1,6 @@
 package generate
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,40 +18,12 @@ type generateZoneTokenContext struct {
 
 type generateZoneTokenContextArgs struct {
 	zone     string
-	scope    scopes
+	scope    []string
 	validFor time.Duration
 }
 
-type scopes []zone.Scope
-
-func (s *scopes) String() string {
-	var strs []string
-
-	for _, scope := range *s {
-		strs = append(strs, string(scope))
-	}
-
-	return fmt.Sprintf("[%s]", strings.Join(strs, ", "))
-}
-
-func (s *scopes) Set(v string) error {
-	switch v {
-	// TODO (bartsmykla): add ingress and egress cases when Zone Token will be
-	//  available for these resources
-	case string(zone.Egress):
-		*s = append(*s, zone.Scope(v))
-		return nil
-	default:
-		return errors.Errorf("must be one of: %s", scopes(zone.FullScope))
-	}
-}
-
-func (s *scopes) Type() string {
-	return "scope"
-}
-
 func NewGenerateZoneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
-	args := &generateZoneTokenContextArgs{scope: zone.FullScope}
+	args := &generateZoneTokenContextArgs{}
 	ctx := &generateZoneTokenContext{RootContext: pctx, args: args}
 
 	cmd := &cobra.Command{
@@ -67,6 +37,10 @@ $ kumactl generate zone-token --zone zone-1 --valid-for 24h
 $ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope egress`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := validateArgs(ctx.args); err != nil {
+				return err
+			}
+
 			client, err := pctx.CurrentZoneTokenClient()
 			if err != nil {
 				return errors.Wrap(err, "failed to create zone token client")
@@ -84,10 +58,32 @@ $ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope egress`,
 	}
 
 	cmd.Flags().StringVar(&ctx.args.zone, "zone", "", "name of the zone where resides")
-	cmd.Flags().Var(&ctx.args.scope, "scope", "scope of resources which the token will be able to identify (can be 'egress')")
+	// TODO (bartsmykla): update when Zone Token will be available for dataplanes and ingresses
+	cmd.Flags().StringSliceVar(&ctx.args.scope, "scope", zone.FullScope, "scope of resources which the token will be able to identify (can be 'egress')")
 	cmd.Flags().DurationVar(&ctx.args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
 
 	_ = cmd.MarkFlagRequired("valid-for")
 
 	return cmd
+}
+
+func validateArgs(args *generateZoneTokenContextArgs) error {
+	var unsupportedScopes []string
+
+	for _, s := range args.scope {
+		// TODO (bartsmykla): update when Zone Token will be available for dataplanes and ingresses
+		if s != zone.EgressScope {
+			unsupportedScopes = append(unsupportedScopes, s)
+		}
+	}
+
+	if len(unsupportedScopes) > 0 {
+		return errors.Errorf(
+			"invalid --scope values: %+v (supported scopes: %+v)",
+			unsupportedScopes,
+			zone.FullScope,
+		)
+	}
+
+	return nil
 }

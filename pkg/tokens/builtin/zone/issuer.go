@@ -11,7 +11,7 @@ type Token = string
 
 type Identity struct {
 	Zone  string
-	Scope []Scope
+	Scope []string
 }
 
 // TokenIssuer issues Zone Tokens used then for proving identity of the zone egresses.
@@ -41,20 +41,18 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, identity Identity, validF
 	return j.issuer.Generate(ctx, claims, validFor)
 }
 
-type Scope string
-
 const (
 	// TODO (bartsmykla): uncomment when Zone Token will be available for dataplanes
 	// 	and ingresses
-	// Dataplane Scope = "dataplane
-	// Ingress Scope = "ingress"
-	Egress Scope = "egress"
+	// DataplaneScope string = "dataplane
+	// IngressScope string = "ingress"
+	EgressScope string = "egress"
 )
 
-var FullScope = []Scope{
+var FullScope = []string{
 	// TODO (bartsmykla): uncomment when Zone Token will be available for dataplanes
 	// 	and ingresses
-	// Dataplane,
-	// Ingress,
-	Egress,
+	// DataplaneScope,
+	// IngressScope,
+	EgressScope,
 }

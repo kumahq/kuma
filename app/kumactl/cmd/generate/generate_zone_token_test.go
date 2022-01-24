@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 	"github.com/kumahq/kuma/pkg/util/test"
 )
@@ -29,7 +28,7 @@ var _ tokens.ZoneTokenClient = &staticZoneTokenGenerator{}
 
 func (s *staticZoneTokenGenerator) Generate(
 	zone string,
-	_ []zone.Scope,
+	_ []string,
 	_ time.Duration,
 ) (string, error) {
 	if s.err != nil {
