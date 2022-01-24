@@ -212,7 +212,7 @@ var (
 			Split: []*mesh_proto.TrafficRoute_Split{{
 				Weight: util_proto.UInt32(10),
 				Destination: map[string]string{
-					"version": "v2",
+					"kuma.io/service": "*",
 				},
 			}},
 		},

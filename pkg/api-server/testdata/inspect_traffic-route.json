@@ -1,0 +1,37 @@
+{
+ "total": 2,
+ "items": [
+  {
+   "dataplane": {
+    "mesh": "mesh-1",
+    "name": "backend-1"
+   },
+   "attachments": [
+    {
+     "type": "outbound",
+     "name": "192.168.0.2:8080"
+    },
+    {
+     "type": "outbound",
+     "name": "192.168.0.4:8080"
+    }
+   ]
+  },
+  {
+   "dataplane": {
+    "mesh": "mesh-1",
+    "name": "redis-1"
+   },
+   "attachments": [
+    {
+     "type": "outbound",
+     "name": "192.168.0.2:8080"
+    },
+    {
+     "type": "outbound",
+     "name": "192.168.0.4:8080"
+    }
+   ]
+  }
+ ]
+}
