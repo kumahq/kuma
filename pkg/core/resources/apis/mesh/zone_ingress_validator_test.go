@@ -74,6 +74,26 @@ var _ = Describe("Dataplane", func() {
               port: 10001
             availableServices: []`,
 		),
+		Entry("with admin port equal to port but different network interfaces", `
+            type: ZoneIngress
+            name: zi-1
+            networking:
+              admin:
+                port: 10001
+              address: 192.168.0.1
+              advertisedAddress: 10.0.0.1
+              port: 10001
+              advertisedPort: 1234
+            availableServices:
+              - tags:
+                  kuma.io/service: backend
+                  version: "1"
+                  region: us
+              - tags:
+                  kuma.io/service: web
+                  version: v2
+                  region: eu`,
+		),
 	)
 
 	type testCase struct {
@@ -161,6 +181,31 @@ var _ = Describe("Dataplane", func() {
                   message: tag value must be non-empty
                 - field: availableService[4].tags
                   message: mandatory tag "kuma.io/service" is missing`,
+		}),
+		Entry("admin port equal to port", testCase{
+			dataplane: `
+            type: ZoneIngress
+            name: zi-1
+            networking:
+              admin:
+                port: 10001
+              address: 127.0.0.1
+              advertisedAddress: 10.0.0.1
+              port: 10001
+              advertisedPort: 1234
+            availableServices:
+              - tags:
+                  kuma.io/service: backend
+                  version: "1"
+                  region: us
+              - tags:
+                  kuma.io/service: web
+                  version: v2
+                  region: eu`,
+			expected: `
+                violations:
+                - field: networking.admin.port
+                  message: must differ from port`,
 		}),
 	)
 
