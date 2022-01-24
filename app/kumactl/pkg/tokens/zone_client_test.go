@@ -51,7 +51,7 @@ var _ = Describe("Zone Egress Tokens Client", func() {
 		// given
 		baseClient, err := kumactl_client.ApiServerClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
-		})
+		}, time.Second)
 		Expect(err).ToNot(HaveOccurred())
 		client := tokens.NewZoneTokenClient(baseClient)
 
@@ -82,7 +82,7 @@ var _ = Describe("Zone Egress Tokens Client", func() {
 		})
 		baseClient, err := kumactl_client.ApiServerClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
-		})
+		}, time.Second)
 		Expect(err).ToNot(HaveOccurred())
 		client := tokens.NewZoneTokenClient(baseClient)
 		Expect(err).ToNot(HaveOccurred())
