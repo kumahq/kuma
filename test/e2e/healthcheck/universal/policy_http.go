@@ -84,7 +84,7 @@ conf:
 
 		// wait cluster 'test-server' to be marked as unhealthy
 		Eventually(func() bool {
-			cmd := []string{"/bin/bash", "-c", "\"curl localhost:30001/clusters | grep test-server\""}
+			cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
 			stdout, _, err := cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
 			if err != nil {
 				return false
