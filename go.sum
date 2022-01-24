@@ -1372,8 +1372,8 @@ github.com/opentracing/opentracing-go v1.2.0/go.mod h1:GxEUsuufX4nBwe+T+Wl9TAgYr
 github.com/openzipkin/zipkin-go v0.1.6/go.mod h1:QgAqvLzwWbR/WpD4A3cGpPtJrZXNIiJc5AZX7/PBEpw=
 github.com/openzipkin/zipkin-go v0.2.5/go.mod h1:KpXfKdgRDnnhsxw4pNIH9Md5lyFqKUa4YDFlwRYAMyE=
 github.com/operator-framework/api v0.10.0/go.mod h1:tV0BUNvly7szq28ZPBXhjp1Sqg5yHCOeX19ui9K4vjI=
-github.com/operator-framework/operator-lib v0.9.0 h1:Nv1Qk+cRqi5Xm0nxQ4g2ymbiys0fywAYa6KWJMAFudM=
-github.com/operator-framework/operator-lib v0.9.0/go.mod h1:2Z32GTTJUz2/f+OKcoJXsVnAyRwcXx7mGmQsdhIAIIE=
+github.com/operator-framework/operator-lib v0.10.0 h1:tTjrt8Udi0msABkMpgxKHp7sXKnC73jFPO5Col0tWso=
+github.com/operator-framework/operator-lib v0.10.0/go.mod h1:sdCls/olFjSHLXU0bHlaPtmyeIdentoxz/9miyw27kw=
 github.com/oracle/oci-go-sdk v7.1.0+incompatible/go.mod h1:VQb79nF8Z2cwLkLS35ukwStZIg5F66tcBccjip/j888=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
