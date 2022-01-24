@@ -29,6 +29,7 @@ type UniversalCluster struct {
 	deployments    map[string]Deployment
 	defaultTimeout time.Duration
 	defaultRetries int
+	opts           kumaDeploymentOptions
 }
 
 var _ Cluster = &UniversalCluster{}
@@ -40,8 +41,8 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		apps:           map[string]*UniversalApp{},
 		verbose:        verbose,
 		deployments:    map[string]Deployment{},
-		defaultRetries: GetDefaultRetries(),
-		defaultTimeout: GetDefaultTimeout(),
+		defaultRetries: Config.DefaultClusterStartupRetries,
+		defaultTimeout: Config.DefaultClusterStartupTimeout,
 	}
 }
 
@@ -82,11 +83,14 @@ func (c *UniversalCluster) Verbose() bool {
 }
 
 func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
-	var opts kumaDeploymentOptions
-
-	opts.apply(opt...)
-	if opts.installationMode != KumactlInstallationMode {
-		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, opts.installationMode)
+	if mode == core.Zone {
+		c.opts.apply(WithEnvs(Config.KumaZoneUniversalEnvVars))
+	} else {
+		c.opts.apply(WithEnvs(Config.KumaUniversalEnvVars))
+	}
+	c.opts.apply(opt...)
+	if c.opts.installationMode != KumactlInstallationMode {
+		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, c.opts.installationMode)
 	}
 
 	c.controlplane = NewUniversalControlPlane(c.t, mode, c.name, c, c.verbose)
@@ -95,39 +99,39 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	env := []string{"KUMA_MODE=" + mode, "KUMA_DNS_SERVER_PORT=53"}
 
 	caps := []string{}
-	for k, v := range opts.env {
+	for k, v := range c.opts.env {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
-	if opts.globalAddress != "" {
-		env = append(env, "KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS="+opts.globalAddress)
+	if c.opts.globalAddress != "" {
+		env = append(env, "KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS="+c.opts.globalAddress)
 	}
-	if opts.hdsDisabled {
+	if c.opts.hdsDisabled {
 		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
 	}
 
-	if HasApiVersion() {
-		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+GetApiVersion())
+	if Config.XDSApiVersion != "" {
+		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+Config.XDSApiVersion)
 	}
 
-	if opts.isipv6 {
-		env = append(env, fmt.Sprintf("KUMA_DNS_SERVER_CIDR=\"%s\"", cidrIPv6))
+	if Config.CIDR != "" {
+		env = append(env, fmt.Sprintf("KUMA_DNS_SERVER_CIDR=\"%s\"", Config.CIDR))
 	}
 
 	switch mode {
 	case core.Zone:
 		env = append(env, "KUMA_MULTIZONE_ZONE_NAME="+c.name)
 	case core.Global:
-		cmd = append(cmd, "--config-file", confPath)
+		cmd = append(cmd, "--config-file", "/kuma/kuma-cp.conf")
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, opts.isipv6, true, caps)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, c.opts.isipv6, true, caps)
 	if err != nil {
 		return err
 	}
 
 	app.CreateMainApp(env, cmd)
 
-	if opts.runPostgresMigration {
+	if c.opts.runPostgresMigration {
 		if err := runPostgresMigration(app, env); err != nil {
 			return err
 		}
@@ -149,7 +153,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		return err
 	}
 
-	for name, updateFuncs := range opts.meshUpdateFuncs {
+	for name, updateFuncs := range c.opts.meshUpdateFuncs {
 		for _, f := range updateFuncs {
 			Logf("applying update function to mesh %q", name)
 			err := c.controlplane.kumactl.KumactlUpdateObject("mesh", name,
@@ -202,7 +206,7 @@ func (c *UniversalCluster) VerifyKuma() error {
 	return c.controlplane.kumactl.RunKumactl("get", "dataplanes")
 }
 
-func (c *UniversalCluster) DeleteKuma(...KumaDeploymentOption) error {
+func (c *UniversalCluster) DeleteKuma() error {
 	err := c.apps[AppModeCP].Stop()
 	delete(c.apps, AppModeCP)
 	c.controlplane = nil

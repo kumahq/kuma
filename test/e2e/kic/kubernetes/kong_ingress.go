@@ -87,11 +87,11 @@ spec:
 func KICKubernetes() {
 	// IPv6 curently not supported by Kong Ingress Controller
 	// https://github.com/Kong/kubernetes-ingress-controller/issues/1017
-	if IsIPv6() {
+	if Config.IPV6 {
 		fmt.Println("Test not supported on IPv6")
 		return
 	}
-	if !IsK3D() {
+	if Config.K8sType == KindK8sType {
 		// KIC 2.0 when started with service type LoadBalancer requires external IP to be provisioned before it's healthy.
 		// KIND cannot provision external IP, K3D can.
 		fmt.Println("Test not supported on KIND")
@@ -101,14 +101,13 @@ func KICKubernetes() {
 	var ingressNamespace string
 	var altIngressNamespace = "kuma-yawetag"
 	var kubernetes Cluster
-	var kubernetesOps = KumaK8sDeployOpts
 	E2EBeforeSuite(func() {
 		k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		kubernetes = k8sClusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Standalone, kubernetesOps...)).
+			Install(Kuma(config_core.Standalone)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(testserver.Install()).
 			Setup(kubernetes)
@@ -122,12 +121,12 @@ func KICKubernetes() {
 		Expect(kubernetes.DeleteNamespace(ingressNamespace)).To(Succeed())
 	})
 	E2EAfterSuite(func() {
-		Expect(kubernetes.DeleteKuma(kubernetesOps...)).To(Succeed())
+		Expect(kubernetes.DeleteKuma()).To(Succeed())
 		Expect(kubernetes.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(kubernetes.DismissCluster()).To(Succeed())
 	})
 	It("should install kong ingress into default namespace", func() {
-		ingressNamespace = DefaultGatewayNamespace
+		ingressNamespace = Config.DefaultGatewayNamespace
 		// given kong ingress
 		err := NewClusterSetup().
 			Install(kic.KongIngressController()).

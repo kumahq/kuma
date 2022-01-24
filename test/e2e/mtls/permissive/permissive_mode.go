@@ -13,24 +13,19 @@ import (
 
 func PermissiveMode() {
 	var universal Cluster
-	var universalOpts = KumaUniversalDeployOpts
-	// This option is important for introducing update delays into the enable
-	// PERMISSIVE mTLS test
-	universalOpts = append(universalOpts,
-		WithEnv("KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL", "3s"),
-	)
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters([]string{Kuma1}, Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		universal = clusters.GetCluster(Kuma1)
-		Expect(Kuma(core.Standalone, universalOpts...)(universal)).To(Succeed())
+		// This option is important for introducing update delays into to enable PERMISSIVE mTLS test
+		Expect(Kuma(core.Standalone, WithEnv("KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL", "1s"))(universal)).To(Succeed())
 		Expect(universal.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
-		Expect(universal.DeleteKuma(universalOpts...)).To(Succeed())
+		Expect(universal.DeleteKuma()).To(Succeed())
 		Expect(universal.DismissCluster()).To(Succeed())
 	})
 

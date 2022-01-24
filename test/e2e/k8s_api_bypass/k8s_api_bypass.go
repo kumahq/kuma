@@ -32,13 +32,12 @@ spec:
 
 	var cluster *K8sCluster
 	var clientPod *v1.Pod
-	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Setup(cluster)
@@ -66,7 +65,7 @@ spec:
 		err := cluster.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = cluster.DeleteKuma(deployOptsFuncs...)
+		err = cluster.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = cluster.DismissCluster()

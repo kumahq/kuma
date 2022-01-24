@@ -49,12 +49,11 @@ spec:
 `
 
 	var cluster Cluster
-	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(testserver.Install()).
@@ -64,7 +63,7 @@ spec:
 	})
 
 	E2EAfterEach(func() {
-		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})

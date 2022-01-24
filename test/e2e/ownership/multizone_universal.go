@@ -12,29 +12,28 @@ import (
 
 func MultizoneUniversal() {
 	var global, zoneUniversal Cluster
-	var optsGlobal, optsZone1 = KumaUniversalDeployOpts, KumaUniversalDeployOpts
-
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters([]string{Kuma1, Kuma2}, Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Global
 		global = clusters.GetCluster(Kuma1)
-		Expect(Kuma(core.Global, optsGlobal...)(global)).To(Succeed())
+		Expect(Kuma(core.Global)(global)).To(Succeed())
 		Expect(global.VerifyKuma()).To(Succeed())
 
 		// Cluster 1
-		optsZone1 = append(optsZone1, WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))
 		zoneUniversal = clusters.GetCluster(Kuma2)
-		Expect(Kuma(core.Zone, optsZone1...)(zoneUniversal)).To(Succeed())
+		Expect(Kuma(core.Zone,
+			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))(zoneUniversal),
+		).To(Succeed())
 		Expect(zoneUniversal.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
-		Expect(zoneUniversal.DeleteKuma(optsZone1...)).To(Succeed())
+		Expect(zoneUniversal.DeleteKuma()).To(Succeed())
 		Expect(zoneUniversal.DismissCluster()).To(Succeed())
 
-		Expect(global.DeleteKuma(optsGlobal...)).To(Succeed())
+		Expect(global.DeleteKuma()).To(Succeed())
 		Expect(global.DismissCluster()).To(Succeed())
 	})
 

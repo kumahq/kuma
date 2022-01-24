@@ -26,7 +26,7 @@ func RetryOnUniversal() {
 		cluster = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
+			Install(Kuma(core.Standalone)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -53,7 +53,7 @@ func RetryOnUniversal() {
 		if ShouldSkipCleanup() {
 			return
 		}
-		err := cluster.DeleteKuma(KumaUniversalDeployOpts...)
+		err := cluster.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = cluster.DismissCluster()

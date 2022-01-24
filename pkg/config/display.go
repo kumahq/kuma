@@ -2,7 +2,10 @@ package config
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"reflect"
+
+	"gopkg.in/yaml.v2"
 )
 
 func ConfigForDisplay(cfg Config) (Config, error) {
@@ -26,4 +29,17 @@ func copyConfig(cfg Config) (Config, error) {
 		return nil, err
 	}
 	return newCfg, nil
+}
+
+func DumpToFile(filename string, cfg Config) error {
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+
+	b, err := yaml.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(filename, b, 0666)
 }

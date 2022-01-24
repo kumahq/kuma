@@ -14,7 +14,6 @@ import (
 
 func TrafficPermissionHybrid() {
 	var globalCluster, zoneUniversal, zoneKube Cluster
-	var optsGlobal, optsZoneUniversal, optsZoneKube = KumaK8sDeployOpts, KumaUniversalDeployOpts, KumaZoneK8sDeployOpts
 	var clientPodName string
 
 	meshMTLSOn := func(mesh string) string {
@@ -47,7 +46,7 @@ spec:
 		globalCluster = k8sClusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Global, optsGlobal...)).
+			Install(Kuma(config_core.Global)).
 			Install(YamlK8s(meshMTLSOn("default"))).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -60,13 +59,13 @@ spec:
 
 		// Zone universal
 		zoneUniversal = universalClusters.GetCluster(Kuma3)
-		optsZoneUniversal = append(optsZoneUniversal,
-			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Zone, optsZoneUniversal...)).
+			Install(Kuma(config_core.Zone,
+				WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			)).
 			Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneUniversal)
@@ -76,11 +75,11 @@ spec:
 
 		// Zone kubernetes
 		zoneKube = k8sClusters.GetCluster(Kuma2)
-		optsZoneKube = append(optsZoneKube,
-			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Zone, optsZoneKube...)).
+			Install(Kuma(config_core.Zone,
+				WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Setup(zoneKube)
@@ -126,17 +125,17 @@ spec:
 	})
 
 	E2EAfterSuite(func() {
-		err := zoneUniversal.DeleteKuma(optsZoneUniversal...)
+		err := zoneUniversal.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = zoneUniversal.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = zoneKube.DeleteKuma(optsZoneKube...)
+		err = zoneKube.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = zoneKube.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = globalCluster.DeleteKuma(optsGlobal...)
+		err = globalCluster.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = globalCluster.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())

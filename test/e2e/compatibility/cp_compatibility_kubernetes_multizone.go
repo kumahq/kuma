@@ -15,16 +15,11 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var OldChart = "0.7.0"
-var UpstreamImageRegistry = "kumahq"
-
 func CpCompatibilityMultizoneKubernetes() {
 	var globalCluster Cluster
 	var globalReleaseName string
-	var globalDeployOptsFuncs = KumaK8sDeployOpts
 
 	var zoneCluster Cluster
-	var zoneDeployOptsFuncs = KumaZoneK8sDeployOpts
 	var zoneReleaseName string
 
 	// Ensure that the upstream Kuma help repository is configured
@@ -38,7 +33,7 @@ func CpCompatibilityMultizoneKubernetes() {
 		// `--force-update` flag prevents heml emitting an error
 		// in this case.
 		_, err := helm.RunHelmCommandAndGetOutputE(t, &opts,
-			"repo", "add", "--force-update", "kuma", "https://kumahq.github.io/charts")
+			"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)
 		Expect(err).To(Succeed())
 
 		_, err = helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")
@@ -56,17 +51,16 @@ func CpCompatibilityMultizoneKubernetes() {
 			strings.ToLower(random.UniqueId()),
 		)
 
-		globalDeployOptsFuncs = append(globalDeployOptsFuncs,
-			WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
-			WithInstallationMode(HelmInstallationMode),
-			WithHelmChartPath(HelmRepo),
-			WithHelmReleaseName(globalReleaseName),
-			WithHelmChartVersion(OldChart),
-			WithoutHelmOpt("global.image.tag"),
-			WithHelmOpt("global.image.registry", UpstreamImageRegistry))
-
 		err := NewClusterSetup().
-			Install(Kuma(core.Global, globalDeployOptsFuncs...)).
+			Install(Kuma(core.Global,
+				WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmChartPath(Config.HelmChartPath),
+				WithHelmReleaseName(globalReleaseName),
+				WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
+				WithoutHelmOpt("global.image.tag"),
+				WithHelmOpt("global.image.registry", Config.KumaImageRegistry),
+			)).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -82,20 +76,18 @@ func CpCompatibilityMultizoneKubernetes() {
 			strings.ToLower(random.UniqueId()),
 		)
 
-		zoneDeployOptsFuncs = append(zoneDeployOptsFuncs,
-			WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
-			WithInstallationMode(HelmInstallationMode),
-			WithHelmChartPath(HelmRepo),
-			WithHelmReleaseName(zoneReleaseName),
-			WithHelmChartVersion(OldChart),
-			WithoutHelmOpt("global.image.tag"),
-			WithHelmOpt("global.image.registry", UpstreamImageRegistry),
-			WithGlobalAddress(globalCluster.GetKuma().GetKDSServerAddress()),
-			WithHelmOpt("ingress.enabled", "true"),
-		)
-
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, zoneDeployOptsFuncs...)).
+			Install(Kuma(core.Zone,
+				WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmChartPath(Config.HelmChartName),
+				WithHelmReleaseName(zoneReleaseName),
+				WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
+				WithoutHelmOpt("global.image.tag"),
+				WithHelmOpt("global.image.registry", Config.KumaImageRegistry),
+				WithGlobalAddress(globalCluster.GetKuma().GetKDSServerAddress()),
+				WithHelmOpt("ingress.enabled", "true"),
+			)).
 			Install(NamespaceWithSidecarInjectionOnAnnotation(TestNamespace)).
 			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -108,17 +100,16 @@ func CpCompatibilityMultizoneKubernetes() {
 			return
 		}
 
-		Expect(zoneCluster.DeleteKuma(zoneDeployOptsFuncs...)).To(Succeed())
+		Expect(zoneCluster.DeleteKuma()).To(Succeed())
 		Expect(zoneCluster.DismissCluster()).To(Succeed())
 
-		Expect(globalCluster.DeleteKuma(globalDeployOptsFuncs...)).To(Succeed())
+		Expect(globalCluster.DeleteKuma()).To(Succeed())
 		Expect(globalCluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should sync resources between new global and old zone", func() {
 		// when global is upgraded
-		upgradeOptsFuncs := append(KumaK8sDeployOpts, WithHelmReleaseName(globalReleaseName))
-		err := globalCluster.(*K8sCluster).UpgradeKuma(core.Global, upgradeOptsFuncs...)
+		err := globalCluster.(*K8sCluster).UpgradeKuma(core.Global, WithHelmReleaseName(globalReleaseName))
 		Expect(err).ToNot(HaveOccurred())
 
 		// and new resource is created on Global
