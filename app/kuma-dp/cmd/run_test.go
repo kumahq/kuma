@@ -4,9 +4,9 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -106,11 +106,17 @@ var _ = Describe("run", func() {
 				return bootstrap, respBytes, nil
 			}
 
-			var buf bytes.Buffer
+			reader, writer := io.Pipe()
+			go func() {
+				defer GinkgoRecover()
+				_, err := io.ReadAll(reader)
+				Expect(err).ToNot(HaveOccurred())
+			}()
+
 			cmd := NewRootCmd(opts, rootCtx)
 			cmd.SetArgs(append([]string{"run"}, given.args...))
-			cmd.SetOut(&buf)
-			cmd.SetErr(&buf)
+			cmd.SetOut(writer)
+			cmd.SetErr(writer)
 
 			// when
 			By("starting the dataplane manager")
