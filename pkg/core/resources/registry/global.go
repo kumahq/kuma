@@ -20,7 +20,5 @@ func RegisterTypeIfAbsent(res model.ResourceTypeDescriptor) {
 			return
 		}
 	}
-	if err := global.RegisterType(res); err != nil {
-		panic(err)
-	}
+	RegisterType(res)
 }
