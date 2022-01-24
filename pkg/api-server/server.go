@@ -225,7 +225,8 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 func dataplaneTokenWs(resManager manager.ResourceManager, access tokens_access.DataplaneTokenAccess) *restful.WebService {
 	dpIssuer := builtin.NewDataplaneTokenIssuer(resManager)
 	zoneIngressIssuer := builtin.NewZoneIngressTokenIssuer(resManager)
-	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer, access)
+	zoneTokenIssuer := builtin.NewZoneTokenIssuer(resManager)
+	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer, zoneTokenIssuer, access)
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {

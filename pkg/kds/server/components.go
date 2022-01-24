@@ -20,9 +20,9 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
-func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.ResourceType, serverID string, refresh time.Duration, filter reconcile.ResourceFilter, insight bool) (Server, error) {
+func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.ResourceType, serverID string, refresh time.Duration, filter reconcile.ResourceFilter, mapper reconcile.ResourceMapper, insight bool) (Server, error) {
 	hasher, cache := newKDSContext(log)
-	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter)
+	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
 	versioner := util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
 	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode)
 	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())

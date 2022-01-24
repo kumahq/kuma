@@ -35,6 +35,10 @@ func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateZoneIngressToken(zo
 	return s.validateAccess(user)
 }
 
+func (s *staticGenerateDataplaneTokenAccess) ValidateGenerateZoneToken(zone string, user user.User) error {
+	return s.validateAccess(user)
+}
+
 func (s *staticGenerateDataplaneTokenAccess) validateAccess(user user.User) error {
 	allowed := s.usernames[user.Name]
 	for _, group := range user.Groups {

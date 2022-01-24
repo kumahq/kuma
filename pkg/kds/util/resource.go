@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"strings"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -62,6 +63,16 @@ func AddSuffixToNames(rs []model.Resource, suffix string) {
 			r.GetMeta().GetCreationTime(), r.GetMeta().GetModificationTime())
 		r.SetMeta(m)
 	}
+}
+
+func ResourceNameHasAtLeastOneOfPrefixes(resName string, prefixes ...string) bool {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(resName, prefix) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func ZoneTag(r model.Resource) string {

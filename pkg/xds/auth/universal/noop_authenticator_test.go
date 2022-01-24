@@ -45,4 +45,36 @@ var _ = Describe("Noop Authenticator", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 	})
+
+	It("should allow with any token for any zone ingress", func() {
+		// given
+		zoneIngress := core_mesh.ZoneIngressResource{
+			Spec: &mesh_proto.ZoneIngress{
+				Zone: "zone-1",
+				Networking: &mesh_proto.ZoneIngress_Networking{
+					Address:           "127.0.0.1",
+					AdvertisedAddress: "192.168.0.1",
+					Port:              10001,
+					AdvertisedPort:    10001,
+				},
+				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+					{
+						Tags: map[string]string{
+							"kuma.io/service": "web",
+						},
+						Instances: 1,
+						Mesh:      "default",
+					},
+				},
+			},
+		}
+
+		// when
+		err := authenticator.Authenticate(context.Background(), &zoneIngress, "some-random-token")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	// TODO (bartsmykla): add test case for zone egress when resource will be available
 })

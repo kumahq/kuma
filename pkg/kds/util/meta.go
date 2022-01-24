@@ -26,6 +26,19 @@ func NewResourceMeta(name, mesh, version string, creationTime, modificationTime 
 	}
 }
 
+func CloneResourceMetaWithNewName(meta model.ResourceMeta, name string) model.ResourceMeta {
+	creationTime := meta.GetCreationTime()
+	modificationTime := meta.GetModificationTime()
+
+	return &resourceMeta{
+		name:             name,
+		version:          meta.GetVersion(),
+		mesh:             meta.GetMesh(),
+		creationTime:     &creationTime,
+		modificationTime: &modificationTime,
+	}
+}
+
 func kumaResourceMetaToResourceMeta(meta *mesh_proto.KumaResource_Meta) model.ResourceMeta {
 	return &resourceMeta{
 		name:             meta.Name,
