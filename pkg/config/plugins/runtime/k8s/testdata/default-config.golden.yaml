@@ -7,7 +7,6 @@ injector:
     image: kuma/kuma-dp:latest
     uid: 5678
     gid: 5678
-    adminPort: 9901
     drainTime: 30s
     readinessProbe:
       initialDelaySeconds: 1
