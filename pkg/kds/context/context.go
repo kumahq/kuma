@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
@@ -33,7 +32,7 @@ type Context struct {
 	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
 	Configs map[string]bool
 
-	ZoneSigningKeyToPublicKeyMapper reconcile.ResourceMapper
+	GlobalResourceMapper reconcile.ResourceMapper
 }
 
 func DefaultContext(manager manager.ResourceManager, zone string) *Context {
@@ -44,17 +43,17 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 	ctx := context.Background()
 
 	return &Context{
-		ZoneClientCtx:                   ctx,
-		GlobalProvidedFilter:            GlobalProvidedFilter(manager, configs),
-		ZoneProvidedFilter:              ZoneProvidedFilter(zone),
-		Configs:                         configs,
-		ZoneSigningKeyToPublicKeyMapper: MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
+		ZoneClientCtx:        ctx,
+		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
+		ZoneProvidedFilter:   ZoneProvidedFilter(zone),
+		Configs:              configs,
+		GlobalResourceMapper: MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
 	}
 }
 
 func MapZoneTokenSigningKeyGlobalToPublicKey(
-	ctx context.Context,
-	rm manager.ResourceManager,
+	_ context.Context,
+	_ manager.ResourceManager,
 ) reconcile.ResourceMapper {
 	return func(r model.Resource) (model.Resource, error) {
 		resType := r.Descriptor().Name
@@ -62,25 +61,22 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(
 		resName := currentMeta.GetName()
 
 		if resType == system.GlobalSecretType && strings.HasPrefix(resName, zone_tokens.SigningKeyPrefix) {
-			signingKeyManager := tokens.NewSigningKeyManager(rm, zone_tokens.SigningKeyPrefix)
-			signingKey, _, err := signingKeyManager.GetLatestSigningKey(ctx)
-			if err != nil {
-				return nil, err
-			}
-
-			pubBytes, err := rsa.FromPrivateKeyToPublicKeyPEMBytes(signingKey)
+			signingKeyBytes := r.(*system.GlobalSecretResource).Spec.GetData().GetValue()
+			publicKeyBytes, err := rsa.FromPrivateKeyPEMBytesToPublicKeyPEMBytes(signingKeyBytes)
 			if err != nil {
 				return nil, err
 			}
 
 			publicSigningKeyResource := system.NewGlobalSecretResource()
-			publicSigningKeyResource.SetMeta(util.CloneResourceMetaWithNewName(
-				currentMeta,
-				resName+zone_tokens.SigningKeyPublicSuffix,
-			))
+			newResName := strings.ReplaceAll(
+				resName,
+				zone_tokens.SigningKeyPrefix,
+				zone_tokens.SigningPublicKeyPrefix,
+			)
+			publicSigningKeyResource.SetMeta(util.CloneResourceMetaWithNewName(currentMeta, newResName))
 
 			if err := publicSigningKeyResource.SetSpec(&system_proto.Secret{
-				Data: &wrapperspb.BytesValue{Value: pubBytes},
+				Data: &wrapperspb.BytesValue{Value: publicKeyBytes},
 			}); err != nil {
 				return nil, err
 			}

@@ -2,8 +2,10 @@ package zone
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/thediveo/enumflag"
 
 	"github.com/kumahq/kuma/pkg/core/tokens"
@@ -17,8 +19,7 @@ type Identity struct {
 }
 
 // TokenIssuer issues Zone Tokens used then for proving identity of the zone egresses.
-// Issued token can be bound by zone name.
-// See pkg/sds/auth/universal/authenticator.go to check algorithm for authentication
+// Issued token can be bound by the zone name and the scope.
 type TokenIssuer interface {
 	Generate(ctx context.Context, identity Identity, validFor time.Duration) (tokens.Token, error)
 }
@@ -67,6 +68,21 @@ var ScopeItemsIds = map[ScopeItem][]string{
 }
 
 type Scope []ScopeItem
+
+func (s Scope) MarshalJSON() ([]byte, error) {
+	var values []string
+
+	for _, item := range s {
+		ids, ok := ScopeItemsIds[item]
+		if !ok || len(ids) < 1 {
+			return nil, errors.Errorf("missing mapping of item id: %d to string name", item)
+		}
+
+		values = append(values, ids[0])
+	}
+
+	return json.Marshal(values)
+}
 
 func (s *Scope) ContainsAtLeastOneOf(items ...ScopeItem) bool {
 	for _, item := range items {

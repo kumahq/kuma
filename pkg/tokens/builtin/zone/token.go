@@ -9,7 +9,7 @@ import (
 )
 
 const SigningKeyPrefix = "zone-token-signing-key"
-const SigningKeyPublicSuffix = ".pub"
+const SigningPublicKeyPrefix = "zone-token-signing-public-key"
 
 var TokenRevocationsGlobalSecretKey = core_model.ResourceKey{
 	Name: "zone-token-revocations",
