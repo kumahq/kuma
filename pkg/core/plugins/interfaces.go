@@ -19,6 +19,13 @@ type PluginContext = core_runtime.BuilderContext
 
 type MutablePluginContext = core_runtime.Builder
 
+// EnvironmentPreparingOrder describes an order at base environment plugins (K8S/Universal) configures CP.
+var EnvironmentPreparingOrder = 0
+
+// EnvironmentPreparedOrder describes an order at which you can put a plugin and expect that
+// the base environment is already configured by Universal/Kubernetes plugins.
+var EnvironmentPreparedOrder = EnvironmentPreparingOrder + 1
+
 // BootstrapPlugin is responsible for environment-specific initialization at start up,
 // e.g. Kubernetes-specific part of configuration.
 // Unlike other plugins, can mutate plugin context directly.
@@ -26,6 +33,8 @@ type BootstrapPlugin interface {
 	Plugin
 	BeforeBootstrap(*MutablePluginContext, PluginConfig) error
 	AfterBootstrap(*MutablePluginContext, PluginConfig) error
+	Name() PluginName
+	Order() int
 }
 
 // ResourceStorePlugin is responsible for instantiating a particular ResourceStore.

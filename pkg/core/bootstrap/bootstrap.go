@@ -198,9 +198,9 @@ func startReporter(runtime core_runtime.Runtime) error {
 }
 
 func initializeBeforeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	for name, plugin := range core_plugins.Plugins().BootstrapPlugins() {
-		if (cfg.Environment == config_core.KubernetesEnvironment && name == core_plugins.Universal) ||
-			(cfg.Environment == config_core.UniversalEnvironment && name == core_plugins.Kubernetes) {
+	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
+		if (cfg.Environment == config_core.KubernetesEnvironment && plugin.Name() == core_plugins.Universal) ||
+			(cfg.Environment == config_core.UniversalEnvironment && plugin.Name() == core_plugins.Kubernetes) {
 			continue
 		}
 		if err := plugin.BeforeBootstrap(builder, nil); err != nil {
@@ -211,9 +211,9 @@ func initializeBeforeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder
 }
 
 func initializeAfterBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	for name, plugin := range core_plugins.Plugins().BootstrapPlugins() {
-		if (cfg.Environment == config_core.KubernetesEnvironment && name == core_plugins.Universal) ||
-			(cfg.Environment == config_core.UniversalEnvironment && name == core_plugins.Kubernetes) {
+	for _, plugin := range core_plugins.Plugins().BootstrapPlugins() {
+		if (cfg.Environment == config_core.KubernetesEnvironment && plugin.Name() == core_plugins.Universal) ||
+			(cfg.Environment == config_core.UniversalEnvironment && plugin.Name() == core_plugins.Kubernetes) {
 			continue
 		}
 		if err := plugin.AfterBootstrap(builder, nil); err != nil {

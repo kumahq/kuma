@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -209,7 +210,10 @@ func BuildRuntime() (runtime.Runtime, error) {
 		return nil, err
 	}
 
-	plugin := plugins.Plugins().BootstrapPlugins()["gateway"]
+	plugin, err := plugins.Plugins().BootstrapPlugin(gateway.PluginName)
+	if err != nil {
+		return nil, err
+	}
 	if err := plugin.BeforeBootstrap(builder, nil); err != nil {
 		return nil, err
 	}
@@ -316,6 +320,6 @@ func (d *DataplaneGenerator) generate(
 var _ = BeforeSuite(func() {
 	// Ensure that the plugin is registered so that tests at least
 	// have a chance of working.
-	_, registered := plugins.Plugins().BootstrapPlugins()["gateway"]
-	Expect(registered).To(BeTrue(), "gateway plugin is registered")
+	_, err := plugins.Plugins().BootstrapPlugin(gateway.PluginName)
+	Expect(err).ToNot(HaveOccurred(), "gateway plugin is registered")
 })
