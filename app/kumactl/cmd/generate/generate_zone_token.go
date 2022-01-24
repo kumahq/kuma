@@ -30,16 +30,12 @@ func NewGenerateZoneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "zone-token",
 		Short: "Generate Zone Token",
-		Long:  `Generate Zone Token that is used to prove identity of Zone dataplanes, ingresses and egresses.`,
+		// TODO (bartsmykla): update descriptions when this token will be able to
+		//  be used to prove identities of zone dataplanes and ingresses as well
+		Long: `Generate Zone Token that is used to prove identity of Zone egresses.`,
 		Example: `Generate token bound by zone
 $ kumactl generate zone-token --zone zone-1 --valid-for 24h
-
-Generate token which can be used to prove identity of both zone ingress and egress
-$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope ingress,egress
-$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope ingress --scope egress
-
-Generate token which can be used to prove identity of dataplane
-$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope dataplane`,
+$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope egress`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, err := pctx.CurrentZoneTokenClient()
@@ -62,7 +58,9 @@ $ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope dataplane`,
 	cmd.Flags().Var(
 		enumflag.NewSlice(&ctx.args.scope, "scope...", zone.ScopeItemsIds, enumflag.EnumCaseInsensitive),
 		"scope",
-		"scope of the token; can be any combination of 'dataplane', 'ingress', 'egress'")
+		// TODO (bartsmykla): update usage when this token will be able to
+		//  be used to prove identities of zone dataplanes and ingresses as well
+		"scope of the token; can be 'egress'")
 	cmd.Flags().DurationVar(&ctx.args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
 
 	_ = cmd.MarkFlagRequired("valid-for")
