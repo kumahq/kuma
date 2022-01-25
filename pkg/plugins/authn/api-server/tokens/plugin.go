@@ -65,3 +65,11 @@ func (c plugin) AfterBootstrap(context *plugins.MutablePluginContext, config plu
 	context.APIManager().Add(webService)
 	return nil
 }
+
+func (c plugin) Name() plugins.PluginName {
+	return PluginName
+}
+
+func (c plugin) Order() int {
+	return plugins.EnvironmentPreparedOrder
+}

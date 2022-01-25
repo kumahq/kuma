@@ -27,3 +27,11 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
 	return nil
 }
+
+func (p *plugin) Name() core_plugins.PluginName {
+	return core_plugins.Universal
+}
+
+func (p *plugin) Order() int {
+	return core_plugins.EnvironmentPreparingOrder
+}

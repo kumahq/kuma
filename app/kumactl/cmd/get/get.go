@@ -8,9 +8,12 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 )
 
 func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
+	register.RegisterGatewayTypes() // allow applying experimental Gateway types
+
 	getCmd := &cobra.Command{
 		Use:   "get",
 		Short: "Show Kuma resources",

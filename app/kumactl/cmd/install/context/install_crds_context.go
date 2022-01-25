@@ -8,7 +8,8 @@ import (
 )
 
 type InstallCrdsArgs struct {
-	OnlyMissing bool
+	OnlyMissing         bool
+	ExperimentalGateway bool
 }
 
 type InstallCrdsContext struct {

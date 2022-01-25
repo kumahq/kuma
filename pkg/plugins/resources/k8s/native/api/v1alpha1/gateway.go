@@ -1,6 +1,3 @@
-//go:build gateway
-// +build gateway
-
 package v1alpha1
 
 import (
@@ -10,15 +7,16 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-func init() {
+func RegisterK8SGatewayTypes() {
 	SchemeBuilder.Register(&Gateway{}, &GatewayList{})
-	registry.RegisterObjectType(&mesh_proto.Gateway{}, &Gateway{
+	// RegisterObjectTypeIfAbsent is used because it's not deterministic in testing that RegisterGatewayTypes is called only once.
+	registry.RegisterObjectTypeIfAbsent(&mesh_proto.Gateway{}, &Gateway{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "Gateway",
 		},
 	})
-	registry.RegisterListType(&mesh_proto.Gateway{}, &GatewayList{
+	registry.RegisterListTypeIfAbsent(&mesh_proto.Gateway{}, &GatewayList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "GatewayList",
@@ -26,18 +24,17 @@ func init() {
 	})
 
 	SchemeBuilder.Register(&GatewayRoute{}, &GatewayRouteList{})
-	registry.RegisterObjectType(&mesh_proto.GatewayRoute{}, &GatewayRoute{
+	registry.RegisterObjectTypeIfAbsent(&mesh_proto.GatewayRoute{}, &GatewayRoute{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "GatewayRoute",
 		},
 	})
-	registry.RegisterListType(&mesh_proto.GatewayRoute{}, &GatewayRouteList{
+	registry.RegisterListTypeIfAbsent(&mesh_proto.GatewayRoute{}, &GatewayRouteList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "GatewayRouteList",
 		},
 	})
-
 	SchemeBuilder.Register(&GatewayInstance{}, &GatewayInstanceList{})
 }

@@ -13,6 +13,8 @@ import (
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config/core"
 	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 )
 
 type componentVersion struct {
@@ -49,6 +51,11 @@ This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateArgs(args); err != nil {
 				return err
+			}
+
+			if args.ExperimentalGateway {
+				register.RegisterGatewayTypes()
+				mesh_k8s.RegisterK8SGatewayTypes()
 			}
 
 			if useNodePort && args.ControlPlane_mode == core.Global {
@@ -143,6 +150,7 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.Ingress_drainTime, "ingress-drain-time", args.Ingress_drainTime, "drain time for Envoy proxy")
 	cmd.Flags().BoolVar(&ingressUseNodePort, "ingress-use-node-port", false, "use NodePort instead of LoadBalancer for the Ingress Service")
 	cmd.Flags().BoolVar(&args.WithoutKubernetesConnection, "without-kubernetes-connection", false, "install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades")
+	cmd.Flags().BoolVar(&args.ExperimentalGateway, "experimental-gateway", false, "install experimental built-in Gateway support")
 	return cmd
 }
 

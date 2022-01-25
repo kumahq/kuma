@@ -1467,6 +1467,7 @@ rules:
       - get
       - list
       - watch
+
   - apiGroups:
       - "apps"
     resources:
@@ -1570,6 +1571,7 @@ rules:
       - update
       - patch
       - delete
+
   - apiGroups:
       - kuma.io
     resources:
@@ -1799,6 +1801,8 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
+            - name: KUMA_EXPERIMENTAL_GATEWAY
+              value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE

@@ -34,6 +34,10 @@ Show Kuma resources.
 * [kumactl get external-services](kumactl_get_external-services.md)	 - Show ExternalService
 * [kumactl get fault-injection](kumactl_get_fault-injection.md)	 - Show a single FaultInjection resource
 * [kumactl get fault-injections](kumactl_get_fault-injections.md)	 - Show FaultInjection
+* [kumactl get gateway](kumactl_get_gateway.md)	 - Show a single Gateway resource
+* [kumactl get gateway-route](kumactl_get_gateway-route.md)	 - Show a single GatewayRoute resource
+* [kumactl get gateway-routes](kumactl_get_gateway-routes.md)	 - Show GatewayRoute
+* [kumactl get gateways](kumactl_get_gateways.md)	 - Show Gateway
 * [kumactl get global-secret](kumactl_get_global-secret.md)	 - Show a single GlobalSecret resource
 * [kumactl get global-secrets](kumactl_get_global-secrets.md)	 - Show GlobalSecret
 * [kumactl get healthcheck](kumactl_get_healthcheck.md)	 - Show a single HealthCheck resource

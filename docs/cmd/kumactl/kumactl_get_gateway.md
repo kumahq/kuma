@@ -1,17 +1,19 @@
-## kumactl install crds
+## kumactl get gateway
 
-Install Kuma Custom Resource Definitions on Kubernetes
+Show a single Gateway resource
+
+### Synopsis
+
+Show a single Gateway resource.
 
 ```
-kumactl install crds [flags]
+kumactl get gateway NAME [flags]
 ```
 
 ### Options
 
 ```
-      --experimental-gateway   install experimental built-in Gateway support
-  -h, --help                   help for crds
-      --only-missing           install only resources which are not already present in a cluster
+  -h, --help   help for gateway
 ```
 
 ### Options inherited from parent commands
@@ -22,9 +24,10 @@ kumactl install crds [flags]
       --log-level string       log level: one of off|info|debug (default "off")
   -m, --mesh string            mesh to use (default "default")
       --no-config              if set no config file and config directory will be created
+  -o, --output string          output format: one of table|yaml|json (default "table")
 ```
 
 ### SEE ALSO
 
-* [kumactl install](kumactl_install.md)	 - Install various Kuma components.
+* [kumactl get](kumactl_get.md)	 - Show Kuma resources
 
