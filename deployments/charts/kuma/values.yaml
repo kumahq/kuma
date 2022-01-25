@@ -4,6 +4,8 @@ global:
     registry: "docker.io/kumahq"
     # -- The default tag for all Kuma images, which itself defaults to .Chart.AppVersion
     tag:
+  # -- Add imagePullSecrets to all the service accounts used for Kuma components
+  imagePullSecrets: [ ]
 
 # -- Whether to patch the target namespace with the system label
 patchSystemNamespace: true
@@ -12,6 +14,7 @@ patchSystemNamespace: true
 #    with the new version of Kuma)
 installCrdsOnUpgrade:
   enabled: true
+  # -- This field will be deprecated in a future release, please use .global.imagePullSecrets
   imagePullSecrets: [ ]
 
 controlPlane:

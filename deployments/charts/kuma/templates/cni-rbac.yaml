@@ -6,6 +6,12 @@ metadata:
   namespace: kube-system
   labels:
   {{ include "kuma.cniLabels" . | nindent 4 }}
+{{- with .Values.global.imagePullSecrets }}
+imagePullSecrets:
+  {{- range . }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

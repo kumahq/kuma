@@ -12,8 +12,10 @@ A Helm chart for the Kuma Control Plane
 |-----|------|---------|-------------|
 | global.image.registry | string | `"docker.io/kumahq"` | Default registry for all Kuma Images |
 | global.image.tag | string | `nil` | The default tag for all Kuma images, which itself defaults to .Chart.AppVersion |
+| global.imagePullSecrets | list | `[]` | `imagePullSecrets` that should be added to all Kuma component Service Accounts |
 | patchSystemNamespace | bool | `true` | Whether to patch the target namespace with the system label |
-| installCrdsOnUpgrade | object | `{"enabled":true,"imagePullSecrets":[]}` | Whether ot not install new CRDs before upgrade  (if any were introduced    with the new version of Kuma) |
+| installCrdsOnUpgrade.enabled | bool | `true` | Whether or not install new CRDs before upgrade (if any were introduced with the new version of Kuma) |
+| installCrdsOnUpgrade.imagePullSecrets | list | `[]` | `imagePullSecrets` that should be added to the Service Account for installing new CRDs (*deprecated* - Use .global.imagePullSecrets instead) |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,zone,global |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
