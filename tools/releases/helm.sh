@@ -24,7 +24,8 @@ function package {
     git diff --exit-code HEAD -- "${dir}"
 
     # TODO remove this when Gateway is no longer experimental
-    if [[ -n "${BUILD_WITH_EXPERIMENTAL_GATEWAY}" && "${BUILD_WITH_EXPERIMENTAL_GATEWAY}" != "N" && $(basename "${dir}") == "kuma" ]]; then
+    # Gateway CRDs are installed conditionally via install missing CRDs job
+    if [[ $(basename "${dir}") == "kuma" ]]; then
       find "${dir}/crds" -name "*gateway*.yaml" -delete
     fi
 
