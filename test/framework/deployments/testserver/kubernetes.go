@@ -128,7 +128,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 						InitialDelaySeconds: 3,
 						PeriodSeconds:       3,
 					},
-					Image: framework.GetUniversalImage(),
+					Image: framework.Config.GetUniversalImage(),
 					Ports: []corev1.ContainerPort{
 						{ContainerPort: 80},
 					},

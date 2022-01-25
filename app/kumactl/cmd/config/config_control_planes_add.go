@@ -60,7 +60,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 				cp.Coordinates.ApiServer.Headers = append(cp.Coordinates.ApiServer.Headers, header)
 			}
 			cfg := pctx.Config()
-			if err := config.ValidateCpCoordinates(cp); err != nil {
+			if err := config.ValidateCpCoordinates(cp, pctx.Args.ApiTimeout); err != nil {
 				return err
 			}
 			if !cfg.AddControlPlane(cp, args.overwrite) {

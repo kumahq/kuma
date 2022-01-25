@@ -46,6 +46,14 @@ func (r *typeRegistry) RegisterObjectType(typ ResourceType, obj model.Kubernetes
 	return nil
 }
 
+func (r *typeRegistry) RegisterObjectTypeIfAbsent(typ ResourceType, obj model.KubernetesObject) {
+	name := proto.MessageName(typ)
+	if _, exists := r.objectTypes[name]; exists {
+		return
+	}
+	r.objectTypes[name] = obj
+}
+
 func (r *typeRegistry) RegisterListType(typ ResourceType, obj model.KubernetesList) error {
 	name := proto.MessageName(typ)
 	if previous, ok := r.objectListTypes[name]; ok {
@@ -53,6 +61,14 @@ func (r *typeRegistry) RegisterListType(typ ResourceType, obj model.KubernetesLi
 	}
 	r.objectListTypes[name] = obj
 	return nil
+}
+
+func (r *typeRegistry) RegisterListTypeIfAbsent(typ ResourceType, obj model.KubernetesList) {
+	name := proto.MessageName(typ)
+	if _, exists := r.objectListTypes[name]; exists {
+		return
+	}
+	r.objectListTypes[name] = obj
 }
 
 func (r *typeRegistry) NewObject(typ ResourceType) (model.KubernetesObject, error) {

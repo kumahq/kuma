@@ -13,7 +13,6 @@ import (
 
 func ResilienceMultizoneUniversalPostgres() {
 	var global, zoneUniversal Cluster
-	var optsGlobal, optsZone1 []KumaDeploymentOption
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -23,20 +22,17 @@ func ResilienceMultizoneUniversalPostgres() {
 
 		// Global
 		global = clusters.GetCluster(Kuma1)
-		optsGlobal = []KumaDeploymentOption{}
 
 		err = NewClusterSetup().
 			Install(postgres.Install(Kuma1)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 
-		optsGlobal = []KumaDeploymentOption{
-			WithPostgres(postgres.From(global, Kuma1).GetEnvVars()),
-			WithEnv("KUMA_METRICS_ZONE_IDLE_TIMEOUT", "10s"),
-		}
-
 		err = NewClusterSetup().
-			Install(Kuma(core.Global, optsGlobal...)).
+			Install(Kuma(core.Global,
+				WithPostgres(postgres.From(global, Kuma1).GetEnvVars()),
+				WithEnv("KUMA_METRICS_ZONE_IDLE_TIMEOUT", "10s"),
+			)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -52,14 +48,12 @@ func ResilienceMultizoneUniversalPostgres() {
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
 
-		optsZone1 = []KumaDeploymentOption{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithPostgres(postgres.From(zoneUniversal, Kuma2).GetEnvVars()),
-			WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
-		}
-
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone1...)).
+			Install(Kuma(core.Zone,
+				WithGlobalAddress(globalCP.GetKDSServerAddress()),
+				WithPostgres(postgres.From(zoneUniversal, Kuma2).GetEnvVars()),
+				WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
+			)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -68,12 +62,12 @@ func ResilienceMultizoneUniversalPostgres() {
 	})
 
 	E2EAfterEach(func() {
-		err := zoneUniversal.DeleteKuma(optsZone1...)
+		err := zoneUniversal.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = zoneUniversal.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.DeleteKuma(optsGlobal...)
+		err = global.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = global.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())

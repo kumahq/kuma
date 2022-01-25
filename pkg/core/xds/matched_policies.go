@@ -24,6 +24,7 @@ type MatchedPolicies struct {
 	// Outbound(Listener) -> Policy
 	Timeouts           TimeoutMap
 	RateLimitsOutbound OutboundRateLimitsMap
+	TrafficRoutes      RouteMap
 
 	// Dataplane -> Policy
 	TrafficTrace *core_mesh.TrafficTraceResource
@@ -177,6 +178,9 @@ func getOutboundMatchedPolicies(matchedPolicies *MatchedPolicies) map[mesh_proto
 	}
 	for outbound, rl := range matchedPolicies.RateLimitsOutbound {
 		result[outbound] = append(result[outbound], rl)
+	}
+	for outboud, tr := range matchedPolicies.TrafficRoutes {
+		result[outboud] = append(result[outboud], tr)
 	}
 
 	return result

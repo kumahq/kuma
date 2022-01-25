@@ -47,6 +47,7 @@ type InstallControlPlaneArgs struct {
 	Ingress_drainTime                            string            `helm:"ingress.drainTime"`
 	Ingress_service_type                         string            `helm:"ingress.service.type"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
+	ExperimentalGateway                          bool              `helm:"experimental.gateway"`
 }
 
 type ImageEnvSecret struct {
@@ -96,8 +97,21 @@ func DefaultInstallCpContext() InstallCpContext {
 			Ingress_service_type:                    "LoadBalancer",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
-			return data.ReadFiles(deployments.KumaChartFS())
+			files, err := data.ReadFiles(deployments.KumaChartFS())
+			if err != nil {
+				return nil, err
+			}
+			if !args.ExperimentalGateway {
+				files = files.Filter(ExcludeGatewayCRDs)
+			}
+			return files, nil
 		},
 		HELMValuesPrefix: "",
 	}
+}
+
+func ExcludeGatewayCRDs(file data.File) bool {
+	return file.Name != "kuma.io_gateways.yaml" &&
+		file.Name != "kuma.io_gatewayroutes.yaml" &&
+		file.Name != "kuma.io_gatewayinstances.yaml"
 }

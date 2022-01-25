@@ -2,12 +2,10 @@ package gateway
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"net"
 	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/shell"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -85,42 +83,20 @@ networking:
 		}
 	}
 
-	SetupCluster := func(setup *ClusterSetup) {
-		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
-		Expect(cluster).ToNot(BeNil())
-
-		err := setup.Setup(cluster)
-
-		// The makefile rule that builds the kuma-universal:latest image
-		// that is used for e2e tests by default rebuilds Kuma with Gateway
-		// disabled. This means that unless BUILD_WITH_EXPERIMENTAL_GATEWAY=Y is
-		// set persistently in the environment, Gateway will not be supported.
-		// We use the `WithKumactlFlow` option to detect the unsupported gateway
-		// type early (when kumactl creates the dataplane resource), and skip
-		// the remaining tests.
-		var shellErr *shell.ErrWithCmdOutput
-		if errors.As(err, &shellErr) {
-			if strings.Contains(shellErr.Output.Combined(), "unsupported gateway type") {
-				Skip("kuma-cp builtin Gateway support is not enabled")
-			}
-		}
-
-		// Otherwise, we expect the cluster build to succeed.
-		Expect(err).To(Succeed())
-	}
-
 	// DeployCluster creates a universal Kuma cluster using the
 	// provided options, installing an echo service as well as a
 	// gateway and a client container to send HTTP requests.
 	DeployCluster := func(opt ...KumaDeploymentOption) {
-		opt = append(opt, WithVerbose())
+		opt = append(opt, WithVerbose(), WithEnv("KUMA_EXPERIMENTAL_GATEWAY", "true"))
+		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 
-		SetupCluster(NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, opt...)).
 			Install(GatewayClientApp("gateway-client")).
 			Install(EchoServerApp("echo-server")).
-			Install(GatewayProxyUniversal("gateway-proxy")),
-		)
+			Install(GatewayProxyUniversal("gateway-proxy")).
+			Setup(cluster)
+		Expect(err).ToNot(HaveOccurred())
 	}
 
 	GatewayAddress := func(appName string) string {
@@ -191,7 +167,7 @@ conf:
 
 	Context("when mTLS is disabled", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaUniversalDeployOpts...)
+			DeployCluster()
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -202,7 +178,7 @@ conf:
 
 	Context("when mTLS is enabled", func() {
 		BeforeEach(func() {
-			DeployCluster(append(KumaUniversalDeployOpts, OptEnableMeshMTLS)...)
+			DeployCluster(OptEnableMeshMTLS)
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -221,14 +197,15 @@ conf:
 
 	Context("when targeting an external service", func() {
 		BeforeEach(func() {
-			opt := append(KumaUniversalDeployOpts, WithVerbose())
-			SetupCluster(NewClusterSetup().
-				Install(Kuma(config_core.Standalone, opt...)).
+			cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
+			err := NewClusterSetup().
+				Install(Kuma(config_core.Standalone, WithVerbose(), WithEnv("KUMA_EXPERIMENTAL_GATEWAY", "true"))).
 				Install(ExternalServerUniversal("external-echo")).
 				Install(GatewayClientApp("gateway-client")).
 				Install(GatewayProxyUniversal("gateway-proxy")).
-				Install(EchoServerApp("echo-server")),
-			)
+				Install(EchoServerApp("echo-server")).
+				Setup(cluster)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		JustBeforeEach(func() {
@@ -277,7 +254,7 @@ networking:
 
 	Context("when targeting a HTTPS gateway", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaUniversalDeployOpts...)
+			DeployCluster()
 		})
 
 		JustBeforeEach(func() {
@@ -338,7 +315,7 @@ data: %s
 
 	Context("when a rate limit is configured", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaUniversalDeployOpts...)
+			DeployCluster()
 		})
 
 		JustBeforeEach(func() {

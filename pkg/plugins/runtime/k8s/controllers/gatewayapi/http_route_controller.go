@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
@@ -95,33 +96,13 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	ParentConditions,
 	error,
 ) {
-	var refRoutes []gatewayapi.ParentRef
-
-	kumaRoute := &mesh_proto.GatewayRoute{}
-
-	// Convert GAPI parent refs into selectors
-	for i, ref := range route.Spec.ParentRefs {
-		if handle, err := r.shouldHandleParentRef(ctx, route, ref); err != nil {
-			return nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
-		} else if !handle {
-			continue
+	routeNs := kube_core.Namespace{}
+	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: route.Namespace}, &routeNs); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return nil, nil, nil
+		} else {
+			return nil, nil, err
 		}
-		refRoutes = append(refRoutes, ref)
-
-		refNamespace := route.Namespace
-		if ns := ref.Namespace; ns != nil {
-			refNamespace = string(*ns)
-		}
-
-		match := common.ServiceTagForGateway(kube_types.NamespacedName{Namespace: refNamespace, Name: string(ref.Name)})
-
-		if ref.SectionName != nil {
-			match[mesh_proto.ListenerTag] = string(*ref.SectionName)
-		}
-
-		kumaRoute.Selectors = append(kumaRoute.Selectors, &mesh_proto.Selector{
-			Match: match,
-		})
 	}
 
 	routeConf, routeConditions, err := r.gapiToKumaRouteConf(ctx, mesh, route)
@@ -129,51 +110,69 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 		return nil, nil, err
 	}
 
-	kumaRoute.Conf = routeConf
+	kumaRoute := &mesh_proto.GatewayRoute{
+		Conf: routeConf,
+	}
 
+	// The conditions we accumulate for each ParentRef
 	conditions := ParentConditions{}
 
-	for _, ref := range refRoutes {
-		conditions[ref] = routeConditions
+	// Convert GAPI parent refs into selectors
+	for i, ref := range route.Spec.ParentRefs {
+		refAttachment, err := attachment.EvaluateParentRefAttachment(ctx, r.Client, &routeNs, ref)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "unable to check parent ref %d", i)
+		}
+
+		switch refAttachment {
+		case attachment.NotPermitted, attachment.Invalid:
+			var message string
+			switch refAttachment {
+			case attachment.NotPermitted:
+				message = "attachment to parent not permitted by AllowedRoutes"
+			case attachment.Invalid:
+				// TODO missing a specific Reason for this?
+				message = "listener not found, reference to parent is invalid"
+			}
+
+			conditions[ref] = []kube_meta.Condition{
+				{
+					Type:    string(gatewayapi.ConditionRouteAccepted),
+					Status:  kube_meta.ConditionFalse,
+					Reason:  "Refused", // kubernetes-sigs/gateway-api#972
+					Message: message,
+				},
+			}
+		case attachment.Unknown:
+			// We don't care about this ref
+		case attachment.Allowed:
+			kumaRoute.Selectors = append(
+				kumaRoute.Selectors,
+				&mesh_proto.Selector{
+					Match: tagsForRef(route, ref),
+				},
+			)
+
+			conditions[ref] = routeConditions
+		}
 	}
 
 	return kumaRoute, conditions, nil
 }
 
-func (r *HTTPRouteReconciler) shouldHandleParentRef(
-	ctx context.Context, route kube_client.Object, ref gatewayapi.ParentRef,
-) (bool, error) {
-	name := string(ref.Name)
-	// Group and Kind both have default values
-	group := string(*ref.Group)
-	kind := string(*ref.Kind)
-
-	namespace := route.GetNamespace()
+func tagsForRef(referrer kube_client.Object, ref gatewayapi.ParentRef) map[string]string {
+	refNamespace := referrer.GetNamespace()
 	if ns := ref.Namespace; ns != nil {
-		namespace = string(*ns)
+		refNamespace = string(*ns)
 	}
 
-	gateway := &gatewayapi.Gateway{}
-	gatewayKind := "Gateway"
+	match := common.ServiceTagForGateway(kube_types.NamespacedName{Namespace: refNamespace, Name: string(ref.Name)})
 
-	if group != gatewayapi.GroupName || kind != gatewayKind {
-		return false, nil
+	if ref.SectionName != nil {
+		match[mesh_proto.ListenerTag] = string(*ref.SectionName)
 	}
 
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Namespace: namespace, Name: name}, gateway); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			return false, nil
-		} else {
-			return false, err
-		}
-	}
-
-	class, err := common.GetGatewayClass(ctx, r.Client, gateway.Spec.GatewayClassName)
-	if err != nil {
-		return false, err
-	}
-
-	return class.Spec.ControllerName == common.ControllerName, nil
+	return match
 }
 
 // routesForGateway returns a function that calculates which routes might

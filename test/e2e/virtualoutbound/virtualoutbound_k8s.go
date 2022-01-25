@@ -15,15 +15,14 @@ import (
 
 func VirtualOutboundOnK8s() {
 	var k8sCluster Cluster
-	var optsKubernetes = append(KumaK8sDeployOpts,
-		WithEnv("KUMA_DNS_SERVER_SERVICE_VIP_ENABLED", "false"),
-	)
 
 	BeforeEach(func() {
 		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone, optsKubernetes...)).
+			Install(Kuma(config_core.Standalone,
+				WithEnv("KUMA_DNS_SERVER_SERVICE_VIP_ENABLED", "false"),
+			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(testserver.Install(testserver.WithStatefulSet(true), testserver.WithReplicas(2))).
@@ -32,7 +31,7 @@ func VirtualOutboundOnK8s() {
 	})
 
 	E2EAfterEach(func() {
-		Expect(k8sCluster.DeleteKuma(optsKubernetes...)).To(Succeed())
+		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})

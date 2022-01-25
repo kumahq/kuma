@@ -11,7 +11,6 @@ import (
 
 func ResilienceMultizoneK8s() {
 	var global, zone1 *K8sCluster
-	var optsGlobal, optsZone1 = KumaK8sDeployOpts, KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		clusters, err := NewK8sClusters([]string{Kuma1, Kuma2}, Silent)
@@ -20,7 +19,7 @@ func ResilienceMultizoneK8s() {
 		// Global
 		global = clusters.GetCluster(Kuma1).(*K8sCluster)
 		Expect(NewClusterSetup().
-			Install(Kuma(core.Global, optsGlobal...)).
+			Install(Kuma(core.Global)).
 			Setup(global)).To(Succeed())
 		Expect(global.VerifyKuma()).To(Succeed())
 
@@ -28,20 +27,19 @@ func ResilienceMultizoneK8s() {
 
 		// Cluster 1
 		zone1 = clusters.GetCluster(Kuma2).(*K8sCluster)
-		optsZone1 = append(optsZone1, WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		Expect(NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone1...)).
+			Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Setup(zone1)).To(Succeed())
 		Expect(zone1.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
-		Expect(zone1.DeleteKuma(optsZone1...)).To(Succeed())
+		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
 
-		Expect(global.DeleteKuma(optsGlobal...)).To(Succeed())
+		Expect(global.DeleteKuma()).To(Succeed())
 		Expect(global.DismissCluster()).To(Succeed())
 	})
 

@@ -16,10 +16,11 @@ Show Kuma resources.
 ### Options inherited from parent commands
 
 ```
-      --config-file string   path to the configuration file to use
-      --log-level string     log level: one of off|info|debug (default "off")
-  -m, --mesh string          mesh to use (default "default")
-      --no-config            if set no config file and config directory will be created
+      --api-timeout duration   the timeout for api calls. It includes connection time, any redirects, and reading the response body. A timeout of zero means no timeout (default 1m0s)
+      --config-file string     path to the configuration file to use
+      --log-level string       log level: one of off|info|debug (default "off")
+  -m, --mesh string            mesh to use (default "default")
+      --no-config              if set no config file and config directory will be created
 ```
 
 ### SEE ALSO
@@ -33,6 +34,10 @@ Show Kuma resources.
 * [kumactl get external-services](kumactl_get_external-services.md)	 - Show ExternalService
 * [kumactl get fault-injection](kumactl_get_fault-injection.md)	 - Show a single FaultInjection resource
 * [kumactl get fault-injections](kumactl_get_fault-injections.md)	 - Show FaultInjection
+* [kumactl get gateway](kumactl_get_gateway.md)	 - Show a single Gateway resource
+* [kumactl get gateway-route](kumactl_get_gateway-route.md)	 - Show a single GatewayRoute resource
+* [kumactl get gateway-routes](kumactl_get_gateway-routes.md)	 - Show GatewayRoute
+* [kumactl get gateways](kumactl_get_gateways.md)	 - Show Gateway
 * [kumactl get global-secret](kumactl_get_global-secret.md)	 - Show a single GlobalSecret resource
 * [kumactl get global-secrets](kumactl_get_global-secrets.md)	 - Show GlobalSecret
 * [kumactl get healthcheck](kumactl_get_healthcheck.md)	 - Show a single HealthCheck resource

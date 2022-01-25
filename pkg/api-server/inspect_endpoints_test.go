@@ -501,6 +501,33 @@ var _ = Describe("Inspect WS", func() {
 					build(),
 			},
 		}),
+		Entry("inspect traffic route", testCase{
+			path:       "/meshes/mesh-1/traffic-routes/t-1/dataplanes",
+			goldenFile: "inspect_traffic-route.json",
+			resources: []core_model.Resource{
+				newMesh("mesh-1"),
+				&core_mesh.TrafficRouteResource{
+					Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "mesh-1"},
+					Spec: &mesh_proto.TrafficRoute{
+						Sources:      anyService(),
+						Destinations: anyService(),
+						Conf:         samples.TrafficRoute.Conf,
+					},
+				},
+				newDataplane().
+					meta("backend-1", "mesh-1").
+					inbound("backend", "192.168.0.1", 80, 81).
+					outbound("redis", "192.168.0.2", 8080).
+					outbound("web", "192.168.0.4", 8080).
+					build(),
+				newDataplane().
+					meta("redis-1", "mesh-1").
+					inbound("redis", "192.168.0.1", 80, 81).
+					outbound("gateway", "192.168.0.2", 8080).
+					outbound("web", "192.168.0.4", 8080).
+					build(),
+			},
+		}),
 		Entry("inspect traffic trace", testCase{
 			path:       "/meshes/mesh-1/traffic-traces/tt-1/dataplanes",
 			goldenFile: "inspect_traffic-trace.json",

@@ -16,7 +16,7 @@ func MTLSUniversal() {
 		universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone, KumaUniversalDeployOpts...)).
+			Install(Kuma(config_core.Standalone)).
 			Setup(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = universalCluster.VerifyKuma()
@@ -51,7 +51,7 @@ name: default`
 	})
 
 	E2EAfterSuite(func() {
-		Expect(universalCluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
+		Expect(universalCluster.DeleteKuma()).To(Succeed())
 		Expect(universalCluster.DismissCluster()).To(Succeed())
 	})
 

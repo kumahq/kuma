@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
@@ -22,17 +23,20 @@ var log = core.Log.WithName("dataplane-token-ws")
 type tokenWebService struct {
 	issuer            issuer.DataplaneTokenIssuer
 	zoneIngressIssuer zoneingress.TokenIssuer
+	zoneIssuer        zone.TokenIssuer
 	access            access.DataplaneTokenAccess
 }
 
 func NewWebservice(
 	issuer issuer.DataplaneTokenIssuer,
 	zoneIngressIssuer zoneingress.TokenIssuer,
+	zoneIssuer zone.TokenIssuer,
 	access access.DataplaneTokenAccess,
 ) *restful.WebService {
 	ws := tokenWebService{
 		issuer:            issuer,
 		zoneIngressIssuer: zoneIngressIssuer,
+		zoneIssuer:        zoneIssuer,
 		access:            access,
 	}
 	return ws.createWs()
@@ -45,7 +49,8 @@ func (d *tokenWebService) createWs() *restful.WebService {
 	ws.Path("/tokens").
 		Route(ws.POST("").To(d.handleIdentityRequest)). // backwards compatibility
 		Route(ws.POST("/dataplane").To(d.handleIdentityRequest)).
-		Route(ws.POST("/zone-ingress").To(d.handleZoneIngressIdentityRequest))
+		Route(ws.POST("/zone-ingress").To(d.handleZoneIngressIdentityRequest)).
+		Route(ws.POST("/zone").To(d.handleZoneIdentityRequest))
 	return ws
 }
 
@@ -145,6 +150,50 @@ func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Requ
 
 	token, err := d.zoneIngressIssuer.Generate(request.Request.Context(), zoneingress.Identity{
 		Zone: idReq.Zone,
+	}, validFor)
+	if err != nil {
+		errors.HandleError(response, err, "Could not issue a token")
+		return
+	}
+
+	response.Header().Set("content-type", "text/plain")
+	if _, err := response.Write([]byte(token)); err != nil {
+		log.Error(err, "Could not write a response")
+	}
+}
+
+func (d *tokenWebService) handleZoneIdentityRequest(request *restful.Request, response *restful.Response) {
+	var idReq types.ZoneTokenRequest
+	if err := request.ReadEntity(&idReq); err != nil {
+		log.Error(err, "Could not read a request")
+		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	ctx := request.Request.Context()
+
+	if err := d.access.ValidateGenerateZoneToken(idReq.Zone, user.FromCtx(ctx)); err != nil {
+		errors.HandleError(response, err, "Could not issue a token")
+		return
+	}
+
+	var verr validators.ValidationError
+
+	if idReq.Scope == nil {
+		verr.AddViolation("scope", "cannot be empty")
+	}
+
+	validForErr, validFor := validateValidFor(idReq.ValidFor)
+	verr.Add(validForErr)
+
+	if verr.HasViolations() {
+		errors.HandleError(response, verr.OrNil(), "Invalid request")
+		return
+	}
+
+	token, err := d.zoneIssuer.Generate(ctx, zone.Identity{
+		Zone:  idReq.Zone,
+		Scope: idReq.Scope,
 	}, validFor)
 	if err != nil {
 		errors.HandleError(response, err, "Could not issue a token")

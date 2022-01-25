@@ -25,7 +25,6 @@ metadata:
 `
 
 	var cluster Cluster
-	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).
@@ -36,15 +35,15 @@ metadata:
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
-		deployOptsFuncs = append(deployOptsFuncs,
-			WithInstallationMode(HelmInstallationMode),
-			WithHelmReleaseName(releaseName),
-			WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
-			WithCPReplicas(3),         // test HA capability
-			WithCNI())
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, deployOptsFuncs...)).
+			Install(Kuma(core.Standalone,
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmReleaseName(releaseName),
+				WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
+				WithCPReplicas(3),         // test HA capability
+				WithCNI(),
+			)).
 			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -64,7 +63,7 @@ metadata:
 		// tear down apps
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		// tear down Kuma
-		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(cluster.DeleteKuma()).To(Succeed())
 		// tear down cluster
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})

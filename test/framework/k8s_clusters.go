@@ -124,11 +124,11 @@ func (cs *K8sClusters) VerifyKuma() error {
 	return nil
 }
 
-func (cs *K8sClusters) DeleteKuma(opt ...KumaDeploymentOption) error {
+func (cs *K8sClusters) DeleteKuma() error {
 	failed := []string{}
 
 	for name, c := range cs.clusters {
-		if err := c.DeleteKuma(opt...); err != nil {
+		if err := c.DeleteKuma(); err != nil {
 			fmt.Printf("Delete Kuma on %s failed", name)
 			failed = append(failed, name)
 		}

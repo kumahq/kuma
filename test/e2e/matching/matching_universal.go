@@ -12,7 +12,6 @@ import (
 
 func Universal() {
 	var universal Cluster
-	var optsUniversal = KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters([]string{Kuma1}, Silent)
@@ -21,7 +20,7 @@ func Universal() {
 		universal = clusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, optsUniversal...)).
+			Install(Kuma(core.Standalone)).
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
 		err = universal.VerifyKuma()
@@ -47,7 +46,7 @@ func Universal() {
 	})
 
 	E2EAfterEach(func() {
-		Expect(universal.DeleteKuma(optsUniversal...)).To(Succeed())
+		Expect(universal.DeleteKuma()).To(Succeed())
 		Expect(universal.DismissCluster()).To(Succeed())
 	})
 

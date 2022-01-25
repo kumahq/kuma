@@ -45,10 +45,17 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.NamespacedName.Name)
 	}
 
-	injected, _, err := metadata.Annotations(namespace.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+	injectedLabel, _, err := metadata.Annotations(namespace.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+	if err != nil {
+		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection label on namespace %s", namespace.Name)
+	}
+	// support annotations for backwards compatibility
+	injectedAnnotation := false
+	injectedAnnotation, _, err = metadata.Annotations(namespace.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection annotation on namespace %s", namespace.Name)
 	}
+	injected := injectedLabel || injectedAnnotation
 	if !injected {
 		log.V(1).Info(req.NamespacedName.String() + "is not part of the mesh")
 		return kube_ctrl.Result{}, nil

@@ -45,7 +45,7 @@ var _ = Describe("kumactl generate zone-ingress-token", func() {
 		ctx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
 				Registry: registry.NewTypeRegistry(),
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 					return nil, nil
 				},
 				NewZoneIngressTokenClient: func(util_http.Client) tokens.ZoneIngressTokenClient {

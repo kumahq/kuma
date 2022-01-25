@@ -161,6 +161,14 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 	return nil
 }
 
+func (p *plugin) Name() core_plugins.PluginName {
+	return core_plugins.Kubernetes
+}
+
+func (p *plugin) Order() int {
+	return core_plugins.EnvironmentPreparingOrder
+}
+
 // kubeManagerWrapper exists in order to intercept Manager.Add calls on
 // controllers so that we can start them independently of Manager.Start.
 type kubeManagerWrapper struct {

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -42,7 +43,7 @@ var _ = Describe("kumactl apply", func() {
 		rootCtx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
 				Registry: registry.Global(),
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 					return nil, nil
 				},
 				NewResourceStore: func(util_http.Client) core_store.ResourceStore {

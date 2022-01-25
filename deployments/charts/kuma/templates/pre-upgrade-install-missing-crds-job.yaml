@@ -1,11 +1,15 @@
 {{- if .Values.installCrdsOnUpgrade.enabled }}
+  {{ $hook := "pre-upgrade" }}
+  {{ if .Values.experimental.gateway }}
+  {{ $hook = "pre-upgrade,pre-install" }}
+  {{ end }}
   {{- $serviceAccountName := printf "%s-install-missing-crds" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ $serviceAccountName }}
   annotations:
-    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook": "{{ $hook }}"
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
@@ -22,7 +26,7 @@ kind: ClusterRole
 metadata:
   name: {{ include "kuma.name" . }}-install-missing-crds
   annotations:
-    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook": "{{ $hook }}"
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
@@ -42,7 +46,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ include "kuma.name" . }}-install-missing-crds
   annotations:
-    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook": "{{ $hook }}"
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
@@ -62,7 +66,7 @@ metadata:
   name: {{ include "kuma.name" . }}-install-missing-crds-scripts
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook": "{{ $hook }}"
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
   labels:
@@ -80,7 +84,7 @@ data:
   save_missing_crds.sh: |
     #!/usr/bin/env sh
 
-    missing_crds="$(kumactl install crds --only-missing)"
+    missing_crds="$(kumactl install crds --only-missing {{ if .Values.experimental.gateway }}--experimental-gateway{{end}})"
 
     if [ -n "${missing_crds}" ]; then
       echo "found missing crds - saving to /kuma/missing/crds.yaml"
@@ -95,7 +99,7 @@ metadata:
   labels:
   {{ include "kuma.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook": "{{ $hook }}"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
 spec:
   template:

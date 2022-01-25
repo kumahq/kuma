@@ -53,7 +53,7 @@ type kumaDeploymentOptions struct {
 
 func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	// Set defaults.
-	k.isipv6 = IsIPv6()
+	k.isipv6 = Config.IPV6
 	k.installationMode = KumactlInstallationMode
 	k.env = map[string]string{}
 	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
@@ -105,7 +105,7 @@ type appDeploymentOptions struct {
 
 func (d *appDeploymentOptions) apply(opts ...AppDeploymentOption) {
 	// Set defaults.
-	d.isipv6 = IsIPv6()
+	d.isipv6 = Config.IPV6
 
 	// Apply options.
 	for _, o := range opts {
@@ -245,6 +245,14 @@ func WithEnv(name, value string) KumaDeploymentOption {
 	})
 }
 
+func WithEnvs(entries map[string]string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		for k, v := range entries {
+			o.env[k] = v
+		}
+	})
+}
+
 func WithIngress() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.ingress = true
@@ -266,12 +274,14 @@ func WithGlobalAddress(address string) KumaDeploymentOption {
 // WithCtlOpt allows arbitrary options to be passed to kuma, which is important
 // for using test/framework in other libraries where additional options may have
 // been added.
-func WithCtlOpt(name, value string) KumaDeploymentOption {
+func WithCtlOpts(opts map[string]string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		if o.ctlOpts == nil {
 			o.ctlOpts = map[string]string{}
 		}
-		o.ctlOpts[name] = value
+		for name, value := range opts {
+			o.ctlOpts[name] = value
+		}
 	})
 }
 
@@ -421,7 +431,7 @@ type Cluster interface {
 	DeployKuma(mode core.CpMode, opts ...KumaDeploymentOption) error
 	GetKuma() ControlPlane
 	VerifyKuma() error
-	DeleteKuma(opts ...KumaDeploymentOption) error
+	DeleteKuma() error
 	InjectDNS(namespace ...string) error
 	GetKumactlOptions() *KumactlOptions
 	Deployment(name string) Deployment

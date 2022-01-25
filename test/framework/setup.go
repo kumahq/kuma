@@ -106,14 +106,14 @@ func YamlPathK8s(path string) InstallFunc {
 
 func Kuma(mode core.CpMode, opt ...KumaDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		opt = append(opt, WithIPv6(IsIPv6()))
+		opt = append(opt, WithIPv6(Config.IPV6))
 		return cluster.DeployKuma(mode, opt...)
 	}
 }
 
 func KumaDNS() InstallFunc {
 	return func(cluster Cluster) error {
-		err := cluster.InjectDNS(KumaNamespace)
+		err := cluster.InjectDNS(Config.KumaNamespace)
 		return err
 	}
 }
@@ -161,7 +161,7 @@ func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 func IngressUniversal(token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
-		isipv6 := IsIPv6()
+		isipv6 := Config.IPV6
 		verbose := false
 		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, isipv6, verbose, []string{})
 		if err != nil {
@@ -224,7 +224,7 @@ spec:
               memory: 128Mi
 `
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage())),
+		YamlK8s(fmt.Sprintf(deployment, mesh, Config.GetUniversalImage())),
 		WaitNumPods(TestNamespace, 1, name),
 		WaitPodsAvailable(TestNamespace, name),
 	)
@@ -277,7 +277,7 @@ func DemoClientJobK8s(namespace, mesh, destination string) InstallFunc {
 					Containers: []corev1.Container{
 						{
 							Name:            name,
-							Image:           GetUniversalImage(),
+							Image:           Config.GetUniversalImage(),
 							ImagePullPolicy: "IfNotPresent",
 							Command:         []string{"curl"},
 							Args:            []string{"-v", "-m", "3", "--fail", destination},
@@ -317,7 +317,7 @@ func DemoClientUniversal(name, mesh, token string, opt ...AppDeploymentOption) I
 			WithToken(token),
 			WithArgs(args),
 			WithYaml(appYaml),
-			WithIPv6(IsIPv6()))
+			WithIPv6(Config.IPV6))
 		return cluster.DeployApp(opt...)
 	}
 }
@@ -381,7 +381,7 @@ networking:
 			WithToken(token),
 			WithArgs(args),
 			WithYaml(appYaml),
-			WithIPv6(IsIPv6()))
+			WithIPv6(Config.IPV6))
 		return cluster.DeployApp(opt...)
 	}
 }

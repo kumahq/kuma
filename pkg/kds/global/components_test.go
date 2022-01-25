@@ -44,7 +44,7 @@ var _ = Describe("Global Sync", func() {
 		for i := 0; i < numOfZones; i++ {
 			wg.Add(1)
 			zoneStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any)
+			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), registry.Global().ObjectTypes(model.HasKdsEnabled()), reconcile.Any, reconcile.NoopResourceMapper)
 			serverStreams = append(serverStreams, serverStream)
 			zoneStores = append(zoneStores, zoneStore)
 		}

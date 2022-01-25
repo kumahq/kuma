@@ -13,7 +13,8 @@ import (
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
-	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 )
 
 func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
@@ -23,17 +24,15 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 		Use:   "crds",
 		Short: "Install Kuma Custom Resource Definitions on Kubernetes",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if args.ExperimentalGateway {
+				register.RegisterGatewayTypes()
+				mesh_k8s.RegisterK8SGatewayTypes()
+			}
+
 			wantCrdFiles, err := ctx.InstallCrdTemplateFiles(args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read CRD files")
 			}
-
-			scheme, err := bootstrap_k8s.NewScheme()
-			if err != nil {
-				return err
-			}
-
-			wantCrdFiles = filterHelmTemplates(scheme, wantCrdFiles)
 
 			if !args.OnlyMissing {
 				singleFile := data.JoinYAML(wantCrdFiles)
@@ -87,6 +86,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&args.OnlyMissing, "only-missing", false, "install only resources which are not already present in a cluster")
+	cmd.Flags().BoolVar(&args.ExperimentalGateway, "experimental-gateway", false, "install experimental built-in Gateway support")
 
 	return cmd
 }

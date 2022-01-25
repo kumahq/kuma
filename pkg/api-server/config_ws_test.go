@@ -334,6 +334,9 @@ var _ = Describe("Config WS", func() {
                 "groups": ["mesh-system:admin"]
               }
             }
+          },
+          "experimental": {
+            "gateway": false
           }
         }
 		`, port, cfg.HTTPS.Port)

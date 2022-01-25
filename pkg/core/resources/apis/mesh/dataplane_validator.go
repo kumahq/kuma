@@ -11,11 +11,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-// allowBuiltinGateways specifies whether the dataplanes of builtin
-// gateway type are allowed. This is controlled by the +gateway build
-// conditional.
-var allowBuiltinGateways = false
-
 func (d *DataplaneResource) Validate() error {
 	var err validators.ValidationError
 
@@ -49,11 +44,6 @@ func (d *DataplaneResource) Validate() error {
 		err.Add(validateProbes(d.Spec.GetProbes()))
 
 	case d.Spec.IsBuiltinGateway():
-		if !allowBuiltinGateways {
-			err.AddViolationAt(net.Field("gateway"), "unsupported gateway type")
-			return err.OrNil()
-		}
-
 		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
 			err.AddViolationAt(net.Field("inbound"), "inbound cannot be defined for builtin gateways")
 		}

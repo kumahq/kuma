@@ -74,7 +74,7 @@ k3d/deploy/helm: k3d/load
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(KUMA_NAMESPACE)
 	@KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) \
                 --set global.image.registry="$(DOCKER_REGISTRY)" \
-                --set global.image.tag="$(BUILD_INFO_GIT_TAG)" \
+                --set global.image.tag="$(BUILD_INFO_VERSION)" \
                 --set cni.enabled=true \
                 --set cni.chained=true \
                 --set cni.netDir=/var/lib/rancher/k3s/agent/etc/cni/net.d/ \

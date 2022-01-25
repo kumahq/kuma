@@ -69,8 +69,9 @@ var _ = Describe("Authentication flow", func() {
 
 		dataplaneValidator := builtin.NewDataplaneTokenValidator(resManager)
 		zoneIngressValidator := builtin.NewZoneIngressTokenValidator(resManager)
+		zoneTokenValidator := builtin.NewZoneTokenValidator(resManager)
 		issuer = builtin.NewDataplaneTokenIssuer(resManager)
-		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneIngressValidator, "zone-1")
+		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneIngressValidator, zoneTokenValidator, "zone-1")
 
 		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())

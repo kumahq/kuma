@@ -4,6 +4,9 @@ import (
 	"context"
 	"strings"
 
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -14,7 +17,9 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
+	"github.com/kumahq/kuma/pkg/util/rsa"
 )
 
 var log = core.Log.WithName("kds")
@@ -26,17 +31,60 @@ type Context struct {
 	GlobalServerFilters  []mux.Filter
 	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
 	Configs map[string]bool
+
+	GlobalResourceMapper reconcile.ResourceMapper
 }
 
 func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 	configs := map[string]bool{
 		config_manager.ClusterIdConfigKey: true,
 	}
+
+	ctx := context.Background()
+
 	return &Context{
-		ZoneClientCtx:        context.Background(),
+		ZoneClientCtx:        ctx,
 		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
 		ZoneProvidedFilter:   ZoneProvidedFilter(zone),
 		Configs:              configs,
+		GlobalResourceMapper: MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
+	}
+}
+
+func MapZoneTokenSigningKeyGlobalToPublicKey(
+	_ context.Context,
+	_ manager.ResourceManager,
+) reconcile.ResourceMapper {
+	return func(r model.Resource) (model.Resource, error) {
+		resType := r.Descriptor().Name
+		currentMeta := r.GetMeta()
+		resName := currentMeta.GetName()
+
+		if resType == system.GlobalSecretType && strings.HasPrefix(resName, zone_tokens.SigningKeyPrefix) {
+			signingKeyBytes := r.(*system.GlobalSecretResource).Spec.GetData().GetValue()
+			publicKeyBytes, err := rsa.FromPrivateKeyPEMBytesToPublicKeyPEMBytes(signingKeyBytes)
+			if err != nil {
+				return nil, err
+			}
+
+			publicSigningKeyResource := system.NewGlobalSecretResource()
+			newResName := strings.ReplaceAll(
+				resName,
+				zone_tokens.SigningKeyPrefix,
+				zone_tokens.SigningPublicKeyPrefix,
+			)
+			publicSigningKeyResource.SetMeta(util.CloneResourceMetaWithNewName(currentMeta, newResName))
+
+			if err := publicSigningKeyResource.SetSpec(&system_proto.Secret{
+				Data: &wrapperspb.BytesValue{Value: publicKeyBytes},
+			}); err != nil {
+				return nil, err
+			}
+
+			return publicSigningKeyResource, nil
+		}
+
+		return r, nil
 	}
 }
 
@@ -45,11 +93,17 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
 	return func(clusterID string, r model.Resource) bool {
 		resType := r.Descriptor().Name
-		if resType == system.ConfigType && !configs[r.GetMeta().GetName()] {
+		resName := r.GetMeta().GetName()
+
+		if resType == system.ConfigType && !configs[resName] {
 			return false
 		}
 		if resType == system.GlobalSecretType {
-			return strings.HasPrefix(r.GetMeta().GetName(), zoneingress.ZoneIngressSigningKeyPrefix)
+			return util.ResourceNameHasAtLeastOneOfPrefixes(
+				resName,
+				zoneingress.ZoneIngressSigningKeyPrefix,
+				zone_tokens.SigningKeyPrefix,
+			)
 		}
 		if resType != mesh.DataplaneType && resType != mesh.ZoneIngressType {
 			return true

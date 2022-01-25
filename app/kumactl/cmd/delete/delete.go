@@ -11,9 +11,12 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 )
 
 func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
+	register.RegisterGatewayTypes() // allow applying experimental Gateway types
+
 	byName := map[string]model.ResourceTypeDescriptor{}
 	allNames := []string{}
 	for _, desc := range pctx.Runtime.Registry.ObjectDescriptors(model.HasKumactlEnabled()) {

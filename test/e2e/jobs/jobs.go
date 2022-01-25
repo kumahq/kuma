@@ -12,7 +12,6 @@ import (
 
 func Jobs() {
 	var kubernetes Cluster
-	var kubernetesOps = KumaK8sDeployOpts
 
 	E2EBeforeSuite(func() {
 		k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
@@ -20,7 +19,7 @@ func Jobs() {
 
 		kubernetes = k8sClusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Standalone, kubernetesOps...)).
+			Install(Kuma(config_core.Standalone)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(testserver.Install()).
 			Setup(kubernetes)
@@ -30,7 +29,7 @@ func Jobs() {
 	})
 
 	E2EAfterSuite(func() {
-		Expect(kubernetes.DeleteKuma(kubernetesOps...)).To(Succeed())
+		Expect(kubernetes.DeleteKuma()).To(Succeed())
 		Expect(kubernetes.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(kubernetes.DismissCluster()).To(Succeed())
 	})

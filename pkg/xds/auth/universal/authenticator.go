@@ -9,14 +9,16 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
-func NewAuthenticator(dataplaneValidator builtin_issuer.Validator, zoneIngressValidator zoneingress.Validator, zone string) auth.Authenticator {
+func NewAuthenticator(dataplaneValidator builtin_issuer.Validator, zoneIngressValidator zoneingress.Validator, zoneValidator zone.Validator, zone string) auth.Authenticator {
 	return &universalAuthenticator{
 		dataplaneValidator:   dataplaneValidator,
 		zoneIngressValidator: zoneIngressValidator,
+		zoneValidator:        zoneValidator,
 		zone:                 zone,
 	}
 }
@@ -33,6 +35,7 @@ func NewAuthenticator(dataplaneValidator builtin_issuer.Validator, zoneIngressVa
 type universalAuthenticator struct {
 	dataplaneValidator   builtin_issuer.Validator
 	zoneIngressValidator zoneingress.Validator
+	zoneValidator        zone.Validator
 	zone                 string
 }
 

@@ -245,6 +245,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.GenerateDPToken.Groups).To(Equal([]string{"dp-group1", "dp-group2"}))
 			Expect(cfg.Access.Static.GenerateUserToken.Users).To(Equal([]string{"ut-admin1", "ut-admin2"}))
 			Expect(cfg.Access.Static.GenerateUserToken.Groups).To(Equal([]string{"ut-group1", "ut-group2"}))
+
+			Expect(cfg.Experimental.Gateway).To(BeTrue())
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -452,6 +454,8 @@ access:
     generateUserToken:
       users: ["ut-admin1", "ut-admin2"]
       groups: ["ut-group1", "ut-group2"]
+experimental:
+  gateway: true
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -594,6 +598,7 @@ access:
 				"KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS":                                              "dp-group1,dp-group2",
 				"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS":                                             "ut-admin1,ut-admin2",
 				"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS":                                            "ut-group1,ut-group2",
+				"KUMA_EXPERIMENTAL_GATEWAY":                                                                "true",
 			},
 			yamlFileConfig: "",
 		}),

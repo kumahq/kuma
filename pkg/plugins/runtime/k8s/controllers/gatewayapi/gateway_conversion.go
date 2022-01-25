@@ -48,6 +48,21 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			continue
 		}
 
+		for _, gk := range l.AllowedRoutes.Kinds {
+			if gk.Kind != common.HTTPRouteKind || *gk.Group != gatewayapi.GroupName {
+				metaGK := kube_meta.GroupKind{Group: string(*gk.Group), Kind: string(gk.Kind)}
+				listenerConditions[l.Name] = append(listenerConditions[l.Name],
+					kube_meta.Condition{
+						Type:    string(gatewayapi.ListenerConditionResolvedRefs),
+						Status:  kube_meta.ConditionFalse,
+						Reason:  string(gatewayapi.ListenerReasonInvalidRouteKinds),
+						Message: fmt.Sprintf("unexpected RouteGroupKind %q", metaGK.String()),
+					},
+				)
+				continue
+			}
+		}
+
 		listener.Hostname = "*"
 		if l.Hostname != nil {
 			listener.Hostname = string(*l.Hostname)

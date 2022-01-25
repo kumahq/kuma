@@ -3,7 +3,6 @@ package gateway
 import (
 	"bytes"
 	"net"
-	"strings"
 	"text/template"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -42,7 +41,7 @@ func GatewayOnKubernetes() {
 			Image     string
 			Namespace string
 		}{
-			name, GetUniversalImage(), ClientNamespace,
+			name, Config.GetUniversalImage(), ClientNamespace,
 		}
 
 		out := &bytes.Buffer{}
@@ -80,36 +79,21 @@ spec:
 		)
 	}
 
-	SetupCluster := func(setup *ClusterSetup) {
-		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		Expect(setup.Setup(cluster)).To(Succeed())
-
-		out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), cluster.GetKubectlOptions(),
-			"api-resources", "--api-group=kuma.io", "--output=name")
-		Expect(err).To(Succeed())
-
-		// If the GatewayInstances CRD is installed, we can assume
-		// that kuma-cp is built with support for builtin Gateways.
-		// It's not a perfect test (the kumactl and kuma-cp builds
-		// could be out of sync), but it ought to be reliable in CI.
-		if !strings.Contains(out, "gatewayinstances.kuma.io") {
-			Skip("kuma-cp builtin Gateway support is not enabled")
-		}
-	}
-
 	// DeployCluster creates a Kuma cluster on Kubernetes using the
 	// provided options, installing an echo service as well as a
 	// gateway and a client container to send HTTP requests.
 	DeployCluster := func(opt ...KumaDeploymentOption) {
-		opt = append(opt, WithVerbose())
+		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+		opt = append(opt, WithVerbose(), WithCtlOpts(map[string]string{"--experimental-gateway": "true"}))
 
-		SetupCluster(NewClusterSetup().
+		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, opt...)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(Namespace(ClientNamespace)).
 			Install(EchoServerApp("echo-server")).
-			Install(GatewayClientApp("gateway-client")),
-		)
+			Install(GatewayClientApp("gateway-client")).
+			Setup(cluster)
+		Expect(err).ToNot(HaveOccurred())
 	}
 
 	// GatewayAddress find the address of the gateway instance service named instanceName.
@@ -229,7 +213,7 @@ spec:
 
 	Context("when mTLS is disabled", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaK8sDeployOpts...)
+			DeployCluster()
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -241,7 +225,7 @@ spec:
 
 	Context("when mTLS is enabled", func() {
 		BeforeEach(func() {
-			DeployCluster(append(KumaK8sDeployOpts, OptEnableMeshMTLS)...)
+			DeployCluster(OptEnableMeshMTLS)
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -270,7 +254,7 @@ spec:
 
 	Context("when a rate limit is configured", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaK8sDeployOpts...)
+			DeployCluster()
 		})
 
 		JustBeforeEach(func() {

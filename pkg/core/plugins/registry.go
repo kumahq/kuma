@@ -1,6 +1,8 @@
 package plugins
 
 import (
+	"sort"
+
 	"github.com/pkg/errors"
 )
 
@@ -29,7 +31,8 @@ const (
 )
 
 type Registry interface {
-	BootstrapPlugins() map[PluginName]BootstrapPlugin
+	BootstrapPlugins() []BootstrapPlugin
+	BootstrapPlugin(name PluginName) (BootstrapPlugin, error)
 	ResourceStore(name PluginName) (ResourceStorePlugin, error)
 	SecretStore(name PluginName) (SecretStorePlugin, error)
 	ConfigStore(name PluginName) (ConfigStorePlugin, error)
@@ -103,8 +106,23 @@ func (r *registry) RuntimePlugins() map[PluginName]RuntimePlugin {
 	return r.runtime
 }
 
-func (r *registry) BootstrapPlugins() map[PluginName]BootstrapPlugin {
-	return r.bootstrap
+func (r *registry) BootstrapPlugins() []BootstrapPlugin {
+	var plugins []BootstrapPlugin
+	for _, plugin := range r.bootstrap {
+		plugins = append(plugins, plugin)
+	}
+	sort.Slice(plugins, func(i, j int) bool {
+		return plugins[i].Order() < plugins[j].Order()
+	})
+	return plugins
+}
+
+func (r *registry) BootstrapPlugin(name PluginName) (BootstrapPlugin, error) {
+	if p, ok := r.bootstrap[name]; ok {
+		return p, nil
+	} else {
+		return nil, noSuchPluginError(bootstrapPlugin, name)
+	}
 }
 
 func (r *registry) AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin {

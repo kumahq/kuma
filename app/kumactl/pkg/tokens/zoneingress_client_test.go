@@ -34,7 +34,12 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 
 	BeforeEach(func() {
 		container := restful.NewContainer()
-		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}, access.NoopDpTokenAccess{}))
+		container.Add(tokens_server.NewWebservice(
+			&staticTokenIssuer{},
+			&zoneIngressStaticTokenIssuer{},
+			&zoneStaticTokenIssuer{},
+			access.NoopDpTokenAccess{},
+		))
 		server = httptest.NewServer(container.ServeMux)
 	})
 
@@ -46,7 +51,7 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 		// given
 		baseClient, err := kumactl_client.ApiServerClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
-		})
+		}, time.Second)
 		Expect(err).ToNot(HaveOccurred())
 		client := tokens.NewZoneIngressTokenClient(baseClient)
 
@@ -77,7 +82,7 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 		})
 		baseClient, err := kumactl_client.ApiServerClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
-		})
+		}, time.Second)
 		Expect(err).ToNot(HaveOccurred())
 		client := tokens.NewZoneIngressTokenClient(baseClient)
 		Expect(err).ToNot(HaveOccurred())

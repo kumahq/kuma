@@ -88,7 +88,7 @@ func (c *K8sControlPlane) PortForwardKumaCP() {
 	// There could be multiple pods still starting so pick one that's available already
 	for i := range kumaCpPods {
 		if k8s.IsPodAvailable(&kumaCpPods[i]) {
-			c.portFwd.localAPITunnel = k8s.NewTunnel(c.GetKubectlOptions(KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, kumaCPAPIPort)
+			c.portFwd.localAPITunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, 5681)
 			c.portFwd.localAPITunnel.ForwardPort(c.t)
 			return
 		}
@@ -98,18 +98,18 @@ func (c *K8sControlPlane) PortForwardKumaCP() {
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
 	return k8s.ListPods(c.t,
-		c.GetKubectlOptions(KumaNamespace),
+		c.GetKubectlOptions(Config.KumaNamespace),
 		metav1.ListOptions{
-			LabelSelector: "app=" + KumaServiceName,
+			LabelSelector: "app=" + Config.KumaServiceName,
 		},
 	)
 }
 
 func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
 	return k8s.ListServices(c.t,
-		c.GetKubectlOptions(KumaNamespace),
+		c.GetKubectlOptions(Config.KumaNamespace),
 		metav1.ListOptions{
-			FieldSelector: "metadata.name=" + KumaGlobalZoneSyncServiceName,
+			FieldSelector: "metadata.name=" + Config.KumaGlobalZoneSyncServiceName,
 		},
 	)
 }
@@ -190,7 +190,7 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 
 func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
-		sec, err := k8s.GetSecretE(c.t, c.GetKubectlOptions(KumaNamespace), "admin-user-token")
+		sec, err := k8s.GetSecretE(c.t, c.GetKubectlOptions(Config.KumaNamespace), "admin-user-token")
 		if err != nil {
 			return "", err
 		}
@@ -231,12 +231,12 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 	// As EKS and AWS generally returns dns records of load balancers instead of
 	//  IP addresses, accessing this data (hostname) was only tested there,
 	//  so the env var was created for that purpose
-	if UseLoadBalancer() {
+	if Config.UseLoadBalancer {
 		svc := c.GetKumaCPSvcs()[0]
 
 		address := svc.Status.LoadBalancer.Ingress[0].IP
 
-		if UseHostnameInsteadOfIP() {
+		if Config.UseHostnameInsteadOfIP {
 			address = svc.Status.LoadBalancer.Ingress[0].Hostname
 		}
 

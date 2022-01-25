@@ -44,7 +44,7 @@ selectors:
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
+			Install(Kuma(core.Standalone)).
 			Install(tracing.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -66,7 +66,7 @@ selectors:
 		if ShouldSkipCleanup() {
 			return
 		}
-		Expect(cluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
+		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 

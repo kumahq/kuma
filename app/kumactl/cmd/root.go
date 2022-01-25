@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -77,6 +78,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&root.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.OffLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	cmd.PersistentFlags().BoolVar(&args.noConfig, "no-config", false, "if set no config file and config directory will be created")
+	cmd.PersistentFlags().DurationVar(&root.Args.ApiTimeout, "api-timeout", time.Minute, "the timeout for api calls. It includes connection time, any redirects, and reading the response body. A timeout of zero means no timeout")
 
 	// sub-commands
 	cmd.AddCommand(apply.NewApplyCmd(root))
