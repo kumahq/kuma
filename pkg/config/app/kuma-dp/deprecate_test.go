@@ -23,7 +23,7 @@ var _ = Describe("Deprecate", func() {
 		kumadp.PrintDeprecations(&cfg, &stringBuilder)
 
 		// then
-		expected := `Deprecated: Dataplane.AdminPort. Please set adminPort directly in Data Plane Proxy resource, in the field 'networking.admin.port'.
+		expected := `Deprecated: Dataplane.AdminPort. Please set adminPort directly in Dataplane resource, in the field 'networking.admin.port'.
 `
 		Expect(stringBuilder.String()).To(Equal(expected))
 	})
@@ -40,7 +40,7 @@ var _ = Describe("Deprecate", func() {
 		kumadp.PrintDeprecations(&cfg, &stringBuilder)
 
 		// then
-		expected := `Deprecated: KUMA_DATAPLANE_ADMIN_PORT. Please set adminPort directly in Data Plane Proxy resource, in the field 'networking.admin.port'.
+		expected := `Deprecated: KUMA_DATAPLANE_ADMIN_PORT. Please set adminPort directly in Dataplane resource, in the field 'networking.admin.port'.
 `
 		Expect(stringBuilder.String()).To(Equal(expected))
 	})
