@@ -33,6 +33,10 @@ func DefaultInstallCrdsContext() InstallCrdsContext {
 				return strings.Contains(file.FullPath, "crds/")
 			})
 
+			if !args.ExperimentalGateway {
+				crdFiles = crdFiles.Filter(ExcludeGatewayCRDs)
+			}
+
 			return crdFiles, nil
 		},
 	}
