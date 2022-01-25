@@ -31,7 +31,7 @@ var _ = Describe("NamespaceReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Name:      "non-system-ns-with-sidecar-injection",
 					Namespace: "non-system-ns-with-sidecar-injection",
-					Annotations: map[string]string{
+					Labels: map[string]string{
 						"kuma.io/sidecar-injection": "enabled",
 					},
 				},

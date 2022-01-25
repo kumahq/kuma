@@ -4,8 +4,9 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: kuma-metrics
-  annotations:
+  labels:
     kuma.io/sidecar-injection: enabled
+  annotations:
     kuma.io/mesh: default
 ---
 apiVersion: v1
@@ -766,7 +767,7 @@ spec:
       labels:
         component: "node-exporter"
         app: prometheus
-      annotations:
+      labels:
         kuma.io/sidecar-injection: "disabled" # disabled for now, injecting DP crashes K8S cluster
     spec:
       serviceAccountName: prometheus-node-exporter
