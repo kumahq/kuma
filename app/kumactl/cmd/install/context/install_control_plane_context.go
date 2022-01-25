@@ -97,8 +97,21 @@ func DefaultInstallCpContext() InstallCpContext {
 			Ingress_service_type:                    "LoadBalancer",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
-			return data.ReadFiles(deployments.KumaChartFS())
+			files, err := data.ReadFiles(deployments.KumaChartFS())
+			if err != nil {
+				return nil, err
+			}
+			if !args.ExperimentalGateway {
+				files = files.Filter(ExcludeGatewayCRDs)
+			}
+			return files, nil
 		},
 		HELMValuesPrefix: "",
 	}
+}
+
+func ExcludeGatewayCRDs(file data.File) bool {
+	return file.Name != "kuma.io_gateways.yaml" &&
+		file.Name != "kuma.io_gatewayroutes.yaml" &&
+		file.Name != "kuma.io_gatewayinstances.yaml"
 }

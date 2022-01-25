@@ -60,10 +60,17 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, nil
 	}
 
-	injected, _, err := metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+	injectedLabel, _, err := metadata.Annotations(ns.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+	if err != nil {
+		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection label on namespace %s", ns.Name)
+	}
+	// support annotations for backwards compatibility
+	injectedAnnotation := false
+	injectedAnnotation, _, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection annotation on namespace %s", ns.Name)
 	}
+	injected := injectedLabel || injectedAnnotation
 	if injected {
 		log.Info("creating NetworkAttachmentDefinition for CNI support")
 		err := r.createOrUpdateNetworkAttachmentDefinition(ctx, req.Name)
