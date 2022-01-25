@@ -12,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config/core"
-	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 )
@@ -79,13 +78,6 @@ This command requires that the KUBECONFIG environment is set`,
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
 			}
-
-			scheme, err := bootstrap_k8s.NewScheme()
-			if err != nil {
-				return err
-			}
-
-			templateFiles = filterHelmTemplates(scheme, templateFiles)
 
 			renderedFiles, err := renderHelmFiles(templateFiles, args, args.Namespace, ctx.HELMValuesPrefix, kubeClientConfig)
 			if err != nil {

@@ -1,6 +1,8 @@
 package context
 
 import (
+	"strings"
+
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/deployments"
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -97,8 +99,19 @@ func DefaultInstallCpContext() InstallCpContext {
 			Ingress_service_type:                    "LoadBalancer",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
-			return data.ReadFiles(deployments.KumaChartFS())
+			files, err := data.ReadFiles(deployments.KumaChartFS())
+			if err != nil {
+				return nil, err
+			}
+			if !args.ExperimentalGateway {
+				files = files.Filter(ExcludeGatewayCRDs)
+			}
+			return files, nil
 		},
 		HELMValuesPrefix: "",
 	}
+}
+
+func ExcludeGatewayCRDs(file data.File) bool {
+	return !strings.HasPrefix(file.Name, "kuma.io_gateway")
 }
