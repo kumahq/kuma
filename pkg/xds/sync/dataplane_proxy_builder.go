@@ -45,6 +45,8 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, meshContext xd
 		return nil, err
 	}
 
+	matchedPolicies.TrafficRoutes = routing.TrafficRoutes
+
 	proxy := &xds.Proxy{
 		Id:         xds.FromResourceKey(key),
 		APIVersion: p.APIVersion,
