@@ -16,14 +16,18 @@ Kuma always generate the corresponding metrics.
 
 ### Kubernetes
 
-Please migrate your `kuma.io/sidecar-injection` annotations to labels.
-The new version still supports annotation, but to have a guarantee that applications can only start with sidecar, you must use label instead of annotation.
+- Please migrate your `kuma.io/sidecar-injection` annotations to labels.
+  The new version still supports annotation, but to have a guarantee that applications can only start with sidecar, you must use label instead of annotation.
+- Configuration parameter `kuma.runtime.kubernetes.injector.sidecarContainer.adminPort` and environment variable `KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT`
+  have been deprecated in favor of `kuma.bootstrapServer.params.adminPort` and `KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT`.
 
 ### Universal
 
 - We removed support for old Ingress (`Dataplane#networking.ingress`) from pre 1.2 days.
   If you are still using it, please migrate to `ZoneIngress` first (see `Upgrade to 1.2.0` section).
 - You can't use 0.0.0.0 or :: in `networking.address` most of the time using loopback is what people intended.
+- Kuma DP flag `--admin-port` and environment variable `KUMA_DATAPLANE_ADMIN_PORT` have been deprecated, 
+  admin port should be specified in DPP or ZoneIngress resources.
 
 ## Upgrade to `1.4.0`
 
