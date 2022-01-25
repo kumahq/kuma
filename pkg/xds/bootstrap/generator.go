@@ -116,11 +116,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 				params.AdminPort = b.defaultAdminPort
 			}
 		}
-
-		// The admin port in kuma-dp is always bound to 127.0.0.1
-		if zoneIngress.UsesInboundInterface(core_mesh.IPv4Loopback, params.AdminPort) {
-			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", params.AdminPort)
-		}
 	case mesh_proto.DataplaneProxyType, "":
 		params.HdsEnabled = b.hdsEnabled
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
@@ -138,14 +133,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			} else {
 				params.AdminPort = b.defaultAdminPort
 			}
-		}
-
-		// The admin port in kuma-dp is always bound to 127.0.0.1
-		if dataplane.UsesInboundInterface(core_mesh.IPv4Loopback, params.AdminPort) {
-			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", params.AdminPort)
-		}
-		if dataplane.UsesOutboundInterface(core_mesh.IPv4Loopback, params.AdminPort) {
-			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", params.AdminPort)
 		}
 	default:
 		return nil, errors.Errorf("unknown proxy type %v", params.ProxyType)
