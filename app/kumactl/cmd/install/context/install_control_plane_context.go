@@ -1,8 +1,6 @@
 package context
 
 import (
-	"strings"
-
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/deployments"
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -113,5 +111,7 @@ func DefaultInstallCpContext() InstallCpContext {
 }
 
 func ExcludeGatewayCRDs(file data.File) bool {
-	return !strings.HasPrefix(file.Name, "kuma.io_gateway")
+	return file.Name != "kuma.io_gateways.yaml" &&
+		file.Name != "kuma.io_gatewayroutes.yaml" &&
+		file.Name != "kuma.io_gatewayinstances.yaml"
 }
