@@ -6,6 +6,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/options.proto";
 import "mesh/v1alpha1/metrics.proto";
+import "mesh/v1alpha1/admin.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
@@ -150,11 +151,6 @@ message Dataplane {
       // redirected.
       uint32 redirect_port_inbound_v6 = 4
           [ (validate.rules).uint32 = {lte : 65535} ];
-    }
-
-    message Admin {
-      // Port on which Envoy Admin API server will be listening
-      uint32 port = 1;
     }
 
     // Gateway describes configuration of gateway of the dataplane.

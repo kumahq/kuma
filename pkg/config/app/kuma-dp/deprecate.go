@@ -6,7 +6,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 )
 
-const DeprecateAdminPortMsg = "Please set adminPort directly in Data Plane Proxy resource, in the field 'networking.admin.port'."
+const DeprecateAdminPortMsg = "Please set adminPort directly in Dataplane resource, in the field 'networking.admin.port'."
 
 var deprecations = []config.Deprecation{
 	{

@@ -130,7 +130,7 @@ var _ = Describe("Bootstrap Server", func() {
 							},
 						},
 					},
-					Admin: &mesh_proto.Dataplane_Networking_Admin{},
+					Admin: &mesh_proto.Admin{},
 				},
 			},
 		}

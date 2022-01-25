@@ -98,6 +98,22 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		params.ProxyType = string(mesh_proto.DataplaneProxyType)
 	}
 
+	setAdminPort := func(adminPortFromResource uint32) {
+		if adminPortFromResource != 0 {
+			params.AdminPort = adminPortFromResource
+		} else {
+			if request.AdminPort != 0 {
+				// Backwards compatibility, Inspect API may not work properly if the port
+				// was set through the '--admin-port' flag. It affects only ability to get
+				// config_dump through the Inspect API and it's done that way to avoid updating
+				// DPP or ZoneIngress resources on the fly.
+				params.AdminPort = request.AdminPort
+			} else {
+				params.AdminPort = b.defaultAdminPort
+			}
+		}
+	}
+
 	switch mesh_proto.ProxyType(params.ProxyType) {
 	case mesh_proto.IngressProxyType:
 		zoneIngress, err := b.zoneIngressFor(ctx, request, proxyId)
@@ -106,16 +122,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 
 		params.Service = "ingress"
-		if adminPort := zoneIngress.Spec.GetNetworking().GetAdmin().GetPort(); adminPort != 0 {
-			params.AdminPort = adminPort
-		} else {
-			if request.AdminPort != 0 {
-				// backwards compatibility, Inspect API may not work properly
-				params.AdminPort = request.AdminPort
-			} else {
-				params.AdminPort = b.defaultAdminPort
-			}
-		}
+		setAdminPort(zoneIngress.Spec.GetNetworking().GetAdmin().GetPort())
 	case mesh_proto.DataplaneProxyType, "":
 		params.HdsEnabled = b.hdsEnabled
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
@@ -124,16 +131,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 
 		params.Service = dataplane.Spec.GetIdentifyingService()
-		if adminPort := dataplane.Spec.GetNetworking().GetAdmin().GetPort(); adminPort != 0 {
-			params.AdminPort = adminPort
-		} else {
-			if request.AdminPort != 0 {
-				// backwards compatibility, Inspect API may not work properly
-				params.AdminPort = request.AdminPort
-			} else {
-				params.AdminPort = b.defaultAdminPort
-			}
-		}
+		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 	default:
 		return nil, errors.Errorf("unknown proxy type %v", params.ProxyType)
 	}

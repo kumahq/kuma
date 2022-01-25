@@ -215,7 +215,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if err != nil {
 				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 			}
-			runLog.Info("receive bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
+			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 
 			opts.BootstrapConfig = bootstrapBytes
 
