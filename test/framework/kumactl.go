@@ -27,19 +27,11 @@ type KumactlOptions struct {
 }
 
 func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*KumactlOptions, error) {
-	kumactl := GetKumactlBin()
-
-	_, err := os.Stat(kumactl)
-	if kumactl == "" || os.IsNotExist(err) {
-		return nil, errors.Wrapf(err, "unable to find kumactl, please supply a valid KUMACTLBIN environment variable")
-	}
-
 	configPath := os.ExpandEnv(fmt.Sprintf(defaultKumactlConfig, cpname))
-
 	return &KumactlOptions{
 		t:          t,
 		CPName:     cpname,
-		Kumactl:    kumactl,
+		Kumactl:    Config.KumactlBin,
 		ConfigPath: configPath,
 		Verbose:    verbose,
 		Env:        map[string]string{},
@@ -147,7 +139,7 @@ func (k *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 		cmd = append(cmd, "--zone", k.CPName)
 		fallthrough
 	case core.Global:
-		if !UseLoadBalancer() {
+		if !Config.UseLoadBalancer {
 			cmd = append(cmd, "--use-node-port")
 		}
 	}

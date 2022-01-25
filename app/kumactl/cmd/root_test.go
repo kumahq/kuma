@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -36,7 +37,7 @@ var _ = Describe("kumactl root cmd", func() {
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 					return nil, nil
 				},
 				Registry:           registry.NewTypeRegistry(),
@@ -73,7 +74,7 @@ currentContext: local
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 					return nil, nil
 				},
 				Registry:           registry.NewTypeRegistry(),

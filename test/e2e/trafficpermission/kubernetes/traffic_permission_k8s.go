@@ -14,7 +14,6 @@ import (
 
 func TrafficPermission() {
 	var k8sCluster Cluster
-	var optsKubernetes = KumaK8sDeployOpts
 
 	E2EBeforeSuite(func() {
 		k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
@@ -22,12 +21,12 @@ func TrafficPermission() {
 
 		k8sCluster = k8sClusters.GetCluster(Kuma1)
 
-		Expect(Kuma(config_core.Standalone, optsKubernetes...)(k8sCluster)).To(Succeed())
+		Expect(Kuma(config_core.Standalone)(k8sCluster)).To(Succeed())
 		Expect(k8sCluster.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterSuite(func() {
-		Expect(k8sCluster.DeleteKuma(optsKubernetes...)).To(Succeed())
+		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})
 
@@ -61,7 +60,7 @@ func TrafficPermission() {
 		Expect(pods).To(HaveLen(1))
 		err := k8s.RunKubectlE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(), "delete", "pod", pods[0].GetName(), "-n", pods[0].GetNamespace())
 		Expect(err).ToNot(HaveOccurred())
-		Expect(k8sCluster.(*K8sCluster).WaitApp(KumaServiceName, KumaNamespace, 1)).To(Succeed())
+		Expect(k8sCluster.(*K8sCluster).WaitApp(Config.KumaServiceName, Config.KumaNamespace, 1)).To(Succeed())
 	}
 
 	It("should not create deleted default traffic permission after Kuma CP restart", func() {

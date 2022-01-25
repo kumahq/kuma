@@ -1,8 +1,6 @@
 package zone
 
 import (
-	"strings"
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -16,11 +14,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	"github.com/kumahq/kuma/pkg/kds/mux"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
@@ -31,9 +31,10 @@ var (
 func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multizone.Zone.Name
 	reg := registry.Global()
+	kdsCtx := rt.KDSContext()
 	kdsServer, err := kds_server.New(kdsZoneLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByZone)),
 		zone, rt.Config().Multizone.Zone.KDS.RefreshInterval,
-		rt.KDSContext().ZoneProvidedFilter, false)
+		kdsCtx.ZoneProvidedFilter, reconcile.NoopResourceMapper, false)
 	if err != nil {
 		return err
 	}
@@ -104,7 +105,11 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 			}
 			if rs.GetItemType() == system.GlobalSecretType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					return strings.HasPrefix(r.GetMeta().GetName(), zoneingress.ZoneIngressSigningKeyPrefix)
+					return util.ResourceNameHasAtLeastOneOfPrefixes(
+						r.GetMeta().GetName(),
+						zoneingress.ZoneIngressSigningKeyPrefix,
+						zone_tokens.SigningKeyPrefix,
+					)
 				}))
 			}
 			return syncer.Sync(rs)

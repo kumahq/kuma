@@ -62,7 +62,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	var err error
 	if t.ingressNamespace == "" {
 		yaml, err = cluster.GetKumactlOptions().RunKumactlAndGetOutputV(framework.Verbose, "install", "gateway", "kong")
-		t.ingressNamespace = framework.DefaultGatewayNamespace
+		t.ingressNamespace = framework.Config.DefaultGatewayNamespace
 	} else {
 		yaml, err = cluster.GetKumactlOptions().RunKumactlAndGetOutputV(framework.Verbose, "install", "gateway", "kong", "--namespace", t.ingressNamespace)
 	}

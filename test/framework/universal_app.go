@@ -230,7 +230,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 		opts.OtherOptions = append(opts.OtherOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
 	}
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker(isipv6)...)
-	container, err := docker.RunAndGetIDE(t, GetUniversalImage(), &opts)
+	container, err := docker.RunAndGetIDE(t, Config.GetUniversalImage(), &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 
 	retry.DoWithRetry(app.t, "get IP "+app.container, DefaultRetries, DefaultTimeout,
 		func() (string, error) {
-			app.ip, err = app.getIP(IsIPv6())
+			app.ip, err = app.getIP(Config.IPV6)
 			if err != nil {
 				return "Unable to get Container IP", err
 			}

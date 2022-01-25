@@ -51,7 +51,7 @@ conf:
 		universalCluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
+			Install(Kuma(core.Standalone)).
 			Install(YamlUniversal(faultInjection)).
 			Setup(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -74,7 +74,7 @@ conf:
 		if ShouldSkipCleanup() {
 			return
 		}
-		Expect(universalCluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
+		Expect(universalCluster.DeleteKuma()).To(Succeed())
 		Expect(universalCluster.DismissCluster()).To(Succeed())
 	})
 

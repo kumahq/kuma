@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
@@ -43,13 +44,27 @@ func (z *zoneIngressStaticTokenIssuer) Generate(ctx context.Context, identity zo
 	return fmt.Sprintf("token-for-%s", identity.Zone), nil
 }
 
+type zoneStaticTokenIssuer struct {
+}
+
+var _ zone.TokenIssuer = &zoneStaticTokenIssuer{}
+
+func (z *zoneStaticTokenIssuer) Generate(ctx context.Context, identity zone.Identity, validFor time.Duration) (zone.Token, error) {
+	return fmt.Sprintf("token-for-%s", identity.Zone), nil
+}
+
 var _ = Describe("Dataplane Token Webservice", func() {
 
 	const credentials = "test"
 	var url string
 
 	BeforeEach(func() {
-		ws := server.NewWebservice(&staticTokenIssuer{credentials}, &zoneIngressStaticTokenIssuer{}, &access.NoopDpTokenAccess{})
+		ws := server.NewWebservice(
+			&staticTokenIssuer{credentials},
+			&zoneIngressStaticTokenIssuer{},
+			&zoneStaticTokenIssuer{},
+			&access.NoopDpTokenAccess{},
+		)
 
 		container := restful.NewContainer()
 		container.Add(ws)

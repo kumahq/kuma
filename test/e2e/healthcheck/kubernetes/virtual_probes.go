@@ -16,7 +16,6 @@ import (
 
 func VirtualProbes() {
 	var k8sCluster Cluster
-	var optsKubernetes = KumaK8sDeployOpts
 
 	E2EBeforeSuite(func() {
 		k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
@@ -24,14 +23,14 @@ func VirtualProbes() {
 
 		k8sCluster = k8sClusters.GetCluster(Kuma1)
 
-		Expect(Kuma(config_core.Standalone, optsKubernetes...)(k8sCluster)).To(Succeed())
+		Expect(Kuma(config_core.Standalone)(k8sCluster)).To(Succeed())
 		Expect(NamespaceWithSidecarInjection(TestNamespace)(k8sCluster)).To(Succeed())
 		Expect(k8sCluster.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterSuite(func() {
 		Expect(k8sCluster.DeleteNamespace(TestNamespace)).To(Succeed())
-		Expect(k8sCluster.DeleteKuma(optsKubernetes...)).To(Succeed())
+		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})
 

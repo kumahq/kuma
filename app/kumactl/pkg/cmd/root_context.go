@@ -30,13 +30,14 @@ import (
 type RootArgs struct {
 	ConfigFile string
 	Mesh       string
+	ApiTimeout time.Duration
 }
 
 type RootRuntime struct {
 	Config                       config_proto.Configuration
 	Now                          func() time.Time
 	AuthnPlugins                 map[string]plugins.AuthnPlugin
-	NewBaseAPIServerClient       func(*config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error)
+	NewBaseAPIServerClient       func(*config_proto.ControlPlaneCoordinates_ApiServer, time.Duration) (util_http.Client, error)
 	NewResourceStore             func(util_http.Client) core_store.ResourceStore
 	NewDataplaneOverviewClient   func(util_http.Client) kumactl_resources.DataplaneOverviewClient
 	NewZoneIngressOverviewClient func(util_http.Client) kumactl_resources.ZoneIngressOverviewClient
@@ -44,6 +45,7 @@ type RootRuntime struct {
 	NewServiceOverviewClient     func(util_http.Client) kumactl_resources.ServiceOverviewClient
 	NewDataplaneTokenClient      func(util_http.Client) tokens.DataplaneTokenClient
 	NewZoneIngressTokenClient    func(util_http.Client) tokens.ZoneIngressTokenClient
+	NewZoneTokenClient           func(util_http.Client) tokens.ZoneTokenClient
 	NewAPIServerClient           func(util_http.Client) kumactl_resources.ApiServerClient
 	Registry                     registry.TypeRegistry
 }
@@ -90,6 +92,7 @@ func DefaultRootContext() *RootContext {
 			NewServiceOverviewClient:     kumactl_resources.NewServiceOverviewClient,
 			NewDataplaneTokenClient:      tokens.NewDataplaneTokenClient,
 			NewZoneIngressTokenClient:    tokens.NewZoneIngressTokenClient,
+			NewZoneTokenClient:           tokens.NewZoneTokenClient,
 			NewAPIServerClient:           kumactl_resources.NewAPIServerClient,
 		},
 		InstallCpContext:                    install_context.DefaultInstallCpContext(),
@@ -155,7 +158,7 @@ func (rc *RootContext) BaseAPIServerClient() (util_http.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client, err := rc.Runtime.NewBaseAPIServerClient(controlPlane.Coordinates.ApiServer)
+	client, err := rc.Runtime.NewBaseAPIServerClient(controlPlane.Coordinates.ApiServer, rc.Args.ApiTimeout)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create a client for Control Plane %q", controlPlane.Name)
 	}
@@ -228,6 +231,14 @@ func (rc *RootContext) CurrentZoneIngressTokenClient() (tokens.ZoneIngressTokenC
 		return nil, err
 	}
 	return rc.Runtime.NewZoneIngressTokenClient(client), nil
+}
+
+func (rc *RootContext) CurrentZoneTokenClient() (tokens.ZoneTokenClient, error) {
+	client, err := rc.BaseAPIServerClient()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewZoneTokenClient(client), nil
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {

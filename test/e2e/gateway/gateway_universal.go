@@ -167,7 +167,7 @@ conf:
 
 	Context("when mTLS is disabled", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaUniversalDeployOpts...)
+			DeployCluster()
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -178,7 +178,7 @@ conf:
 
 	Context("when mTLS is enabled", func() {
 		BeforeEach(func() {
-			DeployCluster(append(KumaUniversalDeployOpts, OptEnableMeshMTLS)...)
+			DeployCluster(OptEnableMeshMTLS)
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -197,10 +197,9 @@ conf:
 
 	Context("when targeting an external service", func() {
 		BeforeEach(func() {
-			opt := append(KumaUniversalDeployOpts, WithVerbose(), WithEnv("KUMA_EXPERIMENTAL_GATEWAY", "true"))
 			cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 			err := NewClusterSetup().
-				Install(Kuma(config_core.Standalone, opt...)).
+				Install(Kuma(config_core.Standalone, WithVerbose(), WithEnv("KUMA_EXPERIMENTAL_GATEWAY", "true"))).
 				Install(ExternalServerUniversal("external-echo")).
 				Install(GatewayClientApp("gateway-client")).
 				Install(GatewayProxyUniversal("gateway-proxy")).
@@ -255,7 +254,7 @@ networking:
 
 	Context("when targeting a HTTPS gateway", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaUniversalDeployOpts...)
+			DeployCluster()
 		})
 
 		JustBeforeEach(func() {
@@ -316,7 +315,7 @@ data: %s
 
 	Context("when a rate limit is configured", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaUniversalDeployOpts...)
+			DeployCluster()
 		})
 
 		JustBeforeEach(func() {

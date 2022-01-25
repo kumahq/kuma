@@ -23,8 +23,6 @@ func ZoneAndGlobalWithHelmChart() {
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, zone ControlPlane
-	var optsGlobal, optsZone = KumaK8sDeployOpts, KumaZoneK8sDeployOpts
-
 	BeforeEach(func() {
 		var err error
 		clusters, err = NewK8sClusters(
@@ -43,26 +41,25 @@ func ZoneAndGlobalWithHelmChart() {
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
-		optsGlobal = append(optsGlobal,
-			WithInstallationMode(HelmInstallationMode),
-			WithHelmReleaseName(releaseName))
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Global, optsGlobal...)).
+			Install(Kuma(core.Global,
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmReleaseName(releaseName),
+			)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 
 		global = c1.GetKuma()
 		Expect(global).ToNot(BeNil())
 
-		optsZone = append(optsZone,
-			WithInstallationMode(HelmInstallationMode),
-			WithHelmReleaseName(releaseName),
-			WithGlobalAddress(global.GetKDSServerAddress()),
-			WithHelmOpt("ingress.enabled", "true"))
-
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone...)).
+			Install(Kuma(core.Zone,
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmReleaseName(releaseName),
+				WithGlobalAddress(global.GetKDSServerAddress()),
+				WithHelmOpt("ingress.enabled", "true"),
+			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Setup(c2)
@@ -99,8 +96,8 @@ func ZoneAndGlobalWithHelmChart() {
 		// tear down apps
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		// tear down Kuma
-		Expect(c1.DeleteKuma(optsGlobal...)).To(Succeed())
-		Expect(c2.DeleteKuma(optsZone...)).To(Succeed())
+		Expect(c1.DeleteKuma()).To(Succeed())
+		Expect(c2.DeleteKuma()).To(Succeed())
 		// tear down clusters
 		Expect(clusters.DismissCluster()).To(Succeed())
 	})

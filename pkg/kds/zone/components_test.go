@@ -75,7 +75,7 @@ var _ = Describe("Zone Sync", func() {
 
 		kdsCtx := kds_context.DefaultContext(manager.NewResourceManager(globalStore), "global")
 		wg.Add(1)
-		serverStream := setup.StartServer(globalStore, wg, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter)
+		serverStream := setup.StartServer(globalStore, wg, "global", registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kdsCtx.GlobalProvidedFilter, kdsCtx.GlobalResourceMapper)
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)

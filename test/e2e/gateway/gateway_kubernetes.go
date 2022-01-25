@@ -41,7 +41,7 @@ func GatewayOnKubernetes() {
 			Image     string
 			Namespace string
 		}{
-			name, GetUniversalImage(), ClientNamespace,
+			name, Config.GetUniversalImage(), ClientNamespace,
 		}
 
 		out := &bytes.Buffer{}
@@ -84,7 +84,7 @@ spec:
 	// gateway and a client container to send HTTP requests.
 	DeployCluster := func(opt ...KumaDeploymentOption) {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		opt = append(opt, WithVerbose(), WithCtlOpt("--experimental-gateway", "true"))
+		opt = append(opt, WithVerbose(), WithCtlOpts(map[string]string{"--experimental-gateway": "true"}))
 
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, opt...)).
@@ -213,7 +213,7 @@ spec:
 
 	Context("when mTLS is disabled", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaK8sDeployOpts...)
+			DeployCluster()
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -225,7 +225,7 @@ spec:
 
 	Context("when mTLS is enabled", func() {
 		BeforeEach(func() {
-			DeployCluster(append(KumaK8sDeployOpts, OptEnableMeshMTLS)...)
+			DeployCluster(OptEnableMeshMTLS)
 		})
 
 		It("should proxy simple HTTP requests", func() {
@@ -254,7 +254,7 @@ spec:
 
 	Context("when a rate limit is configured", func() {
 		BeforeEach(func() {
-			DeployCluster(KumaK8sDeployOpts...)
+			DeployCluster()
 		})
 
 		JustBeforeEach(func() {

@@ -13,7 +13,6 @@ import (
 
 func ResilienceMultizoneUniversal() {
 	var global, zone1 Cluster
-	var optsGlobal, optsZone1 = KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -24,7 +23,7 @@ func ResilienceMultizoneUniversal() {
 		// Global
 		global = clusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
-			Install(Kuma(core.Global, optsGlobal...)).
+			Install(Kuma(core.Global)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -34,10 +33,8 @@ func ResilienceMultizoneUniversal() {
 
 		// Cluster 1
 		zone1 = clusters.GetCluster(Kuma2)
-		optsZone1 = append(optsZone1, WithGlobalAddress(globalCP.GetKDSServerAddress()))
-
 		err = NewClusterSetup().
-			Install(Kuma(core.Zone, optsZone1...)).
+			Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone1.VerifyKuma()
@@ -45,12 +42,12 @@ func ResilienceMultizoneUniversal() {
 	})
 
 	E2EAfterEach(func() {
-		err := zone1.DeleteKuma(optsZone1...)
+		err := zone1.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = zone1.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.DeleteKuma(optsGlobal...)
+		err = global.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = global.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())

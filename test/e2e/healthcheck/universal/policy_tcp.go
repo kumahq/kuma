@@ -48,7 +48,7 @@ conf:
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Verbose)
 
 		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone, KumaUniversalDeployOpts...)).
+			Install(Kuma(config_core.Standalone)).
 			Install(YamlUniversal(healthCheck("foo", "bar"))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -73,7 +73,7 @@ conf:
 		if ShouldSkipCleanup() {
 			return
 		}
-		Expect(cluster.DeleteKuma(KumaUniversalDeployOpts...)).To(Succeed())
+		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
