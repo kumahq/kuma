@@ -4,4 +4,3 @@ In addition to the `kumactl install` command, Kuma offers a set of Helm charts t
 Kuma on Kubernetes.
 
 These charts are compatible with Helm 3+.
-

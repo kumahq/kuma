@@ -10,6 +10,12 @@ metadata:
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
+{{- with .Values.global.imagePullSecrets }}
+imagePullSecrets:
+  {{- range . }}
+  - name: {{ . | quote }}
+  {{- end }}
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
