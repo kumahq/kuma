@@ -27,7 +27,7 @@ Kuma always generate the corresponding metrics.
   If you are still using it, please migrate to `ZoneIngress` first (see `Upgrade to 1.2.0` section).
 - You can't use 0.0.0.0 or :: in `networking.address` most of the time using loopback is what people intended.
 - Kuma DP flag `--admin-port` and environment variable `KUMA_DATAPLANE_ADMIN_PORT` have been deprecated, 
-  admin port should be specified in DPP or ZoneIngress resources.
+  admin port should be specified in Dataplane or ZoneIngress resources.
 
 ## Upgrade to `1.4.0`
 

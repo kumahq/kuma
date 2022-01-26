@@ -64,7 +64,7 @@ func (p *PodConverter) IngressFor(
 		return err
 	}
 	if exist {
-		zoneIngress.Networking.Admin = &mesh_proto.Admin{Port: adminPort}
+		zoneIngress.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: adminPort}
 	}
 
 	return nil

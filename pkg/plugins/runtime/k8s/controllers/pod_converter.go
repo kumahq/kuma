@@ -143,7 +143,7 @@ func (p *PodConverter) dataplaneFor(
 		return nil, err
 	}
 	if exist {
-		dataplane.Networking.Admin = &mesh_proto.Admin{Port: adminPort}
+		dataplane.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: adminPort}
 	}
 
 	return dataplane, nil

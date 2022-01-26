@@ -130,7 +130,7 @@ var _ = Describe("Bootstrap Server", func() {
 							},
 						},
 					},
-					Admin: &mesh_proto.Admin{},
+					Admin: &mesh_proto.EnvoyAdmin{},
 				},
 			},
 		}

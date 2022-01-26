@@ -67,7 +67,7 @@ var _ = Describe("bootstrapGenerator", func() {
 							},
 						},
 					},
-					Admin: &mesh_proto.Admin{},
+					Admin: &mesh_proto.EnvoyAdmin{},
 				},
 			},
 		}
