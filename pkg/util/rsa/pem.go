@@ -12,7 +12,7 @@ import (
 const rsaPrivateBlockType = "RSA PRIVATE KEY"
 const rsaPublicBlockType = "RSA PUBLIC KEY"
 
-func ToPEMBytes(key *rsa.PrivateKey) ([]byte, error) {
+func FromPrivateKeyToPEMBytes(key *rsa.PrivateKey) ([]byte, error) {
 	block := pem.Block{
 		Type:  rsaPrivateBlockType,
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
@@ -37,7 +37,7 @@ func FromPrivateKeyToPublicKeyPEMBytes(key *rsa.PrivateKey) ([]byte, error) {
 }
 
 func FromPrivateKeyPEMBytesToPublicKeyPEMBytes(b []byte) ([]byte, error) {
-	privateKey, err := FromPEMBytes(b)
+	privateKey, err := FromPEMBytesToPrivateKey(b)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func FromPrivateKeyPEMBytesToPublicKeyPEMBytes(b []byte) ([]byte, error) {
 	return FromPrivateKeyToPublicKeyPEMBytes(privateKey)
 }
 
-func FromPEMBytes(b []byte) (*rsa.PrivateKey, error) {
+func FromPEMBytesToPrivateKey(b []byte) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode(b)
 	if block.Type != rsaPrivateBlockType {
 		return nil, errors.Errorf("invalid key encoding %q", block.Type)
@@ -53,7 +53,20 @@ func FromPEMBytes(b []byte) (*rsa.PrivateKey, error) {
 	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }
 
-func IsPEMBytes(b []byte) bool {
+func FromPEMBytesToPublicKey(b []byte) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode(b)
+	if block.Type != rsaPublicBlockType {
+		return nil, errors.Errorf("invalid key encoding %q", block.Type)
+	}
+	return x509.ParsePKCS1PublicKey(block.Bytes)
+}
+
+func IsPrivateKeyPEMBytes(b []byte) bool {
 	block, _ := pem.Decode(b)
 	return block != nil && block.Type == rsaPrivateBlockType
+}
+
+func IsPublicKeyPEMBytes(b []byte) bool {
+	block, _ := pem.Decode(b)
+	return block != nil && block.Type == rsaPublicBlockType
 }

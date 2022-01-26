@@ -40,19 +40,3 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, identity Identity, validF
 
 	return j.issuer.Generate(ctx, claims, validFor)
 }
-
-const (
-	// TODO (bartsmykla): uncomment when Zone Token will be available for dataplanes
-	// 	and ingresses
-	// DataplaneScope string = "dataplane
-	// IngressScope string = "ingress"
-	EgressScope string = "egress"
-)
-
-var FullScope = []string{
-	// TODO (bartsmykla): uncomment when Zone Token will be available for dataplanes
-	// 	and ingresses
-	// DataplaneScope,
-	// IngressScope,
-	EgressScope,
-}

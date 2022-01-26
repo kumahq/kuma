@@ -84,6 +84,8 @@ func ZoneTag(r model.Resource) string {
 		return res.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]
 	case *mesh_proto.ZoneIngress:
 		return res.GetZone()
+	case *mesh_proto.ZoneEgress:
+		return res.GetZone()
 	default:
 		return ""
 	}

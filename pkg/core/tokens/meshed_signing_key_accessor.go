@@ -35,7 +35,7 @@ func (s *meshedSigningKeyAccessor) GetPublicKey(ctx context.Context, serialNumbe
 	if err != nil {
 		return nil, err
 	}
-	key, err := keyBytesToRsaKey(keyBytes)
+	key, err := keyBytesToRsaPrivateKey(keyBytes)
 	if err != nil {
 		return nil, err
 	}

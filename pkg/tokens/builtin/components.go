@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -44,16 +45,22 @@ func NewDataplaneTokenValidator(resManager manager.ResourceManager) issuer.Valid
 func NewZoneIngressTokenValidator(resManager manager.ResourceManager) zoneingress.Validator {
 	return zoneingress.NewValidator(
 		tokens.NewValidator(
-			tokens.NewSigningKeyAccessor(resManager, zoneingress.ZoneIngressSigningKeyPrefix),
+			tokens.NewSigningKeyAccessor(resManager, zoneingress.ZoneIngressSigningKeyPrefix, false),
 			tokens.NewRevocations(resManager, zoneingress.ZoneIngressTokenRevocationsGlobalSecretKey),
 		),
 	)
 }
 
-func NewZoneTokenValidator(resManager manager.ResourceManager) zone.Validator {
+func NewZoneTokenValidator(resManager manager.ResourceManager, mode core.CpMode) zone.Validator {
+	signingKeyPrefix := zone.SigningKeyPrefix
+
+	if mode == core.Zone {
+		signingKeyPrefix = zone.SigningPublicKeyPrefix
+	}
+
 	return zone.NewValidator(
 		tokens.NewValidator(
-			tokens.NewSigningKeyAccessor(resManager, zone.SigningKeyPrefix),
+			tokens.NewSigningKeyAccessor(resManager, signingKeyPrefix, mode == core.Zone),
 			tokens.NewRevocations(resManager, zone.TokenRevocationsGlobalSecretKey),
 		),
 	)

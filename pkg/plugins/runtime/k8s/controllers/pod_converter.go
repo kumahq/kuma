@@ -55,6 +55,18 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 	return nil
 }
 
+func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service) error {
+	zoneEgressProto := &mesh_proto.ZoneEgress{}
+	// Pass the current dataplane, so we won't override available services in Egress section
+	if err := p.EgressFor(ctx, zoneEgressProto, pod, services); err != nil {
+		return err
+	}
+
+	zoneEgress.SetSpec(zoneEgressProto)
+
+	return nil
+}
+
 func (p *PodConverter) dataplaneFor(
 	ctx context.Context,
 	pod *kube_core.Pod,

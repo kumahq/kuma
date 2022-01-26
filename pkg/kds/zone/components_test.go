@@ -63,6 +63,15 @@ var _ = Describe("Zone Sync", func() {
 			},
 		}
 	}
+	egressFunc := func(zone string) *mesh_proto.ZoneEgress {
+		return &mesh_proto.ZoneEgress{
+			Zone: zone,
+			Networking: &mesh_proto.ZoneEgress_Networking{
+				Address: "192.168.0.1",
+				Port:    1212,
+			},
+		}
+	}
 
 	var zoneStore store.ResourceStore
 	var zoneSyncer sync_store.ResourceSyncer
@@ -138,6 +147,27 @@ var _ = Describe("Zone Sync", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	It("should sync egresses", func() {
+		// create Egress for current zone, shouldn't be synced
+		err := globalStore.Create(context.Background(), &mesh.ZoneEgressResource{Spec: egressFunc(zoneName)}, store.CreateByKey("dp-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = globalStore.Create(context.Background(), &mesh.ZoneEgressResource{Spec: egressFunc("another-zone-1")}, store.CreateByKey("dp-2", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = globalStore.Create(context.Background(), &mesh.ZoneEgressResource{Spec: egressFunc("another-zone-2")}, store.CreateByKey("dp-3", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(func() int {
+			actual := mesh.ZoneEgressResourceList{}
+			err := zoneStore.List(context.Background(), &actual)
+			Expect(err).ToNot(HaveOccurred())
+			return len(actual.Items)
+		}, "5s", "100ms").Should(Equal(2))
+
+		actual := mesh.ZoneEgressResourceList{}
+		err = zoneStore.List(context.Background(), &actual)
+		Expect(err).ToNot(HaveOccurred())
+	})
+
 	It("should have up to date list of consumed types", func() {
 		excludeTypes := map[model.ResourceType]bool{
 			mesh.DataplaneInsightType:  true,
@@ -152,10 +182,11 @@ var _ = Describe("Zone Sync", func() {
 			return !excludeTypes[descriptor.Name]
 		}))
 
-		// plus 2 global-scope types
+		// plus 5 global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
 			mesh.ZoneIngressType,
+			mesh.ZoneEgressType,
 			system.ConfigType,
 			system.GlobalSecretType,
 		}

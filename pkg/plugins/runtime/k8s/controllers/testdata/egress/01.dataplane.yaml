@@ -1,0 +1,6 @@
+metadata:
+  creationTimestamp: null
+spec:
+  networking:
+    address: 192.168.0.1
+    port: 10001

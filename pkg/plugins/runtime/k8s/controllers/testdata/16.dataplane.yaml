@@ -1,0 +1,17 @@
+mesh: default
+metadata:
+  creationTimestamp: null
+spec:
+  networking:
+    address: 10.244.0.8
+    inbound:
+    - port: 10002
+      tags:
+        app: kuma-egress
+        k8s.kuma.io/namespace: kuma-system
+        k8s.kuma.io/service-name: kuma-egress
+        k8s.kuma.io/service-port: "10002"
+        kuma.io/protocol: tcp
+        kuma.io/service: kuma-egress_kuma-system_svc_10002
+        kuma.io/zone: zone-1
+        pod-template-hash: 74c9b794cf

@@ -34,7 +34,7 @@ func init() {
 func (c plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenticator, error) {
 	validator := issuer.NewUserTokenValidator(
 		core_tokens.NewValidator(
-			core_tokens.NewSigningKeyAccessor(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix),
+			core_tokens.NewSigningKeyAccessor(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix, false),
 			core_tokens.NewRevocations(context.ResourceManager(), issuer.UserTokenRevocationsGlobalSecretKey),
 		),
 	)

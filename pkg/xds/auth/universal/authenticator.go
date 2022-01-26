@@ -47,6 +47,8 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, resource mode
 		return u.authDataplane(ctx, resource, credential)
 	case *core_mesh.ZoneIngressResource:
 		return u.authZoneIngress(ctx, resource, credential)
+	case *core_mesh.ZoneEgressResource:
+		return u.authZoneEgress(ctx, resource, credential)
 	default:
 		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
@@ -77,6 +79,31 @@ func (u *universalAuthenticator) authZoneIngress(ctx context.Context, zoneIngres
 	}
 	if u.zone != identity.Zone {
 		return errors.Errorf("zone ingress zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
+	}
+
+	return nil
+}
+
+func (u *universalAuthenticator) authZoneEgress(
+	ctx context.Context,
+	_ *core_mesh.ZoneEgressResource,
+	credential auth.Credential,
+) error {
+	identity, err := u.zoneValidator.Validate(ctx, credential)
+	if err != nil {
+		return err
+	}
+
+	if !zone.InScope(identity.Scope, zone.EgressScope) {
+		return errors.Errorf(
+			"token cannot be used to authenticate zone egresses (%s is out of token's scope: %+v)",
+			zone.EgressScope,
+			identity.Scope,
+		)
+	}
+
+	if identity.Zone != "" && u.zone != identity.Zone {
+		return errors.Errorf("zone egress zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
 	}
 
 	return nil

@@ -91,6 +91,19 @@ var _ = Describe("Auth Callbacks", func() {
 		},
 	}
 
+	zoneEgress := &core_mesh.ZoneEgressResource{
+		Meta: &test_model.ResourceMeta{
+			Name: "egress",
+			Mesh: core_model.NoMesh,
+		},
+		Spec: &mesh_proto.ZoneEgress{
+			Networking: &mesh_proto.ZoneEgress_Networking{
+				Address: "1.1.1.1",
+				Port:    10001,
+			},
+		},
+	}
+
 	BeforeEach(func() {
 		memStore := memory.NewStore()
 		resManager = core_manager.NewResourceManager(memStore)
@@ -102,6 +115,8 @@ var _ = Describe("Auth Callbacks", func() {
 		err = resManager.Create(context.Background(), dpRes, core_store.CreateByKey("web-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 		err = resManager.Create(context.Background(), zoneIngress, core_store.CreateBy(core_model.MetaToResourceKey(zoneIngress.GetMeta())))
+		Expect(err).ToNot(HaveOccurred())
+		err = resManager.Create(context.Background(), zoneEgress, core_store.CreateBy(core_model.MetaToResourceKey(zoneEgress.GetMeta())))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

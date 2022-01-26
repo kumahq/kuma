@@ -129,7 +129,7 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 
 func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string, filter store.ListFilterFunc) (mesh.DataplaneOverviewResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset), ListByFilterFunc(filter)); err != nil {
+	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset), store.ListByFilterFunc(filter)); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err
 	}
 
@@ -189,12 +189,6 @@ func modeToFilter(mode string) DpFilter {
 		return func(a interface{}) bool {
 			return true
 		}
-	}
-}
-
-func ListByFilterFunc(filterFunc store.ListFilterFunc) store.ListOptionsFunc {
-	return func(opts *store.ListOptions) {
-		opts.FilterFunc = filterFunc
 	}
 }
 

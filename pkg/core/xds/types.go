@@ -137,7 +137,9 @@ type Proxy struct {
 }
 
 type ZoneEgressProxy struct {
-	Meshes *core_mesh.MeshResourceList
+	Meshes             []*core_mesh.MeshResource
+	ExternalServices   []*core_mesh.ExternalServiceResource
+	ZoneEgressResource *core_mesh.ZoneEgressResource
 }
 
 type VIPDomains struct {

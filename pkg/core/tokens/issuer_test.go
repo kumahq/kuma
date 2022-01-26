@@ -87,7 +87,7 @@ var _ = Describe("Token issuer", func() {
 			signingKeyManager = tokens.NewSigningKeyManager(secretManager, TestTokenSigningKeyPrefix)
 			issuer = tokens.NewTokenIssuer(signingKeyManager)
 			validator = tokens.NewValidator(
-				tokens.NewSigningKeyAccessor(secretManager, TestTokenSigningKeyPrefix),
+				tokens.NewSigningKeyAccessor(secretManager, TestTokenSigningKeyPrefix, false),
 				tokens.NewRevocations(secretManager, TokenRevocationsGlobalSecretKey),
 			)
 

@@ -110,6 +110,16 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", params.AdminPort)
 		}
 		params.Service = "ingress"
+	case mesh_proto.EgressProxyType:
+		zoneEgress, err := b.zoneEgressFor(ctx, request, proxyId)
+		if err != nil {
+			return nil, err
+		}
+		// The admin port in kuma-dp is always bound to 127.0.0.1
+		if zoneEgress.UsesInboundInterface(core_mesh.IPv4Loopback, params.AdminPort) {
+			return nil, errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", params.AdminPort)
+		}
+		params.Service = "egress"
 	case mesh_proto.DataplaneProxyType, "":
 		params.HdsEnabled = b.hdsEnabled
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
@@ -230,6 +240,29 @@ func (b *bootstrapGenerator) zoneIngressFor(ctx context.Context, request types.B
 			return nil, err
 		}
 		return zoneIngress, nil
+	}
+}
+
+func (b *bootstrapGenerator) zoneEgressFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.ZoneEgressResource, error) {
+	if request.DataplaneResource != "" {
+		res, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
+		if err != nil {
+			return nil, err
+		}
+		zoneEgress, ok := res.(*core_mesh.ZoneEgressResource)
+		if !ok {
+			return nil, errors.Errorf("invalid resource")
+		}
+		if err := zoneEgress.Validate(); err != nil {
+			return nil, err
+		}
+		return zoneEgress, nil
+	} else {
+		zoneEgress := core_mesh.NewZoneEgressResource()
+		if err := b.resManager.Get(ctx, zoneEgress, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
+			return nil, err
+		}
+		return zoneEgress, nil
 	}
 }
 

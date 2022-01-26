@@ -76,6 +76,17 @@ A Helm chart for the Kuma Control Plane
 | ingress.annotations | object | `{}` | Additional deployment annotation |
 | ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
 | ingress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
+| egress.enabled | bool | `false` | If true, it deploys Egress for cross cluster communication |
+| egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
+| egress.replicas | int | `1` | Number of replicas of the Egress |
+| egress.service.type | string | `"LoadBalancer"` | Service type of the Egress |
+| egress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
+| egress.service.annotations | object | `{}` | Additional annotations to put on the Egress service |
+| egress.service.port | int | `10002` | Port on which Egress is exposed |
+| egress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
+| egress.annotations | object | `{}` | Additional deployment annotation |
+| egress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
+| egress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kubectl.image.registry | string | `"bitnami"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |

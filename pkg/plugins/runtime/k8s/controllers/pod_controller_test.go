@@ -159,6 +159,70 @@ var _ = Describe("PodReconciler", func() {
 					},
 				},
 			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "pod-egress",
+					Annotations: map[string]string{
+						"kuma.io/sidecar-injected": "true",
+						"kuma.io/egress":           "enabled",
+					},
+					Labels: map[string]string{
+						"app": "egress",
+					},
+				},
+				Status: kube_core.PodStatus{
+					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
+				},
+			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "kuma-system",
+					Name:      "pod-egress",
+					Annotations: map[string]string{
+						"kuma.io/sidecar-injected": "true",
+						"kuma.io/egress":           "enabled",
+					},
+					Labels: map[string]string{
+						"app": "egress",
+					},
+				},
+				Status: kube_core.PodStatus{
+					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
+				},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace:   "kuma-system",
+					Name:        "egress",
+					Annotations: map[string]string{},
+				},
+				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.1",
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 80,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+						},
+					},
+					Selector: map[string]string{
+						"app": "egress",
+					},
+				},
+			},
 			&kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
@@ -284,10 +348,37 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err.Error()).To(Equal(`Ingress can only be deployed in system namespace "kuma-system"`))
 	})
 
+	It("should not reconcile Egress with namespace other than system", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-egress"},
+		}
+
+		// when
+		_, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal(`Egress can only be deployed in system namespace "kuma-system"`))
+	})
+
 	It("should reconcile Ingress with system namespace", func() {
 		// given
 		req := kube_ctrl.Request{
 			NamespacedName: kube_types.NamespacedName{Namespace: "kuma-system", Name: "pod-ingress"},
+		}
+
+		// when
+		_, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should reconcile Egress with system namespace", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "kuma-system", Name: "pod-egress"},
 		}
 
 		// when

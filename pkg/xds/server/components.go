@@ -28,6 +28,7 @@ var (
 		core_system.ConfigType:       true,
 		core_system.GlobalSecretType: true,
 		core_mesh.ZoneIngressType:    true,
+		core_mesh.ZoneEgressType:     true,
 	}
 )
 

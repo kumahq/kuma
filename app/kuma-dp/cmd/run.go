@@ -63,6 +63,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			proxyTypeMap := map[string]model.ResourceType{
 				string(mesh_proto.DataplaneProxyType): mesh.DataplaneType,
 				string(mesh_proto.IngressProxyType):   mesh.ZoneIngressType,
+				string(mesh_proto.EgressProxyType):    mesh.ZoneEgressType,
 			}
 
 			if _, ok := proxyTypeMap[cfg.Dataplane.ProxyType]; !ok {

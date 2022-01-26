@@ -222,6 +222,34 @@ ingress:
   # -- Affinity placement rule for the Kuma Ingress pods
   affinity: {}
 
+egress:
+  # -- If true, it deploys Egress for cross cluster communication
+  enabled: false
+  # -- Time for which old listener will still be active as draining
+  drainTime: 30s
+  # -- Number of replicas of the Egress
+  replicas: 1
+  service:
+    # -- Service type of the Egress
+    type: LoadBalancer
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
+    # -- Additional annotations to put on the Egress service
+    annotations: { }
+    # -- Port on which Egress is exposed
+    port: 10002
+    # -- Port on which service is exposed on Node for service of type NodePort
+    nodePort:
+  # -- Additional deployment annotation
+  annotations: { }
+  # -- Node Selector for the Egress pods
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+
+  # -- Affinity placement rule for the Kuma Ingress pods
+  affinity: {}
+
 kumactl:
   image:
     # -- The kumactl image repository

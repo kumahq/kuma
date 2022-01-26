@@ -27,6 +27,10 @@ const (
 	// which is crucial for Multizone communication
 	KumaIngressAnnotation = "kuma.io/ingress"
 
+	// KumaEgressAnnotation allows marking pod with Kuma Egress
+	// which is crucial for Multizone communication
+	KumaEgressAnnotation = "kuma.io/egress"
+
 	// KumaTagsAnnotation holds a JSON representation of desired tags
 	KumaTagsAnnotation = "kuma.io/tags"
 

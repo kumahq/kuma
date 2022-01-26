@@ -98,6 +98,11 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 					return r.(*mesh.ZoneIngressResource).IsRemoteIngress(localZone)
 				}))
 			}
+			if rs.GetItemType() == mesh.ZoneEgressType {
+				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
+					return r.(*mesh.ZoneEgressResource).IsRemoteEgress(localZone)
+				}))
+			}
 			if rs.GetItemType() == system.ConfigType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return rt.KDSContext().Configs[r.GetMeta().GetName()]

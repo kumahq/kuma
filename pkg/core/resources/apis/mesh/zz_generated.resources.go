@@ -2328,6 +2328,107 @@ func init() {
 }
 
 const (
+	ZoneEgressType model.ResourceType = "ZoneEgress"
+)
+
+var _ model.Resource = &ZoneEgressResource{}
+
+type ZoneEgressResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.ZoneEgress
+}
+
+func NewZoneEgressResource() *ZoneEgressResource {
+	return &ZoneEgressResource{
+		Spec: &mesh_proto.ZoneEgress{},
+	}
+}
+
+func (t *ZoneEgressResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *ZoneEgressResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *ZoneEgressResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *ZoneEgressResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.ZoneEgress)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		if protoType == nil {
+			t.Spec = &mesh_proto.ZoneEgress{}
+		} else {
+			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *ZoneEgressResource) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneEgressResourceTypeDescriptor
+}
+
+var _ model.ResourceList = &ZoneEgressResourceList{}
+
+type ZoneEgressResourceList struct {
+	Items      []*ZoneEgressResource
+	Pagination model.Pagination
+}
+
+func (l *ZoneEgressResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *ZoneEgressResourceList) GetItemType() model.ResourceType {
+	return ZoneEgressType
+}
+
+func (l *ZoneEgressResourceList) NewItem() model.Resource {
+	return NewZoneEgressResource()
+}
+
+func (l *ZoneEgressResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*ZoneEgressResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*ZoneEgressResource)(nil), r)
+	}
+}
+
+func (l *ZoneEgressResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           ZoneEgressType,
+	Resource:       NewZoneEgressResource(),
+	ResourceList:   &ZoneEgressResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeGlobal,
+	KDSFlags:       model.FromZoneToGlobal | model.FromGlobalToZone,
+	WsPath:         "zone-egresses",
+	KumactlArg:     "zone-egress",
+	KumactlListArg: "zone-egresses",
+	AllowToInspect: false,
+}
+
+func init() {
+	registry.RegisterType(ZoneEgressResourceTypeDescriptor)
+}
+
+const (
 	ZoneIngressType model.ResourceType = "ZoneIngress"
 )
 
