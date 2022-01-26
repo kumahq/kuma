@@ -14,7 +14,7 @@ metadata:
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
-{{- with .Values.installCrdsOnUpgrade.imagePullSecrets }}
+{{- with concat .Values.installCrdsOnUpgrade.imagePullSecrets .Values.global.imagePullSecrets | uniq }}
 imagePullSecrets:
   {{- range . }}
   - name: {{ . | quote }}
