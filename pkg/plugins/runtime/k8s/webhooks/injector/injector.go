@@ -51,13 +51,8 @@ func New(
 		client:           client,
 		converter:        converter,
 		defaultAdminPort: envoyAdminPort,
-		proxyFactory: containers.DataplaneProxyFactory{
-			ControlPlaneURL:    controlPlaneURL,
-			ControlPlaneCACert: caCert,
-			DefaultAdminPort:   envoyAdminPort,
-			ContainerConfig:    cfg.SidecarContainer.DataplaneContainer,
-			BuiltinDNS:         cfg.BuiltinDNS,
-		},
+		proxyFactory: containers.NewDataplaneProxyFactory(controlPlaneURL, caCert, envoyAdminPort,
+			cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS),
 	}, nil
 }
 
@@ -65,7 +60,7 @@ type KumaInjector struct {
 	cfg              runtime_k8s.Injector
 	client           kube_client.Client
 	converter        k8s_common.Converter
-	proxyFactory     containers.DataplaneProxyFactory
+	proxyFactory     *containers.DataplaneProxyFactory
 	defaultAdminPort uint32
 }
 

@@ -30,6 +30,22 @@ type DataplaneProxyFactory struct {
 	BuiltinDNS         runtime_k8s.BuiltinDNS
 }
 
+func NewDataplaneProxyFactory(
+	controlPlaneURL string,
+	controlPlaneCACert string,
+	defaultAdminPort uint32,
+	containerConfig runtime_k8s.DataplaneContainer,
+	builtinDNS runtime_k8s.BuiltinDNS,
+) *DataplaneProxyFactory {
+	return &DataplaneProxyFactory{
+		ControlPlaneURL:    controlPlaneURL,
+		ControlPlaneCACert: controlPlaneCACert,
+		DefaultAdminPort:   defaultAdminPort,
+		ContainerConfig:    containerConfig,
+		BuiltinDNS:         builtinDNS,
+	}
+}
+
 func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]string) (int64, error) {
 	count, ok, err := metadata.Annotations(annotations).GetUint32(metadata.KumaSidecarConcurrencyAnnotation)
 	if ok {
