@@ -2,6 +2,7 @@ package hybrid
 
 import (
 	"fmt"
+	"net"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -157,8 +158,8 @@ conf:
 				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(func(g Gomega) {
-					target := fmt.Sprintf("http://%s:8080%s",
-						zone1.(*UniversalCluster).GetApp("gateway-proxy").GetIP(),
+					target := fmt.Sprintf("http://%s%s",
+						net.JoinHostPort(zone1.(*UniversalCluster).GetApp("gateway-proxy").GetIP(), "8080"),
 						given.path,
 					)
 					responses, err := client.CollectResponsesByInstance(zone1, "gateway-client", target, client.WithHeader("Host", "example.kuma.io"))
