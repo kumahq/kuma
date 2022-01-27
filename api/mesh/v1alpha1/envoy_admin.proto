@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+message EnvoyAdmin {
+  // Port on which Envoy Admin API server will be listening
+  uint32 port = 1;
+}

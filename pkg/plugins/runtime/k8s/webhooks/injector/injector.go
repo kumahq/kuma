@@ -36,6 +36,7 @@ func New(
 	controlPlaneURL string,
 	client kube_client.Client,
 	converter k8s_common.Converter,
+	envoyAdminPort uint32,
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
@@ -46,23 +47,21 @@ func New(
 		caCert = string(bytes)
 	}
 	return &KumaInjector{
-		cfg:       cfg,
-		client:    client,
-		converter: converter,
-		proxyFactory: containers.DataplaneProxyFactory{
-			ControlPlaneURL:    controlPlaneURL,
-			ControlPlaneCACert: caCert,
-			ContainerConfig:    cfg.SidecarContainer.DataplaneContainer,
-			BuiltinDNS:         cfg.BuiltinDNS,
-		},
+		cfg:              cfg,
+		client:           client,
+		converter:        converter,
+		defaultAdminPort: envoyAdminPort,
+		proxyFactory: containers.NewDataplaneProxyFactory(controlPlaneURL, caCert, envoyAdminPort,
+			cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS),
 	}, nil
 }
 
 type KumaInjector struct {
-	cfg          runtime_k8s.Injector
-	client       kube_client.Client
-	converter    k8s_common.Converter
-	proxyFactory containers.DataplaneProxyFactory
+	cfg              runtime_k8s.Injector
+	client           kube_client.Client
+	converter        k8s_common.Converter
+	proxyFactory     *containers.DataplaneProxyFactory
+	defaultAdminPort uint32
 }
 
 func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
@@ -336,6 +335,11 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *core_mesh.MeshRe
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = val
 	} else if len(i.cfg.SidecarTraffic.ExcludeOutboundPorts) > 0 {
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts)
+	}
+	if _, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaEnvoyAdminPort); err != nil {
+		return nil, err
+	} else if !exist {
+		annotations[metadata.KumaEnvoyAdminPort] = fmt.Sprintf("%d", i.defaultAdminPort)
 	}
 	return annotations, nil
 }

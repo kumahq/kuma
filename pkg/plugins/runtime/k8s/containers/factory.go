@@ -1,7 +1,6 @@
 package containers
 
 import (
-	"fmt"
 	"sort"
 	"strconv"
 
@@ -26,8 +25,25 @@ func (a EnvVarsByName) Less(i, j int) bool {
 type DataplaneProxyFactory struct {
 	ControlPlaneURL    string
 	ControlPlaneCACert string
+	DefaultAdminPort   uint32
 	ContainerConfig    runtime_k8s.DataplaneContainer
 	BuiltinDNS         runtime_k8s.BuiltinDNS
+}
+
+func NewDataplaneProxyFactory(
+	controlPlaneURL string,
+	controlPlaneCACert string,
+	defaultAdminPort uint32,
+	containerConfig runtime_k8s.DataplaneContainer,
+	builtinDNS runtime_k8s.BuiltinDNS,
+) *DataplaneProxyFactory {
+	return &DataplaneProxyFactory{
+		ControlPlaneURL:    controlPlaneURL,
+		ControlPlaneCACert: controlPlaneCACert,
+		DefaultAdminPort:   defaultAdminPort,
+		ContainerConfig:    containerConfig,
+		BuiltinDNS:         builtinDNS,
+	}
 }
 
 func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]string) (int64, error) {
@@ -48,6 +64,14 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 	return ncpu, nil
 }
 
+func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (uint32, error) {
+	adminPort, _, err := metadata.Annotations(annotations).GetUint32(metadata.KumaEnvoyAdminPort)
+	if err != nil {
+		return 0, err
+	}
+	return adminPort, nil
+}
+
 func (i *DataplaneProxyFactory) NewContainer(
 	owner kube_client.Object,
 	ns *kube_core.Namespace,
@@ -64,6 +88,14 @@ func (i *DataplaneProxyFactory) NewContainer(
 	cpuCount, err := i.proxyConcurrencyFor(annotations)
 	if err != nil {
 		return kube_core.Container{}, err
+	}
+
+	adminPort, err := i.envoyAdminPort(annotations)
+	if err != nil {
+		return kube_core.Container{}, err
+	}
+	if adminPort == 0 {
+		adminPort = i.DefaultAdminPort
 	}
 
 	args := []string{
@@ -90,7 +122,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				HTTPGet: &kube_core.HTTPGetAction{
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
-						IntVal: int32(i.ContainerConfig.AdminPort),
+						IntVal: int32(adminPort),
 					},
 				},
 			},
@@ -105,7 +137,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 				HTTPGet: &kube_core.HTTPGetAction{
 					Path: "/ready",
 					Port: kube_intstr.IntOrString{
-						IntVal: int32(i.ContainerConfig.AdminPort),
+						IntVal: int32(adminPort),
 					},
 				},
 			},
@@ -143,10 +175,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
 			// that is why we have to use a runtime reference to POD_NAME instead
 			Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
-		},
-		"KUMA_DATAPLANE_ADMIN_PORT": {
-			Name:  "KUMA_DATAPLANE_ADMIN_PORT",
-			Value: fmt.Sprintf("%d", i.ContainerConfig.AdminPort),
 		},
 		"KUMA_DATAPLANE_DRAIN_TIME": {
 			Name:  "KUMA_DATAPLANE_DRAIN_TIME",

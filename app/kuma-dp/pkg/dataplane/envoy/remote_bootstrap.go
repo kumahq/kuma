@@ -12,11 +12,13 @@ import (
 	"os"
 	"strings"
 
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -43,17 +45,17 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
+func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if bootstrapUrl.Scheme == "https" {
 		if cfg.ControlPlane.CaCert != "" {
 			certPool := x509.NewCertPool()
 			if ok := certPool.AppendCertsFromPEM([]byte(cfg.ControlPlane.CaCert)); !ok {
-				return nil, errors.New("could not add certificate")
+				return nil, nil, errors.New("could not add certificate")
 			}
 			b.client.Transport = &http.Transport{
 				TLSClientConfig: &tls.Config{
@@ -86,9 +88,14 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params Bootst
 		return retry.RetryableError(err)
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return respBytes, nil
+
+	bootstrap := &envoy_bootstrap_v3.Bootstrap{}
+	if err := util_proto.FromYAML(respBytes, bootstrap); err != nil {
+		return nil, nil, err
+	}
+	return bootstrap, respBytes, nil
 }
 
 func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {

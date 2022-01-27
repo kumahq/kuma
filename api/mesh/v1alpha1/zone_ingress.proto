@@ -5,6 +5,7 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/options.proto";
+import "mesh/v1alpha1/envoy_admin.proto";
 
 // ZoneIngress allows us to configure dataplane in the Ingress mode. In this
 // mode, dataplane has only inbound interfaces. Every inbound interface matches
@@ -39,6 +40,9 @@ message ZoneIngress {
     // AdvertisedPort defines port on which ZoneIngress is accessible to other
     // Kuma clusters.
     uint32 advertisedPort = 4;
+
+    // Admin contains configuration related to Envoy Admin API
+    EnvoyAdmin admin = 5;
   }
 
   // Networking defines the address and port of the Ingress to listen on.

@@ -150,6 +150,14 @@ func (p *PodConverter) dataplaneFor(
 	}
 	dataplane.Probes = probes
 
+	adminPort, exist, err := annotations.GetUint32(metadata.KumaEnvoyAdminPort)
+	if err != nil {
+		return nil, err
+	}
+	if exist {
+		dataplane.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: adminPort}
+	}
+
 	return dataplane, nil
 }
 

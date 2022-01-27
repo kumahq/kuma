@@ -82,7 +82,7 @@ var _ = Describe("Config WS", func() {
 			"params": {
 			  "adminAccessLogPath": "/dev/null",
 			  "adminAddress": "127.0.0.1",
-			  "adminPort": 0,
+			  "adminPort": 9901,
 			  "xdsConnectTimeout": "1s",
 			  "xdsHost": "",
 			  "xdsPort": 0
@@ -203,7 +203,6 @@ var _ = Describe("Config WS", func() {
 				  "image": "kuma/kuma-init:latest"
 				},
 				"sidecarContainer": {
-				  "adminPort": 9901,
 				  "drainTime": "30s",
 				  "envVars": {},
 				  "gid": 5678,

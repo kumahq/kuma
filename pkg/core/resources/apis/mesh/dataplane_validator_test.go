@@ -189,6 +189,46 @@ var _ = Describe("Dataplane", func() {
                   tags:
                     kuma.io/service: redis`,
 		),
+		Entry("dataplane with admin port", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              admin:
+                port: 9901
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 127.0.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  address: 127.0.0.1
+                  tags:
+                    kuma.io/service: redis`),
+		Entry("dataplane with admin port equal to inbound and outbound but different network interfaces", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              admin:
+                port: 8080
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: redis`),
 	)
 
 	type testCase struct {
@@ -931,6 +971,58 @@ var _ = Describe("Dataplane", func() {
                   message: must have a positive value
                 - field: networking.inbound[0].serviceProbe.unhealthyThreshold
                   message: must have a positive value`,
+		}),
+		Entry("dataplane with admin port equal to inbound", testCase{
+			dataplane: `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              admin:
+                port: 8080
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 127.0.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  address: 127.0.0.1
+                  tags:
+                    kuma.io/service: redis`,
+			expected: `
+                violations:
+                - field: networking.admin.port
+                  message: must differ from inbound`,
+		}),
+		Entry("dataplane with admin port equal to outbound", testCase{
+			dataplane: `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              admin:
+                port: 3333
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 127.0.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  address: 127.0.0.1
+                  tags:
+                    kuma.io/service: redis`,
+			expected: `
+                violations:
+                - field: networking.admin.port
+                  message: must differ from outbound`,
 		}),
 	)
 

@@ -109,7 +109,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		builder.CaManagers(),
 		builder.Config().DpServer.TlsCertFile,
 		builder.Config().DpServer.TlsKeyFile,
-		builder.Config().Runtime.Kubernetes.Injector.SidecarContainer.AdminPort,
+		builder.Config().GetEnvoyAdminPort(),
 	)
 	if err != nil {
 		return nil, err

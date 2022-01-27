@@ -87,3 +87,12 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: l.ReusePort is deprecated"
+    - linters: # AdminPort is deprecated, but it's used to support backwards compatibility
+        - staticcheck
+      text: "SA1019: cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
+    - linters: # AdminPort is deprecated, but it's used to support backwards compatibility
+        - staticcheck
+      text: "SA1019: kumaCPConfig.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
+    - linters: # AdminPort is deprecated, but it's used to support backwards compatibility
+        - staticcheck
+      text: "SA1019: c.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."

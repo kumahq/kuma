@@ -6,6 +6,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/options.proto";
 import "mesh/v1alpha1/metrics.proto";
+import "mesh/v1alpha1/envoy_admin.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
@@ -163,6 +164,9 @@ message Dataplane {
 
     // TransparentProxying describes configuration for transparent proxying.
     TransparentProxying transparent_proxying = 4;
+
+    // Admin contains configuration related to Envoy Admin API
+    EnvoyAdmin admin = 8;
   }
 
   // Networking describes inbound and outbound interfaces of the dataplane.

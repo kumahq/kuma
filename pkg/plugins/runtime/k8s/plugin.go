@@ -294,6 +294,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 			address,
 			mgr.GetClient(),
 			converter,
+			rt.Config().GetEnvoyAdminPort(),
 		)
 		if err != nil {
 			return err

@@ -41,7 +41,7 @@ type GatewayInstanceReconciler struct {
 
 	Scheme          *kube_runtime.Scheme
 	Converter       k8s_common.Converter
-	ProxyFactory    containers.DataplaneProxyFactory
+	ProxyFactory    *containers.DataplaneProxyFactory
 	ResourceManager manager.ResourceManager
 }
 
@@ -131,11 +131,9 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 				})
 			}
 
-			service.Spec = kube_core.ServiceSpec{
-				Selector: k8sSelector(gatewayInstance.Name),
-				Ports:    ports,
-				Type:     gatewayInstance.Spec.ServiceType,
-			}
+			service.Spec.Selector = k8sSelector(gatewayInstance.Name)
+			service.Spec.Ports = ports
+			service.Spec.Type = gatewayInstance.Spec.ServiceType
 
 			return service, nil
 		},
