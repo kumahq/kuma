@@ -41,7 +41,7 @@ type GatewayInstanceReconciler struct {
 
 	Scheme          *kube_runtime.Scheme
 	Converter       k8s_common.Converter
-	ProxyFactory    containers.DataplaneProxyFactory
+	ProxyFactory    *containers.DataplaneProxyFactory
 	ResourceManager manager.ResourceManager
 }
 

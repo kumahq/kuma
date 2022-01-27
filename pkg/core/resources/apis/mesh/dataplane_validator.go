@@ -21,6 +21,17 @@ func (d *DataplaneResource) Validate() error {
 		return err.OrNil()
 	}
 
+	if admin := d.Spec.GetNetworking().GetAdmin(); admin != nil {
+		adminPort := net.Field("admin").Field("port")
+
+		if d.UsesInboundInterface(IPv4Loopback, admin.GetPort()) {
+			err.AddViolationAt(adminPort, "must differ from inbound")
+		}
+		if d.UsesOutboundInterface(IPv4Loopback, admin.GetPort()) {
+			err.AddViolationAt(adminPort, "must differ from outbound")
+		}
+	}
+
 	switch {
 	case d.Spec.IsDelegatedGateway():
 		if len(d.Spec.GetNetworking().GetInbound()) > 0 {

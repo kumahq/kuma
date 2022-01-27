@@ -40,6 +40,7 @@ type BootstrapParamsConfig struct {
 	// Address of Envoy Admin
 	AdminAddress string `yaml:"adminAddress" envconfig:"kuma_bootstrap_server_params_admin_address"`
 	// Port of Envoy Admin
+	// Deprecated
 	AdminPort uint32 `yaml:"adminPort" envconfig:"kuma_bootstrap_server_params_admin_port"`
 	// Path to access log file of Envoy Admin
 	AdminAccessLogPath string `yaml:"adminAccessLogPath" envconfig:"kuma_bootstrap_server_params_admin_access_log_path"`
@@ -79,7 +80,7 @@ func (b *BootstrapParamsConfig) Validate() error {
 func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 	return &BootstrapParamsConfig{
 		AdminAddress:       "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
-		AdminPort:          0,           // by default, turn off Admin interface of Envoy
+		AdminPort:          9901,
 		AdminAccessLogPath: os.DevNull,
 		XdsHost:            "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
 		XdsPort:            0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT

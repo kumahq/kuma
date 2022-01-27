@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/pkg/errors"
 
 	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
@@ -34,15 +35,12 @@ type BootstrapParams struct {
 	DynamicMetadata map[string]string
 }
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error)
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error)
 
 type Opts struct {
 	Config          kuma_dp.Config
-	Generator       BootstrapConfigFactoryFunc
+	BootstrapConfig []byte
 	Dataplane       *rest.Resource
-	DynamicMetadata map[string]string
-	DNSPort         uint32
-	EmptyDNSPort    uint32
 	Stdout          io.Writer
 	Stderr          io.Writer
 	Quit            chan struct{}
@@ -81,23 +79,7 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 }
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
-	envoyVersion, err := e.version()
-	if err != nil {
-		return errors.Wrap(err, "failed to get Envoy version")
-	}
-	runLog.Info("fetched Envoy version", "version", envoyVersion)
-	runLog.Info("generating bootstrap configuration")
-	bootstrapConfig, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
-		Dataplane:       e.opts.Dataplane,
-		DNSPort:         e.opts.DNSPort,
-		EmptyDNSPort:    e.opts.EmptyDNSPort,
-		EnvoyVersion:    *envoyVersion,
-		DynamicMetadata: e.opts.DynamicMetadata,
-	})
-	if err != nil {
-		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
-	}
-	configFile, err := GenerateBootstrapFile(e.opts.Config.DataplaneRuntime, bootstrapConfig)
+	configFile, err := GenerateBootstrapFile(e.opts.Config.DataplaneRuntime, e.opts.BootstrapConfig)
 	if err != nil {
 		return err
 	}
@@ -173,9 +155,8 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (e *Envoy) version() (*EnvoyVersion, error) {
-	binaryPathConfig := e.opts.Config.DataplaneRuntime.BinaryPath
-	resolvedPath, err := lookupEnvoyPath(binaryPathConfig)
+func GetEnvoyVersion(binaryPath string) (*EnvoyVersion, error) {
+	resolvedPath, err := lookupEnvoyPath(binaryPath)
 	if err != nil {
 		return nil, err
 	}

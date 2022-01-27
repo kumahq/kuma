@@ -20,6 +20,7 @@ var (
 	NewLoggerWithRotation = kuma_log.NewLoggerWithRotation
 	SetLogger             = kube_log.SetLogger
 	Now                   = time.Now
+	TempDir               = os.TempDir
 
 	SetupSignalHandler = func() context.Context {
 		ctx, cancel := context.WithCancel(context.Background())

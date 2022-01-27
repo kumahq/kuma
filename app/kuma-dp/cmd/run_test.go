@@ -14,6 +14,7 @@ import (
 	"strings"
 	"syscall"
 
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -22,6 +23,7 @@ import (
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/test"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("run", func() {
@@ -94,12 +96,23 @@ var _ = Describe("run", func() {
 
 			// given
 			rootCtx := DefaultRootContext()
-			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, error) {
+			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error) {
 				respBytes, err := os.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
-				return respBytes, nil
+				bootstrap := &envoy_bootstrap_v3.Bootstrap{}
+				if err := util_proto.FromYAML(respBytes, bootstrap); err != nil {
+					return nil, nil, err
+				}
+				return bootstrap, respBytes, nil
 			}
-			_, writer := io.Pipe()
+
+			reader, writer := io.Pipe()
+			go func() {
+				defer GinkgoRecover()
+				_, err := io.ReadAll(reader)
+				Expect(err).ToNot(HaveOccurred())
+			}()
+
 			cmd := NewRootCmd(opts, rootCtx)
 			cmd.SetArgs(append([]string{"run"}, given.args...))
 			cmd.SetOut(writer)

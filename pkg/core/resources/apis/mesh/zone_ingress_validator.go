@@ -14,6 +14,11 @@ func (r *ZoneIngressResource) Validate() error {
 
 func (r *ZoneIngressResource) validateNetworking(path validators.PathBuilder, networking *mesh_proto.ZoneIngress_Networking) validators.ValidationError {
 	var err validators.ValidationError
+	if admin := networking.GetAdmin(); admin != nil {
+		if r.UsesInboundInterface(IPv4Loopback, admin.GetPort()) {
+			err.AddViolationAt(path.Field("admin").Field("port"), "must differ from port")
+		}
+	}
 	if networking.GetAdvertisedAddress() == "" && networking.GetAdvertisedPort() != 0 {
 		err.AddViolationAt(path.Field("advertisedAddress"), `has to be defined with advertisedPort`)
 	}

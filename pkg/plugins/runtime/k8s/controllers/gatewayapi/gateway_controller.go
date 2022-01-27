@@ -36,7 +36,7 @@ type GatewayReconciler struct {
 	Scheme          *kube_runtime.Scheme
 	TypeRegistry    k8s_registry.TypeRegistry
 	SystemNamespace string
-	ProxyFactory    containers.DataplaneProxyFactory
+	ProxyFactory    *containers.DataplaneProxyFactory
 	ResourceManager manager.ResourceManager
 }
 

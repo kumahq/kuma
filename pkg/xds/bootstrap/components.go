@@ -12,6 +12,7 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.TlsCertFile,
 		rt.Config().DpServer.Auth.Type != dp_server.DpServerAuthNone,
 		rt.Config().DpServer.Hds.Enabled,
+		rt.Config().GetEnvoyAdminPort(),
 	)
 	if err != nil {
 		return err

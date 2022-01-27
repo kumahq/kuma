@@ -1,7 +1,7 @@
 params:
   adminAccessLogPath: /dev/null
   adminAddress: 127.0.0.1
-  adminPort: 0
+  adminPort: 9901
   xdsConnectTimeout: 1s
   xdsHost: ""
   xdsPort: 0
