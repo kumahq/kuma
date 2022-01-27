@@ -34,7 +34,7 @@ kumactl install control-plane [flags]
       --dataplane-version string                    version of the image of the Kuma DataPlane component (default "unknown")
       --egress-drain-time string                    drain time for Envoy proxy (default "30s")
       --egress-enabled                              install Kuma with an Egress deployment, using the Data Plane image
-      --egress-use-node-port                        use NodePort instead of LoadBalancer for the Egress Service
+      --egress-service-type string                  the type for the Egress Service (ie. ClusterIP, NodePort, LoadBalancer) (default "ClusterIP")
       --env-var stringToString                      environment variables that will be passed to the control plane (default [])
       --experimental-gateway                        install experimental built-in Gateway support
   -h, --help                                        help for control-plane

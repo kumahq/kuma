@@ -7,6 +7,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
 func (p *PodConverter) EgressFor(
@@ -39,6 +40,14 @@ func (p *PodConverter) EgressFor(
 		if _, err := p.coordinatesFromService(ctx, services[0]); err != nil {
 			return err
 		}
+	}
+
+	adminPort, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaEnvoyAdminPort)
+	if err != nil {
+		return err
+	}
+	if exist {
+		zoneEgress.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: adminPort}
 	}
 
 	return nil

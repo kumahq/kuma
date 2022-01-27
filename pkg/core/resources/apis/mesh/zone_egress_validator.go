@@ -13,6 +13,12 @@ func (r *ZoneEgressResource) Validate() error {
 
 func (r *ZoneEgressResource) validateNetworking(path validators.PathBuilder, networking *mesh_proto.ZoneEgress_Networking) validators.ValidationError {
 	var err validators.ValidationError
+	if admin := networking.GetAdmin(); admin != nil {
+		if r.UsesInboundInterface(IPv4Loopback, admin.GetPort()) {
+			err.AddViolationAt(path.Field("admin").Field("port"), "must differ from port")
+		}
+	}
+
 	if networking.GetAddress() != "" {
 		err.Add(validateAddress(path.Field("address"), networking.GetAddress()))
 	}

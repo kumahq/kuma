@@ -36,6 +36,15 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               port: 10001`,
 		),
+		Entry("with admin port equal to port but different network interfaces", `
+            type: ZoneEgress
+            name: ze-1
+            networking:
+              admin:
+                port: 10001
+              address: 192.168.0.1
+              port: 10001`,
+		),
 	)
 
 	type testCase struct {
@@ -72,6 +81,20 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.port
                   message: port must be in the range [1, 65535]`,
+		}),
+		Entry("admin port equal to port", testCase{
+			dataplane: `
+            type: ZoneEgress
+            name: ze-1
+            networking:
+              admin:
+                port: 10001
+              address: 127.0.0.1
+              port: 10001`,
+			expected: `
+                violations:
+                - field: networking.admin.port
+                  message: must differ from port`,
 		}),
 	)
 

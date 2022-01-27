@@ -176,7 +176,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				LogLevel:  rootCtx.LogLevel,
 			}
 
-			if cfg.DNS.Enabled && cfg.Dataplane.ProxyType != string(mesh_proto.IngressProxyType) {
+			if cfg.DNS.Enabled &&
+				cfg.Dataplane.ProxyType != string(mesh_proto.IngressProxyType) &&
+				cfg.Dataplane.ProxyType != string(mesh_proto.EgressProxyType) {
 				dnsOpts := &dnsserver.Opts{
 					Config: *cfg,
 					Stdout: cmd.OutOrStdout(),

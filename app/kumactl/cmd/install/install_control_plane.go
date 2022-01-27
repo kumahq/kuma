@@ -42,7 +42,6 @@ func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Com
 	args := ctx.Args
 	useNodePort := false
 	ingressUseNodePort := false
-	egressUseNodePort := false
 	cmd := &cobra.Command{
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
@@ -64,10 +63,6 @@ This command requires that the KUBECONFIG environment is set`,
 
 			if ingressUseNodePort {
 				args.Ingress_service_type = "NodePort"
-			}
-
-			if egressUseNodePort {
-				args.Egress_service_type = "NodePort"
 			}
 
 			var kubeClientConfig *rest.Config
@@ -148,7 +143,7 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().BoolVar(&ingressUseNodePort, "ingress-use-node-port", false, "use NodePort instead of LoadBalancer for the Ingress Service")
 	cmd.Flags().BoolVar(&args.Egress_enabled, "egress-enabled", args.Egress_enabled, "install Kuma with an Egress deployment, using the Data Plane image")
 	cmd.Flags().StringVar(&args.Egress_drainTime, "egress-drain-time", args.Egress_drainTime, "drain time for Envoy proxy")
-	cmd.Flags().BoolVar(&egressUseNodePort, "egress-use-node-port", false, "use NodePort instead of LoadBalancer for the Egress Service")
+	cmd.Flags().StringVar(&args.Egress_service_type, "egress-service-type", "ClusterIP", "the type for the Egress Service (ie. ClusterIP, NodePort, LoadBalancer)")
 	cmd.Flags().BoolVar(&args.WithoutKubernetesConnection, "without-kubernetes-connection", false, "install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades")
 	cmd.Flags().BoolVar(&args.ExperimentalGateway, "experimental-gateway", false, "install experimental built-in Gateway support")
 	return cmd
