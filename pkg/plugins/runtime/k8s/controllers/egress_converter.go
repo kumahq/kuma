@@ -11,7 +11,7 @@ import (
 )
 
 func (p *PodConverter) EgressFor(
-	ctx context.Context, zoneEgress *mesh_proto.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service,
+	_ context.Context, zoneEgress *mesh_proto.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service,
 ) error {
 	if len(services) != 1 {
 		return errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
@@ -30,17 +30,6 @@ func (p *PodConverter) EgressFor(
 
 	zoneEgress.Networking.Address = pod.Status.PodIP
 	zoneEgress.Networking.Port = ifaces[0].Port
-
-	coords, err := p.coordinatesFromAnnotations(pod.Annotations)
-	if err != nil {
-		return err
-	}
-
-	if coords == nil { // if ingress public coordinates were not present in annotations we will try to pick it from service
-		if _, err := p.coordinatesFromService(ctx, services[0]); err != nil {
-			return err
-		}
-	}
 
 	adminPort, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaEnvoyAdminPort)
 	if err != nil {

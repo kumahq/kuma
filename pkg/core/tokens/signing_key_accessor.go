@@ -40,12 +40,10 @@ func NewSigningKeyAccessor(resManager manager.ResourceManager, signingKeyPrefix 
 }
 
 func (s *signingKeyAccessor) GetPublicKey(ctx context.Context, serialNumber int) (*rsa.PublicKey, error) {
-	keyResource, err := s.getKey(ctx, serialNumber)
+	keyBytes, err := s.getKeyBytes(ctx, serialNumber)
 	if err != nil {
 		return nil, err
 	}
-
-	keyBytes := keyResource.Spec.GetData().GetValue()
 
 	if s.isPublic {
 		return keyBytesToRsaPublicKey(keyBytes)
@@ -55,33 +53,23 @@ func (s *signingKeyAccessor) GetPublicKey(ctx context.Context, serialNumber int)
 	if err != nil {
 		return nil, err
 	}
-
 	return &key.PublicKey, nil
 }
 
-func (s *signingKeyAccessor) getKey(ctx context.Context, serialNumber int) (*system.GlobalSecretResource, error) {
-	resourceKey := SigningKeyResourceKey(s.signingKeyPrefix, serialNumber, model.NoMesh)
+func (s *signingKeyAccessor) getKeyBytes(ctx context.Context, serialNumber int) ([]byte, error) {
 	resource := system.NewGlobalSecretResource()
-
-	if err := s.resManager.Get(ctx, resource, store.GetBy(resourceKey)); err != nil {
+	if err := s.resManager.Get(ctx, resource, store.GetBy(SigningKeyResourceKey(s.signingKeyPrefix, serialNumber, model.NoMesh))); err != nil {
 		if store.IsResourceNotFound(err) {
 			return nil, &SigningKeyNotFound{
 				SerialNumber: serialNumber,
 				Prefix:       s.signingKeyPrefix,
 			}
 		}
-
 		return nil, errors.Wrap(err, "could not retrieve signing key")
 	}
-
-	return resource, nil
+	return resource.Spec.GetData().GetValue(), nil
 }
 
 func (s *signingKeyAccessor) GetLegacyKey(ctx context.Context, serialNumber int) ([]byte, error) {
-	keyResource, err := s.getKey(ctx, serialNumber)
-	if err != nil {
-		return nil, err
-	}
-
-	return keyResource.Spec.GetData().GetValue(), nil
+	return s.getKeyBytes(ctx, serialNumber)
 }

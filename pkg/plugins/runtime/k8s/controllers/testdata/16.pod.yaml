@@ -6,7 +6,6 @@ metadata:
     pod-template-hash: 74c9b794cf
   annotations:
     kuma.io/egress: enabled
-    kuma.io/mesh: default
 spec:
   containers:
     - ports:

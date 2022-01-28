@@ -2,8 +2,10 @@ package context_test
 
 import (
 	stdcontext "context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -34,25 +36,37 @@ var _ = Describe("Context", func() {
 			config_manager.ClusterIdConfigKey: true,
 		}
 
+		type testCase struct {
+			resource model.Resource
+			expect   bool
+
+			// zone ingresses and egresses
+			zoneResource *core_system.ZoneResource
+			zoneName     string
+		}
+
 		BeforeEach(func() {
 			rm = manager.NewResourceManager(memory.NewStore())
 			predicate = context.GlobalProvidedFilter(rm, configs)
 		})
 
-		It("Should filter out dataplanes", func() {
-			// when
+		It("should filter out dataplanes", func() {
+			// given
 			dp := &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "dp-1",
 				},
 			}
 
+			// when
+			ok := predicate(clusterID, dp)
+
 			// then
-			Expect(predicate(clusterID, dp)).To(BeFalse())
+			Expect(ok).To(BeFalse())
 		})
 
-		It("Should filter out configs if not in provided argument", func() {
-			// when
+		It("should filter out configs if not in provided argument", func() {
+			// given
 			config1 := &core_system.ConfigResource{
 				Meta: &test_model.ResourceMeta{
 					Name: config_manager.ClusterIdConfigKey,
@@ -64,150 +78,194 @@ var _ = Describe("Context", func() {
 				},
 			}
 
-			// then
-			Expect(predicate(clusterID, config1)).To(BeTrue())
-			Expect(predicate(clusterID, config2)).To(BeFalse())
-		})
-
-		It("Should filter out global secrets if they are not signing keys", func() {
 			// when
-			// zone ingress signing key
-			secret1 := &core_system.GlobalSecretResource{
-				Meta: &test_model.ResourceMeta{
-					Name: zoneingress.ZoneIngressSigningKeyPrefix + "-1",
-				},
-			}
-			// zone token signing key
-			secret2 := &core_system.GlobalSecretResource{
-				Meta: &test_model.ResourceMeta{
-					Name: zone_tokens.SigningKeyPrefix + "-1",
-				},
-			}
-			// zone token signing key
-			secret3 := &core_system.GlobalSecretResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "some-other-global-secret",
-				},
-			}
+			ok := predicate(clusterID, config1)
 
 			// then
-			Expect(predicate(clusterID, secret1)).To(BeTrue())
-			Expect(predicate(clusterID, secret2)).To(BeTrue())
-			Expect(predicate(clusterID, secret3)).To(BeFalse())
-		})
+			Expect(ok).To(BeTrue())
 
-		It("Should filter out zone ingresses from the same zone", func() {
 			// when
-			// the same zone
-			zoneIngress1 := &core_mesh.ZoneIngressResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "zone-ingress-1",
-				},
-				Spec: &mesh_proto.ZoneIngress{
-					Zone: clusterID,
-				},
-			}
-			// different zones
-			differentZone1Name := "zone-1"
-			differentZone2Name := "zone-2"
-			zoneIngress2 := &core_mesh.ZoneIngressResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "zone-ingress-2",
-				},
-				Spec: &mesh_proto.ZoneIngress{
-					Zone: differentZone1Name,
-				},
-			}
-			zoneIngress3 := &core_mesh.ZoneIngressResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "zone-ingress-3",
-				},
-				Spec: &mesh_proto.ZoneIngress{
-					Zone: differentZone2Name,
-				},
-			}
-
-			Expect(rm.Create(stdcontext.Background(), &core_system.ZoneResource{
-				Meta: &test_model.ResourceMeta{
-					Name: differentZone1Name,
-				},
-				Spec: &system_proto.Zone{
-					Enabled: util_proto.Bool(true),
-				},
-			}, core_store.CreateByKey(differentZone1Name, ""))).To(Succeed())
-
-			Expect(rm.Create(stdcontext.Background(), &core_system.ZoneResource{
-				Meta: &test_model.ResourceMeta{
-					Name: differentZone2Name,
-				},
-				Spec: &system_proto.Zone{
-					Enabled: util_proto.Bool(false),
-				},
-			}, core_store.CreateByKey(differentZone2Name, ""))).To(Succeed())
+			ok = predicate(clusterID, config2)
 
 			// then
-			Expect(predicate(clusterID, zoneIngress1)).To(BeFalse())
-			Expect(predicate(clusterID, zoneIngress2)).To(BeTrue())
-			Expect(predicate(clusterID, zoneIngress3)).To(BeFalse())
+			Expect(ok).To(BeFalse())
 		})
 
-		It("Should filter out zone egresses from the same zone", func() {
-			// when
-			// the same zone
-			zoneEgress1 := &core_mesh.ZoneEgressResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "zone-egress-1",
-				},
-				Spec: &mesh_proto.ZoneEgress{
-					Zone: clusterID,
-				},
-			}
-			// different zones
-			differentZone1Name := "zone-1"
-			differentZone2Name := "zone-2"
-			zoneEgress2 := &core_mesh.ZoneEgressResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "zone-egress-2",
-				},
-				Spec: &mesh_proto.ZoneEgress{
-					Zone: differentZone1Name,
-				},
-			}
-			zoneEgress3 := &core_mesh.ZoneEgressResource{
-				Meta: &test_model.ResourceMeta{
-					Name: "zone-egress-3",
-				},
-				Spec: &mesh_proto.ZoneEgress{
-					Zone: differentZone2Name,
-				},
-			}
+		DescribeTable("global secrets",
+			func(given testCase) {
+				// when
+				ok := predicate(clusterID, given.resource)
 
-			Expect(rm.Create(stdcontext.Background(), &core_system.ZoneResource{
-				Meta: &test_model.ResourceMeta{
-					Name: differentZone1Name,
+				// then
+				Expect(ok).To(Equal(given.expect))
+			},
+			Entry("should not filter out zone ingress token signing key", testCase{
+				resource: &core_system.GlobalSecretResource{
+					Meta: &test_model.ResourceMeta{
+						Name: zoneingress.ZoneIngressSigningKeyPrefix + "-1",
+					},
 				},
-				Spec: &system_proto.Zone{
-					Enabled: util_proto.Bool(true),
+				expect: true,
+			}),
+			Entry("should not filter out zone token signing key", testCase{
+				resource: &core_system.GlobalSecretResource{
+					Meta: &test_model.ResourceMeta{
+						Name: zone_tokens.SigningKeyPrefix + "-1",
+					},
 				},
-			}, core_store.CreateByKey(differentZone1Name, ""))).To(Succeed())
+				expect: true,
+			}),
+			Entry("should filter out when not signing key", testCase{
+				resource: &core_system.GlobalSecretResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "some-non-signing-key-global-secret",
+					},
+				},
+				expect: false,
+			}),
+		)
 
-			Expect(rm.Create(stdcontext.Background(), &core_system.ZoneResource{
-				Meta: &test_model.ResourceMeta{
-					Name: differentZone2Name,
-				},
-				Spec: &system_proto.Zone{
-					Enabled: util_proto.Bool(false),
-				},
-			}, core_store.CreateByKey(differentZone2Name, ""))).To(Succeed())
+		DescribeTable("zone ingresses",
+			func(given testCase) {
+				// given
+				if given.zoneResource != nil {
+					Expect(rm.Create(
+						stdcontext.Background(),
+						given.zoneResource,
+						core_store.CreateByKey(given.zoneName, ""),
+					)).To(Succeed())
+				}
 
-			// then
-			Expect(predicate(clusterID, zoneEgress1)).To(BeFalse())
-			Expect(predicate(clusterID, zoneEgress2)).To(BeTrue())
-			Expect(predicate(clusterID, zoneEgress3)).To(BeFalse())
-		})
+				// when
+				ok := predicate(clusterID, given.resource)
 
-		It("Should filter resources with KDS Flags equal model.ProvidedByGlobal", func() {
-			// when
+				// then
+				Expect(ok).To(Equal(given.expect))
+			},
+			Entry("should not filter out zone ingresses from the different, enabled zone", testCase{
+				resource: &core_mesh.ZoneIngressResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "zone-ingress-1",
+					},
+					Spec: &mesh_proto.ZoneIngress{
+						Zone: "different-zone",
+					},
+				},
+				zoneResource: &core_system.ZoneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "different-zone",
+					},
+					Spec: &system_proto.Zone{
+						Enabled: util_proto.Bool(true),
+					},
+				},
+				zoneName: "different-zone",
+				expect:   true,
+			}),
+			Entry("should filter out zone ingresses from the same zone", testCase{
+				resource: &core_mesh.ZoneIngressResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "zone-ingress-1",
+					},
+					Spec: &mesh_proto.ZoneIngress{
+						Zone: clusterID,
+					},
+				},
+				expect: false,
+			}),
+			Entry("should filter out zone ingresses from the different, not enabled zone", testCase{
+				resource: &core_mesh.ZoneIngressResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "zone-ingress-1",
+					},
+					Spec: &mesh_proto.ZoneIngress{
+						Zone: "different-zone",
+					},
+				},
+				zoneResource: &core_system.ZoneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "different-zone",
+					},
+					Spec: &system_proto.Zone{
+						Enabled: util_proto.Bool(false),
+					},
+				},
+				zoneName: "different-zone",
+				expect:   false,
+			}),
+		)
+
+		DescribeTable("zone egresses",
+			func(given testCase) {
+				// given
+				if given.zoneResource != nil {
+					Expect(rm.Create(
+						stdcontext.Background(),
+						given.zoneResource,
+						core_store.CreateByKey(given.zoneName, ""),
+					)).To(Succeed())
+				}
+
+				// when
+				ok := predicate(clusterID, given.resource)
+
+				// then
+				Expect(ok).To(Equal(given.expect))
+			},
+			Entry("should not filter out zone egresses from the different, enabled zone", testCase{
+				resource: &core_mesh.ZoneEgressResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "zone-egress-1",
+					},
+					Spec: &mesh_proto.ZoneEgress{
+						Zone: "different-zone",
+					},
+				},
+				zoneResource: &core_system.ZoneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "different-zone",
+					},
+					Spec: &system_proto.Zone{
+						Enabled: util_proto.Bool(true),
+					},
+				},
+				zoneName: "different-zone",
+				expect:   true,
+			}),
+			Entry("should filter out zone egresses from the same zone", testCase{
+				resource: &core_mesh.ZoneEgressResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "zone-egress-1",
+					},
+					Spec: &mesh_proto.ZoneEgress{
+						Zone: clusterID,
+					},
+				},
+				expect: false,
+			}),
+			Entry("should filter out zone egresses from the different, not enabled zone", testCase{
+				resource: &core_mesh.ZoneEgressResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "zone-egress-1",
+					},
+					Spec: &mesh_proto.ZoneEgress{
+						Zone: "different-zone",
+					},
+				},
+				zoneResource: &core_system.ZoneResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "different-zone",
+					},
+					Spec: &system_proto.Zone{
+						Enabled: util_proto.Bool(false),
+					},
+				},
+				zoneName: "different-zone",
+				expect:   false,
+			}),
+		)
+
+		Context("global provided resources", func() {
 			// we are ignoring this types, as we should already test them in
 			// earlier tests
 			ignoreTypes := map[model.ResourceType]struct{}{
@@ -218,19 +276,34 @@ var _ = Describe("Context", func() {
 				core_mesh.ZoneEgressType:     {},
 			}
 
-			// then
+			var entries []TableEntry
 			for _, descriptor := range registry.Global().ObjectDescriptors() {
-				_, ignoreType := ignoreTypes[descriptor.Name]
+				name := descriptor.Name
+				_, ignoreType := ignoreTypes[name]
 
 				if descriptor.KDSFlags.Has(model.ProvidedByGlobal) && !ignoreType {
 					resource := descriptor.NewObject()
 					resource.SetMeta(&test_model.ResourceMeta{
-						Name: string(descriptor.Name),
+						Name: string(name),
 					})
 
-					Expect(predicate(clusterID, resource)).To(BeTrue())
+					entries = append(entries, Entry(
+						fmt.Sprintf("should return true for %s", name),
+						testCase{resource: resource},
+					))
 				}
 			}
+
+			DescribeTable("returned predicate function",
+				func(given testCase) {
+					// when
+					ok := predicate(clusterID, given.resource)
+
+					// then
+					Expect(ok).To(BeTrue())
+				},
+				entries...,
+			)
 		})
 	})
 })

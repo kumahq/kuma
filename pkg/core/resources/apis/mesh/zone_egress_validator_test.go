@@ -10,21 +10,21 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var _ = Describe("Dataplane", func() {
+var _ = Describe("ZoneEgress", func() {
 
 	DescribeTable("should pass validation",
-		func(dpYAML string) {
+		func(yaml string) {
 			// given
-			zoneegress := core_mesh.NewZoneEgressResource()
+			zoneEgress := core_mesh.NewZoneEgressResource()
 
 			// when
-			err := util_proto.FromYAML([]byte(dpYAML), zoneegress.Spec)
+			err := util_proto.FromYAML([]byte(yaml), zoneEgress.Spec)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = zoneegress.Validate()
+			err = zoneEgress.Validate()
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -51,24 +51,24 @@ var _ = Describe("Dataplane", func() {
 		dataplane string
 		expected  string
 	}
+
 	DescribeTable("should validate all fields and return as much individual errors as possible",
 		func(given testCase) {
-			// setup
-			zoneegress := core_mesh.NewZoneEgressResource()
+			// given
+			zoneEgress := core_mesh.NewZoneEgressResource()
 
 			// when
-			err := util_proto.FromYAML([]byte(given.dataplane), zoneegress.Spec)
+			err := util_proto.FromYAML([]byte(given.dataplane), zoneEgress.Spec)
+
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			verr := zoneegress.Validate()
-			// and
+			verr := zoneEgress.Validate()
 			actual, err := yaml.Marshal(verr)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			// and
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("no port defined", testCase{
@@ -97,5 +97,4 @@ var _ = Describe("Dataplane", func() {
                   message: must differ from port`,
 		}),
 	)
-
 })

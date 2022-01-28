@@ -48,7 +48,7 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, resource mode
 	case *core_mesh.ZoneIngressResource:
 		return u.authZoneIngress(ctx, resource, credential)
 	case *core_mesh.ZoneEgressResource:
-		return u.authZoneEgress(ctx, resource, credential)
+		return u.authZoneEgress(ctx, credential)
 	default:
 		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
@@ -86,7 +86,6 @@ func (u *universalAuthenticator) authZoneIngress(ctx context.Context, zoneIngres
 
 func (u *universalAuthenticator) authZoneEgress(
 	ctx context.Context,
-	_ *core_mesh.ZoneEgressResource,
 	credential auth.Credential,
 ) error {
 	identity, err := u.zoneValidator.Validate(ctx, credential)

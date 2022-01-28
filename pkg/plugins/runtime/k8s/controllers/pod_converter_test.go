@@ -317,7 +317,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		}),
 	)
 
-	DescribeTable("should convert Ingress Pod into an Egress Dataplane YAML version",
+	DescribeTable("should convert Egress Pod into an Egress Dataplane YAML version",
 		func(given testCase) {
 			// given
 			// pod
