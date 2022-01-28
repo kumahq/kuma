@@ -76,5 +76,22 @@ var _ = Describe("Noop Authenticator", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	// TODO (bartsmykla): add test case for zone egress when resource will be available
+	It("should allow with any token for any zone egress", func() {
+		// given
+		zoneEgress := core_mesh.ZoneEgressResource{
+			Spec: &mesh_proto.ZoneEgress{
+				Zone: "zone-1",
+				Networking: &mesh_proto.ZoneEgress_Networking{
+					Address: "127.0.0.1",
+					Port:    10002,
+				},
+			},
+		}
+
+		// when
+		err := authenticator.Authenticate(context.Background(), &zoneEgress, "some-random-token")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
 })

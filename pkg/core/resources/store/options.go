@@ -191,6 +191,12 @@ func ListByPage(size int, offset string) ListOptionsFunc {
 	}
 }
 
+func ListByFilterFunc(filterFunc ListFilterFunc) ListOptionsFunc {
+	return func(opts *ListOptions) {
+		opts.FilterFunc = filterFunc
+	}
+}
+
 func (l *ListOptions) HashCode() string {
 	return l.Mesh
 }

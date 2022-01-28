@@ -1,6 +1,7 @@
 package tokens
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
@@ -9,7 +10,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
@@ -18,7 +22,7 @@ func NewSigningKey() ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate RSA key")
 	}
-	return util_rsa.ToPEMBytes(key)
+	return util_rsa.FromPrivateKeyToPEMBytes(key)
 }
 
 func SigningKeyResourceKey(signingKeyPrefix string, serialNumber int, mesh string) model.ResourceKey {
@@ -52,9 +56,9 @@ func IsSigningKeyNotFound(err error) bool {
 	return errors.As(err, &target)
 }
 
-func keyBytesToRsaKey(keyBytes []byte) (*rsa.PrivateKey, error) {
-	if util_rsa.IsPEMBytes(keyBytes) {
-		key, err := util_rsa.FromPEMBytes(keyBytes)
+func keyBytesToRsaPrivateKey(keyBytes []byte) (*rsa.PrivateKey, error) {
+	if util_rsa.IsPrivateKeyPEMBytes(keyBytes) {
+		key, err := util_rsa.FromPEMBytesToPrivateKey(keyBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -69,6 +73,23 @@ func keyBytesToRsaKey(keyBytes []byte) (*rsa.PrivateKey, error) {
 	return key, nil
 }
 
+func keyBytesToRsaPublicKey(keyBytes []byte) (*rsa.PublicKey, error) {
+	if util_rsa.IsPublicKeyPEMBytes(keyBytes) {
+		key, err := util_rsa.FromPEMBytesToPublicKey(keyBytes)
+		if err != nil {
+			return nil, err
+		}
+		return key, nil
+	}
+
+	// support non-PEM RSA key for legacy reasons
+	key, err := x509.ParsePKCS1PublicKey(keyBytes)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
+}
+
 func signingKeySerialNumber(secretName string, signingKeyPrefix string) (int, error) {
 	serialNumberStr := strings.ReplaceAll(secretName, signingKeyPrefix+"-", "")
 	serialNumber, err := strconv.Atoi(serialNumberStr)
@@ -76,4 +97,25 @@ func signingKeySerialNumber(secretName string, signingKeyPrefix string) (int, er
 		return 0, err
 	}
 	return serialNumber, nil
+}
+
+func getKeyBytes(
+	ctx context.Context,
+	resManager manager.ResourceManager,
+	signingKeyPrefix string,
+	serialNumber int,
+) ([]byte, error) {
+	resource := system.NewGlobalSecretResource()
+	if err := resManager.Get(ctx, resource, store.GetBy(SigningKeyResourceKey(signingKeyPrefix, serialNumber, model.NoMesh))); err != nil {
+		if store.IsResourceNotFound(err) {
+			return nil, &SigningKeyNotFound{
+				SerialNumber: serialNumber,
+				Prefix:       signingKeyPrefix,
+			}
+		}
+
+		return nil, errors.Wrap(err, "could not retrieve signing key")
+	}
+
+	return resource.Spec.GetData().GetValue(), nil
 }

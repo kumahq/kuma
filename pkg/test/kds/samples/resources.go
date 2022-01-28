@@ -126,6 +126,12 @@ var (
 			Id: "1",
 		}},
 	}
+	ZoneEgress = &mesh_proto.ZoneEgress{
+		Networking: &mesh_proto.ZoneEgress_Networking{
+			Address: "127.0.0.1",
+			Port:    80,
+		},
+	}
 	ExternalService = &mesh_proto.ExternalService{
 		Networking: &mesh_proto.ExternalService_Networking{
 			Address: "192.168.0.1",

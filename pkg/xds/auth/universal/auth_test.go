@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -69,7 +70,7 @@ var _ = Describe("Authentication flow", func() {
 
 		dataplaneValidator := builtin.NewDataplaneTokenValidator(resManager)
 		zoneIngressValidator := builtin.NewZoneIngressTokenValidator(resManager)
-		zoneTokenValidator := builtin.NewZoneTokenValidator(resManager)
+		zoneTokenValidator := builtin.NewZoneTokenValidator(resManager, config_core.Global)
 		issuer = builtin.NewDataplaneTokenIssuer(resManager)
 		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneIngressValidator, zoneTokenValidator, "zone-1")
 

@@ -152,7 +152,7 @@ var _ = Describe("Zone Sync", func() {
 			return !excludeTypes[descriptor.Name]
 		}))
 
-		// plus 2 global-scope types
+		// plus 4 global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
 			mesh.ZoneIngressType,

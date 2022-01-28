@@ -1,0 +1,12 @@
+---
+metadata:
+  namespace: kuma-system
+  name: kuma-egress
+spec:
+  type: NodePort
+  ports:
+    - port: 10002
+      targetPort: 10002
+      nodePort: 12345
+  selector:
+    app: kuma-egress

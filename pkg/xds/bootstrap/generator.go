@@ -123,6 +123,13 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 		params.Service = "ingress"
 		setAdminPort(zoneIngress.Spec.GetNetworking().GetAdmin().GetPort())
+	case mesh_proto.EgressProxyType:
+		zoneEgress, err := b.zoneEgressFor(ctx, request, proxyId)
+		if err != nil {
+			return nil, err
+		}
+		params.Service = "egress"
+		setAdminPort(zoneEgress.Spec.GetNetworking().GetAdmin().GetPort())
 	case mesh_proto.DataplaneProxyType, "":
 		params.HdsEnabled = b.hdsEnabled
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
@@ -238,6 +245,29 @@ func (b *bootstrapGenerator) zoneIngressFor(ctx context.Context, request types.B
 			return nil, err
 		}
 		return zoneIngress, nil
+	}
+}
+
+func (b *bootstrapGenerator) zoneEgressFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.ZoneEgressResource, error) {
+	if request.DataplaneResource != "" {
+		res, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
+		if err != nil {
+			return nil, err
+		}
+		zoneEgress, ok := res.(*core_mesh.ZoneEgressResource)
+		if !ok {
+			return nil, errors.Errorf("invalid resource")
+		}
+		if err := zoneEgress.Validate(); err != nil {
+			return nil, err
+		}
+		return zoneEgress, nil
+	} else {
+		zoneEgress := core_mesh.NewZoneEgressResource()
+		if err := b.resManager.Get(ctx, zoneEgress, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
+			return nil, err
+		}
+		return zoneEgress, nil
 	}
 }
 

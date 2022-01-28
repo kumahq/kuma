@@ -190,7 +190,7 @@ func (d *Dataplane) Sanitize() {
 func (d *Dataplane) Validate() (errs error) {
 	proxyType := mesh_proto.ProxyType(d.ProxyType)
 	switch proxyType {
-	case mesh_proto.DataplaneProxyType, mesh_proto.IngressProxyType:
+	case mesh_proto.DataplaneProxyType, mesh_proto.IngressProxyType, mesh_proto.EgressProxyType:
 	default:
 		if err := proxyType.IsValid(); err != nil {
 			errs = multierr.Append(errs, errors.Wrap(err, ".ProxyType is not valid"))
@@ -200,7 +200,7 @@ func (d *Dataplane) Validate() (errs error) {
 		}
 	}
 
-	if d.Mesh == "" && proxyType != mesh_proto.IngressProxyType {
+	if d.Mesh == "" && proxyType != mesh_proto.IngressProxyType && proxyType != mesh_proto.EgressProxyType {
 		errs = multierr.Append(errs, errors.Errorf(".Mesh must be non-empty"))
 	}
 

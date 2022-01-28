@@ -59,41 +59,25 @@ var _ = Describe("Global Insights Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		Expect(resourceStore.Create(
-			context.Background(),
-			system.NewZoneResource(),
-			store.CreateByKey("zone-1", core_model.NoMesh),
-		)).To(Succeed())
+		resources := map[string]core_model.Resource{
+			"zone-1":         system.NewZoneResource(),
+			"zone-2":         system.NewZoneResource(),
+			"zone-ingress-1": core_mesh.NewZoneIngressResource(),
+			"zone-egress-1":  core_mesh.NewZoneEgressResource(),
+			"zone-egress-2":  core_mesh.NewZoneEgressResource(),
+			"mesh-1":         core_mesh.NewMeshResource(),
+			"mesh-2":         core_mesh.NewMeshResource(),
+			"mesh-3":         core_mesh.NewMeshResource(),
+		}
 
-		Expect(resourceStore.Create(
-			context.Background(),
-			system.NewZoneResource(),
-			store.CreateByKey("zone-2", core_model.NoMesh),
-		)).To(Succeed())
+		for name, resource := range resources {
+			Expect(resourceStore.Create(
+				context.Background(),
+				resource,
+				store.CreateByKey(name, core_model.NoMesh),
+			)).To(Succeed())
+		}
 
-		Expect(resourceStore.Create(
-			context.Background(),
-			core_mesh.NewZoneIngressResource(),
-			store.CreateByKey("zone-ingress-1", core_model.NoMesh),
-		)).To(Succeed())
-
-		Expect(resourceStore.Create(
-			context.Background(),
-			core_mesh.NewMeshResource(),
-			store.CreateByKey("mesh-1", core_model.NoMesh),
-		)).To(Succeed())
-
-		Expect(resourceStore.Create(
-			context.Background(),
-			core_mesh.NewMeshResource(),
-			store.CreateByKey("mesh-2", core_model.NoMesh),
-		)).To(Succeed())
-
-		Expect(resourceStore.Create(
-			context.Background(),
-			core_mesh.NewMeshResource(),
-			store.CreateByKey("mesh-3", core_model.NoMesh),
-		)).To(Succeed())
 	})
 
 	globalInsightsJSON := `
@@ -108,6 +92,9 @@ var _ = Describe("Global Insights Endpoints", func() {
       "total": 3
     },
     "Zone": {
+      "total": 2
+    },
+    "ZoneEgress": {
       "total": 2
     },
     "ZoneIngress": {

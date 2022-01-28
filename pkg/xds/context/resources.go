@@ -72,6 +72,10 @@ func (r Resources) ZoneIngresses() *core_mesh.ZoneIngressResourceList {
 	return r.ListOrEmpty(core_mesh.ZoneIngressType).(*core_mesh.ZoneIngressResourceList)
 }
 
+func (r Resources) ZoneEgresses() *core_mesh.ZoneEgressResourceList {
+	return r.ListOrEmpty(core_mesh.ZoneEgressType).(*core_mesh.ZoneEgressResourceList)
+}
+
 func (r Resources) Dataplanes() *core_mesh.DataplaneResourceList {
 	return r.ListOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList)
 }

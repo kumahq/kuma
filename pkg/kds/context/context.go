@@ -89,59 +89,61 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(
 }
 
 // GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
-// excludes Dataplanes and Ingresses from 'clusterID' cluster
+// excludes Dataplanes, Ingresses and Egresses from 'clusterID' cluster
 func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
 	return func(clusterID string, r model.Resource) bool {
-		resType := r.Descriptor().Name
 		resName := r.GetMeta().GetName()
 
-		if resType == system.ConfigType && !configs[resName] {
+		switch r.Descriptor().Name {
+		case mesh.DataplaneType:
 			return false
-		}
-		if resType == system.GlobalSecretType {
+		case system.ConfigType:
+			return configs[resName]
+		case system.GlobalSecretType:
 			return util.ResourceNameHasAtLeastOneOfPrefixes(
 				resName,
 				zoneingress.ZoneIngressSigningKeyPrefix,
 				zone_tokens.SigningKeyPrefix,
 			)
-		}
-		if resType != mesh.DataplaneType && resType != mesh.ZoneIngressType {
+		case mesh.ZoneIngressType:
+			zoneTag := util.ZoneTag(r)
+
+			if clusterID == zoneTag {
+				// don't need to sync resource to the zone where resource is originated from
+				return false
+			}
+
+			zone := system.NewZoneResource()
+			if err := rm.Get(context.Background(), zone, store.GetByKey(zoneTag, model.NoMesh)); err != nil {
+				log.Error(err, "failed to get zone", "zone", zoneTag)
+				// since there is no explicit 'enabled: false' then we don't
+				// make any strong decisions which might affect connectivity
+				return true
+			}
+
+			return zone.Spec.IsEnabled()
+		default:
 			return true
 		}
-		if resType == mesh.DataplaneType {
-			return false
-		}
-		if clusterID == util.ZoneTag(r) {
-			// don't need to sync resource to the zone where resource is originated from
-			return false
-		}
-		zone := system.NewZoneResource()
-		if err := rm.Get(context.Background(), zone, store.GetByKey(util.ZoneTag(r), model.NoMesh)); err != nil {
-			log.Error(err, "failed to get zone", "zone", util.ZoneTag(r))
-			// since there is no explicit 'enabled: false' then we don't
-			// make any strong decisions which might affect connectivity
-			return true
-		}
-		return zone.Spec.IsEnabled()
 	}
 }
 
-// ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses that belongs to another zones
+// ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses
+// that belongs to another zones
 func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
 	return func(_ string, r model.Resource) bool {
-		resType := r.Descriptor().Name
-		if resType == mesh.DataplaneType {
+		switch r.Descriptor().Name {
+		case mesh.DataplaneType:
 			return clusterName == util.ZoneTag(r)
-		}
-		if resType == mesh.DataplaneInsightType {
+		case mesh.ZoneIngressType:
+			return !r.(*mesh.ZoneIngressResource).IsRemoteIngress(clusterName)
+		// TODO (bartsmykla): add ZoneEgressInsightType when available
+		case mesh.DataplaneInsightType,
+			mesh.ZoneIngressInsightType,
+			mesh.ZoneEgressType:
 			return true
+		default:
+			return false
 		}
-		if resType == mesh.ZoneIngressType && !r.(*mesh.ZoneIngressResource).IsRemoteIngress(clusterName) {
-			return true
-		}
-		if resType == mesh.ZoneIngressInsightType {
-			return true
-		}
-		return false
 	}
 }

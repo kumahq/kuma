@@ -65,6 +65,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			proxyTypeMap := map[string]model.ResourceType{
 				string(mesh_proto.DataplaneProxyType): mesh.DataplaneType,
 				string(mesh_proto.IngressProxyType):   mesh.ZoneIngressType,
+				string(mesh_proto.EgressProxyType):    mesh.ZoneEgressType,
 			}
 
 			if _, ok := proxyTypeMap[cfg.Dataplane.ProxyType]; !ok {
@@ -175,7 +176,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				LogLevel:  rootCtx.LogLevel,
 			}
 
-			if cfg.DNS.Enabled && cfg.Dataplane.ProxyType != string(mesh_proto.IngressProxyType) {
+			if cfg.DNS.Enabled &&
+				cfg.Dataplane.ProxyType != string(mesh_proto.IngressProxyType) &&
+				cfg.Dataplane.ProxyType != string(mesh_proto.EgressProxyType) {
 				dnsOpts := &dnsserver.Opts{
 					Config: *cfg,
 					Stdout: cmd.OutOrStdout(),

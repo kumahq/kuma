@@ -102,6 +102,27 @@ func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (k
 		return kube_ctrl.Result{}, nil
 	}
 
+	// for Pods marked with egress annotation special type of Dataplane will be injected
+	egressEnabled, egressExist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaEgressAnnotation)
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
+	if egressExist && egressEnabled {
+		if pod.Namespace != r.SystemNamespace {
+			return kube_ctrl.Result{}, errors.Errorf("Egress can only be deployed in system namespace %q", r.SystemNamespace)
+		}
+		services, err := r.findMatchingServices(ctx, pod)
+		if err != nil {
+			return kube_ctrl.Result{}, err
+		}
+		err = r.createOrUpdateEgress(ctx, pod, services)
+		if err != nil {
+			return kube_ctrl.Result{}, err
+		}
+
+		return kube_ctrl.Result{}, nil
+	}
+
 	ns := kube_core.Namespace{}
 	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: pod.Namespace}, &ns); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace for Pod")
@@ -265,6 +286,38 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Ingress: %s", pod.Name)
 	case kube_controllerutil.OperationResultUpdated:
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Ingress: %s", pod.Name)
+	}
+	return nil
+}
+
+func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) error {
+	egress := &mesh_k8s.ZoneEgress{
+		ObjectMeta: kube_meta.ObjectMeta{
+			Namespace: pod.Namespace,
+			Name:      pod.Name,
+		},
+		Mesh: model.NoMesh,
+	}
+	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, egress, func() error {
+		if err := r.PodConverter.PodToEgress(ctx, egress, pod, services); err != nil {
+			return errors.Wrap(err, "unable to translate a Pod into a Egress")
+		}
+		if err := kube_controllerutil.SetControllerReference(pod, egress, r.Scheme); err != nil {
+			return errors.Wrap(err, "unable to set Egress's controller reference to Pod")
+		}
+		return nil
+	})
+	if err != nil {
+		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
+		log.Error(err, "unable to create/update Egress", "operationResult", operationResult)
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Egress: %s", err.Error())
+		return err
+	}
+	switch operationResult {
+	case kube_controllerutil.OperationResultCreated:
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Egress: %s", pod.Name)
+	case kube_controllerutil.OperationResultUpdated:
+		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Egress: %s", pod.Name)
 	}
 	return nil
 }

@@ -107,6 +107,7 @@ var predefinedProfiles = make(map[string]ResourceGenerator)
 func init() {
 	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
 	RegisterProfile(IngressProxy, CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
+	RegisterProfile(EgressProxy, CompositeResourceGenerator{AdminProxyGenerator{}, EgressGenerator{}})
 }
 
 func RegisterProfile(profileName string, generator ResourceGenerator) {

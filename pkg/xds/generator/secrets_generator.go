@@ -62,7 +62,7 @@ func (s SecretsProxyGenerator) Generate(
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	if proxy.ZoneEgressProxy != nil {
-		return createSecrets(ctx, proxy, proxy.ZoneEgressProxy.Meshes.Items)
+		return createSecrets(ctx, proxy, proxy.ZoneEgressProxy.Meshes)
 	}
 
 	return createSecrets(ctx, proxy, []*core_mesh.MeshResource{ctx.Mesh.Resource})

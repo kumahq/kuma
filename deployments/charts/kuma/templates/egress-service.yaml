@@ -1,0 +1,28 @@
+{{- if .Values.egress.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kuma.egress.serviceName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.egress.service.annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  type: {{ .Values.egress.service.type }}
+  {{- if .Values.egress.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.egress.service.loadBalancerIP }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.egress.service.port }}
+      protocol: TCP
+      targetPort: 10002
+    {{- if and (eq .Values.egress.service.type "NodePort")  .Values.egress.service.nodePort }}
+      nodePort: {{ .Values.egress.service.nodePort }}
+    {{- end }}
+  selector:
+    app: kuma-egress
+  {{- include "kuma.selectorLabels" . | nindent 4 }}
+{{- end }}

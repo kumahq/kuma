@@ -2478,6 +2478,76 @@ _kumactl_get_zone()
     noun_aliases=()
 }
 
+_kumactl_get_zone-egress()
+{
+    last_command="kumactl_get_zone-egress"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_zone-egresses()
+{
+    last_command="kumactl_get_zone-egresses"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--offset=")
+    two_word_flags+=("--offset")
+    flags+=("--size=")
+    two_word_flags+=("--size")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_get_zone-ingress()
 {
     last_command="kumactl_get_zone-ingress"
@@ -2631,6 +2701,8 @@ _kumactl_get()
     commands+=("virtual-outbound")
     commands+=("virtual-outbounds")
     commands+=("zone")
+    commands+=("zone-egress")
+    commands+=("zone-egresses")
     commands+=("zone-ingress")
     commands+=("zone-ingresses")
     commands+=("zones")
@@ -2980,6 +3052,16 @@ _kumactl_install_control-plane()
     two_word_flags+=("--dataplane-version")
     local_nonpersistent_flags+=("--dataplane-version")
     local_nonpersistent_flags+=("--dataplane-version=")
+    flags+=("--egress-drain-time=")
+    two_word_flags+=("--egress-drain-time")
+    local_nonpersistent_flags+=("--egress-drain-time")
+    local_nonpersistent_flags+=("--egress-drain-time=")
+    flags+=("--egress-enabled")
+    local_nonpersistent_flags+=("--egress-enabled")
+    flags+=("--egress-service-type=")
+    two_word_flags+=("--egress-service-type")
+    local_nonpersistent_flags+=("--egress-service-type")
+    local_nonpersistent_flags+=("--egress-service-type=")
     flags+=("--env-var=")
     two_word_flags+=("--env-var")
     local_nonpersistent_flags+=("--env-var")

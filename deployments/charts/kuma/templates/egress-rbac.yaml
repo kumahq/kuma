@@ -1,0 +1,9 @@
+{{- if .Values.egress.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kuma.name" . }}-egress
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+{{- end }}

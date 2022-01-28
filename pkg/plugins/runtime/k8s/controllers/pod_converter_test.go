@@ -234,6 +234,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "15.services-for-pod.yaml",
 			dataplane:      "15.dataplane.yaml",
 		}),
+		Entry("16. Pod with Kuma Egress", testCase{
+			pod:            "16.pod.yaml",
+			servicesForPod: "16.services-for-pod.yaml",
+			dataplane:      "16.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
@@ -309,6 +314,77 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "06.pod.yaml",
 			servicesForPod: "06.services-for-pod.yaml",
 			dataplane:      "06.dataplane.yaml",
+		}),
+	)
+
+	DescribeTable("should convert Egress Pod into an Egress Dataplane YAML version",
+		func(given testCase) {
+			// given
+			// pod
+			pod := &kube_core.Pod{}
+			bytes, err := os.ReadFile(filepath.Join("testdata", "egress", given.pod))
+			Expect(err).ToNot(HaveOccurred())
+			err = yaml.Unmarshal(bytes, pod)
+			Expect(err).ToNot(HaveOccurred())
+
+			// services for pod
+			bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.servicesForPod))
+			Expect(err).ToNot(HaveOccurred())
+			YAMLs := util_yaml.SplitYAML(string(bytes))
+			services, err := ParseServices(YAMLs)
+			Expect(err).ToNot(HaveOccurred())
+
+			// node
+			var nodeGetter kube_client.Reader
+			if given.node != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.node))
+				Expect(err).ToNot(HaveOccurred())
+				nodeGetter = fakeNodeReader(bytes)
+			}
+
+			converter := PodConverter{
+				ServiceGetter: nil,
+				NodeGetter:    nodeGetter,
+				Zone:          "zone-1",
+			}
+
+			// when
+			egress := &mesh_k8s.ZoneEgress{}
+			err = converter.PodToEgress(context.Background(), egress, pod, services)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			actual, err := yaml.Marshal(egress)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "egress", given.dataplane)))
+		},
+		Entry("01. Egress with load balancer service and hostname", testCase{ // AWS use case
+			pod:            "01.pod.yaml",
+			servicesForPod: "01.services-for-pod.yaml",
+			dataplane:      "01.dataplane.yaml",
+		}),
+		Entry("02. Egress with load balancer and ip", testCase{ // GCP use case
+			pod:            "02.pod.yaml",
+			servicesForPod: "02.services-for-pod.yaml",
+			dataplane:      "02.dataplane.yaml",
+		}),
+		Entry("03. Egress with load balancer without public ip", testCase{
+			pod:            "03.pod.yaml",
+			servicesForPod: "03.services-for-pod.yaml",
+			dataplane:      "03.dataplane.yaml",
+		}),
+		Entry("04. Egress with node port external IP", testCase{ // Real deployment use case
+			pod:            "04.pod.yaml",
+			servicesForPod: "04.services-for-pod.yaml",
+			dataplane:      "04.dataplane.yaml",
+			node:           "04.node.yaml",
+		}),
+		Entry("05. Egress with node port internal IP", testCase{ // KIND / Minikube use case
+			pod:            "05.pod.yaml",
+			servicesForPod: "05.services-for-pod.yaml",
+			dataplane:      "05.dataplane.yaml",
+			node:           "05.node.yaml",
 		}),
 	)
 

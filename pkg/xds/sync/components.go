@@ -39,11 +39,22 @@ func defaultIngressProxyBuilder(rt core_runtime.Runtime, metadataTracker Datapla
 	}
 }
 
+func defaultEgressProxyBuilder(rt core_runtime.Runtime, metadataTracker DataplaneMetadataTracker, apiVersion envoy.APIVersion) *EgressProxyBuilder {
+	return &EgressProxyBuilder{
+		ResManager:         rt.ResourceManager(),
+		ReadOnlyResManager: rt.ReadOnlyResourceManager(),
+		LookupIP:           rt.LookupIP(),
+		MetadataTracker:    metadataTracker,
+		apiVersion:         apiVersion,
+	}
+}
+
 func DefaultDataplaneWatchdogFactory(
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
 	dataplaneReconciler SnapshotReconciler,
 	ingressReconciler SnapshotReconciler,
+	egressReconciler SnapshotReconciler,
 	xdsMetrics *xds_metrics.Metrics,
 	meshSnapshotCache *mesh.Cache,
 	envoyCpCtx *xds_context.ControlPlaneContext,
@@ -55,12 +66,15 @@ func DefaultDataplaneWatchdogFactory(
 		metadataTracker,
 		apiVersion)
 	ingressProxyBuilder := defaultIngressProxyBuilder(rt, metadataTracker, apiVersion)
+	egressProxyBuilder := defaultEgressProxyBuilder(rt, metadataTracker, apiVersion)
 
 	deps := DataplaneWatchdogDependencies{
 		dataplaneProxyBuilder: dataplaneProxyBuilder,
 		dataplaneReconciler:   dataplaneReconciler,
 		ingressProxyBuilder:   ingressProxyBuilder,
 		ingressReconciler:     ingressReconciler,
+		egressProxyBuilder:    egressProxyBuilder,
+		egressReconciler:      egressReconciler,
 		envoyCpCtx:            envoyCpCtx,
 		meshCache:             meshSnapshotCache,
 		metadataTracker:       metadataTracker,
