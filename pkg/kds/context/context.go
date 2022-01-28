@@ -105,7 +105,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 				zoneingress.ZoneIngressSigningKeyPrefix,
 				zone_tokens.SigningKeyPrefix,
 			)
-		case mesh.ZoneIngressType, mesh.ZoneEgressType:
+		case mesh.ZoneIngressType:
 			zoneTag := util.ZoneTag(r)
 
 			if clusterID == zoneTag {
