@@ -23,6 +23,10 @@ var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 		Path:        "/ready",
 		RewritePath: "/ready",
 	},
+	{
+		Path:        "/config_dump",
+		RewritePath: "/config_dump",
+	},
 }
 
 var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{

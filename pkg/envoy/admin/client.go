@@ -28,10 +28,10 @@ type EnvoyAdminClient interface {
 }
 
 type envoyAdminClient struct {
-	rm         manager.ResourceManager
-	caManagers ca.Managers
-	clientCert tls.Certificate
-	adminPort  uint32
+	rm               manager.ResourceManager
+	caManagers       ca.Managers
+	clientCert       tls.Certificate
+	defaultAdminPort uint32
 }
 
 func NewEnvoyAdminClient(rm manager.ResourceManager, caManagers ca.Managers, clientCertPath, clientKeyPath string, adminPort uint32) (EnvoyAdminClient, error) {
@@ -41,10 +41,10 @@ func NewEnvoyAdminClient(rm manager.ResourceManager, caManagers ca.Managers, cli
 	}
 
 	client := &envoyAdminClient{
-		rm:         rm,
-		caManagers: caManagers,
-		clientCert: cert,
-		adminPort:  adminPort,
+		rm:               rm,
+		caManagers:       caManagers,
+		clientCert:       cert,
+		defaultAdminPort: adminPort,
 	}
 	return client, nil
 }
@@ -135,13 +135,13 @@ const (
 	quitquitquit = "quitquitquit"
 )
 
-func (a *envoyAdminClient) adminAddress(dataplane *core_mesh.DataplaneResource) string {
+func adminAddress(dataplane *core_mesh.DataplaneResource, defaultAdminPort uint32) string {
 	ip := dataplane.GetIP()
-	// TODO: this will work perfectly fine with K8s, but will fail for Universal
-	// The real allocated admin port is part of the DP metadata, but it is attached to a particular CP,
-	// so we can not reliably use that. A better approach would be to include the admin port
-	// in the DataplaneInsights.
-	return net.JoinHostPort(ip, strconv.FormatUint(uint64(a.adminPort), 10))
+	adminPort := dataplane.Spec.GetNetworking().GetAdmin().GetPort()
+	if adminPort == 0 {
+		adminPort = defaultAdminPort
+	}
+	return net.JoinHostPort(ip, strconv.FormatUint(uint64(adminPort), 10))
 }
 
 func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) error {
@@ -150,7 +150,7 @@ func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) erro
 		return err
 	}
 
-	url := fmt.Sprintf("https://%s/%s", a.adminAddress(dataplane), quitquitquit)
+	url := fmt.Sprintf("https://%s/%s", adminAddress(dataplane, a.defaultAdminPort), quitquitquit)
 	request, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		return err
@@ -171,4 +171,28 @@ func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) erro
 	}
 
 	return nil
+}
+
+func ConfigDump(dataplane *core_mesh.DataplaneResource, defaultAdminAddress uint32) ([]byte, error) {
+	httpClient := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	url := fmt.Sprintf("http://%s/%s", adminAddress(dataplane, defaultAdminAddress), "config_dump")
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to send GET to %s", "config_dump")
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
+	}
+
+	return io.ReadAll(response.Body)
 }
