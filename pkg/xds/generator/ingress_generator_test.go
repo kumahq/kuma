@@ -44,8 +44,11 @@ var _ = Describe("IngressGenerator", func() {
 				ZoneIngress: zoneIngressRes,
 				APIVersion:  envoy_common.APIV3,
 				Routing: core_xds.Routing{
-					OutboundTargets:  given.outboundTargets,
+					OutboundTargets: given.outboundTargets,
+				},
+				ZoneIngressProxy: &core_xds.ZoneIngressProxy{
 					TrafficRouteList: given.trafficRoutes,
+					GatewayRoutes:    &core_mesh.GatewayRouteResourceList{},
 				},
 			}
 

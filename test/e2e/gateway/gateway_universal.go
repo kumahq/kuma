@@ -19,32 +19,6 @@ func GatewayOnUniversal() {
 
 	const GatewayPort = "8080"
 
-	EchoServerApp := func(name string) InstallFunc {
-		return func(cluster Cluster) error {
-			const service = "echo-service"
-			token, err := cluster.GetKuma().GenerateDpToken("default", service)
-			if err != nil {
-				return err
-			}
-
-			return TestServerUniversal(
-				name,
-				"default",
-				token,
-				WithArgs([]string{"echo", "--instance", "universal"}),
-				WithServiceName(service),
-			)(cluster)
-		}
-	}
-
-	// GatewayClientApp runs an empty container that will
-	// function as a client for a gateway.
-	GatewayClientApp := func(name string) InstallFunc {
-		return func(cluster Cluster) error {
-			return cluster.DeployApp(WithName(name), WithoutDataplane(), WithVerbose())
-		}
-	}
-
 	ExternalServerUniversal := func(name string) InstallFunc {
 		return func(cluster Cluster) error {
 			return cluster.DeployApp(
@@ -52,34 +26,6 @@ func GatewayOnUniversal() {
 				WithName(name),
 				WithoutDataplane(),
 				WithVerbose())
-		}
-	}
-
-	GatewayProxyUniversal := func(name string) InstallFunc {
-		return func(cluster Cluster) error {
-			token, err := cluster.GetKuma().GenerateDpToken("default", "edge-gateway")
-			if err != nil {
-				return err
-			}
-
-			dataplaneYaml := `
-type: Dataplane
-mesh: default
-name: {{ name }}
-networking:
-  address:  {{ address }}
-  gateway:
-    type: BUILTIN
-    tags:
-      kuma.io/service: edge-gateway
-`
-			return cluster.DeployApp(
-				WithKumactlFlow(),
-				WithName(name),
-				WithToken(token),
-				WithVerbose(),
-				WithYaml(dataplaneYaml),
-			)
 		}
 	}
 
@@ -92,8 +38,8 @@ networking:
 
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, opt...)).
-			Install(GatewayClientApp("gateway-client")).
-			Install(EchoServerApp("echo-server")).
+			Install(GatewayClientAppUniversal("gateway-client")).
+			Install(EchoServerApp("echo-server", "echo-service", "universal")).
 			Install(GatewayProxyUniversal("gateway-proxy")).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -201,9 +147,9 @@ conf:
 			err := NewClusterSetup().
 				Install(Kuma(config_core.Standalone, WithVerbose(), WithEnv("KUMA_EXPERIMENTAL_GATEWAY", "true"))).
 				Install(ExternalServerUniversal("external-echo")).
-				Install(GatewayClientApp("gateway-client")).
+				Install(GatewayClientAppUniversal("gateway-client")).
 				Install(GatewayProxyUniversal("gateway-proxy")).
-				Install(EchoServerApp("echo-server")).
+				Install(EchoServerApp("echo-server", "echo-service", "universal")).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
