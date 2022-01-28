@@ -2417,7 +2417,7 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:       false,
 	AdminOnly:      false,
 	Scope:          model.ScopeGlobal,
-	KDSFlags:       model.FromZoneToGlobal | model.FromGlobalToZone,
+	KDSFlags:       model.FromZoneToGlobal,
 	WsPath:         "zone-egresses",
 	KumactlArg:     "zone-egress",
 	KumactlListArg: "zone-egresses",

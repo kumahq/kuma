@@ -15,11 +15,3 @@ func (r *ZoneEgressResource) UsesInboundInterface(address net.IP, port uint32) b
 
 	return false
 }
-
-func (r *ZoneEgressResource) IsRemoteEgress(localZone string) bool {
-	if r.Spec.GetZone() == "" || r.Spec.GetZone() == localZone {
-		return false
-	}
-
-	return true
-}

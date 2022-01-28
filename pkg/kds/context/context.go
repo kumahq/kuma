@@ -129,7 +129,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 }
 
 // ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses
-// and Egresses that belongs to another zones
+// that belongs to another zones
 func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
 	return func(_ string, r model.Resource) bool {
 		switch r.Descriptor().Name {
@@ -137,10 +137,10 @@ func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
 			return clusterName == util.ZoneTag(r)
 		case mesh.ZoneIngressType:
 			return !r.(*mesh.ZoneIngressResource).IsRemoteIngress(clusterName)
-		case mesh.ZoneEgressType:
-			return !r.(*mesh.ZoneEgressResource).IsRemoteEgress(clusterName)
 		// TODO (bartsmykla): add ZoneEgressInsightType when available
-		case mesh.DataplaneInsightType, mesh.ZoneIngressInsightType:
+		case mesh.DataplaneInsightType,
+			mesh.ZoneIngressInsightType,
+			mesh.ZoneEgressType:
 			return true
 		default:
 			return false
