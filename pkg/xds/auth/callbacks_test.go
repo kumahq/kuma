@@ -43,6 +43,11 @@ func (t *testAuthenticator) Authenticate(_ context.Context, resource core_model.
 		if credential == "zone pass" {
 			return nil
 		}
+	case *core_mesh.ZoneEgressResource:
+		t.zoneCallCounter++
+		if credential == "zone pass" {
+			return nil
+		}
 	default:
 		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
@@ -99,7 +104,7 @@ var _ = Describe("Auth Callbacks", func() {
 		Spec: &mesh_proto.ZoneEgress{
 			Networking: &mesh_proto.ZoneEgress_Networking{
 				Address: "1.1.1.1",
-				Port:    10001,
+				Port:    10002,
 			},
 		},
 	}
@@ -281,6 +286,45 @@ var _ = Describe("Auth Callbacks", func() {
 						"dataplane.proxyType": {
 							Kind: &structpb.Value_StringValue{
 								StringValue: "ingress",
+							},
+						},
+					},
+				},
+			},
+		})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(testAuth.zoneCallCounter).To(Equal(1))
+
+		// when send second request that is already authenticated
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{})
+
+		// then auth is called only once
+		Expect(err).ToNot(HaveOccurred())
+		Expect(testAuth.zoneCallCounter).To(Equal(1))
+	})
+
+	It("should authenticate egress", func() {
+		// given
+		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "zone pass"}))
+		streamID := int64(1)
+
+		// when
+		err := callbacks.OnStreamOpen(ctx, streamID, "")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: ".egress",
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"dataplane.proxyType": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: "egress",
 							},
 						},
 					},
