@@ -14,7 +14,7 @@ func (p *PodConverter) EgressFor(
 	_ context.Context, zoneEgress *mesh_proto.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service,
 ) error {
 	if len(services) != 1 {
-		return errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
+		return errors.Errorf("egress should be matched by exactly one service. Matched %d services", len(services))
 	}
 	ifaces, err := InboundInterfacesFor(p.Zone, pod, services)
 	if err != nil {

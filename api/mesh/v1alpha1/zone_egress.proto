@@ -29,10 +29,10 @@ message ZoneEgress {
     string address = 1;
 
     // Port of the inbound interface that will forward requests to the service.
-    uint32 port = 3;
+    uint32 port = 2;
 
     // Admin contains configuration related to Envoy Admin API
-    EnvoyAdmin admin = 5;
+    EnvoyAdmin admin = 3;
   }
 
   // Networking defines the address and port of the Egress to listen on.

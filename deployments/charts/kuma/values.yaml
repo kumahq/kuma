@@ -11,7 +11,7 @@ global:
 patchSystemNamespace: true
 
 installCrdsOnUpgrade:
-  # -- Whether or not install new CRDs before upgrade (if any were introduced with the new version of Kuma)
+  # -- Whether install new CRDs before upgrade (if any were introduced with the new version of Kuma)
   enabled: true
   # -- The `imagePullSecrets` to attach to the Service Account running CRD installation.
   # This field will be deprecated in a future release, please use .global.imagePullSecrets
@@ -234,7 +234,7 @@ egress:
   replicas: 1
   service:
     # -- Service type of the Egress
-    type: LoadBalancer
+    type: ClusterIP
     # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
     loadBalancerIP:
     # -- Additional annotations to put on the Egress service
