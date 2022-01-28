@@ -9,11 +9,13 @@
    "attachments": [
     {
      "type": "service",
-     "name": "gateway"
+     "name": "gateway",
+     "service": "gateway"
     },
     {
      "type": "service",
-     "name": "redis"
+     "name": "redis",
+     "service": "redis"
     }
    ]
   },
@@ -25,7 +27,8 @@
    "attachments": [
     {
      "type": "service",
-     "name": "gateway"
+     "name": "gateway",
+     "service": "gateway"
     }
    ]
   }

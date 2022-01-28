@@ -19,9 +19,11 @@ import (
 
 func inbound(ip string, dpPort, workloadPort uint32) mesh_proto.InboundInterface {
 	return mesh_proto.InboundInterface{
-		DataplaneIP:   ip,
-		DataplanePort: dpPort,
-		WorkloadPort:  workloadPort,
+		DataplaneAdvertisedIP: ip,
+		DataplaneIP:           ip,
+		DataplanePort:         dpPort,
+		WorkloadIP:            "127.0.0.1",
+		WorkloadPort:          workloadPort,
 	}
 }
 
@@ -36,12 +38,13 @@ var _ = Describe("GroupByAttachment", func() {
 
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
+		dpNetworking    *mesh_proto.Dataplane_Networking
 		expected        core_xds.AttachmentMap
 	}
 
 	DescribeTable("should generate attachmentMap based on MatchedPolicies",
 		func(given testCase) {
-			actual := core_xds.GroupByAttachment(given.matchedPolicies)
+			actual := core_xds.GroupByAttachment(given.matchedPolicies, given.dpNetworking)
 			Expect(actual).To(Equal(given.expected))
 		},
 		Entry("group by inbounds", testCase{
@@ -81,8 +84,36 @@ var _ = Describe("GroupByAttachment", func() {
 					},
 				},
 			},
+			dpNetworking: &mesh_proto.Dataplane_Networking{
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Address:     "192.168.0.1",
+						Port:        80,
+						ServicePort: 81,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web",
+						},
+					},
+					{
+						Address:     "192.168.0.2",
+						Port:        80,
+						ServicePort: 81,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web-api",
+						},
+					},
+					{
+						Address:     "192.168.0.2",
+						Port:        90,
+						ServicePort: 91,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web-admin",
+						},
+					},
+				},
+			},
 			expected: core_xds.AttachmentMap{
-				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.1:80:81"}: {
+				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"}: {
 					core_mesh.FaultInjectionType: []core_model.Resource{
 						&core_mesh.FaultInjectionResource{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
 							Delay: &mesh_proto.FaultInjection_Conf_Delay{
@@ -101,7 +132,7 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.2:80:81"}: {
+				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"}: {
 					core_mesh.FaultInjectionType: []core_model.Resource{
 						&core_mesh.FaultInjectionResource{Spec: &mesh_proto.FaultInjection{Conf: &mesh_proto.FaultInjection_Conf{
 							Delay: &mesh_proto.FaultInjection_Conf_Delay{
@@ -114,7 +145,7 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.2:90:91"}: {
+				core_xds.Attachment{Type: core_xds.Inbound, Name: "192.168.0.2:90:91", Service: "web-admin"}: {
 					core_mesh.TrafficPermissionType: []core_model.Resource{
 						&core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission},
 					},
@@ -124,6 +155,45 @@ var _ = Describe("GroupByAttachment", func() {
 				},
 			}}),
 		Entry("group by outbounds", testCase{
+			dpNetworking: &mesh_proto.Dataplane_Networking{
+				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+					{
+						Address: "192.168.0.1",
+						Port:    80,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "redis",
+						},
+					},
+					{
+						Address: "192.168.0.2",
+						Port:    80,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "postgres",
+						},
+					},
+					{
+						Address: "192.168.0.2",
+						Port:    90,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "mysql",
+						},
+					},
+					{
+						Address: "192.168.0.3",
+						Port:    90,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "elastic",
+						},
+					},
+					{
+						Address: "192.168.0.4",
+						Port:    90,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "cockroachdb",
+						},
+					},
+				},
+			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Timeouts: core_xds.TimeoutMap{
 					outbound("192.168.0.1", 80): {Spec: samples.Timeout},
@@ -145,7 +215,7 @@ var _ = Describe("GroupByAttachment", func() {
 				},
 			},
 			expected: core_xds.AttachmentMap{
-				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.1:80"}: {
+				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.1:80", Service: "redis"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Spec: samples.Timeout},
 					},
@@ -156,7 +226,7 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficRouteResource{Spec: samples.TrafficRoute},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.2:80"}: {
+				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.2:80", Service: "postgres"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Spec: samples.Timeout},
 					},
@@ -167,7 +237,7 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficRouteResource{Spec: samples.TrafficRoute},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.2:90"}: {
+				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.2:90", Service: "mysql"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Spec: samples.Timeout},
 					},
@@ -178,12 +248,12 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.TrafficRouteResource{Spec: samples.TrafficRoute},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.3:90"}: {
+				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.3:90", Service: "elastic"}: {
 					core_mesh.TimeoutType: []core_model.Resource{
 						&core_mesh.TimeoutResource{Spec: samples.Timeout},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.4:90"}: {
+				core_xds.Attachment{Type: core_xds.Outbound, Name: "192.168.0.4:90", Service: "cockroachdb"}: {
 					core_mesh.RateLimitType: []core_model.Resource{
 						&core_mesh.RateLimitResource{Spec: samples.RateLimit},
 					},
@@ -194,6 +264,7 @@ var _ = Describe("GroupByAttachment", func() {
 			},
 		}),
 		Entry("group by service", testCase{
+			dpNetworking: &mesh_proto.Dataplane_Networking{},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				TrafficLogs: core_xds.TrafficLogMap{
 					"backend":  &core_mesh.TrafficLogResource{Spec: samples.TrafficLog},
@@ -213,7 +284,7 @@ var _ = Describe("GroupByAttachment", func() {
 				},
 			},
 			expected: core_xds.AttachmentMap{
-				core_xds.Attachment{Type: core_xds.Service, Name: "backend"}: {
+				core_xds.Attachment{Type: core_xds.Service, Name: "backend", Service: "backend"}: {
 					core_mesh.TrafficLogType: []core_model.Resource{
 						&core_mesh.TrafficLogResource{Spec: samples.TrafficLog},
 					},
@@ -227,7 +298,7 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.RetryResource{Spec: samples.Retry},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Service, Name: "postgres"}: {
+				core_xds.Attachment{Type: core_xds.Service, Name: "postgres", Service: "postgres"}: {
 					core_mesh.TrafficLogType: []core_model.Resource{
 						&core_mesh.TrafficLogResource{Spec: samples.TrafficLog},
 					},
@@ -235,12 +306,12 @@ var _ = Describe("GroupByAttachment", func() {
 						&core_mesh.CircuitBreakerResource{Spec: samples.CircuitBreaker},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Service, Name: "web"}: {
+				core_xds.Attachment{Type: core_xds.Service, Name: "web", Service: "web"}: {
 					core_mesh.HealthCheckType: []core_model.Resource{
 						&core_mesh.HealthCheckResource{Spec: samples.HealthCheck},
 					},
 				},
-				core_xds.Attachment{Type: core_xds.Service, Name: "redis"}: {
+				core_xds.Attachment{Type: core_xds.Service, Name: "redis", Service: "redis"}: {
 					core_mesh.CircuitBreakerType: []core_model.Resource{
 						&core_mesh.CircuitBreakerResource{Spec: samples.CircuitBreaker},
 					},
@@ -266,12 +337,13 @@ var _ = Describe("GroupByAttachment", func() {
 
 	type testCase struct {
 		matchedPolicies *core_xds.MatchedPolicies
+		dpNetworking    *mesh_proto.Dataplane_Networking
 		expected        core_xds.AttachmentsByPolicy
 	}
 
 	DescribeTable("should generate AttachmentsByPolicy map based on MatchedPolicies",
 		func(given testCase) {
-			actual := core_xds.GroupByPolicy(given.matchedPolicies)
+			actual := core_xds.GroupByPolicy(given.matchedPolicies, given.dpNetworking)
 			Expect(actual).To(Equal(given.expected))
 		},
 		Entry("empty MatchedPolicies", testCase{
@@ -279,6 +351,34 @@ var _ = Describe("GroupByAttachment", func() {
 			expected:        core_xds.AttachmentsByPolicy{},
 		}),
 		Entry("group by inbound policies", testCase{
+			dpNetworking: &mesh_proto.Dataplane_Networking{
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Address:     "192.168.0.1",
+						Port:        80,
+						ServicePort: 81,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web",
+						},
+					},
+					{
+						Address:     "192.168.0.2",
+						Port:        90,
+						ServicePort: 91,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web-api",
+						},
+					},
+					{
+						Address:     "192.168.0.3",
+						Port:        80,
+						ServicePort: 81,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web-admin",
+						},
+					},
+				},
+			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				TrafficPermissions: core_xds.TrafficPermissionMap{
 					inbound("192.168.0.1", 80, 81): &core_mesh.TrafficPermissionResource{
@@ -330,43 +430,61 @@ var _ = Describe("GroupByAttachment", func() {
 					Type: core_mesh.TrafficPermissionType,
 					Key:  core_model.ResourceKey{Name: "tp-1", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81"},
-					{Type: core_xds.Inbound, Name: "192.168.0.2:90:91"},
+					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
+					{Type: core_xds.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.TrafficPermissionType,
 					Key:  core_model.ResourceKey{Name: "tp-2", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.3:80:81"},
+					{Type: core_xds.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.FaultInjectionType,
 					Key:  core_model.ResourceKey{Name: "fi-1", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81"},
+					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.FaultInjectionType,
 					Key:  core_model.ResourceKey{Name: "fi-2", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81"},
-					{Type: core_xds.Inbound, Name: "192.168.0.3:80:81"},
+					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
+					{Type: core_xds.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.FaultInjectionType,
 					Key:  core_model.ResourceKey{Name: "fi-3", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.3:80:81"},
+					{Type: core_xds.Inbound, Name: "192.168.0.3:80:81", Service: "web-admin"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.RateLimitType,
 					Key:  core_model.ResourceKey{Name: "rl-1", Mesh: "default"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.2:90:91"},
+					{Type: core_xds.Inbound, Name: "192.168.0.2:90:91", Service: "web-api"},
 				},
 			},
 		}),
 		Entry("group by outbound policies", testCase{
+			dpNetworking: &mesh_proto.Dataplane_Networking{
+				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+					{
+						Address: "192.168.0.1",
+						Port:    80,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "redis",
+						},
+					},
+					{
+						Address: "192.168.0.2",
+						Port:    90,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "postgres",
+						},
+					},
+				},
+			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				Timeouts: core_xds.TimeoutMap{
 					outbound("192.168.0.1", 80): &core_mesh.TimeoutResource{
@@ -394,24 +512,25 @@ var _ = Describe("GroupByAttachment", func() {
 					Type: core_mesh.TimeoutType,
 					Key:  core_model.ResourceKey{Name: "t-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Outbound, Name: "192.168.0.1:80"},
-					{Type: core_xds.Outbound, Name: "192.168.0.2:90"},
+					{Type: core_xds.Outbound, Name: "192.168.0.1:80", Service: "redis"},
+					{Type: core_xds.Outbound, Name: "192.168.0.2:90", Service: "postgres"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.RateLimitType,
 					Key:  core_model.ResourceKey{Name: "rl-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Outbound, Name: "192.168.0.1:80"},
+					{Type: core_xds.Outbound, Name: "192.168.0.1:80", Service: "redis"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.RateLimitType,
 					Key:  core_model.ResourceKey{Name: "rl-2", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Outbound, Name: "192.168.0.2:90"},
+					{Type: core_xds.Outbound, Name: "192.168.0.2:90", Service: "postgres"},
 				},
 			},
 		}),
 		Entry("group by service policies", testCase{
+			dpNetworking: &mesh_proto.Dataplane_Networking{},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				TrafficLogs: core_xds.TrafficLogMap{
 					"backend": &core_mesh.TrafficLogResource{
@@ -463,56 +582,92 @@ var _ = Describe("GroupByAttachment", func() {
 					Type: core_mesh.TrafficLogType,
 					Key:  core_model.ResourceKey{Name: "tl-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "backend"},
-					{Type: core_xds.Service, Name: "postgres"},
+					{Type: core_xds.Service, Name: "backend", Service: "backend"},
+					{Type: core_xds.Service, Name: "postgres", Service: "postgres"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.TrafficLogType,
 					Key:  core_model.ResourceKey{Name: "tl-2", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "redis"},
+					{Type: core_xds.Service, Name: "redis", Service: "redis"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.HealthCheckType,
 					Key:  core_model.ResourceKey{Name: "hc-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "backend"},
+					{Type: core_xds.Service, Name: "backend", Service: "backend"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.HealthCheckType,
 					Key:  core_model.ResourceKey{Name: "hc-2", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "redis"},
+					{Type: core_xds.Service, Name: "redis", Service: "redis"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.CircuitBreakerType,
 					Key:  core_model.ResourceKey{Name: "cb-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "kafka"},
+					{Type: core_xds.Service, Name: "kafka", Service: "kafka"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.RetryType,
 					Key:  core_model.ResourceKey{Name: "r-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "payments"},
+					{Type: core_xds.Service, Name: "payments", Service: "payments"},
 				},
 				core_xds.PolicyKey{
 					Type: core_mesh.RetryType,
 					Key:  core_model.ResourceKey{Name: "r-2", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Service, Name: "backend"},
-					{Type: core_xds.Service, Name: "web"},
+					{Type: core_xds.Service, Name: "backend", Service: "backend"},
+					{Type: core_xds.Service, Name: "web", Service: "web"},
 				},
 			},
 		}),
 		Entry("group by policy that exists both for inbounds and outbounds", testCase{
+			dpNetworking: &mesh_proto.Dataplane_Networking{
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Address:     "192.168.0.1",
+						Port:        80,
+						ServicePort: 81,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web",
+						},
+					},
+					{
+						Address:     "192.168.0.2",
+						Port:        80,
+						ServicePort: 81,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "web-api",
+						},
+					},
+				},
+				Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+					{
+						Address: "192.168.0.3",
+						Port:    80,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "redis",
+						},
+					},
+					{
+						Address: "192.168.0.4",
+						Port:    80,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "postgres",
+						},
+					},
+				},
+			},
 			matchedPolicies: &core_xds.MatchedPolicies{
 				RateLimitsOutbound: core_xds.OutboundRateLimitsMap{
-					outbound("192.168.0.1", 80): &core_mesh.RateLimitResource{
+					outbound("192.168.0.3", 80): &core_mesh.RateLimitResource{
 						Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
 						Spec: samples.RateLimit,
 					},
-					outbound("192.168.0.2", 80): &core_mesh.RateLimitResource{
+					outbound("192.168.0.4", 80): &core_mesh.RateLimitResource{
 						Meta: &test_model.ResourceMeta{Name: "rl-1", Mesh: "mesh-1"},
 						Spec: samples.RateLimit,
 					},
@@ -537,10 +692,10 @@ var _ = Describe("GroupByAttachment", func() {
 					Type: core_mesh.RateLimitType,
 					Key:  core_model.ResourceKey{Name: "rl-1", Mesh: "mesh-1"},
 				}: {
-					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81"},
-					{Type: core_xds.Inbound, Name: "192.168.0.2:80:81"},
-					{Type: core_xds.Outbound, Name: "192.168.0.1:80"},
-					{Type: core_xds.Outbound, Name: "192.168.0.2:80"},
+					{Type: core_xds.Inbound, Name: "192.168.0.1:80:81", Service: "web"},
+					{Type: core_xds.Inbound, Name: "192.168.0.2:80:81", Service: "web-api"},
+					{Type: core_xds.Outbound, Name: "192.168.0.3:80", Service: "redis"},
+					{Type: core_xds.Outbound, Name: "192.168.0.4:80", Service: "postgres"},
 				},
 			},
 		}),
