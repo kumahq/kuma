@@ -1,6 +1,7 @@
 package tokens
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
@@ -9,7 +10,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	util_rsa "github.com/kumahq/kuma/pkg/util/rsa"
 )
 
@@ -93,4 +97,25 @@ func signingKeySerialNumber(secretName string, signingKeyPrefix string) (int, er
 		return 0, err
 	}
 	return serialNumber, nil
+}
+
+func getKeyBytes(
+	ctx context.Context,
+	resManager manager.ResourceManager,
+	signingKeyPrefix string,
+	serialNumber int,
+) ([]byte, error) {
+	resource := system.NewGlobalSecretResource()
+	if err := resManager.Get(ctx, resource, store.GetBy(SigningKeyResourceKey(signingKeyPrefix, serialNumber, model.NoMesh))); err != nil {
+		if store.IsResourceNotFound(err) {
+			return nil, &SigningKeyNotFound{
+				SerialNumber: serialNumber,
+				Prefix:       signingKeyPrefix,
+			}
+		}
+
+		return nil, errors.Wrap(err, "could not retrieve signing key")
+	}
+
+	return resource.Spec.GetData().GetValue(), nil
 }

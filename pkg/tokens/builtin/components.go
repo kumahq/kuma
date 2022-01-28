@@ -45,22 +45,24 @@ func NewDataplaneTokenValidator(resManager manager.ResourceManager) issuer.Valid
 func NewZoneIngressTokenValidator(resManager manager.ResourceManager) zoneingress.Validator {
 	return zoneingress.NewValidator(
 		tokens.NewValidator(
-			tokens.NewSigningKeyAccessor(resManager, zoneingress.ZoneIngressSigningKeyPrefix, false),
+			tokens.NewSigningKeyAccessor(resManager, zoneingress.ZoneIngressSigningKeyPrefix),
 			tokens.NewRevocations(resManager, zoneingress.ZoneIngressTokenRevocationsGlobalSecretKey),
 		),
 	)
 }
 
 func NewZoneTokenValidator(resManager manager.ResourceManager, mode core.CpMode) zone.Validator {
-	signingKeyPrefix := zone.SigningKeyPrefix
+	var signingKeyAccessor tokens.SigningKeyAccessor
 
 	if mode == core.Zone {
-		signingKeyPrefix = zone.SigningPublicKeyPrefix
+		signingKeyAccessor = tokens.NewSigningKeyFromPublicKeyAccessor(resManager, zone.SigningPublicKeyPrefix)
+	} else {
+		signingKeyAccessor = tokens.NewSigningKeyAccessor(resManager, zone.SigningKeyPrefix)
 	}
 
 	return zone.NewValidator(
 		tokens.NewValidator(
-			tokens.NewSigningKeyAccessor(resManager, signingKeyPrefix, mode == core.Zone),
+			signingKeyAccessor,
 			tokens.NewRevocations(resManager, zone.TokenRevocationsGlobalSecretKey),
 		),
 	)
