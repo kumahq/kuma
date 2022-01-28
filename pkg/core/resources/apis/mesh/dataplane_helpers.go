@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"net"
+	"strconv"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
@@ -158,4 +159,16 @@ func (d *DataplaneResource) IsIPv6() bool {
 	}
 
 	return ip.To4() == nil
+}
+
+func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {
+	if d == nil {
+		return ""
+	}
+	ip := d.GetIP()
+	adminPort := d.Spec.GetNetworking().GetAdmin().GetPort()
+	if adminPort == 0 {
+		adminPort = defaultAdminPort
+	}
+	return net.JoinHostPort(ip, strconv.FormatUint(uint64(adminPort), 10))
 }

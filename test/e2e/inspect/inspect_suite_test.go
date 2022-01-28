@@ -11,7 +11,8 @@ import (
 )
 
 var _ = Describe("Test Inspect API on Universal", inspect.Universal)
-var _ = Describe("Test Inspect API on Kubernetes", inspect.Kubernetes)
+var _ = Describe("Test Inspect API on Kubernetes Standalone", inspect.KubernetesStandalone)
+var _ = Describe("Test Inspect API on Kubernetes Multizone", inspect.KubernetesMultizone)
 
 func TestE2EInspectAPI(t *testing.T) {
 	if framework.IsK8sClustersStarted() {

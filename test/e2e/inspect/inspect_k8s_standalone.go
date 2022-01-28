@@ -13,7 +13,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func Kubernetes() {
+func KubernetesStandalone() {
 	var cluster *K8sCluster
 	var demoClient *kube_core.Pod
 	var kumaControlPlane *kube_core.Pod

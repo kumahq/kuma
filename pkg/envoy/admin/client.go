@@ -9,7 +9,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -25,6 +24,10 @@ import (
 
 type EnvoyAdminClient interface {
 	PostQuit(dataplane *core_mesh.DataplaneResource) error
+}
+
+type AdminAddresser interface {
+	AdminAddress(defaultAdminPort uint32) string
 }
 
 type envoyAdminClient struct {
@@ -135,22 +138,13 @@ const (
 	quitquitquit = "quitquitquit"
 )
 
-func adminAddress(dataplane *core_mesh.DataplaneResource, defaultAdminPort uint32) string {
-	ip := dataplane.GetIP()
-	adminPort := dataplane.Spec.GetNetworking().GetAdmin().GetPort()
-	if adminPort == 0 {
-		adminPort = defaultAdminPort
-	}
-	return net.JoinHostPort(ip, strconv.FormatUint(uint64(adminPort), 10))
-}
-
 func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) error {
 	httpClient, err := a.buildHTTPClient(dataplane)
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("https://%s/%s", adminAddress(dataplane, a.defaultAdminPort), quitquitquit)
+	url := fmt.Sprintf("https://%s/%s", dataplane.AdminAddress(a.defaultAdminPort), quitquitquit)
 	request, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		return err
@@ -173,12 +167,12 @@ func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) erro
 	return nil
 }
 
-func ConfigDump(dataplane *core_mesh.DataplaneResource, defaultAdminAddress uint32) ([]byte, error) {
+func ConfigDump(addresser AdminAddresser, defaultAdminAddress uint32) ([]byte, error) {
 	httpClient := &http.Client{
 		Timeout: 5 * time.Second,
 	}
 
-	url := fmt.Sprintf("http://%s/%s", adminAddress(dataplane, defaultAdminAddress), "config_dump")
+	url := fmt.Sprintf("http://%s/%s", addresser.AdminAddress(defaultAdminAddress), "config_dump")
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err

@@ -60,10 +60,16 @@ func addInspectEndpoints(
 	)
 
 	ws.Route(
-		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/xds").To(inspectXDS(rm, cfg.GetEnvoyAdminPort())).
+		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/xds").To(inspectDataplaneXDS(rm, cfg.GetEnvoyAdminPort())).
 			Doc("inspect dataplane XDS configuration").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")),
+	)
+
+	ws.Route(
+		ws.GET("/zoneingresses/{zoneingress}/xds").To(inspectZoneIngressXDS(rm, cfg.GetEnvoyAdminPort())).
+			Doc("inspect zone ingresses XDS configuration").
+			Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")),
 	)
 
 	for _, desc := range registry.Global().ObjectDescriptors(core_model.AllowedToInspect()) {
@@ -160,7 +166,7 @@ func inspectPolicies(
 	}
 }
 
-func inspectXDS(rm manager.ResourceManager, defaultAdminPort uint32) restful.RouteFunction {
+func inspectDataplaneXDS(rm manager.ResourceManager, defaultAdminPort uint32) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
@@ -172,6 +178,29 @@ func inspectXDS(rm manager.ResourceManager, defaultAdminPort uint32) restful.Rou
 		}
 
 		configDump, err := admin.ConfigDump(dp, defaultAdminPort)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not get config_dump")
+			return
+		}
+
+		if _, err := response.Write(configDump); err != nil {
+			rest_errors.HandleError(response, err, "Could not write response")
+			return
+		}
+	}
+}
+
+func inspectZoneIngressXDS(rm manager.ResourceManager, defaultAdminPort uint32) restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		zoneIngressName := request.PathParameter("zoneingress")
+
+		zi := mesh.NewZoneIngressResource()
+		if err := rm.Get(context.Background(), zi, store.GetByKey(zoneIngressName, core_model.NoMesh)); err != nil {
+			rest_errors.HandleError(response, err, "Could not get zone ingress resource")
+			return
+		}
+
+		configDump, err := admin.ConfigDump(zi, defaultAdminPort)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
 			return
