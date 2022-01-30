@@ -1,10 +1,10 @@
 package mesh
 
 import (
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )

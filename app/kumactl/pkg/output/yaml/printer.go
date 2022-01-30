@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"

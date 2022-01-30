@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"reflect"
 
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 func ConfigForDisplay(cfg Config) (Config, error) {

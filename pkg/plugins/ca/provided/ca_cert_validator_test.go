@@ -8,11 +8,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"sigs.k8s.io/yaml"
 
 	. "github.com/kumahq/kuma/pkg/plugins/ca/provided"
 	util_tls "github.com/kumahq/kuma/pkg/tls"

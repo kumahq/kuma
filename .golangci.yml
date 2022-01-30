@@ -2,6 +2,7 @@ linters:
   enable:
     - bodyclose
     - contextcheck
+    - depguard
     - gci
     - gocritic
     - gofmt
@@ -12,6 +13,7 @@ linters:
     - whitespace
 
 run:
+  timeout: 10m
   skip-files:
     - app/kumactl/pkg/k8s/kubectl_proxy.go # excluded to keep as close to original file from K8S repository
     - pkg/xds/server/server.go # excluded to keep as close to original file from Envoy repository
@@ -26,6 +28,11 @@ linters-settings:
   gocritic:
     disabled-checks:
       - singleCaseSwitch
+  depguard:
+    packages:
+      - github.com/ghodss/yaml
+    packages-with-error-message:
+      - github.com/ghodss/yaml: 'Please use sigs.k8s.io/yaml instead'
   gci:
     local-prefixes: github.com/kumahq/kuma
   importas:

@@ -5,10 +5,10 @@ import (
 	"errors"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
+	"sigs.k8s.io/yaml"
 )
 
 func ResourceFromYaml(resYaml string) (proto.Message, error) {
