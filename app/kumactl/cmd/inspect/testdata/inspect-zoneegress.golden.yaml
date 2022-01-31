@@ -1,0 +1,122 @@
+items:
+- creationTime: "2018-07-17T16:05:36.995Z"
+  modificationTime: "2019-07-17T18:08:41Z"
+  name: zoneegress-1
+  type: ZoneEgressOverview
+  zoneEgress: {}
+  zoneEgressInsight:
+    subscriptions:
+    - connectTime: "2018-07-17T16:05:36.995Z"
+      controlPlaneInstanceId: node-001
+      id: "1"
+      status:
+        total:
+          responsesRejected: "1"
+          responsesSent: "10"
+      version:
+        envoy:
+          build: hash/1.16.0/RELEASE
+          version: 1.16.0
+        kumaDp:
+          buildDate: "2019-08-07T11:26:06Z"
+          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+          gitTag: v1.0.0
+          version: 1.0.0
+    - connectTime: "2019-07-17T16:05:36.995Z"
+      controlPlaneInstanceId: node-002
+      id: "2"
+      status:
+        total:
+          responsesRejected: "2"
+          responsesSent: "20"
+      version:
+        envoy:
+          build: hash/1.16.1/RELEASE
+          version: 1.16.1
+        kumaDp:
+          buildDate: "2020-08-07T11:26:06Z"
+          gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
+          gitTag: v1.0.2
+          version: 1.0.2
+- creationTime: "2018-07-17T16:05:36.995Z"
+  modificationTime: "2019-07-17T18:08:41Z"
+  name: zoneegress-2
+  type: ZoneEgressOverview
+  zoneEgress: {}
+  zoneEgressInsight:
+    subscriptions:
+    - connectTime: "2018-07-17T16:05:36.995Z"
+      controlPlaneInstanceId: node-001
+      disconnectTime: "2018-07-17T16:06:36.995Z"
+      id: "1"
+      status:
+        total:
+          responsesRejected: "1"
+          responsesSent: "10"
+      version:
+        envoy:
+          build: hash/1.16.0/RELEASE
+          version: 1.16.0
+        kumaDp:
+          buildDate: "2019-08-07T11:26:06Z"
+          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+          gitTag: v1.0.0
+          version: 1.0.0
+    - connectTime: "2019-07-17T16:05:36.995Z"
+      controlPlaneInstanceId: node-002
+      disconnectTime: "2019-07-17T16:06:36.995Z"
+      id: "2"
+      status:
+        total:
+          responsesRejected: "2"
+          responsesSent: "20"
+      version:
+        envoy:
+          build: hash/1.16.1/RELEASE
+          version: 1.16.1
+        kumaDp:
+          buildDate: "2020-08-07T11:26:06Z"
+          gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
+          gitTag: v1.0.2
+          version: 1.0.2
+- creationTime: "2018-07-17T16:05:36.995Z"
+  modificationTime: "2019-07-17T18:08:41Z"
+  name: zoneegress-3
+  type: ZoneEgressOverview
+  zoneEgress: {}
+  zoneEgressInsight:
+    subscriptions:
+    - connectTime: "2018-07-17T16:05:36.995Z"
+      controlPlaneInstanceId: node-001
+      id: "1"
+      status:
+        total:
+          responsesRejected: "1"
+          responsesSent: "10"
+      version:
+        envoy:
+          build: hash/1.16.0/RELEASE
+          version: 1.16.0
+        kumaDp:
+          buildDate: "2019-08-07T11:26:06Z"
+          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+          gitTag: v1.0.0
+          version: 1.0.0
+    - connectTime: "2019-07-17T16:05:36.995Z"
+      controlPlaneInstanceId: node-002
+      id: "2"
+      status:
+        total:
+          responsesRejected: "2"
+          responsesSent: "20"
+      version:
+        envoy:
+          build: hash/1.16.1/RELEASE
+          version: 1.16.1
+        kumaDp:
+          buildDate: "2020-08-07T11:26:06Z"
+          gitCommit: 9d868cd8681c4021bb4a10bf2306ca613ba4de42
+          gitTag: v1.0.2
+          version: 1.0.2
+next: null
+total: 3

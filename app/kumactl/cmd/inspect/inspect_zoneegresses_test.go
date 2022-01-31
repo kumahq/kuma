@@ -54,7 +54,7 @@ var _ = Describe("kumactl inspect zoneegresses", func() {
 		sampleZoneEgressOverview = []*core_mesh.ZoneEgressOverviewResource{
 			{
 				Meta: &test_model.ResourceMeta{
-					Name:             "zone-egress-1",
+					Name:             "zoneegress-1",
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
@@ -114,7 +114,7 @@ var _ = Describe("kumactl inspect zoneegresses", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Name:             "zone-egress-2",
+					Name:             "zoneegress-2",
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
@@ -176,7 +176,7 @@ var _ = Describe("kumactl inspect zoneegresses", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Name:             "zone-egress-3",
+					Name:             "zoneegress-3",
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
@@ -268,12 +268,12 @@ var _ = Describe("kumactl inspect zoneegresses", func() {
 			matcher      func(path ...string) gomega_types.GomegaMatcher
 		}
 
-		DescribeTable("kumactl inspect zone-egresses -o table|json|yaml",
+		DescribeTable("kumactl inspect zoneegresses -o table|json|yaml",
 			func(given testCase) {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "zone-egresses"}, given.outputFormat))
+					"inspect", "zoneegresses"}, given.outputFormat))
 
 				// when
 				err := rootCmd.Execute()
@@ -283,22 +283,22 @@ var _ = Describe("kumactl inspect zoneegresses", func() {
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
-				goldenFile:   "inspect-zone-egresses.golden.txt",
+				goldenFile:   "inspect-zoneegresses.golden.txt",
 				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
-				goldenFile:   "inspect-zone-egresses.golden.txt",
+				goldenFile:   "inspect-zoneegresses.golden.txt",
 				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support JSON output", testCase{
 				outputFormat: "-ojson",
-				goldenFile:   "inspect-zone-egresses.golden.json",
+				goldenFile:   "inspect-zoneegresses.golden.json",
 				matcher:      matchers.MatchGoldenJSON,
 			}),
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
-				goldenFile:   "inspect-zone-egress.golden.yaml",
+				goldenFile:   "inspect-zoneegress.golden.yaml",
 				matcher:      matchers.MatchGoldenYAML,
 			}),
 		)
