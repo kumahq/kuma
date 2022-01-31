@@ -9,11 +9,13 @@
    "attachments": [
     {
      "type": "inbound",
-     "name": "192.168.0.1:80:81"
+     "name": "192.168.0.1:80:81",
+     "service": "gateway"
     },
     {
      "type": "outbound",
-     "name": "192.168.0.4:8080"
+     "name": "192.168.0.4:8080",
+     "service": "es"
     }
    ]
   }

@@ -28,7 +28,7 @@ protoc/plugins:
 	$(PROTOC_GO) --proto_path=./api pkg/plugins/ca/provided/config/*.proto
 	$(PROTOC_GO) --proto_path=./api pkg/plugins/ca/builtin/config/*.proto
 
-KUMA_GUI_GIT=https://github.com/kumahq/kuma-gui.git
+KUMA_GUI_GIT_URL=https://github.com/kumahq/kuma-gui.git
 KUMA_GUI_VERSION=master
 KUMA_GUI_FOLDER=app/kuma-ui/pkg/resources/data
 KUMA_GUI_WORK_FOLDER=app/kuma-ui/data/work
@@ -36,7 +36,7 @@ KUMA_GUI_WORK_FOLDER=app/kuma-ui/data/work
 .PHONY: upgrade/gui
 upgrade/gui:
 	rm -rf $(KUMA_GUI_WORK_FOLDER); \
-	git clone --depth 1 -b $(KUMA_GUI_VERSION) https://github.com/kumahq/kuma-gui.git $(KUMA_GUI_WORK_FOLDER); \
+	git clone --depth 1 -b $(KUMA_GUI_VERSION) $(KUMA_GUI_GIT_URL) $(KUMA_GUI_WORK_FOLDER); \
 	pushd $(KUMA_GUI_WORK_FOLDER) && yarn install && yarn build && popd; \
 	rm -rf $(KUMA_GUI_FOLDER) && mv $(KUMA_GUI_WORK_FOLDER)/dist/ $(KUMA_GUI_FOLDER); \
 	rm -rf $(KUMA_GUI_WORK_FOLDER); \

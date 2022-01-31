@@ -46,6 +46,9 @@ type InstallControlPlaneArgs struct {
 	Ingress_mesh                                 string            `helm:"ingress.mesh"`
 	Ingress_drainTime                            string            `helm:"ingress.drainTime"`
 	Ingress_service_type                         string            `helm:"ingress.service.type"`
+	Egress_enabled                               bool              `helm:"egress.enabled"`
+	Egress_drainTime                             string            `helm:"egress.drainTime"`
+	Egress_service_type                          string            `helm:"egress.service.type"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
 	ExperimentalGateway                          bool              `helm:"experimental.gateway"`
 }
@@ -95,6 +98,9 @@ func DefaultInstallCpContext() InstallCpContext {
 			Ingress_mesh:                            "default",
 			Ingress_drainTime:                       "30s",
 			Ingress_service_type:                    "LoadBalancer",
+			Egress_enabled:                          false,
+			Egress_drainTime:                        "30s",
+			Egress_service_type:                     "ClusterIP",
 		},
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
 			files, err := data.ReadFiles(deployments.KumaChartFS())

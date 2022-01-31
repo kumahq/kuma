@@ -129,6 +129,8 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 			dpType = core_mesh.ZoneIngressType
 		case mesh_proto.DataplaneProxyType:
 			dpType = core_mesh.DataplaneType
+		case mesh_proto.EgressProxyType:
+			dpType = core_mesh.ZoneEgressType
 		}
 
 		// Infer the Dataplane ID.

@@ -46,16 +46,16 @@ func (f fakeDataSourceLoader) Load(ctx context.Context, mesh string, source *sys
 	return []byte("secret"), nil
 }
 
-func getMatchedPolicies(cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey) (*core_xds.MatchedPolicies, error) {
+func getMatchedPolicies(cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey) (*core_xds.MatchedPolicies, *core_mesh.DataplaneResource, error) {
 	proxyBuilder := sync.DefaultDataplaneProxyBuilder(
 		&fakeDataSourceLoader{},
 		*cfg,
 		callbacks.NewDataplaneMetadataTracker(),
 		envoy.APIV3)
 	if proxy, err := proxyBuilder.Build(dataplaneKey, meshContext); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
-		return &proxy.Policies, nil
+		return &proxy.Policies, proxy.Dataplane, nil
 	}
 }
 
@@ -127,13 +127,13 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			return
 		}
 
-		matchedPolicies, err := getMatchedPolicies(cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName})
+		matchedPolicies, dp, err := getMatchedPolicies(cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName})
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
 			return
 		}
 
-		entries := newDataplaneInspectResponse(matchedPolicies)
+		entries := newDataplaneInspectResponse(matchedPolicies, dp)
 		result := &api_server_types.DataplaneInspectEntryList{
 			Items: entries,
 			Total: uint32(len(entries)),
@@ -165,18 +165,19 @@ func inspectPolicies(
 
 		for _, dp := range meshContext.Resources.Dataplanes().Items {
 			dpKey := core_model.MetaToResourceKey(dp.GetMeta())
-			matchedPolicies, err := getMatchedPolicies(cfg, meshContext, dpKey)
+			matchedPolicies, _, err := getMatchedPolicies(cfg, meshContext, dpKey)
 			if err != nil {
 				rest_errors.HandleError(response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
 			}
-			for policy, attachments := range core_xds.GroupByPolicy(matchedPolicies) {
+			for policy, attachments := range core_xds.GroupByPolicy(matchedPolicies, dp.Spec.Networking) {
 				if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
 					attachmentList := []api_server_types.AttachmentEntry{}
 					for _, attachment := range attachments {
 						attachmentList = append(attachmentList, api_server_types.AttachmentEntry{
-							Type: attachment.Type.String(),
-							Name: attachment.Name,
+							Type:    attachment.Type.String(),
+							Name:    attachment.Name,
+							Service: attachment.Service,
 						})
 					}
 					result.Items = append(result.Items, &api_server_types.PolicyInspectEntry{
@@ -257,8 +258,8 @@ func inspectZoneIngressXDS(
 	}
 }
 
-func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies) []*api_server_types.DataplaneInspectEntry {
-	attachmentMap := core_xds.GroupByAttachment(matchedPolicies)
+func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {
+	attachmentMap := core_xds.GroupByAttachment(matchedPolicies, dp.Spec.Networking)
 
 	entries := make([]*api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
 	attachments := []core_xds.Attachment{}
@@ -271,8 +272,9 @@ func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies) []*a
 	for _, attachment := range attachments {
 		entry := &api_server_types.DataplaneInspectEntry{
 			AttachmentEntry: api_server_types.AttachmentEntry{
-				Type: attachment.Type.String(),
-				Name: attachment.Name,
+				Type:    attachment.Type.String(),
+				Name:    attachment.Name,
+				Service: attachment.Service,
 			},
 			MatchedPolicies: map[core_model.ResourceType][]*rest.Resource{},
 		}

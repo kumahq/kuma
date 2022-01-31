@@ -117,3 +117,60 @@ func ProxyRequestsWithRateLimit(cluster framework.Cluster, gateway string, opts 
 		g.Expect(response.Received.StatusCode).To(Equal(429))
 	}, "30s", "1s").Should(Succeed())
 }
+
+// GatewayClientAppUniversal runs an empty container that will
+// function as a client for a gateway.
+func GatewayClientAppUniversal(name string) framework.InstallFunc {
+	return func(cluster framework.Cluster) error {
+		return cluster.DeployApp(
+			framework.WithName(name),
+			framework.WithoutDataplane(),
+			framework.WithVerbose(),
+		)
+	}
+}
+
+func GatewayProxyUniversal(name string) framework.InstallFunc {
+	return func(cluster framework.Cluster) error {
+		token, err := cluster.GetKuma().GenerateDpToken("default", "edge-gateway")
+		if err != nil {
+			return err
+		}
+
+		dataplaneYaml := `
+type: Dataplane
+mesh: default
+name: {{ name }}
+networking:
+  address:  {{ address }}
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: edge-gateway
+`
+		return cluster.DeployApp(
+			framework.WithKumactlFlow(),
+			framework.WithName(name),
+			framework.WithToken(token),
+			framework.WithVerbose(),
+			framework.WithYaml(dataplaneYaml),
+		)
+	}
+}
+
+func EchoServerApp(name string, service string, instance string) framework.InstallFunc {
+	return func(cluster framework.Cluster) error {
+		token, err := cluster.GetKuma().GenerateDpToken("default", service)
+		if err != nil {
+			return err
+		}
+
+		return framework.TestServerUniversal(
+			name,
+			"default",
+			token,
+			framework.WithArgs([]string{"echo", "--instance", instance}),
+			framework.WithServiceName(service),
+		)(cluster)
+	}
+}

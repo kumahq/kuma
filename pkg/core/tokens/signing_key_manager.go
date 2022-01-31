@@ -74,7 +74,7 @@ func latestSigningKey(list model.ResourceList, prefix string, mesh string) (*rsa
 		}
 	}
 
-	key, err := keyBytesToRsaKey(signingKey.GetSpec().(*system_proto.Secret).GetData().GetValue())
+	key, err := keyBytesToRsaPrivateKey(signingKey.GetSpec().(*system_proto.Secret).GetData().GetValue())
 	if err != nil {
 		return nil, 0, err
 	}

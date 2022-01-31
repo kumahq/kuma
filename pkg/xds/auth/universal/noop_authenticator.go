@@ -25,7 +25,8 @@ func (u *noopAuthenticator) Authenticate(ctx context.Context, resource model.Res
 		return nil
 	case *core_mesh.ZoneIngressResource:
 		return nil
-	// TODO (bartsmykla): add ZoneEgressResource when available
+	case *core_mesh.ZoneEgressResource:
+		return nil
 	default:
 		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}

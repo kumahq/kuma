@@ -117,6 +117,12 @@ func (m *meshContextBuilder) fetchResources(ctx context.Context, mesh *core_mesh
 				return nil, err
 			}
 			resources[typ] = zoneIngresses
+		case core_mesh.ZoneEgressType:
+			zoneEgresses := &core_mesh.ZoneEgressResourceList{}
+			if err := m.rm.List(ctx, zoneEgresses); err != nil {
+				return nil, err
+			}
+			resources[typ] = zoneEgresses
 		case system.ConfigType:
 			configs := &system.ConfigResourceList{}
 			var items []*system.ConfigResource
@@ -208,6 +214,14 @@ func (m *meshContextBuilder) hashResource(r core_model.Resource) string {
 				v.GetMeta().GetVersion(),
 				v.Spec.GetNetworking().GetAddress(),
 				v.Spec.GetNetworking().GetAdvertisedAddress(),
+			}, ":")
+	case *core_mesh.ZoneEgressResource:
+		return strings.Join(
+			[]string{string(v.Descriptor().Name),
+				v.GetMeta().GetMesh(),
+				v.GetMeta().GetName(),
+				v.GetMeta().GetVersion(),
+				v.Spec.GetNetworking().GetAddress(),
 			}, ":")
 	default:
 		return strings.Join(

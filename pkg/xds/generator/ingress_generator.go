@@ -28,7 +28,7 @@ type IngressGenerator struct {
 func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 
-	destinationsPerService := i.destinations(proxy.Routing.TrafficRouteList)
+	destinationsPerService := i.destinations(proxy.ZoneIngressProxy.TrafficRouteList, proxy.ZoneIngressProxy.GatewayRoutes)
 
 	listener, err := i.generateLDS(proxy, proxy.ZoneIngress, destinationsPerService, proxy.APIVersion)
 	if err != nil {
@@ -60,7 +60,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 // generateLDS generates one Ingress Listener
 // Ingress Listener assumes that mTLS is on. Using TLSInspector we sniff SNI value.
 // SNI value has service name and tag values specified with the following format: "backend{cluster=2,version=1}"
-// We take all possible destinations from TrafficRoutes and generate FilterChainsMatcher for each unique destination.
+// We take all possible destinations from TrafficRoutes + GatewayRoutes and generate FilterChainsMatcher for each unique destination.
 // This approach has a limitation: additional tags on outbound in Universal mode won't work across different zones.
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
 func (i IngressGenerator) generateLDS(
@@ -111,7 +111,7 @@ func (i IngressGenerator) generateLDS(
 	return inboundListenerBuilder.Build()
 }
 
-func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList) map[string][]envoy_common.Tags {
+func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList, gatewayRoutes *core_mesh.GatewayRouteResourceList) map[string][]envoy_common.Tags {
 	destinations := map[string][]envoy_common.Tags{}
 	for _, tr := range trs.Items {
 		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
@@ -125,6 +125,29 @@ func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList) 
 			}
 		}
 	}
+
+	var backends []*mesh_proto.GatewayRoute_Backend
+
+	for _, route := range gatewayRoutes.Items {
+		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
+			backends = append(backends, rule.Backends...)
+		}
+		for _, rule := range route.Spec.GetConf().GetTcp().GetRules() {
+			backends = append(backends, rule.Backends...)
+		}
+		for _, rule := range route.Spec.GetConf().GetTls().GetRules() {
+			backends = append(backends, rule.Backends...)
+		}
+		for _, rule := range route.Spec.GetConf().GetUdp().GetRules() {
+			backends = append(backends, rule.Backends...)
+		}
+	}
+
+	for _, backend := range backends {
+		service := backend.Destination[mesh_proto.ServiceTag]
+		destinations[service] = append(destinations[service], backend.Destination)
+	}
+
 	return destinations
 }
 

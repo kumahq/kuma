@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "mesh/options.proto";
+import "mesh/v1alpha1/envoy_admin.proto";
+
+// ZoneEgress allows us to configure dataplane in the Egress mode.
+message ZoneEgress {
+
+  option (kuma.mesh.resource).name = "ZoneEgressResource";
+  option (kuma.mesh.resource).type = "ZoneEgress";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).kds.send_to_global = true;
+  option (kuma.mesh.resource).kds.send_to_zone = false;
+  option (kuma.mesh.resource).ws.name = "zone-egress";
+  option (kuma.mesh.resource).ws.plural = "zone-egresses";
+  option (kuma.mesh.resource).scope_namespace = true;
+
+  // Zone field contains Zone name where egress is serving, field will be
+  // automatically set by Global Kuma CP
+  string zone = 1;
+
+  message Networking {
+    // Address on which inbound listener will be exposed
+    string address = 1;
+
+    // Port of the inbound interface that will forward requests to the service.
+    uint32 port = 2;
+
+    // Admin contains configuration related to Envoy Admin API
+    EnvoyAdmin admin = 3;
+  }
+
+  // Networking defines the address and port of the Egress to listen on.
+  Networking networking = 2;
+}

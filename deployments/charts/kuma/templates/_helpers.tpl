@@ -46,6 +46,11 @@ Create chart name and version as used by the chart label.
 {{ printf "%s" (default $defaultSvcName .Values.ingress.service.name) }}
 {{- end }}
 
+{{- define "kuma.egress.serviceName" -}}
+{{- $defaultSvcName := printf "%s-egress" (include "kuma.name" .) -}}
+{{ printf "%s" (default $defaultSvcName .Values.egress.service.name) }}
+{{- end }}
+
 {{/*
 Common labels
 */}}

@@ -63,6 +63,14 @@ func (d *DataplaneLifecycle) register(ctx context.Context, streamID core_xds.Str
 			log.Info("cannot register zone ingress", "reason", err.Error())
 			return errors.Wrap(err, "could not register zone ingress passed in kuma-dp run")
 		}
+	case md.GetProxyType() == mesh_proto.EgressProxyType && md.GetZoneEgressResource() != nil:
+		zi := md.GetZoneEgressResource()
+		log := lifecycleLog.WithValues("zoneEgress", zi, "zoneEgressKey", dpKey, "streamID", streamID)
+		log.Info("registering zone egress")
+		if err := d.registerZoneEgress(ctx, zi); err != nil {
+			log.Info("cannot register zone egress", "reason", err.Error())
+			return errors.Wrap(err, "could not register zone egress passed in kuma-dp run")
+		}
 	default:
 		return nil
 	}
@@ -107,6 +115,11 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(streamID core_xds.StreamID, dpK
 		lifecycleLog.Info("unregistering zone ingress", "zoneIngressKey", dpKey, "streamID", streamID)
 		if err := d.unregisterZoneIngress(dpKey); err != nil {
 			lifecycleLog.Error(err, "could not unregister zone ingress")
+		}
+	case mesh_proto.EgressProxyType:
+		lifecycleLog.Info("unregistering zone egress", "zoneEgressKey", dpKey, "streamID", streamID)
+		if err := d.unregisterZoneEgress(dpKey); err != nil {
+			lifecycleLog.Error(err, "could not unregister zone egress")
 		}
 	}
 }
@@ -164,10 +177,25 @@ func (d *DataplaneLifecycle) registerZoneIngress(ctx context.Context, zi *core_m
 	})
 }
 
+func (d *DataplaneLifecycle) registerZoneEgress(ctx context.Context, ze *core_mesh.ZoneEgressResource) error {
+	key := model.MetaToResourceKey(ze.GetMeta())
+	existing := core_mesh.NewZoneEgressResource()
+	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) error {
+		if err := d.validateUpsert(ctx, existing); err != nil {
+			return errors.Wrap(err, "you are trying to override existing zone egress to which you don't have an access.")
+		}
+		return existing.SetSpec(ze.GetSpec())
+	})
+}
+
 func (d *DataplaneLifecycle) unregisterDataplane(key model.ResourceKey) error {
 	return d.resManager.Delete(context.Background(), core_mesh.NewDataplaneResource(), store.DeleteBy(key))
 }
 
 func (d *DataplaneLifecycle) unregisterZoneIngress(key model.ResourceKey) error {
 	return d.resManager.Delete(context.Background(), core_mesh.NewZoneIngressResource(), store.DeleteBy(key))
+}
+
+func (d *DataplaneLifecycle) unregisterZoneEgress(key model.ResourceKey) error {
+	return d.resManager.Delete(context.Background(), core_mesh.NewZoneEgressResource(), store.DeleteBy(key))
 }

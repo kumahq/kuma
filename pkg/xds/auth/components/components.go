@@ -21,10 +21,13 @@ func NewKubeAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
 }
 
 func NewUniversalAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
+	config := rt.Config()
+
 	dataplaneValidator := builtin.NewDataplaneTokenValidator(rt.ResourceManager())
 	zoneIngressValidator := builtin.NewZoneIngressTokenValidator(rt.ResourceManager())
-	zoneTokenValidator := builtin.NewZoneTokenValidator(rt.ResourceManager())
-	return universal_auth.NewAuthenticator(dataplaneValidator, zoneIngressValidator, zoneTokenValidator, rt.Config().Multizone.Zone.Name), nil
+	zoneTokenValidator := builtin.NewZoneTokenValidator(rt.ResourceManager(), config.Mode)
+
+	return universal_auth.NewAuthenticator(dataplaneValidator, zoneIngressValidator, zoneTokenValidator, config.Multizone.Zone.Name), nil
 }
 
 func DefaultAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {

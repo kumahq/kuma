@@ -1,0 +1,18 @@
+items:
+- creationTime: "0001-01-01T00:00:00Z"
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: egress-zone-1
+  networking:
+    address: 1.1.1.1
+    port: 10001
+  type: ZoneEgress
+- creationTime: "0001-01-01T00:00:00Z"
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: egress-zone-2
+  networking:
+    address: 3.3.3.3
+    port: 30003
+  type: ZoneEgress
+  zone: us-east
+next: null
+total: 2

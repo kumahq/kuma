@@ -40,8 +40,9 @@ var _ = Describe("Marshal DataplaneInspectEntry", func() {
 		Entry("full example", testCase{
 			input: &types.DataplaneInspectEntry{
 				AttachmentEntry: types.AttachmentEntry{
-					Type: "inbound",
-					Name: "192.168.0.1:80",
+					Type:    "inbound",
+					Name:    "192.168.0.1:80",
+					Service: "web",
 				},
 				MatchedPolicies: map[model.ResourceType][]*rest.Resource{
 					core_mesh.TimeoutType: {
@@ -99,8 +100,9 @@ var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 			inputFile: "full_example.json",
 			output: &types.DataplaneInspectEntry{
 				AttachmentEntry: types.AttachmentEntry{
-					Type: "inbound",
-					Name: "192.168.0.1:80",
+					Type:    "inbound",
+					Name:    "192.168.0.1:80",
+					Service: "web",
 				},
 				MatchedPolicies: map[model.ResourceType][]*rest.Resource{
 					core_mesh.TimeoutType: {

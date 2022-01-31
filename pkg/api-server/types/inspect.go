@@ -10,8 +10,9 @@ import (
 )
 
 type AttachmentEntry struct {
-	Type string `json:"type"`
-	Name string `json:"name"`
+	Type    string `json:"type"`
+	Name    string `json:"name"`
+	Service string `json:"service"`
 }
 
 type ResourceKeyEntry struct {
@@ -54,6 +55,7 @@ func (rec *DataplaneInspectEntryReceiver) UnmarshalJSON(bytes []byte) error {
 	type intermediate struct {
 		Type            string                                        `json:"type"`
 		Name            string                                        `json:"name"`
+		Service         string                                        `json:"service"`
 		MatchedPolicies map[core_model.ResourceType][]json.RawMessage `json:"matchedPolicies"`
 	}
 	inter := &intermediate{}
@@ -63,6 +65,7 @@ func (rec *DataplaneInspectEntryReceiver) UnmarshalJSON(bytes []byte) error {
 	}
 	rec.Type = inter.Type
 	rec.Name = inter.Name
+	rec.Service = inter.Service
 	rec.MatchedPolicies = map[core_model.ResourceType][]*rest.Resource{}
 
 	for typ, rawList := range inter.MatchedPolicies {

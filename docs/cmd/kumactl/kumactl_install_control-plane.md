@@ -32,6 +32,9 @@ kumactl install control-plane [flags]
       --dataplane-registry string                   registry for the image of the Kuma DataPlane component (default "docker.io/kumahq")
       --dataplane-repository string                 repository for the image of the Kuma DataPlane component (default "kuma-dp")
       --dataplane-version string                    version of the image of the Kuma DataPlane component (default "unknown")
+      --egress-drain-time string                    drain time for Envoy proxy (default "30s")
+      --egress-enabled                              install Kuma with an Egress deployment, using the Data Plane image
+      --egress-service-type string                  the type for the Egress Service (ie. ClusterIP, NodePort, LoadBalancer) (default "ClusterIP")
       --env-var stringToString                      environment variables that will be passed to the control plane (default [])
       --experimental-gateway                        install experimental built-in Gateway support
   -h, --help                                        help for control-plane

@@ -1,0 +1,27 @@
+{
+  "total": 2,
+  "items": [
+    {
+      "type": "ZoneEgress",
+      "name": "egress-zone-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "networking": {
+        "address": "1.1.1.1",
+        "port": 10001
+      }
+    },
+    {
+      "type": "ZoneEgress",
+      "name": "egress-zone-2",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "zone": "us-east",
+      "networking": {
+        "address": "3.3.3.3",
+        "port": 30003
+      }
+    }
+  ],
+  "next": null
+}

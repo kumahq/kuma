@@ -19,6 +19,8 @@ type DataplaneWatchdogDependencies struct {
 	dataplaneReconciler   SnapshotReconciler
 	ingressProxyBuilder   *IngressProxyBuilder
 	ingressReconciler     SnapshotReconciler
+	egressProxyBuilder    *EgressProxyBuilder
+	egressReconciler      SnapshotReconciler
 	envoyCpCtx            *xds_context.ControlPlaneContext
 	meshCache             *mesh.Cache
 	metadataTracker       DataplaneMetadataTracker
@@ -58,6 +60,8 @@ func (d *DataplaneWatchdog) Sync() error {
 		return d.syncDataplane()
 	case mesh_proto.IngressProxyType:
 		return d.syncIngress()
+	case mesh_proto.EgressProxyType:
+		return d.syncEgress()
 	default:
 		// It might be a case that dp type is not yet inferred because there is no Dataplane definition yet.
 		return nil
@@ -72,6 +76,8 @@ func (d *DataplaneWatchdog) Cleanup() error {
 		return d.dataplaneReconciler.Clear(&proxyID)
 	case mesh_proto.IngressProxyType:
 		return d.ingressReconciler.Clear(&proxyID)
+	case mesh_proto.EgressProxyType:
+		return d.egressReconciler.Clear(&proxyID)
 	default:
 		return nil
 	}
@@ -127,4 +133,19 @@ func (d *DataplaneWatchdog) syncIngress() error {
 		return err
 	}
 	return d.ingressReconciler.Reconcile(*envoyCtx, proxy)
+}
+
+// syncEgress syncs state of Egress Dataplane. Notice that it does not use Mesh Hash yet because Egress supports many Meshes.
+func (d *DataplaneWatchdog) syncEgress() error {
+	envoyCtx := &xds_context.Context{
+		ControlPlane: d.envoyCpCtx,
+		Mesh:         xds_context.MeshContext{}, // ZoneEgress does not need MeshContext
+	}
+
+	proxy, err := d.egressProxyBuilder.build(d.key)
+	if err != nil {
+		return err
+	}
+
+	return d.egressReconciler.Reconcile(*envoyCtx, proxy)
 }

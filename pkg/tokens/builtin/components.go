@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -50,10 +51,18 @@ func NewZoneIngressTokenValidator(resManager manager.ResourceManager) zoneingres
 	)
 }
 
-func NewZoneTokenValidator(resManager manager.ResourceManager) zone.Validator {
+func NewZoneTokenValidator(resManager manager.ResourceManager, mode core.CpMode) zone.Validator {
+	var signingKeyAccessor tokens.SigningKeyAccessor
+
+	if mode == core.Zone {
+		signingKeyAccessor = tokens.NewSigningKeyFromPublicKeyAccessor(resManager, zone.SigningPublicKeyPrefix)
+	} else {
+		signingKeyAccessor = tokens.NewSigningKeyAccessor(resManager, zone.SigningKeyPrefix)
+	}
+
 	return zone.NewValidator(
 		tokens.NewValidator(
-			tokens.NewSigningKeyAccessor(resManager, zone.SigningKeyPrefix),
+			signingKeyAccessor,
 			tokens.NewRevocations(resManager, zone.TokenRevocationsGlobalSecretKey),
 		),
 	)

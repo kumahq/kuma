@@ -133,11 +133,21 @@ type Proxy struct {
 	Routing     Routing
 	Policies    MatchedPolicies
 
+	// ZoneEgressProxy is available only when XDS is generated for ZoneEgress data plane proxy.
 	ZoneEgressProxy *ZoneEgressProxy
+	// ZoneIngressProxy is available only when XDS is generated for ZoneIngress data plane proxy.
+	ZoneIngressProxy *ZoneIngressProxy
 }
 
 type ZoneEgressProxy struct {
-	Meshes *core_mesh.MeshResourceList
+	Meshes             []*core_mesh.MeshResource
+	ExternalServices   []*core_mesh.ExternalServiceResource
+	ZoneEgressResource *core_mesh.ZoneEgressResource
+}
+
+type ZoneIngressProxy struct {
+	TrafficRouteList *core_mesh.TrafficRouteResourceList
+	GatewayRoutes    *core_mesh.GatewayRouteResourceList
 }
 
 type VIPDomains struct {
@@ -148,10 +158,6 @@ type VIPDomains struct {
 type Routing struct {
 	TrafficRoutes   RouteMap
 	OutboundTargets EndpointMap
-
-	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
-	// TrafficRouteList is used only for generating configs for Ingress.
-	TrafficRouteList *core_mesh.TrafficRouteResourceList
 }
 
 type CaSecret struct {

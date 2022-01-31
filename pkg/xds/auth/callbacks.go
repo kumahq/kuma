@@ -133,6 +133,8 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 		switch md.GetProxyType() {
 		case mesh_proto.IngressProxyType:
 			resource = core_mesh.NewZoneIngressResource()
+		case mesh_proto.EgressProxyType:
+			resource = core_mesh.NewZoneEgressResource()
 		case mesh_proto.DataplaneProxyType:
 			resource = core_mesh.NewDataplaneResource()
 		default:
