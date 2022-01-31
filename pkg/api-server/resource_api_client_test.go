@@ -3,6 +3,7 @@ package api_server_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -22,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
@@ -108,7 +110,15 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, enableGUI bool, metrics core_metrics.Metrics) *api_server.ApiServer {
+type configModifier func(config *kuma_cp.Config)
+
+func createTestApiServer(
+	store store.ResourceStore,
+	config *config_api_server.ApiServerConfig,
+	enableGUI bool,
+	metrics core_metrics.Metrics,
+	modifiers ...configModifier,
+) *api_server.ApiServer {
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client
 	port, err := test.GetFreePort()
@@ -126,6 +136,9 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
+	for _, modifier := range modifiers {
+		modifier(&cfg)
+	}
 
 	apiServer, err := api_server.NewApiServer(
 		manager.NewResourceManager(store),
@@ -149,6 +162,9 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
 			DataplaneTokenAccess: nil,
 		},
+		api_server.ConfigDumpFunc(func(addresser admin.Addresser, defaultAdminAddress uint32) ([]byte, error) {
+			return []byte(fmt.Sprintf(`{"envoyAdminAddress": "%s"}`, addresser.AdminAddress(defaultAdminAddress))), nil
+		}),
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

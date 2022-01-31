@@ -26,7 +26,7 @@ type EnvoyAdminClient interface {
 	PostQuit(dataplane *core_mesh.DataplaneResource) error
 }
 
-type AdminAddresser interface {
+type Addresser interface {
 	AdminAddress(defaultAdminPort uint32) string
 }
 
@@ -167,12 +167,12 @@ func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) erro
 	return nil
 }
 
-func ConfigDump(addresser AdminAddresser, defaultAdminAddress uint32) ([]byte, error) {
+func ConfigDump(adminAddresser Addresser, defaultAdminAddress uint32) ([]byte, error) {
 	httpClient := &http.Client{
 		Timeout: 5 * time.Second,
 	}
 
-	url := fmt.Sprintf("http://%s/%s", addresser.AdminAddress(defaultAdminAddress), "config_dump")
+	url := fmt.Sprintf("http://%s/%s", adminAddresser.AdminAddress(defaultAdminAddress), "config_dump")
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err

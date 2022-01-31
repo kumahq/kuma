@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
@@ -73,6 +74,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
 			DataplaneTokenAccess: nil,
 		},
+		api_server.ConfigDumpFunc(admin.ConfigDump),
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
