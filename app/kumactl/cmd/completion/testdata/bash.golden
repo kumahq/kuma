@@ -2899,6 +2899,39 @@ _kumactl_inspect_zone-ingresses()
     noun_aliases=()
 }
 
+_kumactl_inspect_zoneegresses()
+{
+    last_command="kumactl_inspect_zoneegresses"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_inspect_zones()
 {
     last_command="kumactl_inspect_zones"
@@ -2943,6 +2976,7 @@ _kumactl_inspect()
     commands+=("meshes")
     commands+=("services")
     commands+=("zone-ingresses")
+    commands+=("zoneegresses")
     commands+=("zones")
 
     flags=()

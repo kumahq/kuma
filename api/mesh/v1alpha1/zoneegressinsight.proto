@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "mesh/options.proto";
+import "mesh/v1alpha1/dataplane_insight.proto";
+
+// ZoneEgressInsight defines the observed state of a Zone Egress.
+message ZoneEgressInsight {
+
+  option (kuma.mesh.resource).name = "ZoneEgressInsightResource";
+  option (kuma.mesh.resource).type = "ZoneEgressInsight";
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).skip_validation = true;
+  option (kuma.mesh.resource).kds.send_to_global = true;
+  option (kuma.mesh.resource).ws.name = "zoneegressinsight";
+  option (kuma.mesh.resource).ws.read_only = true;
+  option (kuma.mesh.resource).scope_namespace = true;
+
+  // List of ADS subscriptions created by a given Zone Kuma CP.
+  repeated DiscoverySubscription subscriptions = 1;
+}

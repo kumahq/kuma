@@ -118,6 +118,7 @@ rules:
       - zoneingresses
       - zoneingressinsights
       - zoneegresses
+      - zoneegressinsights
       - meshinsights
       - serviceinsights
       - proxytemplates
