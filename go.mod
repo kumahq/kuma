@@ -44,7 +44,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.10.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
-	github.com/spiffe/spire v1.1.3
+	github.com/spiffe/spire v1.2.0
 	github.com/testcontainers/testcontainers-go v0.12.0
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.20.0
