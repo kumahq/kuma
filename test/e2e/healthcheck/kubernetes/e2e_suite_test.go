@@ -7,15 +7,10 @@ import (
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e/healthcheck/kubernetes"
-	"github.com/kumahq/kuma/test/framework"
 )
 
-func TestE2EHealthCheckKubernetes(t *testing.T) {
-	if framework.IsK8sClustersStarted() {
-		test.RunSpecs(t, "Health Check Kubernetes Suite")
-	} else {
-		t.SkipNow()
-	}
+func TestE2E(t *testing.T) {
+	test.RunSpecs(t, "E2E Health Check Kubernetes Suite")
 }
 
 var _ = Describe("Test Virtual Probes on Kubernetes", kubernetes.VirtualProbes)

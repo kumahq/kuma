@@ -84,9 +84,9 @@ func (c *UniversalCluster) Verbose() bool {
 
 func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
 	if mode == core.Zone {
-		c.opts.apply(WithEnvs(Config.KumaZoneUniversalEnvVars))
+		opt = append([]KumaDeploymentOption{WithEnvs(Config.KumaZoneUniversalEnvVars)}, opt...)
 	} else {
-		c.opts.apply(WithEnvs(Config.KumaUniversalEnvVars))
+		opt = append([]KumaDeploymentOption{WithEnvs(Config.KumaUniversalEnvVars)}, opt...)
 	}
 	c.opts.apply(opt...)
 	if c.opts.installationMode != KumactlInstallationMode {
