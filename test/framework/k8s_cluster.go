@@ -204,7 +204,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	if c.opts.egress {
 		argsMap["--egress-enabled"] = ""
-		argsMap["--egress-use-node-port"] = ""
 	}
 
 	if c.opts.cni {
