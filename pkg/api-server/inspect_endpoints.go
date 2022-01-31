@@ -111,7 +111,10 @@ func inspectPolicies(
 			return
 		}
 
-		result := &api_server_types.PolicyInspectEntryList{}
+		result := &api_server_types.PolicyInspectEntryList{
+			Total: 0,
+			Items: []*api_server_types.PolicyInspectEntry{},
+		}
 
 		for _, dp := range meshContext.Resources.Dataplanes().Items {
 			dpKey := core_model.MetaToResourceKey(dp.GetMeta())
