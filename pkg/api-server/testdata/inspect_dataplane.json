@@ -4,6 +4,7 @@
   {
    "type": "inbound",
    "name": "192.168.0.1:80:81",
+   "service": "backend",
    "matchedPolicies": {
     "FaultInjection": [
      {
@@ -91,6 +92,7 @@
   {
    "type": "outbound",
    "name": "192.168.0.2:8080",
+   "service": "web",
    "matchedPolicies": {
     "Timeout": [
      {
@@ -134,6 +136,7 @@
   {
    "type": "service",
    "name": "gateway",
+   "service": "gateway",
    "matchedPolicies": {
     "HealthCheck": [
      {
@@ -169,6 +172,7 @@
   {
    "type": "service",
    "name": "postgres",
+   "service": "postgres",
    "matchedPolicies": {
     "HealthCheck": [
      {
@@ -204,6 +208,7 @@
   {
    "type": "service",
    "name": "redis",
+   "service": "redis",
    "matchedPolicies": {
     "HealthCheck": [
      {
@@ -239,6 +244,7 @@
   {
    "type": "service",
    "name": "web",
+   "service": "web",
    "matchedPolicies": {
     "HealthCheck": [
      {

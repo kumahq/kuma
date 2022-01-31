@@ -57,9 +57,13 @@ func (s AttachmentType) String() string {
 type Attachment struct {
 	Type AttachmentType
 	Name string
+	// Service indicates service for the attachments.
+	// For Dataplane AttachmentType it's empty since we are not matching to a specific service.
+	Service string
 }
 
 type AttachmentList []Attachment
+type Attachments map[Attachment][]core_model.Resource
 
 type PoliciesByResourceType map[core_model.ResourceType][]core_model.Resource
 type AttachmentMap map[Attachment]PoliciesByResourceType
@@ -77,70 +81,81 @@ func (abp AttachmentsByPolicy) Merge(other AttachmentsByPolicy) {
 	}
 }
 
-func GroupByAttachment(matchedPolicies *MatchedPolicies) AttachmentMap {
-	result := AttachmentMap{}
+func BuildAttachments(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking) Attachments {
+	attachments := Attachments{}
 
-	addPolicies := func(key Attachment, policies []core_model.Resource) {
-		if len(policies) == 0 {
-			return
-		}
-		if _, ok := result[key]; !ok {
-			result[key] = PoliciesByResourceType{}
-		}
-		for _, policy := range policies {
-			resType := policy.Descriptor().Name
-			result[key][resType] = append(result[key][resType], policy)
-		}
+	serviceByInbound := map[mesh_proto.InboundInterface]string{}
+	for _, iface := range networking.GetInbound() {
+		serviceByInbound[networking.ToInboundInterface(iface)] = iface.GetService()
 	}
 
 	for inbound, policies := range getInboundMatchedPolicies(matchedPolicies) {
-		addPolicies(Attachment{Type: Inbound, Name: inbound.String()}, policies)
+		attachment := Attachment{
+			Type:    Inbound,
+			Name:    inbound.String(),
+			Service: serviceByInbound[inbound],
+		}
+		attachments[attachment] = append(attachments[attachment], policies...)
+	}
+
+	serviceByOutbound := map[mesh_proto.OutboundInterface]string{}
+	for _, oface := range networking.GetOutbound() {
+		serviceByOutbound[networking.ToOutboundInterface(oface)] = oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 	}
 
 	for outbound, policies := range getOutboundMatchedPolicies(matchedPolicies) {
-		addPolicies(Attachment{Type: Outbound, Name: outbound.String()}, policies)
+		attachment := Attachment{
+			Type:    Outbound,
+			Name:    outbound.String(),
+			Service: serviceByOutbound[outbound],
+		}
+		attachments[attachment] = append(attachments[attachment], policies...)
 	}
 
 	for service, policies := range getServiceMatchedPolicies(matchedPolicies) {
-		addPolicies(Attachment{Type: Service, Name: service}, policies)
+		attachment := Attachment{
+			Type:    Service,
+			Name:    service,
+			Service: service,
+		}
+		attachments[attachment] = append(attachments[attachment], policies...)
 	}
 
-	addPolicies(Attachment{Type: Dataplane, Name: ""}, getDataplaneMatchedPolicies(matchedPolicies))
+	attachments[Attachment{Type: Dataplane, Name: ""}] = getDataplaneMatchedPolicies(matchedPolicies)
+
+	return attachments
+}
+
+func GroupByAttachment(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentMap {
+	result := AttachmentMap{}
+
+	for attachment, policies := range BuildAttachments(matchedPolicies, networking) {
+		if len(policies) == 0 {
+			continue
+		}
+		if _, ok := result[attachment]; !ok {
+			result[attachment] = PoliciesByResourceType{}
+		}
+		for _, policy := range policies {
+			resType := policy.Descriptor().Name
+			result[attachment][resType] = append(result[attachment][resType], policy)
+		}
+	}
 
 	return result
 }
 
-func GroupByPolicy(matchedPolicies *MatchedPolicies) AttachmentsByPolicy {
+func GroupByPolicy(matchedPolicies *MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentsByPolicy {
 	result := AttachmentsByPolicy{}
 
-	addAttachment := func(policy core_model.Resource, attachment Attachment) {
-		key := PolicyKey{
-			Type: policy.Descriptor().Name,
-			Key:  core_model.MetaToResourceKey(policy.GetMeta()),
-		}
-		result[key] = append(result[key], attachment)
-	}
-
-	for inbound, policies := range getInboundMatchedPolicies(matchedPolicies) {
+	for attachment, policies := range BuildAttachments(matchedPolicies, networking) {
 		for _, policy := range policies {
-			addAttachment(policy, Attachment{Type: Inbound, Name: inbound.String()})
+			key := PolicyKey{
+				Type: policy.Descriptor().Name,
+				Key:  core_model.MetaToResourceKey(policy.GetMeta()),
+			}
+			result[key] = append(result[key], attachment)
 		}
-	}
-
-	for outbound, policies := range getOutboundMatchedPolicies(matchedPolicies) {
-		for _, policy := range policies {
-			addAttachment(policy, Attachment{Type: Outbound, Name: outbound.String()})
-		}
-	}
-
-	for service, policies := range getServiceMatchedPolicies(matchedPolicies) {
-		for _, policy := range policies {
-			addAttachment(policy, Attachment{Type: Service, Name: service})
-		}
-	}
-
-	for _, policy := range getDataplaneMatchedPolicies(matchedPolicies) {
-		addAttachment(policy, Attachment{Type: Dataplane, Name: ""})
 	}
 
 	for policyKey := range result {
