@@ -12,7 +12,7 @@ import (
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -205,7 +205,7 @@ func inspectDataplaneXDS(dumper ConfigDumper, rm manager.ResourceManager, defaul
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
 
-		dp := mesh.NewDataplaneResource()
+		dp := core_mesh.NewDataplaneResource()
 		if err := rm.Get(context.Background(), dp, store.GetByKey(dataplaneName, meshName)); err != nil {
 			rest_errors.HandleError(response, err, "Could not get dataplane resource")
 			return
@@ -233,7 +233,7 @@ func inspectZoneIngressXDS(
 	return func(request *restful.Request, response *restful.Response) {
 		zoneIngressName := request.PathParameter("zoneingress")
 
-		zi := mesh.NewZoneIngressResource()
+		zi := core_mesh.NewZoneIngressResource()
 		if err := rm.Get(context.Background(), zi, store.GetByKey(zoneIngressName, core_model.NoMesh)); err != nil {
 			rest_errors.HandleError(response, err, "Could not get zone ingress resource")
 			return
