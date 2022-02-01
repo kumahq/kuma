@@ -22,7 +22,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
-var _ = Describe("kumactl get zone-egresses", func() {
+var _ = Describe("kumactl get zoneegresses", func() {
 
 	zoneEgresses := []*core_mesh.ZoneEgressResource{
 		{
@@ -80,11 +80,11 @@ var _ = Describe("kumactl get zone-egresses", func() {
 			matcher      func(path ...string) gomega_types.GomegaMatcher
 		}
 
-		DescribeTable("kumactl get zone-egresses -o table|json|yaml",
+		DescribeTable("kumactl get zoneegresses -o table|json|yaml",
 			func(given testCase) {
 				// when
 				Expect(
-					ExecuteRootCommand(rootCmd, "zone-egresses", given.outputFormat, given.pagination),
+					ExecuteRootCommand(rootCmd, "zoneegresses", given.outputFormat, given.pagination),
 				).To(Succeed())
 
 				// then
@@ -92,28 +92,28 @@ var _ = Describe("kumactl get zone-egresses", func() {
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
-				goldenFile:   "get-zone-egresses.golden.txt",
+				goldenFile:   "get-zoneegresses.golden.txt",
 				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
-				goldenFile:   "get-zone-egresses.golden.txt",
+				goldenFile:   "get-zoneegresses.golden.txt",
 				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support pagination", testCase{
 				outputFormat: "-otable",
-				goldenFile:   "get-zone-egresses.pagination.golden.txt",
+				goldenFile:   "get-zoneegresses.pagination.golden.txt",
 				pagination:   "--size=1",
 				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support JSON output", testCase{
 				outputFormat: "-ojson",
-				goldenFile:   "get-zone-egresses.golden.json",
+				goldenFile:   "get-zoneegresses.golden.json",
 				matcher:      matchers.MatchGoldenJSON,
 			}),
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
-				goldenFile:   "get-zone-egresses.golden.yaml",
+				goldenFile:   "get-zoneegresses.golden.yaml",
 				matcher:      matchers.MatchGoldenYAML,
 			}),
 		)

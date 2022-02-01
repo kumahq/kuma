@@ -263,24 +263,26 @@ func (c *K8sControlPlane) GetGlobalStatusAPI() string {
 	return c.GetAPIServerAddress() + "/status/zones"
 }
 
-func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
+func (c *K8sControlPlane) generateToken(
+	tokenPath string,
+	data string,
+) (string, error) {
 	var token string
+
 	if !c.localhostIsAdmin {
 		t, err := c.retrieveAdminToken()
 		if err != nil {
 			return "", err
 		}
+
 		token = t
 	}
-	dpType := ""
-	if service == "ingress" {
-		dpType = "ingress"
-	}
+
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
-		c.GetAPIServerAddress()+"/tokens",
-		[]byte(fmt.Sprintf(`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, dpType, service)),
+		c.GetAPIServerAddress()+"/tokens"+tokenPath,
+		[]byte(data),
 		map[string]string{
 			"content-type":  "application/json",
 			"authorization": "Bearer " + token,
@@ -292,29 +294,32 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 	)
 }
 
-func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
-	var token string
-	if !c.localhostIsAdmin {
-		t, err := c.retrieveAdminToken()
-		if err != nil {
-			return "", err
-		}
-		token = t
+func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
+	var dpType string
+	if service == "ingress" {
+		dpType = "ingress"
 	}
-	return http_helper.HTTPDoWithRetryE(
-		c.t,
-		"POST",
-		c.GetAPIServerAddress()+"/tokens/zone-ingress",
-		[]byte(fmt.Sprintf(`{"zone": "%s"}`, zone)),
-		map[string]string{
-			"content-type":  "application/json",
-			"authorization": "Bearer " + token,
-		},
-		200,
-		DefaultRetries,
-		DefaultTimeout,
-		&tls.Config{},
+
+	data := fmt.Sprintf(
+		`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`,
+		mesh,
+		dpType,
+		service,
 	)
+
+	return c.generateToken("", data)
+}
+
+func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
+	data := fmt.Sprintf(`{"zone": "%s"}`, zone)
+
+	return c.generateToken("/zone-ingress", data)
+}
+
+func (c *K8sControlPlane) GenerateZoneEgressToken(zone string) (string, error) {
+	data := fmt.Sprintf(`'{"zone": "%s", "scope": ["egress"]}'`, zone)
+
+	return c.generateToken("/zone", data)
 }
 
 // UpdateObject fetches an object and updates it after the update function is applied to it.

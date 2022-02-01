@@ -1,0 +1,179 @@
+{
+  "total": 3,
+  "items": [
+    {
+      "type": "ZoneEgressOverview",
+      "name": "zoneegress-1",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2019-07-17T18:08:41Z",
+      "zoneEgress": {},
+      "zoneEgressInsight": {
+        "subscriptions": [
+          {
+            "id": "1",
+            "controlPlaneInstanceId": "node-001",
+            "connectTime": "2018-07-17T16:05:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "10",
+                "responsesRejected": "1"
+              }
+            },
+            "version": {
+              "kumaDp": {
+                "version": "1.0.0",
+                "gitTag": "v1.0.0",
+                "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+                "buildDate": "2019-08-07T11:26:06Z"
+              },
+              "envoy": {
+                "version": "1.16.0",
+                "build": "hash/1.16.0/RELEASE"
+              }
+            }
+          },
+          {
+            "id": "2",
+            "controlPlaneInstanceId": "node-002",
+            "connectTime": "2019-07-17T16:05:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "20",
+                "responsesRejected": "2"
+              }
+            },
+            "version": {
+              "kumaDp": {
+                "version": "1.0.2",
+                "gitTag": "v1.0.2",
+                "gitCommit": "9d868cd8681c4021bb4a10bf2306ca613ba4de42",
+                "buildDate": "2020-08-07T11:26:06Z"
+              },
+              "envoy": {
+                "version": "1.16.1",
+                "build": "hash/1.16.1/RELEASE"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ZoneEgressOverview",
+      "name": "zoneegress-2",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2019-07-17T18:08:41Z",
+      "zoneEgress": {},
+      "zoneEgressInsight": {
+        "subscriptions": [
+          {
+            "id": "1",
+            "controlPlaneInstanceId": "node-001",
+            "connectTime": "2018-07-17T16:05:36.995Z",
+            "disconnectTime": "2018-07-17T16:06:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "10",
+                "responsesRejected": "1"
+              }
+            },
+            "version": {
+              "kumaDp": {
+                "version": "1.0.0",
+                "gitTag": "v1.0.0",
+                "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+                "buildDate": "2019-08-07T11:26:06Z"
+              },
+              "envoy": {
+                "version": "1.16.0",
+                "build": "hash/1.16.0/RELEASE"
+              }
+            }
+          },
+          {
+            "id": "2",
+            "controlPlaneInstanceId": "node-002",
+            "connectTime": "2019-07-17T16:05:36.995Z",
+            "disconnectTime": "2019-07-17T16:06:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "20",
+                "responsesRejected": "2"
+              }
+            },
+            "version": {
+              "kumaDp": {
+                "version": "1.0.2",
+                "gitTag": "v1.0.2",
+                "gitCommit": "9d868cd8681c4021bb4a10bf2306ca613ba4de42",
+                "buildDate": "2020-08-07T11:26:06Z"
+              },
+              "envoy": {
+                "version": "1.16.1",
+                "build": "hash/1.16.1/RELEASE"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ZoneEgressOverview",
+      "name": "zoneegress-3",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2019-07-17T18:08:41Z",
+      "zoneEgress": {},
+      "zoneEgressInsight": {
+        "subscriptions": [
+          {
+            "id": "1",
+            "controlPlaneInstanceId": "node-001",
+            "connectTime": "2018-07-17T16:05:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "10",
+                "responsesRejected": "1"
+              }
+            },
+            "version": {
+              "kumaDp": {
+                "version": "1.0.0",
+                "gitTag": "v1.0.0",
+                "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+                "buildDate": "2019-08-07T11:26:06Z"
+              },
+              "envoy": {
+                "version": "1.16.0",
+                "build": "hash/1.16.0/RELEASE"
+              }
+            }
+          },
+          {
+            "id": "2",
+            "controlPlaneInstanceId": "node-002",
+            "connectTime": "2019-07-17T16:05:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "20",
+                "responsesRejected": "2"
+              }
+            },
+            "version": {
+              "kumaDp": {
+                "version": "1.0.2",
+                "gitTag": "v1.0.2",
+                "gitCommit": "9d868cd8681c4021bb4a10bf2306ca613ba4de42",
+                "buildDate": "2020-08-07T11:26:06Z"
+              },
+              "envoy": {
+                "version": "1.16.1",
+                "build": "hash/1.16.1/RELEASE"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "next": null
+}

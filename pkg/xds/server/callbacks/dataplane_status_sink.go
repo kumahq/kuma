@@ -149,6 +149,11 @@ func (s *dataplaneInsightStore) Upsert(dataplaneType core_model.ResourceType, da
 			insight := resource.(*core_mesh.ZoneIngressInsightResource)
 			return insight.Spec.UpdateSubscription(subscription)
 		})
+	case core_mesh.ZoneEgressType:
+		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewZoneEgressInsightResource(), func(resource core_model.Resource) error {
+			insight := resource.(*core_mesh.ZoneEgressInsightResource)
+			return insight.Spec.UpdateSubscription(subscription)
+		})
 	case core_mesh.DataplaneType:
 		return manager.Upsert(s.resManager, dataplaneID, core_mesh.NewDataplaneInsightResource(), func(resource core_model.Resource) error {
 			insight := resource.(*core_mesh.DataplaneInsightResource)

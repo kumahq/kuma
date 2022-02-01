@@ -2418,14 +2418,219 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AdminOnly:      false,
 	Scope:          model.ScopeGlobal,
 	KDSFlags:       model.FromZoneToGlobal,
-	WsPath:         "zone-egresses",
-	KumactlArg:     "zone-egress",
-	KumactlListArg: "zone-egresses",
+	WsPath:         "zoneegresses",
+	KumactlArg:     "zoneegress",
+	KumactlListArg: "zoneegresses",
 	AllowToInspect: false,
 }
 
 func init() {
 	registry.RegisterType(ZoneEgressResourceTypeDescriptor)
+}
+
+const (
+	ZoneEgressInsightType model.ResourceType = "ZoneEgressInsight"
+)
+
+var _ model.Resource = &ZoneEgressInsightResource{}
+
+type ZoneEgressInsightResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.ZoneEgressInsight
+}
+
+func NewZoneEgressInsightResource() *ZoneEgressInsightResource {
+	return &ZoneEgressInsightResource{
+		Spec: &mesh_proto.ZoneEgressInsight{},
+	}
+}
+
+func (t *ZoneEgressInsightResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *ZoneEgressInsightResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *ZoneEgressInsightResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *ZoneEgressInsightResource) Validate() error {
+	return nil
+}
+
+func (t *ZoneEgressInsightResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.ZoneEgressInsight)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		if protoType == nil {
+			t.Spec = &mesh_proto.ZoneEgressInsight{}
+		} else {
+			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *ZoneEgressInsightResource) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneEgressInsightResourceTypeDescriptor
+}
+
+var _ model.ResourceList = &ZoneEgressInsightResourceList{}
+
+type ZoneEgressInsightResourceList struct {
+	Items      []*ZoneEgressInsightResource
+	Pagination model.Pagination
+}
+
+func (l *ZoneEgressInsightResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *ZoneEgressInsightResourceList) GetItemType() model.ResourceType {
+	return ZoneEgressInsightType
+}
+
+func (l *ZoneEgressInsightResourceList) NewItem() model.Resource {
+	return NewZoneEgressInsightResource()
+}
+
+func (l *ZoneEgressInsightResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*ZoneEgressInsightResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*ZoneEgressInsightResource)(nil), r)
+	}
+}
+
+func (l *ZoneEgressInsightResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+var ZoneEgressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           ZoneEgressInsightType,
+	Resource:       NewZoneEgressInsightResource(),
+	ResourceList:   &ZoneEgressInsightResourceList{},
+	ReadOnly:       true,
+	AdminOnly:      false,
+	Scope:          model.ScopeGlobal,
+	KDSFlags:       model.FromZoneToGlobal,
+	WsPath:         "zoneegressinsights",
+	KumactlArg:     "",
+	KumactlListArg: "",
+	AllowToInspect: false,
+}
+
+func init() {
+	registry.RegisterType(ZoneEgressInsightResourceTypeDescriptor)
+}
+
+const (
+	ZoneEgressOverviewType model.ResourceType = "ZoneEgressOverview"
+)
+
+var _ model.Resource = &ZoneEgressOverviewResource{}
+
+type ZoneEgressOverviewResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.ZoneEgressOverview
+}
+
+func NewZoneEgressOverviewResource() *ZoneEgressOverviewResource {
+	return &ZoneEgressOverviewResource{
+		Spec: &mesh_proto.ZoneEgressOverview{},
+	}
+}
+
+func (t *ZoneEgressOverviewResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *ZoneEgressOverviewResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *ZoneEgressOverviewResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *ZoneEgressOverviewResource) Validate() error {
+	return nil
+}
+
+func (t *ZoneEgressOverviewResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.ZoneEgressOverview)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		if protoType == nil {
+			t.Spec = &mesh_proto.ZoneEgressOverview{}
+		} else {
+			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *ZoneEgressOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneEgressOverviewResourceTypeDescriptor
+}
+
+var _ model.ResourceList = &ZoneEgressOverviewResourceList{}
+
+type ZoneEgressOverviewResourceList struct {
+	Items      []*ZoneEgressOverviewResource
+	Pagination model.Pagination
+}
+
+func (l *ZoneEgressOverviewResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *ZoneEgressOverviewResourceList) GetItemType() model.ResourceType {
+	return ZoneEgressOverviewType
+}
+
+func (l *ZoneEgressOverviewResourceList) NewItem() model.Resource {
+	return NewZoneEgressOverviewResource()
+}
+
+func (l *ZoneEgressOverviewResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*ZoneEgressOverviewResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*ZoneEgressOverviewResource)(nil), r)
+	}
+}
+
+func (l *ZoneEgressOverviewResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+var ZoneEgressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           ZoneEgressOverviewType,
+	Resource:       NewZoneEgressOverviewResource(),
+	ResourceList:   &ZoneEgressOverviewResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeGlobal,
+	WsPath:         "",
+	KumactlArg:     "",
+	KumactlListArg: "",
+	AllowToInspect: false,
 }
 
 const (

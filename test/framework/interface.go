@@ -41,6 +41,7 @@ type kumaDeploymentOptions struct {
 	noHelmOpts           []string
 	env                  map[string]string
 	ingress              bool
+	egress               bool
 	cni                  bool
 	cpReplicas           int
 	hdsDisabled          bool
@@ -259,6 +260,12 @@ func WithIngress() KumaDeploymentOption {
 	})
 }
 
+func WithEgress() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.egress = true
+	})
+}
+
 func WithCNI() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.cni = true
@@ -463,4 +470,5 @@ type ControlPlane interface {
 	GetAPIServerAddress() string
 	GenerateDpToken(mesh, serviceName string) (string, error)
 	GenerateZoneIngressToken(zone string) (string, error)
+	GenerateZoneEgressToken(zone string) (string, error)
 }

@@ -25,7 +25,7 @@ func Setup(rt runtime.Runtime) error {
 func setupCollector(rt runtime.Runtime) error {
 	switch rt.Config().Environment {
 	// Dataplane GC is run only on Universal because on Kubernetes Dataplanes are bounded by ownership to Pods.
-	// Therefore on K8S offline dataplanes are cleaned up quickly enough to not run this.
+	// Therefore, on K8S offline dataplanes are cleaned up quickly enough to not run this.
 	case config_core.UniversalEnvironment:
 		return rt.Add(
 			NewCollector(rt.ResourceManager(), 1*time.Minute, rt.Config().Runtime.Universal.DataplaneCleanupAge),
@@ -54,6 +54,7 @@ func setupFinalizer(rt runtime.Runtime) error {
 		resourceTypes = []model.ResourceType{
 			mesh.DataplaneInsightType,
 			mesh.ZoneIngressInsightType,
+			mesh.ZoneEgressInsightType,
 		}
 	case config_core.Global:
 		newTicker = func() *time.Ticker {

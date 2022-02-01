@@ -23,6 +23,7 @@ type AppMode string
 const (
 	AppModeCP              = "kuma-cp"
 	AppIngress             = "ingress"
+	AppEgress              = "egress"
 	AppModeEchoServer      = "echo-server"
 	AppModeHttpsEchoServer = "https-echo-server"
 	sshPort                = "22"
@@ -48,6 +49,13 @@ networking:
   address: {{ address }}
   advertisedAddress: %s
   advertisedPort: %d
+  port: %d
+`
+	ZoneEgress = `
+type: ZoneEgress
+name: egress
+networking:
+  address: {{ address }}
   port: %d
 `
 
@@ -377,7 +385,12 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	return nil
 }
 
-func (s *UniversalApp) CreateDP(token, cpAddress, name, mesh, ip, dpyaml string, builtindns, ingress bool, concurrency int) {
+func (s *UniversalApp) CreateDP(
+	token, cpAddress, name, mesh, ip, dpyaml string,
+	builtindns bool,
+	proxyType string,
+	concurrency int,
+) {
 	// create the token file on the app container
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + name}).Run()
 	if err != nil {
@@ -415,9 +428,11 @@ func (s *UniversalApp) CreateDP(token, cpAddress, name, mesh, ip, dpyaml string,
 	if builtindns {
 		args = append(args, "--dns-enabled")
 	}
-	if ingress {
-		args = append(args, "--proxy-type=ingress")
+
+	if proxyType != "" {
+		args = append(args, "--proxy-type", proxyType)
 	}
+
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, args)
 }
 

@@ -202,6 +202,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--ingress-use-node-port"] = ""
 	}
 
+	if c.opts.egress {
+		argsMap["--egress-enabled"] = ""
+	}
+
 	if c.opts.cni {
 		argsMap["--cni-enabled"] = ""
 		argsMap["--cni-chained"] = ""

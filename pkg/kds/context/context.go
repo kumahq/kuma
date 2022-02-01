@@ -137,10 +137,10 @@ func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
 			return clusterName == util.ZoneTag(r)
 		case mesh.ZoneIngressType:
 			return !r.(*mesh.ZoneIngressResource).IsRemoteIngress(clusterName)
-		// TODO (bartsmykla): add ZoneEgressInsightType when available
 		case mesh.DataplaneInsightType,
 			mesh.ZoneIngressInsightType,
-			mesh.ZoneEgressType:
+			mesh.ZoneEgressType,
+			mesh.ZoneEgressInsightType:
 			return true
 		default:
 			return false

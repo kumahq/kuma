@@ -83,6 +83,7 @@ var _ = Describe("KDS Server", func() {
 				kds_samples.ZoneIngress,
 				kds_samples.ZoneIngressInsight,
 				kds_samples.ZoneEgress,
+				kds_samples.ZoneEgressInsight,
 				kds_samples.Config,
 				kds_samples.VirtualOutbound,
 				kds_samples.Gateway,
