@@ -25,8 +25,12 @@ function download_envoy() {
     status=$(curl -# --location --output "${BINARY_PATH}" --write-out '%{http_code}' \
     "https://download.konghq.com/mesh-alpine/${binary_name}")
 
-  [ -f "${BINARY_PATH}" ] && chmod +x "${BINARY_PATH}"
-  if [ "$status" -ne "200" ]; then msg_err "Error: failed downloading Envoy"; fi
+    if [ "$status" -ne "200" ]; then
+        rm "${BINARY_PATH}"
+        msg_err "Error: failed downloading Envoy: ${status} error"
+    fi
+
+    [ -f "${BINARY_PATH}" ] && chmod +x "${BINARY_PATH}"
 }
 
 if [[ -n "${ENVOY_VERSION}" ]]; then
