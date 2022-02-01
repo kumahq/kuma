@@ -124,11 +124,15 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			var ports []kube_core.ServicePort
 
 			for _, listener := range gateway.Spec.GetConf().GetListeners() {
-				ports = append(ports, kube_core.ServicePort{
+				servicePort := kube_core.ServicePort{
 					Name:     strconv.Itoa(int(listener.Port)),
 					Protocol: kube_core.ProtocolTCP,
 					Port:     int32(listener.Port),
-				})
+				}
+				if gatewayInstance.Spec.ServiceType == kube_core.ServiceTypeNodePort {
+					servicePort.NodePort = int32(listener.Port)
+				}
+				ports = append(ports, servicePort)
 			}
 
 			service.Spec.Selector = k8sSelector(gatewayInstance.Name)
