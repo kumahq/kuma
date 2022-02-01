@@ -25,6 +25,7 @@ import (
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
 	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
+	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -74,6 +75,7 @@ type RuntimeContext interface {
 type Access struct {
 	ResourceAccess       resources_access.ResourceAccess
 	DataplaneTokenAccess tokens_access.DataplaneTokenAccess
+	ZoneTokenAccess      zone_access.ZoneTokenAccess
 }
 
 type ResourceValidators struct {

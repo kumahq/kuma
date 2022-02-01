@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
+	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 )
 
 type zoneStaticTokenIssuer struct {
@@ -39,6 +40,7 @@ var _ = Describe("Zone Egress Tokens Client", func() {
 			&zoneIngressStaticTokenIssuer{},
 			&zoneStaticTokenIssuer{},
 			access.NoopDpTokenAccess{},
+			zone_access.NoopZoneTokenAccess{},
 		))
 		server = httptest.NewServer(container.ServeMux)
 	})

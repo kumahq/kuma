@@ -16,6 +16,7 @@ import (
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
+	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
@@ -39,6 +40,7 @@ var _ = Describe("Zone Ingress Tokens Client", func() {
 			&zoneIngressStaticTokenIssuer{},
 			&zoneStaticTokenIssuer{},
 			access.NoopDpTokenAccess{},
+			zone_access.NoopZoneTokenAccess{},
 		))
 		server = httptest.NewServer(container.ServeMux)
 	})

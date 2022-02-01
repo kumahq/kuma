@@ -15,29 +15,33 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
+	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
-var log = core.Log.WithName("dataplane-token-ws")
+var log = core.Log.WithName("token-ws")
 
 type tokenWebService struct {
 	issuer            issuer.DataplaneTokenIssuer
 	zoneIngressIssuer zoneingress.TokenIssuer
 	zoneIssuer        zone.TokenIssuer
-	access            access.DataplaneTokenAccess
+	dpAccess          access.DataplaneTokenAccess
+	zoneAccess        zone_access.ZoneTokenAccess
 }
 
 func NewWebservice(
 	issuer issuer.DataplaneTokenIssuer,
 	zoneIngressIssuer zoneingress.TokenIssuer,
 	zoneIssuer zone.TokenIssuer,
-	access access.DataplaneTokenAccess,
+	dpAccess access.DataplaneTokenAccess,
+	zoneAccess zone_access.ZoneTokenAccess,
 ) *restful.WebService {
 	ws := tokenWebService{
 		issuer:            issuer,
 		zoneIngressIssuer: zoneIngressIssuer,
 		zoneIssuer:        zoneIssuer,
-		access:            access,
+		dpAccess:          dpAccess,
+		zoneAccess:        zoneAccess,
 	}
 	return ws.createWs()
 }
@@ -82,7 +86,7 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 		return
 	}
 
-	if err := d.access.ValidateGenerateDataplaneToken(
+	if err := d.dpAccess.ValidateGenerateDataplaneToken(
 		idReq.Name,
 		idReq.Mesh,
 		idReq.Tags,
@@ -130,7 +134,7 @@ func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Requ
 		return
 	}
 
-	if err := d.access.ValidateGenerateZoneIngressToken(idReq.Zone, user.FromCtx(request.Request.Context())); err != nil {
+	if err := d.dpAccess.ValidateGenerateZoneIngressToken(idReq.Zone, user.FromCtx(request.Request.Context())); err != nil {
 		errors.HandleError(response, err, "Could not issue a token")
 		return
 	}
@@ -172,7 +176,7 @@ func (d *tokenWebService) handleZoneIdentityRequest(request *restful.Request, re
 
 	ctx := request.Request.Context()
 
-	if err := d.access.ValidateGenerateZoneToken(idReq.Zone, user.FromCtx(ctx)); err != nil {
+	if err := d.dpAccess.ValidateGenerateZoneToken(idReq.Zone, user.FromCtx(ctx)); err != nil {
 		errors.HandleError(response, err, "Could not issue a token")
 		return
 	}
