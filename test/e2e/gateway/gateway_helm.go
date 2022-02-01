@@ -106,11 +106,11 @@ spec:
 
 		Eventually(func(g Gomega) {
 			// given
-			address := "http://"+net.JoinHostPort("localhost", GatewayNodePort)
+			address := "http://" + net.JoinHostPort("localhost", GatewayNodePort)
 			if Config.IPV6 {
 				// With IPV6, KIND forwards to the host but it works only on IPV6.
 				// Just localhost:30800 will resolve to 127.0.0.1:30800 therefore we need explicit IPV6
-				address = "http://"+net.JoinHostPort("::1", GatewayNodePort)
+				address = "http://" + net.JoinHostPort("::1", GatewayNodePort)
 			}
 
 			// when
