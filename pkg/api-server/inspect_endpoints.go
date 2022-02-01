@@ -227,7 +227,7 @@ func inspectDataplaneXDS(dumper ConfigDumper, rm manager.ResourceManager, defaul
 func inspectZoneIngressXDS(
 	dumper ConfigDumper,
 	rm manager.ResourceManager,
-	zone string,
+	localZone string,
 	defaultAdminPort uint32,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
@@ -239,7 +239,7 @@ func inspectZoneIngressXDS(
 			return
 		}
 
-		if zi.Spec.GetZone() != zone {
+		if zi.IsRemoteIngress(localZone) {
 			rest_errors.HandleError(response, &validators.ValidationError{},
 				"Could not connect to zone ingress that resides in another zone")
 			return

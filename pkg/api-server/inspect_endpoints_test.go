@@ -646,7 +646,7 @@ var _ = Describe("Inspect WS", func() {
 			resources: []core_model.Resource{
 				newZoneIngress().
 					meta("zi-1").
-					zone("local").
+					zone(""). // local zone ingress has empty "zone" field
 					admin(2201).
 					address("2.2.2.2").port(8080).
 					advertisedAddress("3.3.3.3").advertisedPort(80).
