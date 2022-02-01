@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/template"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -127,6 +128,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		Timeouts:           xds_topology.BuildTimeoutMap(dataplane, resources.Timeouts().Items),
 		RateLimitsInbound:  ratelimits.Inbound,
 		RateLimitsOutbound: ratelimits.Outbound,
+		ProxyTemplate:      template.SelectProxyTemplate(dataplane, resources.ProxyTemplates().Items),
 	}
 	return matchedPolicies, nil
 }

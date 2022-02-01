@@ -561,6 +561,39 @@ var _ = Describe("Inspect WS", func() {
 					build(),
 			},
 		}),
+		Entry("inspect proxytemplate", testCase{
+			path:       "/meshes/mesh-1/proxytemplates/tt-1/dataplanes",
+			goldenFile: "inspect_proxytemplate.json",
+			resources: []core_model.Resource{
+				newMesh("mesh-1"),
+				&core_mesh.ProxyTemplateResource{
+					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
+					Spec: &mesh_proto.ProxyTemplate{
+						Selectors: anyService(),
+						Conf:      samples.ProxyTemplate.Conf,
+					},
+				},
+				newDataplane().
+					meta("backend-1", "mesh-1").
+					inbound("backend", "192.168.0.1", 80, 81).
+					outbound("redis", "192.168.0.2", 8080).
+					outbound("gateway", "192.168.0.3", 8080).
+					outbound("web", "192.168.0.4", 8080).
+					build(),
+				newDataplane().
+					meta("redis-1", "mesh-1").
+					inbound("redis", "192.168.0.1", 80, 81).
+					outbound("gateway", "192.168.0.2", 8080).
+					outbound("web", "192.168.0.4", 8080).
+					build(),
+				newDataplane().
+					meta("web-1", "mesh-1").
+					inbound("web", "192.168.0.1", 80, 81).
+					outbound("gateway", "192.168.0.2", 8080).
+					outbound("backend", "192.168.0.4", 8080).
+					build(),
+			},
+		}),
 	)
 
 	It("should change response if state changed", func() {

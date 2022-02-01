@@ -1251,7 +1251,7 @@ var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:         "proxytemplates",
 	KumactlArg:     "proxytemplate",
 	KumactlListArg: "proxytemplates",
-	AllowToInspect: false,
+	AllowToInspect: true,
 }
 
 func init() {

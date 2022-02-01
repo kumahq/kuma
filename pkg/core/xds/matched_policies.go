@@ -27,7 +27,8 @@ type MatchedPolicies struct {
 	TrafficRoutes      RouteMap
 
 	// Dataplane -> Policy
-	TrafficTrace *core_mesh.TrafficTraceResource
+	TrafficTrace  *core_mesh.TrafficTraceResource
+	ProxyTemplate *core_mesh.ProxyTemplateResource
 }
 
 type AttachmentType int64
@@ -221,10 +222,14 @@ func getServiceMatchedPolicies(matchedPolicies *MatchedPolicies) map[ServiceName
 }
 
 func getDataplaneMatchedPolicies(matchedPolicies *MatchedPolicies) []core_model.Resource {
+	var resources []core_model.Resource
 	if matchedPolicies.TrafficTrace != nil {
-		return []core_model.Resource{matchedPolicies.TrafficTrace}
+		resources = append(resources, matchedPolicies.TrafficTrace)
 	}
-	return nil
+	if matchedPolicies.ProxyTemplate != nil {
+		resources = append(resources, matchedPolicies.ProxyTemplate)
+	}
+	return resources
 }
 
 func (a AttachmentList) Len() int           { return len(a) }

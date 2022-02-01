@@ -241,7 +241,7 @@ var (
 			Match: map[string]string{"serivce": "*"},
 		}},
 		Conf: &mesh_proto.ProxyTemplate_Conf{
-			Imports: []string{"default-kuma-profile"},
+			Imports: []string{"default-proxy"},
 		},
 	}
 	Retry = &mesh_proto.Retry{

@@ -74,3 +74,14 @@ func (s sequentialResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTem
 func SequentialResolver(r ...ProxyTemplateResolver) ProxyTemplateResolver {
 	return sequentialResolver(r)
 }
+
+func SelectProxyTemplate(dataplane *core_mesh.DataplaneResource, proxyTemplates []*core_mesh.ProxyTemplateResource) *core_mesh.ProxyTemplateResource {
+	policies := make([]core_policy.DataplanePolicy, len(proxyTemplates))
+	for i, proxyTemplate := range proxyTemplates {
+		policies[i] = proxyTemplate
+	}
+	if policy := core_policy.SelectDataplanePolicy(dataplane, policies); policy != nil {
+		return policy.(*core_mesh.ProxyTemplateResource)
+	}
+	return nil
+}
