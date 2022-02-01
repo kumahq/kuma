@@ -14,7 +14,3 @@ func (n NoopDpTokenAccess) ValidateGenerateDataplaneToken(name string, mesh stri
 func (n NoopDpTokenAccess) ValidateGenerateZoneIngressToken(zone string, user user.User) error {
 	return nil
 }
-
-func (n NoopDpTokenAccess) ValidateGenerateZoneToken(zone string, user user.User) error {
-	return nil
-}
