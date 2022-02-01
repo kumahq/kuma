@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
+	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 )
 
@@ -64,6 +65,7 @@ var _ = Describe("Dataplane Token Webservice", func() {
 			&zoneIngressStaticTokenIssuer{},
 			&zoneStaticTokenIssuer{},
 			&access.NoopDpTokenAccess{},
+			&zone_access.NoopZoneTokenAccess{},
 		)
 
 		container := restful.NewContainer()

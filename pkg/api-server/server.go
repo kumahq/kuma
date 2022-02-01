@@ -36,7 +36,6 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
-	tokens_access "github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -134,7 +133,7 @@ func NewApiServer(
 	container.Add(configWs)
 	container.Add(versionsWs())
 	container.Add(zonesWs(resManager))
-	container.Add(dataplaneTokenWs(resManager, access.DataplaneTokenAccess))
+	container.Add(tokenWs(resManager, access))
 
 	container.Filter(cors.Filter)
 
@@ -229,11 +228,14 @@ func addResourcesEndpoints(ws *restful.WebService, defs []model.ResourceTypeDesc
 	}
 }
 
-func dataplaneTokenWs(resManager manager.ResourceManager, access tokens_access.DataplaneTokenAccess) *restful.WebService {
-	dpIssuer := builtin.NewDataplaneTokenIssuer(resManager)
-	zoneIngressIssuer := builtin.NewZoneIngressTokenIssuer(resManager)
-	zoneTokenIssuer := builtin.NewZoneTokenIssuer(resManager)
-	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer, zoneTokenIssuer, access)
+func tokenWs(resManager manager.ResourceManager, access runtime.Access) *restful.WebService {
+	return tokens_server.NewWebservice(
+		builtin.NewDataplaneTokenIssuer(resManager),
+		builtin.NewZoneIngressTokenIssuer(resManager),
+		builtin.NewZoneTokenIssuer(resManager),
+		access.DataplaneTokenAccess,
+		access.ZoneTokenAccess,
+	)
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {

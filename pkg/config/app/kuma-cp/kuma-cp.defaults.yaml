@@ -411,12 +411,18 @@ access:
       users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_USERS
       # List of groups that are allowed to generate dataplane token
       groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_DP_TOKEN_GROUPS
-    # GenerateDPToken defines an access to generating user token
+    # GenerateUserToken defines an access to generating user token
     generateUserToken:
       # List of users that are allowed to generate user token
       users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS
       # List of groups that are allowed to generate user token
       groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS
+    # GenerateZoneToken defines an access to generating zone token
+    generateZoneToken:
+      # List of users that are allowed to generate zone token
+      users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_USERS
+      # List of groups that are allowed to generate zone token
+      groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS
 
 # Configuration of experimental features of Kuma
 experimental:

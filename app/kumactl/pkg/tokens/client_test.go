@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
+	zone_access "github.com/kumahq/kuma/pkg/tokens/builtin/zone/access"
 )
 
 type staticTokenIssuer struct {
@@ -40,6 +41,7 @@ var _ = Describe("Tokens Client", func() {
 			&zoneIngressStaticTokenIssuer{},
 			&zoneStaticTokenIssuer{},
 			access.NoopDpTokenAccess{},
+			zone_access.NoopZoneTokenAccess{},
 		))
 		server = httptest.NewServer(container.ServeMux)
 	})

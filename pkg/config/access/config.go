@@ -24,6 +24,10 @@ func DefaultAccessConfig() AccessConfig {
 				Users:  []string{"mesh-system:admin"},
 				Groups: []string{"mesh-system:admin"},
 			},
+			GenerateZoneToken: GenerateZoneTokenStaticAccessConfig{
+				Users:  []string{"mesh-system:admin"},
+				Groups: []string{"mesh-system:admin"},
+			},
 		},
 	}
 }
@@ -54,8 +58,10 @@ type StaticAccessConfig struct {
 	AdminResources AdminResourcesStaticAccessConfig `yaml:"adminResources"`
 	// GenerateDPToken defines an access to generating dataplane token
 	GenerateDPToken GenerateDPTokenStaticAccessConfig `yaml:"generateDpToken"`
-	// GenerateDPToken defines an access to generating user token
+	// GenerateUserToken defines an access to generating user token
 	GenerateUserToken GenerateUserTokenStaticAccessConfig `yaml:"generateUserToken"`
+	// GenerateZoneToken defines an access to generating zone token
+	GenerateZoneToken GenerateZoneTokenStaticAccessConfig `yaml:"generateZoneToken"`
 }
 
 type AdminResourcesStaticAccessConfig struct {
@@ -77,4 +83,11 @@ type GenerateUserTokenStaticAccessConfig struct {
 	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_USERS"`
 	// List of groups that are allowed to generate user token
 	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS"`
+}
+
+type GenerateZoneTokenStaticAccessConfig struct {
+	// List of users that are allowed to generate zone token
+	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_USERS"`
+	// List of groups that are allowed to generate zone token
+	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS"`
 }
