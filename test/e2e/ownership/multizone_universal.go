@@ -43,6 +43,12 @@ func MultizoneUniversal() {
 		Expect(IngressUniversal(ingressToken)(zoneUniversal)).To(Succeed())
 	}
 
+	installZoneEgress := func() {
+		egressToken, err := global.GetKuma().GenerateZoneEgressToken(Kuma2)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(EgressUniversal(egressToken)(zoneUniversal)).To(Succeed())
+	}
+
 	installDataplane := func() {
 		token, err := global.GetKuma().GenerateDpToken("default", AppModeDemoClient)
 		Expect(err).ToNot(HaveOccurred())
@@ -92,6 +98,18 @@ func MultizoneUniversal() {
 
 		Eventually(has("zone-ingresses"), "30s", "1s").Should(BeFalse())
 		Eventually(has("zone-ingress-insights"), "30s", "1s").Should(BeFalse())
+	})
+
+	It("should delete ZoneEgressInsights when ZoneEgress is deleted", func() {
+		installZoneEgress()
+
+		Eventually(has("zoneegresses"), "30s", "1s").Should(BeTrue())
+		Eventually(has("zoneegressinsights"), "30s", "1s").Should(BeTrue())
+
+		killKumaDP(AppEgress)
+
+		Eventually(has("zoneegresses"), "30s", "1s").Should(BeFalse())
+		Eventually(has("zoneegressinsights"), "30s", "1s").Should(BeFalse())
 	})
 
 	It("should delete DataplaneInsight when Dataplane is deleted", func() {

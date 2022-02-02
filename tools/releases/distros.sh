@@ -2,7 +2,8 @@
 
 set -e
 
-source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
+SCRIPT_DIR="$(dirname -- "${BASH_SOURCE[0]}")"
+source "${SCRIPT_DIR}/../common.sh"
 
 GOARCH=(amd64)
 
@@ -114,7 +115,7 @@ function usage() {
 }
 
 function main() {
-  KUMA_VERSION=$($(dirname -- "${BASH_SOURCE[0]}")/version.sh)
+  KUMA_VERSION=$("${SCRIPT_DIR}/version.sh")
 
   while [[ $# -gt 0 ]]; do
     flag=$1

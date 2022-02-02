@@ -1,19 +1,21 @@
-## kumactl get zone-egress
+## kumactl get zoneegresses
 
-Show a single ZoneEgress resource
+Show ZoneEgress
 
 ### Synopsis
 
-Show a single ZoneEgress resource.
+Show ZoneEgress entities.
 
 ```
-kumactl get zone-egress NAME [flags]
+kumactl get zoneegresses [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for zone-egress
+  -h, --help            help for zoneegresses
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 ```
 
 ### Options inherited from parent commands

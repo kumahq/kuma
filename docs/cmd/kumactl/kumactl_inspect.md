@@ -30,5 +30,6 @@ Inspect Kuma resources.
 * [kumactl inspect meshes](kumactl_inspect_meshes.md)	 - Inspect Meshes
 * [kumactl inspect services](kumactl_inspect_services.md)	 - Inspect Services
 * [kumactl inspect zone-ingresses](kumactl_inspect_zone-ingresses.md)	 - Inspect Zone Ingresses
+* [kumactl inspect zoneegresses](kumactl_inspect_zoneegresses.md)	 - Inspect Zone Egresses
 * [kumactl inspect zones](kumactl_inspect_zones.md)	 - Inspect Zones
 

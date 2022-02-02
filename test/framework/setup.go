@@ -8,6 +8,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
+	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -158,12 +159,25 @@ func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 	}
 }
 
-func IngressUniversal(token string) InstallFunc {
+func zoneRelatedResource(
+	token string,
+	appType AppMode,
+	resourceManifestFunc func(address string, port, advertisedPort int) string,
+) func(cluster Cluster) error {
+	dpName := string(appType)
+
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
-		isipv6 := Config.IPV6
-		verbose := false
-		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, isipv6, verbose, []string{})
+
+		app, err := NewUniversalApp(
+			cluster.GetTesting(),
+			uniCluster.name,
+			dpName,
+			appType,
+			Config.IPV6,
+			false,
+			[]string{},
+		)
 		if err != nil {
 			return err
 		}
@@ -174,12 +188,36 @@ func IngressUniversal(token string) InstallFunc {
 		if err != nil {
 			return err
 		}
-		uniCluster.apps[AppIngress] = app
 
-		publicAddress := uniCluster.apps[AppIngress].ip
-		dpyaml := fmt.Sprintf(ZoneIngress, publicAddress, kdsPort, kdsPort)
-		return uniCluster.CreateZoneIngress(app, "ingress", app.ip, dpyaml, token, false)
+		uniCluster.apps[dpName] = app
+		publicAddress := app.ip
+		dpYAML := resourceManifestFunc(publicAddress, kdsPort, kdsPort)
+
+		switch appType {
+		case AppIngress:
+			return uniCluster.CreateZoneIngress(app, dpName, publicAddress, dpYAML, token, false)
+		case AppEgress:
+			return uniCluster.CreateZoneEgress(app, dpName, publicAddress, dpYAML, token, false)
+		default:
+			return errors.Errorf("unsupported appType: %s", appType)
+		}
 	}
+}
+
+func IngressUniversal(token string) InstallFunc {
+	manifestFunc := func(address string, port, advertisedPort int) string {
+		return fmt.Sprintf(ZoneIngress, address, port, advertisedPort)
+	}
+
+	return zoneRelatedResource(token, AppIngress, manifestFunc)
+}
+
+func EgressUniversal(token string) InstallFunc {
+	manifestFunc := func(_ string, port, _ int) string {
+		return fmt.Sprintf(ZoneEgress, port)
+	}
+
+	return zoneRelatedResource(token, AppEgress, manifestFunc)
 }
 
 func DemoClientK8s(mesh string) InstallFunc {

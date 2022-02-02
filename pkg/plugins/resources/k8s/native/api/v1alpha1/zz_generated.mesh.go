@@ -1978,6 +1978,101 @@ func init() {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Namespaced
+type ZoneEgressInsight struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma ZoneEgressInsight resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
+type ZoneEgressInsightList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ZoneEgressInsight `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&ZoneEgressInsight{}, &ZoneEgressInsightList{})
+}
+
+func (cb *ZoneEgressInsight) GetObjectMeta() *metav1.ObjectMeta {
+	return &cb.ObjectMeta
+}
+
+func (cb *ZoneEgressInsight) SetObjectMeta(m *metav1.ObjectMeta) {
+	cb.ObjectMeta = *m
+}
+
+func (cb *ZoneEgressInsight) GetMesh() string {
+	return cb.Mesh
+}
+
+func (cb *ZoneEgressInsight) SetMesh(mesh string) {
+	cb.Mesh = mesh
+}
+
+func (cb *ZoneEgressInsight) GetSpec() proto.Message {
+	spec := cb.Spec
+	m := mesh_proto.ZoneEgressInsight{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+}
+
+func (cb *ZoneEgressInsight) SetSpec(spec proto.Message) {
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.ZoneEgressInsight); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+}
+
+func (cb *ZoneEgressInsight) Scope() model.Scope {
+	return model.ScopeNamespace
+}
+
+func (l *ZoneEgressInsightList) GetItems() []model.KubernetesObject {
+	result := make([]model.KubernetesObject, len(l.Items))
+	for i := range l.Items {
+		result[i] = &l.Items[i]
+	}
+	return result
+}
+
+func init() {
+	registry.RegisterObjectType(&mesh_proto.ZoneEgressInsight{}, &ZoneEgressInsight{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "ZoneEgressInsight",
+		},
+	})
+	registry.RegisterListType(&mesh_proto.ZoneEgressInsight{}, &ZoneEgressInsightList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "ZoneEgressInsightList",
+		},
+	})
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
 type ZoneIngress struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
