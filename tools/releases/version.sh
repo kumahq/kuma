@@ -6,12 +6,12 @@
 #    At the same time, if $lastGitTag is not final tag (for example 1.4.0-rc1 or 1.4.0-preview1), the version is "dev-$shortHash"
 # 3) If the branch does not start with "release", then the version is "dev-$shortHash" (for example: dev-450174242)
 
-lastGitTag=`git describe --abbrev=0 --tags`
-shortHash=`git rev-parse --short HEAD`
-currentBranch=`git rev-parse --abbrev-ref HEAD`
+lastGitTag=$(git describe --abbrev=0 --tags)
+shortHash=$(git rev-parse --short HEAD)
+currentBranch=$(git rev-parse --abbrev-ref HEAD)
 
 if git describe --exact-match --tags > /dev/null 2>&1; then # if we are on tag
-  echo $lastGitTag
+  echo "$lastGitTag"
 else
   if [[ $lastGitTag =~ [0-9]+\.[0-9]+\.[0-9]+ ]] && [[ $currentBranch == release* ]]; then
     # set field separator to dot and read parts of semver

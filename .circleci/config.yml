@@ -132,9 +132,10 @@ commands:
         default: *go_version
     steps:
     - run:
-        # `unzip` is necessary to install `protoc`
-        # `gcc`   is necessary to run `go test -race`
-        # `git`   is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
+        # `unzip`    is necessary to install `protoc`
+        # `gcc`      is necessary to run `go test -race`
+        # `git`      is necessary because the CircleCI version is different somehow ¯\_(ツ)_/¯
+        # `xz-utils` is necessary to decompress xz files
         name: "Install basic tools"
         command: |
           if [ -r /etc/os-release ]; then source /etc/os-release; fi
@@ -146,7 +147,7 @@ commands:
             fi
 
             sudo apt update
-            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc
+            sudo env DEBIAN_FRONTEND=noninteractive apt install -y curl git make unzip gcc xz-utils
             ;;
           esac
     - run:
@@ -707,7 +708,8 @@ jobs:
     - run:
         name: "Install pre-requirements"
         # `unzip` is necessary to install `protoc`
-        command: apt update && apt install -y unzip
+        # `xz-utils` is necessary to decompress xz files
+        command: apt update && apt install -y unzip xz-utils
     - run:
         name: "Install all development tools"
         command: make dev/tools

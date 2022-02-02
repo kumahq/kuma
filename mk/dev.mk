@@ -9,6 +9,7 @@ UDPA_LATEST_VERSION := main
 GOOGLEAPIS_LATEST_VERSION := master
 KUMADOC_VERSION := v0.1.7
 DATAPLANE_API_LATEST_VERSION := main
+SHELLCHECK_VERSION := v0.8.0
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_MINIKUBE_VERSION ?= v1.24.0
@@ -34,6 +35,7 @@ KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
 ETCD_PATH := $(CI_TOOLS_DIR)/etcd
 GOLANGCI_LINT_DIR := $(CI_TOOLS_DIR)
 HELM_DOCS_PATH := $(CI_TOOLS_DIR)/helm-docs
+SHELLCHECK_PATH := $(CI_TOOLS_DIR)/shellcheck
 
 TOOLS_DIR ?= $(shell pwd)/tools
 
@@ -44,9 +46,11 @@ UNAME_S := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
 ifeq ($(UNAME_S), Linux)
 	PROTOC_OS=linux
+	SHELLCHECK_OS=linux
 else
 	ifeq ($(UNAME_S), Darwin)
 		PROTOC_OS=osx
+		SHELLCHECK_OS=darwin
 	endif
 endif
 
@@ -76,7 +80,8 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/golangci-lint \
 	dev/install/helm3 \
 	dev/install/helm-docs \
-	dev/install/data-plane-api
+	dev/install/data-plane-api \
+	dev/install/shellcheck
 
 .PHONY: dev/install/protoc-gen-kumadoc
 dev/install/protoc-gen-kumadoc:
@@ -224,6 +229,24 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 .PHONY: dev/install/golangci-lint
 dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
+
+SHELLCHECK_ARCHIVE := "shellcheck-$(SHELLCHECK_VERSION).$(SHELLCHECK_OS).$(UNAME_ARCH).tar.xz"
+
+.PHONY: dev/install/shellcheck
+dev/install/shellcheck:
+	@if [ -e $(SHELLCHECK_PATH) ]; then echo "Shellcheck $$( $(SHELLCHECK_PATH) --version ) is already installed at $(SHELLCHECK_PATH)" ; fi
+	@if [ ! -e $(SHELLCHECK_PATH) ]; then \
+		echo "Installing shellcheck $(SHELLCHECK_VERSION) ..." \
+		&& set -x \
+		&& $(CURL_DOWNLOAD) -o shellcheck.tar.xz https://github.com/koalaman/shellcheck/releases/download/$(SHELLCHECK_VERSION)/$(SHELLCHECK_ARCHIVE) \
+		&& tar -xf shellcheck.tar.xz shellcheck-$(SHELLCHECK_VERSION)/shellcheck \
+		&& rm shellcheck.tar.xz \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mv shellcheck-$(SHELLCHECK_VERSION)/shellcheck $(SHELLCHECK_PATH) \
+		&& chmod +x $(SHELLCHECK_PATH) \
+		&& rmdir shellcheck-$(SHELLCHECK_VERSION) \
+		&& set +x \
+		&& echo "Shellcheck $(SHELLCHECK_VERSION) has been installed at $(SHELLCHECK_PATH)" ; fi
 
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
