@@ -1,7 +1,6 @@
 package framework
 
 import (
-	"os"
 	"time"
 )
 
@@ -35,8 +34,3 @@ const (
 	redirectPortInboundV6 = "15010"
 	redirectPortOutbound  = "15001"
 )
-
-func IsK8sClustersStarted() bool {
-	_, ok := os.LookupEnv("K8SCLUSTERS")
-	return ok
-}

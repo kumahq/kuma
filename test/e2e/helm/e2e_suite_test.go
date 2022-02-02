@@ -7,15 +7,10 @@ import (
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e/helm"
-	"github.com/kumahq/kuma/test/framework"
 )
 
-func TestE2EHelm(t *testing.T) {
-	if framework.IsK8sClustersStarted() {
-		test.RunSpecs(t, "E2E Helm Suite")
-	} else {
-		t.SkipNow()
-	}
+func TestE2E(t *testing.T) {
+	test.RunSpecs(t, "E2E Helm Suite")
 }
 
 var _ = Describe("Test Control Plane autoscaling with Helm chart", helm.ControlPlaneAutoscalingWithHelmChart)
