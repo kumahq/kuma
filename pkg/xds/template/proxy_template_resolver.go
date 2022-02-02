@@ -34,14 +34,9 @@ func (r *SimpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 		return nil
 	}
 
-	policies := make([]core_policy.DataplanePolicy, len(templateList.Items))
-	for i, proxyTemplate := range templateList.Items {
-		policies[i] = proxyTemplate
-	}
-
-	if bestMatchTemplate := core_policy.SelectDataplanePolicy(proxy.Dataplane, policies); bestMatchTemplate != nil {
+	if bestMatchTemplate := SelectProxyTemplate(proxy.Dataplane, templateList.Items); bestMatchTemplate != nil {
 		log.V(2).Info("found the best matching ProxyTemplate", "proxytemplate", core_model.MetaToResourceKey(bestMatchTemplate.GetMeta()))
-		return bestMatchTemplate.(*core_mesh.ProxyTemplateResource).Spec
+		return bestMatchTemplate.Spec
 	}
 
 	log.V(2).Info("no matching ProxyTemplate")
