@@ -279,11 +279,6 @@ resources:
                 route:
                   cluster: kuma:envoy:admin
                   prefixRewrite: /ready
-              - match:
-                  prefix: /config_dump
-                route:
-                  cluster: kuma:envoy:admin
-                  prefixRewrite: /config_dump
           statPrefix: kuma_envoy_admin
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
