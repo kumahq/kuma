@@ -29,16 +29,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 
-type ConfigDumper interface {
-	ConfigDump(addresser admin.Addresser, defaultAdminPort uint32) ([]byte, error)
-}
-
-type ConfigDumpFunc func(addresser admin.Addresser, defaultAdminPort uint32) ([]byte, error)
-
-func (f ConfigDumpFunc) ConfigDump(addresser admin.Addresser, defaultAdminPort uint32) ([]byte, error) {
-	return f(addresser, defaultAdminPort)
-}
-
 type fakeDataSourceLoader struct {
 }
 
@@ -64,7 +54,7 @@ func addInspectEndpoints(
 	cfg *kuma_cp.Config,
 	builder xds_context.MeshContextBuilder,
 	rm manager.ResourceManager,
-	cd ConfigDumper,
+	envoyAdminClient admin.EnvoyAdminClient,
 ) {
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(cfg, builder)).
@@ -76,14 +66,14 @@ func addInspectEndpoints(
 
 	if cfg.Mode != config_core.Global {
 		ws.Route(
-			ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/xds").To(inspectDataplaneXDS(cd, rm, cfg.GetEnvoyAdminPort())).
+			ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/xds").To(inspectDataplaneXDS(envoyAdminClient, rm, cfg.GetEnvoyAdminPort())).
 				Doc("inspect dataplane XDS configuration").
 				Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 				Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")),
 		)
 
 		ws.Route(
-			ws.GET("/zoneingresses/{zoneingress}/xds").To(inspectZoneIngressXDS(cd, rm, cfg.Multizone.Zone.Name, cfg.GetEnvoyAdminPort())).
+			ws.GET("/zoneingresses/{zoneingress}/xds").To(inspectZoneIngressXDS(envoyAdminClient, rm, cfg.Multizone.Zone.Name, cfg.GetEnvoyAdminPort())).
 				Doc("inspect zone ingresses XDS configuration").
 				Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")),
 		)
@@ -200,7 +190,7 @@ func inspectPolicies(
 	}
 }
 
-func inspectDataplaneXDS(dumper ConfigDumper, rm manager.ResourceManager, defaultAdminPort uint32) restful.RouteFunction {
+func inspectDataplaneXDS(envoyAdminClient admin.EnvoyAdminClient, rm manager.ResourceManager, defaultAdminPort uint32) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
@@ -211,7 +201,7 @@ func inspectDataplaneXDS(dumper ConfigDumper, rm manager.ResourceManager, defaul
 			return
 		}
 
-		configDump, err := dumper.ConfigDump(dp, defaultAdminPort)
+		configDump, err := envoyAdminClient.ConfigDump(dp, defaultAdminPort)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
 			return
@@ -225,7 +215,7 @@ func inspectDataplaneXDS(dumper ConfigDumper, rm manager.ResourceManager, defaul
 }
 
 func inspectZoneIngressXDS(
-	dumper ConfigDumper,
+	envoyAdminClient admin.EnvoyAdminClient,
 	rm manager.ResourceManager,
 	localZone string,
 	defaultAdminPort uint32,
@@ -245,7 +235,7 @@ func inspectZoneIngressXDS(
 			return
 		}
 
-		configDump, err := dumper.ConfigDump(zi, defaultAdminPort)
+		configDump, err := envoyAdminClient.ConfigDump(zi, defaultAdminPort)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
 			return

@@ -23,16 +23,16 @@ var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 		Path:        "/ready",
 		RewritePath: "/ready",
 	},
-	{
-		Path:        "/config_dump",
-		RewritePath: "/config_dump",
-	},
 }
 
 var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
 		Path:        "/",
 		RewritePath: "/",
+	},
+	{
+		Path:        "/config_dump",
+		RewritePath: "/config_dump",
 	},
 }
 
@@ -97,7 +97,8 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 		if err != nil {
 			return nil, err
 		}
-		if proxy.Dataplane != nil && hasCpValidationCtx {
+		// todo(lobkovilya): handle ZoneEgress
+		if (proxy.Dataplane != nil || proxy.ZoneIngress != nil) && hasCpValidationCtx {
 			for _, se := range staticTlsEndpointPaths {
 				se.ClusterName = envoyAdminClusterName
 			}

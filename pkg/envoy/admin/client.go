@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,18 +17,20 @@ import (
 	"github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-type EnvoyAdminClient interface {
-	PostQuit(dataplane *core_mesh.DataplaneResource) error
+type ResourceWithAddress interface {
+	core_model.Resource
+	AdminAddress(defaultAdminPort uint32) string
 }
 
-type Addresser interface {
-	AdminAddress(defaultAdminPort uint32) string
+type EnvoyAdminClient interface {
+	PostQuit(dataplane *core_mesh.DataplaneResource) error
+	ConfigDump(proxy ResourceWithAddress, defaultAdminPort uint32) ([]byte, error)
 }
 
 type envoyAdminClient struct {
@@ -57,8 +60,8 @@ func NewEnvoyAdminClient(rm manager.ResourceManager, caManagers ca.Managers, cli
 // 2) When mTLS on the mesh is enabled, we are protecting the endpoint with enabled mTLS backend.
 //
 // Regardless of which CA is used to protect Admin API endpoint, Envoy will always require certs from CP which are the same certs as DP server.
-func (a *envoyAdminClient) buildHTTPClient(dataplane *core_mesh.DataplaneResource) (*http.Client, error) {
-	caCertPool, err := a.caCertPoolOfMeshMTLS(dataplane.Meta.GetMesh())
+func (a *envoyAdminClient) buildHTTPClient(mesh, identifyingService string) (*http.Client, error) {
+	caCertPool, err := a.caCertPoolOfMeshMTLS(mesh)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +85,7 @@ func (a *envoyAdminClient) buildHTTPClient(dataplane *core_mesh.DataplaneResourc
 
 					// Verify SPIFFE to see if we are connecting to the right DP
 					cert, _ := x509.ParseCertificate(rawCerts[0]) // ignore error because cert was parsed already
-					dpSpiffe := xds_tls.ServiceSpiffeID(dataplane.Meta.GetMesh(), dataplane.Spec.GetIdentifyingService())
+					dpSpiffe := xds_tls.ServiceSpiffeID(mesh, identifyingService)
 					for _, uri := range cert.URIs {
 						if uri.String() == dpSpiffe {
 							return nil
@@ -105,8 +108,11 @@ func (a *envoyAdminClient) buildHTTPClient(dataplane *core_mesh.DataplaneResourc
 }
 
 func (a *envoyAdminClient) caCertPoolOfMeshMTLS(mesh string) (*x509.CertPool, error) {
+	if mesh == "" {
+		return nil, nil
+	}
 	meshRes := core_mesh.NewMeshResource()
-	err := a.rm.Get(context.Background(), meshRes, core_store.GetByKey(mesh, model.NoMesh))
+	err := a.rm.Get(context.Background(), meshRes, core_store.GetByKey(mesh, core_model.NoMesh))
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +145,7 @@ const (
 )
 
 func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) error {
-	httpClient, err := a.buildHTTPClient(dataplane)
+	httpClient, err := a.buildHTTPClient(dataplane.Meta.GetMesh(), dataplane.Spec.GetIdentifyingService())
 	if err != nil {
 		return err
 	}
@@ -167,13 +173,39 @@ func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) erro
 	return nil
 }
 
-func ConfigDump(adminAddresser Addresser, defaultAdminAddress uint32) ([]byte, error) {
-	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+func (a *envoyAdminClient) ConfigDump(proxy ResourceWithAddress, defaultAdminAddress uint32) ([]byte, error) {
+	var httpClient *http.Client
+	var err error
+	u := &url.URL{}
+
+	switch p := proxy.(type) {
+	// todo(lobkovilya): handle ZoneEgress
+	case *core_mesh.DataplaneResource:
+		httpClient, err = a.buildHTTPClient(p.Meta.GetMesh(), p.Spec.GetIdentifyingService())
+		if err != nil {
+			return nil, err
+		}
+		u.Scheme = "https"
+	case *core_mesh.ZoneIngressResource:
+		httpClient, err = a.buildHTTPClient(core_model.NoMesh, "")
+		if err != nil {
+			return nil, err
+		}
+		u.Scheme = "https"
+	default:
+		return nil, errors.New("unsupported proxy type")
 	}
 
-	url := fmt.Sprintf("http://%s/%s", adminAddresser.AdminAddress(defaultAdminAddress), "config_dump")
-	request, err := http.NewRequest("GET", url, nil)
+	if host, _, err := net.SplitHostPort(proxy.AdminAddress(defaultAdminAddress)); err == nil && host == "127.0.0.1" {
+		httpClient = &http.Client{
+			Timeout: 5 * time.Second,
+		}
+		u.Scheme = "http"
+	}
+
+	u.Host = proxy.AdminAddress(defaultAdminAddress)
+	u.Path = "config_dump"
+	request, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}

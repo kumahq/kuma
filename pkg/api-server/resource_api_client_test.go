@@ -3,7 +3,6 @@ package api_server_test
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -23,12 +22,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
@@ -162,9 +161,7 @@ func createTestApiServer(
 			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
 			DataplaneTokenAccess: nil,
 		},
-		api_server.ConfigDumpFunc(func(addresser admin.Addresser, defaultAdminAddress uint32) ([]byte, error) {
-			return []byte(fmt.Sprintf(`{"envoyAdminAddress": "%s"}`, addresser.AdminAddress(defaultAdminAddress))), nil
-		}),
+		&test_runtime.DummyEnvoyAdminClient{},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer

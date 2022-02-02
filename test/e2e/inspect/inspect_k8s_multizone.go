@@ -89,8 +89,11 @@ spec:
 	})
 
 	E2EAfterEach(func() {
-		Expect(zoneK8s.DismissCluster()).ToNot(HaveOccurred())
-		Expect(globalK8s.DismissCluster()).ToNot(HaveOccurred())
+		Expect(zoneK8s.DeleteKuma()).To(Succeed())
+		Expect(zoneK8s.DismissCluster()).To(Succeed())
+
+		Expect(globalK8s.DeleteKuma()).To(Succeed())
+		Expect(globalK8s.DismissCluster()).To(Succeed())
 	})
 
 	It("should return envoy config_dump for zone ingress", func() {
@@ -101,7 +104,6 @@ spec:
 		stdout, _, err := zoneK8s.ExecWithRetries("kuma-system", kumaControlPlane.GetName(), "control-plane", cmd...)
 		Expect(err).ToNot(HaveOccurred())
 
-		fmt.Println(stdout)
 		Expect(stdout).To(ContainSubstring(`"dataplane.proxyType": "ingress"`))
 		Expect(stdout).To(ContainSubstring(`"demo-client_kuma-test_svc{mesh=default}"`))
 	})

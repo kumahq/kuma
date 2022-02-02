@@ -15,6 +15,7 @@ func Universal() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 
 		Expect(Kuma(config_core.Standalone, WithVerbose())(cluster)).To(Succeed())
+		Expect(cluster.VerifyKuma()).To(Succeed())
 
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
@@ -25,8 +26,6 @@ func Universal() {
 
 	// Before each test, verify the cluster is up and stable.
 	JustBeforeEach(func() {
-		Expect(cluster.VerifyKuma()).To(Succeed())
-
 		// Synchronize on the dataplanes coming up.
 		Eventually(func(g Gomega) {
 			dataplanes, err := cluster.GetKumactlOptions().KumactlList("dataplanes", "default")

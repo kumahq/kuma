@@ -90,7 +90,7 @@ func NewApiServer(
 	getInstanceId func() string, getClusterId func() string,
 	authenticator authn.Authenticator,
 	access runtime.Access,
-	cd ConfigDumper,
+	envoyAdminClient admin.EnvoyAdminClient,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -123,7 +123,7 @@ func NewApiServer(
 		Produces(restful.MIME_JSON)
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess)
-	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager, cd)
+	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager, envoyAdminClient)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI); err != nil {
@@ -378,7 +378,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.GetClusterId,
 		rt.APIServerAuthenticator(),
 		rt.Access(),
-		ConfigDumpFunc(admin.ConfigDump),
+		rt.EnvoyAdminClient(),
 	)
 	if err != nil {
 		return err
