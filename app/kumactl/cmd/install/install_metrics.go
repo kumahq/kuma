@@ -20,8 +20,6 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)",
 		Long:  `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			args.Mesh = pctx.Args.Mesh
-
 			installMetricsFS := kumactl_data.InstallMetricsFS()
 			templateFiles, err := data.ReadFiles(installMetricsFS)
 			if err != nil {
@@ -97,6 +95,7 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install metrics to")
+	cmd.PersistentFlags().StringVarP(&args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.Flags().StringVar(&args.KumaCpAddress, "kuma-cp-address", args.KumaCpAddress, "the address of Kuma CP")
 	cmd.Flags().StringVar(&args.JaegerAddress, "jaeger-address", args.JaegerAddress, "the address of jaeger to query")
 	cmd.Flags().StringVar(&args.LokiAddress, "loki-address", args.LokiAddress, "the address of the loki to query")

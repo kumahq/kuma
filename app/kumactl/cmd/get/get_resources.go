@@ -49,5 +49,6 @@ func NewGetResourcesCmd(pctx *kumactl_cmd.RootContext, desc model.ResourceTypeDe
 			}
 		},
 	}
+	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	return cmd
 }

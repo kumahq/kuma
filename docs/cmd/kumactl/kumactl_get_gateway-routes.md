@@ -1,20 +1,22 @@
-## kumactl inspect zoneegress
+## kumactl get gateway-routes
 
-Inspect ZoneEgress
+Show GatewayRoute
 
 ### Synopsis
 
-Inspect ZoneEgress.
+Show GatewayRoute entities.
 
 ```
-kumactl inspect zoneegress NAME [flags]
+kumactl get gateway-routes [flags]
 ```
 
 ### Options
 
 ```
-      --config-dump   if set then the command returns envoy config dump for provided dataplane
-  -h, --help          help for zoneegress
+  -h, --help            help for gateway-routes
+  -m, --mesh string     mesh to use (default "default")
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 ```
 
 ### Options inherited from parent commands
@@ -29,5 +31,5 @@ kumactl inspect zoneegress NAME [flags]
 
 ### SEE ALSO
 
-* [kumactl inspect](kumactl_inspect.md)	 - Inspect Kuma resources
+* [kumactl get](kumactl_get.md)	 - Show Kuma resources
 
