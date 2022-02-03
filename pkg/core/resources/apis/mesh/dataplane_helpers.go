@@ -94,11 +94,7 @@ func (d *DataplaneResource) UsesOutboundInterface(address net.IP, port uint32) b
 	if d == nil {
 		return false
 	}
-	ofaces, err := d.Spec.Networking.GetOutboundInterfaces()
-	if err != nil {
-		return false
-	}
-	for _, oface := range ofaces {
+	for _, oface := range d.Spec.Networking.GetOutboundInterfaces() {
 		// compare against port and IP address of the dataplane
 		if port == oface.DataplanePort && overlap(address, net.ParseIP(oface.DataplaneIP)) {
 			return true

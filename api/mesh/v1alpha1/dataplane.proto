@@ -151,6 +151,12 @@ message Dataplane {
       // redirected.
       uint32 redirect_port_inbound_v6 = 4
           [ (validate.rules).uint32 = {lte : 65535} ];
+
+      // List of reachable services (represented by the value of
+      // kuma.io/service) via transparent proxying. Setting an explicit list can
+      // dramatically improve the performance of the mesh. If not specified, all
+      // services in the mesh are reachable.
+      repeated string reachable_services = 5;
     }
 
     // Gateway describes configuration of gateway of the dataplane.

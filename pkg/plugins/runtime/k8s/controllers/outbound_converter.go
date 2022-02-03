@@ -18,8 +18,14 @@ func (p *PodConverter) OutboundInterfacesFor(
 	ctx context.Context,
 	pod *kube_core.Pod,
 	others []*mesh_k8s.Dataplane,
+	reachableServices []string,
 ) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+
+	reachableServicesMap := map[string]bool{}
+	for _, service := range reachableServices {
+		reachableServicesMap[service] = true
+	}
 
 	dataplanes := []*core_mesh.DataplaneResource{}
 	for _, other := range others {
@@ -37,6 +43,9 @@ func (p *PodConverter) OutboundInterfacesFor(
 		if err != nil {
 			converterLog.Error(err, "could not get K8S Service for service tag")
 			continue // one invalid Dataplane definition should not break the entire mesh
+		}
+		if len(reachableServices) > 0 && !reachableServicesMap[serviceTag] {
+			continue // ignore generating outbound if reachable services are defined and this one is not on the list
 		}
 
 		// Do not generate outbounds for service-less

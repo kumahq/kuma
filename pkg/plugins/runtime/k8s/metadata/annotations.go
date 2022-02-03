@@ -79,16 +79,17 @@ const (
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
-	KumaSidecarInjectedAnnotation                  = "kuma.io/sidecar-injected"
-	KumaIgnoreAnnotation                           = "kuma.io/ignore"
-	KumaSidecarUID                                 = "kuma.io/sidecar-uid"
-	KumaEnvoyAdminPort                             = "kuma.io/envoy-admin-port"
-	KumaTransparentProxyingAnnotation              = "kuma.io/transparent-proxying"
-	KumaTransparentProxyingInboundPortAnnotation   = "kuma.io/transparent-proxying-inbound-port"
-	KumaTransparentProxyingInboundPortAnnotationV6 = "kuma.io/transparent-proxying-inbound-v6-port"
-	KumaTransparentProxyingOutboundPortAnnotation  = "kuma.io/transparent-proxying-outbound-port"
-	CNCFNetworkAnnotation                          = "k8s.v1.cni.cncf.io/networks"
-	KumaCNI                                        = "kuma-cni"
+	KumaSidecarInjectedAnnotation                      = "kuma.io/sidecar-injected"
+	KumaIgnoreAnnotation                               = "kuma.io/ignore"
+	KumaSidecarUID                                     = "kuma.io/sidecar-uid"
+	KumaEnvoyAdminPort                                 = "kuma.io/envoy-admin-port"
+	KumaTransparentProxyingAnnotation                  = "kuma.io/transparent-proxying"
+	KumaTransparentProxyingInboundPortAnnotation       = "kuma.io/transparent-proxying-inbound-port"
+	KumaTransparentProxyingInboundPortAnnotationV6     = "kuma.io/transparent-proxying-inbound-v6-port"
+	KumaTransparentProxyingOutboundPortAnnotation      = "kuma.io/transparent-proxying-outbound-port"
+	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
+	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
+	KumaCNI                                            = "kuma-cni"
 )
 
 // Annotations related to the gateway

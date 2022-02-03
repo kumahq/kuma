@@ -94,15 +94,15 @@ func (i OutboundInterface) String() string {
 		strconv.FormatUint(uint64(i.DataplanePort), 10))
 }
 
-func (n *Dataplane_Networking) GetOutboundInterfaces() ([]OutboundInterface, error) {
+func (n *Dataplane_Networking) GetOutboundInterfaces() []OutboundInterface {
 	if n == nil {
-		return nil, nil
+		return nil
 	}
 	ofaces := make([]OutboundInterface, len(n.Outbound))
 	for i, outbound := range n.Outbound {
 		ofaces[i] = n.ToOutboundInterface(outbound)
 	}
-	return ofaces, nil
+	return ofaces
 }
 
 func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networking_Outbound) OutboundInterface {

@@ -124,12 +124,8 @@ func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_m
 }
 
 func takenEndpoints(dataplane *core_mesh.DataplaneResource) (map[Endpoint]bool, error) {
-	ofaces, err := dataplane.Spec.GetNetworking().GetOutboundInterfaces()
-	if err != nil {
-		return nil, err
-	}
 	takenEndpoints := map[Endpoint]bool{}
-	for _, oface := range ofaces {
+	for _, oface := range dataplane.Spec.GetNetworking().GetOutboundInterfaces() {
 		endpoint := Endpoint{
 			Address: oface.DataplaneIP,
 			Port:    oface.DataplanePort,
