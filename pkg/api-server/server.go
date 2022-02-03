@@ -122,7 +122,7 @@ func NewApiServer(
 		Produces(restful.MIME_JSON)
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess)
-	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager, envoyAdminClient)
+	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager, access.ConfigDumpAccess, envoyAdminClient)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI); err != nil {

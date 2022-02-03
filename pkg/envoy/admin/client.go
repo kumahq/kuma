@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"time"
 
+	envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/ca"
@@ -20,6 +21,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
@@ -220,5 +222,19 @@ func (a *envoyAdminClient) ConfigDump(proxy ResourceWithAddress, defaultAdminAdd
 		return nil, errors.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
 	}
 
-	return io.ReadAll(response.Body)
+	configDump, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	cd := &envoy_admin_v3.ConfigDump{}
+	if err := util_proto.FromJSON(configDump, cd); err != nil {
+		return nil, err
+	}
+
+	if err := Sanitize(cd); err != nil {
+		return nil, err
+	}
+
+	return util_proto.ToJSONIndent(cd, " ")
 }

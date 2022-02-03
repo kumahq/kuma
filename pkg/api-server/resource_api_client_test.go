@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/test"
@@ -160,6 +161,7 @@ func createTestApiServer(
 		runtime.Access{
 			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
 			DataplaneTokenAccess: nil,
+			ConfigDumpAccess:     access.NewStaticConfigDumpAccess(cfg.Access.Static.GetConfigDump),
 		},
 		&test_runtime.DummyEnvoyAdminClient{},
 	)

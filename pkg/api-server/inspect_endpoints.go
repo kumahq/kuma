@@ -20,9 +20,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
+	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
@@ -54,6 +56,7 @@ func addInspectEndpoints(
 	cfg *kuma_cp.Config,
 	builder xds_context.MeshContextBuilder,
 	rm manager.ResourceManager,
+	configDumpAccess access.ConfigDumpAccess,
 	envoyAdminClient admin.EnvoyAdminClient,
 ) {
 	ws.Route(
@@ -66,24 +69,31 @@ func addInspectEndpoints(
 
 	if cfg.Mode != config_core.Global {
 		ws.Route(
-			ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/xds").To(inspectDataplaneXDS(envoyAdminClient, rm, cfg.GetEnvoyAdminPort())).
+			ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/xds").To(inspectDataplaneXDS(envoyAdminClient, configDumpAccess, rm, cfg.GetEnvoyAdminPort())).
 				Doc("inspect dataplane XDS configuration").
 				Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 				Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")),
 		)
 
 		ws.Route(
-			ws.GET("/zoneingresses/{zoneingress}/xds").To(inspectZoneIngressXDS(envoyAdminClient, rm, cfg.Multizone.Zone.Name, cfg.GetEnvoyAdminPort())).
+			ws.GET("/zoneingresses/{zoneingress}/xds").To(inspectZoneIngressXDS(envoyAdminClient, configDumpAccess, rm, cfg.Multizone.Zone.Name, cfg.GetEnvoyAdminPort())).
 				Doc("inspect zone ingresses XDS configuration").
 				Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")),
 		)
 	} else {
+		methodNotAllowed := func(_ *restful.Request, response *restful.Response) {
+			kumaErr := types.Error{
+				Title:   "Method is not allowed",
+				Details: "It it not possible to inspect envoy config dump on Global CP. Please consider using Zone CP of the corresponding zone",
+			}
+			rest_errors.WriteError(response, http.StatusMethodNotAllowed, kumaErr)
+		}
 		ws.Route(
-			ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/xds").To(methodNotAllowedOnGlobal).
+			ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/xds").To(methodNotAllowed).
 				Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 				Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")))
 		ws.Route(
-			ws.GET("/zoneingresses/{zoneingress}/xds").To(methodNotAllowedOnGlobal).
+			ws.GET("/zoneingresses/{zoneingress}/xds").To(methodNotAllowed).
 				Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")))
 	}
 
@@ -96,14 +106,6 @@ func addInspectEndpoints(
 				Returns(200, "OK", nil),
 		)
 	}
-}
-
-func methodNotAllowedOnGlobal(_ *restful.Request, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   "Method is not allowed",
-		Details: "It it not possible to inspect envoy config dump on Global CP. Please consider using Zone CP of the corresponding zone",
-	}
-	rest_errors.WriteError(response, http.StatusMethodNotAllowed, kumaErr)
 }
 
 func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
@@ -190,10 +192,22 @@ func inspectPolicies(
 	}
 }
 
-func inspectDataplaneXDS(envoyAdminClient admin.EnvoyAdminClient, rm manager.ResourceManager, defaultAdminPort uint32) restful.RouteFunction {
+func inspectDataplaneXDS(
+	envoyAdminClient admin.EnvoyAdminClient,
+	access access.ConfigDumpAccess,
+	rm manager.ResourceManager,
+	defaultAdminPort uint32,
+) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
+
+		ctx := request.Request.Context()
+
+		if err := access.ValidateGetConfigDump(user.FromCtx(ctx)); err != nil {
+			rest_errors.HandleError(response, err, "Could not get config_dump")
+			return
+		}
 
 		dp := core_mesh.NewDataplaneResource()
 		if err := rm.Get(context.Background(), dp, store.GetByKey(dataplaneName, meshName)); err != nil {
@@ -216,12 +230,20 @@ func inspectDataplaneXDS(envoyAdminClient admin.EnvoyAdminClient, rm manager.Res
 
 func inspectZoneIngressXDS(
 	envoyAdminClient admin.EnvoyAdminClient,
+	access access.ConfigDumpAccess,
 	rm manager.ResourceManager,
 	localZone string,
 	defaultAdminPort uint32,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		zoneIngressName := request.PathParameter("zoneingress")
+
+		ctx := request.Request.Context()
+
+		if err := access.ValidateGetConfigDump(user.FromCtx(ctx)); err != nil {
+			rest_errors.HandleError(response, err, "Could not get config_dump")
+			return
+		}
 
 		zi := core_mesh.NewZoneIngressResource()
 		if err := rm.Get(context.Background(), zi, store.GetByKey(zoneIngressName, core_model.NoMesh)); err != nil {

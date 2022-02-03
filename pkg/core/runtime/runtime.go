@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
+	"github.com/kumahq/kuma/pkg/envoy/admin/access"
 	"github.com/kumahq/kuma/pkg/events"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -76,6 +77,7 @@ type Access struct {
 	ResourceAccess       resources_access.ResourceAccess
 	DataplaneTokenAccess tokens_access.DataplaneTokenAccess
 	ZoneTokenAccess      zone_access.ZoneTokenAccess
+	ConfigDumpAccess     access.ConfigDumpAccess
 }
 
 type ResourceValidators struct {

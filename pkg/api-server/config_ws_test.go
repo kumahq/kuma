@@ -336,6 +336,10 @@ var _ = Describe("Config WS", func() {
               "generateZoneToken": {
                 "users": ["mesh-system:admin"],
                 "groups": ["mesh-system:admin"]
+              },
+              "getConfigDump": {
+                "users": ["mesh-system:anonymous","mesh-system:admin"],
+                "groups": ["mesh-system:unauthenticated","mesh-system:admin"]
               }
             }
           },
