@@ -1,6 +1,8 @@
 package testserver
 
 import (
+	"strings"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -97,7 +99,7 @@ func (k *k8SDeployment) statefulSet() *appsv1.StatefulSet {
 }
 
 func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
-	return corev1.PodTemplateSpec{
+	spec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      map[string]string{"app": k.Name()},
 			Annotations: map[string]string{"kuma.io/mesh": k.opts.Mesh},
@@ -144,6 +146,10 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 			},
 		},
 	}
+	if len(k.opts.ReachableServices) > 0 {
+		spec.ObjectMeta.Annotations["kuma.io/transparent-proxying-reachable-services"] = strings.Join(k.opts.ReachableServices, ",")
+	}
+	return spec
 }
 
 func meta(namespace string, name string) metav1.ObjectMeta {

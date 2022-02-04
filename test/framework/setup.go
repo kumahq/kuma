@@ -3,6 +3,7 @@ package framework
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ghodss/yaml"
@@ -339,7 +340,7 @@ func DemoClientUniversal(name, mesh, token string, opt ...AppDeploymentOption) I
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := ""
 		if opts.transparent {
-			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
 		} else {
 			if opts.serviceProbe {
 				appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, "80", "8080")

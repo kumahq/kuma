@@ -83,25 +83,26 @@ type appDeploymentOptions struct {
 	verbose *bool
 
 	// app specific
-	namespace       string
-	appname         string
-	name            string
-	appYaml         string
-	appArgs         []string
-	token           string
-	transparent     bool
-	builtindns      *bool // true by default
-	protocol        string
-	serviceName     string
-	serviceVersion  string
-	serviceInstance string
-	mesh            string
-	dpVersion       string
-	kumactlFlow     bool
-	concurrency     int
-	omitDataplane   bool
-	proxyOnly       bool
-	serviceProbe    bool
+	namespace         string
+	appname           string
+	name              string
+	appYaml           string
+	appArgs           []string
+	token             string
+	transparent       bool
+	builtindns        *bool // true by default
+	protocol          string
+	serviceName       string
+	serviceVersion    string
+	serviceInstance   string
+	mesh              string
+	dpVersion         string
+	kumactlFlow       bool
+	concurrency       int
+	omitDataplane     bool
+	proxyOnly         bool
+	serviceProbe      bool
+	reachableServices []string
 }
 
 func (d *appDeploymentOptions) apply(opts ...AppDeploymentOption) {
@@ -421,6 +422,12 @@ func WithBuiltinDNS(builtindns bool) AppDeploymentOption {
 func WithConcurrency(concurrency int) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.concurrency = concurrency
+	})
+}
+
+func WithReachableServices(services ...string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.reachableServices = services
 	})
 }
 
