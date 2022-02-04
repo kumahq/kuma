@@ -30,6 +30,13 @@ type PolicyInspectEntryList struct {
 	Items []*PolicyInspectEntry `json:"items"`
 }
 
+func NewPolicyInspectEntryList() *PolicyInspectEntryList {
+	return &PolicyInspectEntryList{
+		Total: 0,
+		Items: []*PolicyInspectEntry{},
+	}
+}
+
 type DataplaneInspectEntry struct {
 	AttachmentEntry
 	MatchedPolicies map[core_model.ResourceType][]*rest.Resource `json:"matchedPolicies"`
@@ -38,6 +45,13 @@ type DataplaneInspectEntry struct {
 type DataplaneInspectEntryList struct {
 	Total uint32                   `json:"total"`
 	Items []*DataplaneInspectEntry `json:"items"`
+}
+
+func NewDataplaneInspectEntryList() *DataplaneInspectEntryList {
+	return &DataplaneInspectEntryList{
+		Total: 0,
+		Items: []*DataplaneInspectEntry{},
+	}
 }
 
 type DataplaneInspectEntryReceiver struct {

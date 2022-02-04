@@ -83,11 +83,9 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			return
 		}
 
-		entries := newDataplaneInspectResponse(matchedPolicies, dp)
-		result := &api_server_types.DataplaneInspectEntryList{
-			Items: entries,
-			Total: uint32(len(entries)),
-		}
+		result := api_server_types.NewDataplaneInspectEntryList()
+		result.Items = append(result.Items, newDataplaneInspectResponse(matchedPolicies, dp)...)
+		result.Total = uint32(len(result.Items))
 
 		if err := response.WriteAsJson(result); err != nil {
 			rest_errors.HandleError(response, err, "Could not write response")
@@ -111,10 +109,7 @@ func inspectPolicies(
 			return
 		}
 
-		result := &api_server_types.PolicyInspectEntryList{
-			Total: 0,
-			Items: []*api_server_types.PolicyInspectEntry{},
-		}
+		result := api_server_types.NewPolicyInspectEntryList()
 
 		for _, dp := range meshContext.Resources.Dataplanes().Items {
 			dpKey := core_model.MetaToResourceKey(dp.GetMeta())
