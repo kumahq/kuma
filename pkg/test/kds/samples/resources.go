@@ -34,22 +34,22 @@ var (
 	FaultInjection = &mesh_proto.FaultInjection{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
-				"tag0":    "version0",
-				"tag1":    "version1",
-				"tag2":    "version2",
-				"tag3":    "version3",
-				"tag4":    "version4",
-				"tag5":    "version5",
-				"tag6":    "version6",
-				"tag7":    "version7",
-				"tag8":    "version8",
-				"tag9":    "version9",
+				mesh_proto.ServiceTag: "*",
+				"tag0":                "version0",
+				"tag1":                "version1",
+				"tag2":                "version2",
+				"tag3":                "version3",
+				"tag4":                "version4",
+				"tag5":                "version5",
+				"tag6":                "version6",
+				"tag7":                "version7",
+				"tag8":                "version8",
+				"tag9":                "version9",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Conf: &mesh_proto.FaultInjection_Conf{
@@ -117,7 +117,7 @@ var (
 		},
 		AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{{
 			Tags: map[string]string{
-				"service": "backend",
+				mesh_proto.ServiceTag: "backend",
 			}},
 		},
 	}
@@ -149,12 +149,12 @@ var (
 	CircuitBreaker = &mesh_proto.CircuitBreaker{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Conf: &mesh_proto.CircuitBreaker_Conf{
@@ -166,12 +166,12 @@ var (
 	HealthCheck = &mesh_proto.HealthCheck{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Conf: &mesh_proto.HealthCheck_Conf{
@@ -184,12 +184,12 @@ var (
 	TrafficLog = &mesh_proto.TrafficLog{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Conf: &mesh_proto.TrafficLog_Conf{
@@ -199,38 +199,38 @@ var (
 	TrafficPermission = &mesh_proto.TrafficPermission{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"kuma.io/service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"kuma.io/service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 	}
 	TrafficRoute = &mesh_proto.TrafficRoute{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Conf: &mesh_proto.TrafficRoute_Conf{
 			Split: []*mesh_proto.TrafficRoute_Split{{
 				Weight: util_proto.UInt32(10),
 				Destination: map[string]string{
-					"kuma.io/service": "*",
+					mesh_proto.ServiceTag: "*",
 				},
 			}},
 		},
 	}
 	TrafficTrace = &mesh_proto.TrafficTrace{
 		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{"serivce": "*"},
+			Match: map[string]string{mesh_proto.ServiceTag: "*"},
 		}},
 		Conf: &mesh_proto.TrafficTrace_Conf{
 			Backend: "tracing-backend",
@@ -238,7 +238,7 @@ var (
 	}
 	ProxyTemplate = &mesh_proto.ProxyTemplate{
 		Selectors: []*mesh_proto.Selector{{
-			Match: map[string]string{"serivce": "*"},
+			Match: map[string]string{mesh_proto.ServiceTag: "*"},
 		}},
 		Conf: &mesh_proto.ProxyTemplate_Conf{
 			Imports: []string{"default-kuma-profile"},
@@ -247,12 +247,12 @@ var (
 	Retry = &mesh_proto.Retry{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Conf: &mesh_proto.Retry_Conf{
@@ -270,12 +270,12 @@ var (
 	Timeout = &mesh_proto.Timeout{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Conf: &mesh_proto.Timeout_Conf{
@@ -305,12 +305,12 @@ var (
 	RateLimit = &mesh_proto.RateLimit{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"kuma.io/service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"kuma.io/service": "*",
+				mesh_proto.ServiceTag: "*",
 			},
 		}},
 		Conf: &mesh_proto.RateLimit_Conf{
@@ -323,7 +323,7 @@ var (
 	Gateway = &mesh_proto.Gateway{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"kuma.io/service": "gateway",
+				mesh_proto.ServiceTag: "gateway",
 			},
 		}},
 		Tags: map[string]string{
@@ -343,7 +343,7 @@ var (
 	GatewayRoute = &mesh_proto.GatewayRoute{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"kuma.io/service": "gateway",
+				mesh_proto.ServiceTag: "gateway",
 			},
 		}},
 		Conf: &mesh_proto.GatewayRoute_Conf{
@@ -355,7 +355,7 @@ var (
 	VirtualOutbound = &mesh_proto.VirtualOutbound{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"kuma.io/service": "virtual-outbound",
+				mesh_proto.ServiceTag: "virtual-outbound",
 			},
 		}},
 		Conf: &mesh_proto.VirtualOutbound_Conf{
@@ -363,7 +363,7 @@ var (
 			Port: "{{.port}}",
 			Parameters: []*mesh_proto.VirtualOutbound_Conf_TemplateParameter{
 				{Name: "port"},
-				{Name: "service", TagKey: "kuma.io/service"},
+				{Name: "service", TagKey: mesh_proto.ServiceTag},
 			},
 		},
 	}
