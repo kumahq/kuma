@@ -151,34 +151,35 @@ func NewExternalServiceEndpoint(
 	loader datasource.Loader,
 	zone string,
 ) (*core_xds.Endpoint, error) {
+	spec := externalService.Spec
+	tls := spec.GetNetworking().GetTls()
+	meshName := mesh.GetMeta().GetName()
+	tags := spec.GetTags()
+
 	es := &core_xds.ExternalService{
-		TLSEnabled: externalService.Spec.GetNetworking().GetTls().GetEnabled(),
-		CaCert: convertToEnvoy(
-			externalService.Spec.GetNetworking().GetTls().GetCaCert(),
-			mesh.GetMeta().GetName(), loader),
-		ClientCert: convertToEnvoy(
-			externalService.Spec.GetNetworking().GetTls().GetClientCert(),
-			mesh.GetMeta().GetName(), loader),
-		ClientKey: convertToEnvoy(
-			externalService.Spec.GetNetworking().GetTls().GetClientKey(),
-			mesh.GetMeta().GetName(), loader),
-		AllowRenegotiation: externalService.Spec.GetNetworking().GetTls().GetAllowRenegotiation().GetValue(),
-		ServerName:         externalService.Spec.GetNetworking().GetTls().GetServerName().GetValue(),
+		TLSEnabled:         tls.GetEnabled(),
+		CaCert:             convertToEnvoy(tls.GetCaCert(), meshName, loader),
+		ClientCert:         convertToEnvoy(tls.GetClientCert(), meshName, loader),
+		ClientKey:          convertToEnvoy(tls.GetClientKey(), meshName, loader),
+		AllowRenegotiation: tls.GetAllowRenegotiation().GetValue(),
+		ServerName:         tls.GetServerName().GetValue(),
 	}
 
-	tags := externalService.Spec.GetTags()
 	if es.TLSEnabled {
-		tags = envoy.Tags(tags).WithTags(mesh_proto.ExternalServiceTag, externalService.Meta.GetName())
+		name := externalService.Meta.GetName()
+
+		tags = envoy.Tags(tags).
+			WithTags(mesh_proto.ExternalServiceTag, name)
 	}
 
 	var priority uint32 = priorityRemote
-	if esZone, ok := externalService.Spec.GetTags()[mesh_proto.ZoneTag]; ok && esZone == zone {
+	if esZone, ok := spec.GetTags()[mesh_proto.ZoneTag]; ok && esZone == zone {
 		priority = priorityLocal
 	}
 
 	return &core_xds.Endpoint{
-		Target:          externalService.Spec.GetHost(),
-		Port:            externalService.Spec.GetPortUInt32(),
+		Target:          spec.GetHost(),
+		Port:            spec.GetPortUInt32(),
 		Tags:            tags,
 		Weight:          1,
 		ExternalService: es,
