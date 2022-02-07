@@ -87,3 +87,7 @@ func (r Resources) Gateways() *core_mesh.GatewayResourceList {
 func (r Resources) GatewayRoutes() *core_mesh.GatewayRouteResourceList {
 	return r.ListOrEmpty(core_mesh.GatewayRouteType).(*core_mesh.GatewayRouteResourceList)
 }
+
+func (r Resources) ProxyTemplates() *core_mesh.ProxyTemplateResourceList {
+	return r.ListOrEmpty(core_mesh.ProxyTemplateType).(*core_mesh.ProxyTemplateResourceList)
+}

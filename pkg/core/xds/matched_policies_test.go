@@ -320,12 +320,16 @@ var _ = Describe("GroupByAttachment", func() {
 		}),
 		Entry("group by dataplane", testCase{
 			matchedPolicies: &core_xds.MatchedPolicies{
-				TrafficTrace: &core_mesh.TrafficTraceResource{Spec: samples.TrafficTrace},
+				TrafficTrace:  &core_mesh.TrafficTraceResource{Spec: samples.TrafficTrace},
+				ProxyTemplate: &core_mesh.ProxyTemplateResource{Spec: samples.ProxyTemplate},
 			},
 			expected: core_xds.AttachmentMap{
 				core_xds.Attachment{Type: core_xds.Dataplane, Name: ""}: {
 					core_mesh.TrafficTraceType: []core_model.Resource{
 						&core_mesh.TrafficTraceResource{Spec: samples.TrafficTrace},
+					},
+					core_mesh.ProxyTemplateType: []core_model.Resource{
+						&core_mesh.ProxyTemplateResource{Spec: samples.ProxyTemplate},
 					},
 				},
 			},
