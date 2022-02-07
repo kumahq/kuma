@@ -58,7 +58,7 @@ func handleInvalidPageSize(title string, response *restful.Response) {
 			},
 		},
 	}
-	writeError(response, 400, kumaErr)
+	WriteError(response, 400, kumaErr)
 }
 
 func handleNotFound(title string, response *restful.Response) {
@@ -66,7 +66,7 @@ func handleNotFound(title string, response *restful.Response) {
 		Title:   title,
 		Details: "Not found",
 	}
-	writeError(response, 404, kumaErr)
+	WriteError(response, 404, kumaErr)
 }
 
 func handlePreconditionFailed(title string, response *restful.Response) {
@@ -74,7 +74,7 @@ func handlePreconditionFailed(title string, response *restful.Response) {
 		Title:   title,
 		Details: "Precondition Failed",
 	}
-	writeError(response, 412, kumaErr)
+	WriteError(response, 412, kumaErr)
 }
 
 func handleMeshNotFound(title string, err *manager.MeshNotFoundError, response *restful.Response) {
@@ -88,7 +88,7 @@ func handleMeshNotFound(title string, err *manager.MeshNotFoundError, response *
 			},
 		},
 	}
-	writeError(response, 400, kumaErr)
+	WriteError(response, 400, kumaErr)
 }
 
 func handleValidationError(title string, err *validators.ValidationError, response *restful.Response) {
@@ -102,7 +102,7 @@ func handleValidationError(title string, err *validators.ValidationError, respon
 			Message: violation.Message,
 		})
 	}
-	writeError(response, 400, kumaErr)
+	WriteError(response, 400, kumaErr)
 }
 
 func handleInvalidOffset(title string, response *restful.Response) {
@@ -116,7 +116,7 @@ func handleInvalidOffset(title string, response *restful.Response) {
 			},
 		},
 	}
-	writeError(response, 400, kumaErr)
+	WriteError(response, 400, kumaErr)
 }
 
 func handleMaxPageSizeExceeded(title string, err error, response *restful.Response) {
@@ -130,7 +130,7 @@ func handleMaxPageSizeExceeded(title string, err error, response *restful.Respon
 			},
 		},
 	}
-	writeError(response, 400, kumaErr)
+	WriteError(response, 400, kumaErr)
 }
 
 func handleUnknownError(err error, title string, response *restful.Response) {
@@ -139,7 +139,7 @@ func handleUnknownError(err error, title string, response *restful.Response) {
 		Title:   title,
 		Details: "Internal Server Error",
 	}
-	writeError(response, 500, kumaErr)
+	WriteError(response, 500, kumaErr)
 }
 
 func handleSigningKeyNotFound(err error, response *restful.Response) {
@@ -147,7 +147,7 @@ func handleSigningKeyNotFound(err error, response *restful.Response) {
 		Title:   "Signing Key not found",
 		Details: err.Error(),
 	}
-	writeError(response, 404, kumaErr)
+	WriteError(response, 404, kumaErr)
 }
 
 func handleAccessDenied(err *access.AccessDeniedError, response *restful.Response) {
@@ -155,7 +155,7 @@ func handleAccessDenied(err *access.AccessDeniedError, response *restful.Respons
 		Title:   "Access Denied",
 		Details: err.Reason,
 	}
-	writeError(response, 403, kumaErr)
+	WriteError(response, 403, kumaErr)
 }
 
 func handleUnauthenticated(err *Unauthenticated, title string, response *restful.Response) {
@@ -163,10 +163,10 @@ func handleUnauthenticated(err *Unauthenticated, title string, response *restful
 		Title:   title,
 		Details: err.Error(),
 	}
-	writeError(response, 401, kumaErr)
+	WriteError(response, 401, kumaErr)
 }
 
-func writeError(response *restful.Response, httpStatus int, kumaErr types.Error) {
+func WriteError(response *restful.Response, httpStatus int, kumaErr types.Error) {
 	if err := response.WriteHeaderAndJson(httpStatus, kumaErr, "application/json"); err != nil {
 		core.Log.Error(err, "Could not write the error response")
 	}

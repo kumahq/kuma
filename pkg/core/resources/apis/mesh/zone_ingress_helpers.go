@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"net"
+	"strconv"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -32,6 +33,18 @@ func (r *ZoneIngressResource) HasPublicAddress() bool {
 		return false
 	}
 	return r.Spec.GetNetworking().GetAdvertisedAddress() != "" && r.Spec.GetNetworking().GetAdvertisedPort() != 0
+}
+
+func (r *ZoneIngressResource) AdminAddress(defaultAdminPort uint32) string {
+	if r == nil {
+		return ""
+	}
+	ip := r.Spec.GetNetworking().GetAddress()
+	adminPort := r.Spec.GetNetworking().GetAdmin().GetPort()
+	if adminPort == 0 {
+		adminPort = defaultAdminPort
+	}
+	return net.JoinHostPort(ip, strconv.FormatUint(uint64(adminPort), 10))
 }
 
 func NewZoneIngressOverviews(zoneIngresses ZoneIngressResourceList, insights ZoneIngressInsightResourceList) ZoneIngressOverviewResourceList {

@@ -33,6 +33,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
@@ -88,6 +89,7 @@ func NewApiServer(
 	getInstanceId func() string, getClusterId func() string,
 	authenticator authn.Authenticator,
 	access runtime.Access,
+	envoyAdminClient admin.EnvoyAdminClient,
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
@@ -120,7 +122,7 @@ func NewApiServer(
 		Produces(restful.MIME_JSON)
 
 	addResourcesEndpoints(ws, defs, resManager, cfg, access.ResourceAccess)
-	addInspectEndpoints(ws, cfg, meshContextBuilder)
+	addInspectEndpoints(ws, cfg, meshContextBuilder, resManager, access.ConfigDumpAccess, envoyAdminClient)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws, getInstanceId, getClusterId, enableGUI); err != nil {
@@ -385,6 +387,7 @@ func SetupServer(rt runtime.Runtime) error {
 		rt.GetClusterId,
 		rt.APIServerAuthenticator(),
 		rt.Access(),
+		rt.EnvoyAdminClient(),
 	)
 	if err != nil {
 		return err

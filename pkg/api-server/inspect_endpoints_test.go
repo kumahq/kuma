@@ -15,6 +15,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -29,12 +31,60 @@ import (
 )
 
 type dataplaneBuilder core_mesh.DataplaneResource
+type zoneIngressBuilder core_mesh.ZoneIngressResource
 
 func newMesh(name string) *core_mesh.MeshResource {
 	return &core_mesh.MeshResource{
 		Meta: &test_model.ResourceMeta{Name: name},
 		Spec: &mesh_proto.Mesh{},
 	}
+}
+
+func newZoneIngress() *zoneIngressBuilder {
+	return &zoneIngressBuilder{
+		Spec: &mesh_proto.ZoneIngress{
+			Networking: &mesh_proto.ZoneIngress_Networking{},
+		},
+	}
+}
+
+func (b *zoneIngressBuilder) meta(name string) *zoneIngressBuilder {
+	b.Meta = &test_model.ResourceMeta{Name: name, Mesh: core_model.NoMesh}
+	return b
+}
+
+func (b *zoneIngressBuilder) zone(name string) *zoneIngressBuilder {
+	b.Spec.Zone = name
+	return b
+}
+
+func (b *zoneIngressBuilder) address(address string) *zoneIngressBuilder {
+	b.Spec.Networking.Address = address
+	return b
+}
+
+func (b *zoneIngressBuilder) port(port uint32) *zoneIngressBuilder {
+	b.Spec.Networking.Port = port
+	return b
+}
+
+func (b *zoneIngressBuilder) advertisedAddress(address string) *zoneIngressBuilder {
+	b.Spec.Networking.AdvertisedAddress = address
+	return b
+}
+
+func (b *zoneIngressBuilder) advertisedPort(port uint32) *zoneIngressBuilder {
+	b.Spec.Networking.AdvertisedPort = port
+	return b
+}
+
+func (b *zoneIngressBuilder) admin(port uint32) *zoneIngressBuilder {
+	b.Spec.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: port}
+	return b
+}
+
+func (b *zoneIngressBuilder) build() *core_mesh.ZoneIngressResource {
+	return (*core_mesh.ZoneIngressResource)(b)
 }
 
 func newDataplane() *dataplaneBuilder {
@@ -80,6 +130,11 @@ func (b *dataplaneBuilder) outbound(service, ip string, port uint32) *dataplaneB
 	return b
 }
 
+func (b *dataplaneBuilder) admin(port uint32) *dataplaneBuilder {
+	b.Spec.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: port}
+	return b
+}
+
 type selectors []*mesh_proto.Selector
 
 func anyService() []*mesh_proto.Selector {
@@ -115,6 +170,7 @@ var _ = Describe("Inspect WS", func() {
 		path       string
 		goldenFile string
 		resources  []core_model.Resource
+		global     bool
 	}
 
 	DescribeTable("should return valid response",
@@ -133,7 +189,15 @@ var _ = Describe("Inspect WS", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
+			cfg := config.DefaultApiServerConfig()
+			apiServer := createTestApiServer(resourceStore, cfg, true, metrics, func(config *kuma_cp.Config) {
+				if given.global {
+					config.Mode = config_core.Global
+				} else {
+					config.Mode = config_core.Zone
+					config.Multizone.Zone.Name = "local"
+				}
+			})
 
 			stop := make(chan struct{})
 			defer close(stop)
@@ -589,6 +653,57 @@ var _ = Describe("Inspect WS", func() {
 					},
 				},
 			},
+		}),
+		Entry("inspect xds for dataplane", testCase{
+			path:       "/meshes/mesh-1/dataplanes/backend-1/xds",
+			goldenFile: "inspect_xds_dataplane.json",
+			resources: []core_model.Resource{
+				newMesh("mesh-1"),
+				newDataplane().
+					meta("backend-1", "mesh-1").
+					admin(3301).
+					inbound("backend", "192.168.0.1", 80, 81).
+					outbound("redis", "192.168.0.2", 8080).
+					outbound("gateway", "192.168.0.3", 8080).
+					outbound("web", "192.168.0.4", 8080).
+					build(),
+			},
+		}),
+		Entry("inspect xds for local zone ingress", testCase{
+			path:       "/zoneingresses/zi-1/xds",
+			goldenFile: "inspect_xds_local_zoneingress.json",
+			resources: []core_model.Resource{
+				newZoneIngress().
+					meta("zi-1").
+					zone(""). // local zone ingress has empty "zone" field
+					admin(2201).
+					address("2.2.2.2").port(8080).
+					advertisedAddress("3.3.3.3").advertisedPort(80).
+					build(),
+			},
+		}),
+		Entry("inspect xds for zone ingress from another zone", testCase{
+			path:       "/zoneingresses/zi-1/xds",
+			goldenFile: "inspect_xds_remote_zoneingress.json",
+			resources: []core_model.Resource{
+				newZoneIngress().
+					meta("zi-1").
+					zone("not-local-zone").
+					admin(2201).
+					address("2.2.2.2").port(8080).
+					advertisedAddress("3.3.3.3").advertisedPort(80).
+					build(),
+			},
+		}),
+		Entry("inspect xds for zone ingress on global", testCase{
+			global:     true,
+			path:       "/zoneingresses/zi-1/xds",
+			goldenFile: "inspect_xds_global_zoneingress.json",
+		}),
+		Entry("inspect xds for dataplane on global", testCase{
+			global:     true,
+			path:       "/meshes/default/dataplanes/dp-1/xds",
+			goldenFile: "inspect_xds_global_dataplane.json",
 		}),
 	)
 

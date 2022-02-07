@@ -30,6 +30,10 @@ var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{
 		Path:        "/",
 		RewritePath: "/",
 	},
+	{
+		Path:        "/config_dump",
+		RewritePath: "/config_dump",
+	},
 }
 
 // AdminProxyGenerator generates resources to expose some endpoints of Admin API on public interface.
@@ -93,7 +97,8 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 		if err != nil {
 			return nil, err
 		}
-		if proxy.Dataplane != nil && hasCpValidationCtx {
+		// todo(lobkovilya): handle ZoneEgress
+		if (proxy.Dataplane != nil || proxy.ZoneIngress != nil) && hasCpValidationCtx {
 			for _, se := range staticTlsEndpointPaths {
 				se.ClusterName = envoyAdminClusterName
 			}

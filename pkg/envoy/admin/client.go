@@ -9,29 +9,37 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strconv"
+	"net/url"
 	"time"
 
+	envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
+type ResourceWithAddress interface {
+	core_model.Resource
+	AdminAddress(defaultAdminPort uint32) string
+}
+
 type EnvoyAdminClient interface {
 	PostQuit(dataplane *core_mesh.DataplaneResource) error
+	ConfigDump(proxy ResourceWithAddress, defaultAdminPort uint32) ([]byte, error)
 }
 
 type envoyAdminClient struct {
-	rm         manager.ResourceManager
-	caManagers ca.Managers
-	clientCert tls.Certificate
-	adminPort  uint32
+	rm               manager.ResourceManager
+	caManagers       ca.Managers
+	clientCert       tls.Certificate
+	defaultAdminPort uint32
 }
 
 func NewEnvoyAdminClient(rm manager.ResourceManager, caManagers ca.Managers, clientCertPath, clientKeyPath string, adminPort uint32) (EnvoyAdminClient, error) {
@@ -41,10 +49,10 @@ func NewEnvoyAdminClient(rm manager.ResourceManager, caManagers ca.Managers, cli
 	}
 
 	client := &envoyAdminClient{
-		rm:         rm,
-		caManagers: caManagers,
-		clientCert: cert,
-		adminPort:  adminPort,
+		rm:               rm,
+		caManagers:       caManagers,
+		clientCert:       cert,
+		defaultAdminPort: adminPort,
 	}
 	return client, nil
 }
@@ -54,8 +62,8 @@ func NewEnvoyAdminClient(rm manager.ResourceManager, caManagers ca.Managers, cli
 // 2) When mTLS on the mesh is enabled, we are protecting the endpoint with enabled mTLS backend.
 //
 // Regardless of which CA is used to protect Admin API endpoint, Envoy will always require certs from CP which are the same certs as DP server.
-func (a *envoyAdminClient) buildHTTPClient(dataplane *core_mesh.DataplaneResource) (*http.Client, error) {
-	caCertPool, err := a.caCertPoolOfMeshMTLS(dataplane.Meta.GetMesh())
+func (a *envoyAdminClient) buildHTTPClient(mesh, identifyingService string) (*http.Client, error) {
+	caCertPool, err := a.caCertPoolOfMeshMTLS(mesh)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +87,7 @@ func (a *envoyAdminClient) buildHTTPClient(dataplane *core_mesh.DataplaneResourc
 
 					// Verify SPIFFE to see if we are connecting to the right DP
 					cert, _ := x509.ParseCertificate(rawCerts[0]) // ignore error because cert was parsed already
-					dpSpiffe := xds_tls.ServiceSpiffeID(dataplane.Meta.GetMesh(), dataplane.Spec.GetIdentifyingService())
+					dpSpiffe := xds_tls.ServiceSpiffeID(mesh, identifyingService)
 					for _, uri := range cert.URIs {
 						if uri.String() == dpSpiffe {
 							return nil
@@ -102,8 +110,11 @@ func (a *envoyAdminClient) buildHTTPClient(dataplane *core_mesh.DataplaneResourc
 }
 
 func (a *envoyAdminClient) caCertPoolOfMeshMTLS(mesh string) (*x509.CertPool, error) {
+	if mesh == "" {
+		return nil, nil
+	}
 	meshRes := core_mesh.NewMeshResource()
-	err := a.rm.Get(context.Background(), meshRes, core_store.GetByKey(mesh, model.NoMesh))
+	err := a.rm.Get(context.Background(), meshRes, core_store.GetByKey(mesh, core_model.NoMesh))
 	if err != nil {
 		return nil, err
 	}
@@ -135,22 +146,13 @@ const (
 	quitquitquit = "quitquitquit"
 )
 
-func (a *envoyAdminClient) adminAddress(dataplane *core_mesh.DataplaneResource) string {
-	ip := dataplane.GetIP()
-	// TODO: this will work perfectly fine with K8s, but will fail for Universal
-	// The real allocated admin port is part of the DP metadata, but it is attached to a particular CP,
-	// so we can not reliably use that. A better approach would be to include the admin port
-	// in the DataplaneInsights.
-	return net.JoinHostPort(ip, strconv.FormatUint(uint64(a.adminPort), 10))
-}
-
 func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) error {
-	httpClient, err := a.buildHTTPClient(dataplane)
+	httpClient, err := a.buildHTTPClient(dataplane.Meta.GetMesh(), dataplane.Spec.GetIdentifyingService())
 	if err != nil {
 		return err
 	}
 
-	url := fmt.Sprintf("https://%s/%s", a.adminAddress(dataplane), quitquitquit)
+	url := fmt.Sprintf("https://%s/%s", dataplane.AdminAddress(a.defaultAdminPort), quitquitquit)
 	request, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		return err
@@ -171,4 +173,68 @@ func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) erro
 	}
 
 	return nil
+}
+
+func (a *envoyAdminClient) ConfigDump(proxy ResourceWithAddress, defaultAdminAddress uint32) ([]byte, error) {
+	var httpClient *http.Client
+	var err error
+	u := &url.URL{}
+
+	switch p := proxy.(type) {
+	// todo(lobkovilya): handle ZoneEgress
+	case *core_mesh.DataplaneResource:
+		httpClient, err = a.buildHTTPClient(p.Meta.GetMesh(), p.Spec.GetIdentifyingService())
+		if err != nil {
+			return nil, err
+		}
+		u.Scheme = "https"
+	case *core_mesh.ZoneIngressResource:
+		httpClient, err = a.buildHTTPClient(core_model.NoMesh, "")
+		if err != nil {
+			return nil, err
+		}
+		u.Scheme = "https"
+	default:
+		return nil, errors.New("unsupported proxy type")
+	}
+
+	if host, _, err := net.SplitHostPort(proxy.AdminAddress(defaultAdminAddress)); err == nil && host == "127.0.0.1" {
+		httpClient = &http.Client{
+			Timeout: 5 * time.Second,
+		}
+		u.Scheme = "http"
+	}
+
+	u.Host = proxy.AdminAddress(defaultAdminAddress)
+	u.Path = "config_dump"
+	request, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to send GET to %s", "config_dump")
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
+	}
+
+	configDump, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	cd := &envoy_admin_v3.ConfigDump{}
+	if err := util_proto.FromJSON(configDump, cd); err != nil {
+		return nil, err
+	}
+
+	if err := Sanitize(cd); err != nil {
+		return nil, err
+	}
+
+	return util_proto.ToJSONIndent(cd, " ")
 }

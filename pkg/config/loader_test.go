@@ -247,6 +247,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.GenerateUserToken.Groups).To(Equal([]string{"ut-group1", "ut-group2"}))
 			Expect(cfg.Access.Static.GenerateZoneToken.Users).To(Equal([]string{"zt-admin1", "zt-admin2"}))
 			Expect(cfg.Access.Static.GenerateZoneToken.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
+			Expect(cfg.Access.Static.ViewConfigDump.Users).To(Equal([]string{"zt-admin1", "zt-admin2"}))
+			Expect(cfg.Access.Static.ViewConfigDump.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
 
 			Expect(cfg.Experimental.Gateway).To(BeTrue())
 		},
@@ -459,6 +461,9 @@ access:
     generateZoneToken:
       users: ["zt-admin1", "zt-admin2"]
       groups: ["zt-group1", "zt-group2"]
+    viewConfigDump:
+      users: ["zt-admin1", "zt-admin2"]
+      groups: ["zt-group1", "zt-group2"]
 experimental:
   gateway: true
 `,
@@ -605,6 +610,8 @@ experimental:
 				"KUMA_ACCESS_STATIC_GENERATE_USER_TOKEN_GROUPS":                                            "ut-group1,ut-group2",
 				"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_USERS":                                             "zt-admin1,zt-admin2",
 				"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS":                                            "zt-group1,zt-group2",
+				"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS":                                                 "zt-admin1,zt-admin2",
+				"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS":                                                "zt-group1,zt-group2",
 				"KUMA_EXPERIMENTAL_GATEWAY":                                                                "true",
 			},
 			yamlFileConfig: "",

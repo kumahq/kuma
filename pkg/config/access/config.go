@@ -28,6 +28,10 @@ func DefaultAccessConfig() AccessConfig {
 				Users:  []string{"mesh-system:admin"},
 				Groups: []string{"mesh-system:admin"},
 			},
+			ViewConfigDump: ViewConfigDumpStaticAccessConfig{
+				Users:  []string{},
+				Groups: []string{"mesh-system:unauthenticated", "mesh-system:authenticated"},
+			},
 		},
 	}
 }
@@ -62,6 +66,8 @@ type StaticAccessConfig struct {
 	GenerateUserToken GenerateUserTokenStaticAccessConfig `yaml:"generateUserToken"`
 	// GenerateZoneToken defines an access to generating zone token
 	GenerateZoneToken GenerateZoneTokenStaticAccessConfig `yaml:"generateZoneToken"`
+	// ViewConfigDump defines an access to getting envoy config dump
+	ViewConfigDump ViewConfigDumpStaticAccessConfig `yaml:"viewConfigDump"`
 }
 
 type AdminResourcesStaticAccessConfig struct {
@@ -90,4 +96,11 @@ type GenerateZoneTokenStaticAccessConfig struct {
 	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_USERS"`
 	// List of groups that are allowed to generate zone token
 	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS"`
+}
+
+type ViewConfigDumpStaticAccessConfig struct {
+	// List of users that are allowed to get envoy config dump
+	Users []string `yaml:"users" envconfig:"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS"`
+	// List of groups that are allowed to get envoy config dump
+	Groups []string `yaml:"groups" envconfig:"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS"`
 }
