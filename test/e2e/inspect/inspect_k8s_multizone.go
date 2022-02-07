@@ -89,6 +89,7 @@ spec:
 	})
 
 	E2EAfterEach(func() {
+		Expect(zoneK8s.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zoneK8s.DeleteKuma()).To(Succeed())
 		Expect(zoneK8s.DismissCluster()).To(Succeed())
 

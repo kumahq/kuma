@@ -60,6 +60,7 @@ func KubernetesStandalone() {
 	})
 
 	E2EAfterEach(func() {
+		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).ToNot(HaveOccurred())
 	})
