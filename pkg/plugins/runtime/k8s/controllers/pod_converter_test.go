@@ -239,6 +239,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "16.services-for-pod.yaml",
 			dataplane:      "16.dataplane.yaml",
 		}),
+		Entry("17. Pod with reachable services", testCase{
+			pod:             "17.pod.yaml",
+			servicesForPod:  "17.services-for-pod.yaml",
+			otherDataplanes: "17.other-dataplanes.yaml",
+			otherServices:   "17.other-services.yaml",
+			dataplane:       "17.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",

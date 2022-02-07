@@ -7,14 +7,15 @@ import (
 )
 
 type DeploymentOpts struct {
-	Name             string
-	Namespace        string
-	Mesh             string
-	WithStatefulSet  bool
-	ServiceAccount   string
-	Args             []string
-	Replicas         int32
-	WaitingToBeReady bool
+	Name              string
+	Namespace         string
+	Mesh              string
+	ReachableServices []string
+	WithStatefulSet   bool
+	ServiceAccount    string
+	Args              []string
+	Replicas          int32
+	WaitingToBeReady  bool
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {
@@ -39,6 +40,12 @@ func WithMesh(mesh string) DeploymentOptsFn {
 func WithName(name string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.Name = name
+	}
+}
+
+func WithReachableServices(services ...string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.ReachableServices = services
 	}
 }
 

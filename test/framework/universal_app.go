@@ -180,6 +180,7 @@ networking:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
     redirectPortOutbound: %s
+    reachableServices: [%s]
 `
 )
 

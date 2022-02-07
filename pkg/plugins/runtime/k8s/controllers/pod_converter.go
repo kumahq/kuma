@@ -82,6 +82,7 @@ func (p *PodConverter) dataplaneFor(
 	if err != nil {
 		return nil, err
 	}
+	var reachableServices []string
 	if exist && enabled {
 		inboundPort, exist, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation)
 		if err != nil {
@@ -110,6 +111,10 @@ func (p *PodConverter) dataplaneFor(
 		if services, _ := annotations.GetString(metadata.KumaDirectAccess); services != "" {
 			dataplane.Networking.TransparentProxying.DirectAccessServices = strings.Split(services, ",")
 		}
+		if reachableServicesRaw, exist := annotations.GetString(metadata.KumaTransparentProxyingReachableServicesAnnotation); exist {
+			reachableServices = strings.Split(reachableServicesRaw, ",")
+			dataplane.Networking.TransparentProxying.ReachableServices = reachableServices
+		}
 	}
 
 	dataplane.Networking.Address = pod.Status.PodIP
@@ -132,7 +137,7 @@ func (p *PodConverter) dataplaneFor(
 		dataplane.Networking.Inbound = ifaces
 	}
 
-	ofaces, err := p.OutboundInterfacesFor(ctx, pod, others)
+	ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, reachableServices)
 	if err != nil {
 		return nil, err
 	}

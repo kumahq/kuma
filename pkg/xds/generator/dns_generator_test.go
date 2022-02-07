@@ -42,7 +42,7 @@ var _ = Describe("DNSGenerator", func() {
 					VIPDomains: []model.VIPDomains{
 						{Address: "240.0.0.1", Domains: []string{"httpbin.mesh"}},
 						{Address: "240.0.0.0", Domains: []string{"backend.test-ns.svc.8080.mesh", "backend_test-ns_svc_8080.mesh"}},
-						{Address: "2001:db8::ff00:42:8329", Domains: []string{"frontend.test-ns.svc.8080.mesh", "frontend_test-ns_svc_8080.mesh"}},
+						{Address: "2001:db8::ff00:42:8329", Domains: []string{"frontend.test-ns.svc.8080.mesh", "frontend_test-ns_svc_8080.mesh"}}, // this is ignored because there is no outbounds for it
 					},
 				},
 			}

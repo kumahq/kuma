@@ -3,6 +3,7 @@ package sync
 import (
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
@@ -92,12 +93,23 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	if dataplane.Spec.Networking.GetTransparentProxying() == nil {
 		return
 	}
+	reachableServices := map[string]bool{}
+	for _, reachableService := range dataplane.Spec.Networking.TransparentProxying.ReachableServices {
+		reachableServices[reachableService] = true
+	}
+
 	// Update the outbound of the dataplane with the generatedVips
 	generatedVips := map[string]bool{}
 	for _, ob := range meshContext.VIPOutbounds {
 		generatedVips[ob.Address] = true
 	}
-	outbounds := meshContext.VIPOutbounds
+	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	for _, outbound := range meshContext.VIPOutbounds {
+		service := outbound.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
+		if len(reachableServices) == 0 || reachableServices[service] { // ignore VIP outbound if reachableServices is defined and not specified
+			outbounds = append(outbounds, outbound)
+		}
+	}
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		if generatedVips[outbound.Address] { // Useful while we still have resources with computed vip outbounds
 			continue

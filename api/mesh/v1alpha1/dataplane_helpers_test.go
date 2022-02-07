@@ -45,10 +45,8 @@ var _ = Describe("Dataplane_Networking", func() {
 			DescribeTable("should parse valid input values",
 				func(given testCase) {
 					// when
-					ofaces, err := given.input.GetOutboundInterfaces()
+					ofaces := given.input.GetOutboundInterfaces()
 					// then
-					Expect(err).ToNot(HaveOccurred())
-					// and
 					Expect(ofaces).To(Equal(given.expected))
 				},
 				Entry("nil", testCase{
