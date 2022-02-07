@@ -7,15 +7,10 @@ import (
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e/resilience"
-	"github.com/kumahq/kuma/test/framework"
 )
 
-func TestE2EResilience(t *testing.T) {
-	if framework.IsK8sClustersStarted() {
-		test.RunSpecs(t, "Resilience tests")
-	} else {
-		t.SkipNow()
-	}
+func TestE2E(t *testing.T) {
+	test.RunSpecs(t, "E2E Resilience Suite")
 }
 
 var _ = Describe("Test Leader Election with Postgres", resilience.LeaderElectionPostgres)

@@ -296,6 +296,21 @@ var _ = Describe("Inspect WS", func() {
 				},
 			},
 		}),
+		Entry("inspect dataplane, empty response", testCase{
+			path:       "/meshes/default/dataplanes/backend-1/policies",
+			goldenFile: "inspect_dataplane_empty-response.json",
+			resources: []core_model.Resource{
+				newMesh("default"),
+				newDataplane().
+					meta("backend-1", "default").
+					inbound("backend", "192.168.0.1", 80, 81).
+					outbound("redis", "192.168.0.2", 8080).
+					outbound("gateway", "192.168.0.3", 8080).
+					outbound("postgres", "192.168.0.4", 8080).
+					outbound("web", "192.168.0.2", 8080).
+					build(),
+			},
+		}),
 		Entry("inspect traffic permission", testCase{
 			path:       "/meshes/default/traffic-permissions/tp-1/dataplanes",
 			goldenFile: "inspect_traffic-permission.json",
@@ -623,6 +638,20 @@ var _ = Describe("Inspect WS", func() {
 					outbound("gateway", "192.168.0.2", 8080).
 					outbound("backend", "192.168.0.4", 8080).
 					build(),
+			},
+		}),
+		Entry("inspect traffic trace, empty response", testCase{
+			path:       "/meshes/mesh-1/traffic-traces/tt-1/dataplanes",
+			goldenFile: "inspect_traffic-trace_empty-response.json",
+			resources: []core_model.Resource{
+				newMesh("mesh-1"),
+				&core_mesh.TrafficTraceResource{
+					Meta: &test_model.ResourceMeta{Name: "tt-1", Mesh: "mesh-1"},
+					Spec: &mesh_proto.TrafficTrace{
+						Selectors: anyService(),
+						Conf:      samples.TrafficTrace.Conf,
+					},
+				},
 			},
 		}),
 		Entry("inspect xds for dataplane", testCase{

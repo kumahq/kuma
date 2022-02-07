@@ -7,15 +7,10 @@ import (
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e/externalservices"
-	"github.com/kumahq/kuma/test/framework"
 )
 
-func TestE2EExternalServices(t *testing.T) {
-	if framework.IsK8sClustersStarted() {
-		test.RunSpecs(t, "E2E External Services Suite")
-	} else {
-		t.SkipNow()
-	}
+func TestE2E(t *testing.T) {
+	test.RunSpecs(t, "E2E External Services Suite")
 }
 
 var _ = Describe("ExternalService host header", externalservices.ExternalServiceHostHeader)

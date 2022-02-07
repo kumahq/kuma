@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"strings"
 	"sync"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -14,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/utils"
 	"github.com/kumahq/kuma/test/server/types"
 )
 
@@ -35,7 +35,7 @@ func DefaultCollectResponsesOpts() CollectResponsesOpts {
 		NumberOfRequests: 10,
 		Method:           "GET",
 		Headers:          map[string]string{},
-		ShellEscaped:     ShellEscape,
+		ShellEscaped:     utils.ShellEscape,
 		Flags: []string{
 			"--fail",
 		},
@@ -211,10 +211,6 @@ func CollectResponse(
 	}
 
 	return *response, nil
-}
-
-func ShellEscape(arg string) string {
-	return fmt.Sprintf("'%s'", strings.ReplaceAll(arg, "'", "\\'"))
 }
 
 // FailureResponse is the JSON output for a Curl command. Note that the available
