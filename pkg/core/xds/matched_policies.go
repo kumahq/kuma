@@ -24,11 +24,12 @@ type MatchedPolicies struct {
 	// Outbound(Listener) -> Policy
 	Timeouts           TimeoutMap
 	RateLimitsOutbound OutboundRateLimitsMap
-	TrafficRoutes      RouteMap
+	// Actual Envoy Configuration is generated without taking this TrafficRoutes into account
+	TrafficRoutes RouteMap
 
 	// Dataplane -> Policy
-	// Actual Envoy Configuration is generated without taking these policies into account
-	TrafficTrace  *core_mesh.TrafficTraceResource
+	TrafficTrace *core_mesh.TrafficTraceResource
+	// Actual Envoy Configuration is generated without taking this ProxyTemplate into account
 	ProxyTemplate *core_mesh.ProxyTemplateResource
 }
 
