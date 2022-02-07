@@ -204,7 +204,7 @@ func inspectDataplaneXDS(
 
 		ctx := request.Request.Context()
 
-		if err := access.ValidateGetConfigDump(user.FromCtx(ctx)); err != nil {
+		if err := access.ValidateViewConfigDump(user.FromCtx(ctx)); err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
 			return
 		}
@@ -240,7 +240,7 @@ func inspectZoneIngressXDS(
 
 		ctx := request.Request.Context()
 
-		if err := access.ValidateGetConfigDump(user.FromCtx(ctx)); err != nil {
+		if err := access.ValidateViewConfigDump(user.FromCtx(ctx)); err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
 			return
 		}

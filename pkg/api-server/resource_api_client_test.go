@@ -161,7 +161,7 @@ func createTestApiServer(
 		runtime.Access{
 			ResourceAccess:       resources_access.NewAdminResourceAccess(cfg.Access.Static.AdminResources),
 			DataplaneTokenAccess: nil,
-			ConfigDumpAccess:     access.NewStaticConfigDumpAccess(cfg.Access.Static.GetConfigDump),
+			ConfigDumpAccess:     access.NewStaticConfigDumpAccess(cfg.Access.Static.ViewConfigDump),
 		},
 		&test_runtime.DummyEnvoyAdminClient{},
 	)

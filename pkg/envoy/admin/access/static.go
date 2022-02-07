@@ -13,7 +13,7 @@ type staticConfigDumpAccess struct {
 
 var _ ConfigDumpAccess = &staticConfigDumpAccess{}
 
-func NewStaticConfigDumpAccess(cfg config_access.GetConfigDumpStaticAccessConfig) ConfigDumpAccess {
+func NewStaticConfigDumpAccess(cfg config_access.ViewConfigDumpStaticAccessConfig) ConfigDumpAccess {
 	s := &staticConfigDumpAccess{
 		usernames: map[string]bool{},
 		groups:    map[string]bool{},
@@ -27,7 +27,7 @@ func NewStaticConfigDumpAccess(cfg config_access.GetConfigDumpStaticAccessConfig
 	return s
 }
 
-func (s *staticConfigDumpAccess) ValidateGetConfigDump(user user.User) error {
+func (s *staticConfigDumpAccess) ValidateViewConfigDump(user user.User) error {
 	allowed := s.usernames[user.Name]
 	for _, group := range user.Groups {
 		if s.groups[group] {

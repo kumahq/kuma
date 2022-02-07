@@ -7,6 +7,6 @@ type NoopConfigDumpAccess struct {
 
 var _ ConfigDumpAccess = NoopConfigDumpAccess{}
 
-func (n NoopConfigDumpAccess) ValidateGetConfigDump(_ user.User) error {
+func (n NoopConfigDumpAccess) ValidateViewConfigDump(_ user.User) error {
 	return nil
 }

@@ -423,11 +423,11 @@ access:
       users: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_USERS
       # List of groups that are allowed to generate zone token
       groups: ["mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS
-    getConfigDump:
+    viewConfigDump:
       # List of users that are allowed to get envoy config dump
-      users: ["mesh-system:anonymous","mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS
+      users: [ ] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS
       # List of groups that are allowed to get envoy config dump
-      groups: ["mesh-system:unauthenticated","mesh-system:admin"] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS
+      groups: ["mesh-system:unauthenticated","mesh-system:authenticated"] # ENV: KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS
 
 # Configuration of experimental features of Kuma
 experimental:

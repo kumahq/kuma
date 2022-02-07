@@ -247,8 +247,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.GenerateUserToken.Groups).To(Equal([]string{"ut-group1", "ut-group2"}))
 			Expect(cfg.Access.Static.GenerateZoneToken.Users).To(Equal([]string{"zt-admin1", "zt-admin2"}))
 			Expect(cfg.Access.Static.GenerateZoneToken.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
-			Expect(cfg.Access.Static.GetConfigDump.Users).To(Equal([]string{"zt-admin1", "zt-admin2"}))
-			Expect(cfg.Access.Static.GetConfigDump.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
+			Expect(cfg.Access.Static.ViewConfigDump.Users).To(Equal([]string{"zt-admin1", "zt-admin2"}))
+			Expect(cfg.Access.Static.ViewConfigDump.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
 
 			Expect(cfg.Experimental.Gateway).To(BeTrue())
 		},
@@ -461,7 +461,7 @@ access:
     generateZoneToken:
       users: ["zt-admin1", "zt-admin2"]
       groups: ["zt-group1", "zt-group2"]
-    getConfigDump:
+    viewConfigDump:
       users: ["zt-admin1", "zt-admin2"]
       groups: ["zt-group1", "zt-group2"]
 experimental:
