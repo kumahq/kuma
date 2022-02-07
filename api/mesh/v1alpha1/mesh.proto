@@ -56,8 +56,19 @@ message Mesh {
   // Routing settings of the mesh
   Routing routing = 6;
 
-  // Membership configures data plane proxy membership.
-  message Membership {
+  // Constraints to apply to the mesh and its entities
+  message Constraints {
+
+    // DataplaneProxyMembership defines a set of requirements for data plane
+    // proxies to be a member of the mesh.
+    DataplaneProxyConstraints dataplaneProxy = 1;
+  }
+
+  // Constraints that applies to the mesh and its entities
+  Constraints constraints = 7;
+
+  message DataplaneProxyConstraints {
+
     // Rules defines a set of rules for data plane proxies to be member of the
     // mesh.
     message Rules {
@@ -76,11 +87,7 @@ message Mesh {
     // requirement in order to join the mesh.
     // Restrictions takes precedence over requirements.
     repeated Rules restrictions = 2;
-  }
-
-  // DataplaneProxyMembership defines a set of requirements for data plane
-  // proxies to be a member of the mesh.
-  Membership dataplaneProxyMembership = 7;
+  };
 }
 
 // CertificateAuthorityBackend defines Certificate Authority backend

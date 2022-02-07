@@ -23,10 +23,11 @@ kind: Mesh
 metadata:
   name: %s
 spec:
-  dataplaneProxyMembership:
-    requirements:
-    - tags:
-        k8s.kuma.io/namespace: %s`, mesh, ns)
+  constraints:
+    dataplaneProxy:
+      requirements:
+      - tags:
+          k8s.kuma.io/namespace: %s`, mesh, ns)
 	}
 
 	BeforeEach(func() {

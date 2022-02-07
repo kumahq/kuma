@@ -21,17 +21,26 @@ func (m *MeshResource) Validate() error {
 	verr.AddError("logging", validateLogging(m.Spec.Logging))
 	verr.AddError("tracing", validateTracing(m.Spec.Tracing))
 	verr.AddError("metrics", validateMetrics(m.Spec.Metrics))
-	verr.AddError("dataplaneProxyMembership", validateMembership(m.Spec.DataplaneProxyMembership))
+	verr.AddError("constraints", validateConstraints(m.Spec.Constraints))
 	return verr.OrNil()
 }
 
-func validateMembership(membership *mesh_proto.Mesh_Membership) validators.ValidationError {
+func validateConstraints(constraints *mesh_proto.Mesh_Constraints) validators.ValidationError {
 	var verr validators.ValidationError
-	if membership == nil {
+	if constraints == nil {
+		return verr
+	}
+	verr.AddError("dataplaneProxy", validateDppConstraints(constraints.DataplaneProxy))
+	return verr
+}
+
+func validateDppConstraints(constraints *mesh_proto.Mesh_DataplaneProxyConstraints) validators.ValidationError {
+	var verr validators.ValidationError
+	if constraints == nil {
 		return verr
 	}
 
-	for i, requirement := range membership.GetRequirements() {
+	for i, requirement := range constraints.GetRequirements() {
 		verr.Add(ValidateSelector(
 			validators.RootedAt("requirements").Index(i).Field("tags"),
 			requirement.Tags,
@@ -39,7 +48,7 @@ func validateMembership(membership *mesh_proto.Mesh_Membership) validators.Valid
 		))
 	}
 
-	for i, requirement := range membership.GetRestrictions() {
+	for i, requirement := range constraints.GetRestrictions() {
 		verr.Add(ValidateSelector(
 			validators.RootedAt("restrictions").Index(i).Field("tags"),
 			requirement.Tags,
