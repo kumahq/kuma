@@ -74,7 +74,6 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 	u.container = container
 
 	port := u.ports["22"]
-	env := []string{}
 
 	// ceritficates
 	cert, key, err := framework.CreateCertsFor("localhost", ip, name)
@@ -82,19 +81,19 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
-	err = framework.NewSshApp(u.verbose, port, env, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
+	err = framework.NewSshApp(u.verbose, port, nil, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
-	err = framework.NewSshApp(u.verbose, port, env, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
+	err = framework.NewSshApp(u.verbose, port, nil, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
 	u.cert = cert
 	for _, arg := range u.commands {
-		u.app = framework.NewSshApp(u.verbose, port, env, arg)
+		u.app = framework.NewSshApp(u.verbose, port, nil, arg)
 		err = u.app.Start()
 		if err != nil {
 			return err

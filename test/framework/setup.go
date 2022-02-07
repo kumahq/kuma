@@ -182,7 +182,7 @@ func zoneRelatedResource(
 			return err
 		}
 
-		app.CreateMainApp([]string{}, []string{})
+		app.CreateMainApp(nil, []string{})
 
 		err = app.mainApp.Start()
 		if err != nil {

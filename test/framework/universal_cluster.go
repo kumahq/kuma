@@ -84,9 +84,9 @@ func (c *UniversalCluster) Verbose() bool {
 
 func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) error {
 	if mode == core.Zone {
-		c.opts.apply(WithEnvs(Config.KumaZoneUniversalEnvVars))
+		opt = append([]KumaDeploymentOption{WithEnvs(Config.KumaZoneUniversalEnvVars)}, opt...)
 	} else {
-		c.opts.apply(WithEnvs(Config.KumaUniversalEnvVars))
+		opt = append([]KumaDeploymentOption{WithEnvs(Config.KumaUniversalEnvVars)}, opt...)
 	}
 	c.opts.apply(opt...)
 	if c.opts.installationMode != KumactlInstallationMode {
@@ -95,36 +95,35 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	c.controlplane = NewUniversalControlPlane(c.t, mode, c.name, c, c.verbose)
 
-	cmd := []string{"kuma-cp", "run"}
-	env := []string{"KUMA_MODE=" + mode, "KUMA_DNS_SERVER_PORT=53"}
+	env := map[string]string{"KUMA_MODE": mode, "KUMA_DNS_SERVER_PORT": "53"}
 
-	caps := []string{}
 	for k, v := range c.opts.env {
-		env = append(env, fmt.Sprintf("%s=%s", k, v))
+		env[k] = v
 	}
 	if c.opts.globalAddress != "" {
-		env = append(env, "KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS="+c.opts.globalAddress)
+		env["KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS"] = c.opts.globalAddress
 	}
 	if c.opts.hdsDisabled {
-		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
+		env["KUMA_DP_SERVER_HDS_ENABLED"] = "false"
 	}
 
 	if Config.XDSApiVersion != "" {
-		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+Config.XDSApiVersion)
+		env["KUMA_BOOTSTRAP_SERVER_API_VERSION"] = Config.XDSApiVersion
 	}
 
 	if Config.CIDR != "" {
-		env = append(env, fmt.Sprintf("KUMA_DNS_SERVER_CIDR=\"%s\"", Config.CIDR))
+		env["KUMA_DNS_SERVER_CIDR"] = Config.CIDR
 	}
 
+	cmd := []string{"kuma-cp", "run"}
 	switch mode {
 	case core.Zone:
-		env = append(env, "KUMA_MULTIZONE_ZONE_NAME="+c.name)
+		env["KUMA_MULTIZONE_ZONE_NAME"] = c.name
 	case core.Global:
 		cmd = append(cmd, "--config-file", "/kuma/kuma-cp.conf")
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, c.opts.isipv6, true, caps)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, c.opts.isipv6, true, []string{})
 	if err != nil {
 		return err
 	}
@@ -176,7 +175,7 @@ func (c *UniversalCluster) retrieveAdminToken() (string, error) {
 		DefaultRetries,
 		DefaultTimeout,
 		func() (string, error) {
-			sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
+			sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], nil, []string{"curl",
 				"--fail", "--show-error",
 				"http://localhost:5681/global-secrets/admin-user-token"})
 			if err := sshApp.Run(); err != nil {
@@ -336,7 +335,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	}
 
 	if !opts.proxyOnly {
-		app.CreateMainApp([]string{}, args)
+		app.CreateMainApp(nil, args)
 		err = app.mainApp.Start()
 		if err != nil {
 			return err
@@ -346,7 +345,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	return nil
 }
 
-func runPostgresMigration(kumaCP *UniversalApp, envVars []string) error {
+func runPostgresMigration(kumaCP *UniversalApp, envVars map[string]string) error {
 	args := []string{
 		"/usr/bin/kuma-cp", "migrate", "up",
 	}
@@ -356,7 +355,7 @@ func runPostgresMigration(kumaCP *UniversalApp, envVars []string) error {
 		return errors.New("missing public port: 22")
 	}
 
-	app := NewSshApp(true, sshPort, envVars, args)
+	app := NewSshApp(kumaCP.verbose, sshPort, envVars, args)
 	if err := app.Run(); err != nil {
 		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
 	}
@@ -381,7 +380,7 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 	if !ok {
 		return "", "", errors.Errorf("App %s not found", appname)
 	}
-	sshApp := NewSshApp(false, app.ports[sshPort], []string{}, cmd)
+	sshApp := NewSshApp(c.verbose, app.ports[sshPort], nil, cmd)
 	err := sshApp.Run()
 	return sshApp.Out(), sshApp.Err(), err
 }
@@ -399,7 +398,7 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 			if !ok {
 				return "", errors.Errorf("App %s not found", appname)
 			}
-			sshApp := NewSshApp(false, app.ports[sshPort], []string{}, cmd)
+			sshApp := NewSshApp(c.verbose, app.ports[sshPort], nil, cmd)
 			err := sshApp.Run()
 			stdout = sshApp.Out()
 			stderr = sshApp.Err()
