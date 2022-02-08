@@ -47,6 +47,5 @@ func Universal() {
 		Expect(stdout).To(ContainSubstring(`"name": "outbound:127.0.0.1:4000"`))
 		Expect(stdout).To(ContainSubstring(`"name": "outbound:127.0.0.1:4001"`))
 		Expect(stdout).To(ContainSubstring(`"name": "outbound:127.0.0.1:5000"`))
-		Expect(stdout).To(ContainSubstring(`"dataplane.resource": "{\"type\":\"Dataplane\",\"mesh\":\"default\",\"name\":\"demo-client\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\",\"networking\":{\"address\":\"172.18.0.3\",\"inbound\":[{\"port\":13000,\"servicePort\":3000,\"tags\":{\"kuma.io/service\":\"demo-client\",\"team\":\"client-owners\"}}],\"outbound\":[{\"port\":4000,\"tags\":{\"kuma.io/service\":\"echo-server_kuma-test_svc_80\"}},{\"port\":4001,\"tags\":{\"kuma.io/service\":\"echo-server_kuma-test_svc_8080\"}},{\"port\":5000,\"tags\":{\"kuma.io/service\":\"external-service\"}}]}}",`))
 	})
 }

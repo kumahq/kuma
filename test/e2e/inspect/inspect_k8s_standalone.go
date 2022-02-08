@@ -56,7 +56,7 @@ func KubernetesStandalone() {
 		}, "60s", "1s").Should(Succeed())
 
 		demoClient = GetPod(TestNamespace, "demo-client")
-		kumaControlPlane = GetPod("kuma-system", "kuma-control-plane")
+		kumaControlPlane = GetPod(Config.KumaNamespace, Config.KumaServiceName)
 	})
 
 	E2EAfterEach(func() {
@@ -70,7 +70,7 @@ func KubernetesStandalone() {
 		url := fmt.Sprintf("localhost:5681/meshes/default/dataplanes/%s/xds", dataplaneName)
 		cmd := []string{"wget", "-O-", url}
 
-		stdout, _, err := cluster.ExecWithRetries("kuma-system", kumaControlPlane.GetName(), "control-plane", cmd...)
+		stdout, _, err := cluster.ExecWithRetries(Config.KumaNamespace, kumaControlPlane.GetName(), "control-plane", cmd...)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(stdout).To(ContainSubstring(`"name": "demo-client_kuma-test_svc"`))

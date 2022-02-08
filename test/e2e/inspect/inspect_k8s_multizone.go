@@ -84,8 +84,8 @@ spec:
 			g.Expect(dataplanes).Should(ContainElement(ContainSubstring("demo-client")))
 		}, "60s", "1s").Should(Succeed())
 
-		zoneIngress = GetPod("kuma-system", "kuma-ingress")
-		kumaControlPlane = GetPod("kuma-system", "kuma-control-plane")
+		zoneIngress = GetPod(Config.KumaNamespace, "kuma-ingress")
+		kumaControlPlane = GetPod(Config.KumaNamespace, Config.KumaServiceName)
 	})
 
 	E2EAfterEach(func() {
@@ -98,11 +98,11 @@ spec:
 	})
 
 	It("should return envoy config_dump for zone ingress", func() {
-		zoneIngressName := fmt.Sprintf("%s.%s", zoneIngress.GetName(), "kuma-system")
+		zoneIngressName := fmt.Sprintf("%s.%s", zoneIngress.GetName(), Config.KumaNamespace)
 		url := fmt.Sprintf("localhost:5681/zoneingresses/%s/xds", zoneIngressName)
 		cmd := []string{"wget", "-O-", url}
 
-		stdout, _, err := zoneK8s.ExecWithRetries("kuma-system", kumaControlPlane.GetName(), "control-plane", cmd...)
+		stdout, _, err := zoneK8s.ExecWithRetries(Config.KumaNamespace, kumaControlPlane.GetName(), "control-plane", cmd...)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(stdout).To(ContainSubstring(`"dataplane.proxyType": "ingress"`))
