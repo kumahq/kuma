@@ -2,7 +2,10 @@ package gateway
 
 import (
 	"bytes"
+	"encoding/base64"
+	"fmt"
 	"net"
+	"strings"
 	"text/template"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -245,11 +248,116 @@ spec:
 	})
 
 	Context("when targeting an external service", func() {
-		// TODO match universal test cases
+		BeforeEach(func() {
+			DeployCluster()
+			err := NewClusterSetup().
+				Install(testserver.Install(
+					testserver.WithName("es-test-server"),
+					testserver.WithNamespace(ClientNamespace), // reuse client namespace to not wait for delete separate namespace
+					testserver.WithArgs("echo", "--instance", "es-test-server"),
+				)).
+				Install(YamlK8s(`
+apiVersion: kuma.io/v1alpha1
+kind: ExternalService
+mesh: default
+metadata:
+  name: external-service
+spec:
+  tags:
+    kuma.io/service: external-service
+    kuma.io/protocol: http
+  networking:
+    address: es-test-server.kuma-client.svc.cluster.local:80`)).
+				Install(YamlK8s(`
+apiVersion: kuma.io/v1alpha1
+kind: GatewayRoute
+metadata:
+  name: edge-gateway-external-service
+mesh: default
+spec:
+  selectors:
+  - match:
+      kuma.io/service: edge-gateway
+  conf:
+    http:
+      rules:
+      - matches:
+        - path:
+            match: PREFIX
+            value: /external
+        backends:
+        - destination:
+            kuma.io/service: external-service
+`)).
+				Setup(cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should proxy simple HTTP requests", func() {
+			ProxySimpleRequests(cluster, "es-test-server",
+				net.JoinHostPort(GatewayAddress("edge-gateway"), GatewayPort),
+				client.FromKubernetesPod(ClientNamespace, "gateway-client"),
+				client.WithPathPrefix("/external"),
+			)
+		})
 	})
 
 	Context("when targeting a HTTPS gateway", func() {
-		// TODO match universal test cases
+		BeforeEach(func() {
+			DeployCluster()
+		})
+
+		JustBeforeEach(func() {
+			cert, key, err := CreateCertsFor("example.kuma.io")
+			Expect(err).To(Succeed())
+			secretData := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{key, cert}, "\n")))
+
+			err = NewClusterSetup().
+				Install(YamlK8s(`
+apiVersion: kuma.io/v1alpha1
+kind: Gateway
+metadata:
+  name: edge-gateway
+mesh: default
+spec:
+  selectors:
+  - match:
+      kuma.io/service: edge-gateway
+  conf:
+    listeners:
+    - port: 8080
+      protocol: HTTPS
+      hostname: example.kuma.io
+      tls:
+        mode: TERMINATE
+        certificates:
+        - secret: example-kuma-io-certificate
+      tags:
+        hostname: example.kuma.io
+`)).
+				Install(YamlK8s(fmt.Sprintf(`
+apiVersion: v1
+kind: Secret
+metadata:
+  name: example-kuma-io-certificate
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default 
+data:
+  value: %s
+type: system.kuma.io/secret
+`, secretData))).
+				Setup(cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should proxy simple HTTPS requests", func() {
+			ProxySecureRequests(cluster, "kubernetes",
+				net.JoinHostPort("example.kuma.io", GatewayPort),
+				client.Resolve("example.kuma.io", 8080, GatewayAddress("edge-gateway")),
+				client.FromKubernetesPod(ClientNamespace, "gateway-client"),
+			)
+		})
 	})
 
 	Context("when a rate limit is configured", func() {
