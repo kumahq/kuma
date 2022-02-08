@@ -70,15 +70,16 @@ var _ = Describe("Mesh", func() {
                 conf:
                   port: 5670
                   path: /metrics
-            dataplaneProxyMembership:
-              requirements:
-              - tags:
-                  k8s.kuma.io/namespace: ns-1
-                  kuma.io/zone: east
-              restrictions:
-              - tags:
-                  k8s.kuma.io/namespace: ns-1
-                  kuma.io/zone: west
+            constraints:
+              dataplaneProxy:
+                requirements:
+                - tags:
+                    k8s.kuma.io/namespace: ns-1
+                    kuma.io/zone: east
+                restrictions:
+                - tags:
+                    k8s.kuma.io/namespace: ns-1
+                    kuma.io/zone: west
 `
 			mesh := NewMeshResource()
 
@@ -419,46 +420,47 @@ var _ = Describe("Mesh", func() {
                 - field: metrics.backends[0].type
                   message: 'unknown backend type. Available backends: "prometheus"'`,
 			}),
-			Entry("membership with invalid tags", testCase{
+			Entry("constraints dataplaneProxy with invalid tags", testCase{
 				mesh: `
-                dataplaneProxyMembership:
-                  requirements:
-                  - {}
-                  - tags:
-                      '': ''
-                  - tags:
-                      '!@#$': '!@#$'
-                  restrictions:
-                  - {}
-                  - tags:
-                      '': ''
-                  - tags:
-                      '!@#$': '!@#$'
+                constraints:
+                  dataplaneProxy:
+                    requirements:
+                    - {}
+                    - tags:
+                        '': ''
+                    - tags:
+                        '!@#$': '!@#$'
+                    restrictions:
+                    - {}
+                    - tags:
+                        '': ''
+                    - tags:
+                        '!@#$': '!@#$'
 `,
 				expected: `
                 violations:
-                - field: dataplaneProxyMembership.requirements[0].tags
+                - field: constraints.dataplaneProxy.requirements[0].tags
                   message: must have at least one tag
-                - field: dataplaneProxyMembership.requirements[1].tags
+                - field: constraints.dataplaneProxy.requirements[1].tags
                   message: tag name must be non-empty
-                - field: dataplaneProxyMembership.requirements[1].tags[""]
+                - field: constraints.dataplaneProxy.requirements[1].tags[""]
                   message: tag value must be non-empty
-                - field: dataplaneProxyMembership.requirements[2].tags["!@#$"]
+                - field: constraints.dataplaneProxy.requirements[2].tags["!@#$"]
                   message: tag name must consist of alphanumeric characters, dots, dashes, slashes
                     and underscores
-                - field: dataplaneProxyMembership.requirements[2].tags["!@#$"]
+                - field: constraints.dataplaneProxy.requirements[2].tags["!@#$"]
                   message: tag value must consist of alphanumeric characters, dots, dashes, slashes
                     and underscores or be "*"
-                - field: dataplaneProxyMembership.restrictions[0].tags
+                - field: constraints.dataplaneProxy.restrictions[0].tags
                   message: must have at least one tag
-                - field: dataplaneProxyMembership.restrictions[1].tags
+                - field: constraints.dataplaneProxy.restrictions[1].tags
                   message: tag name must be non-empty
-                - field: dataplaneProxyMembership.restrictions[1].tags[""]
+                - field: constraints.dataplaneProxy.restrictions[1].tags[""]
                   message: tag value must be non-empty
-                - field: dataplaneProxyMembership.restrictions[2].tags["!@#$"]
+                - field: constraints.dataplaneProxy.restrictions[2].tags["!@#$"]
                   message: tag name must consist of alphanumeric characters, dots, dashes, slashes
                     and underscores
-                - field: dataplaneProxyMembership.restrictions[2].tags["!@#$"]
+                - field: constraints.dataplaneProxy.restrictions[2].tags["!@#$"]
                   message: tag value must consist of alphanumeric characters, dots, dashes, slashes
                     and underscores or be "*"`,
 			}),

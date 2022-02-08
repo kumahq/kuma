@@ -42,19 +42,23 @@ func (m *membershipValidator) ValidateCreate(_ context.Context, key model.Resour
 }
 
 func (m *membershipValidator) validateDp(key model.ResourceKey, dp *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) error {
-	membership := mesh.Spec.GetDataplaneProxyMembership()
-	if membership == nil {
+	constraints := mesh.Spec.GetConstraints()
+	if constraints == nil {
+		return nil
+	}
+	dataplaneProxyConstraints := constraints.GetDataplaneProxy()
+	if dataplaneProxyConstraints == nil {
 		return nil
 	}
 
 	for _, tagSet := range dp.Spec.SingleValueTagSets() {
-		if !isAllowedToJoin(tagSet, membership.GetRequirements()) {
+		if !isAllowedToJoin(tagSet, dataplaneProxyConstraints.GetRequirements()) {
 			return &NotAllowedErr{
 				Mesh:   key.Mesh,
 				TagSet: tagSet,
 			}
 		}
-		if denied, deniedTags := isDeniedToJoin(tagSet, membership.GetRestrictions()); denied {
+		if denied, deniedTags := isDeniedToJoin(tagSet, dataplaneProxyConstraints.GetRestrictions()); denied {
 			return &DeniedErr{
 				Mesh:         key.Mesh,
 				DpTagSet:     tagSet,
@@ -65,7 +69,7 @@ func (m *membershipValidator) validateDp(key model.ResourceKey, dp *core_mesh.Da
 	return nil
 }
 
-func isAllowedToJoin(tagSet mesh_proto.SingleValueTagSet, requirements []*mesh_proto.Mesh_Membership_Rules) bool {
+func isAllowedToJoin(tagSet mesh_proto.SingleValueTagSet, requirements []*mesh_proto.Mesh_DataplaneProxyConstraints_Rules) bool {
 	if len(requirements) == 0 {
 		return true
 	}
@@ -77,7 +81,7 @@ func isAllowedToJoin(tagSet mesh_proto.SingleValueTagSet, requirements []*mesh_p
 	return false
 }
 
-func isDeniedToJoin(tagSet mesh_proto.SingleValueTagSet, restrictions []*mesh_proto.Mesh_Membership_Rules) (bool, mesh_proto.SingleValueTagSet) {
+func isDeniedToJoin(tagSet mesh_proto.SingleValueTagSet, restrictions []*mesh_proto.Mesh_DataplaneProxyConstraints_Rules) (bool, mesh_proto.SingleValueTagSet) {
 	for _, restriction := range restrictions {
 		if matchTags(restriction.Tags, tagSet) {
 			return true, restriction.Tags

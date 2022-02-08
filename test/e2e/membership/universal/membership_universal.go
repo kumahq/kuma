@@ -30,13 +30,14 @@ func MembershipUniversal() {
 		mesh := `
 type: Mesh
 name: default
-dataplaneProxyMembership:
-  requirements:
-  - tags:
-      kuma.io/service: demo-client
-  restrictions:
-  - tags:
-      kuma.io/service: test-server
+constraints:
+  dataplaneProxy:
+    requirements:
+    - tags:
+        kuma.io/service: demo-client
+    restrictions:
+    - tags:
+        kuma.io/service: test-server
 `
 		Expect(YamlUniversal(mesh)(cluster)).To(Succeed())
 
