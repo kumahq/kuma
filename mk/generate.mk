@@ -35,11 +35,11 @@ KUMA_GUI_WORK_FOLDER=app/kuma-ui/data/work
 
 .PHONY: upgrade/gui
 upgrade/gui:
-	rm -rf $(KUMA_GUI_WORK_FOLDER); \
-	git clone --depth 1 -b $(KUMA_GUI_VERSION) $(KUMA_GUI_GIT_URL) $(KUMA_GUI_WORK_FOLDER); \
-	pushd $(KUMA_GUI_WORK_FOLDER) && yarn install && yarn build && popd; \
-	rm -rf $(KUMA_GUI_FOLDER) && mv $(KUMA_GUI_WORK_FOLDER)/dist/ $(KUMA_GUI_FOLDER); \
-	rm -rf $(KUMA_GUI_WORK_FOLDER); \
+	rm -rf $(KUMA_GUI_WORK_FOLDER)
+	git clone --depth 1 -b $(KUMA_GUI_VERSION) $(KUMA_GUI_GIT_URL) $(KUMA_GUI_WORK_FOLDER)
+	cd $(KUMA_GUI_WORK_FOLDER) && yarn install && yarn build
+	rm -rf $(KUMA_GUI_FOLDER) && mv $(KUMA_GUI_WORK_FOLDER)/dist/ $(KUMA_GUI_FOLDER)
+	rm -rf $(KUMA_GUI_WORK_FOLDER)
 
 .PHONY: generate/envoy-imports
 generate/envoy-imports:
