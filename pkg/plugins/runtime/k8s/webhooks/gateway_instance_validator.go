@@ -50,7 +50,7 @@ func (h *GatewayInstanceValidator) ValidateDelete(ctx context.Context, req admis
 }
 
 func (h *GatewayInstanceValidator) ValidateCreate(ctx context.Context, req admission.Request) admission.Response {
-	gatewayInstance := &mesh_k8s.GatewayInstance{}
+	gatewayInstance := &mesh_k8s.MeshGatewayInstance{}
 	if err := h.decoder.Decode(req, gatewayInstance); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -63,7 +63,7 @@ func (h *GatewayInstanceValidator) ValidateCreate(ctx context.Context, req admis
 }
 
 func (h *GatewayInstanceValidator) ValidateUpdate(ctx context.Context, req admission.Request) admission.Response {
-	gatewayInstance := &mesh_k8s.GatewayInstance{}
+	gatewayInstance := &mesh_k8s.MeshGatewayInstance{}
 	if err := h.decoder.Decode(req, gatewayInstance); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -75,7 +75,7 @@ func (h *GatewayInstanceValidator) ValidateUpdate(ctx context.Context, req admis
 	return admission.Allowed("")
 }
 
-func (h *GatewayInstanceValidator) validateTags(gatewayInstance *mesh_k8s.GatewayInstance) admission.Response {
+func (h *GatewayInstanceValidator) validateTags(gatewayInstance *mesh_k8s.MeshGatewayInstance) admission.Response {
 	tags := gatewayInstance.Spec.Tags
 
 	err := core_mesh.ValidateTags(validators.RootedAt("tags"), tags, core_mesh.ValidateTagsOpts{
@@ -90,6 +90,6 @@ func (h *GatewayInstanceValidator) validateTags(gatewayInstance *mesh_k8s.Gatewa
 }
 
 func (h *GatewayInstanceValidator) Supports(req admission.Request) bool {
-	gvk := mesh_k8s.GroupVersion.WithKind(reflect.TypeOf(mesh_k8s.GatewayInstance{}).Name())
+	gvk := mesh_k8s.GroupVersion.WithKind(reflect.TypeOf(mesh_k8s.MeshGatewayInstance{}).Name())
 	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }

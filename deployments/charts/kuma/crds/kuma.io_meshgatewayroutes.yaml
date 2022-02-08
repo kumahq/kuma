@@ -5,14 +5,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: gatewayroutes.kuma.io
+  name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: GatewayRoute
-    listKind: GatewayRouteList
-    plural: gatewayroutes
-    singular: gatewayroute
+    kind: MeshGatewayRoute
+    listKind: MeshGatewayRouteList
+    plural: meshgatewayroutes
+    singular: meshgatewayroute
   scope: Cluster
   versions:
   - name: v1alpha1
@@ -36,7 +36,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: Spec is the specification of the Kuma GatewayRoute resource.
+            description: Spec is the specification of the Kuma MeshGatewayRoute resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true

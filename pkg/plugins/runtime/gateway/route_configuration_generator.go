@@ -10,13 +10,13 @@ import (
 // RouteConfigurationGenerator generates Kuma gateway listeners.
 type RouteConfigurationGenerator struct{}
 
-func (*RouteConfigurationGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Protocol) bool {
+func (*RouteConfigurationGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
 	switch p {
-	case mesh_proto.Gateway_Listener_UDP,
-		mesh_proto.Gateway_Listener_TCP,
-		mesh_proto.Gateway_Listener_TLS,
-		mesh_proto.Gateway_Listener_HTTP,
-		mesh_proto.Gateway_Listener_HTTPS:
+	case mesh_proto.MeshGateway_Listener_UDP,
+		mesh_proto.MeshGateway_Listener_TCP,
+		mesh_proto.MeshGateway_Listener_TLS,
+		mesh_proto.MeshGateway_Listener_HTTP,
+		mesh_proto.MeshGateway_Listener_HTTPS:
 		return true
 	default:
 		return false

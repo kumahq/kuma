@@ -26,7 +26,7 @@ type ClusterGenerator struct {
 }
 
 // SupportsProtocol is always true for generating clusters.
-func (*ClusterGenerator) SupportsProtocol(mesh_proto.Gateway_Listener_Protocol) bool {
+func (*ClusterGenerator) SupportsProtocol(mesh_proto.MeshGateway_Listener_Protocol) bool {
 	return true
 }
 

@@ -5,20 +5,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: gatewayinstances.kuma.io
+  name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: GatewayInstance
-    listKind: GatewayInstanceList
-    plural: gatewayinstances
-    singular: gatewayinstance
+    kind: MeshGatewayInstance
+    listKind: MeshGatewayInstanceList
+    plural: meshgatewayinstances
+    singular: meshgatewayinstance
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: GatewayInstance represents a managed instance of a dataplane
+        description: MeshGatewayInstance represents a managed instance of a dataplane
           proxy for a Kuma Gateway.
         properties:
           apiVersion:
@@ -34,8 +34,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: GatewayInstanceSpec specifies the options available for a
-              GatewayDataplane.
+            description: MeshGatewayInstanceSpec specifies the options available for
+              a GatewayDataplane.
             properties:
               replicas:
                 default: 1
@@ -93,7 +93,7 @@ spec:
                 type: object
             type: object
           status:
-            description: GatewayInstanceStatus holds information about the status
+            description: MeshGatewayInstanceStatus holds information about the status
               of the gateway instance.
             properties:
               conditions:

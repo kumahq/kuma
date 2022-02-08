@@ -56,7 +56,7 @@ func GatewayHELM() {
 		err := NewClusterSetup().
 			Install(YamlK8s(`
 apiVersion: kuma.io/v1alpha1
-kind: GatewayInstance
+kind: MeshGatewayInstance
 metadata:
   name: edge-gateway
 spec:
@@ -66,7 +66,7 @@ spec:
     kuma.io/service: edge-gateway`)).
 			Install(YamlK8s(`
 apiVersion: kuma.io/v1alpha1
-kind: Gateway
+kind: MeshGateway
 metadata:
   name: edge-gateway
 mesh: default
@@ -83,7 +83,7 @@ spec:
         hostname: example.kuma.io`)).
 			Install(YamlK8s(`
 apiVersion: kuma.io/v1alpha1
-kind: GatewayRoute
+kind: MeshGatewayRoute
 metadata:
   name: edge-gateway
 mesh: default

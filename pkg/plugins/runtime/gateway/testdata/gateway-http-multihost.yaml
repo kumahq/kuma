@@ -1,4 +1,4 @@
-type: Gateway
+type: MeshGateway
 mesh: default
 name: gateway-multihost
 selectors:
@@ -21,5 +21,3 @@ conf:
     protocol: HTTP
     tags:
       hostname: three.example.com
-
-

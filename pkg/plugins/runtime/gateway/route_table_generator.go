@@ -19,7 +19,7 @@ import (
 type RouteTableGenerator struct{}
 
 // SupportsProtocol is always true for RouteTableGenerator.
-func (*RouteTableGenerator) SupportsProtocol(mesh_proto.Gateway_Listener_Protocol) bool {
+func (*RouteTableGenerator) SupportsProtocol(mesh_proto.MeshGateway_Listener_Protocol) bool {
 	return true
 }
 
@@ -33,7 +33,7 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 	)
 
 	// Ensure that we get TLS on HTTPS protocol listeners.
-	if info.Listener.Protocol == mesh_proto.Gateway_Listener_HTTPS {
+	if info.Listener.Protocol == mesh_proto.MeshGateway_Listener_HTTPS {
 		vh.Configure(
 			envoy_routes.RequireTLS(),
 			// Set HSTS header to 1 year.

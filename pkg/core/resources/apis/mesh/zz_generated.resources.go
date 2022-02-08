@@ -638,208 +638,6 @@ func init() {
 }
 
 const (
-	GatewayType model.ResourceType = "Gateway"
-)
-
-var _ model.Resource = &GatewayResource{}
-
-type GatewayResource struct {
-	Meta model.ResourceMeta
-	Spec *mesh_proto.Gateway
-}
-
-func NewGatewayResource() *GatewayResource {
-	return &GatewayResource{
-		Spec: &mesh_proto.Gateway{},
-	}
-}
-
-func (t *GatewayResource) GetMeta() model.ResourceMeta {
-	return t.Meta
-}
-
-func (t *GatewayResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *GatewayResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *GatewayResource) Selectors() []*mesh_proto.Selector {
-	return t.Spec.GetSelectors()
-}
-
-func (t *GatewayResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*mesh_proto.Gateway)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &mesh_proto.Gateway{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *GatewayResource) Descriptor() model.ResourceTypeDescriptor {
-	return GatewayResourceTypeDescriptor
-}
-
-var _ model.ResourceList = &GatewayResourceList{}
-
-type GatewayResourceList struct {
-	Items      []*GatewayResource
-	Pagination model.Pagination
-}
-
-func (l *GatewayResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *GatewayResourceList) GetItemType() model.ResourceType {
-	return GatewayType
-}
-
-func (l *GatewayResourceList) NewItem() model.Resource {
-	return NewGatewayResource()
-}
-
-func (l *GatewayResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*GatewayResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*GatewayResource)(nil), r)
-	}
-}
-
-func (l *GatewayResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-var GatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           GatewayType,
-	Resource:       NewGatewayResource(),
-	ResourceList:   &GatewayResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "gateways",
-	KumactlArg:     "gateway",
-	KumactlListArg: "gateways",
-	AllowToInspect: false,
-}
-
-const (
-	GatewayRouteType model.ResourceType = "GatewayRoute"
-)
-
-var _ model.Resource = &GatewayRouteResource{}
-
-type GatewayRouteResource struct {
-	Meta model.ResourceMeta
-	Spec *mesh_proto.GatewayRoute
-}
-
-func NewGatewayRouteResource() *GatewayRouteResource {
-	return &GatewayRouteResource{
-		Spec: &mesh_proto.GatewayRoute{},
-	}
-}
-
-func (t *GatewayRouteResource) GetMeta() model.ResourceMeta {
-	return t.Meta
-}
-
-func (t *GatewayRouteResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *GatewayRouteResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *GatewayRouteResource) Selectors() []*mesh_proto.Selector {
-	return t.Spec.GetSelectors()
-}
-
-func (t *GatewayRouteResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*mesh_proto.GatewayRoute)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &mesh_proto.GatewayRoute{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *GatewayRouteResource) Descriptor() model.ResourceTypeDescriptor {
-	return GatewayRouteResourceTypeDescriptor
-}
-
-var _ model.ResourceList = &GatewayRouteResourceList{}
-
-type GatewayRouteResourceList struct {
-	Items      []*GatewayRouteResource
-	Pagination model.Pagination
-}
-
-func (l *GatewayRouteResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *GatewayRouteResourceList) GetItemType() model.ResourceType {
-	return GatewayRouteType
-}
-
-func (l *GatewayRouteResourceList) NewItem() model.Resource {
-	return NewGatewayRouteResource()
-}
-
-func (l *GatewayRouteResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*GatewayRouteResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*GatewayRouteResource)(nil), r)
-	}
-}
-
-func (l *GatewayRouteResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-var GatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:           GatewayRouteType,
-	Resource:       NewGatewayRouteResource(),
-	ResourceList:   &GatewayRouteResourceList{},
-	ReadOnly:       false,
-	AdminOnly:      false,
-	Scope:          model.ScopeMesh,
-	KDSFlags:       model.FromGlobalToZone,
-	WsPath:         "gateway-routes",
-	KumactlArg:     "gateway-route",
-	KumactlListArg: "gateway-routes",
-	AllowToInspect: false,
-}
-
-const (
 	HealthCheckType model.ResourceType = "HealthCheck"
 )
 
@@ -1047,6 +845,208 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 
 func init() {
 	registry.RegisterType(MeshResourceTypeDescriptor)
+}
+
+const (
+	MeshGatewayType model.ResourceType = "MeshGateway"
+)
+
+var _ model.Resource = &MeshGatewayResource{}
+
+type MeshGatewayResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.MeshGateway
+}
+
+func NewMeshGatewayResource() *MeshGatewayResource {
+	return &MeshGatewayResource{
+		Spec: &mesh_proto.MeshGateway{},
+	}
+}
+
+func (t *MeshGatewayResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *MeshGatewayResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *MeshGatewayResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *MeshGatewayResource) Selectors() []*mesh_proto.Selector {
+	return t.Spec.GetSelectors()
+}
+
+func (t *MeshGatewayResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.MeshGateway)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		if protoType == nil {
+			t.Spec = &mesh_proto.MeshGateway{}
+		} else {
+			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *MeshGatewayResource) Descriptor() model.ResourceTypeDescriptor {
+	return MeshGatewayResourceTypeDescriptor
+}
+
+var _ model.ResourceList = &MeshGatewayResourceList{}
+
+type MeshGatewayResourceList struct {
+	Items      []*MeshGatewayResource
+	Pagination model.Pagination
+}
+
+func (l *MeshGatewayResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *MeshGatewayResourceList) GetItemType() model.ResourceType {
+	return MeshGatewayType
+}
+
+func (l *MeshGatewayResourceList) NewItem() model.Resource {
+	return NewMeshGatewayResource()
+}
+
+func (l *MeshGatewayResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*MeshGatewayResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*MeshGatewayResource)(nil), r)
+	}
+}
+
+func (l *MeshGatewayResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           MeshGatewayType,
+	Resource:       NewMeshGatewayResource(),
+	ResourceList:   &MeshGatewayResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "meshgateways",
+	KumactlArg:     "meshgateway",
+	KumactlListArg: "meshgateways",
+	AllowToInspect: false,
+}
+
+const (
+	MeshGatewayRouteType model.ResourceType = "MeshGatewayRoute"
+)
+
+var _ model.Resource = &MeshGatewayRouteResource{}
+
+type MeshGatewayRouteResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.MeshGatewayRoute
+}
+
+func NewMeshGatewayRouteResource() *MeshGatewayRouteResource {
+	return &MeshGatewayRouteResource{
+		Spec: &mesh_proto.MeshGatewayRoute{},
+	}
+}
+
+func (t *MeshGatewayRouteResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *MeshGatewayRouteResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *MeshGatewayRouteResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *MeshGatewayRouteResource) Selectors() []*mesh_proto.Selector {
+	return t.Spec.GetSelectors()
+}
+
+func (t *MeshGatewayRouteResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.MeshGatewayRoute)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		if protoType == nil {
+			t.Spec = &mesh_proto.MeshGatewayRoute{}
+		} else {
+			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *MeshGatewayRouteResource) Descriptor() model.ResourceTypeDescriptor {
+	return MeshGatewayRouteResourceTypeDescriptor
+}
+
+var _ model.ResourceList = &MeshGatewayRouteResourceList{}
+
+type MeshGatewayRouteResourceList struct {
+	Items      []*MeshGatewayRouteResource
+	Pagination model.Pagination
+}
+
+func (l *MeshGatewayRouteResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *MeshGatewayRouteResourceList) GetItemType() model.ResourceType {
+	return MeshGatewayRouteType
+}
+
+func (l *MeshGatewayRouteResourceList) NewItem() model.Resource {
+	return NewMeshGatewayRouteResource()
+}
+
+func (l *MeshGatewayRouteResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*MeshGatewayRouteResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*MeshGatewayRouteResource)(nil), r)
+	}
+}
+
+func (l *MeshGatewayRouteResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:           MeshGatewayRouteType,
+	Resource:       NewMeshGatewayRouteResource(),
+	ResourceList:   &MeshGatewayRouteResourceList{},
+	ReadOnly:       false,
+	AdminOnly:      false,
+	Scope:          model.ScopeMesh,
+	KDSFlags:       model.FromGlobalToZone,
+	WsPath:         "meshgatewayroutes",
+	KumactlArg:     "meshgatewayroute",
+	KumactlListArg: "meshgatewayroutes",
+	AllowToInspect: false,
 }
 
 const (

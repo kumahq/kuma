@@ -7,8 +7,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-// Validate checks GatewayRouteResource semantic constraints.
-func (g *GatewayRouteResource) Validate() error {
+// Validate checks MeshGatewayRouteResource semantic constraints.
+func (g *MeshGatewayRouteResource) Validate() error {
 	var err validators.ValidationError
 
 	err.Add(ValidateSelectors(
@@ -23,7 +23,7 @@ func (g *GatewayRouteResource) Validate() error {
 		},
 	))
 
-	err.Add(validateGatewayRouteConf(
+	err.Add(validateMeshGatewayRouteConf(
 		validators.RootedAt("conf"),
 		g.Spec.GetConf(),
 	))
@@ -31,24 +31,24 @@ func (g *GatewayRouteResource) Validate() error {
 	return err.OrNil()
 }
 
-func validateGatewayRouteConf(path validators.PathBuilder, conf *mesh_proto.GatewayRoute_Conf) validators.ValidationError {
+func validateMeshGatewayRouteConf(path validators.PathBuilder, conf *mesh_proto.MeshGatewayRoute_Conf) validators.ValidationError {
 	var err validators.ValidationError
 
 	if conf.GetRoute() == nil {
 		err.AddViolationAt(path, "cannot be empty")
 	}
 
-	err.Add(validateGatewayRouteTLS(path.Field("tls"), conf.GetTls()))
-	err.Add(validateGatewayRouteTCP(path.Field("tcp"), conf.GetTcp()))
-	err.Add(validateGatewayRouteUDP(path.Field("udp"), conf.GetUdp()))
-	err.Add(validateGatewayRouteHTTP(path.Field("http"), conf.GetHttp()))
+	err.Add(validateMeshGatewayRouteTLS(path.Field("tls"), conf.GetTls()))
+	err.Add(validateMeshGatewayRouteTCP(path.Field("tcp"), conf.GetTcp()))
+	err.Add(validateMeshGatewayRouteUDP(path.Field("udp"), conf.GetUdp()))
+	err.Add(validateMeshGatewayRouteHTTP(path.Field("http"), conf.GetHttp()))
 
 	return err
 }
 
-func validateGatewayRouteTLS(
+func validateMeshGatewayRouteTLS(
 	path validators.PathBuilder,
-	conf *mesh_proto.GatewayRoute_TlsRoute,
+	conf *mesh_proto.MeshGatewayRoute_TlsRoute,
 ) validators.ValidationError {
 	if conf != nil {
 		return validators.MakeUnimplementedFieldErr(path)
@@ -57,9 +57,9 @@ func validateGatewayRouteTLS(
 	return validators.OK()
 }
 
-func validateGatewayRouteTCP(
+func validateMeshGatewayRouteTCP(
 	path validators.PathBuilder,
-	conf *mesh_proto.GatewayRoute_TcpRoute,
+	conf *mesh_proto.MeshGatewayRoute_TcpRoute,
 ) validators.ValidationError {
 	if conf != nil {
 		return validators.MakeUnimplementedFieldErr(path)
@@ -68,9 +68,9 @@ func validateGatewayRouteTCP(
 	return validators.OK()
 }
 
-func validateGatewayRouteUDP(
+func validateMeshGatewayRouteUDP(
 	path validators.PathBuilder,
-	conf *mesh_proto.GatewayRoute_UdpRoute,
+	conf *mesh_proto.MeshGatewayRoute_UdpRoute,
 ) validators.ValidationError {
 	if conf != nil {
 		return validators.MakeUnimplementedFieldErr(path)
@@ -79,9 +79,9 @@ func validateGatewayRouteUDP(
 	return validators.OK()
 }
 
-func validateGatewayRouteHTTP(
+func validateMeshGatewayRouteHTTP(
 	path validators.PathBuilder,
-	conf *mesh_proto.GatewayRoute_HttpRoute,
+	conf *mesh_proto.MeshGatewayRoute_HttpRoute,
 ) validators.ValidationError {
 	if conf == nil {
 		return validators.OK()
@@ -94,15 +94,15 @@ func validateGatewayRouteHTTP(
 	var err validators.ValidationError
 
 	for i, rule := range conf.GetRules() {
-		err.Add(validateGatewayRouteHTTPRule(path.Field("rules").Index(i), rule))
+		err.Add(validateMeshGatewayRouteHTTPRule(path.Field("rules").Index(i), rule))
 	}
 
 	return err
 }
 
-func validateGatewayRouteHTTPRule(
+func validateMeshGatewayRouteHTTPRule(
 	path validators.PathBuilder,
-	conf *mesh_proto.GatewayRoute_HttpRoute_Rule,
+	conf *mesh_proto.MeshGatewayRoute_HttpRoute_Rule,
 ) validators.ValidationError {
 	var hasRedirect bool
 
@@ -113,7 +113,7 @@ func validateGatewayRouteHTTPRule(
 	var err validators.ValidationError
 
 	for i, m := range conf.GetMatches() {
-		err.Add(validateGatewayRouteHTTPMatch(path.Field("matches").Index(i), m))
+		err.Add(validateMeshGatewayRouteHTTPMatch(path.Field("matches").Index(i), m))
 	}
 
 	for i, f := range conf.GetFilters() {
@@ -121,7 +121,7 @@ func validateGatewayRouteHTTPRule(
 			hasRedirect = true
 		}
 
-		err.Add(validateGatewayRouteHTTPFilter(path.Field("filters").Index(i), f))
+		err.Add(validateMeshGatewayRouteHTTPFilter(path.Field("filters").Index(i), f))
 	}
 
 	// It doesn't make sense to redirect and also mirror or rewrite request headers.
@@ -145,15 +145,15 @@ func validateGatewayRouteHTTPRule(
 	}
 
 	for i, b := range conf.GetBackends() {
-		err.Add(validateGatewayRouteBackend(path.Field("backends").Index(i), b))
+		err.Add(validateMeshGatewayRouteBackend(path.Field("backends").Index(i), b))
 	}
 
 	return err
 }
 
-func validateGatewayRouteHTTPMatch(
+func validateMeshGatewayRouteHTTPMatch(
 	path validators.PathBuilder,
-	conf *mesh_proto.GatewayRoute_HttpRoute_Match,
+	conf *mesh_proto.MeshGatewayRoute_HttpRoute_Match,
 ) validators.ValidationError {
 	var err validators.ValidationError
 
@@ -166,7 +166,7 @@ func validateGatewayRouteHTTPMatch(
 
 	if p := conf.GetPath(); p != nil {
 		switch p.GetMatch() {
-		case mesh_proto.GatewayRoute_HttpRoute_Match_Path_REGEX:
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_REGEX:
 			if p.GetValue() == "" {
 				err.AddViolationAt(path.Field("value"), "cannot be empty")
 			}
@@ -200,16 +200,16 @@ func validateGatewayRouteHTTPMatch(
 	return err
 }
 
-func validateGatewayRouteHTTPFilter(
+func validateMeshGatewayRouteHTTPFilter(
 	path validators.PathBuilder,
-	conf *mesh_proto.GatewayRoute_HttpRoute_Filter,
+	conf *mesh_proto.MeshGatewayRoute_HttpRoute_Filter,
 ) validators.ValidationError {
 	var err validators.ValidationError
 
 	if r := conf.GetRequestHeader(); r != nil {
 		header := func(
 			path validators.PathBuilder,
-			headers []*mesh_proto.GatewayRoute_HttpRoute_Filter_RequestHeader_Header,
+			headers []*mesh_proto.MeshGatewayRoute_HttpRoute_Filter_RequestHeader_Header,
 		) validators.ValidationError {
 			var err validators.ValidationError
 			for i, h := range headers {
@@ -265,7 +265,7 @@ func validateGatewayRouteHTTPFilter(
 		path := path.Field("mirror")
 
 		err.Add(validatePercentage(path, m.GetPercentage()))
-		err.Add(validateGatewayRouteBackend(
+		err.Add(validateMeshGatewayRouteBackend(
 			path.Field("backend"),
 			m.GetBackend(),
 		))
@@ -274,9 +274,9 @@ func validateGatewayRouteHTTPFilter(
 	return err
 }
 
-func validateGatewayRouteBackend(
+func validateMeshGatewayRouteBackend(
 	path validators.PathBuilder,
-	conf *mesh_proto.GatewayRoute_Backend,
+	conf *mesh_proto.MeshGatewayRoute_Backend,
 ) validators.ValidationError {
 	if conf == nil {
 		return validators.MakeRequiredFieldErr(path)

@@ -320,7 +320,7 @@ var (
 			},
 		},
 	}
-	Gateway = &mesh_proto.Gateway{
+	Gateway = &mesh_proto.MeshGateway{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{
 				"kuma.io/service": "gateway",
@@ -329,26 +329,26 @@ var (
 		Tags: map[string]string{
 			"gateway-name": "philip",
 		},
-		Conf: &mesh_proto.Gateway_Conf{
-			Listeners: []*mesh_proto.Gateway_Listener{{
+		Conf: &mesh_proto.MeshGateway_Conf{
+			Listeners: []*mesh_proto.MeshGateway_Listener{{
 				Hostname: "philip.example.com",
 				Port:     8080,
-				Protocol: mesh_proto.Gateway_Listener_HTTP,
+				Protocol: mesh_proto.MeshGateway_Listener_HTTP,
 				Tags: map[string]string{
 					"port": "8080",
 				},
 			}},
 		},
 	}
-	GatewayRoute = &mesh_proto.GatewayRoute{
+	GatewayRoute = &mesh_proto.MeshGatewayRoute{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{
 				"kuma.io/service": "gateway",
 			},
 		}},
-		Conf: &mesh_proto.GatewayRoute_Conf{
-			Route: &mesh_proto.GatewayRoute_Conf_Http{
-				Http: &mesh_proto.GatewayRoute_HttpRoute{},
+		Conf: &mesh_proto.MeshGatewayRoute_Conf{
+			Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
+				Http: &mesh_proto.MeshGatewayRoute_HttpRoute{},
 			},
 		},
 	}

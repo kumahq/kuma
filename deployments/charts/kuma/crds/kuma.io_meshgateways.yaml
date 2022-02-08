@@ -5,14 +5,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: gateways.kuma.io
+  name: meshgateways.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: Gateway
-    listKind: GatewayList
-    plural: gateways
-    singular: gateway
+    kind: MeshGateway
+    listKind: MeshGatewayList
+    plural: meshgateways
+    singular: meshgateway
   scope: Cluster
   versions:
   - name: v1alpha1
@@ -36,7 +36,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: Spec is the specification of the Kuma Gateway resource.
+            description: Spec is the specification of the Kuma MeshGateway resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true

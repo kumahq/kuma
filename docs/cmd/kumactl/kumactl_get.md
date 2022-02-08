@@ -34,16 +34,16 @@ Show Kuma resources.
 * [kumactl get external-services](kumactl_get_external-services.md)	 - Show ExternalService
 * [kumactl get fault-injection](kumactl_get_fault-injection.md)	 - Show a single FaultInjection resource
 * [kumactl get fault-injections](kumactl_get_fault-injections.md)	 - Show FaultInjection
-* [kumactl get gateway](kumactl_get_gateway.md)	 - Show a single Gateway resource
-* [kumactl get gateway-route](kumactl_get_gateway-route.md)	 - Show a single GatewayRoute resource
-* [kumactl get gateway-routes](kumactl_get_gateway-routes.md)	 - Show GatewayRoute
-* [kumactl get gateways](kumactl_get_gateways.md)	 - Show Gateway
 * [kumactl get global-secret](kumactl_get_global-secret.md)	 - Show a single GlobalSecret resource
 * [kumactl get global-secrets](kumactl_get_global-secrets.md)	 - Show GlobalSecret
 * [kumactl get healthcheck](kumactl_get_healthcheck.md)	 - Show a single HealthCheck resource
 * [kumactl get healthchecks](kumactl_get_healthchecks.md)	 - Show HealthCheck
 * [kumactl get mesh](kumactl_get_mesh.md)	 - Show a single Mesh resource
 * [kumactl get meshes](kumactl_get_meshes.md)	 - Show Mesh
+* [kumactl get meshgateway](kumactl_get_meshgateway.md)	 - Show a single MeshGateway resource
+* [kumactl get meshgatewayroute](kumactl_get_meshgatewayroute.md)	 - Show a single MeshGatewayRoute resource
+* [kumactl get meshgatewayroutes](kumactl_get_meshgatewayroutes.md)	 - Show MeshGatewayRoute
+* [kumactl get meshgateways](kumactl_get_meshgateways.md)	 - Show MeshGateway
 * [kumactl get proxytemplate](kumactl_get_proxytemplate.md)	 - Show a single ProxyTemplate resource
 * [kumactl get proxytemplates](kumactl_get_proxytemplates.md)	 - Show ProxyTemplate
 * [kumactl get rate-limit](kumactl_get_rate-limit.md)	 - Show a single RateLimit resource

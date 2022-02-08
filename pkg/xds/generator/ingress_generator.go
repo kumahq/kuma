@@ -111,7 +111,7 @@ func (i IngressGenerator) generateLDS(
 	return inboundListenerBuilder.Build()
 }
 
-func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList, gatewayRoutes *core_mesh.GatewayRouteResourceList) map[string][]envoy_common.Tags {
+func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList, gatewayRoutes *core_mesh.MeshGatewayRouteResourceList) map[string][]envoy_common.Tags {
 	destinations := map[string][]envoy_common.Tags{}
 	for _, tr := range trs.Items {
 		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
@@ -126,7 +126,7 @@ func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList, 
 		}
 	}
 
-	var backends []*mesh_proto.GatewayRoute_Backend
+	var backends []*mesh_proto.MeshGatewayRoute_Backend
 
 	for _, route := range gatewayRoutes.Items {
 		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {

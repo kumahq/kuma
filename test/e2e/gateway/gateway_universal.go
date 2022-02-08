@@ -65,7 +65,7 @@ func GatewayOnUniversal() {
 	JustBeforeEach(func() {
 		Expect(
 			cluster.GetKumactlOptions().KumactlApplyFromString(`
-type: Gateway
+type: MeshGateway
 mesh: default
 name: edge-gateway
 selectors:
@@ -83,7 +83,7 @@ conf:
 
 		Expect(
 			cluster.GetKumactlOptions().KumactlApplyFromString(`
-type: GatewayRoute
+type: MeshGatewayRoute
 mesh: default
 name: edge-gateway
 selectors:
@@ -103,7 +103,7 @@ conf:
 		).To(Succeed())
 
 		Expect(
-			cluster.GetKumactlOptions().KumactlList("gateways", "default"),
+			cluster.GetKumactlOptions().KumactlList("meshgateways", "default"),
 		).To(ContainElement("edge-gateway"))
 	})
 
@@ -159,7 +159,7 @@ conf:
 			// Add new route to the external echo server.
 			Expect(
 				cluster.GetKumactlOptions().KumactlApplyFromString(`
-type: GatewayRoute
+type: MeshGatewayRoute
 mesh: default
 name: external-routes
 selectors:
@@ -206,13 +206,13 @@ networking:
 		JustBeforeEach(func() {
 			// Delete the default gateway that the test fixtures create.
 			Expect(
-				cluster.GetKumactlOptions().KumactlDelete("gateway", "edge-gateway", "default"),
+				cluster.GetKumactlOptions().KumactlDelete("meshgateway", "edge-gateway", "default"),
 			).To(Succeed())
 
 			// And replace it with a HTTPS gateway.
 			Expect(
 				cluster.GetKumactlOptions().KumactlApplyFromString(`
-type: Gateway
+type: MeshGateway
 mesh: default
 name: edge-https-gateway
 selectors:
@@ -248,7 +248,7 @@ data: %s
 			).To(Succeed())
 
 			Expect(
-				cluster.GetKumactlOptions().KumactlList("gateways", "default"),
+				cluster.GetKumactlOptions().KumactlList("meshgateways", "default"),
 			).To(ContainElement("edge-https-gateway"))
 		})
 

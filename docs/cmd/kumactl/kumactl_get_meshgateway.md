@@ -1,19 +1,19 @@
-## kumactl get gateway
+## kumactl get meshgateway
 
-Show a single Gateway resource
+Show a single MeshGateway resource
 
 ### Synopsis
 
-Show a single Gateway resource.
+Show a single MeshGateway resource.
 
 ```
-kumactl get gateway NAME [flags]
+kumactl get meshgateway NAME [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for gateway
+  -h, --help   help for meshgateway
 ```
 
 ### Options inherited from parent commands

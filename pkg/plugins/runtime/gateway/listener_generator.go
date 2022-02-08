@@ -20,10 +20,10 @@ const DefaultConnectionBuffer = 32 * 1024
 // ListenerGenerator generates Kuma gateway listeners.
 type ListenerGenerator struct{}
 
-func (*ListenerGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Protocol) bool {
+func (*ListenerGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
 	switch p {
-	case mesh_proto.Gateway_Listener_HTTP,
-		mesh_proto.Gateway_Listener_HTTPS:
+	case mesh_proto.MeshGateway_Listener_HTTP,
+		mesh_proto.MeshGateway_Listener_HTTPS:
 		return true
 	default:
 		return false

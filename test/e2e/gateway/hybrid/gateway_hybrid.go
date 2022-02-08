@@ -97,7 +97,7 @@ func GatewayHybrid() {
 			func(given testCase) {
 				err := NewClusterSetup().
 					Install(YamlUniversal(`
-type: Gateway
+type: MeshGateway
 mesh: default
 name: edge-gateway
 selectors:
@@ -113,7 +113,7 @@ conf:
 `,
 					)).
 					Install(YamlUniversal(`
-type: GatewayRoute
+type: MeshGatewayRoute
 mesh: default
 name: edge-gateway
 selectors:

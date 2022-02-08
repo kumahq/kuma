@@ -87,7 +87,7 @@ data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBM3ZWM1cvNX
 		},
 		Entry("should generate a single listener",
 			"01-gateway-listener.yaml", `
-type: Gateway
+type: MeshGateway
 mesh: default
 name: edge-gateway
 selectors:
@@ -102,7 +102,7 @@ conf:
 `),
 		Entry("should generate a multiple listeners",
 			"02-gateway-listener.yaml", `
-type: Gateway
+type: MeshGateway
 mesh: default
 name: edge-gateway
 selectors:
@@ -121,7 +121,7 @@ conf:
 `),
 		Entry("should generate listener tracing",
 			"03-gateway-listener.yaml", `
-type: Gateway
+type: MeshGateway
 mesh: tracing
 name: tracing-gateway
 selectors:
@@ -137,7 +137,7 @@ conf:
 
 		Entry("should generate listener logging",
 			"04-gateway-listener.yaml", `
-type: Gateway
+type: MeshGateway
 mesh: logging
 name: logging-gateway
 selectors:
@@ -153,7 +153,7 @@ conf:
 
 		Entry("should order HTTPS wildcard hostnames last",
 			"05-gateway-listener.yaml", `
-type: Gateway
+type: MeshGateway
 mesh: default
 name: default-gateway
 selectors:
@@ -200,7 +200,7 @@ conf:
 
 		Entry("incompatible listeners",
 			"cannot collapse listener protocols", `
-type: Gateway
+type: MeshGateway
 mesh: default
 name: edge-gateway
 selectors:
