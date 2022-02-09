@@ -99,8 +99,7 @@ spec:
 
 	It("should return envoy config_dump for zone ingress", func() {
 		zoneIngressName := fmt.Sprintf("%s.%s", zoneIngress.GetName(), Config.KumaNamespace)
-		url := fmt.Sprintf("localhost:5681/zoneingresses/%s/xds", zoneIngressName)
-		cmd := []string{"wget", "-O-", url}
+		cmd := []string{"kumactl", "inspect", "zoneingress", zoneIngressName, "--config-dump"}
 
 		stdout, _, err := zoneK8s.ExecWithRetries(Config.KumaNamespace, kumaControlPlane.GetName(), "control-plane", cmd...)
 		Expect(err).ToNot(HaveOccurred())

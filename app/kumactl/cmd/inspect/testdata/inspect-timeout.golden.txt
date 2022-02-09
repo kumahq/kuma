@@ -1,0 +1,13 @@
+Affected data plane proxies:
+
+  backend-1:
+    outbound 127.0.0.1:10006(gateway)
+    outbound 127.0.0.1:10007(web)
+    outbound 127.0.0.1:10008(redis)
+
+  redis-1:
+    outbound 127.0.0.1:10006(gateway)
+    outbound 127.0.0.1:10007(web)
+    outbound 127.0.0.1:10008(backend)
+    outbound 127.0.0.1:10009(payments)
+

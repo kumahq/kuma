@@ -26,10 +26,23 @@ Inspect Kuma resources.
 ### SEE ALSO
 
 * [kumactl](kumactl.md)	 - Management tool for Kuma
+* [kumactl inspect circuit-breaker](kumactl_inspect_circuit-breaker.md)	 - Inspect circuit-breaker
+* [kumactl inspect dataplane](kumactl_inspect_dataplane.md)	 - Inspect Dataplane
 * [kumactl inspect dataplanes](kumactl_inspect_dataplanes.md)	 - Inspect Dataplanes
+* [kumactl inspect fault-injection](kumactl_inspect_fault-injection.md)	 - Inspect fault-injection
+* [kumactl inspect healthcheck](kumactl_inspect_healthcheck.md)	 - Inspect healthcheck
 * [kumactl inspect meshes](kumactl_inspect_meshes.md)	 - Inspect Meshes
+* [kumactl inspect proxytemplate](kumactl_inspect_proxytemplate.md)	 - Inspect proxytemplate
+* [kumactl inspect rate-limit](kumactl_inspect_rate-limit.md)	 - Inspect rate-limit
+* [kumactl inspect retry](kumactl_inspect_retry.md)	 - Inspect retry
 * [kumactl inspect services](kumactl_inspect_services.md)	 - Inspect Services
+* [kumactl inspect timeout](kumactl_inspect_timeout.md)	 - Inspect timeout
+* [kumactl inspect traffic-log](kumactl_inspect_traffic-log.md)	 - Inspect traffic-log
+* [kumactl inspect traffic-permission](kumactl_inspect_traffic-permission.md)	 - Inspect traffic-permission
+* [kumactl inspect traffic-route](kumactl_inspect_traffic-route.md)	 - Inspect traffic-route
+* [kumactl inspect traffic-trace](kumactl_inspect_traffic-trace.md)	 - Inspect traffic-trace
 * [kumactl inspect zone-ingresses](kumactl_inspect_zone-ingresses.md)	 - Inspect Zone Ingresses
 * [kumactl inspect zoneegresses](kumactl_inspect_zoneegresses.md)	 - Inspect Zone Egresses
+* [kumactl inspect zoneingress](kumactl_inspect_zoneingress.md)	 - Inspect ZoneIngress
 * [kumactl inspect zones](kumactl_inspect_zones.md)	 - Inspect Zones
 

@@ -40,6 +40,9 @@ type RootRuntime struct {
 	NewBaseAPIServerClient       func(*config_proto.ControlPlaneCoordinates_ApiServer, time.Duration) (util_http.Client, error)
 	NewResourceStore             func(util_http.Client) core_store.ResourceStore
 	NewDataplaneOverviewClient   func(util_http.Client) kumactl_resources.DataplaneOverviewClient
+	NewDataplaneInspectClient    func(util_http.Client) kumactl_resources.DataplaneInspectClient
+	NewZoneIngressInspectClient  func(util_http.Client) kumactl_resources.ZoneIngressInspectClient
+	NewPolicyInspectClient       func(util_http.Client) kumactl_resources.PolicyInspectClient
 	NewZoneIngressOverviewClient func(util_http.Client) kumactl_resources.ZoneIngressOverviewClient
 	NewZoneEgressOverviewClient  func(util_http.Client) kumactl_resources.ZoneEgressOverviewClient
 	NewZoneOverviewClient        func(util_http.Client) kumactl_resources.ZoneOverviewClient
@@ -88,6 +91,9 @@ func DefaultRootContext() *RootContext {
 				return kumactl_resources.NewResourceStore(client, registry.Global().ObjectDescriptors())
 			},
 			NewDataplaneOverviewClient:   kumactl_resources.NewDataplaneOverviewClient,
+			NewDataplaneInspectClient:    kumactl_resources.NewDataplaneInspectClient,
+			NewZoneIngressInspectClient:  kumactl_resources.NewZoneIngressInspectClient,
+			NewPolicyInspectClient:       kumactl_resources.NewPolicyInspectClient,
 			NewZoneIngressOverviewClient: kumactl_resources.NewZoneIngressOverviewClient,
 			NewZoneEgressOverviewClient:  kumactl_resources.NewZoneEgressOverviewClient,
 			NewZoneOverviewClient:        kumactl_resources.NewZoneOverviewClient,
@@ -193,6 +199,30 @@ func (rc *RootContext) CurrentDataplaneOverviewClient() (kumactl_resources.Datap
 		return nil, err
 	}
 	return rc.Runtime.NewDataplaneOverviewClient(client), nil
+}
+
+func (rc *RootContext) CurrentDataplaneInspectClient() (kumactl_resources.DataplaneInspectClient, error) {
+	client, err := rc.BaseAPIServerClient()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewDataplaneInspectClient(client), nil
+}
+
+func (rc *RootContext) CurrentZoneIngressInspectClient() (kumactl_resources.ZoneIngressInspectClient, error) {
+	client, err := rc.BaseAPIServerClient()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewZoneIngressInspectClient(client), nil
+}
+
+func (rc *RootContext) CurrentPolicyInspectClient() (kumactl_resources.PolicyInspectClient, error) {
+	client, err := rc.BaseAPIServerClient()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewPolicyInspectClient(client), nil
 }
 
 func (rc *RootContext) CurrentZoneOverviewClient() (kumactl_resources.ZoneOverviewClient, error) {

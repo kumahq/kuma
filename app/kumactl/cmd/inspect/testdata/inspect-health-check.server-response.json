@@ -1,0 +1,54 @@
+{
+  "total": 1,
+  "items": [
+    {
+      "dataplane": {
+        "mesh": "default",
+        "name": "backend-1"
+      },
+      "attachments": [
+        {
+          "type": "service",
+          "name": "gateway",
+          "service": "gateway"
+        },
+        {
+          "type": "service",
+          "name": "web",
+          "service": "web"
+        }
+      ]
+    },
+    {
+      "dataplane": {
+        "mesh": "default",
+        "name": "web-1"
+      },
+      "attachments": [
+        {
+          "type": "service",
+          "name": "gateway",
+          "service": "gateway"
+        }
+      ]
+    },
+    {
+      "dataplane": {
+        "mesh": "default",
+        "name": "redis-1"
+      },
+      "attachments": [
+        {
+          "type": "service",
+          "name": "gateway",
+          "service": "gateway"
+        },
+        {
+          "type": "service",
+          "name": "web",
+          "service": "web"
+        }
+      ]
+    }
+  ]
+}

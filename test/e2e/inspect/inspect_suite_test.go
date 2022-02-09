@@ -11,9 +11,8 @@ import (
 
 var _ = Describe("Test Inspect API on Universal", inspect.Universal)
 
-// Disabling tests to implement them later using `kumactl` instead of `wget`
-var _ = XDescribe("Test Inspect API on Kubernetes Standalone", inspect.KubernetesStandalone)
-var _ = XDescribe("Test Inspect API on Kubernetes Multizone", inspect.KubernetesMultizone)
+var _ = Describe("Test Inspect API on Kubernetes Standalone", inspect.KubernetesStandalone)
+var _ = Describe("Test Inspect API on Kubernetes Multizone", inspect.KubernetesMultizone)
 
 func TestE2EInspectAPI(t *testing.T) {
 	test.RunSpecs(t, "E2E Inspect API Suite")
