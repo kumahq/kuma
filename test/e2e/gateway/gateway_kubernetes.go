@@ -340,13 +340,13 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: example-kuma-io-certificate
-  namespace: kuma-system
+  namespace: %s
   labels:
     kuma.io/mesh: default 
 data:
   value: %s
 type: system.kuma.io/secret
-`, secretData))).
+`, Config.KumaNamespace, secretData))).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
