@@ -135,14 +135,15 @@ func (d *DataplaneWatchdog) syncIngress() error {
 	return d.ingressReconciler.Reconcile(*envoyCtx, proxy)
 }
 
-// syncEgress syncs state of Egress Dataplane. Notice that it does not use Mesh Hash yet because Egress supports many Meshes.
+// syncEgress syncs state of Egress Dataplane. Notice that it does not use
+// Mesh Hash yet because Egress supports many Meshes.
 func (d *DataplaneWatchdog) syncEgress() error {
 	envoyCtx := &xds_context.Context{
 		ControlPlane: d.envoyCpCtx,
 		Mesh:         xds_context.MeshContext{}, // ZoneEgress does not need MeshContext
 	}
 
-	proxy, err := d.egressProxyBuilder.build(d.key)
+	proxy, err := d.egressProxyBuilder.Build(d.key)
 	if err != nil {
 		return err
 	}

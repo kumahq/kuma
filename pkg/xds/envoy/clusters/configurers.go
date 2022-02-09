@@ -61,7 +61,7 @@ func EdsCluster(name string) ClusterBuilderOpt {
 	})
 }
 
-// ProvidedEndpointCluster sets the cluster with the defined endpoints, this is useful when endpoints are not discovered using EDS so we don't use EdsCluster
+// ProvidedEndpointCluster sets the cluster with the defined endpoints, this is useful when endpoints are not discovered using EDS, so we don't use EdsCluster
 func ProvidedEndpointCluster(name string, hasIPv6 bool, endpoints ...core_xds.Endpoint) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ProvidedEndpointClusterConfigurer{

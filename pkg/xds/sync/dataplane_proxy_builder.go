@@ -78,6 +78,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshConte
 		p.Zone,
 		meshContext.Resources.Dataplanes().Items,
 		meshContext.Resources.ZoneIngresses().Items,
+		meshContext.Resources.ZoneEgresses().Items,
 		matchedExternalServices, p.DataSourceLoader,
 	)
 

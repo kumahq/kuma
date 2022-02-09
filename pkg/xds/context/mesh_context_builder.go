@@ -83,7 +83,10 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 
 	dataplanesByName := map[string]*core_mesh.DataplaneResource{}
-	for _, dp := range resources.Dataplanes().Items {
+
+	dataplanes := resources.Dataplanes().Items
+
+	for _, dp := range dataplanes {
 		dataplanesByName[dp.Meta.GetName()] = dp
 	}
 
@@ -94,15 +97,19 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	// resolve all the domains
 	domains, outbounds := xds_topology.VIPOutbounds(virtualOutboundView, m.topLevelDomain)
 
+	zoneIngresses := resources.ZoneIngresses().Items
+	zoneEgresses := resources.ZoneEgresses().Items
+	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses)
+
 	return &MeshContext{
 		Hash:                newHash,
 		Resource:            mesh,
 		Resources:           resources,
 		DataplanesByName:    dataplanesByName,
-		EndpointMap:         xds_topology.BuildEdsEndpointMap(mesh, m.zone, resources.Dataplanes().Items, resources.ZoneIngresses().Items),
+		EndpointMap:         endpointMap,
 		VIPDomains:          domains,
 		VIPOutbounds:        outbounds,
-		ServiceTLSReadiness: resolveTLSReadiness(mesh, resources.ServiceInsights()),
+		ServiceTLSReadiness: m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
 	}, nil
 }
 
@@ -236,7 +243,7 @@ func configInHash(configName string, meshName string) bool {
 	return configName == vips.ConfigKey(meshName)
 }
 
-func resolveTLSReadiness(mesh *core_mesh.MeshResource, serviceInsights *core_mesh.ServiceInsightResourceList) map[string]bool {
+func (m *meshContextBuilder) resolveTLSReadiness(mesh *core_mesh.MeshResource, serviceInsights *core_mesh.ServiceInsightResourceList) map[string]bool {
 	tlsReady := map[string]bool{}
 
 	backend := mesh.GetEnabledCertificateAuthorityBackend()

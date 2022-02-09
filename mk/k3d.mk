@@ -7,6 +7,9 @@ PORT_PREFIX:=300
 ifeq ($(KIND_CLUSTER_NAME), kuma-2)
 PORT_PREFIX=301
 endif
+ifeq ($(KIND_CLUSTER_NAME), kuma-3)
+PORT_PREFIX=401
+endif
 
 .PHONY: k3d/network/create
 k3d/network/create:

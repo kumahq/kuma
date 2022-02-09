@@ -3,60 +3,144 @@ package sync
 import (
 	"context"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 type EgressProxyBuilder struct {
+	ctx context.Context
+
 	ResManager         manager.ResourceManager
 	ReadOnlyResManager manager.ReadOnlyResourceManager
 	LookupIP           lookup.LookupIPFunc
 	MetadataTracker    DataplaneMetadataTracker
+	meshCache          *xds_cache.Cache
+	DataSourceLoader   datasource.Loader
 
-	apiVersion envoy.APIVersion
+	zone       string
+	apiVersion envoy_common.APIVersion
 }
 
-func filterMeshesByMTLS(rs core_model.Resource) bool {
-	return rs.(*core_mesh.MeshResource).Spec.GetMtls().GetEnabledBackend() != ""
-}
-
-func (p *EgressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, error) {
-	ctx := context.Background()
-
-	zoneEgress := core_mesh.NewZoneEgressResource()
-	if err := p.ReadOnlyResManager.Get(ctx, zoneEgress, core_store.GetBy(key)); err != nil {
+func (p *EgressProxyBuilder) Build(key core_model.ResourceKey) (*xds.Proxy, error) {
+	ze := core_mesh.NewZoneEgressResource()
+	if err := p.ReadOnlyResManager.Get(p.ctx, ze, core_store.GetBy(key)); err != nil {
 		return nil, err
 	}
 
-	var meshes core_mesh.MeshResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &meshes, core_store.ListByFilterFunc(filterMeshesByMTLS)); err != nil {
+	var meshList core_mesh.MeshResourceList
+	if err := p.ReadOnlyResManager.List(
+		p.ctx,
+		&meshList,
+	); err != nil {
 		return nil, err
 	}
 
-	var externalServices []*core_mesh.ExternalServiceResource
-	for _, mesh := range meshes.Items {
+	var meshes []*core_mesh.MeshResource
+	for _, mesh := range meshList.Items {
+		if mesh.MTLSEnabled() {
+			meshes = append(meshes, mesh)
+		}
+	}
+
+	var zoneIngressesList core_mesh.ZoneIngressResourceList
+	if err := p.ReadOnlyResManager.List(
+		p.ctx,
+		&zoneIngressesList,
+	); err != nil {
+		return nil, err
+	}
+
+	var zoneIngresses []*core_mesh.ZoneIngressResource
+	for _, zoneIngress := range zoneIngressesList.Items {
+		if zoneIngress.IsRemoteIngress(p.zone) {
+			zoneIngresses = append(zoneIngresses, zoneIngress)
+		}
+	}
+
+	externalServiceMap := map[string][]*core_mesh.ExternalServiceResource{}
+	meshEndpointMap := map[string]xds.EndpointMap{}
+	trafficRouteMap := map[string][]*core_mesh.TrafficRouteResource{}
+
+	for _, mesh := range meshes {
 		meshName := mesh.GetMeta().GetName()
 
-		var es core_mesh.ExternalServiceResourceList
-		if err := p.ReadOnlyResManager.List(ctx, &es, core_store.ListByMesh(meshName)); err != nil {
+		meshExternalServiceMap := map[string]*core_mesh.ExternalServiceResource{}
+
+		meshCtx, err := p.meshCache.GetMeshContext(p.ctx, syncLog, meshName)
+		if err != nil {
 			return nil, err
 		}
 
-		externalServices = append(externalServices, es.Items...)
+		meshResources := meshCtx.Resources
+		trafficPermissions := meshResources.TrafficPermissions()
+		trafficRoutes := meshResources.TrafficRoutes().Items
+		externalServices := meshResources.ExternalServices()
+
+		trafficRouteMap[meshName] = trafficRoutes
+
+		for _, dp := range meshCtx.DataplanesByName {
+			if !dp.Spec.Matches(map[string]string{
+				mesh_proto.ZoneTag: p.zone,
+			}) {
+				continue
+			}
+
+			allowedExternalServices, err := permissions.MatchExternalServices(
+				dp,
+				externalServices,
+				trafficPermissions,
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, es := range allowedExternalServices {
+				esName := es.GetMeta().GetName()
+
+				if _, ok := meshExternalServiceMap[esName]; !ok {
+					meshExternalServiceMap[esName] = es
+				}
+			}
+		}
+
+		var meshExternalServices []*core_mesh.ExternalServiceResource
+		for _, es := range meshExternalServiceMap {
+			meshExternalServices = append(meshExternalServices, es)
+		}
+
+		externalServiceMap[meshName] = meshExternalServices
+
+		meshEndpointMap[meshName] = xds_topology.BuildRemoteEndpointMap(
+			mesh,
+			p.zone,
+			zoneIngresses,
+			externalServices.Items,
+			p.DataSourceLoader,
+		)
 	}
 
 	proxy := &xds.Proxy{
 		Id:         xds.FromResourceKey(key),
 		APIVersion: p.apiVersion,
 		ZoneEgressProxy: &xds.ZoneEgressProxy{
-			ZoneEgressResource: zoneEgress,
-			Meshes:             meshes.Items,
-			ExternalServices:   externalServices,
+			ZoneEgressResource: ze,
+			DataSourceLoader:   p.DataSourceLoader,
+			ExternalServiceMap: externalServiceMap,
+			Zone:               p.zone,
+			Meshes:             meshes,
+			MeshEndpointMap:    meshEndpointMap,
+			TrafficRouteMap:    trafficRouteMap,
+			ZoneIngresses:      zoneIngresses,
 		},
 		Metadata: p.MetadataTracker.Metadata(key),
 	}

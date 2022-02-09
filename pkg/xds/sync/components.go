@@ -1,6 +1,8 @@
 package sync
 
 import (
+	"context"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -39,13 +41,24 @@ func defaultIngressProxyBuilder(rt core_runtime.Runtime, metadataTracker Datapla
 	}
 }
 
-func defaultEgressProxyBuilder(rt core_runtime.Runtime, metadataTracker DataplaneMetadataTracker, apiVersion envoy.APIVersion) *EgressProxyBuilder {
+func defaultEgressProxyBuilder(
+	ctx context.Context,
+	rt core_runtime.Runtime,
+	metadataTracker DataplaneMetadataTracker,
+	meshCache *mesh.Cache,
+	dataSourceLoader datasource.Loader,
+	apiVersion envoy.APIVersion,
+) *EgressProxyBuilder {
 	return &EgressProxyBuilder{
+		ctx:                ctx,
 		ResManager:         rt.ResourceManager(),
 		ReadOnlyResManager: rt.ReadOnlyResourceManager(),
 		LookupIP:           rt.LookupIP(),
 		MetadataTracker:    metadataTracker,
+		meshCache:          meshCache,
+		DataSourceLoader:   dataSourceLoader,
 		apiVersion:         apiVersion,
+		zone:               rt.Config().Multizone.Zone.Name,
 	}
 }
 
@@ -60,13 +73,31 @@ func DefaultDataplaneWatchdogFactory(
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	apiVersion envoy.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
+	ctx := context.Background()
+	dataSourceLoader := rt.DataSourceLoader()
+	config := rt.Config()
+
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
-		rt.DataSourceLoader(),
-		rt.Config(),
+		dataSourceLoader,
+		config,
 		metadataTracker,
-		apiVersion)
-	ingressProxyBuilder := defaultIngressProxyBuilder(rt, metadataTracker, apiVersion)
-	egressProxyBuilder := defaultEgressProxyBuilder(rt, metadataTracker, apiVersion)
+		apiVersion,
+	)
+
+	ingressProxyBuilder := defaultIngressProxyBuilder(
+		rt,
+		metadataTracker,
+		apiVersion,
+	)
+
+	egressProxyBuilder := defaultEgressProxyBuilder(
+		ctx,
+		rt,
+		metadataTracker,
+		meshSnapshotCache,
+		dataSourceLoader,
+		apiVersion,
+	)
 
 	deps := DataplaneWatchdogDependencies{
 		dataplaneProxyBuilder: dataplaneProxyBuilder,
@@ -81,7 +112,7 @@ func DefaultDataplaneWatchdogFactory(
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,
-		rt.Config().XdsServer.DataplaneConfigurationRefreshInterval,
+		config.XdsServer.DataplaneConfigurationRefreshInterval,
 		deps,
 	)
 }

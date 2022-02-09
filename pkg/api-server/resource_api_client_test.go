@@ -129,14 +129,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 
 	apiServer, err := api_server.NewApiServer(
 		manager.NewResourceManager(store),
-		xds_context.NewMeshContextBuilder(
-			manager.NewResourceManager(store),
-			server.MeshResourceTypes(server.HashMeshExcludedResources),
-			net.LookupIP,
-			cfg.Multizone.Zone.Name,
-			vips.NewPersistence(manager.NewResourceManager(store), config_manager.NewConfigManager(store)),
-			cfg.DNSServer.Domain,
-		),
+		xds_context.NewMeshContextBuilder(manager.NewResourceManager(store), server.MeshResourceTypes(server.HashMeshExcludedResources), net.LookupIP, cfg.Multizone.Zone.Name, vips.NewPersistence(manager.NewResourceManager(store), config_manager.NewConfigManager(store)), cfg.DNSServer.Domain),
 		customization.NewAPIList(),
 		append(registry.Global().ObjectDescriptors(model.HasWsEnabled()), sample_model.TrafficRouteResourceTypeDescriptor),
 		&cfg,

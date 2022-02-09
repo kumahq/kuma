@@ -12,6 +12,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -80,7 +81,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	}
 	resources.AddSet(cdsResources)
 
-	edsResources, err := g.generateEDS(ctx, services, proxy.APIVersion)
+	edsResources, err := generateEDS(ctx, services, proxy)
 	if err != nil {
 		return nil, err
 	}
@@ -180,6 +181,7 @@ func (_ OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *mode
 
 func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services envoy_common.Services, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
+
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
@@ -194,10 +196,28 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 				Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
 
+			clusterName := cluster.Name()
+			clusterTags := []envoy_common.Tags{cluster.Tags()}
+
 			if service.HasExternalService() {
-				edsClusterBuilder.
-					Configure(envoy_clusters.ProvidedEndpointCluster(cluster.Name(), proxy.Dataplane.IsIPv6(), proxy.Routing.OutboundTargets[serviceName]...)).
-					Configure(envoy_clusters.ClientSideTLS(proxy.Routing.OutboundTargets[serviceName]))
+				if len(ctx.Mesh.Resources.ZoneEgresses().Items) > 0 {
+					edsClusterBuilder.
+						Configure(envoy_clusters.EdsCluster(clusterName)).
+						Configure(envoy_clusters.ClientSideMTLS(
+							ctx,
+							mesh_proto.ZoneEgressServiceName,
+							tlsReady,
+							clusterTags,
+						))
+				} else {
+					endpoints := proxy.Routing.OutboundTargets[serviceName]
+					isIPv6 := proxy.Dataplane.IsIPv6()
+
+					edsClusterBuilder.
+						Configure(envoy_clusters.ProvidedEndpointCluster(clusterName, isIPv6, endpoints...)).
+						Configure(envoy_clusters.ClientSideTLS(endpoints))
+				}
+
 				switch protocol {
 				case core_mesh.ProtocolHTTP:
 					edsClusterBuilder.Configure(envoy_clusters.Http())
@@ -207,17 +227,19 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				}
 			} else {
 				edsClusterBuilder.
-					Configure(envoy_clusters.EdsCluster(cluster.Name())).
+					Configure(envoy_clusters.EdsCluster(clusterName)).
 					Configure(envoy_clusters.LB(cluster.LB())).
-					Configure(envoy_clusters.ClientSideMTLS(ctx, serviceName, tlsReady, []envoy_common.Tags{cluster.Tags()})).
+					Configure(envoy_clusters.ClientSideMTLS(ctx, serviceName, tlsReady, clusterTags)).
 					Configure(envoy_clusters.Http2())
 			}
+
 			edsCluster, err := edsClusterBuilder.Build()
 			if err != nil {
-				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", cluster.Name())
+				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)
 			}
+
 			resources.Add(&model.Resource{
-				Name:     cluster.Name(),
+				Name:     clusterName,
 				Origin:   OriginOutbound,
 				Resource: edsCluster,
 			})
@@ -227,8 +249,14 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 	return resources, nil
 }
 
-func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, services envoy_common.Services, apiVersion envoy_common.APIVersion) (*model.ResourceSet, error) {
+func generateEDS(
+	ctx xds_context.Context,
+	services envoy_common.Services,
+	proxy *model.Proxy,
+) (*model.ResourceSet, error) {
+	apiVersion := proxy.APIVersion
 	resources := model.NewResourceSet()
+
 	for _, serviceName := range services.Sorted() {
 		// Endpoints for ExternalServices are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
@@ -243,8 +271,40 @@ func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, services en
 					Resource: loadAssignment,
 				})
 			}
+		} else {
+			// TODO (bartsmykla): we should be able to reuse code above
+			zoneEgresses := ctx.Mesh.Resources.ZoneEgresses().Items
+
+			if len(zoneEgresses) > 0 {
+				var endpoints []model.Endpoint
+
+				for _, egress := range zoneEgresses {
+					egressNetworking := egress.Spec.GetNetworking()
+
+					endpoints = append(endpoints, model.Endpoint{
+						Target: egressNetworking.GetAddress(),
+						Port:   egressNetworking.GetPort(),
+						Weight: 1,
+					})
+				}
+
+				loadAssignment, err := envoy_endpoints.CreateClusterLoadAssignment(
+					serviceName,
+					endpoints,
+					apiVersion,
+				)
+				if err != nil {
+					return nil, err
+				}
+
+				resources.Add(&model.Resource{
+					Name:     serviceName,
+					Resource: loadAssignment,
+				})
+			}
 		}
 	}
+
 	return resources, nil
 }
 

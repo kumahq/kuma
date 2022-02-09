@@ -28,11 +28,41 @@ func BuildEndpointMap(
 	zone string,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
+	zoneEgresses []*core_mesh.ZoneEgressResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
-	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses)
+	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses, zoneEgresses)
 	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
+	return outbound
+}
+
+// BuildRemoteEndpointMap creates a map of endpoints that match given selectors
+// and are not local for the provided zone (external services and services
+// behind remote zone ingress only)
+func BuildRemoteEndpointMap(
+	mesh *core_mesh.MeshResource,
+	zone string,
+	zoneIngresses []*core_mesh.ZoneIngressResource,
+	externalServices []*core_mesh.ExternalServiceResource,
+	loader datasource.Loader,
+) core_xds.EndpointMap {
+	outbound := core_xds.EndpointMap{}
+
+	fillIngressOutbounds(outbound, zoneIngresses, nil, zone, mesh)
+	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
+
+	for serviceName, endpoints := range outbound {
+		var newEndpoints []core_xds.Endpoint
+
+		for _, endpoint := range endpoints {
+			endpoint.Tags["mesh"] = mesh.GetMeta().GetName()
+			newEndpoints = append(newEndpoints, endpoint)
+		}
+
+		outbound[serviceName] = newEndpoints
+	}
+
 	return outbound
 }
 
@@ -41,9 +71,16 @@ func BuildEdsEndpointMap(
 	zone string,
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
+	zoneEgresses []*core_mesh.ZoneEgressResource,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zone, mesh)
+	ingressInstances := fillIngressOutbounds(
+		outbound,
+		zoneIngresses,
+		zoneEgresses,
+		zone,
+		mesh,
+	)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
@@ -72,63 +109,135 @@ func BuildEdsEndpointMap(
 //    * backend-zone1-2 - weight: 2
 //    * ingress-zone2-1 - weight: 3
 //    * ingress-zone2-2 - weight: 3
-func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, endpointWeight uint32) {
+func fillDataplaneOutbounds(
+	outbound core_xds.EndpointMap,
+	dataplanes []*core_mesh.DataplaneResource,
+	mesh *core_mesh.MeshResource,
+	endpointWeight uint32,
+) {
 	for _, dataplane := range dataplanes {
-		for _, inbound := range dataplane.Spec.GetNetworking().GetHealthyInbounds() {
-			service := inbound.Tags[mesh_proto.ServiceTag]
-			iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
+		dpSpec := dataplane.Spec
+		dpNetworking := dpSpec.GetNetworking()
+
+		for _, inbound := range dpNetworking.GetHealthyInbounds() {
+			inboundTags := inbound.GetTags()
+			serviceName := inboundTags[mesh_proto.ServiceTag]
+			inboundInterface := dpNetworking.ToInboundInterface(inbound)
+			inboundAddress := inboundInterface.DataplaneAdvertisedIP
+			inboundPort := inboundInterface.DataplanePort
+
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?
-			outbound[service] = append(outbound[service], core_xds.Endpoint{
-				Target:   iface.DataplaneAdvertisedIP,
-				Port:     iface.DataplanePort,
-				Tags:     inbound.Tags,
+			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
+				Target:   inboundAddress,
+				Port:     inboundPort,
+				Tags:     inboundTags,
 				Weight:   endpointWeight,
-				Locality: localityFromTags(mesh, priorityLocal, inbound.Tags),
+				Locality: localityFromTags(mesh, priorityLocal, inboundTags),
 			})
 		}
 	}
 }
 
+func buildCoordinates(address string, port uint32) string {
+	return net.JoinHostPort(
+		address,
+		strconv.FormatUint(uint64(port), 10),
+	)
+}
+
 func fillIngressOutbounds(
 	outbound core_xds.EndpointMap,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
+	zoneEgresses []*core_mesh.ZoneEgressResource,
 	zone string,
 	mesh *core_mesh.MeshResource,
 ) uint32 {
-	ingressInstances := map[string]bool{}
+	ziInstances := map[string]struct{}{}
+
 	for _, zi := range zoneIngresses {
 		if !zi.IsRemoteIngress(zone) {
 			continue
 		}
+
 		if !mesh.MTLSEnabled() {
-			// Ingress routes the request by TLS SNI, therefore for cross cluster communication MTLS is required
-			// We ignore Ingress from endpoints if MTLS is disabled, otherwise we would fail anyway.
+			// Ingress routes the request by TLS SNI, therefore for cross
+			// cluster communication MTLS is required.
+			// We ignore Ingress from endpoints if MTLS is disabled, otherwise
+			// we would fail anyway.
 			continue
 		}
+
 		if !zi.HasPublicAddress() {
-			continue // Zone Ingress is not reachable yet from other clusters. This may happen when Ingress Service is pending waiting on External IP on Kubernetes.
+			// Zone Ingress is not reachable yet from other clusters.
+			// This may happen when Ingress Service is pending waiting on
+			// External IP on Kubernetes.
+			continue
 		}
-		ingressCoordinates := net.JoinHostPort(zi.Spec.GetNetworking().GetAdvertisedAddress(), strconv.FormatUint(uint64(zi.Spec.GetNetworking().GetAdvertisedPort()), 10))
-		if ingressInstances[ingressCoordinates] {
-			continue // many Ingress instances can be placed in front of one load balancer (all instances can have the same public address and port). In this case we only need one Instance avoiding creating unnecessary duplicated endpoints
+
+		ziSpec := zi.Spec
+		ziNetworking := ziSpec.GetNetworking()
+		ziAddress := ziNetworking.GetAdvertisedAddress()
+		ziPort := ziNetworking.GetAdvertisedPort()
+		ziCoordinates := buildCoordinates(ziAddress, ziPort)
+
+		if _, ok := ziInstances[ziCoordinates]; ok {
+			// many Ingress instances can be placed in front of one load
+			// balancer (all instances can have the same public address and
+			// port).
+			// In this case we only need one Instance avoiding creating
+			// unnecessary duplicated endpoints
+			continue
 		}
-		ingressInstances[ingressCoordinates] = true
-		for _, service := range zi.Spec.GetAvailableServices() {
+
+		ziInstances[ziCoordinates] = struct{}{}
+
+		for _, service := range ziSpec.GetAvailableServices() {
 			if service.Mesh != mesh.GetMeta().GetName() {
 				continue
 			}
-			serviceName := service.Tags[mesh_proto.ServiceTag]
-			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-				Target:   zi.Spec.GetNetworking().GetAdvertisedAddress(),
-				Port:     zi.Spec.GetNetworking().GetAdvertisedPort(),
-				Tags:     service.Tags,
-				Weight:   service.Instances,
-				Locality: localityFromTags(mesh, priorityRemote, service.Tags),
-			})
+
+			serviceTags := service.GetTags()
+			serviceName := serviceTags[mesh_proto.ServiceTag]
+			serviceInstances := service.GetInstances()
+			locality := localityFromTags(mesh, priorityRemote, serviceTags)
+
+			for _, ze := range zoneEgresses {
+				zeSpec := ze.Spec
+				zeNetworking := zeSpec.GetNetworking()
+				zeAddress := zeNetworking.GetAddress()
+				zePort := zeNetworking.GetPort()
+
+				endpoint := core_xds.Endpoint{
+					Target:   zeAddress,
+					Port:     zePort,
+					Tags:     serviceTags,
+					Weight:   serviceInstances,
+					Locality: locality,
+				}
+
+				outbound[serviceName] = append(outbound[serviceName], endpoint)
+			}
+
+			// If there are any zone egresses, we already prepared all necessary
+			// endpoints above
+			if len(zoneEgresses) > 0 {
+				continue
+			}
+
+			endpoint := core_xds.Endpoint{
+				Target:   ziAddress,
+				Port:     ziPort,
+				Tags:     serviceTags,
+				Weight:   serviceInstances,
+				Locality: locality,
+			}
+
+			outbound[serviceName] = append(outbound[serviceName], endpoint)
 		}
 	}
-	return uint32(len(ingressInstances))
+
+	return uint32(len(ziInstances))
 }
 
 func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServices []*core_mesh.ExternalServiceResource, mesh *core_mesh.MeshResource, loader datasource.Loader, zone string) {

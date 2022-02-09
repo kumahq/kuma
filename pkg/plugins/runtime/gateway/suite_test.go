@@ -120,14 +120,7 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	control, err := xds_context.BuildControlPlaneContext(cache, secrets)
 	Expect(err).To(Succeed())
 
-	meshCtxBuilder := xds_context.NewMeshContextBuilder(
-		rt.ReadOnlyResourceManager(),
-		server.MeshResourceTypes(server.HashMeshExcludedResources),
-		rt.LookupIP(),
-		rt.Config().Multizone.Zone.Name,
-		vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()),
-		rt.Config().DNSServer.Domain,
-	)
+	meshCtxBuilder := xds_context.NewMeshContextBuilder(rt.ReadOnlyResourceManager(), server.MeshResourceTypes(server.HashMeshExcludedResources), rt.LookupIP(), rt.Config().Multizone.Zone.Name, vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager()), rt.Config().DNSServer.Domain)
 
 	meshCtx, err := meshCtxBuilder.Build(context.TODO(), key.Mesh)
 	Expect(err).To(Succeed())
