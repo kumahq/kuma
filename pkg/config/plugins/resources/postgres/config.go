@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -43,6 +45,18 @@ type PostgresStoreConfig struct {
 	MaxReconnectInterval time.Duration `yaml:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
 }
 
+func (cfg PostgresStoreConfig) ConnectionString() (string, error) {
+	mode, err := cfg.TLS.Mode.postgresMode()
+	if err != nil {
+		return "", err
+	}
+	escape := func(value string) string { return strings.ReplaceAll(strings.ReplaceAll(value, `\`, `\\`), `'`, `\'`) }
+	return fmt.Sprintf(
+		`host='%s' port=%d user='%s' password='%s' dbname='%s' connect_timeout=%d sslmode=%s sslcert='%s' sslkey='%s' sslrootcert='%s'`,
+		escape(cfg.Host), cfg.Port, escape(cfg.User), escape(cfg.Password), escape(cfg.DbName), cfg.ConnectionTimeout, mode, escape(cfg.TLS.CertPath), escape(cfg.TLS.KeyPath), escape(cfg.TLS.CAPath),
+	), nil
+}
+
 // Modes available here https://godoc.org/github.com/lib/pq
 type TLSMode string
 
@@ -55,6 +69,21 @@ const (
 	// Always TLS (verify that the certification presented by the server was signed by a trusted CA and the server host name matches the one in the certificate)
 	VerifyFull TLSMode = "verifyFull"
 )
+
+func (mode TLSMode) postgresMode() (string, error) {
+	switch mode {
+	case Disable:
+		return "disable", nil
+	case VerifyNone:
+		return "require", nil
+	case VerifyCa:
+		return "verify-ca", nil
+	case VerifyFull:
+		return "verify-full", nil
+	default:
+		return "", errors.Errorf("could not translate mode %q to postgres mode", mode)
+	}
+}
 
 type TLSPostgresStoreConfig struct {
 	// Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
