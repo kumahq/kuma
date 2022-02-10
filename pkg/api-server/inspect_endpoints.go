@@ -38,6 +38,8 @@ func (f fakeDataSourceLoader) Load(ctx context.Context, mesh string, source *sys
 	return []byte("secret"), nil
 }
 
+var CustomizeProxy func(meshContext xds_context.MeshContext, proxy *core_xds.Proxy) error
+
 func getMatchedPolicies(cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey) (*core_xds.MatchedPolicies, *core_mesh.DataplaneResource, error) {
 	proxyBuilder := sync.DefaultDataplaneProxyBuilder(
 		&fakeDataSourceLoader{},
@@ -47,6 +49,11 @@ func getMatchedPolicies(cfg *kuma_cp.Config, meshContext xds_context.MeshContext
 	if proxy, err := proxyBuilder.Build(dataplaneKey, meshContext); err != nil {
 		return nil, nil, err
 	} else {
+		if CustomizeProxy != nil {
+			if err := CustomizeProxy(meshContext, proxy); err != nil {
+				return nil, nil, err
+			}
+		}
 		return &proxy.Policies, proxy.Dataplane, nil
 	}
 }
