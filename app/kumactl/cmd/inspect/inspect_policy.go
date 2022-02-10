@@ -42,8 +42,8 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s NAME", policyDesc.KumactlArg),
-		Short: fmt.Sprintf("Inspect %s", policyDesc.KumactlArg),
-		Long:  fmt.Sprintf("Inspect %s.", policyDesc.KumactlArg),
+		Short: fmt.Sprintf("Inspect %s", policyDesc.Name),
+		Long:  fmt.Sprintf("Inspect %s.", policyDesc.Name),
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := pctx.CurrentPolicyInspectClient()
