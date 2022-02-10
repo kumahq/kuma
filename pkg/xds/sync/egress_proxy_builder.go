@@ -31,9 +31,15 @@ type EgressProxyBuilder struct {
 	apiVersion envoy_common.APIVersion
 }
 
-func (p *EgressProxyBuilder) Build(key core_model.ResourceKey) (*xds.Proxy, error) {
-	ze := core_mesh.NewZoneEgressResource()
-	if err := p.ReadOnlyResManager.Get(p.ctx, ze, core_store.GetBy(key)); err != nil {
+func (p *EgressProxyBuilder) Build(
+	key core_model.ResourceKey,
+) (*xds.Proxy, error) {
+	zoneEgress := core_mesh.NewZoneEgressResource()
+	if err := p.ReadOnlyResManager.Get(
+		p.ctx,
+		zoneEgress,
+		core_store.GetBy(key),
+	); err != nil {
 		return nil, err
 	}
 
@@ -45,6 +51,8 @@ func (p *EgressProxyBuilder) Build(key core_model.ResourceKey) (*xds.Proxy, erro
 		return nil, err
 	}
 
+	// As egress is using SNI to identify the services, we need to filter out
+	// meshes with no mTLS enabled
 	var meshes []*core_mesh.MeshResource
 	for _, mesh := range meshList.Items {
 		if mesh.MTLSEnabled() {
@@ -60,6 +68,7 @@ func (p *EgressProxyBuilder) Build(key core_model.ResourceKey) (*xds.Proxy, erro
 		return nil, err
 	}
 
+	// We don't want to process services from our local zone ingress
 	var zoneIngresses []*core_mesh.ZoneIngressResource
 	for _, zoneIngress := range zoneIngressesList.Items {
 		if zoneIngress.IsRemoteIngress(p.zone) {
@@ -133,7 +142,7 @@ func (p *EgressProxyBuilder) Build(key core_model.ResourceKey) (*xds.Proxy, erro
 		Id:         xds.FromResourceKey(key),
 		APIVersion: p.apiVersion,
 		ZoneEgressProxy: &xds.ZoneEgressProxy{
-			ZoneEgressResource: ze,
+			ZoneEgressResource: zoneEgress,
 			DataSourceLoader:   p.DataSourceLoader,
 			ExternalServiceMap: externalServiceMap,
 			Zone:               p.zone,
