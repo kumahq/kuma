@@ -5,6 +5,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -83,19 +84,21 @@ func (p *EgressProxyBuilder) Build(
 		externalServices := meshCtx.Resources.ExternalServices().Items
 
 		meshResources := &xds.MeshResources{
-			Mesh:               mesh,
-			TrafficRoutes:      trafficRoutes,
-			ExternalServices:   externalServices,
-			TrafficPermissions: trafficPermissions,
+			Mesh:             mesh,
+			TrafficRoutes:    trafficRoutes,
+			ExternalServices: externalServices,
+			EndpointMap: xds_topology.BuildRemoteEndpointMap(
+				mesh,
+				p.zone,
+				zoneIngresses,
+				externalServices,
+				p.DataSourceLoader,
+			),
+			ExternalServicePermissionMap: permissions.BuildExternalServicesPermissionsMapForZoneEgress(
+				externalServices,
+				trafficPermissions,
+			),
 		}
-
-		meshResources.EndpointMap = xds_topology.BuildRemoteEndpointMap(
-			mesh,
-			p.zone,
-			zoneIngresses,
-			externalServices,
-			p.DataSourceLoader,
-		)
 
 		meshResourcesList = append(meshResourcesList, meshResources)
 	}

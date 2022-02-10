@@ -20,6 +20,16 @@ networking:
   address: 192.168.0.1
   port: 10002
 ---
+type: TrafficPermission
+name: allow-all-traffic
+mesh: mesh-1
+sources:
+- match:
+    kuma.io/service: '*'
+destinations:
+- match:
+    kuma.io/service: '*'
+---
 type: TrafficRoute
 name: trafficroute-0
 mesh: mesh-1

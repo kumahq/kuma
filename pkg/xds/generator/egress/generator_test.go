@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -46,6 +47,7 @@ var _ = Describe("EgressGenerator", func() {
 		func(given testCase) {
 			var zoneEgress *core_mesh.ZoneEgressResource
 			var zoneIngresses []*core_mesh.ZoneIngressResource
+			var trafficPermissions []*core_mesh.TrafficPermissionResource
 
 			meshResourcesMap := map[string]*core_xds.MeshResources{}
 
@@ -72,6 +74,8 @@ var _ = Describe("EgressGenerator", func() {
 					zoneEgress = res.(*core_mesh.ZoneEgressResource)
 				case core_mesh.ZoneIngressType:
 					zoneIngresses = append(zoneIngresses, res.(*core_mesh.ZoneIngressResource))
+				case core_mesh.TrafficPermissionType:
+					trafficPermissions = append(trafficPermissions, res.(*core_mesh.TrafficPermissionResource))
 				case core_mesh.MeshType:
 					meshName := res.GetMeta().GetName()
 
@@ -112,6 +116,11 @@ var _ = Describe("EgressGenerator", func() {
 					zoneIngresses,
 					meshResources.ExternalServices,
 					&loader,
+				)
+
+				meshResources.ExternalServicePermissionMap = permissions.BuildExternalServicesPermissionsMapForZoneEgress(
+					meshResources.ExternalServices,
+					trafficPermissions,
 				)
 			}
 
@@ -169,6 +178,10 @@ var _ = Describe("EgressGenerator", func() {
 		Entry("04. custom trafficroute, mixed internal and external services", testCase{
 			fileWithResourcesName: "04.mixed-services-custom-trafficroute.yaml",
 			expected:              "04.mixed-services-custom-trafficroute.golden.yaml",
+		}),
+		Entry("05. custom trafficpermission, mixed internal and external services", testCase{
+			fileWithResourcesName: "05.mixed-services-with-custom-trafficpermissions.yaml",
+			expected:              "05.mixed-services-with-custom-trafficpermissions.golden.yaml",
 		}),
 	)
 })

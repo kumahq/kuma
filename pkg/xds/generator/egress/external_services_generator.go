@@ -148,6 +148,13 @@ func (*ExternalServicesGenerator) addFilterChains(
 				envoy_listeners.ServerSideMTLS(info.MeshResources.Mesh),
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(sni),
+				envoy_listeners.NetworkRBAC(
+					serviceName,
+					// Zone Egress will configure these filter chains only for
+					// meshes with mTLS enabled, so we can safely pass here true
+					true,
+					info.MeshResources.ExternalServicePermissionMap[serviceName],
+				),
 			)
 
 			protocol := endpoints[0].Tags[mesh_proto.ProtocolTag]

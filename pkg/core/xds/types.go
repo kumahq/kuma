@@ -110,6 +110,8 @@ type RateLimitsMap struct {
 	Outbound OutboundRateLimitsMap
 }
 
+type ExternalServicePermissionMap map[ServiceName]*core_mesh.TrafficPermissionResource
+
 type CLACache interface {
 	GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion, endpointMap EndpointMap) (proto.Message, error)
 }
@@ -140,11 +142,11 @@ type Proxy struct {
 }
 
 type MeshResources struct {
-	Mesh               *core_mesh.MeshResource
-	TrafficRoutes      []*core_mesh.TrafficRouteResource
-	ExternalServices   []*core_mesh.ExternalServiceResource
-	TrafficPermissions []*core_mesh.TrafficPermissionResource
-	EndpointMap        EndpointMap
+	Mesh                         *core_mesh.MeshResource
+	TrafficRoutes                []*core_mesh.TrafficRouteResource
+	ExternalServices             []*core_mesh.ExternalServiceResource
+	ExternalServicePermissionMap ExternalServicePermissionMap
+	EndpointMap                  EndpointMap
 }
 
 type ZoneEgressProxy struct {

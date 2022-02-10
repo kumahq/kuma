@@ -200,7 +200,9 @@ resources:
                 permissions:
                 - any: true
                 principals:
-                - any: true
+                - authenticated:
+                    principalName:
+                      exact: spiffe://zone-1/backend
           statPrefix: externalservice-1.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:

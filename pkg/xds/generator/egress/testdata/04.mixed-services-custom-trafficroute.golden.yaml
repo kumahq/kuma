@@ -151,6 +151,17 @@ resources:
         - externalservice-2{mesh=mesh-1}
         transportProtocol: tls
       filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              allow-all-traffic:
+                permissions:
+                - any: true
+                principals:
+                - any: true
+          statPrefix: externalservice-2.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
