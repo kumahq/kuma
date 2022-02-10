@@ -368,7 +368,14 @@ func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
 	apiServer, err := NewApiServer(
 		rt.ResourceManager(),
-		xds_context.NewMeshContextBuilder(rt.ResourceManager(), server.MeshResourceTypes(server.HashMeshExcludedResources), net.LookupIP, cfg.Multizone.Zone.Name, vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()), cfg.DNSServer.Domain),
+		xds_context.NewMeshContextBuilder(
+			rt.ResourceManager(),
+			server.MeshResourceTypes(server.HashMeshExcludedResources),
+			net.LookupIP,
+			cfg.Multizone.Zone.Name,
+			vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
+			cfg.DNSServer.Domain,
+		),
 		rt.APIInstaller(),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

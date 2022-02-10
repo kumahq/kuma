@@ -3,10 +3,8 @@ package sync
 import (
 	"context"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -44,10 +42,7 @@ func (p *EgressProxyBuilder) Build(
 	}
 
 	var meshList core_mesh.MeshResourceList
-	if err := p.ReadOnlyResManager.List(
-		p.ctx,
-		&meshList,
-	); err != nil {
+	if err := p.ReadOnlyResManager.List(p.ctx, &meshList); err != nil {
 		return nil, err
 	}
 
@@ -61,10 +56,7 @@ func (p *EgressProxyBuilder) Build(
 	}
 
 	var zoneIngressesList core_mesh.ZoneIngressResourceList
-	if err := p.ReadOnlyResManager.List(
-		p.ctx,
-		&zoneIngressesList,
-	); err != nil {
+	if err := p.ReadOnlyResManager.List(p.ctx, &zoneIngressesList); err != nil {
 		return nil, err
 	}
 
@@ -76,66 +68,36 @@ func (p *EgressProxyBuilder) Build(
 		}
 	}
 
-	externalServiceMap := map[string][]*core_mesh.ExternalServiceResource{}
-	meshEndpointMap := map[string]xds.EndpointMap{}
-	trafficRouteMap := map[string][]*core_mesh.TrafficRouteResource{}
+	var meshResourcesList []*xds.MeshResources
 
 	for _, mesh := range meshes {
 		meshName := mesh.GetMeta().GetName()
-
-		meshExternalServiceMap := map[string]*core_mesh.ExternalServiceResource{}
 
 		meshCtx, err := p.meshCache.GetMeshContext(p.ctx, syncLog, meshName)
 		if err != nil {
 			return nil, err
 		}
 
-		meshResources := meshCtx.Resources
-		trafficPermissions := meshResources.TrafficPermissions()
-		trafficRoutes := meshResources.TrafficRoutes().Items
-		externalServices := meshResources.ExternalServices()
+		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
+		trafficRoutes := meshCtx.Resources.TrafficRoutes().Items
+		externalServices := meshCtx.Resources.ExternalServices().Items
 
-		trafficRouteMap[meshName] = trafficRoutes
-
-		for _, dp := range meshCtx.DataplanesByName {
-			if !dp.Spec.Matches(map[string]string{
-				mesh_proto.ZoneTag: p.zone,
-			}) {
-				continue
-			}
-
-			allowedExternalServices, err := permissions.MatchExternalServices(
-				dp,
-				externalServices,
-				trafficPermissions,
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			for _, es := range allowedExternalServices {
-				esName := es.GetMeta().GetName()
-
-				if _, ok := meshExternalServiceMap[esName]; !ok {
-					meshExternalServiceMap[esName] = es
-				}
-			}
+		meshResources := &xds.MeshResources{
+			Mesh:               mesh,
+			TrafficRoutes:      trafficRoutes,
+			ExternalServices:   externalServices,
+			TrafficPermissions: trafficPermissions,
 		}
 
-		var meshExternalServices []*core_mesh.ExternalServiceResource
-		for _, es := range meshExternalServiceMap {
-			meshExternalServices = append(meshExternalServices, es)
-		}
-
-		externalServiceMap[meshName] = meshExternalServices
-
-		meshEndpointMap[meshName] = xds_topology.BuildRemoteEndpointMap(
+		meshResources.EndpointMap = xds_topology.BuildRemoteEndpointMap(
 			mesh,
 			p.zone,
 			zoneIngresses,
-			externalServices.Items,
+			externalServices,
 			p.DataSourceLoader,
 		)
+
+		meshResourcesList = append(meshResourcesList, meshResources)
 	}
 
 	proxy := &xds.Proxy{
@@ -143,13 +105,8 @@ func (p *EgressProxyBuilder) Build(
 		APIVersion: p.apiVersion,
 		ZoneEgressProxy: &xds.ZoneEgressProxy{
 			ZoneEgressResource: zoneEgress,
-			DataSourceLoader:   p.DataSourceLoader,
-			ExternalServiceMap: externalServiceMap,
-			Zone:               p.zone,
-			Meshes:             meshes,
-			MeshEndpointMap:    meshEndpointMap,
-			TrafficRouteMap:    trafficRouteMap,
 			ZoneIngresses:      zoneIngresses,
+			MeshResourcesList:  meshResourcesList,
 		},
 		Metadata: p.MetadataTracker.Metadata(key),
 	}

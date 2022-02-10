@@ -98,7 +98,7 @@ func NewEgressProxyProfile() ResourceGenerator {
 		SecretsProxyGenerator{},
 		egress.Generator{
 			Generators: []egress.ZoneEgressGenerator{
-				&egress.ListenerGenerator{},
+				&egress.InternalServicesGenerator{},
 				&egress.ExternalServicesGenerator{},
 			},
 		},

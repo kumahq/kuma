@@ -3,7 +3,6 @@ package egress
 import (
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -25,36 +24,17 @@ var (
 	log = core.Log.WithName("xds").WithName("generator").WithName("egress")
 )
 
-type Destination struct {
-	Destination envoy_common.Tags
-	Weight      uint32
-
-	IsExternalService bool
-}
-
 type Listener struct {
 	Address      string
 	Port         uint32
 	ResourceName string
 }
 
-// Resources tracks partially-built xDS resources that can be updated
-// by multiple zoneegress generators.
-type Resources struct {
-	Listener *envoy_listeners.ListenerBuilder
-}
-
 type ResourceInfo struct {
 	Proxy *core_xds.Proxy
-	Mesh  *core_mesh.MeshResource
 
-	Listener         Listener
-	Resources        Resources
-	Destinations     []*Destination
-	EndpointMap      core_xds.EndpointMap
-	ExternalServices []*core_mesh.ExternalServiceResource
-	TrafficRoutes    []*core_mesh.TrafficRouteResource
-	ZoneIngresses    []*core_mesh.ZoneIngressResource
+	ListenerBuilder *envoy_listeners.ListenerBuilder
+	MeshResources   *core_xds.MeshResources
 }
 
 // ZoneEgressGenerator is responsible for generating xDS resources for
@@ -68,76 +48,24 @@ type Generator struct {
 	Generators []ZoneEgressGenerator
 }
 
-// ResourceBuilder is an interface commonly implemented by complex Envoy
-// configuration element builders.
-// TODO (bartsmykla): DRY pkg/plugins/runtime/gateway/builder.go:11
-type ResourceBuilder interface {
-	Build() (envoy_common.NamedResource, error)
-}
-
-// BuildResourceSet is an adaptor that triggers the resource builder,
-// b, to build its resource. If the builder is successful, the result is
-// wrapped in a ResourceSet.
-// TODO (bartsmykla): DRY pkg/plugins/runtime/gateway/builder.go:20
-func BuildResourceSet(b ResourceBuilder) (*core_xds.ResourceSet, error) {
-	resource, err := b.Build()
-	if err != nil {
-		return nil, err
-	}
-
-	if resource.GetName() == "" {
-		return nil, errors.Errorf("anonymous resource %T", resource)
-	}
-
-	set := core_xds.NewResourceSet()
-	set.Add(&core_xds.Resource{
-		Name:     resource.GetName(),
-		Origin:   OriginEgress,
-		Resource: resource,
-	})
-
-	return set, nil
-}
-
-func makeListener(zoneEgress *core_mesh.ZoneEgressResource) Listener {
+func makeListenerBuilder(
+	apiVersion envoy_common.APIVersion,
+	zoneEgress *core_mesh.ZoneEgressResource,
+) *envoy_listeners.ListenerBuilder {
 	networking := zoneEgress.Spec.GetNetworking()
 
 	address := networking.GetAddress()
 	port := networking.GetPort()
 
-	return Listener{
-		Port:         port,
-		Address:      address,
-		ResourceName: envoy_names.GetInboundListenerName(address, port),
-	}
-}
-
-func routeDestinations(
-	proxy *core_xds.Proxy,
-	mesh *core_mesh.MeshResource,
-) []*Destination {
-	var destinations []*Destination
-
-	meshName := mesh.GetMeta().GetName()
-	zoneEgressProxy := proxy.ZoneEgressProxy
-	endpointMap := zoneEgressProxy.MeshEndpointMap[meshName]
-
-	for serviceName, endpoints := range endpointMap {
-		for _, endpoint := range endpoints {
-			tags := map[string]string{
-				mesh_proto.ServiceTag: serviceName,
-				"mesh":                meshName,
-			}
-
-			destinations = append(destinations, &Destination{
-				Destination:       tags,
-				Weight:            endpoint.Weight,
-				IsExternalService: endpoint.IsExternalService(),
-			})
-		}
-	}
-
-	return destinations
+	return envoy_listeners.NewListenerBuilder(apiVersion).
+		Configure(
+			envoy_listeners.InboundListener(
+				envoy_names.GetInboundListenerName(address, port),
+				address, port,
+				core_xds.SocketAddressProtocolTCP,
+			),
+			envoy_listeners.TLSInspector(),
+		)
 }
 
 func (g Generator) Generate(
@@ -145,21 +73,17 @@ func (g Generator) Generate(
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	zoneEgressProxy := proxy.ZoneEgressProxy
-	listener := makeListener(zoneEgressProxy.ZoneEgressResource)
 
-	for _, mesh := range zoneEgressProxy.Meshes {
-		meshName := mesh.GetMeta().GetName()
+	listenerBuilder := makeListenerBuilder(
+		proxy.APIVersion,
+		proxy.ZoneEgressProxy.ZoneEgressResource,
+	)
 
+	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
 		info := ResourceInfo{
-			Proxy:            proxy,
-			Listener:         listener,
-			Mesh:             mesh,
-			EndpointMap:      zoneEgressProxy.MeshEndpointMap[meshName],
-			ExternalServices: zoneEgressProxy.ExternalServiceMap[meshName],
-			TrafficRoutes:    zoneEgressProxy.TrafficRouteMap[meshName],
-			ZoneIngresses:    zoneEgressProxy.ZoneIngresses,
-			Destinations:     routeDestinations(proxy, mesh),
+			Proxy:           proxy,
+			MeshResources:   meshResources,
+			ListenerBuilder: listenerBuilder,
 		}
 
 		for _, generator := range g.Generators {
@@ -177,12 +101,16 @@ func (g Generator) Generate(
 			resources.AddSet(rs)
 		}
 
-		rs, err := BuildResourceSet(info.Resources.Listener)
+		listener, err := listenerBuilder.Build()
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to build listener resource")
+			return nil, err
 		}
 
-		resources.AddSet(rs)
+		resources.Add(&core_xds.Resource{
+			Name:     listener.GetName(),
+			Origin:   OriginEgress,
+			Resource: listener,
+		})
 	}
 
 	return resources, nil

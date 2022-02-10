@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -140,15 +139,18 @@ type Proxy struct {
 	ZoneIngressProxy *ZoneIngressProxy
 }
 
+type MeshResources struct {
+	Mesh               *core_mesh.MeshResource
+	TrafficRoutes      []*core_mesh.TrafficRouteResource
+	ExternalServices   []*core_mesh.ExternalServiceResource
+	TrafficPermissions []*core_mesh.TrafficPermissionResource
+	EndpointMap        EndpointMap
+}
+
 type ZoneEgressProxy struct {
-	Zone               string
 	ZoneEgressResource *core_mesh.ZoneEgressResource
-	DataSourceLoader   datasource.Loader
-	ExternalServiceMap map[string][]*core_mesh.ExternalServiceResource
-	MeshEndpointMap    map[string]EndpointMap
-	Meshes             []*core_mesh.MeshResource
-	TrafficRouteMap    map[string][]*core_mesh.TrafficRouteResource
 	ZoneIngresses      []*core_mesh.ZoneIngressResource
+	MeshResourcesList  []*MeshResources
 }
 
 type ZoneIngressProxy struct {

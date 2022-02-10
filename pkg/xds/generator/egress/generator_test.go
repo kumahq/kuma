@@ -1,23 +1,20 @@
 package egress_test
 
 import (
-	"bytes"
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"gopkg.in/yaml.v2"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -48,12 +45,9 @@ var _ = Describe("EgressGenerator", func() {
 	DescribeTable("should generate Envoy xDS resources",
 		func(given testCase) {
 			var zoneEgress *core_mesh.ZoneEgressResource
-			var meshes []*core_mesh.MeshResource
 			var zoneIngresses []*core_mesh.ZoneIngressResource
 
-			externalServiceMap := map[string][]*core_mesh.ExternalServiceResource{}
-			trafficRouteMap := map[string][]*core_mesh.TrafficRouteResource{}
-			meshEndpointMap := map[string]core_xds.EndpointMap{}
+			meshResourcesMap := map[string]*core_xds.MeshResources{}
 
 			resourcePath := filepath.Join(
 				"testdata", "input",
@@ -63,54 +57,46 @@ var _ = Describe("EgressGenerator", func() {
 			resourceBytes, err := os.ReadFile(resourcePath)
 			Expect(err).ToNot(HaveOccurred())
 
-			resourceReader := bytes.NewReader(resourceBytes)
-			yamlDecoder := yaml.NewDecoder(resourceReader)
+			rawResources := strings.Split(string(resourceBytes), "---")
+			for _, rawResource := range rawResources {
+				bytes := []byte(rawResource)
 
-			var parsedResource map[string]interface{}
-
-			for yamlDecoder.Decode(&parsedResource) == nil {
-				var mesh string
-				kind := parsedResource["type"].(string)
-				name := parsedResource["name"].(string)
-				delete(parsedResource, "type")
-				delete(parsedResource, "name")
-				if m, ok := parsedResource["mesh"].(string); ok {
-					mesh = m
-					delete(parsedResource, "mesh")
-				}
-
-				specBytes, err := yaml.Marshal(parsedResource)
+				res, err := rest_types.UnmarshallToCore(bytes)
 				Expect(err).To(BeNil())
 
-				object, err := registry.Global().
-					NewObject(core_model.ResourceType(kind))
-				Expect(err).To(BeNil())
+				meshName := res.GetMeta().GetMesh()
 
-				meta := &test_model.ResourceMeta{
-					Name: name,
-					Mesh: mesh,
-				}
-				object.SetMeta(meta)
-
-				Expect(util_proto.FromYAML(specBytes, object.GetSpec())).To(Succeed())
-
-				switch object.Descriptor().Name {
+				switch res.Descriptor().Name {
 				case core_mesh.ZoneEgressType:
 					Expect(zoneEgress).To(BeNil(), "there can be only one zone egress in resources")
-					zoneEgress = object.(*core_mesh.ZoneEgressResource)
-				case core_mesh.MeshType:
-					meshes = append(meshes, object.(*core_mesh.MeshResource))
+					zoneEgress = res.(*core_mesh.ZoneEgressResource)
 				case core_mesh.ZoneIngressType:
-					zoneIngresses = append(zoneIngresses, object.(*core_mesh.ZoneIngressResource))
+					zoneIngresses = append(zoneIngresses, res.(*core_mesh.ZoneIngressResource))
+				case core_mesh.MeshType:
+					meshName := res.GetMeta().GetName()
+
+					if _, ok := meshResourcesMap[meshName]; !ok {
+						meshResourcesMap[meshName] = &core_xds.MeshResources{}
+					}
+
+					meshResourcesMap[meshName].Mesh = res.(*core_mesh.MeshResource)
 				case core_mesh.ExternalServiceType:
-					externalServiceMap[mesh] = append(
-						externalServiceMap[mesh],
-						object.(*core_mesh.ExternalServiceResource),
+					if _, ok := meshResourcesMap[meshName]; !ok {
+						meshResourcesMap[meshName] = &core_xds.MeshResources{}
+					}
+
+					meshResourcesMap[meshName].ExternalServices = append(
+						meshResourcesMap[meshName].ExternalServices,
+						res.(*core_mesh.ExternalServiceResource),
 					)
 				case core_mesh.TrafficRouteType:
-					trafficRouteMap[mesh] = append(
-						trafficRouteMap[mesh],
-						object.(*core_mesh.TrafficRouteResource),
+					if _, ok := meshResourcesMap[meshName]; !ok {
+						meshResourcesMap[meshName] = &core_xds.MeshResources{}
+					}
+
+					meshResourcesMap[meshName].TrafficRoutes = append(
+						meshResourcesMap[meshName].TrafficRoutes,
+						res.(*core_mesh.TrafficRouteResource),
 					)
 				}
 			}
@@ -119,38 +105,35 @@ var _ = Describe("EgressGenerator", func() {
 
 			loader := fakeLoader{}
 
-			for _, mesh := range meshes {
-				meshName := mesh.GetMeta().GetName()
-
-				meshEndpointMap[meshName] = xds_topology.BuildRemoteEndpointMap(
-					mesh,
+			for _, meshResources := range meshResourcesMap {
+				meshResources.EndpointMap = xds_topology.BuildRemoteEndpointMap(
+					meshResources.Mesh,
 					zoneName,
 					zoneIngresses,
-					externalServiceMap[meshName],
+					meshResources.ExternalServices,
 					&loader,
 				)
 			}
 
 			gen := egress.Generator{
 				Generators: []egress.ZoneEgressGenerator{
-					&egress.ListenerGenerator{},
 					&egress.InternalServicesGenerator{},
 					&egress.ExternalServicesGenerator{},
 				},
+			}
+
+			var meshResourcesList []*core_xds.MeshResources
+			for _, meshResources := range meshResourcesMap {
+				meshResourcesList = append(meshResourcesList, meshResources)
 			}
 
 			proxy := &core_xds.Proxy{
 				Id:         *core_xds.BuildProxyId("default", "egress"),
 				APIVersion: envoy_common.APIV3,
 				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-					Zone:               zoneName,
 					ZoneEgressResource: zoneEgress,
-					DataSourceLoader:   &loader,
-					ExternalServiceMap: externalServiceMap,
-					MeshEndpointMap:    meshEndpointMap,
-					Meshes:             meshes,
-					TrafficRouteMap:    trafficRouteMap,
 					ZoneIngresses:      zoneIngresses,
+					MeshResourcesList:  meshResourcesList,
 				},
 			}
 

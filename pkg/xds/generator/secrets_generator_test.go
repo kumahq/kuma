@@ -65,10 +65,12 @@ var _ = Describe("SecretsGenerator", func() {
 			proxy: &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("", mesh_proto.ZoneEgressServiceName),
 				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-					Meshes: []*core_mesh.MeshResource{
+					MeshResourcesList: []*core_xds.MeshResources{
 						{
-							Meta: &test_model.ResourceMeta{
-								Name: "demo",
+							Mesh: &core_mesh.MeshResource{
+								Meta: &test_model.ResourceMeta{
+									Name: "demo",
+								},
 							},
 						},
 					},
@@ -153,83 +155,92 @@ var _ = Describe("SecretsGenerator", func() {
 				Id:         *core_xds.BuildProxyId("", mesh_proto.ZoneEgressServiceName),
 				APIVersion: envoy_common.APIV3,
 				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-
-					Meshes: []*core_mesh.MeshResource{
+					MeshResourcesList: []*core_xds.MeshResources{
 						{
-							Meta: &test_model.ResourceMeta{
-								Name: "mesh-1",
-							},
-							Spec: &mesh_proto.Mesh{
-								Mtls: &mesh_proto.Mesh_Mtls{
-									EnabledBackend: "ca-1",
-									Backends: []*mesh_proto.CertificateAuthorityBackend{
-										{
-											Name: "ca-1",
-											Type: "builtin",
+							Mesh: &core_mesh.MeshResource{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh-1",
+								},
+								Spec: &mesh_proto.Mesh{
+									Mtls: &mesh_proto.Mesh_Mtls{
+										EnabledBackend: "ca-1",
+										Backends: []*mesh_proto.CertificateAuthorityBackend{
+											{
+												Name: "ca-1",
+												Type: "builtin",
+											},
 										},
 									},
 								},
 							},
 						},
 						{
-							Meta: &test_model.ResourceMeta{
-								Name: "mesh-2",
-							},
-							Spec: &mesh_proto.Mesh{
-								Mtls: &mesh_proto.Mesh_Mtls{
-									EnabledBackend: "ca-1",
-									Backends: []*mesh_proto.CertificateAuthorityBackend{
-										{
-											Name: "ca-1",
-											Type: "builtin",
+							Mesh: &core_mesh.MeshResource{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh-2",
+								},
+								Spec: &mesh_proto.Mesh{
+									Mtls: &mesh_proto.Mesh_Mtls{
+										EnabledBackend: "ca-1",
+										Backends: []*mesh_proto.CertificateAuthorityBackend{
+											{
+												Name: "ca-1",
+												Type: "builtin",
+											},
 										},
 									},
 								},
 							},
 						},
 						{
-							Meta: &test_model.ResourceMeta{
-								Name: "mesh-3",
-							},
-							Spec: &mesh_proto.Mesh{
-								Mtls: &mesh_proto.Mesh_Mtls{
-									EnabledBackend: "ca-1",
-									Backends: []*mesh_proto.CertificateAuthorityBackend{
-										{
-											Name: "ca-1",
-											Type: "builtin",
+							Mesh: &core_mesh.MeshResource{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh-3",
+								},
+								Spec: &mesh_proto.Mesh{
+									Mtls: &mesh_proto.Mesh_Mtls{
+										EnabledBackend: "ca-1",
+										Backends: []*mesh_proto.CertificateAuthorityBackend{
+											{
+												Name: "ca-1",
+												Type: "builtin",
+											},
 										},
 									},
 								},
 							},
 						},
 						{
-							Meta: &test_model.ResourceMeta{
-								Name: "mesh-4",
-							},
-							Spec: &mesh_proto.Mesh{
-								Mtls: &mesh_proto.Mesh_Mtls{
-									EnabledBackend: "ca-1",
-									Backends: []*mesh_proto.CertificateAuthorityBackend{
-										{
-											Name: "ca-1",
-											Type: "builtin",
+							Mesh: &core_mesh.MeshResource{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh-4",
+								},
+								Spec: &mesh_proto.Mesh{
+									Mtls: &mesh_proto.Mesh_Mtls{
+										EnabledBackend: "ca-1",
+										Backends: []*mesh_proto.CertificateAuthorityBackend{
+											{
+												Name: "ca-1",
+												Type: "builtin",
+											},
 										},
 									},
 								},
 							},
 						},
 						{
-							Meta: &test_model.ResourceMeta{
-								Name: "mesh-5",
-							},
-							Spec: &mesh_proto.Mesh{
-								Mtls: &mesh_proto.Mesh_Mtls{
-									EnabledBackend: "ca-1",
-									Backends: []*mesh_proto.CertificateAuthorityBackend{
-										{
-											Name: "ca-1",
-											Type: "builtin",
+							Mesh: &core_mesh.MeshResource{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh-5",
+								},
+								Spec: &mesh_proto.Mesh{
+									Mtls: &mesh_proto.Mesh_Mtls{
+										EnabledBackend: "ca-1",
+										Backends: []*mesh_proto.CertificateAuthorityBackend{
+											{
+												Name: "ca-1",
+												Type: "builtin",
+											},
 										},
 									},
 								},

@@ -25,8 +25,8 @@ func (g *InternalServicesGenerator) Generate(
 	resources := core_xds.NewResourceSet()
 
 	apiVersion := info.Proxy.APIVersion
-	endpointMap := info.EndpointMap
-	destinations := g.buildDestinations(info.TrafficRoutes)
+	endpointMap := info.MeshResources.EndpointMap
+	destinations := g.buildDestinations(info.MeshResources.TrafficRoutes)
 	services := g.buildServices(endpointMap)
 
 	g.addFilterChains(apiVersion, destinations, endpointMap, info)
@@ -125,12 +125,11 @@ func (*InternalServicesGenerator) addFilterChains(
 	endpointMap core_xds.EndpointMap,
 	info *ResourceInfo,
 ) {
-	zoneIngresses := info.ZoneIngresses
-	meshName := info.Mesh.GetMeta().GetName()
+	meshName := info.MeshResources.Mesh.GetMeta().GetName()
 
 	sniUsed := map[string]bool{}
 
-	for _, zoneIngress := range zoneIngresses {
+	for _, zoneIngress := range info.Proxy.ZoneEgressProxy.ZoneIngresses {
 		for _, service := range zoneIngress.Spec.GetAvailableServices() {
 			serviceName := service.Tags[mesh_proto.ServiceTag]
 			if service.Mesh != meshName {
@@ -166,7 +165,7 @@ func (*InternalServicesGenerator) addFilterChains(
 
 				sniUsed[sni] = true
 
-				info.Resources.Listener.Configure(envoy_listeners.FilterChain(
+				info.ListenerBuilder.Configure(envoy_listeners.FilterChain(
 					envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"),
 						envoy_listeners.MatchServerNames(sni),

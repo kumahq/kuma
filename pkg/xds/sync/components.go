@@ -46,7 +46,6 @@ func defaultEgressProxyBuilder(
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
 	meshCache *mesh.Cache,
-	dataSourceLoader datasource.Loader,
 	apiVersion envoy.APIVersion,
 ) *EgressProxyBuilder {
 	return &EgressProxyBuilder{
@@ -56,7 +55,7 @@ func defaultEgressProxyBuilder(
 		LookupIP:           rt.LookupIP(),
 		MetadataTracker:    metadataTracker,
 		meshCache:          meshCache,
-		DataSourceLoader:   dataSourceLoader,
+		DataSourceLoader:   rt.DataSourceLoader(),
 		apiVersion:         apiVersion,
 		zone:               rt.Config().Multizone.Zone.Name,
 	}
@@ -74,11 +73,10 @@ func DefaultDataplaneWatchdogFactory(
 	apiVersion envoy.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
 	ctx := context.Background()
-	dataSourceLoader := rt.DataSourceLoader()
 	config := rt.Config()
 
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
-		dataSourceLoader,
+		rt.DataSourceLoader(),
 		config,
 		metadataTracker,
 		apiVersion,
@@ -95,7 +93,6 @@ func DefaultDataplaneWatchdogFactory(
 		rt,
 		metadataTracker,
 		meshSnapshotCache,
-		dataSourceLoader,
 		apiVersion,
 	)
 

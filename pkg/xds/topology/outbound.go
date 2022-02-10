@@ -175,8 +175,7 @@ func fillIngressOutbounds(
 			continue
 		}
 
-		ziSpec := zi.Spec
-		ziNetworking := ziSpec.GetNetworking()
+		ziNetworking := zi.Spec.GetNetworking()
 		ziAddress := ziNetworking.GetAdvertisedAddress()
 		ziPort := ziNetworking.GetAdvertisedPort()
 		ziCoordinates := buildCoordinates(ziAddress, ziPort)
@@ -192,7 +191,7 @@ func fillIngressOutbounds(
 
 		ziInstances[ziCoordinates] = struct{}{}
 
-		for _, service := range ziSpec.GetAvailableServices() {
+		for _, service := range zi.Spec.GetAvailableServices() {
 			if service.Mesh != mesh.GetMeta().GetName() {
 				continue
 			}
@@ -203,8 +202,7 @@ func fillIngressOutbounds(
 			locality := localityFromTags(mesh, priorityRemote, serviceTags)
 
 			for _, ze := range zoneEgresses {
-				zeSpec := ze.Spec
-				zeNetworking := zeSpec.GetNetworking()
+				zeNetworking := ze.Spec.GetNetworking()
 				zeAddress := zeNetworking.GetAddress()
 				zePort := zeNetworking.GetPort()
 

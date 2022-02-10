@@ -24,8 +24,8 @@ func (g *ExternalServicesGenerator) Generate(
 	resources := core_xds.NewResourceSet()
 
 	apiVersion := info.Proxy.APIVersion
-	endpointMap := info.EndpointMap
-	destinations := g.buildDestinations(info.TrafficRoutes)
+	endpointMap := info.MeshResources.EndpointMap
+	destinations := g.buildDestinations(info.MeshResources.TrafficRoutes)
 	services := g.buildServices(endpointMap)
 
 	g.addFilterChains(apiVersion, destinations, endpointMap, info)
@@ -107,19 +107,17 @@ func (*ExternalServicesGenerator) addFilterChains(
 	endpointMap core_xds.EndpointMap,
 	info *ResourceInfo,
 ) {
-	meshName := info.Mesh.GetMeta().GetName()
-	externalServices := info.ExternalServices
-	mesh := info.Mesh
+	meshName := info.MeshResources.Mesh.GetMeta().GetName()
 
 	sniUsed := map[string]bool{}
 
-	for _, es := range externalServices {
+	for _, es := range info.MeshResources.ExternalServices {
 		serviceName := es.GetMeta().GetName()
 
 		endpoints := endpointMap[serviceName]
 
 		if len(endpoints) == 0 {
-			// TODO (bartsmykla): throw warning maybe
+			log.Info("no endpoints for service", "serviceName", serviceName)
 			// There is no need to generate filter chain if there is no
 			// endpoints for the service
 			continue
@@ -147,7 +145,7 @@ func (*ExternalServicesGenerator) addFilterChains(
 			)
 
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
-				envoy_listeners.ServerSideMTLS(mesh),
+				envoy_listeners.ServerSideMTLS(info.MeshResources.Mesh),
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(sni),
 			)
@@ -167,7 +165,7 @@ func (*ExternalServicesGenerator) addFilterChains(
 				)
 			}
 
-			info.Resources.Listener.Configure(envoy_listeners.FilterChain(filterChainBuilder))
+			info.ListenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		}
 	}
 }

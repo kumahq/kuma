@@ -15,12 +15,13 @@ type SecretsProxyGenerator struct {
 
 var _ ResourceGenerator = SecretsProxyGenerator{}
 
-func addSecretsToResources(
+func createSecretResources(
 	mesh *core_mesh.MeshResource,
 	identity *core_xds.IdentitySecret,
 	ca *core_xds.CaSecret,
-	resources *core_xds.ResourceSet,
 ) *core_xds.ResourceSet {
+	resources := core_xds.NewResourceSet()
+
 	meshName := mesh.GetMeta().GetName()
 	identitySecret := envoy_secrets.CreateIdentitySecret(identity, meshName)
 	caSecret := envoy_secrets.CreateCaSecret(ca, meshName)
@@ -59,38 +60,31 @@ func createDataPlaneProxySecrets(
 		return nil, err
 	}
 
-	return addSecretsToResources(
-		mesh,
-		identity,
-		ca,
-		core_xds.NewResourceSet(),
-	), nil
+	return createSecretResources(mesh, identity, ca), nil
 }
 
 func createZoneEgressSecrets(
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
-	var resources *core_xds.ResourceSet
+	resources := core_xds.NewResourceSet()
 
-	zoneEgressProxy := proxy.ZoneEgressProxy
-
-	for _, mesh := range zoneEgressProxy.Meshes {
-		if !mesh.MTLSEnabled() {
+	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
+		if !meshResources.Mesh.MTLSEnabled() {
 			continue
 		}
 
 		resources = core_xds.NewResourceSet()
 
 		identity, ca, err := ctx.ControlPlane.Secrets.GetForZoneEgress(
-			zoneEgressProxy.ZoneEgressResource,
-			mesh,
+			proxy.ZoneEgressProxy.ZoneEgressResource,
+			meshResources.Mesh,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		addSecretsToResources(mesh, identity, ca, resources)
+		resources.AddSet(createSecretResources(meshResources.Mesh, identity, ca))
 	}
 
 	return resources, nil
