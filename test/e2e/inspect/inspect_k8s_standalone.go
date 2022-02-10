@@ -67,8 +67,7 @@ func KubernetesStandalone() {
 
 	It("should return envoy config_dump", func() {
 		dataplaneName := fmt.Sprintf("%s.%s", demoClient.GetName(), TestNamespace)
-		url := fmt.Sprintf("localhost:5681/meshes/default/dataplanes/%s/xds", dataplaneName)
-		cmd := []string{"wget", "-O-", url}
+		cmd := []string{"kumactl", "inspect", "dataplane", dataplaneName, "--config-dump"}
 
 		stdout, _, err := cluster.ExecWithRetries(Config.KumaNamespace, kumaControlPlane.GetName(), "control-plane", cmd...)
 		Expect(err).ToNot(HaveOccurred())

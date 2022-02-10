@@ -126,6 +126,23 @@ var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 		}),
 	)
 
+	It("should unmarshal DataplaneInspectEntryList", func() {
+		// given
+		input, err := os.ReadFile(path.Join("testdata", "dataplane_inspect_entry_list.json"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		receiver := &types.DataplaneInspectEntryListReceiver{
+			NewResource: registry.Global().NewObject,
+		}
+		Expect(json.Unmarshal(input, receiver)).To(Succeed())
+		entryList := receiver.DataplaneInspectEntryList
+
+		// then
+		Expect(entryList.Total).To(Equal(uint32(3)))
+		Expect(entryList.Items).To(HaveLen(3))
+	})
+
 	DescribeTable("should return error",
 		func(given testCase) {
 			inputFile, err := os.Open(path.Join("testdata", given.inputFile))
