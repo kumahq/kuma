@@ -37,7 +37,7 @@ var _ = Describe("SecretsGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(rs).To(BeNil())
+			Expect(rs.List()).To(BeEmpty())
 		},
 		Entry("Mesh has no mTLS configuration", testCase{
 			ctx: xds_context.Context{

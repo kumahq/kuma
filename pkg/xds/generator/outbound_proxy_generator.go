@@ -12,7 +12,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -258,47 +257,19 @@ func generateEDS(
 	resources := model.NewResourceSet()
 
 	for _, serviceName := range services.Sorted() {
-		// Endpoints for ExternalServices are specified in load assignment in DNS Cluster.
+		// When no zone egress present in a mesh Endpoints for ExternalServices
+		// are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
-		if !services[serviceName].HasExternalService() {
+		if !services[serviceName].HasExternalService() ||
+			len(ctx.Mesh.Resources.ZoneEgresses().Items) > 0 {
 			for _, cluster := range services[serviceName].Clusters() {
 				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion, ctx.Mesh.EndpointMap)
 				if err != nil {
 					return nil, errors.Wrapf(err, "could not get ClusterLoadAssignment for %s", serviceName)
 				}
+
 				resources.Add(&model.Resource{
 					Name:     cluster.Name(),
-					Resource: loadAssignment,
-				})
-			}
-		} else {
-			// TODO (bartsmykla): we should be able to reuse code above
-			zoneEgresses := ctx.Mesh.Resources.ZoneEgresses().Items
-
-			if len(zoneEgresses) > 0 {
-				var endpoints []model.Endpoint
-
-				for _, egress := range zoneEgresses {
-					egressNetworking := egress.Spec.GetNetworking()
-
-					endpoints = append(endpoints, model.Endpoint{
-						Target: egressNetworking.GetAddress(),
-						Port:   egressNetworking.GetPort(),
-						Weight: 1,
-					})
-				}
-
-				loadAssignment, err := envoy_endpoints.CreateClusterLoadAssignment(
-					serviceName,
-					endpoints,
-					apiVersion,
-				)
-				if err != nil {
-					return nil, err
-				}
-
-				resources.Add(&model.Resource{
-					Name:     serviceName,
 					Resource: loadAssignment,
 				})
 			}

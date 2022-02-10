@@ -16,7 +16,7 @@ import (
 
 const (
 	// Constants for Locality Aware load balancing
-	// Highest priority 0 shall be assigned to all locally available services
+	// The Highest priority 0 shall be assigned to all locally available services
 	// A priority of 1 is for ExternalServices and services exposed on neighboring ingress-es
 	priorityLocal  = 0
 	priorityRemote = 1
@@ -32,8 +32,12 @@ func BuildEndpointMap(
 	externalServices []*core_mesh.ExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
-	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses, zoneEgresses)
-	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
+	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
+
+	if len(zoneEgresses) == 0 {
+		fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
+	}
+
 	return outbound
 }
 
@@ -72,6 +76,7 @@ func BuildEdsEndpointMap(
 	dataplanes []*core_mesh.DataplaneResource,
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
+	externalServices []*core_mesh.ExternalServiceResource,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	ingressInstances := fillIngressOutbounds(
@@ -86,6 +91,11 @@ func BuildEdsEndpointMap(
 		endpointWeight = ingressInstances
 	}
 	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight)
+
+	if len(zoneEgresses) > 0 {
+		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, zoneEgresses, mesh)
+	}
+
 	return outbound
 }
 
@@ -201,14 +211,33 @@ func fillIngressOutbounds(
 			serviceInstances := service.GetInstances()
 			locality := localityFromTags(mesh, priorityRemote, serviceTags)
 
-			for _, ze := range zoneEgresses {
-				zeNetworking := ze.Spec.GetNetworking()
-				zeAddress := zeNetworking.GetAddress()
-				zePort := zeNetworking.GetPort()
+			// TODO (bartsmykla): We have to check if it will be ok in a situation
+			//  where we have few zone ingresses with the same services, as
+			//  with zone egresses we will generate endpoints with the same
+			//  targets and ports (zone egress ones), which envoy probably will
+			//  ignore
+			// If zone egresses present, we want to pass the traffic:
+			// dp -> zone egress -> zone ingress -> dp
+			if len(zoneEgresses) > 0 {
+				for _, ze := range zoneEgresses {
+					zeNetworking := ze.Spec.GetNetworking()
+					zeAddress := zeNetworking.GetAddress()
+					zePort := zeNetworking.GetPort()
 
+					endpoint := core_xds.Endpoint{
+						Target:   zeAddress,
+						Port:     zePort,
+						Tags:     serviceTags,
+						Weight:   1,
+						Locality: locality,
+					}
+
+					outbound[serviceName] = append(outbound[serviceName], endpoint)
+				}
+			} else {
 				endpoint := core_xds.Endpoint{
-					Target:   zeAddress,
-					Port:     zePort,
+					Target:   ziAddress,
+					Port:     ziPort,
 					Tags:     serviceTags,
 					Weight:   serviceInstances,
 					Locality: locality,
@@ -216,22 +245,6 @@ func fillIngressOutbounds(
 
 				outbound[serviceName] = append(outbound[serviceName], endpoint)
 			}
-
-			// If there are any zone egresses, we already prepared all necessary
-			// endpoints above
-			if len(zoneEgresses) > 0 {
-				continue
-			}
-
-			endpoint := core_xds.Endpoint{
-				Target:   ziAddress,
-				Port:     ziPort,
-				Tags:     serviceTags,
-				Weight:   serviceInstances,
-				Locality: locality,
-			}
-
-			outbound[serviceName] = append(outbound[serviceName], endpoint)
 		}
 	}
 
@@ -248,6 +261,38 @@ func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServic
 			continue
 		}
 		outbound[service] = append(outbound[service], *externalServiceEndpoint)
+	}
+}
+
+func fillExternalServicesOutboundsThroughEgress(
+	outbound core_xds.EndpointMap,
+	externalServices []*core_mesh.ExternalServiceResource,
+	zoneEgresses []*core_mesh.ZoneEgressResource,
+	mesh *core_mesh.MeshResource,
+) {
+	for _, externalService := range externalServices {
+		serviceTags := externalService.Spec.GetTags()
+		serviceName := serviceTags[mesh_proto.ServiceTag]
+		locality := localityFromTags(mesh, priorityRemote, serviceTags)
+
+		for _, ze := range zoneEgresses {
+			zeNetworking := ze.Spec.GetNetworking()
+			zeAddress := zeNetworking.GetAddress()
+			zePort := zeNetworking.GetPort()
+
+			endpoint := core_xds.Endpoint{
+				Target: zeAddress,
+				Port:   zePort,
+				Tags:   serviceTags,
+				// AS it's a role of zone egress to load balance traffic between
+				// instances, we can safely set weight to 1
+				Weight:          1,
+				Locality:        locality,
+				ExternalService: &core_xds.ExternalService{},
+			}
+
+			outbound[serviceName] = append(outbound[serviceName], endpoint)
+		}
 	}
 }
 

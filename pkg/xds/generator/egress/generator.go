@@ -24,23 +24,10 @@ var (
 	log = core.Log.WithName("xds").WithName("generator").WithName("egress")
 )
 
-type Listener struct {
-	Address      string
-	Port         uint32
-	ResourceName string
-}
-
-type ResourceInfo struct {
-	Proxy *core_xds.Proxy
-
-	ListenerBuilder *envoy_listeners.ListenerBuilder
-	MeshResources   *core_xds.MeshResources
-}
-
 // ZoneEgressGenerator is responsible for generating xDS resources for
-// a single ZoneEgressHost.
+// a single ZoneEgress.
 type ZoneEgressGenerator interface {
-	Generate(xds_context.Context, *ResourceInfo) (*core_xds.ResourceSet, error)
+	Generate(proxy *core_xds.Proxy, listenerBuilder *envoy_listeners.ListenerBuilder, meshResources *core_xds.MeshResources) (*core_xds.ResourceSet, error)
 }
 
 // Generator generates xDS resources for an entire ZoneEgress.
@@ -69,7 +56,7 @@ func makeListenerBuilder(
 }
 
 func (g Generator) Generate(
-	ctx xds_context.Context,
+	_ xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
@@ -80,14 +67,8 @@ func (g Generator) Generate(
 	)
 
 	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
-		info := ResourceInfo{
-			Proxy:           proxy,
-			MeshResources:   meshResources,
-			ListenerBuilder: listenerBuilder,
-		}
-
 		for _, generator := range g.Generators {
-			rs, err := generator.Generate(ctx, &info)
+			rs, err := generator.Generate(proxy, listenerBuilder, meshResources)
 			if err != nil {
 				err := errors.Wrapf(
 					err,

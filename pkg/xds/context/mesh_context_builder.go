@@ -99,7 +99,8 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := resources.ZoneEgresses().Items
-	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses)
+	externalServices := resources.ExternalServices().Items
+	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 
 	return &MeshContext{
 		Hash:                newHash,

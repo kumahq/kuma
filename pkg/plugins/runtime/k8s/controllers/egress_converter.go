@@ -28,6 +28,7 @@ func (p *PodConverter) EgressFor(
 		zoneEgress.Networking = &mesh_proto.ZoneEgress_Networking{}
 	}
 
+	zoneEgress.Zone = p.Zone
 	zoneEgress.Networking.Address = pod.Status.PodIP
 	zoneEgress.Networking.Port = ifaces[0].Port
 

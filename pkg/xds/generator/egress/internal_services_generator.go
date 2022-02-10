@@ -6,7 +6,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
@@ -19,17 +18,25 @@ type InternalServicesGenerator struct {
 
 // Generate will generate envoy resources for one, provided in ResourceInfo mesh
 func (g *InternalServicesGenerator) Generate(
-	_ xds_context.Context,
-	info *ResourceInfo,
+	proxy *core_xds.Proxy,
+	listenerBuilder *envoy_listeners.ListenerBuilder,
+	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	apiVersion := info.Proxy.APIVersion
-	endpointMap := info.MeshResources.EndpointMap
-	destinations := g.buildDestinations(info.MeshResources.TrafficRoutes)
+	apiVersion := proxy.APIVersion
+	endpointMap := meshResources.EndpointMap
+	destinations := g.buildDestinations(meshResources.TrafficRoutes)
 	services := g.buildServices(endpointMap)
 
-	g.addFilterChains(apiVersion, destinations, endpointMap, info)
+	g.addFilterChains(
+		apiVersion,
+		destinations,
+		endpointMap,
+		proxy,
+		listenerBuilder,
+		meshResources,
+	)
 
 	cds, err := g.generateCDS(apiVersion, services, destinations)
 	if err != nil {
@@ -123,13 +130,15 @@ func (*InternalServicesGenerator) addFilterChains(
 	apiVersion envoy_common.APIVersion,
 	destinationsPerService map[string][]envoy_common.Tags,
 	endpointMap core_xds.EndpointMap,
-	info *ResourceInfo,
+	proxy *core_xds.Proxy,
+	listenerBuilder *envoy_listeners.ListenerBuilder,
+	meshResources *core_xds.MeshResources,
 ) {
-	meshName := info.MeshResources.Mesh.GetMeta().GetName()
+	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	sniUsed := map[string]bool{}
 
-	for _, zoneIngress := range info.Proxy.ZoneEgressProxy.ZoneIngresses {
+	for _, zoneIngress := range proxy.ZoneEgressProxy.ZoneIngresses {
 		for _, service := range zoneIngress.Spec.GetAvailableServices() {
 			serviceName := service.Tags[mesh_proto.ServiceTag]
 			if service.Mesh != meshName {
@@ -165,7 +174,7 @@ func (*InternalServicesGenerator) addFilterChains(
 
 				sniUsed[sni] = true
 
-				info.ListenerBuilder.Configure(envoy_listeners.FilterChain(
+				listenerBuilder.Configure(envoy_listeners.FilterChain(
 					envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"),
 						envoy_listeners.MatchServerNames(sni),

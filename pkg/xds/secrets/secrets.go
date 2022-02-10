@@ -108,12 +108,7 @@ func (s *secrets) GetForDataPlane(
 	dataplane *core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	return s.get(
-		dataplane,
-		dataplane.GetMeta().GetMesh(),
-		dataplane.Spec.TagSet(),
-		mesh,
-	)
+	return s.get(dataplane, dataplane.Spec.TagSet(), mesh)
 }
 
 func (s *secrets) GetForZoneEgress(
@@ -126,12 +121,11 @@ func (s *secrets) GetForZoneEgress(
 		},
 	})
 
-	return s.get(zoneEgress, mesh.GetMeta().GetName(), tags, mesh)
+	return s.get(zoneEgress, tags, mesh)
 }
 
 func (s *secrets) get(
 	resource model.Resource,
-	resourceMeshName string,
 	tags mesh_proto.MultiValueTagSet,
 	mesh *core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
@@ -152,7 +146,7 @@ func (s *secrets) get(
 			string(resource.Descriptor().Name), resourceKey, "reason", reason,
 		)
 
-		certs, err := s.generateCerts(resourceMeshName, tags, mesh)
+		certs, err := s.generateCerts(mesh.GetMeta().GetName(), tags, mesh)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "could not generate certificates")
 		}

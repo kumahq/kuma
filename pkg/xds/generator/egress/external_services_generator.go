@@ -6,7 +6,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -18,19 +17,31 @@ type ExternalServicesGenerator struct {
 
 // Generate will generate envoy resources for one, provided in ResourceInfo mesh
 func (g *ExternalServicesGenerator) Generate(
-	_ xds_context.Context,
-	info *ResourceInfo,
+	proxy *core_xds.Proxy,
+	listenerBuilder *envoy_listeners.ListenerBuilder,
+	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	apiVersion := info.Proxy.APIVersion
-	endpointMap := info.MeshResources.EndpointMap
-	destinations := g.buildDestinations(info.MeshResources.TrafficRoutes)
+	apiVersion := proxy.APIVersion
+	endpointMap := meshResources.EndpointMap
+	destinations := g.buildDestinations(meshResources.TrafficRoutes)
 	services := g.buildServices(endpointMap)
 
-	g.addFilterChains(apiVersion, destinations, endpointMap, info)
+	g.addFilterChains(
+		apiVersion,
+		destinations,
+		endpointMap,
+		meshResources,
+		listenerBuilder,
+	)
 
-	cds, err := g.generateCDS(apiVersion, services, endpointMap)
+	cds, err := g.generateCDS(
+		apiVersion,
+		services,
+		endpointMap,
+		proxy.ZoneEgressProxy.ZoneEgressResource.IsIPv6(),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +54,7 @@ func (*ExternalServicesGenerator) generateCDS(
 	apiVersion envoy_common.APIVersion,
 	services []string,
 	endpointMap core_xds.EndpointMap,
+	isIPV6 bool,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
@@ -58,7 +70,7 @@ func (*ExternalServicesGenerator) generateCDS(
 		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion).
 			Configure(envoy_clusters.ProvidedEndpointCluster(
 				serviceName,
-				false, // TODO (bartsmykla)
+				isIPV6,
 				endpoints...,
 			)).
 			Configure(envoy_clusters.ClientSideTLS(endpoints))
@@ -85,7 +97,7 @@ func (*ExternalServicesGenerator) generateCDS(
 	return resources, nil
 }
 
-func (ExternalServicesGenerator) buildServices(
+func (*ExternalServicesGenerator) buildServices(
 	endpointMap core_xds.EndpointMap,
 ) []string {
 	var services []string
@@ -105,13 +117,14 @@ func (*ExternalServicesGenerator) addFilterChains(
 	apiVersion envoy_common.APIVersion,
 	destinationsPerService map[string][]envoy_common.Tags,
 	endpointMap core_xds.EndpointMap,
-	info *ResourceInfo,
+	meshResources *core_xds.MeshResources,
+	listenerBuilder *envoy_listeners.ListenerBuilder,
 ) {
-	meshName := info.MeshResources.Mesh.GetMeta().GetName()
+	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	sniUsed := map[string]bool{}
 
-	for _, es := range info.MeshResources.ExternalServices {
+	for _, es := range meshResources.ExternalServices {
 		serviceName := es.GetMeta().GetName()
 
 		endpoints := endpointMap[serviceName]
@@ -145,7 +158,7 @@ func (*ExternalServicesGenerator) addFilterChains(
 			)
 
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
-				envoy_listeners.ServerSideMTLS(info.MeshResources.Mesh),
+				envoy_listeners.ServerSideMTLS(meshResources.Mesh),
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(sni),
 				envoy_listeners.NetworkRBAC(
@@ -153,7 +166,7 @@ func (*ExternalServicesGenerator) addFilterChains(
 					// Zone Egress will configure these filter chains only for
 					// meshes with mTLS enabled, so we can safely pass here true
 					true,
-					info.MeshResources.ExternalServicePermissionMap[serviceName],
+					meshResources.ExternalServicePermissionMap[serviceName],
 				),
 			)
 
@@ -172,7 +185,7 @@ func (*ExternalServicesGenerator) addFilterChains(
 				)
 			}
 
-			info.ListenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
+			listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		}
 	}
 }
