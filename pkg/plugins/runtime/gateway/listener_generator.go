@@ -30,7 +30,7 @@ func (*ListenerGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Pro
 	}
 }
 
-func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
+func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, _ gatewayHostInfo) (*core_xds.ResourceSet, error) {
 	// TODO(jpeach) what we really need to do here is build the
 	// listener once, then generate a HTTP filter chain for each
 	// host on the same HTTPConnectionManager. Each HTTP filter
