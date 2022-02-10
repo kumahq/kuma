@@ -1,0 +1,105 @@
+type: Mesh
+name: mesh-1
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+    dpCert:
+      rotation:
+        expiration: 1d
+    conf:
+      caCert:
+        RSAbits: 2048
+        expiration: 10y
+---
+type: ZoneEgress
+name: zoneegress-1
+zone: zone-1
+networking:
+  address: 192.168.0.1
+  port: 10002
+---
+type: TrafficRoute
+name: trafficroute-0
+mesh: mesh-1
+sources:
+- match:
+    kuma.io/service: "*"
+destinations:
+- match:
+    kuma.io/service: "*"
+conf:
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: "*"
+---
+type: ZoneIngress
+name: zone-2-zoneingress-1
+zone: zone-2
+networking:
+  address: 10.0.0.254
+  advertisedAddress: 10.0.0.254
+  port: 10001
+  advertisedPort: 10001
+availableServices:
+- tags:
+    kuma.io/service: service-1-zone-2
+    kuma.io/protocol: http
+  instances: 3
+  mesh: mesh-1
+- tags:
+    kuma.io/service: service-2-zone-2
+    kuma.io/protocol: http2
+  instances: 30
+  mesh: mesh-1
+---
+type: ExternalService
+name: externalservice-1
+mesh: mesh-1
+tags:
+  kuma.io/service: externalservice-1
+  kuma.io/protocol: http
+networking:
+  address: kuma.io:80
+---
+type: ExternalService
+name: externalservice-1
+mesh: mesh-1
+tags:
+  kuma.io/service: externalservice-2
+  kuma.io/protocol: http2
+networking:
+  address: httpbin.io:443
+  tls:
+    enabled: true
+    allowRenegotiation: false
+    sni: httpbin.org
+    caCert:
+      inlineString: |
+        -----BEGIN CERTIFICATE-----
+        MIIESTCCAzGgAwIBAgITBntQXCplJ7wevi2i0ZmY7bibLDANBgkqhkiG9w0BAQsF
+        ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6
+        b24gUm9vdCBDQSAxMB4XDTE1MTAyMTIyMjQzNFoXDTQwMTAyMTIyMjQzNFowRjEL
+        MAkGA1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEVMBMGA1UECxMMU2VydmVyIENB
+        IDFCMQ8wDQYDVQQDEwZBbWF6b24wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+        AoIBAQDCThZn3c68asg3Wuw6MLAd5tES6BIoSMzoKcG5blPVo+sDORrMd4f2AbnZ
+        cMzPa43j4wNxhplty6aUKk4T1qe9BOwKFjwK6zmxxLVYo7bHViXsPlJ6qOMpFge5
+        blDP+18x+B26A0piiQOuPkfyDyeR4xQghfj66Yo19V+emU3nazfvpFA+ROz6WoVm
+        B5x+F2pV8xeKNR7u6azDdU5YVX1TawprmxRC1+WsAYmz6qP+z8ArDITC2FMVy2fw
+        0IjKOtEXc/VfmtTFch5+AfGYMGMqqvJ6LcXiAhqG5TI+Dr0RtM88k+8XUBCeQ8IG
+        KuANaL7TiItKZYxK1MMuTJtV9IblAgMBAAGjggE7MIIBNzASBgNVHRMBAf8ECDAG
+        AQH/AgEAMA4GA1UdDwEB/wQEAwIBhjAdBgNVHQ4EFgQUWaRmBlKge5WSPKOUByeW
+        dFv5PdAwHwYDVR0jBBgwFoAUhBjMhTTsvAyUlC4IWZzHshBOCggwewYIKwYBBQUH
+        AQEEbzBtMC8GCCsGAQUFBzABhiNodHRwOi8vb2NzcC5yb290Y2ExLmFtYXpvbnRy
+        dXN0LmNvbTA6BggrBgEFBQcwAoYuaHR0cDovL2NybC5yb290Y2ExLmFtYXpvbnRy
+        dXN0LmNvbS9yb290Y2ExLmNlcjA/BgNVHR8EODA2MDSgMqAwhi5odHRwOi8vY3Js
+        LnJvb3RjYTEuYW1hem9udHJ1c3QuY29tL3Jvb3RjYTEuY3JsMBMGA1UdIAQMMAow
+        CAYGZ4EMAQIBMA0GCSqGSIb3DQEBCwUAA4IBAQAfsaEKwn17DjAbi/Die0etn+PE
+        gfY/I6s8NLWkxGAOUfW2o+vVowNARRVjaIGdrhAfeWHkZI6q2pI0x/IJYmymmcWa
+        ZaW/2R7DvQDtxCkFkVaxUeHvENm6IyqVhf6Q5oN12kDSrJozzx7I7tHjhBK7V5Xo
+        TyS4NU4EhSyzGgj2x6axDd1hHRjblEpJ80LoiXlmUDzputBXyO5mkcrplcVvlIJi
+        WmKjrDn2zzKxDX5nwvkskpIjYlJcrQu4iCX1/YwZ1yNqF9LryjlilphHCACiHbhI
+        RnGfN8j8KLDVmWyTYMk8V+6j0LI4+4zFh2upqGMQHL3VFVFWBek6vCDWhB/b
+        -----END CERTIFICATE-----

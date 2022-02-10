@@ -1,0 +1,237 @@
+resources:
+- name: externalservice-1
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: externalservice-1
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: kuma.io
+                portValue: 80
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                mesh: mesh-1
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                mesh: mesh-1
+    name: externalservice-1
+    type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          httpProtocolOptions: {}
+- name: externalservice-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: externalservice-2
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: httpbin.io
+                portValue: 443
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/external-service-name: externalservice-1
+                kuma.io/protocol: http2
+                mesh: mesh-1
+              envoy.transport_socket_match:
+                kuma.io/external-service-name: externalservice-1
+                kuma.io/protocol: http2
+                mesh: mesh-1
+    name: externalservice-2
+    transportSocketMatches:
+    - match:
+        kuma.io/external-service-name: externalservice-1
+        kuma.io/protocol: http2
+        mesh: mesh-1
+      name: httpbin.io
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          commonTlsContext:
+            validationContext:
+              matchSubjectAltNames:
+              - exact: httpbin.io
+              trustedCa:
+                inlineBytes: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVTVENDQXpHZ0F3SUJBZ0lUQm50UVhDcGxKN3dldmkyaTBabVk3YmliTERBTkJna3Foa2lHOXcwQkFRc0YKQURBNU1Rc3dDUVlEVlFRR0V3SlZVekVQTUEwR0ExVUVDaE1HUVcxaGVtOXVNUmt3RndZRFZRUURFeEJCYldGNgpiMjRnVW05dmRDQkRRU0F4TUI0WERURTFNVEF5TVRJeU1qUXpORm9YRFRRd01UQXlNVEl5TWpRek5Gb3dSakVMCk1Ba0dBMVVFQmhNQ1ZWTXhEekFOQmdOVkJBb1RCa0Z0WVhwdmJqRVZNQk1HQTFVRUN4TU1VMlZ5ZG1WeUlFTkIKSURGQ01ROHdEUVlEVlFRREV3WkJiV0Y2YjI0d2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFSwpBb0lCQVFEQ1RoWm4zYzY4YXNnM1d1dzZNTEFkNXRFUzZCSW9TTXpvS2NHNWJsUFZvK3NET1JyTWQ0ZjJBYm5aCmNNelBhNDNqNHdOeGhwbHR5NmFVS2s0VDFxZTlCT3dLRmp3SzZ6bXh4TFZZbzdiSFZpWHNQbEo2cU9NcEZnZTUKYmxEUCsxOHgrQjI2QTBwaWlRT3VQa2Z5RHllUjR4UWdoZmo2NllvMTlWK2VtVTNuYXpmdnBGQStST3o2V29WbQpCNXgrRjJwVjh4ZUtOUjd1NmF6RGRVNVlWWDFUYXdwcm14UkMxK1dzQVltejZxUCt6OEFyRElUQzJGTVZ5MmZ3CjBJaktPdEVYYy9WZm10VEZjaDUrQWZHWU1HTXFxdko2TGNYaUFocUc1VEkrRHIwUnRNODhrKzhYVUJDZVE4SUcKS3VBTmFMN1RpSXRLWll4SzFNTXVUSnRWOUlibEFnTUJBQUdqZ2dFN01JSUJOekFTQmdOVkhSTUJBZjhFQ0RBRwpBUUgvQWdFQU1BNEdBMVVkRHdFQi93UUVBd0lCaGpBZEJnTlZIUTRFRmdRVVdhUm1CbEtnZTVXU1BLT1VCeWVXCmRGdjVQZEF3SHdZRFZSMGpCQmd3Rm9BVWhCak1oVFRzdkF5VWxDNElXWnpIc2hCT0NnZ3dld1lJS3dZQkJRVUgKQVFFRWJ6QnRNQzhHQ0NzR0FRVUZCekFCaGlOb2RIUndPaTh2YjJOemNDNXliMjkwWTJFeExtRnRZWHB2Ym5SeQpkWE4wTG1OdmJUQTZCZ2dyQmdFRkJRY3dBb1l1YUhSMGNEb3ZMMk55YkM1eWIyOTBZMkV4TG1GdFlYcHZiblJ5CmRYTjBMbU52YlM5eWIyOTBZMkV4TG1ObGNqQS9CZ05WSFI4RU9EQTJNRFNnTXFBd2hpNW9kSFJ3T2k4dlkzSnMKTG5KdmIzUmpZVEV1WVcxaGVtOXVkSEoxYzNRdVkyOXRMM0p2YjNSallURXVZM0pzTUJNR0ExVWRJQVFNTUFvdwpDQVlHWjRFTUFRSUJNQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUJBUUFmc2FFS3duMTdEakFiaS9EaWUwZXRuK1BFCmdmWS9JNnM4TkxXa3hHQU9VZlcybyt2Vm93TkFSUlZqYUlHZHJoQWZlV0hrWkk2cTJwSTB4L0lKWW15bW1jV2EKWmFXLzJSN0R2UUR0eENrRmtWYXhVZUh2RU5tNkl5cVZoZjZRNW9OMTJrRFNySm96eng3STd0SGpoQks3VjVYbwpUeVM0TlU0RWhTeXpHZ2oyeDZheERkMWhIUmpibEVwSjgwTG9pWGxtVUR6cHV0Qlh5TzVta2NycGxjVnZsSUppCldtS2pyRG4yenpLeERYNW53dmtza3BJallsSmNyUXU0aUNYMS9Zd1oxeU5xRjlMcnlqbGlscGhIQ0FDaUhiaEkKUm5HZk44ajhLTERWbVd5VFlNazhWKzZqMExJNCs0ekZoMnVwcUdNUUhMM1ZGVkZXQmVrNnZDRFdoQi9iCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          sni: httpbin.io
+    type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: service-1-zone-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+    name: service-1-zone-2
+    type: EDS
+- name: service-2-zone-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+    name: service-2-zone-2
+    type: EDS
+- name: service-1-zone-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: service-1-zone-2
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 10.0.0.254
+              portValue: 10001
+        loadBalancingWeight: 3
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              mesh: mesh-1
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              mesh: mesh-1
+- name: service-2-zone-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: service-2-zone-2
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 10.0.0.254
+              portValue: 10001
+        loadBalancingWeight: 30
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http2
+              mesh: mesh-1
+            envoy.transport_socket_match:
+              kuma.io/protocol: http2
+              mesh: mesh-1
+- name: inbound:192.168.0.1:10002
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 10002
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - service-1-zone-2{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: service-1-zone-2
+          metadataMatch:
+            filterMetadata:
+              envoy.lb:
+                mesh: mesh-1
+          statPrefix: service-1-zone-2
+    - filterChainMatch:
+        serverNames:
+        - service-2-zone-2{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: service-2-zone-2
+          metadataMatch:
+            filterMetadata:
+              envoy.lb:
+                mesh: mesh-1
+          statPrefix: service-2-zone-2
+    - filterChainMatch:
+        serverNames:
+        - externalservice-1{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: outbound:externalservice-1
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: externalservice-1
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: externalservice-1
+          statPrefix: externalservice-1
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - prefix: spiffe://mesh-1/
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:mesh-1
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:mesh-1
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: inbound:192.168.0.1:10002
+    trafficDirection: INBOUND
