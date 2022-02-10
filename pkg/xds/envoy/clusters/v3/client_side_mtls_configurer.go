@@ -6,8 +6,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -15,7 +15,7 @@ import (
 )
 
 type ClientSideMTLSConfigurer struct {
-	Ctx              xds_context.Context
+	Mesh             *core_mesh.MeshResource
 	UpstreamService  string
 	Tags             []envoy.Tags
 	UpstreamTLSReady bool
@@ -24,15 +24,15 @@ type ClientSideMTLSConfigurer struct {
 var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 
 func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	if !c.Ctx.Mesh.Resource.MTLSEnabled() {
+	if !c.Mesh.MTLSEnabled() {
 		return nil
 	}
-	if c.Ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE &&
+	if c.Mesh.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE &&
 		!c.UpstreamTLSReady {
 		return nil
 	}
 
-	mesh := c.Ctx.Mesh.Resource.GetMeta().GetName()
+	meshName := c.Mesh.GetMeta().GetName()
 	// there might be a situation when there are multiple sam tags passed here for example two outbound listeners with the same tags, therefore we need to distinguish between them.
 	distinctTags := envoy.DistinctTags(c.Tags)
 	switch {
@@ -43,14 +43,14 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 		}
 		cluster.TransportSocket = transportSocket
 	case len(distinctTags) == 1:
-		transportSocket, err := c.createTransportSocket(tls.SNIFromTags(c.Tags[0].WithTags("mesh", mesh)))
+		transportSocket, err := c.createTransportSocket(tls.SNIFromTags(c.Tags[0].WithTags("mesh", meshName)))
 		if err != nil {
 			return err
 		}
 		cluster.TransportSocket = transportSocket
 	default:
 		for _, tags := range distinctTags {
-			sni := tls.SNIFromTags(tags.WithTags("mesh", mesh))
+			sni := tls.SNIFromTags(tags.WithTags("mesh", meshName))
 			transportSocket, err := c.createTransportSocket(sni)
 			if err != nil {
 				return err
@@ -68,7 +68,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 }
 
 func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_core.TransportSocket, error) {
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.Ctx, c.UpstreamService, sni)
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.Mesh, c.UpstreamService, sni)
 	if err != nil {
 		return nil, err
 	}

@@ -204,7 +204,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster(clusterName)).
 						Configure(envoy_clusters.ClientSideMTLS(
-							ctx,
+							ctx.Mesh.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							tlsReady,
 							clusterTags,
@@ -229,7 +229,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				edsClusterBuilder.
 					Configure(envoy_clusters.EdsCluster(clusterName)).
 					Configure(envoy_clusters.LB(cluster.LB())).
-					Configure(envoy_clusters.ClientSideMTLS(ctx, serviceName, tlsReady, clusterTags)).
+					Configure(envoy_clusters.ClientSideMTLS(ctx.Mesh.Resource, serviceName, tlsReady, clusterTags)).
 					Configure(envoy_clusters.Http2())
 			}
 

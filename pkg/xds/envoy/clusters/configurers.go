@@ -4,7 +4,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 )
@@ -21,10 +20,10 @@ func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBui
 	})
 }
 
-func ClientSideMTLS(ctx xds_context.Context, upstreamService string, upstreamTLSReady bool, tags []envoy.Tags) ClusterBuilderOpt {
+func ClientSideMTLS(mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
-			Ctx:              ctx,
+			Mesh:             mesh,
 			UpstreamService:  upstreamService,
 			Tags:             tags,
 			UpstreamTLSReady: upstreamTLSReady,
@@ -33,10 +32,10 @@ func ClientSideMTLS(ctx xds_context.Context, upstreamService string, upstreamTLS
 }
 
 // UnknownDestinationClientSideMTLS configures cluster with mTLS for a mesh but without extensive destination verification (only Mesh is verified)
-func UnknownDestinationClientSideMTLS(ctx xds_context.Context) ClusterBuilderOpt {
+func UnknownDestinationClientSideMTLS(mesh *core_mesh.MeshResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
-			Ctx:              ctx,
+			Mesh:             mesh,
 			UpstreamService:  "*",
 			Tags:             nil,
 			UpstreamTLSReady: true,

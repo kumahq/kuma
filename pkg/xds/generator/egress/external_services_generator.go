@@ -113,12 +113,6 @@ func (*ExternalServicesGenerator) addFilterChains(
 
 	sniUsed := map[string]bool{}
 
-	xdsContext := xds_context.Context{
-		Mesh: xds_context.MeshContext{
-			Resource: mesh,
-		},
-	}
-
 	for _, es := range externalServices {
 		serviceName := es.GetMeta().GetName()
 
@@ -153,7 +147,7 @@ func (*ExternalServicesGenerator) addFilterChains(
 			)
 
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
-				envoy_listeners.ServerSideMTLS(xdsContext),
+				envoy_listeners.ServerSideMTLS(mesh),
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(sni),
 			)

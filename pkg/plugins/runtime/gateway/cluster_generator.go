@@ -60,7 +60,7 @@ func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayRe
 				"service", service,
 			)
 
-			return c.generateMeshCluster(ctx, info, dest)
+			return c.generateMeshCluster(ctx.Mesh.Resource, info, dest)
 		}()
 
 		if resources.Add(r, err) != nil {
@@ -104,7 +104,7 @@ func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayRe
 }
 
 func (c *ClusterGenerator) generateMeshCluster(
-	ctx xds_context.Context,
+	mesh *core_mesh.MeshResource,
 	info *GatewayResourceInfo,
 	dest *route.Destination,
 ) (*core_xds.Resource, error) {
@@ -115,7 +115,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	builder := newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
 		clusters.EdsCluster(dest.Destination[mesh_proto.ServiceTag]),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(ctx, dest.Destination[mesh_proto.ServiceTag], true, []envoy.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(mesh, dest.Destination[mesh_proto.ServiceTag], true, []envoy.Tags{dest.Destination}),
 	)
 
 	// TODO(jpeach) Envoy configures retries and fault injection with
