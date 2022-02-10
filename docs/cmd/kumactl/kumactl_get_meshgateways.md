@@ -1,19 +1,21 @@
-## kumactl get gateway-route
+## kumactl get meshgateways
 
-Show a single GatewayRoute resource
+Show MeshGateway
 
 ### Synopsis
 
-Show a single GatewayRoute resource.
+Show MeshGateway entities.
 
 ```
-kumactl get gateway-route NAME [flags]
+kumactl get meshgateways [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for gateway-route
+  -h, --help            help for meshgateways
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
 ```
 
 ### Options inherited from parent commands

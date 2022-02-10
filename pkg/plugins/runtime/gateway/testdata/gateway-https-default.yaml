@@ -1,4 +1,4 @@
-type: Gateway
+type: MeshGateway
 mesh: default
 name: edge-gateway
 selectors:

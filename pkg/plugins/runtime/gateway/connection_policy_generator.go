@@ -17,7 +17,7 @@ import (
 type ConnectionPolicyGenerator struct {
 }
 
-func (*ConnectionPolicyGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Protocol) bool {
+func (*ConnectionPolicyGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
 	return true
 }
 

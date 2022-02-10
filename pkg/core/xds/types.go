@@ -147,7 +147,7 @@ type ZoneEgressProxy struct {
 
 type ZoneIngressProxy struct {
 	TrafficRouteList *core_mesh.TrafficRouteResourceList
-	GatewayRoutes    *core_mesh.GatewayRouteResourceList
+	GatewayRoutes    *core_mesh.MeshGatewayRouteResourceList
 }
 
 type VIPDomains struct {

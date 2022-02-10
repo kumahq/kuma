@@ -117,7 +117,7 @@ func DefaultInstallCpContext() InstallCpContext {
 }
 
 func ExcludeGatewayCRDs(file data.File) bool {
-	return file.Name != "kuma.io_gateways.yaml" &&
-		file.Name != "kuma.io_gatewayroutes.yaml" &&
-		file.Name != "kuma.io_gatewayinstances.yaml"
+	return file.Name != "kuma.io_meshgateways.yaml" &&
+		file.Name != "kuma.io_meshgatewayroutes.yaml" &&
+		file.Name != "kuma.io_meshgatewayinstances.yaml"
 }

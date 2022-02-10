@@ -24,7 +24,7 @@ const WildcardHostname = "*"
 // RoutePolicyTypes specifies the resource types the gateway will bind
 // for routes.
 var RoutePolicyTypes = []model.ResourceType{
-	core_mesh.GatewayRouteType,
+	core_mesh.MeshGatewayRouteType,
 }
 
 // ConnectionPolicyTypes specifies the resource types the gateway will
@@ -42,7 +42,7 @@ type GatewayHost struct {
 	Hostname string
 	Routes   []model.Resource
 	Policies map[model.ResourceType][]match.RankedPolicy
-	TLS      *mesh_proto.Gateway_TLS_Conf
+	TLS      *mesh_proto.MeshGateway_TLS_Conf
 }
 
 // Resources tracks partially-built xDS resources that can be updated
@@ -55,14 +55,14 @@ type Resources struct {
 
 type GatewayListener struct {
 	Port         uint32
-	Protocol     mesh_proto.Gateway_Listener_Protocol
+	Protocol     mesh_proto.MeshGateway_Listener_Protocol
 	ResourceName string
 }
 
 type GatewayResourceInfo struct {
 	Proxy            *core_xds.Proxy
 	Dataplane        *core_mesh.DataplaneResource
-	Gateway          *core_mesh.GatewayResource
+	Gateway          *core_mesh.MeshGatewayResource
 	ExternalServices *core_mesh.ExternalServiceResourceList
 
 	Listener   GatewayListener
@@ -74,7 +74,7 @@ type GatewayResourceInfo struct {
 // GatewayHostGenerator is responsible for generating xDS resources for a single GatewayHost.
 type GatewayHostGenerator interface {
 	GenerateHost(xds_context.Context, *GatewayResourceInfo) (*core_xds.ResourceSet, error)
-	SupportsProtocol(mesh_proto.Gateway_Listener_Protocol) bool
+	SupportsProtocol(mesh_proto.MeshGateway_Listener_Protocol) bool
 }
 
 // Generator generates xDS resources for an entire Gateway.
@@ -111,7 +111,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 	// Multiple listener specifications can have the same port. If
 	// they are compatible, then we can collapse those specifications
 	// down to a single listener.
-	collapsed := map[uint32][]*mesh_proto.Gateway_Listener{}
+	collapsed := map[uint32][]*mesh_proto.MeshGateway_Listener{}
 	for _, ep := range gateway.Spec.GetConf().GetListeners() {
 		collapsed[ep.GetPort()] = append(collapsed[ep.GetPort()], ep)
 	}
@@ -192,8 +192,8 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 // given listeners must have a consistent protocol and port.
 func MakeGatewayListener(
 	meshContext xds_context.MeshContext,
-	gateway *core_mesh.GatewayResource,
-	listeners []*mesh_proto.Gateway_Listener,
+	gateway *core_mesh.MeshGatewayResource,
+	listeners []*mesh_proto.MeshGateway_Listener,
 ) (GatewayListener, []GatewayHost, error) {
 	hostsByName := map[string]GatewayHost{}
 
@@ -227,8 +227,8 @@ func MakeGatewayListener(
 		}
 
 		switch listener.Protocol {
-		case mesh_proto.Gateway_Listener_HTTP,
-			mesh_proto.Gateway_Listener_HTTPS:
+		case mesh_proto.MeshGateway_Listener_HTTP,
+			mesh_proto.MeshGateway_Listener_HTTPS:
 			host.Routes = append(host.Routes,
 				match.Routes(meshContext.Resources.GatewayRoutes(), l.GetTags())...)
 		default:
@@ -285,7 +285,7 @@ func RedistributeWildcardRoutes(
 	wildcardRoutes := wild.Routes
 	wild.Routes = nil // We are rebuilding this.
 	for _, r := range wildcardRoutes {
-		gw, ok := r.(*core_mesh.GatewayRouteResource)
+		gw, ok := r.(*core_mesh.MeshGatewayRouteResource)
 		if !ok {
 			continue
 		}

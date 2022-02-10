@@ -107,7 +107,7 @@ spec:
 		// Find the service that is owned by the named GatewayInstance.
 		for _, svc := range services {
 			for _, ref := range svc.GetOwnerReferences() {
-				if ref.Kind == "GatewayInstance" && ref.Name == instanceName {
+				if ref.Kind == "MeshGatewayInstance" && ref.Name == instanceName {
 					return svc.Spec.ClusterIP
 				}
 			}
@@ -122,7 +122,7 @@ spec:
 			cluster.GetTesting(),
 			cluster.GetKubectlOptions(TestNamespace), `
 apiVersion: kuma.io/v1alpha1
-kind: Gateway
+kind: MeshGateway
 metadata:
   name: edge-gateway
 mesh: default
@@ -144,7 +144,7 @@ spec:
 			cluster.GetTesting(),
 			cluster.GetKubectlOptions(TestNamespace), `
 apiVersion: kuma.io/v1alpha1
-kind: GatewayRoute
+kind: MeshGatewayRoute
 metadata:
   name: edge-gateway
 mesh: default
@@ -166,7 +166,7 @@ spec:
 		).To(Succeed())
 
 		Expect(
-			cluster.GetKumactlOptions().KumactlList("gateways", "default"),
+			cluster.GetKumactlOptions().KumactlList("meshgateways", "default"),
 		).To(ContainElement("edge-gateway"))
 	})
 
@@ -181,7 +181,7 @@ spec:
 			cluster.GetTesting(),
 			cluster.GetKubectlOptions(TestNamespace), `
 apiVersion: kuma.io/v1alpha1
-kind: GatewayInstance
+kind: MeshGatewayInstance
 metadata:
   name: edge-gateway
 spec:
@@ -270,7 +270,7 @@ spec:
     address: es-test-server.kuma-client.svc.cluster.local:80`)).
 				Install(YamlK8s(`
 apiVersion: kuma.io/v1alpha1
-kind: GatewayRoute
+kind: MeshGatewayRoute
 metadata:
   name: edge-gateway-external-service
 mesh: default
@@ -315,7 +315,7 @@ spec:
 			err = NewClusterSetup().
 				Install(YamlK8s(`
 apiVersion: kuma.io/v1alpha1
-kind: Gateway
+kind: MeshGateway
 metadata:
   name: edge-gateway
 mesh: default

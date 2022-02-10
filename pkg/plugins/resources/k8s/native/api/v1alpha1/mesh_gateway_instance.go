@@ -8,20 +8,20 @@ import (
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// GatewayInstance represents a managed instance of a dataplane proxy for a Kuma
+// MeshGatewayInstance represents a managed instance of a dataplane proxy for a Kuma
 // Gateway.
-type GatewayInstance struct {
+type MeshGatewayInstance struct {
 	kube_meta.TypeMeta   `json:",inline"`
 	kube_meta.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   GatewayInstanceSpec   `json:"spec,omitempty"`
-	Status GatewayInstanceStatus `json:"status,omitempty"`
+	Spec   MeshGatewayInstanceSpec   `json:"spec,omitempty"`
+	Status MeshGatewayInstanceStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
 
-// GatewayInstanceSpec specifies the options available for a GatewayDataplane.
-type GatewayInstanceSpec struct {
+// MeshGatewayInstanceSpec specifies the options available for a GatewayDataplane.
+type MeshGatewayInstanceSpec struct {
 	// Tags specifies the Kuma tags that are propagated to the managed
 	// dataplane proxies. These tags should include exactly one
 	// `kuma.io/service` tag, and should match exactly one Gateway
@@ -60,9 +60,9 @@ type GatewayInstanceSpec struct {
 
 // +k8s:deepcopy-gen=true
 
-// GatewayInstanceStatus holds information about the status of the gateway
+// MeshGatewayInstanceStatus holds information about the status of the gateway
 // instance.
-type GatewayInstanceStatus struct {
+type MeshGatewayInstanceStatus struct {
 	// LoadBalancer contains the current status of the load-balancer,
 	// if one is present.
 	//
@@ -88,11 +88,11 @@ const (
 	GatewayInstanceAddressNotReady = "LoadBalancerAddressNotReady"
 )
 
-// GatewayInstanceList contains a list of GatewayInstances.
+// MeshGatewayInstanceList contains a list of GatewayInstances.
 //
 // +kubebuilder:object:root=true
-type GatewayInstanceList struct {
+type MeshGatewayInstanceList struct {
 	kube_meta.TypeMeta `json:",inline"`
 	kube_meta.ListMeta `json:"metadata,omitempty"`
-	Items              []GatewayInstance `json:"items"`
+	Items              []MeshGatewayInstance `json:"items"`
 }

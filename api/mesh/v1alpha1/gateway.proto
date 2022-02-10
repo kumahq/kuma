@@ -9,23 +9,23 @@ import "mesh/v1alpha1/selector.proto";
 import "system/v1alpha1/datasource.proto";
 import "validate/validate.proto";
 
-// Gateway is a virtual proxy.
+// MeshGateway is a virtual proxy.
 //
-// Each Gateway is bound to a set of builtin gateway dataplanes.
+// Each MeshGateway is bound to a set of builtin gateway dataplanes.
 // Each builtin dataplane instance can host exactly one Gateway
 // proxy configuration.
 //
 // Gateway aligns with the Kubernetes Gateway API v1alpha2. See that
 // spec for detailed documentation.
-message Gateway {
+message MeshGateway {
 
-  option (kuma.mesh.resource).name = "GatewayResource";
-  option (kuma.mesh.resource).type = "Gateway";
+  option (kuma.mesh.resource).name = "MeshGatewayResource";
+  option (kuma.mesh.resource).type = "MeshGateway";
   option (kuma.mesh.resource).package = "mesh";
 
   option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).kds.send_to_zone = true;
-  option (kuma.mesh.resource).ws.name = "gateway";
+  option (kuma.mesh.resource).ws.name = "meshgateway";
 
   // TLSConfig describes a TLS configuration.
   message TLS {
@@ -33,12 +33,12 @@ message Gateway {
       // NONE is not a valid TLS mode. Ether TERMINATE or PASSTHROUGH must
       // be explicitly configured.
       NONE = 0;
-      // The TLS session between the downstream client and the Gateway
-      // is terminated at the Gateway. This mode requires the certificate
+      // The TLS session between the downstream client and the MeshGateway
+      // is terminated at the MeshGateway. This mode requires the certificate
       // field to be set.
       TERMINATE = 1;
-      // The TLS session is NOT terminated by the Gateway. This implies
-      // that the Gateway can't decipher the TLS stream except for the
+      // The TLS session is NOT terminated by the MeshGateway. This implies
+      // that the MeshGateway can't decipher the TLS stream except for the
       // ClientHello message of the TLS protocol. The certificate field
       // is ignored in this mode.
       PASSTHROUGH = 2;
@@ -48,7 +48,7 @@ message Gateway {
       // TODO(jpeach)
     }
 
-    // Aligns with GatewayTLSConfig.
+    // Aligns with MeshGatewayTLSConfig.
     message Conf {
       // Mode defines the TLS behavior for the TLS session initiated
       // by the client.
@@ -113,11 +113,11 @@ message Gateway {
     map<string, string> tags = 5;
   }
 
-  // Conf defines the desired state of Gateway.
+  // Conf defines the desired state of MeshGateway.
   //
-  // Aligns with GatewaySpec.
+  // Aligns with MeshGatewaySpec.
   message Conf {
-    // Listeners define logical endpoints that are bound on this Gateway's
+    // Listeners define logical endpoints that are bound on this MeshGateway's
     // address(es).
     repeated Listener listeners = 2
         [ (validate.rules).repeated = {min_items : 1} ];
@@ -129,7 +129,7 @@ message Gateway {
   }
 
   // Selectors is a list of selectors that are used to match builtin
-  // gateway dataplanes that will receive this Gateway configuration.
+  // gateway dataplanes that will receive this MeshGateway configuration.
   repeated Selector selectors = 1
       [ (validate.rules).repeated = {min_items : 1} ];
 
@@ -139,6 +139,6 @@ message Gateway {
   // defined on the dataplanes).
   map<string, string> tags = 2 [ (validate.rules).repeated = {min_items : 1} ];
 
-  // The desired configuration of the Gateway.
+  // The desired configuration of the MeshGateway.
   Conf conf = 3;
 }

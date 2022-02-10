@@ -35,9 +35,9 @@ func crdsPresent(mgr kube_ctrl.Manager) bool {
 }
 
 func gatewayPresent() bool {
-	// If we haven't registered our type, we're not reconciling GatewayInstance
+	// If we haven't registered our type, we're not reconciling MeshGatewayInstance
 	// or gatewayapi objects.
-	if _, err := k8s_registry.Global().NewObject(&mesh_proto.Gateway{}); err != nil {
+	if _, err := k8s_registry.Global().NewObject(&mesh_proto.MeshGateway{}); err != nil {
 		var unknownTypeError *k8s_registry.UnknownTypeError
 		if errors.As(err, &unknownTypeError) {
 			return false
@@ -71,14 +71,14 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 
 	gatewayInstanceReconciler := &controllers.GatewayInstanceReconciler{
 		Client:          mgr.GetClient(),
-		Log:             core.Log.WithName("controllers").WithName("GatewayInstance"),
+		Log:             core.Log.WithName("controllers").WithName("MeshGatewayInstance"),
 		Scheme:          mgr.GetScheme(),
 		Converter:       converter,
 		ProxyFactory:    proxyFactory,
 		ResourceManager: rt.ResourceManager(),
 	}
 	if err := gatewayInstanceReconciler.SetupWithManager(mgr); err != nil {
-		return errors.Wrap(err, "could not setup GatewayInstance reconciler")
+		return errors.Wrap(err, "could not setup MeshGatewayInstance reconciler")
 	}
 
 	if !crdsPresent(mgr) {

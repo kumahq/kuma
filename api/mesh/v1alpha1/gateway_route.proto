@@ -13,19 +13,19 @@ import "mesh/v1alpha1/http_method.proto";
 
 option (doc.config) = {
   type : Policy,
-  name : "GatewayRoute",
-  file_name : "gateway-route"
+  name : "MeshGatewayRoute",
+  file_name : "meshgatewayroute"
 };
 
-message GatewayRoute {
+message MeshGatewayRoute {
 
-  option (kuma.mesh.resource).name = "GatewayRouteResource";
-  option (kuma.mesh.resource).type = "GatewayRoute";
+  option (kuma.mesh.resource).name = "MeshGatewayRouteResource";
+  option (kuma.mesh.resource).type = "MeshGatewayRoute";
   option (kuma.mesh.resource).package = "mesh";
 
   option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).kds.send_to_zone = true;
-  option (kuma.mesh.resource).ws.name = "gateway-route";
+  option (kuma.mesh.resource).ws.name = "meshgatewayroute";
 
   // Backend selects a target for HTTP request forwarding.
   message Backend {
@@ -295,7 +295,7 @@ message GatewayRoute {
     };
   };
 
-  // Selectors is used to match this resource to Gateway listener.
+  // Selectors is used to match this resource to MeshGateway listener.
   repeated Selector selectors = 1
       [ (doc.required) = true, (validate.rules).repeated .min_items = 1 ];
 

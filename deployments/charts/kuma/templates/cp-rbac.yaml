@@ -141,9 +141,9 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - gateways
-      - gatewayroutes
-      - gatewayinstances
+      - meshgateways
+      - meshgatewayroutes
+      - meshgatewayinstances
     verbs:
       - get
       - list
@@ -155,7 +155,7 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - gatewayinstances/status
+      - meshgatewayinstances/status
     verbs:
       - get
       - patch

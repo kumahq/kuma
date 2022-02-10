@@ -52,7 +52,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		if kube_apierrs.IsNotFound(err) {
 			// We don't know the mesh, but we don't need it to delete our
 			// object.
-			err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.GatewayRoute{}, nil)
+			err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &mesh_proto.MeshGatewayRoute{}, nil)
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned GatewayRoute.kuma.io")
 		}
 
@@ -71,7 +71,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating GatewayRoute.kuma.io")
 	}
 
-	if err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.GatewayRoute{}, spec); err != nil {
+	if err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGatewayRoute{}, spec); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned GatewayRoute.kuma.io")
 	}
 
@@ -92,7 +92,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	mesh string,
 	route *gatewayapi.HTTPRoute,
 ) (
-	*mesh_proto.GatewayRoute,
+	*mesh_proto.MeshGatewayRoute,
 	ParentConditions,
 	error,
 ) {
@@ -110,7 +110,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 		return nil, nil, err
 	}
 
-	kumaRoute := &mesh_proto.GatewayRoute{
+	kumaRoute := &mesh_proto.MeshGatewayRoute{
 		Conf: routeConf,
 	}
 
