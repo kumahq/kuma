@@ -29,10 +29,6 @@ func (g *InternalServicesGenerator) Generate(
 	destinations := g.buildDestinations(info.TrafficRoutes)
 	services := g.buildServices(endpointMap)
 
-	log.Info("endpointMap", "endpointMap", endpointMap)
-	log.Info("destinations", "destinations", destinations)
-	log.Info("services", "services", services)
-
 	g.addFilterChains(apiVersion, destinations, endpointMap, info)
 
 	cds, err := g.generateCDS(apiVersion, services, destinations)
