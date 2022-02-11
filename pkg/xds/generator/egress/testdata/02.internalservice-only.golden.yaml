@@ -1,7 +1,8 @@
 resources:
-- name: service-in-zone-2
+- name: mesh-1:service-in-zone-2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh-1_service-in-zone-2
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
@@ -13,12 +14,12 @@ resources:
       - fallbackPolicy: NO_FALLBACK
         keys:
         - mesh
-    name: service-in-zone-2
+    name: mesh-1:service-in-zone-2
     type: EDS
-- name: service-in-zone-2
+- name: mesh-1:service-in-zone-2
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: service-in-zone-2
+    clusterName: mesh-1:service-in-zone-2
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -51,12 +52,12 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: service-in-zone-2
+          cluster: mesh-1:service-in-zone-2
           metadataMatch:
             filterMetadata:
               envoy.lb:
                 mesh: mesh-1
-          statPrefix: service-in-zone-2
+          statPrefix: mesh-1_service-in-zone-2
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

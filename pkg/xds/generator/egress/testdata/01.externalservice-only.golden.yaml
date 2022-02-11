@@ -2,10 +2,11 @@ resources:
 - name: externalservice-1
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh-1_externalservice-1
     connectTimeout: 10s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
-      clusterName: externalservice-1
+      clusterName: mesh-1:externalservice-1
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -22,7 +23,7 @@ resources:
               envoy.transport_socket_match:
                 kuma.io/protocol: http
                 mesh: mesh-1
-    name: externalservice-1
+    name: mesh-1:externalservice-1
     type: STRICT_DNS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -69,7 +70,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: externalservice-1
+                  cluster: mesh-1:externalservice-1
           statPrefix: externalservice-1
       transportSocket:
         name: envoy.transport_sockets.tls

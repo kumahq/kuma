@@ -34,7 +34,7 @@ func BuildEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 
-	if len(zoneEgresses) == 0 {
+	if len(zoneEgresses) == 0 || !mesh.MTLSEnabled() {
 		fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
 	}
 
@@ -92,7 +92,7 @@ func BuildEdsEndpointMap(
 	}
 	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight)
 
-	if len(zoneEgresses) > 0 {
+	if len(zoneEgresses) > 0 && mesh.MTLSEnabled() {
 		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, zoneEgresses, mesh)
 	}
 

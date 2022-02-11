@@ -10,6 +10,7 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
@@ -28,6 +29,7 @@ func (g *InternalServicesGenerator) Generate(
 	endpointMap := meshResources.EndpointMap
 	destinations := g.buildDestinations(meshResources.TrafficRoutes)
 	services := g.buildServices(endpointMap)
+	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	g.addFilterChains(
 		apiVersion,
@@ -38,13 +40,13 @@ func (g *InternalServicesGenerator) Generate(
 		meshResources,
 	)
 
-	cds, err := g.generateCDS(apiVersion, services, destinations)
+	cds, err := g.generateCDS(meshName, apiVersion, services, destinations)
 	if err != nil {
 		return nil, err
 	}
 	resources.Add(cds...)
 
-	eds, err := g.generateEDS(apiVersion, services, endpointMap)
+	eds, err := g.generateEDS(meshName, apiVersion, services, endpointMap)
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +56,7 @@ func (g *InternalServicesGenerator) Generate(
 }
 
 func (*InternalServicesGenerator) generateEDS(
+	meshName string,
 	apiVersion envoy_common.APIVersion,
 	services []string,
 	endpointMap core_xds.EndpointMap,
@@ -63,13 +66,18 @@ func (*InternalServicesGenerator) generateEDS(
 	for _, serviceName := range services {
 		endpoints := endpointMap[serviceName]
 
-		cla, err := envoy_endpoints.CreateClusterLoadAssignment(serviceName, endpoints, apiVersion)
+		// There is a case where multiple meshes contain services with
+		// the same names, so we cannot use just "serviceName" as a cluster
+		// name as we would overwrite some clusters with the latest one
+		clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
+
+		cla, err := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints, apiVersion)
 		if err != nil {
 			return nil, err
 		}
 
 		resources = append(resources, &core_xds.Resource{
-			Name:     serviceName,
+			Name:     clusterName,
 			Origin:   OriginEgress,
 			Resource: cla,
 		})
@@ -79,6 +87,7 @@ func (*InternalServicesGenerator) generateEDS(
 }
 
 func (*InternalServicesGenerator) generateCDS(
+	meshName string,
 	apiVersion envoy_common.APIVersion,
 	services []string,
 	destinationsPerService map[string][]envoy_common.Tags,
@@ -90,8 +99,13 @@ func (*InternalServicesGenerator) generateCDS(
 
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(envoy_common.Without(mesh_proto.ServiceTag), envoy_common.With("mesh"))
 
+		// There is a case where multiple meshes contain services with
+		// the same names, so we cannot use just "serviceName" as a cluster
+		// name as we would overwrite some clusters with the latest one
+		clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
+
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
-			Configure(envoy_clusters.EdsCluster(serviceName)).
+			Configure(envoy_clusters.EdsCluster(clusterName)).
 			Configure(envoy_clusters.LbSubset(tagKeySlice)).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
@@ -101,7 +115,7 @@ func (*InternalServicesGenerator) generateCDS(
 		}
 
 		resources = append(resources, &core_xds.Resource{
-			Name:     serviceName,
+			Name:     clusterName,
 			Origin:   OriginEgress,
 			Resource: edsCluster,
 		})
@@ -174,11 +188,17 @@ func (*InternalServicesGenerator) addFilterChains(
 
 				sniUsed[sni] = true
 
+				// There is a case where multiple meshes contain services with
+				// the same names, so we cannot use just "serviceName" as a cluster
+				// name as we would overwrite some clusters with the latest one
+				clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
+
 				listenerBuilder.Configure(envoy_listeners.FilterChain(
 					envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"),
 						envoy_listeners.MatchServerNames(sni),
-						envoy_listeners.TcpProxyWithMetadata(serviceName, envoy_common.NewCluster(
+						envoy_listeners.TcpProxyWithMetadata(clusterName, envoy_common.NewCluster(
+							envoy_common.WithName(clusterName),
 							envoy_common.WithService(serviceName),
 							envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
 						)),

@@ -9,6 +9,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
@@ -37,6 +38,7 @@ func (g *ExternalServicesGenerator) Generate(
 	)
 
 	cds, err := g.generateCDS(
+		meshResources.Mesh.GetMeta().GetName(),
 		apiVersion,
 		services,
 		endpointMap,
@@ -51,6 +53,7 @@ func (g *ExternalServicesGenerator) Generate(
 }
 
 func (*ExternalServicesGenerator) generateCDS(
+	meshName string,
 	apiVersion envoy_common.APIVersion,
 	services []string,
 	endpointMap core_xds.EndpointMap,
@@ -67,9 +70,14 @@ func (*ExternalServicesGenerator) generateCDS(
 			continue
 		}
 
+		// There is a case where multiple meshes contain services with
+		// the same names, so we cannot use just "serviceName" as a cluster
+		// name as we would overwrite some clusters with the latest one
+		clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
+
 		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion).
 			Configure(envoy_clusters.ProvidedEndpointCluster(
-				serviceName,
+				clusterName,
 				isIPV6,
 				endpoints...,
 			)).
@@ -152,7 +160,13 @@ func (*ExternalServicesGenerator) addFilterChains(
 
 			sniUsed[sni] = true
 
+			// There is a case where multiple meshes contain services with
+			// the same names, so we cannot use just "serviceName" as a cluster
+			// name as we would overwrite some clusters with the latest one
+			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
+
 			cluster := envoy_common.NewCluster(
+				envoy_common.WithName(clusterName),
 				envoy_common.WithService(serviceName),
 				envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
 			)
