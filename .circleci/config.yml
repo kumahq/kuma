@@ -870,6 +870,11 @@ jobs:
             - run:
                 name: "Run IPv4 E2E tests"
                 command: |
+                  echo $(circleci tests glob ./test/e2e/*)
+                  circleci tests glob ./test/e2e/* | xargs -n 1 echo
+                  echo $(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l))
+                  circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs -n 1 echo
+                  echo $(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
                   export CI_K3S_VERSION=<< parameters.k3sVersion >>
                   export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
