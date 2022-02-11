@@ -115,6 +115,9 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace:    gatewayInstance.Namespace,
 					GenerateName: fmt.Sprintf("%s-", gatewayInstance.Name),
+					Annotations: map[string]string{
+						metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
+					},
 				},
 			}
 			if obj != nil {
