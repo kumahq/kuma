@@ -16,7 +16,6 @@ import (
 func KubernetesMultizone() {
 	var globalK8s, zoneK8s *K8sCluster
 	var zoneIngress *kube_core.Pod
-	var kumaControlPlane *kube_core.Pod
 
 	meshMTLSOn := func(mesh string) string {
 		return fmt.Sprintf(`
@@ -85,7 +84,6 @@ spec:
 		}, "60s", "1s").Should(Succeed())
 
 		zoneIngress = GetPod(Config.KumaNamespace, "kuma-ingress")
-		kumaControlPlane = GetPod(Config.KumaNamespace, Config.KumaServiceName)
 	})
 
 	E2EAfterEach(func() {

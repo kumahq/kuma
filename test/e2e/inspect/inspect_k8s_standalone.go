@@ -16,7 +16,6 @@ import (
 func KubernetesStandalone() {
 	var cluster *K8sCluster
 	var demoClient *kube_core.Pod
-	var kumaControlPlane *kube_core.Pod
 
 	GetPod := func(namespace, app string) *kube_core.Pod {
 		pods, err := k8s.ListPodsE(
@@ -56,7 +55,6 @@ func KubernetesStandalone() {
 		}, "60s", "1s").Should(Succeed())
 
 		demoClient = GetPod(TestNamespace, "demo-client")
-		kumaControlPlane = GetPod(Config.KumaNamespace, Config.KumaServiceName)
 	})
 
 	E2EAfterEach(func() {
