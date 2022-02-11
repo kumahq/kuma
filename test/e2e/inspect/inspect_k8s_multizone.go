@@ -99,8 +99,8 @@ spec:
 		zoneIngressName := fmt.Sprintf("%s.%s", zoneIngress.GetName(), Config.KumaNamespace)
 		Eventually(func(g Gomega) {
 			stdout, err := zoneK8s.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", zoneIngressName, "--config-dump")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(stdout).To(ContainSubstring(`"dataplane.proxyType": "ingress"`))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring(`"dataplane.proxyType": "ingress"`))
 
 			// filterChainMatches could be available not immediately
 			g.Expect(stdout).To(ContainSubstring(`"demo-client_kuma-test_svc{mesh=default}"`))
