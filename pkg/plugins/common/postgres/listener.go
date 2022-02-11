@@ -10,7 +10,7 @@ import (
 )
 
 func NewListener(cfg config.PostgresStoreConfig, log logr.Logger) (*pq.Listener, error) {
-	connStr, err := connectionString(cfg)
+	connStr, err := cfg.ConnectionString()
 	if err != nil {
 		return nil, err
 	}

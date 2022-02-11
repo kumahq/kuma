@@ -86,19 +86,67 @@ var _ = Describe("TLSPostgresStoreConfig", func() {
 })
 
 var _ = Describe("PostgresStoreConfig", func() {
-	type testCase struct {
+	type stringTestCase struct {
+		given    postgres.PostgresStoreConfig
+		expected string
+	}
+	DescribeTable("converts to Postgres connection string",
+		func(testCase stringTestCase) {
+			// when
+			str, err := testCase.given.ConnectionString()
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			Expect(str).To(Equal(testCase.expected))
+		},
+		Entry("basic config", stringTestCase{
+			given: postgres.PostgresStoreConfig{
+				Host:     "localhost",
+				User:     "postgres",
+				Password: `postgres`,
+				DbName:   "kuma",
+				TLS: postgres.TLSPostgresStoreConfig{
+					Mode:     postgres.VerifyFull,
+					CAPath:   "/path",
+					KeyPath:  "/path",
+					CertPath: "/path",
+				},
+				MinReconnectInterval: 10 * time.Second,
+				MaxReconnectInterval: 10 * time.Second,
+			},
+			expected: `host='localhost' port=0 user='postgres' password='postgres' dbname='kuma' connect_timeout=0 sslmode=verify-full sslcert='/path' sslkey='/path' sslrootcert='/path'`,
+		}),
+		Entry("password needing escape", stringTestCase{
+			given: postgres.PostgresStoreConfig{
+				Host:     "localhost",
+				User:     "postgres",
+				Password: `'\`,
+				DbName:   "kuma",
+				TLS: postgres.TLSPostgresStoreConfig{
+					Mode:     postgres.VerifyFull,
+					CAPath:   "/path",
+					KeyPath:  "/path",
+					CertPath: "/path",
+				},
+				MinReconnectInterval: 10 * time.Second,
+				MaxReconnectInterval: 10 * time.Second,
+			},
+			expected: `host='localhost' port=0 user='postgres' password='\'\\' dbname='kuma' connect_timeout=0 sslmode=verify-full sslcert='/path' sslkey='/path' sslrootcert='/path'`,
+		}),
+	)
+	type validateTestCase struct {
 		config postgres.PostgresStoreConfig
 		error  string
 	}
 	DescribeTable("should validate invalid config",
-		func(given testCase) {
+		func(given validateTestCase) {
 			// when
 			err := given.config.Validate()
 
 			// then
 			Expect(err).To(MatchError(given.error))
 		},
-		Entry("MinReconnectInterval is equal to MaxReconnectInterval", testCase{
+		Entry("MinReconnectInterval is equal to MaxReconnectInterval", validateTestCase{
 			config: postgres.PostgresStoreConfig{
 				Host:     "localhost",
 				User:     "postgres",
@@ -115,7 +163,7 @@ var _ = Describe("PostgresStoreConfig", func() {
 			},
 			error: "MinReconnectInterval should be less than MaxReconnectInterval",
 		}),
-		Entry("MinReconnectInterval is greater than MaxReconnectInterval", testCase{
+		Entry("MinReconnectInterval is greater than MaxReconnectInterval", validateTestCase{
 			config: postgres.PostgresStoreConfig{
 				Host:     "localhost",
 				User:     "postgres",
