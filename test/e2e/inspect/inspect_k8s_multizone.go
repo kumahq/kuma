@@ -99,9 +99,7 @@ spec:
 
 	It("should return envoy config_dump for zone ingress", func() {
 		zoneIngressName := fmt.Sprintf("%s.%s", zoneIngress.GetName(), Config.KumaNamespace)
-		cmd := []string{"kumactl", "inspect", "zoneingress", zoneIngressName, "--config-dump"}
-
-		stdout, _, err := zoneK8s.ExecWithRetries(Config.KumaNamespace, kumaControlPlane.GetName(), "control-plane", cmd...)
+		stdout, err := zoneK8s.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", zoneIngressName, "--config-dump")
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(stdout).To(ContainSubstring(`"dataplane.proxyType": "ingress"`))

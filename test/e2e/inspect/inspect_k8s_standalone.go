@@ -67,9 +67,7 @@ func KubernetesStandalone() {
 
 	It("should return envoy config_dump", func() {
 		dataplaneName := fmt.Sprintf("%s.%s", demoClient.GetName(), TestNamespace)
-		cmd := []string{"kumactl", "inspect", "dataplane", dataplaneName, "--config-dump"}
-
-		stdout, _, err := cluster.ExecWithRetries(Config.KumaNamespace, kumaControlPlane.GetName(), "control-plane", cmd...)
+		stdout, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dataplaneName, "--config-dump")
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(stdout).To(ContainSubstring(`"name": "demo-client_kuma-test_svc"`))
