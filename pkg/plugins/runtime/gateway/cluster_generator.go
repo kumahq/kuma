@@ -45,10 +45,18 @@ func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayRe
 	for _, dest := range routeDestinations(&info.RouteTable) {
 		matched := match.ExternalService(info.ExternalServices, mesh_proto.TagSelector(dest.Destination))
 
+		// If there are zone egresses present we want to direct the traffic
+		// through tem. The condition is, the mesh must have mTLS enabled
+		zoneEgresses := ctx.Mesh.Resources.ZoneEgresses().Items
+		mtlsEnabled := ctx.Mesh.Resource.MTLSEnabled()
+
+		isDirectExternalService := len(matched.Items) > 0 && (len(zoneEgresses) == 0 || !mtlsEnabled)
+		isExternalServiceThroughZoneEgress := len(matched.Items) > 0 && !isDirectExternalService
+
 		r, err := func() (*core_xds.Resource, error) {
 			service := dest.Destination[mesh_proto.ServiceTag]
 
-			if len(matched.Items) > 0 {
+			if isDirectExternalService {
 				log.V(1).Info("generating external service cluster",
 					"service", service,
 				)
@@ -60,7 +68,12 @@ func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayRe
 				"service", service,
 			)
 
-			return c.generateMeshCluster(ctx.Mesh.Resource, info, dest)
+			upstreamServiceName := dest.Destination[mesh_proto.ServiceTag]
+			if isExternalServiceThroughZoneEgress {
+				upstreamServiceName = mesh_proto.ZoneEgressServiceName
+			}
+
+			return c.generateMeshCluster(ctx.Mesh.Resource, info, dest, upstreamServiceName)
 		}()
 
 		if resources.Add(r, err) != nil {
@@ -72,7 +85,7 @@ func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayRe
 		// reference it.
 		dest.Name = r.Name
 
-		if len(matched.Items) > 0 {
+		if isDirectExternalService {
 			// External clusters don't get a load assignment.
 			continue
 		}
@@ -107,6 +120,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	mesh *core_mesh.MeshResource,
 	info *GatewayResourceInfo,
 	dest *route.Destination,
+	upstreamServiceName string,
 ) (*core_xds.Resource, error) {
 	protocol := route.InferServiceProtocol([]core_xds.Endpoint{{
 		Tags: dest.Destination,
@@ -115,7 +129,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	builder := newClusterBuilder(info.Proxy.APIVersion, protocol, dest).Configure(
 		clusters.EdsCluster(dest.Destination[mesh_proto.ServiceTag]),
 		clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
-		clusters.ClientSideMTLS(mesh, dest.Destination[mesh_proto.ServiceTag], true, []envoy.Tags{dest.Destination}),
+		clusters.ClientSideMTLS(mesh, upstreamServiceName, true, []envoy.Tags{dest.Destination}),
 	)
 
 	// TODO(jpeach) Envoy configures retries and fault injection with
