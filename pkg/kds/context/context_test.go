@@ -60,10 +60,10 @@ var _ = Describe("Context", func() {
 					},
 					Spec: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 10,
 							},
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 15,
 							},
 						},
@@ -75,10 +75,10 @@ var _ = Describe("Context", func() {
 					},
 					Spec: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 0,
 							},
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 0,
 							},
 						},
@@ -92,10 +92,10 @@ var _ = Describe("Context", func() {
 					},
 					Spec: &mesh_proto.ZoneIngressInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 10,
 							},
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 15,
 							},
 						},
@@ -107,10 +107,10 @@ var _ = Describe("Context", func() {
 					},
 					Spec: &mesh_proto.ZoneIngressInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 0,
 							},
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 0,
 							},
 						},
@@ -124,10 +124,10 @@ var _ = Describe("Context", func() {
 					},
 					Spec: &mesh_proto.ZoneEgressInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 10,
 							},
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 15,
 							},
 						},
@@ -139,10 +139,10 @@ var _ = Describe("Context", func() {
 					},
 					Spec: &mesh_proto.ZoneEgressInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 0,
 							},
-							&mesh_proto.DiscoverySubscription{
+							{
 								Generation: 0,
 							},
 						},
@@ -156,14 +156,14 @@ var _ = Describe("Context", func() {
 					},
 					Spec: &mesh_proto.CircuitBreaker{
 						Sources: []*mesh_proto.Selector{
-							&mesh_proto.Selector{
+							{
 								Match: map[string]string{
 									"match1": "source",
 								},
 							},
 						},
 						Destinations: []*mesh_proto.Selector{
-							&mesh_proto.Selector{
+							{
 								Match: map[string]string{
 									"match2": "dest",
 								},
@@ -180,14 +180,14 @@ var _ = Describe("Context", func() {
 					},
 					Spec: &mesh_proto.CircuitBreaker{
 						Sources: []*mesh_proto.Selector{
-							&mesh_proto.Selector{
+							{
 								Match: map[string]string{
 									"match1": "source",
 								},
 							},
 						},
 						Destinations: []*mesh_proto.Selector{
-							&mesh_proto.Selector{
+							{
 								Match: map[string]string{
 									"match2": "dest",
 								},

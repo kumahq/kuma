@@ -5,7 +5,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -23,8 +25,6 @@ import (
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
 	"github.com/kumahq/kuma/pkg/util/rsa"
-	"github.com/pkg/errors"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 )
 
 var log = core.Log.WithName("kds")
@@ -84,7 +84,6 @@ type specWithDiscoverySubscriptions interface {
 // the field has only local relevance. This prevents reconciliation from unnecessarily
 // deeming the object to have changed.
 func MapInsightResourcesZeroGeneration(r model.Resource) (model.Resource, error) {
-
 	if spec, ok := r.GetSpec().(specWithDiscoverySubscriptions); ok {
 		spec = proto.Clone(spec).(specWithDiscoverySubscriptions)
 		for _, sub := range spec.GetSubscriptions() {
