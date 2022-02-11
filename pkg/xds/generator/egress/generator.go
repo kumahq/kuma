@@ -3,6 +3,7 @@ package egress
 import (
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -95,4 +96,26 @@ func (g Generator) Generate(
 	}
 
 	return resources, nil
+}
+
+func buildDestinations(
+	trafficRoutes []*core_mesh.TrafficRouteResource,
+) map[string][]envoy_common.Tags {
+	destinations := map[string][]envoy_common.Tags{}
+
+	for _, tr := range trafficRoutes {
+		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
+			service := split.Destination[mesh_proto.ServiceTag]
+			destinations[service] = append(destinations[service], split.Destination)
+		}
+
+		for _, http := range tr.Spec.Conf.Http {
+			for _, split := range http.GetSplitWithDestination() {
+				service := split.Destination[mesh_proto.ServiceTag]
+				destinations[service] = append(destinations[service], split.Destination)
+			}
+		}
+	}
+
+	return destinations
 }

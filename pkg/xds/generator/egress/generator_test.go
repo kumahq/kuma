@@ -45,6 +45,7 @@ var _ = Describe("EgressGenerator", func() {
 
 	DescribeTable("should generate Envoy xDS resources",
 		func(given testCase) {
+			// given
 			var zoneEgress *core_mesh.ZoneEgressResource
 			var zoneIngresses []*core_mesh.ZoneIngressResource
 			var trafficPermissions []*core_mesh.TrafficPermissionResource
@@ -148,19 +149,16 @@ var _ = Describe("EgressGenerator", func() {
 
 			// when
 			rs, err := gen.Generate(xds_context.Context{}, proxy)
+
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			// when
 			resp, err := rs.List().ToDeltaDiscoveryResponse()
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// when
-			actual, err := util_proto.ToYAML(resp)
-			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			// and output matches golden files
+			actual, err := util_proto.ToYAML(resp)
+			Expect(err).ToNot(HaveOccurred())
+
 			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", given.expected)))
 		},
 		Entry("01. default trafficroute, one externalservice", testCase{

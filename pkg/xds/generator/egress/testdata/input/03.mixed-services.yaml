@@ -5,13 +5,6 @@ mtls:
   backends:
   - name: ca-1
     type: builtin
-    dpCert:
-      rotation:
-        expiration: 1d
-    conf:
-      caCert:
-        RSAbits: 2048
-        expiration: 10y
 ---
 type: ZoneEgress
 name: zoneegress-1

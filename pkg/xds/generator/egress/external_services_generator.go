@@ -16,7 +16,7 @@ import (
 type ExternalServicesGenerator struct {
 }
 
-// Generate will generate envoy resources for one, provided in ResourceInfo mesh
+// Generate will generate envoy resources for one mesh (when mTLS enabled)
 func (g *ExternalServicesGenerator) Generate(
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
@@ -26,7 +26,7 @@ func (g *ExternalServicesGenerator) Generate(
 
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
-	destinations := g.buildDestinations(meshResources.TrafficRoutes)
+	destinations := buildDestinations(meshResources.TrafficRoutes)
 	services := g.buildServices(endpointMap)
 
 	g.addFilterChains(
@@ -202,26 +202,4 @@ func (*ExternalServicesGenerator) addFilterChains(
 			listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		}
 	}
-}
-
-func (*ExternalServicesGenerator) buildDestinations(
-	trafficRoutes []*core_mesh.TrafficRouteResource,
-) map[string][]envoy_common.Tags {
-	destinations := map[string][]envoy_common.Tags{}
-
-	for _, tr := range trafficRoutes {
-		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
-			service := split.Destination[mesh_proto.ServiceTag]
-			destinations[service] = append(destinations[service], split.Destination)
-		}
-
-		for _, http := range tr.Spec.Conf.Http {
-			for _, split := range http.GetSplitWithDestination() {
-				service := split.Destination[mesh_proto.ServiceTag]
-				destinations[service] = append(destinations[service], split.Destination)
-			}
-		}
-	}
-
-	return destinations
 }

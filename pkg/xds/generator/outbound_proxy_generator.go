@@ -80,7 +80,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	}
 	resources.AddSet(cdsResources)
 
-	edsResources, err := generateEDS(ctx, services, proxy)
+	edsResources, err := g.generateEDS(ctx, services, proxy)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	return resources, nil
 }
 
-func (_ OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_mesh.Protocol) (envoy_common.NamedResource, error) {
+func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_mesh.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 	rateLimits := []*core_mesh.RateLimitResource{}
 	if rateLimit, exists := proxy.Policies.RateLimitsOutbound[oface]; exists {
@@ -178,14 +178,14 @@ func (_ OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *mode
 	return listener, nil
 }
 
-func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services envoy_common.Services, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services envoy_common.Services, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
-		protocol := o.inferProtocol(proxy, service.Clusters())
+		protocol := g.inferProtocol(proxy, service.Clusters())
 		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {
@@ -249,7 +249,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 	return resources, nil
 }
 
-func generateEDS(
+func (OutboundProxyGenerator) generateEDS(
 	ctx xds_context.Context,
 	services envoy_common.Services,
 	proxy *model.Proxy,
@@ -258,7 +258,7 @@ func generateEDS(
 	resources := model.NewResourceSet()
 
 	for _, serviceName := range services.Sorted() {
-		// When no zone egress present in a mesh Endpoints for ExternalServices
+		// When no zone egress is present in a mesh Endpoints for ExternalServices
 		// are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !services[serviceName].HasExternalService() ||
@@ -282,7 +282,7 @@ func generateEDS(
 }
 
 // inferProtocol infers protocol for the destination listener. It will only return HTTP when all endpoints are tagged with HTTP.
-func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []envoy_common.Cluster) core_mesh.Protocol {
+func (OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []envoy_common.Cluster) core_mesh.Protocol {
 	var allEndpoints []model.Endpoint
 	for _, cluster := range clusters {
 		serviceName := cluster.Tags()[mesh_proto.ServiceTag]
@@ -292,7 +292,7 @@ func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []env
 	return InferServiceProtocol(allEndpoints)
 }
 
-func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh_proto.Dataplane_Networking_Outbound, splitCounter *splitCounter) (envoy_common.Routes, error) {
+func (OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh_proto.Dataplane_Networking_Outbound, splitCounter *splitCounter) (envoy_common.Routes, error) {
 	var routes envoy_common.Routes
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 

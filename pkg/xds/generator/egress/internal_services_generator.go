@@ -4,7 +4,6 @@ import (
 	"sort"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -17,7 +16,7 @@ import (
 type InternalServicesGenerator struct {
 }
 
-// Generate will generate envoy resources for one, provided in ResourceInfo mesh
+// Generate will generate envoy resources for one mesh (when mTLS enabled)
 func (g *InternalServicesGenerator) Generate(
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
@@ -27,7 +26,7 @@ func (g *InternalServicesGenerator) Generate(
 
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
-	destinations := g.buildDestinations(meshResources.TrafficRoutes)
+	destinations := buildDestinations(meshResources.TrafficRoutes)
 	services := g.buildServices(endpointMap)
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
@@ -207,26 +206,4 @@ func (*InternalServicesGenerator) addFilterChains(
 			}
 		}
 	}
-}
-
-func (*InternalServicesGenerator) buildDestinations(
-	trafficRoutes []*core_mesh.TrafficRouteResource,
-) map[string][]envoy_common.Tags {
-	destinations := map[string][]envoy_common.Tags{}
-
-	for _, tr := range trafficRoutes {
-		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
-			service := split.Destination[mesh_proto.ServiceTag]
-			destinations[service] = append(destinations[service], split.Destination)
-		}
-
-		for _, http := range tr.Spec.Conf.Http {
-			for _, split := range http.GetSplitWithDestination() {
-				service := split.Destination[mesh_proto.ServiceTag]
-				destinations[service] = append(destinations[service], split.Destination)
-			}
-		}
-	}
-
-	return destinations
 }
