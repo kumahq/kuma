@@ -97,10 +97,13 @@ spec:
 
 	It("should return envoy config_dump for zone ingress", func() {
 		zoneIngressName := fmt.Sprintf("%s.%s", zoneIngress.GetName(), Config.KumaNamespace)
-		stdout, err := zoneK8s.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", zoneIngressName, "--config-dump")
-		Expect(err).ToNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			stdout, err := zoneK8s.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", zoneIngressName, "--config-dump")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(stdout).To(ContainSubstring(`"dataplane.proxyType": "ingress"`))
 
-		Expect(stdout).To(ContainSubstring(`"dataplane.proxyType": "ingress"`))
-		Expect(stdout).To(ContainSubstring(`"demo-client_kuma-test_svc{mesh=default}"`))
+			// filterChainMatches could be available not immediately
+			g.Expect(stdout).To(ContainSubstring(`"demo-client_kuma-test_svc{mesh=default}"`))
+		}, "30s", "1s").Should(Succeed())
 	})
 }
