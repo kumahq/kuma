@@ -855,7 +855,7 @@ jobs:
             - run:
                 name: "Run IPv6 E2E tests"
                 command: |
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export IPV6=true
                   export KUMA_DEFAULT_RETRIES=60
@@ -871,7 +871,7 @@ jobs:
                 name: "Run IPv4 E2E tests"
                 command: |
                   export CI_K3S_VERSION=<< parameters.k3sVersion >>
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split --total=$(ls test/e2e | wc -l) | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
                   export K3D=true
