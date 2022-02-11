@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -16,6 +18,7 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 const WildcardHostname = "*"
@@ -53,10 +56,11 @@ type GatewayListener struct {
 // GatewayListenerInfo holds everything needed to generate resources for a
 // listener.
 type GatewayListenerInfo struct {
-	Proxy            *core_xds.Proxy
-	Dataplane        *core_mesh.DataplaneResource
-	Gateway          *core_mesh.MeshGatewayResource
-	ExternalServices *core_mesh.ExternalServiceResourceList
+	Proxy             *core_xds.Proxy
+	Dataplane         *core_mesh.DataplaneResource
+	Gateway           *core_mesh.MeshGatewayResource
+	ExternalServices  *core_mesh.ExternalServiceResourceList
+	OutboundEndpoints core_xds.EndpointMap
 
 	Listener GatewayListener
 }
@@ -72,6 +76,8 @@ type FilterChainGenerator interface {
 type Generator struct {
 	FilterChainGenerators filterChainGenerators
 	ClusterGenerator      ClusterGenerator
+	Zone                  string
+	DataSourceLoader      datasource.Loader
 }
 
 type filterChainGenerators struct {
@@ -121,6 +127,22 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 	externalServices := ctx.Mesh.Resources.ExternalServices()
 
+	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(
+		proxy.Dataplane, ctx.Mesh.Resources.ExternalServices(), ctx.Mesh.Resources.TrafficPermissions(),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to find external services matched by traffic permissions")
+	}
+
+	outboundEndpoints := topology.BuildEndpointMap(
+		ctx.Mesh.Resource,
+		g.Zone,
+		ctx.Mesh.Resources.Dataplanes().Items,
+		ctx.Mesh.Resources.ZoneIngresses().Items,
+		ctx.Mesh.Resources.ZoneEgresses().Items,
+		matchedExternalServices, g.DataSourceLoader,
+	)
+
 	for port, listeners := range collapsed {
 		// Force all listeners on the same port to have the same protocol.
 		for i := range listeners {
@@ -146,11 +168,12 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		})
 
 		info := GatewayListenerInfo{
-			Proxy:            proxy,
-			Dataplane:        proxy.Dataplane,
-			Gateway:          gateway,
-			ExternalServices: externalServices,
-			Listener:         listener,
+			Proxy:             proxy,
+			Dataplane:         proxy.Dataplane,
+			Gateway:           gateway,
+			ExternalServices:  externalServices,
+			Listener:          listener,
+			OutboundEndpoints: outboundEndpoints,
 		}
 
 		// This is checked by the gateway validator

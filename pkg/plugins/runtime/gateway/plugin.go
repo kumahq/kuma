@@ -96,6 +96,8 @@ func NewProxyProfile(zone string, dataSourceLoader datasource.Loader) generator.
 				DataSourceLoader: dataSourceLoader,
 				Zone:             zone,
 			},
+			Zone:             zone,
+			DataSourceLoader: dataSourceLoader,
 		},
 	}
 }

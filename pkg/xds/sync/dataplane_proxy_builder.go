@@ -61,7 +61,7 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, meshContext xd
 }
 
 func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) (*xds.Routing, xds.DestinationMap, error) {
-	matchedExternalServices, err := permissions.MatchExternalServices(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
+	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 	if err != nil {
 		return nil, nil, err
 	}
