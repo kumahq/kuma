@@ -59,11 +59,17 @@ var _ = Describe("Context", func() {
 						Name: "dpi-1",
 					},
 					Spec: &mesh_proto.DataplaneInsight{
+						MTLS: &mesh_proto.DataplaneInsight_MTLS{
+							IssuedBackend:     "test",
+							SupportedBackends: []string{"one", "two"},
+						},
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
+								Id:         "sub1",
 								Generation: 10,
 							},
 							{
+								Id:         "sub2",
 								Generation: 15,
 							},
 						},
@@ -74,11 +80,17 @@ var _ = Describe("Context", func() {
 						Name: "dpi-1",
 					},
 					Spec: &mesh_proto.DataplaneInsight{
+						MTLS: &mesh_proto.DataplaneInsight_MTLS{
+							IssuedBackend:     "test",
+							SupportedBackends: []string{"one", "two"},
+						},
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
+								Id:         "sub1",
 								Generation: 0,
 							},
 							{
+								Id:         "sub2",
 								Generation: 0,
 							},
 						},
@@ -93,10 +105,12 @@ var _ = Describe("Context", func() {
 					Spec: &mesh_proto.ZoneIngressInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								Generation: 10,
+								ControlPlaneInstanceId: "ID1",
+								Generation:             10,
 							},
 							{
-								Generation: 15,
+								ControlPlaneInstanceId: "ID2",
+								Generation:             15,
 							},
 						},
 					},
@@ -108,10 +122,12 @@ var _ = Describe("Context", func() {
 					Spec: &mesh_proto.ZoneIngressInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								Generation: 0,
+								ControlPlaneInstanceId: "ID1",
+								Generation:             0,
 							},
 							{
-								Generation: 0,
+								ControlPlaneInstanceId: "ID2",
+								Generation:             0,
 							},
 						},
 					},
