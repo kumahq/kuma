@@ -31,7 +31,7 @@ func (*ClusterGenerator) SupportsProtocol(mesh_proto.MeshGateway_Listener_Protoc
 }
 
 // GenerateHost generates clusters for all the services targeted in the current route table.
-func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo, entries []route.Entry) (*core_xds.ResourceSet, error) {
+func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info *GatewayListenerInfo, routes []route.Entry) (*core_xds.ResourceSet, error) {
 	resources := ResourceAggregator{}
 
 	// If there is a service name conflict between external services
@@ -42,7 +42,7 @@ func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayLi
 	// an array of endpoint and checks whether the first entry is from
 	// an external service. Because the dataplane endpoints happen to be
 	// generated first, the mesh service will have priority.
-	for _, dest := range routeDestinations(entries) {
+	for _, dest := range routeDestinations(routes) {
 		matched := match.ExternalService(info.ExternalServices, mesh_proto.TagSelector(dest.Destination))
 
 		// If there are zone egresses present we want to direct the traffic

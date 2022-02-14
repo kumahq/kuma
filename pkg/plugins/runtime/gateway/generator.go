@@ -91,7 +91,7 @@ type Generator struct {
 	RouteConfigurationGenerator RouteConfigurationGenerator
 	RouteEntriesGenerator       GatewayRouteGenerator
 	RouteTableGenerator         RouteTableGenerator
-	Generators                  []GatewayHostGenerator
+	ClusterGenerator            ClusterGenerator
 }
 
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
@@ -199,15 +199,8 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 			entries := g.RouteEntriesGenerator.GenerateRoutes(ctx, &info, gatewayHostInfo)
 
-			for _, generator := range g.Generators {
-				if !generator.SupportsProtocol(listener.Protocol) {
-					continue
-				}
-
-				if err := resources.AddSet(generator.GenerateHost(ctx, &info, gatewayHostInfo, entries)); err != nil {
-					return nil, errors.Wrapf(err, "%T failed to generate resources for dataplane %q",
-						generator, proxy.Id)
-				}
+			if err := resources.AddSet(g.ClusterGenerator.GenerateClusters(ctx, &info, entries)); err != nil {
+				return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", proxy.Id)
 			}
 
 			vh, err := (&RouteTableGenerator{}).GenerateHost(ctx, &info, gatewayHostInfo, entries)
