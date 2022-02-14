@@ -48,7 +48,6 @@ type GatewayHost struct {
 // Resources tracks partially-built xDS resources that can be updated
 // by multiple gateway generators.
 type Resources struct {
-	Listener           *envoy_listeners.ListenerBuilder
 	FilterChain        *envoy_listeners.FilterChainBuilder
 	RouteConfiguration *envoy_routes.RouteConfigurationBuilder
 }
@@ -76,6 +75,7 @@ type gatewayHostInfo struct {
 	// RouteTable is used to accumulate information about routes as we
 	// iterate over the generators.
 	RouteTable *route.Table
+	Resources  *core_xds.ResourceSet
 }
 
 // GatewayHostGenerator is responsible for generating xDS resources for a single GatewayHost.
@@ -84,9 +84,19 @@ type GatewayHostGenerator interface {
 	SupportsProtocol(mesh_proto.MeshGateway_Listener_Protocol) bool
 }
 
+// FilterChainGenerator is responsible for handling the filter chain for
+// a specific protocol.
+type FilterChainGenerator interface {
+	Initialize(xds_context.Context, *GatewayListenerInfo)
+	Generate(xds_context.Context, *GatewayListenerInfo, gatewayHostInfo) (*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error)
+	FinalizeHost(*envoy_listeners.ListenerBuilder, *envoy_listeners.FilterChainBuilder)
+	Finalize(*envoy_listeners.ListenerBuilder)
+}
+
 // Generator generates xDS resources for an entire Gateway.
 type Generator struct {
 	ListenerGenerator     ListenerGenerator
+	FilterChainGenerators map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator
 	Generators            []GatewayHostGenerator
 }
 
@@ -166,6 +176,13 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 		listenerBuilder := g.ListenerGenerator.Generate(ctx, &info)
 
+		filterChainGen, ok := g.FilterChainGenerators[listener.Protocol]
+		if !ok {
+			continue
+		}
+
+		filterChainGen.Initialize(ctx, &info)
+
 		// Make a pass over the generators for each virtual host.
 		for _, host := range hosts {
 			// Ensure that generators don't get duplicate routes,
@@ -177,6 +194,13 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 				RouteTable: &route.Table{},
 			}
 
+			chainRes, filterChain, err := filterChainGen.Generate(ctx, &info, gatewayHostInfo)
+			if err != nil {
+				return nil, err
+			}
+
+			resources.ResourceSet.AddSet(chainRes)
+
 			for _, generator := range g.Generators {
 				if !generator.SupportsProtocol(listener.Protocol) {
 					continue
@@ -187,9 +211,12 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 						generator, proxy.Id)
 				}
 			}
+
+			filterChainGen.FinalizeHost(listenerBuilder, filterChain)
 		}
 
-		info.Resources.Listener.Configure(envoy_listeners.FilterChain(info.Resources.FilterChain))
+		// Close out filter chain
+		filterChainGen.Finalize(listenerBuilder)
 
 		if err := resources.AddSet(BuildResourceSet(listenerBuilder)); err != nil {
 			return nil, errors.Wrapf(err, "failed to build listener resource")

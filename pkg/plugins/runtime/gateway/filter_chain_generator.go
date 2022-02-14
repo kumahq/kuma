@@ -58,29 +58,31 @@ const keyTypeECDSA = keyType("ecdsa")
 const keyTypeRSA = keyType("rsa")
 
 // HTTPFilterChainGenerator generates a filter chain for a HTTP listener.
-type HTTPFilterChainGenerator struct{}
-
-func (*HTTPFilterChainGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
-	return p == mesh_proto.MeshGateway_Listener_HTTP
+type HTTPFilterChainGenerator struct {
+	builder *envoy_listeners.FilterChainBuilder
 }
 
-func (*HTTPFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (g *HTTPFilterChainGenerator) Initialize(ctx xds_context.Context, info *GatewayListenerInfo) {
+	log.V(1).Info("generating filter chain", "protocol", "HTTP")
+
+	g.builder = newFilterChain(ctx, info)
+}
+
+func (g *HTTPFilterChainGenerator) Generate(
+	xds_context.Context, *GatewayListenerInfo, gatewayHostInfo,
+) (
+	*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error,
+) {
 	// HTTP listeners get a single filter chain for all hostnames. So
 	// if there's already a filter chain, we have nothing to do.
-	if info.Resources.FilterChain != nil {
-		log.V(1).Info("updating existing filter chain",
-			"hostname", host.Host.Hostname,
-		)
+	return nil, g.builder, nil
+}
 
-		return nil, nil
-	}
+func (*HTTPFilterChainGenerator) FinalizeHost(listenerBuilder *envoy_listeners.ListenerBuilder, filterChain *envoy_listeners.FilterChainBuilder) {
+}
 
-	log.V(1).Info("generating filter chain",
-		"hostname", host.Host.Hostname,
-	)
-
-	info.Resources.FilterChain = newFilterChain(ctx, info)
-	return nil, nil
+func (g *HTTPFilterChainGenerator) Finalize(listenerBuilder *envoy_listeners.ListenerBuilder) {
+	listenerBuilder.Configure(envoy_listeners.FilterChain(g.builder))
 }
 
 // HTTPSFilterChainGenerator generates a filter chain for an HTTPS listener.
@@ -88,20 +90,14 @@ type HTTPSFilterChainGenerator struct {
 	DataSourceLoader datasource.Loader
 }
 
-func (*HTTPSFilterChainGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
-	return p == mesh_proto.MeshGateway_Listener_HTTPS
+func (g *HTTPSFilterChainGenerator) Initialize(ctx xds_context.Context, info *GatewayListenerInfo) {
 }
 
-func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
-	// HTTPS listeners get a filter chain for each hostname. So if
-	// there is already a filter chain (from the previous host), we
-	// close it, and start a new one.
-	if info.Resources.FilterChain != nil {
-		info.Resources.Listener.Configure(
-			envoy_listeners.FilterChain(info.Resources.FilterChain),
-		)
-	}
-
+func (g *HTTPSFilterChainGenerator) Generate(
+	ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo,
+) (
+	*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error,
+) {
 	log.V(1).Info("generating filter chain",
 		"hostname", host.Host.Hostname,
 	)
@@ -114,11 +110,11 @@ func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *
 		for _, cert := range host.Host.TLS.GetCertificates() {
 			secret, err := g.generateCertificateSecret(ctx, info, host.Host, cert)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to generate TLS certificate")
+				return nil, nil, errors.Wrap(err, "failed to generate TLS certificate")
 			}
 
 			if resources.Contains(secret.Name, secret) {
-				return nil, errors.Errorf("duplicate TLS certificate %q", secret.Name)
+				return nil, nil, errors.Errorf("duplicate TLS certificate %q", secret.Name)
 			}
 
 			resources.Add(NewResource(secret.Name, secret))
@@ -126,10 +122,10 @@ func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *
 
 	case mesh_proto.MeshGateway_TLS_PASSTHROUGH:
 		// TODO(jpeach) add support for PASSTHROUGH mode.
-		return nil, errors.Errorf("unsupported TLS mode %q", host.Host.TLS.GetMode())
+		return nil, nil, errors.Errorf("unsupported TLS mode %q", host.Host.TLS.GetMode())
 
 	default:
-		return nil, errors.Errorf("unsupported TLS mode %q", host.Host.TLS.GetMode())
+		return nil, nil, errors.Errorf("unsupported TLS mode %q", host.Host.TLS.GetMode())
 	}
 
 	builder := newFilterChain(ctx, info)
@@ -151,7 +147,7 @@ func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *
 
 	any, err := util_proto.MarshalAnyDeterministic(downstream)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	builder.Configure(
@@ -167,10 +163,15 @@ func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *
 		),
 	)
 
-	// Leave the builder open so that later steps can update the filters.
-	info.Resources.FilterChain = builder
+	return resources, builder, nil
+}
 
-	return resources, nil
+func (g *HTTPSFilterChainGenerator) FinalizeHost(listenerBuilder *envoy_listeners.ListenerBuilder, filterChain *envoy_listeners.FilterChainBuilder) {
+	listenerBuilder.Configure(envoy_listeners.FilterChain(filterChain))
+
+}
+
+func (g *HTTPSFilterChainGenerator) Finalize(listenerBuilder *envoy_listeners.ListenerBuilder) {
 }
 
 func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
