@@ -86,7 +86,8 @@ type GatewayHostGenerator interface {
 
 // Generator generates xDS resources for an entire Gateway.
 type Generator struct {
-	Generators []GatewayHostGenerator
+	ListenerGenerator     ListenerGenerator
+	Generators            []GatewayHostGenerator
 }
 
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
@@ -159,6 +160,12 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			Listener:         listener,
 		}
 
+		if !g.ListenerGenerator.SupportsProtocol(listener.Protocol) {
+			continue
+		}
+
+		listenerBuilder := g.ListenerGenerator.Generate(ctx, &info)
+
 		// Make a pass over the generators for each virtual host.
 		for _, host := range hosts {
 			// Ensure that generators don't get duplicate routes,
@@ -184,7 +191,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 		info.Resources.Listener.Configure(envoy_listeners.FilterChain(info.Resources.FilterChain))
 
-		if err := resources.AddSet(BuildResourceSet(info.Resources.Listener)); err != nil {
+		if err := resources.AddSet(BuildResourceSet(listenerBuilder)); err != nil {
 			return nil, errors.Wrapf(err, "failed to build listener resource")
 		}
 

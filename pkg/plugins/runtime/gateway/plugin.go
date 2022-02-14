@@ -84,10 +84,10 @@ func NewProxyProfile(zone string, dataSourceLoader datasource.Loader) generator.
 		generator.DNSGenerator{},
 
 		Generator{
+			ListenerGenerator: ListenerGenerator{},
 			Generators: []GatewayHostGenerator{
 				// The order here matters because generators can
 				// depend on state created by a previous generator.
-				&ListenerGenerator{},
 				&HTTPFilterChainGenerator{},
 				&HTTPSFilterChainGenerator{
 					DataSourceLoader: dataSourceLoader,

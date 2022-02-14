@@ -30,9 +30,9 @@ func (*ListenerGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Pro
 	}
 }
 
-func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, _ gatewayHostInfo) (*core_xds.ResourceSet, error) {
-	// TODO(jpeach) what we really need to do here is build the
-	// listener once, then generate a HTTP filter chain for each
+func (*ListenerGenerator) Generate(ctx xds_context.Context, info *GatewayListenerInfo) *envoy_listeners.ListenerBuilder {
+	// TODO(jpeach) what we really need to do here is to
+	// generate a HTTP filter chain for each
 	// host on the same HTTPConnectionManager. Each HTTP filter
 	// chain should be wrapped in a matcher that selects it for
 	// only the host's domain name. This will give us consistent
@@ -40,13 +40,7 @@ func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayLis
 	// listeners.
 	//
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/matching/matching_api
-	if info.Resources.Listener != nil {
-		return nil, nil
-	}
-
 	// A new listener gets a new filter chain.
-	info.Resources.FilterChain = nil
-
 	port := info.Listener.Port
 	protocol := info.Listener.Protocol
 	address := info.Dataplane.Spec.GetNetworking().Address
@@ -57,7 +51,9 @@ func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayLis
 		"protocol", protocol,
 	)
 
-	info.Resources.Listener = envoy_listeners.NewListenerBuilder(info.Proxy.APIVersion).
+	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
+
+	return envoy_listeners.NewListenerBuilder(info.Proxy.APIVersion).
 		Configure(
 			envoy_listeners.InboundListener(
 				envoy_names.GetGatewayListenerName(info.Gateway.Meta.GetName(), protocol.String(), port),
@@ -69,8 +65,4 @@ func (*ListenerGenerator) GenerateHost(ctx xds_context.Context, info *GatewayLis
 			// Always sniff for TLS.
 			envoy_listeners.TLSInspector(),
 		)
-
-	// TODO(jpeach) if proxy protocol is enabled, add the proxy protocol listener filter.
-
-	return nil, nil
 }
