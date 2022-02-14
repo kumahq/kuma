@@ -64,9 +64,6 @@ type GatewayListenerInfo struct {
 
 type gatewayHostInfo struct {
 	Host GatewayHost
-	// RouteTable is used to accumulate information about routes as we
-	// iterate over the generators.
-	Resources *core_xds.ResourceSet
 }
 
 // GatewayHostGenerator is responsible for generating xDS resources for a single GatewayHost.
