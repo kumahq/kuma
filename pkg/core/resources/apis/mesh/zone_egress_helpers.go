@@ -19,6 +19,19 @@ func (r *ZoneEgressResource) UsesInboundInterface(address net.IP, port uint32) b
 	return false
 }
 
+func (r *ZoneEgressResource) IsIPv6() bool {
+	if r == nil {
+		return false
+	}
+
+	ip := net.ParseIP(r.Spec.GetNetworking().GetAddress())
+	if ip == nil {
+		return false
+	}
+
+	return ip.To4() == nil
+}
+
 func NewZoneEgressOverviews(zoneEgresses ZoneEgressResourceList, insights ZoneEgressInsightResourceList) ZoneEgressOverviewResourceList {
 	insightsByKey := map[model.ResourceKey]*ZoneEgressInsightResource{}
 	for _, insight := range insights.Items {

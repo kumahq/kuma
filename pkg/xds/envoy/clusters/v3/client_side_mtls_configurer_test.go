@@ -9,7 +9,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
@@ -20,7 +19,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		clusterName   string
 		clientService string
 		tags          []envoy.Tags
-		ctx           xds_context.Context
+		mesh          *core_mesh.MeshResource
 		expected      string
 	}
 
@@ -29,7 +28,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			// when
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
-				Configure(clusters.ClientSideMTLS(given.ctx, given.clientService, true, given.tags)).
+				Configure(clusters.ClientSideMTLS(given.mesh, given.clientService, true, given.tags)).
 				Configure(clusters.Timeout(core_mesh.ProtocolTCP, DefaultTimeout())).
 				Build()
 
@@ -43,21 +42,17 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		Entry("cluster with mTLS", testCase{
 			clusterName:   "testCluster",
 			clientService: "backend",
-			ctx: xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-						Spec: &mesh_proto.Mesh{
-							Mtls: &mesh_proto.Mesh_Mtls{
-								EnabledBackend: "builtin",
-								Backends: []*mesh_proto.CertificateAuthorityBackend{
-									{
-										Name: "builtin",
-										Type: "builtin",
-									},
-								},
+			mesh: &core_mesh.MeshResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "default",
+				},
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin",
+								Type: "builtin",
 							},
 						},
 					},
@@ -97,21 +92,17 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		Entry("cluster with many different tag sets", testCase{
 			clusterName:   "testCluster",
 			clientService: "backend",
-			ctx: xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-						Spec: &mesh_proto.Mesh{
-							Mtls: &mesh_proto.Mesh_Mtls{
-								EnabledBackend: "builtin",
-								Backends: []*mesh_proto.CertificateAuthorityBackend{
-									{
-										Name: "builtin",
-										Type: "builtin",
-									},
-								},
+			mesh: &core_mesh.MeshResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "default",
+				},
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin",
+								Type: "builtin",
 							},
 						},
 					},
@@ -190,21 +181,17 @@ var _ = Describe("EdsClusterConfigurer", func() {
 		Entry("cluster with mTLS and credentials", testCase{
 			clusterName:   "testCluster",
 			clientService: "backend",
-			ctx: xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "default",
-						},
-						Spec: &mesh_proto.Mesh{
-							Mtls: &mesh_proto.Mesh_Mtls{
-								EnabledBackend: "builtin",
-								Backends: []*mesh_proto.CertificateAuthorityBackend{
-									{
-										Name: "builtin",
-										Type: "builtin",
-									},
-								},
+			mesh: &core_mesh.MeshResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "default",
+				},
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin",
+								Type: "builtin",
 							},
 						},
 					},

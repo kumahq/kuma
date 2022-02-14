@@ -13,14 +13,14 @@
         "sources": [
           {
             "match": {
-              "service": "*"
+              "kuma.io/service": "*"
             }
           }
         ],
         "destinations": [
           {
             "match": {
-              "service": "*"
+              "kuma.io/service": "*"
             }
           }
         ],

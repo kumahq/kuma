@@ -97,7 +97,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 			}
 			if serverSideMTLS {
 				filterChainBuilder.
-					Configure(envoy_listeners.ServerSideMTLS(ctx))
+					Configure(envoy_listeners.ServerSideMTLS(ctx.Mesh.Resource))
 			}
 			return filterChainBuilder.
 				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(),

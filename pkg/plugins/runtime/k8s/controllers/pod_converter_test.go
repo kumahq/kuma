@@ -357,7 +357,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			egress := &mesh_k8s.ZoneEgress{}
-			err = converter.PodToEgress(context.Background(), egress, pod, services)
+			err = converter.PodToEgress(egress, pod, services)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

@@ -19,6 +19,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 	xds_callbacks "github.com/kumahq/kuma/pkg/xds/server/callbacks"
@@ -113,7 +114,7 @@ func DefaultEgressReconciler(rt core_runtime.Runtime, xdsContext XdsContext) xds
 		Template: &mesh_proto.ProxyTemplate{
 			Conf: &mesh_proto.ProxyTemplate_Conf{
 				Imports: []string{
-					generator.EgressProxy,
+					egress.EgressProxy,
 				},
 			},
 		},
