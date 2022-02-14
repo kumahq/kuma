@@ -92,17 +92,16 @@ func NewProxyProfile(zone string, dataSourceLoader datasource.Loader) generator.
 					DataSourceLoader: dataSourceLoader,
 				},
 			},
+			RouteConfigurationGenerator: RouteConfigurationGenerator{},
+			RouteEntriesGenerator:       GatewayRouteGenerator{},
+			RouteTableGenerator:         RouteTableGenerator{},
 			Generators: []GatewayHostGenerator{
 				// The order here matters because generators can
 				// depend on state created by a previous generator.
-				&RouteConfigurationGenerator{},
-				&GatewayRouteGenerator{},
-				&ConnectionPolicyGenerator{},
 				&ClusterGenerator{
 					DataSourceLoader: dataSourceLoader,
 					Zone:             zone,
 				},
-				&RouteTableGenerator{},
 			},
 		},
 	}

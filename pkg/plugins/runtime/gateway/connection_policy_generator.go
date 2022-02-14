@@ -3,35 +3,29 @@ package gateway
 import (
 	"sort"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/policy"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-// ConnectionPolicyGenerator matches connection policies for each route table
-// entry that forwards traffic.
-type ConnectionPolicyGenerator struct {
-}
+func PopulatePolicies(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo, routes []route.Entry) []route.Entry {
+	var routesWithPolicies []route.Entry
 
-func (*ConnectionPolicyGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
-	return true
-}
-
-func (g *ConnectionPolicyGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
-	for _, e := range host.RouteTable.Entries {
+	for _, e := range routes {
 		for i, destination := range e.Action.Forward {
 			e.Action.Forward[i].Policies = mapPoliciesForDestination(destination.Destination, info, host.Host)
 		}
 		if e.Mirror != nil {
 			e.Mirror.Forward.Policies = mapPoliciesForDestination(e.Mirror.Forward.Destination, info, host.Host)
 		}
+
+		routesWithPolicies = append(routesWithPolicies, e)
 	}
 
-	return nil, nil
+	return routesWithPolicies
 }
 
 func mapPoliciesForDestination(destination envoy.Tags, info *GatewayListenerInfo, host GatewayHost) map[model.ResourceType]model.Resource {

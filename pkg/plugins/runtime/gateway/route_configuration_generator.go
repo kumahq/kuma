@@ -2,7 +2,6 @@ package gateway
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
@@ -23,12 +22,8 @@ func (*RouteConfigurationGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Li
 	}
 }
 
-func (*RouteConfigurationGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, _ gatewayHostInfo) (*core_xds.ResourceSet, error) {
-	if info.Resources.RouteConfiguration != nil {
-		return nil, nil
-	}
-
-	info.Resources.RouteConfiguration = envoy_routes.NewRouteConfigurationBuilder(info.Proxy.APIVersion).
+func (*RouteConfigurationGenerator) Generate(ctx xds_context.Context, info *GatewayListenerInfo) *envoy_routes.RouteConfigurationBuilder {
+	return envoy_routes.NewRouteConfigurationBuilder(info.Proxy.APIVersion).
 		Configure(
 			envoy_routes.CommonRouteConfiguration(info.Listener.ResourceName),
 			// TODO(jpeach) propagate merged listener tags.
@@ -41,6 +36,4 @@ func (*RouteConfigurationGenerator) GenerateHost(ctx xds_context.Context, info *
 		)
 
 	// TODO(jpeach) apply additional route configuration configuration.
-
-	return nil, nil
 }

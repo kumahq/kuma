@@ -45,13 +45,6 @@ type GatewayHost struct {
 	TLS      *mesh_proto.MeshGateway_TLS_Conf
 }
 
-// Resources tracks partially-built xDS resources that can be updated
-// by multiple gateway generators.
-type Resources struct {
-	FilterChain        *envoy_listeners.FilterChainBuilder
-	RouteConfiguration *envoy_routes.RouteConfigurationBuilder
-}
-
 type GatewayListener struct {
 	Port         uint32
 	Protocol     mesh_proto.MeshGateway_Listener_Protocol
@@ -66,21 +59,19 @@ type GatewayListenerInfo struct {
 	Gateway          *core_mesh.MeshGatewayResource
 	ExternalServices *core_mesh.ExternalServiceResourceList
 
-	Listener  GatewayListener
-	Resources Resources
+	Listener GatewayListener
 }
 
 type gatewayHostInfo struct {
 	Host GatewayHost
 	// RouteTable is used to accumulate information about routes as we
 	// iterate over the generators.
-	RouteTable *route.Table
-	Resources  *core_xds.ResourceSet
+	Resources *core_xds.ResourceSet
 }
 
 // GatewayHostGenerator is responsible for generating xDS resources for a single GatewayHost.
 type GatewayHostGenerator interface {
-	GenerateHost(xds_context.Context, *GatewayListenerInfo, gatewayHostInfo) (*core_xds.ResourceSet, error)
+	GenerateHost(xds_context.Context, *GatewayListenerInfo, gatewayHostInfo, []route.Entry) (*core_xds.ResourceSet, error)
 	SupportsProtocol(mesh_proto.MeshGateway_Listener_Protocol) bool
 }
 
@@ -95,9 +86,12 @@ type FilterChainGenerator interface {
 
 // Generator generates xDS resources for an entire Gateway.
 type Generator struct {
-	ListenerGenerator     ListenerGenerator
-	FilterChainGenerators map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator
-	Generators            []GatewayHostGenerator
+	ListenerGenerator           ListenerGenerator
+	FilterChainGenerators       map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator
+	RouteConfigurationGenerator RouteConfigurationGenerator
+	RouteEntriesGenerator       GatewayRouteGenerator
+	RouteTableGenerator         RouteTableGenerator
+	Generators                  []GatewayHostGenerator
 }
 
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
@@ -171,10 +165,13 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		}
 
 		if !g.ListenerGenerator.SupportsProtocol(listener.Protocol) {
+			// TODO we have to skip this?
 			continue
 		}
 
 		listenerBuilder := g.ListenerGenerator.Generate(ctx, &info)
+
+		routeConfig := (&RouteConfigurationGenerator{}).Generate(ctx, &info)
 
 		filterChainGen, ok := g.FilterChainGenerators[listener.Protocol]
 		if !ok {
@@ -190,8 +187,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			host.Routes = merge.UniqueResources(host.Routes)
 
 			gatewayHostInfo := gatewayHostInfo{
-				Host:       host,
-				RouteTable: &route.Table{},
+				Host: host,
 			}
 
 			chainRes, filterChain, err := filterChainGen.Generate(ctx, &info, gatewayHostInfo)
@@ -201,16 +197,25 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 			resources.ResourceSet.AddSet(chainRes)
 
+			entries := g.RouteEntriesGenerator.GenerateRoutes(ctx, &info, gatewayHostInfo)
+
 			for _, generator := range g.Generators {
 				if !generator.SupportsProtocol(listener.Protocol) {
 					continue
 				}
 
-				if err := resources.AddSet(generator.GenerateHost(ctx, &info, gatewayHostInfo)); err != nil {
+				if err := resources.AddSet(generator.GenerateHost(ctx, &info, gatewayHostInfo, entries)); err != nil {
 					return nil, errors.Wrapf(err, "%T failed to generate resources for dataplane %q",
 						generator, proxy.Id)
 				}
 			}
+
+			vh, err := (&RouteTableGenerator{}).GenerateHost(ctx, &info, gatewayHostInfo, entries)
+			if err != nil {
+				return nil, err
+			}
+
+			routeConfig.Configure(envoy_routes.VirtualHost(vh))
 
 			filterChainGen.FinalizeHost(listenerBuilder, filterChain)
 		}
@@ -222,7 +227,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			return nil, errors.Wrapf(err, "failed to build listener resource")
 		}
 
-		if err := resources.AddSet(BuildResourceSet(info.Resources.RouteConfiguration)); err != nil {
+		if err := resources.AddSet(BuildResourceSet(routeConfig)); err != nil {
 			return nil, errors.Wrapf(err, "failed to build route configuration resource")
 		}
 	}

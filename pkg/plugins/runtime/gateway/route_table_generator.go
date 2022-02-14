@@ -6,7 +6,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -24,9 +23,11 @@ func (*RouteTableGenerator) SupportsProtocol(mesh_proto.MeshGateway_Listener_Pro
 }
 
 // GenerateHost generates xDS resources for the current route table.
-func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
-	resources := ResourceAggregator{}
-
+func (r *RouteTableGenerator) GenerateHost(
+	ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo, routes []route.Entry,
+) (
+	*envoy_routes.VirtualHostBuilder, error,
+) {
 	vh := envoy_routes.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
 		envoy_routes.CommonVirtualHost(host.Host.Hostname),
 		envoy_routes.DomainNames(host.Host.Hostname),
@@ -49,9 +50,9 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 	// TODO(jpeach) apply additional virtual host configuration.
 
 	// Sort routing table entries so the most specific match comes first.
-	sort.Sort(route.Sorter(host.RouteTable.Entries))
+	sort.Sort(route.Sorter(routes))
 
-	for _, e := range host.RouteTable.Entries {
+	for _, e := range routes {
 		routeBuilder := route.RouteBuilder{}
 
 		routeBuilder.Configure(
@@ -135,9 +136,7 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 		vh.Configure(route.VirtualHostRoute(&routeBuilder))
 	}
 
-	info.Resources.RouteConfiguration.Configure(envoy_routes.VirtualHost(vh))
-
-	return resources.Get(), nil
+	return vh, nil
 }
 
 // retryRouteConfigurers returns the set of route configurers needed to implement the retry policy (if there is one).
