@@ -11,9 +11,10 @@ import (
 
 type MatchedPolicies struct {
 	// Inbound(Listener) -> Policy
-	TrafficPermissions TrafficPermissionMap
-	FaultInjections    FaultInjectionMap
-	RateLimitsInbound  InboundRateLimitsMap
+	TrafficPermissions    TrafficPermissionMap
+	FaultInjections       FaultInjectionMap
+	RateLimitsInbound     InboundRateLimitsMap
+	CustomInboundPolicies []map[mesh_proto.InboundInterface]core_model.Resource
 
 	// Service(Cluster) -> Policy
 	TrafficLogs     TrafficLogMap
@@ -182,6 +183,11 @@ func getInboundMatchedPolicies(matchedPolicies *MatchedPolicies) map[mesh_proto.
 	for inbound, rlList := range matchedPolicies.RateLimitsInbound {
 		for _, rl := range rlList {
 			result[inbound] = append(result[inbound], rl)
+		}
+	}
+	for _, customPolicy := range matchedPolicies.CustomInboundPolicies {
+		for inbound, customList := range customPolicy {
+			result[inbound] = append(result[inbound], customList)
 		}
 	}
 
