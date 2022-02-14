@@ -18,13 +18,13 @@ type ListenerConditions map[gatewayapi.SectionName][]kube_meta.Condition
 
 func (r *GatewayReconciler) gapiToKumaGateway(
 	ctx context.Context, gateway *gatewayapi.Gateway,
-) (*mesh_proto.Gateway, ListenerConditions, error) {
-	var listeners []*mesh_proto.Gateway_Listener
+) (*mesh_proto.MeshGateway, ListenerConditions, error) {
+	var listeners []*mesh_proto.MeshGateway_Listener
 
 	listenerConditions := ListenerConditions{}
 
 	for _, l := range gateway.Spec.Listeners {
-		listener := &mesh_proto.Gateway_Listener{
+		listener := &mesh_proto.MeshGateway_Listener{
 			Port: uint32(l.Port),
 			Tags: map[string]string{
 				// gateway-api routes are configured using direct references to
@@ -33,8 +33,8 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			},
 		}
 
-		if protocol, ok := mesh_proto.Gateway_Listener_Protocol_value[string(l.Protocol)]; ok {
-			listener.Protocol = mesh_proto.Gateway_Listener_Protocol(protocol)
+		if protocol, ok := mesh_proto.MeshGateway_Listener_Protocol_value[string(l.Protocol)]; ok {
+			listener.Protocol = mesh_proto.MeshGateway_Listener_Protocol(protocol)
 		} else if l.Protocol != "" {
 			// TODO admission webhook should prevent this
 			listenerConditions[l.Name] = append(listenerConditions[l.Name],
@@ -128,11 +128,11 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 
 	match := common.ServiceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
 
-	return &mesh_proto.Gateway{
+	return &mesh_proto.MeshGateway{
 		Selectors: []*mesh_proto.Selector{
 			{Match: match},
 		},
-		Conf: &mesh_proto.Gateway_Conf{
+		Conf: &mesh_proto.MeshGateway_Conf{
 			Listeners: listeners,
 		},
 	}, listenerConditions, nil

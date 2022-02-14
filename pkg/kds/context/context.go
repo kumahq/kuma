@@ -2,10 +2,15 @@ package context
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -47,8 +52,57 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
 		ZoneProvidedFilter:   ZoneProvidedFilter(zone),
 		Configs:              configs,
-		GlobalResourceMapper: MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
+		GlobalResourceMapper: CompositeResourceMapper(
+			MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
+			MapInsightResourcesZeroGeneration,
+		),
 	}
+}
+
+// CompositeResourceMapper combines the given ResourceMappers into
+// a single ResourceMapper which calls each in order. If an error
+// occurs, the first one is returned and no further mappers are executed.
+func CompositeResourceMapper(mappers ...reconcile.ResourceMapper) reconcile.ResourceMapper {
+	return func(r model.Resource) (model.Resource, error) {
+		var err error
+		for _, mapper := range mappers {
+			r, err = mapper(r)
+			if err != nil {
+				return r, err
+			}
+		}
+		return r, nil
+	}
+}
+
+type specWithDiscoverySubscriptions interface {
+	GetSubscriptions() []*mesh_proto.DiscoverySubscription
+	ProtoReflect() protoreflect.Message
+}
+
+// MapInsightResourcesZeroGeneration zeros "generation" field in resources for which
+// the field has only local relevance. This prevents reconciliation from unnecessarily
+// deeming the object to have changed.
+func MapInsightResourcesZeroGeneration(r model.Resource) (model.Resource, error) {
+	if spec, ok := r.GetSpec().(specWithDiscoverySubscriptions); ok {
+		spec = proto.Clone(spec).(specWithDiscoverySubscriptions)
+		for _, sub := range spec.GetSubscriptions() {
+			sub.Generation = 0
+		}
+
+		meta := r.GetMeta()
+		resType := reflect.TypeOf(r).Elem()
+
+		newR := reflect.New(resType).Interface().(model.Resource)
+		newR.SetMeta(meta)
+		if err := newR.SetSpec(spec.(model.ResourceSpec)); err != nil {
+			panic(errors.Wrap(err, "error setting spec on resource"))
+		}
+
+		return newR, nil
+	}
+
+	return r, nil
 }
 
 func MapZoneTokenSigningKeyGlobalToPublicKey(

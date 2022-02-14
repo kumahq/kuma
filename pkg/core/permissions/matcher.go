@@ -93,3 +93,31 @@ func BuildExternalServicesPermissionsMap(externalServices *core_mesh.ExternalSer
 	}
 	return result
 }
+
+// BuildExternalServicesPermissionsMapForZoneEgress is necessary for zone egress
+// where we expect to have the permission map with keys equal kuma.io/service tag's
+// value.
+// Zone Egress currently cannot differentiate different external services with the same
+// kuma.io/service tags
+func BuildExternalServicesPermissionsMapForZoneEgress(
+	externalServices []*core_mesh.ExternalServiceResource,
+	trafficPermissions []*core_mesh.TrafficPermissionResource,
+) core_xds.ExternalServicePermissionMap {
+	policies := make([]policy.ConnectionPolicy, len(trafficPermissions))
+	for i, permission := range trafficPermissions {
+		policies[i] = permission
+	}
+
+	result := core_xds.ExternalServicePermissionMap{}
+	for _, externalService := range externalServices {
+		tags := externalService.Spec.GetTags()
+		serviceName := tags[mesh_proto.ServiceTag]
+
+		matchedPolicy := policy.SelectInboundConnectionPolicy(tags, policies)
+		if matchedPolicy != nil {
+			result[serviceName] = matchedPolicy.(*core_mesh.TrafficPermissionResource)
+		}
+	}
+
+	return result
+}

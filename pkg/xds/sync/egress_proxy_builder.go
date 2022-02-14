@@ -3,51 +3,104 @@ package sync
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 type EgressProxyBuilder struct {
+	ctx context.Context
+
 	ResManager         manager.ResourceManager
 	ReadOnlyResManager manager.ReadOnlyResourceManager
 	LookupIP           lookup.LookupIPFunc
 	MetadataTracker    DataplaneMetadataTracker
+	meshCache          *xds_cache.Cache
+	DataSourceLoader   datasource.Loader
 
-	apiVersion envoy.APIVersion
+	zone       string
+	apiVersion envoy_common.APIVersion
 }
 
-func filterMeshesByMTLS(rs core_model.Resource) bool {
-	return rs.(*core_mesh.MeshResource).Spec.GetMtls().GetEnabledBackend() != ""
-}
-
-func (p *EgressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, error) {
-	ctx := context.Background()
-
+func (p *EgressProxyBuilder) Build(
+	key core_model.ResourceKey,
+) (*xds.Proxy, error) {
 	zoneEgress := core_mesh.NewZoneEgressResource()
-	if err := p.ReadOnlyResManager.Get(ctx, zoneEgress, core_store.GetBy(key)); err != nil {
+	if err := p.ReadOnlyResManager.Get(
+		p.ctx,
+		zoneEgress,
+		core_store.GetBy(key),
+	); err != nil {
 		return nil, err
 	}
 
-	var meshes core_mesh.MeshResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &meshes, core_store.ListByFilterFunc(filterMeshesByMTLS)); err != nil {
+	var meshList core_mesh.MeshResourceList
+	if err := p.ReadOnlyResManager.List(p.ctx, &meshList); err != nil {
 		return nil, err
 	}
 
-	var externalServices []*core_mesh.ExternalServiceResource
-	for _, mesh := range meshes.Items {
+	// As egress is using SNI to identify the services, we need to filter out
+	// meshes with no mTLS enabled
+	var meshes []*core_mesh.MeshResource
+	for _, mesh := range meshList.Items {
+		if mesh.MTLSEnabled() {
+			meshes = append(meshes, mesh)
+		}
+	}
+
+	var zoneIngressesList core_mesh.ZoneIngressResourceList
+	if err := p.ReadOnlyResManager.List(p.ctx, &zoneIngressesList); err != nil {
+		return nil, err
+	}
+
+	// We don't want to process services from our local zone ingress
+	var zoneIngresses []*core_mesh.ZoneIngressResource
+	for _, zoneIngress := range zoneIngressesList.Items {
+		if zoneIngress.IsRemoteIngress(p.zone) {
+			zoneIngresses = append(zoneIngresses, zoneIngress)
+		}
+	}
+
+	var meshResourcesList []*xds.MeshResources
+
+	for _, mesh := range meshes {
 		meshName := mesh.GetMeta().GetName()
 
-		var es core_mesh.ExternalServiceResourceList
-		if err := p.ReadOnlyResManager.List(ctx, &es, core_store.ListByMesh(meshName)); err != nil {
+		meshCtx, err := p.meshCache.GetMeshContext(p.ctx, syncLog, meshName)
+		if err != nil {
 			return nil, err
 		}
 
-		externalServices = append(externalServices, es.Items...)
+		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
+		trafficRoutes := meshCtx.Resources.TrafficRoutes().Items
+		externalServices := meshCtx.Resources.ExternalServices().Items
+
+		meshResources := &xds.MeshResources{
+			Mesh:             mesh,
+			TrafficRoutes:    trafficRoutes,
+			ExternalServices: externalServices,
+			EndpointMap: xds_topology.BuildRemoteEndpointMap(
+				mesh,
+				p.zone,
+				zoneIngresses,
+				externalServices,
+				p.DataSourceLoader,
+			),
+			ExternalServicePermissionMap: permissions.BuildExternalServicesPermissionsMapForZoneEgress(
+				externalServices,
+				trafficPermissions,
+			),
+		}
+
+		meshResourcesList = append(meshResourcesList, meshResources)
 	}
 
 	proxy := &xds.Proxy{
@@ -55,8 +108,8 @@ func (p *EgressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, erro
 		APIVersion: p.apiVersion,
 		ZoneEgressProxy: &xds.ZoneEgressProxy{
 			ZoneEgressResource: zoneEgress,
-			Meshes:             meshes.Items,
-			ExternalServices:   externalServices,
+			ZoneIngresses:      zoneIngresses,
+			MeshResourcesList:  meshResourcesList,
 		},
 		Metadata: p.MetadataTracker.Metadata(key),
 	}

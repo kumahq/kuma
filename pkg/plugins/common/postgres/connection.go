@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
-	connStr, err := connectionString(cfg)
+	connStr, err := cfg.ConnectionString()
 	if err != nil {
 		return nil, err
 	}
@@ -28,28 +27,4 @@ func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
 	}
 
 	return db, nil
-}
-
-func connectionString(cfg config.PostgresStoreConfig) (string, error) {
-	mode, err := postgresMode(cfg.TLS.Mode)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s connect_timeout=%d sslmode=%s sslcert=%s sslkey=%s sslrootcert=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DbName, cfg.ConnectionTimeout, mode, cfg.TLS.CertPath, cfg.TLS.KeyPath, cfg.TLS.CAPath), nil
-}
-
-func postgresMode(mode config.TLSMode) (string, error) {
-	switch mode {
-	case config.Disable:
-		return "disable", nil
-	case config.VerifyNone:
-		return "require", nil
-	case config.VerifyCa:
-		return "verify-ca", nil
-	case config.VerifyFull:
-		return "verify-full", nil
-	default:
-		return "", errors.Errorf("could not translate mode %q to postgres mode", mode)
-	}
 }

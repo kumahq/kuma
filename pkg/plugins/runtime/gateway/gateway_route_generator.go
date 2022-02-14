@@ -12,11 +12,11 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.GatewayRouteResource) bool) []*core_mesh.GatewayRouteResource {
-	routes := make([]*core_mesh.GatewayRouteResource, 0, len(in))
+func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.MeshGatewayRouteResource) bool) []*core_mesh.MeshGatewayRouteResource {
+	routes := make([]*core_mesh.MeshGatewayRouteResource, 0, len(in))
 
 	for _, r := range in {
-		if trafficRoute, ok := r.(*core_mesh.GatewayRouteResource); ok {
+		if trafficRoute, ok := r.(*core_mesh.MeshGatewayRouteResource); ok {
 			if accept(trafficRoute) {
 				routes = append(routes, trafficRoute)
 			}
@@ -30,12 +30,12 @@ func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.Ga
 type GatewayRouteGenerator struct {
 }
 
-func (*GatewayRouteGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Protocol) bool {
-	return p == mesh_proto.Gateway_Listener_HTTP || p == mesh_proto.Gateway_Listener_HTTPS
+func (*GatewayRouteGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
+	return p == mesh_proto.MeshGateway_Listener_HTTP || p == mesh_proto.MeshGateway_Listener_HTTPS
 }
 
 func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
-	gatewayRoutes := filterGatewayRoutes(info.Host.Routes, func(route *core_mesh.GatewayRouteResource) bool {
+	gatewayRoutes := filterGatewayRoutes(info.Host.Routes, func(route *core_mesh.MeshGatewayRouteResource) bool {
 		// Wildcard virtual host accepts all routes.
 		if info.Host.Hostname == WildcardHostname {
 			return true
@@ -132,7 +132,7 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 	return nil, nil
 }
 
-func makeRouteEntry(rule *mesh_proto.GatewayRoute_HttpRoute_Rule) route.Entry {
+func makeRouteEntry(rule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule) route.Entry {
 	entry := route.Entry{}
 
 	for _, b := range rule.GetBackends() {
@@ -184,16 +184,16 @@ func makeRouteEntry(rule *mesh_proto.GatewayRoute_HttpRoute_Rule) route.Entry {
 	return entry
 }
 
-func makeRouteMatch(ruleMatch *mesh_proto.GatewayRoute_HttpRoute_Match) route.Match {
+func makeRouteMatch(ruleMatch *mesh_proto.MeshGatewayRoute_HttpRoute_Match) route.Match {
 	match := route.Match{}
 
 	if p := ruleMatch.GetPath(); p != nil {
 		switch p.GetMatch() {
-		case mesh_proto.GatewayRoute_HttpRoute_Match_Path_EXACT:
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT:
 			match.ExactPath = p.GetValue()
-		case mesh_proto.GatewayRoute_HttpRoute_Match_Path_PREFIX:
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_PREFIX:
 			match.PrefixPath = p.GetValue()
-		case mesh_proto.GatewayRoute_HttpRoute_Match_Path_REGEX:
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_REGEX:
 			match.RegexPath = p.GetValue()
 		}
 	} else {
@@ -221,10 +221,10 @@ func makeRouteMatch(ruleMatch *mesh_proto.GatewayRoute_HttpRoute_Match) route.Ma
 
 	for _, h := range ruleMatch.GetHeaders() {
 		switch h.GetMatch() {
-		case mesh_proto.GatewayRoute_HttpRoute_Match_Header_EXACT:
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header_EXACT:
 			match.ExactHeader = append(
 				match.ExactHeader, route.Pair(h.GetName(), h.GetValue()))
-		case mesh_proto.GatewayRoute_HttpRoute_Match_Header_REGEX:
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Header_REGEX:
 			match.RegexHeader = append(
 				match.RegexHeader, route.Pair(h.GetName(), h.GetValue()))
 		}
@@ -232,10 +232,10 @@ func makeRouteMatch(ruleMatch *mesh_proto.GatewayRoute_HttpRoute_Match) route.Ma
 
 	for _, q := range ruleMatch.GetQueryParameters() {
 		switch q.GetMatch() {
-		case mesh_proto.GatewayRoute_HttpRoute_Match_Query_EXACT:
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Query_EXACT:
 			match.ExactQuery = append(
 				match.ExactQuery, route.Pair(q.GetName(), q.GetValue()))
-		case mesh_proto.GatewayRoute_HttpRoute_Match_Query_REGEX:
+		case mesh_proto.MeshGatewayRoute_HttpRoute_Match_Query_REGEX:
 			match.RegexQuery = append(
 				match.RegexQuery, route.Pair(q.GetName(), q.GetValue()))
 		}

@@ -80,7 +80,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	}
 	resources.AddSet(cdsResources)
 
-	edsResources, err := g.generateEDS(ctx, services, proxy.APIVersion)
+	edsResources, err := g.generateEDS(ctx, services, proxy)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	return resources, nil
 }
 
-func (_ OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_mesh.Protocol) (envoy_common.NamedResource, error) {
+func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.Proxy, routes envoy_common.Routes, outbound *mesh_proto.Dataplane_Networking_Outbound, protocol core_mesh.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 	rateLimits := []*core_mesh.RateLimitResource{}
 	if rateLimit, exists := proxy.Policies.RateLimitsOutbound[oface]; exists {
@@ -178,13 +178,14 @@ func (_ OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *mode
 	return listener, nil
 }
 
-func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services envoy_common.Services, proxy *model.Proxy) (*model.ResourceSet, error) {
+func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services envoy_common.Services, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
+
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
-		protocol := o.inferProtocol(proxy, service.Clusters())
+		protocol := g.inferProtocol(proxy, service.Clusters())
 		tlsReady := service.TLSReady()
 
 		for _, cluster := range service.Clusters() {
@@ -194,10 +195,29 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 				Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
 
+			clusterName := cluster.Name()
+			clusterTags := []envoy_common.Tags{cluster.Tags()}
+
 			if service.HasExternalService() {
-				edsClusterBuilder.
-					Configure(envoy_clusters.ProvidedEndpointCluster(cluster.Name(), proxy.Dataplane.IsIPv6(), proxy.Routing.OutboundTargets[serviceName]...)).
-					Configure(envoy_clusters.ClientSideTLS(proxy.Routing.OutboundTargets[serviceName]))
+				if len(ctx.Mesh.Resources.ZoneEgresses().Items) > 0 &&
+					ctx.Mesh.Resource.MTLSEnabled() {
+					edsClusterBuilder.
+						Configure(envoy_clusters.EdsCluster(clusterName)).
+						Configure(envoy_clusters.ClientSideMTLS(
+							ctx.Mesh.Resource,
+							mesh_proto.ZoneEgressServiceName,
+							tlsReady,
+							clusterTags,
+						))
+				} else {
+					endpoints := proxy.Routing.OutboundTargets[serviceName]
+					isIPv6 := proxy.Dataplane.IsIPv6()
+
+					edsClusterBuilder.
+						Configure(envoy_clusters.ProvidedEndpointCluster(clusterName, isIPv6, endpoints...)).
+						Configure(envoy_clusters.ClientSideTLS(endpoints))
+				}
+
 				switch protocol {
 				case core_mesh.ProtocolHTTP:
 					edsClusterBuilder.Configure(envoy_clusters.Http())
@@ -207,17 +227,19 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 				}
 			} else {
 				edsClusterBuilder.
-					Configure(envoy_clusters.EdsCluster(cluster.Name())).
+					Configure(envoy_clusters.EdsCluster(clusterName)).
 					Configure(envoy_clusters.LB(cluster.LB())).
-					Configure(envoy_clusters.ClientSideMTLS(ctx, serviceName, tlsReady, []envoy_common.Tags{cluster.Tags()})).
+					Configure(envoy_clusters.ClientSideMTLS(ctx.Mesh.Resource, serviceName, tlsReady, clusterTags)).
 					Configure(envoy_clusters.Http2())
 			}
+
 			edsCluster, err := edsClusterBuilder.Build()
 			if err != nil {
-				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", cluster.Name())
+				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)
 			}
+
 			resources.Add(&model.Resource{
-				Name:     cluster.Name(),
+				Name:     clusterName,
 				Origin:   OriginOutbound,
 				Resource: edsCluster,
 			})
@@ -227,17 +249,27 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 	return resources, nil
 }
 
-func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, services envoy_common.Services, apiVersion envoy_common.APIVersion) (*model.ResourceSet, error) {
+func (OutboundProxyGenerator) generateEDS(
+	ctx xds_context.Context,
+	services envoy_common.Services,
+	proxy *model.Proxy,
+) (*model.ResourceSet, error) {
+	apiVersion := proxy.APIVersion
 	resources := model.NewResourceSet()
+
 	for _, serviceName := range services.Sorted() {
-		// Endpoints for ExternalServices are specified in load assignment in DNS Cluster.
+		// When no zone egress is present in a mesh Endpoints for ExternalServices
+		// are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
-		if !services[serviceName].HasExternalService() {
+		if !services[serviceName].HasExternalService() ||
+			(len(ctx.Mesh.Resources.ZoneEgresses().Items) > 0 &&
+				ctx.Mesh.Resource.MTLSEnabled()) {
 			for _, cluster := range services[serviceName].Clusters() {
 				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion, ctx.Mesh.EndpointMap)
 				if err != nil {
 					return nil, errors.Wrapf(err, "could not get ClusterLoadAssignment for %s", serviceName)
 				}
+
 				resources.Add(&model.Resource{
 					Name:     cluster.Name(),
 					Resource: loadAssignment,
@@ -245,11 +277,12 @@ func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, services en
 			}
 		}
 	}
+
 	return resources, nil
 }
 
 // inferProtocol infers protocol for the destination listener. It will only return HTTP when all endpoints are tagged with HTTP.
-func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []envoy_common.Cluster) core_mesh.Protocol {
+func (OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []envoy_common.Cluster) core_mesh.Protocol {
 	var allEndpoints []model.Endpoint
 	for _, cluster := range clusters {
 		serviceName := cluster.Tags()[mesh_proto.ServiceTag]
@@ -259,7 +292,7 @@ func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []env
 	return InferServiceProtocol(allEndpoints)
 }
 
-func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh_proto.Dataplane_Networking_Outbound, splitCounter *splitCounter) (envoy_common.Routes, error) {
+func (OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh_proto.Dataplane_Networking_Outbound, splitCounter *splitCounter) (envoy_common.Routes, error) {
 	var routes envoy_common.Routes
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 

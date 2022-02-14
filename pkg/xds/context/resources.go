@@ -80,12 +80,12 @@ func (r Resources) Dataplanes() *core_mesh.DataplaneResourceList {
 	return r.ListOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList)
 }
 
-func (r Resources) Gateways() *core_mesh.GatewayResourceList {
-	return r.ListOrEmpty(core_mesh.GatewayType).(*core_mesh.GatewayResourceList)
+func (r Resources) Gateways() *core_mesh.MeshGatewayResourceList {
+	return r.ListOrEmpty(core_mesh.MeshGatewayType).(*core_mesh.MeshGatewayResourceList)
 }
 
-func (r Resources) GatewayRoutes() *core_mesh.GatewayRouteResourceList {
-	return r.ListOrEmpty(core_mesh.GatewayRouteType).(*core_mesh.GatewayRouteResourceList)
+func (r Resources) GatewayRoutes() *core_mesh.MeshGatewayRouteResourceList {
+	return r.ListOrEmpty(core_mesh.MeshGatewayRouteType).(*core_mesh.MeshGatewayRouteResourceList)
 }
 
 func (r Resources) ProxyTemplates() *core_mesh.ProxyTemplateResourceList {

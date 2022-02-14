@@ -87,6 +87,13 @@ func GetGatewayListenerName(gatewayName string, protoName string, port uint32) s
 	return Join(gatewayName, protoName, formatPort(port))
 }
 
+// GetMeshClusterName will be used everywhere where there is a potential of name
+// clashes (i.e. when Zone Egress is configuring clusters for services with
+// the same name but in different meshes)
+func GetMeshClusterName(meshName string, serviceName string) string {
+	return Join(meshName, serviceName)
+}
+
 // GetSecretName constructs a secret name that has a good chance of being
 // unique across subsystems that are unaware of each other.
 //

@@ -48,7 +48,7 @@ var _ = Describe("IngressGenerator", func() {
 				},
 				ZoneIngressProxy: &core_xds.ZoneIngressProxy{
 					TrafficRouteList: given.trafficRoutes,
-					GatewayRoutes:    &core_mesh.GatewayRouteResourceList{},
+					GatewayRoutes:    &core_mesh.MeshGatewayRouteResourceList{},
 				},
 			}
 

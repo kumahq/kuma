@@ -1,0 +1,56 @@
+{
+  "total": 1,
+  "items": [
+    {
+      "dataplane": {
+        "mesh": "default",
+        "name": "backend-1"
+      },
+      "attachments": [
+        {
+          "type": "outbound",
+          "name": "127.0.0.1:10006",
+          "service": "gateway"
+        },
+        {
+          "type": "outbound",
+          "name": "127.0.0.1:10007",
+          "service": "web"
+        },
+        {
+          "type": "outbound",
+          "name": "127.0.0.1:10008",
+          "service": "redis"
+        }
+      ]
+    },
+    {
+      "dataplane": {
+        "mesh": "default",
+        "name": "redis-1"
+      },
+      "attachments": [
+        {
+          "type": "outbound",
+          "name": "127.0.0.1:10006",
+          "service": "gateway"
+        },
+        {
+          "type": "outbound",
+          "name": "127.0.0.1:10007",
+          "service": "web"
+        },
+        {
+          "type": "outbound",
+          "name": "127.0.0.1:10008",
+          "service": "backend"
+        },
+        {
+          "type": "outbound",
+          "name": "127.0.0.1:10009",
+          "service": "payments"
+        }
+      ]
+    }
+  ]
+}

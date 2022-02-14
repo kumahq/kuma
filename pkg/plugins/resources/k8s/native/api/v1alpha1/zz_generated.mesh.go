@@ -496,158 +496,6 @@ func init() {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Cluster
-type Gateway struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	// Mesh is the name of the Kuma mesh this resource belongs to.
-	// It may be omitted for cluster-scoped resources.
-	//
-	// +kubebuilder:validation:Optional
-	Mesh string `json:"mesh,omitempty"`
-	// Spec is the specification of the Kuma Gateway resource.
-	// +kubebuilder:validation:Optional
-	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
-}
-
-// +kubebuilder:object:root=true
-// +kubebuilder:resource:scope=Namespaced
-type GatewayList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Gateway `json:"items"`
-}
-
-func (cb *Gateway) GetObjectMeta() *metav1.ObjectMeta {
-	return &cb.ObjectMeta
-}
-
-func (cb *Gateway) SetObjectMeta(m *metav1.ObjectMeta) {
-	cb.ObjectMeta = *m
-}
-
-func (cb *Gateway) GetMesh() string {
-	return cb.Mesh
-}
-
-func (cb *Gateway) SetMesh(mesh string) {
-	cb.Mesh = mesh
-}
-
-func (cb *Gateway) GetSpec() proto.Message {
-	spec := cb.Spec
-	m := mesh_proto.Gateway{}
-
-	if spec == nil || len(spec.Raw) == 0 {
-		return &m
-	}
-
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
-}
-
-func (cb *Gateway) SetSpec(spec proto.Message) {
-	if spec == nil {
-		cb.Spec = nil
-		return
-	}
-
-	if _, ok := spec.(*mesh_proto.Gateway); !ok {
-		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
-	}
-
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
-}
-
-func (cb *Gateway) Scope() model.Scope {
-	return model.ScopeCluster
-}
-
-func (l *GatewayList) GetItems() []model.KubernetesObject {
-	result := make([]model.KubernetesObject, len(l.Items))
-	for i := range l.Items {
-		result[i] = &l.Items[i]
-	}
-	return result
-}
-
-// +kubebuilder:object:root=true
-// +kubebuilder:resource:scope=Cluster
-type GatewayRoute struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	// Mesh is the name of the Kuma mesh this resource belongs to.
-	// It may be omitted for cluster-scoped resources.
-	//
-	// +kubebuilder:validation:Optional
-	Mesh string `json:"mesh,omitempty"`
-	// Spec is the specification of the Kuma GatewayRoute resource.
-	// +kubebuilder:validation:Optional
-	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
-}
-
-// +kubebuilder:object:root=true
-// +kubebuilder:resource:scope=Namespaced
-type GatewayRouteList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []GatewayRoute `json:"items"`
-}
-
-func (cb *GatewayRoute) GetObjectMeta() *metav1.ObjectMeta {
-	return &cb.ObjectMeta
-}
-
-func (cb *GatewayRoute) SetObjectMeta(m *metav1.ObjectMeta) {
-	cb.ObjectMeta = *m
-}
-
-func (cb *GatewayRoute) GetMesh() string {
-	return cb.Mesh
-}
-
-func (cb *GatewayRoute) SetMesh(mesh string) {
-	cb.Mesh = mesh
-}
-
-func (cb *GatewayRoute) GetSpec() proto.Message {
-	spec := cb.Spec
-	m := mesh_proto.GatewayRoute{}
-
-	if spec == nil || len(spec.Raw) == 0 {
-		return &m
-	}
-
-	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
-}
-
-func (cb *GatewayRoute) SetSpec(spec proto.Message) {
-	if spec == nil {
-		cb.Spec = nil
-		return
-	}
-
-	if _, ok := spec.(*mesh_proto.GatewayRoute); !ok {
-		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
-	}
-
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
-}
-
-func (cb *GatewayRoute) Scope() model.Scope {
-	return model.ScopeCluster
-}
-
-func (l *GatewayRouteList) GetItems() []model.KubernetesObject {
-	result := make([]model.KubernetesObject, len(l.Items))
-	for i := range l.Items {
-		result[i] = &l.Items[i]
-	}
-	return result
-}
-
-// +kubebuilder:object:root=true
-// +kubebuilder:resource:scope=Cluster
 type HealthCheck struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -834,6 +682,158 @@ func init() {
 			Kind:       "MeshList",
 		},
 	})
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
+type MeshGateway struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma MeshGateway resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
+type MeshGatewayList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []MeshGateway `json:"items"`
+}
+
+func (cb *MeshGateway) GetObjectMeta() *metav1.ObjectMeta {
+	return &cb.ObjectMeta
+}
+
+func (cb *MeshGateway) SetObjectMeta(m *metav1.ObjectMeta) {
+	cb.ObjectMeta = *m
+}
+
+func (cb *MeshGateway) GetMesh() string {
+	return cb.Mesh
+}
+
+func (cb *MeshGateway) SetMesh(mesh string) {
+	cb.Mesh = mesh
+}
+
+func (cb *MeshGateway) GetSpec() proto.Message {
+	spec := cb.Spec
+	m := mesh_proto.MeshGateway{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+}
+
+func (cb *MeshGateway) SetSpec(spec proto.Message) {
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.MeshGateway); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+}
+
+func (cb *MeshGateway) Scope() model.Scope {
+	return model.ScopeCluster
+}
+
+func (l *MeshGatewayList) GetItems() []model.KubernetesObject {
+	result := make([]model.KubernetesObject, len(l.Items))
+	for i := range l.Items {
+		result[i] = &l.Items[i]
+	}
+	return result
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
+type MeshGatewayRoute struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	// Mesh is the name of the Kuma mesh this resource belongs to.
+	// It may be omitted for cluster-scoped resources.
+	//
+	// +kubebuilder:validation:Optional
+	Mesh string `json:"mesh,omitempty"`
+	// Spec is the specification of the Kuma MeshGatewayRoute resource.
+	// +kubebuilder:validation:Optional
+	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced
+type MeshGatewayRouteList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []MeshGatewayRoute `json:"items"`
+}
+
+func (cb *MeshGatewayRoute) GetObjectMeta() *metav1.ObjectMeta {
+	return &cb.ObjectMeta
+}
+
+func (cb *MeshGatewayRoute) SetObjectMeta(m *metav1.ObjectMeta) {
+	cb.ObjectMeta = *m
+}
+
+func (cb *MeshGatewayRoute) GetMesh() string {
+	return cb.Mesh
+}
+
+func (cb *MeshGatewayRoute) SetMesh(mesh string) {
+	cb.Mesh = mesh
+}
+
+func (cb *MeshGatewayRoute) GetSpec() proto.Message {
+	spec := cb.Spec
+	m := mesh_proto.MeshGatewayRoute{}
+
+	if spec == nil || len(spec.Raw) == 0 {
+		return &m
+	}
+
+	return util_proto.MustUnmarshalJSON(spec.Raw, &m)
+}
+
+func (cb *MeshGatewayRoute) SetSpec(spec proto.Message) {
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*mesh_proto.MeshGatewayRoute); !ok {
+		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
+	}
+
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(spec)}
+}
+
+func (cb *MeshGatewayRoute) Scope() model.Scope {
+	return model.ScopeCluster
+}
+
+func (l *MeshGatewayRouteList) GetItems() []model.KubernetesObject {
+	result := make([]model.KubernetesObject, len(l.Items))
+	for i := range l.Items {
+		result[i] = &l.Items[i]
+	}
+	return result
 }
 
 // +kubebuilder:object:root=true

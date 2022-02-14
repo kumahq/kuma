@@ -69,8 +69,8 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(ctx context.Context) (*xds.Z
 		return nil, err
 	}
 
-	gatewayRoutes := &core_mesh.GatewayRouteResourceList{}
-	if _, err := registry.Global().DescriptorFor(core_mesh.GatewayRouteType); err == nil { // GatewayRoute may not be registered
+	gatewayRoutes := &core_mesh.MeshGatewayRouteResourceList{}
+	if _, err := registry.Global().DescriptorFor(core_mesh.MeshGatewayRouteType); err == nil { // GatewayRoute may not be registered
 		if err := p.ReadOnlyResManager.List(ctx, gatewayRoutes); err != nil {
 			return nil, err
 		}

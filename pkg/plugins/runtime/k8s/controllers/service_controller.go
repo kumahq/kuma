@@ -37,6 +37,10 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.NamespacedName.Name)
 	}
 
+	if svc.GetAnnotations()[metadata.KumaGatewayAnnotation] == metadata.AnnotationBuiltin {
+		return kube_ctrl.Result{}, nil
+	}
+
 	namespace := &kube_core.Namespace{}
 	if err := r.Get(ctx, kube_types.NamespacedName{Name: svc.GetNamespace()}, namespace); err != nil {
 		if kube_apierrs.IsNotFound(err) {

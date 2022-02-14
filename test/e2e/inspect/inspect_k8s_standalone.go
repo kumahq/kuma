@@ -16,7 +16,6 @@ import (
 func KubernetesStandalone() {
 	var cluster *K8sCluster
 	var demoClient *kube_core.Pod
-	var kumaControlPlane *kube_core.Pod
 
 	GetPod := func(namespace, app string) *kube_core.Pod {
 		pods, err := k8s.ListPodsE(
@@ -56,7 +55,6 @@ func KubernetesStandalone() {
 		}, "60s", "1s").Should(Succeed())
 
 		demoClient = GetPod(TestNamespace, "demo-client")
-		kumaControlPlane = GetPod("kuma-system", "kuma-control-plane")
 	})
 
 	E2EAfterEach(func() {
@@ -67,10 +65,7 @@ func KubernetesStandalone() {
 
 	It("should return envoy config_dump", func() {
 		dataplaneName := fmt.Sprintf("%s.%s", demoClient.GetName(), TestNamespace)
-		url := fmt.Sprintf("localhost:5681/meshes/default/dataplanes/%s/xds", dataplaneName)
-		cmd := []string{"wget", "-O-", url}
-
-		stdout, _, err := cluster.ExecWithRetries("kuma-system", kumaControlPlane.GetName(), "control-plane", cmd...)
+		stdout, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", dataplaneName, "--config-dump")
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(stdout).To(ContainSubstring(`"name": "demo-client_kuma-test_svc"`))

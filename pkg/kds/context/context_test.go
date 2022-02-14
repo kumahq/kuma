@@ -4,6 +4,7 @@ import (
 	stdcontext "context"
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -27,6 +28,195 @@ import (
 )
 
 var _ = Describe("Context", func() {
+	Describe("GlobalResourceMapper", func() {
+		var rm manager.ResourceManager
+		var mapper reconcile.ResourceMapper
+
+		type testCase struct {
+			resource model.Resource
+			expect   model.Resource
+		}
+
+		BeforeEach(func() {
+			rm = manager.NewResourceManager(memory.NewStore())
+			defaultContext := context.DefaultContext(rm, "zone")
+			mapper = defaultContext.GlobalResourceMapper
+		})
+
+		DescribeTable("should zero generation field",
+			func(given testCase) {
+				// when
+				out, _ := mapper(given.resource)
+
+				// then
+				Expect(out.GetMeta()).To(Equal(given.expect.GetMeta()))
+				Expect(out.Descriptor()).To(Equal(given.expect.Descriptor()))
+				Expect(proto.Equal(out.GetSpec(), given.expect.GetSpec())).To(BeTrue())
+			},
+			Entry("should zero generation on DataplaneInsight", testCase{
+				resource: &core_mesh.DataplaneInsightResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "dpi-1",
+					},
+					Spec: &mesh_proto.DataplaneInsight{
+						MTLS: &mesh_proto.DataplaneInsight_MTLS{
+							IssuedBackend:     "test",
+							SupportedBackends: []string{"one", "two"},
+						},
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								Id:         "sub1",
+								Generation: 10,
+							},
+							{
+								Id:         "sub2",
+								Generation: 15,
+							},
+						},
+					},
+				},
+				expect: &core_mesh.DataplaneInsightResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "dpi-1",
+					},
+					Spec: &mesh_proto.DataplaneInsight{
+						MTLS: &mesh_proto.DataplaneInsight_MTLS{
+							IssuedBackend:     "test",
+							SupportedBackends: []string{"one", "two"},
+						},
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								Id:         "sub1",
+								Generation: 0,
+							},
+							{
+								Id:         "sub2",
+								Generation: 0,
+							},
+						},
+					},
+				},
+			}),
+			Entry("should zero generation on ZoneIngressInsight", testCase{
+				resource: &core_mesh.ZoneIngressInsightResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "zii-1",
+					},
+					Spec: &mesh_proto.ZoneIngressInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								ControlPlaneInstanceId: "ID1",
+								Generation:             10,
+							},
+							{
+								ControlPlaneInstanceId: "ID2",
+								Generation:             15,
+							},
+						},
+					},
+				},
+				expect: &core_mesh.ZoneIngressInsightResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "zii-1",
+					},
+					Spec: &mesh_proto.ZoneIngressInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								ControlPlaneInstanceId: "ID1",
+								Generation:             0,
+							},
+							{
+								ControlPlaneInstanceId: "ID2",
+								Generation:             0,
+							},
+						},
+					},
+				},
+			}),
+			Entry("should zero generation on ZoneEgressInsight", testCase{
+				resource: &core_mesh.ZoneEgressInsightResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "zei-1",
+					},
+					Spec: &mesh_proto.ZoneEgressInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								Generation: 10,
+							},
+							{
+								Generation: 15,
+							},
+						},
+					},
+				},
+				expect: &core_mesh.ZoneEgressInsightResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "zei-1",
+					},
+					Spec: &mesh_proto.ZoneEgressInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								Generation: 0,
+							},
+							{
+								Generation: 0,
+							},
+						},
+					},
+				},
+			}),
+			Entry("should not change non-insight", testCase{
+				resource: &core_mesh.CircuitBreakerResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "cb-1",
+					},
+					Spec: &mesh_proto.CircuitBreaker{
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"match1": "source",
+								},
+							},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"match2": "dest",
+								},
+							},
+						},
+						Conf: &mesh_proto.CircuitBreaker_Conf{
+							SplitExternalAndLocalErrors: true,
+						},
+					},
+				},
+				expect: &core_mesh.CircuitBreakerResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "cb-1",
+					},
+					Spec: &mesh_proto.CircuitBreaker{
+						Sources: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"match1": "source",
+								},
+							},
+						},
+						Destinations: []*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"match2": "dest",
+								},
+							},
+						},
+						Conf: &mesh_proto.CircuitBreaker_Conf{
+							SplitExternalAndLocalErrors: true,
+						},
+					},
+				},
+			}),
+		)
+	})
 	Describe("GlobalProvidedFilter", func() {
 		var rm manager.ResourceManager
 		var predicate reconcile.ResourceFilter

@@ -4,21 +4,21 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func (m *Gateway) UnmarshalJSON(data []byte) error {
+func (m *MeshGateway) UnmarshalJSON(data []byte) error {
 	return util_proto.FromJSON(data, m)
 }
 
-func (m *Gateway) MarshalJSON() ([]byte, error) {
+func (m *MeshGateway) MarshalJSON() ([]byte, error) {
 	return util_proto.ToJSON(m)
 }
-func (t *Gateway) DeepCopyInto(out *Gateway) {
+func (t *MeshGateway) DeepCopyInto(out *MeshGateway) {
 	util_proto.Merge(out, t)
 }
-func (t *Gateway) DeepCopy() *Gateway {
+func (t *MeshGateway) DeepCopy() *MeshGateway {
 	if t == nil {
 		return nil
 	}
-	out := new(Gateway)
+	out := new(MeshGateway)
 	t.DeepCopyInto(out)
 	return out
 }

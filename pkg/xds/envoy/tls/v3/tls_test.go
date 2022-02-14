@@ -9,7 +9,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
@@ -19,14 +18,10 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 
 		It("should return `nil`", func() {
 			// given
-			ctx := xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: core_mesh.NewMeshResource(),
-				},
-			}
+			mesh := core_mesh.NewMeshResource()
 
 			// when
-			snippet, err := v3.CreateDownstreamTlsContext(ctx)
+			snippet, err := v3.CreateDownstreamTlsContext(mesh)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -43,21 +38,17 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 		DescribeTable("should generate proper Envoy config",
 			func(given testCase) {
 				// given
-				ctx := xds_context.Context{
-					Mesh: xds_context.MeshContext{
-						Resource: &core_mesh.MeshResource{
-							Meta: &test_model.ResourceMeta{
-								Name: "default",
-							},
-							Spec: &mesh_proto.Mesh{
-								Mtls: &mesh_proto.Mesh_Mtls{
-									EnabledBackend: "builtin",
-									Backends: []*mesh_proto.CertificateAuthorityBackend{
-										{
-											Name: "builtin",
-											Type: "builtin",
-										},
-									},
+				mesh := &core_mesh.MeshResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "default",
+					},
+					Spec: &mesh_proto.Mesh{
+						Mtls: &mesh_proto.Mesh_Mtls{
+							EnabledBackend: "builtin",
+							Backends: []*mesh_proto.CertificateAuthorityBackend{
+								{
+									Name: "builtin",
+									Type: "builtin",
 								},
 							},
 						},
@@ -65,7 +56,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := v3.CreateDownstreamTlsContext(ctx)
+				snippet, err := v3.CreateDownstreamTlsContext(mesh)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -104,14 +95,10 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 
 		It("should return `nil`", func() {
 			// given
-			ctx := xds_context.Context{
-				Mesh: xds_context.MeshContext{
-					Resource: core_mesh.NewMeshResource(),
-				},
-			}
+			mesh := core_mesh.NewMeshResource()
 
 			// when
-			snippet, err := v3.CreateUpstreamTlsContext(ctx, "backend", "backend")
+			snippet, err := v3.CreateUpstreamTlsContext(mesh, "backend", "backend")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -129,21 +116,17 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 		DescribeTable("should generate proper Envoy config",
 			func(given testCase) {
 				// given
-				ctx := xds_context.Context{
-					Mesh: xds_context.MeshContext{
-						Resource: &core_mesh.MeshResource{
-							Meta: &test_model.ResourceMeta{
-								Name: "default",
-							},
-							Spec: &mesh_proto.Mesh{
-								Mtls: &mesh_proto.Mesh_Mtls{
-									EnabledBackend: "builtin",
-									Backends: []*mesh_proto.CertificateAuthorityBackend{
-										{
-											Name: "builtin",
-											Type: "builtin",
-										},
-									},
+				mesh := &core_mesh.MeshResource{
+					Meta: &test_model.ResourceMeta{
+						Name: "default",
+					},
+					Spec: &mesh_proto.Mesh{
+						Mtls: &mesh_proto.Mesh_Mtls{
+							EnabledBackend: "builtin",
+							Backends: []*mesh_proto.CertificateAuthorityBackend{
+								{
+									Name: "builtin",
+									Type: "builtin",
 								},
 							},
 						},
@@ -151,7 +134,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := v3.CreateUpstreamTlsContext(ctx, given.upstreamService, "")
+				snippet, err := v3.CreateUpstreamTlsContext(mesh, given.upstreamService, "")
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when

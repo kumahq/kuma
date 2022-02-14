@@ -5,8 +5,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-// Validate checks GatewayResource semantic constraints.
-func (g *GatewayResource) Validate() error {
+// Validate checks MeshGatewayResource semantic constraints.
+func (g *MeshGatewayResource) Validate() error {
 	var err validators.ValidationError
 
 	err.Add(ValidateSelectors(
@@ -38,7 +38,7 @@ func (g *GatewayResource) Validate() error {
 		},
 	))
 
-	err.Add(validateGatewayConf(
+	err.Add(validateMeshGatewayConf(
 		validators.RootedAt("conf"),
 		g.Spec.GetConf(),
 	))
@@ -46,7 +46,7 @@ func (g *GatewayResource) Validate() error {
 	return err.OrNil()
 }
 
-func validateGatewayConf(path validators.PathBuilder, conf *mesh_proto.Gateway_Conf) validators.ValidationError {
+func validateMeshGatewayConf(path validators.PathBuilder, conf *mesh_proto.MeshGateway_Conf) validators.ValidationError {
 	err := validators.ValidationError{}
 
 	if conf == nil {
@@ -71,13 +71,13 @@ func validateGatewayConf(path validators.PathBuilder, conf *mesh_proto.Gateway_C
 
 		// For now, only support HTTP and HTTPS.
 		switch l.GetProtocol() {
-		case mesh_proto.Gateway_Listener_NONE:
+		case mesh_proto.MeshGateway_Listener_NONE:
 			err.AddViolationAt(path.Index(i).Field("protocol"), "cannot be empty")
-		case mesh_proto.Gateway_Listener_UDP,
-			mesh_proto.Gateway_Listener_TCP,
-			mesh_proto.Gateway_Listener_TLS:
+		case mesh_proto.MeshGateway_Listener_UDP,
+			mesh_proto.MeshGateway_Listener_TCP,
+			mesh_proto.MeshGateway_Listener_TLS:
 			err.AddViolationAt(path.Index(i).Field("protocol"), "protocol type is not supported")
-		case mesh_proto.Gateway_Listener_HTTPS:
+		case mesh_proto.MeshGateway_Listener_HTTPS:
 			if l.GetTls() == nil {
 				err.AddViolationAt(path.Index(i).Field("tls"), "cannot be empty")
 			}
@@ -85,17 +85,17 @@ func validateGatewayConf(path validators.PathBuilder, conf *mesh_proto.Gateway_C
 
 		if tls := l.GetTls(); tls != nil {
 			switch tls.GetMode() {
-			case mesh_proto.Gateway_TLS_NONE:
+			case mesh_proto.MeshGateway_TLS_NONE:
 				err.AddViolationAt(
 					path.Index(i).Field("tls").Field("mode"),
 					"cannot be empty")
-			case mesh_proto.Gateway_TLS_PASSTHROUGH:
+			case mesh_proto.MeshGateway_TLS_PASSTHROUGH:
 				if len(tls.GetCertificates()) > 0 {
 					err.AddViolationAt(
 						path.Index(i).Field("tls").Field("certificates"),
 						"must be empty in TLS passthrough mode")
 				}
-			case mesh_proto.Gateway_TLS_TERMINATE:
+			case mesh_proto.MeshGateway_TLS_TERMINATE:
 				switch len(tls.GetCertificates()) {
 				case 0:
 					err.AddViolationAt(

@@ -29,26 +29,42 @@ var TestSecretsInfo = &secrets.Info{
 type TestSecrets struct {
 }
 
-func (t *TestSecrets) Get(*core_mesh.DataplaneResource, *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
+func get() (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
 	identitySecret := &core_xds.IdentitySecret{
 		PemCerts: [][]byte{
 			[]byte("CERT"),
 		},
 		PemKey: []byte("KEY"),
 	}
+
 	ca := &core_xds.CaSecret{
 		PemCerts: [][]byte{
 			[]byte("CA"),
 		},
 	}
+
 	return identitySecret, ca, nil
 }
 
-func (t *TestSecrets) Info(dpKey model.ResourceKey) *secrets.Info {
+func (*TestSecrets) GetForZoneEgress(
+	*core_mesh.ZoneEgressResource,
+	*core_mesh.MeshResource,
+) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
+	return get()
+}
+
+func (*TestSecrets) GetForDataPlane(
+	*core_mesh.DataplaneResource,
+	*core_mesh.MeshResource,
+) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
+	return get()
+}
+
+func (*TestSecrets) Info(model.ResourceKey) *secrets.Info {
 	return TestSecretsInfo
 }
 
-func (t *TestSecrets) Cleanup(dpKey model.ResourceKey) {
+func (*TestSecrets) Cleanup(model.ResourceKey) {
 }
 
 var _ secrets.Secrets = &TestSecrets{}

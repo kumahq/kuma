@@ -1115,20 +1115,118 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: gatewayinstances.kuma.io
+  name: healthchecks.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: GatewayInstance
-    listKind: GatewayInstanceList
-    plural: gatewayinstances
-    singular: gatewayinstance
+    kind: HealthCheck
+    listKind: HealthCheckList
+    plural: healthchecks
+    singular: healthcheck
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma HealthCheck resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  name: meshes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: Mesh
+    listKind: MeshList
+    plural: meshes
+    singular: mesh
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma Mesh resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  name: meshgatewayinstances.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: MeshGatewayInstance
+    listKind: MeshGatewayInstanceList
+    plural: meshgatewayinstances
+    singular: meshgatewayinstance
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: GatewayInstance represents a managed instance of a dataplane
+        description: MeshGatewayInstance represents a managed instance of a dataplane
           proxy for a Kuma Gateway.
         properties:
           apiVersion:
@@ -1144,8 +1242,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: GatewayInstanceSpec specifies the options available for a
-              GatewayDataplane.
+            description: MeshGatewayInstanceSpec specifies the options available for
+              a GatewayDataplane.
             properties:
               replicas:
                 default: 1
@@ -1203,7 +1301,7 @@ spec:
                 type: object
             type: object
           status:
-            description: GatewayInstanceStatus holds information about the status
+            description: MeshGatewayInstanceStatus holds information about the status
               of the gateway instance.
             properties:
               conditions:
@@ -1356,14 +1454,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: gatewayroutes.kuma.io
+  name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: GatewayRoute
-    listKind: GatewayRouteList
-    plural: gatewayroutes
-    singular: gatewayroute
+    kind: MeshGatewayRoute
+    listKind: MeshGatewayRouteList
+    plural: meshgatewayroutes
+    singular: meshgatewayroute
   scope: Cluster
   versions:
   - name: v1alpha1
@@ -1387,7 +1485,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: Spec is the specification of the Kuma GatewayRoute resource.
+            description: Spec is the specification of the Kuma MeshGatewayRoute resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -1405,14 +1503,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: gateways.kuma.io
+  name: meshgateways.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: Gateway
-    listKind: GatewayList
-    plural: gateways
-    singular: gateway
+    kind: MeshGateway
+    listKind: MeshGatewayList
+    plural: meshgateways
+    singular: meshgateway
   scope: Cluster
   versions:
   - name: v1alpha1
@@ -1436,105 +1534,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: Spec is the specification of the Kuma Gateway resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
-  creationTimestamp: null
-  name: healthchecks.kuma.io
-spec:
-  group: kuma.io
-  names:
-    kind: HealthCheck
-    listKind: HealthCheckList
-    plural: healthchecks
-    singular: healthcheck
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma HealthCheck resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
-  creationTimestamp: null
-  name: meshes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    kind: Mesh
-    listKind: MeshList
-    plural: meshes
-    singular: mesh
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma Mesh resource.
+            description: Spec is the specification of the Kuma MeshGateway resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -1675,9 +1675,9 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - gateways
-      - gatewayroutes
-      - gatewayinstances
+      - meshgateways
+      - meshgatewayroutes
+      - meshgatewayinstances
     verbs:
       - get
       - list
@@ -1689,7 +1689,7 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - gatewayinstances/status
+      - meshgatewayinstances/status
     verbs:
       - get
       - patch

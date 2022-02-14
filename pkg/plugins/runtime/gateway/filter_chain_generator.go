@@ -60,8 +60,8 @@ const keyTypeRSA = keyType("rsa")
 // HTTPFilterChainGenerator generates a filter chain for a HTTP listener.
 type HTTPFilterChainGenerator struct{}
 
-func (*HTTPFilterChainGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Protocol) bool {
-	return p == mesh_proto.Gateway_Listener_HTTP
+func (*HTTPFilterChainGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
+	return p == mesh_proto.MeshGateway_Listener_HTTP
 }
 
 func (*HTTPFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
@@ -88,8 +88,8 @@ type HTTPSFilterChainGenerator struct {
 	DataSourceLoader datasource.Loader
 }
 
-func (*HTTPSFilterChainGenerator) SupportsProtocol(p mesh_proto.Gateway_Listener_Protocol) bool {
-	return p == mesh_proto.Gateway_Listener_HTTPS
+func (*HTTPSFilterChainGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
+	return p == mesh_proto.MeshGateway_Listener_HTTPS
 }
 
 func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
@@ -109,7 +109,7 @@ func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *
 	resources := core_xds.NewResourceSet()
 
 	switch info.Host.TLS.GetMode() {
-	case mesh_proto.Gateway_TLS_TERMINATE:
+	case mesh_proto.MeshGateway_TLS_TERMINATE:
 		// Note that Envoy 1.184 and earlier will only accept 1 SDS reference.
 		for _, cert := range info.Host.TLS.GetCertificates() {
 			secret, err := g.generateCertificateSecret(ctx, info, cert)
@@ -124,7 +124,7 @@ func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *
 			resources.Add(NewResource(secret.Name, secret))
 		}
 
-	case mesh_proto.Gateway_TLS_PASSTHROUGH:
+	case mesh_proto.MeshGateway_TLS_PASSTHROUGH:
 		// TODO(jpeach) add support for PASSTHROUGH mode.
 		return nil, errors.Errorf("unsupported TLS mode %q", info.Host.TLS.GetMode())
 

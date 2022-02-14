@@ -20,7 +20,7 @@ import (
 func (r *GatewayReconciler) updateStatus(
 	ctx context.Context,
 	gateway *gatewayapi.Gateway,
-	gatewayInstance *mesh_k8s.GatewayInstance,
+	gatewayInstance *mesh_k8s.MeshGatewayInstance,
 	listenerConditions ListenerConditions,
 ) error {
 	updated := gateway.DeepCopy()
@@ -42,7 +42,7 @@ func (r *GatewayReconciler) updateStatus(
 	return nil
 }
 
-func gatewayAddresses(instance *mesh_k8s.GatewayInstance) []gatewayapi.GatewayAddress {
+func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi.GatewayAddress {
 	ipType := gatewayapi.IPAddressType
 	hostnameType := gatewayapi.HostnameAddressType
 
@@ -188,7 +188,7 @@ func mergeGatewayListenerStatuses(
 // mergeGatewayStatus updates the status by mutating the given Gateway.
 func mergeGatewayStatus(
 	gateway *gatewayapi.Gateway,
-	instance *mesh_k8s.GatewayInstance,
+	instance *mesh_k8s.MeshGatewayInstance,
 	listenerConditions ListenerConditions,
 	attachedListeners AttachedRoutesForListeners,
 ) {
