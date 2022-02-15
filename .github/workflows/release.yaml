@@ -1,10 +1,7 @@
 name: "Release"
 
-#on: workflow_dispatch
-on:
-  push:
-    branches:
-      - feat/gh-release-workflow
+on: workflow_dispatch
+
 jobs:
   create-branch:
     runs-on: ubuntu-latest
