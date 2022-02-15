@@ -13,20 +13,21 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: compute parameters
+        id: computed-params
+        run: |
+            echo '::set-output name=release_branch::$(./.github/scripts/release-branch-name.sh)'
+            echo '::set-output name=old_version::$(git describe --abbrev=0 --tags)'
+            echo '::set-output name=new_version::$(./.github/scripts/new-tag.sh)'
       - name: create branch
         run: |
           git --version
           git config user.name "github-actions[bot]"
           git config user.email "<41898282+github-actions[bot]@users.noreply.github.com>"
-          export RELEASE_BRANCH=$(./.github/scripts/release-branch-name.sh)
-          git branch $RELEASE_BRANCH
+          git branch ${{ steps.computed-params.release_branch }}
       - name: create tag
         run: |
-          export OLD_VERSION=$(git describe --abbrev=0 --tags)
-          export NEW_VERSION=$(./.github/scripts/new-tag.sh)
-          bash ./tools/releases/make-release-tag.sh $OLD_VERSION $NEW_VERSION 
+          bash ./tools/releases/make-release-tag.sh ${{ steps.computed-params.old_version }} ${{ steps.computed-params.new_version }}
       - name: push
         run: |
-          export RELEASE_BRANCH=$(./.github/scripts/release-branch-name.sh)
-          export NEW_VERSION=$(./.github/scripts/new-tag.sh)
-          git push --atomic origin $RELEASE_BRANCH $NEW_VERSION
+          git push --atomic origin ${{ steps.computed-params.release_branch }} ${{ steps.computed-params.new_version }}
