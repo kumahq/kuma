@@ -25,7 +25,7 @@ func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.Me
 	return routes
 }
 
-func GenerateRoutes(ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost) []route.Entry {
+func GenerateEnvoyRouteEntries(ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost) []route.Entry {
 	gatewayRoutes := filterGatewayRoutes(host.Routes, func(route *core_mesh.MeshGatewayRouteResource) bool {
 		// Wildcard virtual host accepts all routes.
 		if host.Hostname == WildcardHostname {

@@ -32,7 +32,7 @@ func (*ClusterGenerator) SupportsProtocol(mesh_proto.MeshGateway_Listener_Protoc
 
 // GenerateHost generates clusters for all the services targeted in the current route table.
 func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info GatewayListenerInfo, routes []route.Entry) (*core_xds.ResourceSet, error) {
-	resources := ResourceAggregator{}
+	resources := core_xds.NewResourceSet()
 
 	// If there is a service name conflict between external services
 	// and mesh services, the external service takes priority since
@@ -76,9 +76,10 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 			return c.generateMeshCluster(ctx.Mesh.Resource, info, dest, upstreamServiceName)
 		}()
 
-		if resources.Add(r, err) != nil {
+		if err != nil {
 			return nil, err
 		}
+		resources.Add(r)
 
 		// Assign the generated unique cluster name to the
 		// destination so that subsequent generator passes can
@@ -110,10 +111,10 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 			return nil, errors.Wrapf(err, "failed to build LoadAssignment for cluster %q", dest.Name)
 		}
 
-		resources.Get().Add(NewResource(dest.Name, loadAssignment))
+		resources.Add(NewResource(dest.Name, loadAssignment))
 	}
 
-	return resources.Get(), nil
+	return resources, nil
 }
 
 func (c *ClusterGenerator) generateMeshCluster(

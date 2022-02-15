@@ -12,7 +12,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -62,18 +61,9 @@ type GatewayListenerInfo struct {
 	Listener GatewayListener
 }
 
-type gatewayHostInfo struct {
-	Host GatewayHost
-}
-
-// GatewayHostGenerator is responsible for generating xDS resources for a single GatewayHost.
-type GatewayHostGenerator interface {
-	GenerateHost(xds_context.Context, *GatewayListenerInfo, gatewayHostInfo, []route.Entry) (*core_xds.ResourceSet, error)
-	SupportsProtocol(mesh_proto.MeshGateway_Listener_Protocol) bool
-}
-
 // FilterChainGenerator is responsible for handling the filter chain for
 // a specific protocol.
+// A FilterChainGenerator can be host-specific or shared amongst hosts.
 type FilterChainGenerator interface {
 	Initialize(xds_context.Context, GatewayListenerInfo)
 	Generate(xds_context.Context, GatewayListenerInfo, GatewayHost) (*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error)
@@ -83,23 +73,20 @@ type FilterChainGenerator interface {
 
 // Generator generates xDS resources for an entire Gateway.
 type Generator struct {
-	FilterChainGenerators       filterChainGenerators
-	ClusterGenerator            ClusterGenerator
+	FilterChainGenerators filterChainGenerators
+	ClusterGenerator      ClusterGenerator
 }
 
 type filterChainGenerators struct {
 	FilterChainGenerators map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator
 }
 
-func (g *filterChainGenerators) For(ctx xds_context.Context, info GatewayListenerInfo) (FilterChainGenerator, bool) {
-	gen, ok := g.FilterChainGenerators[info.Listener.Protocol]
-	if !ok {
-		return nil, false
-	}
+func (g *filterChainGenerators) For(ctx xds_context.Context, info GatewayListenerInfo) FilterChainGenerator {
+	gen := g.FilterChainGenerators[info.Listener.Protocol]
 
 	gen.Initialize(ctx, info)
 
-	return gen, true
+	return gen
 }
 
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
@@ -136,7 +123,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		collapsed[ep.GetPort()] = append(collapsed[ep.GetPort()], ep)
 	}
 
-	resources := ResourceAggregator{core_xds.NewResourceSet()}
+	resources := core_xds.NewResourceSet()
 
 	externalServices := ctx.Mesh.Resources.ExternalServices()
 
@@ -172,18 +159,16 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			Listener:         listener,
 		}
 
-		if !ListenerSupportsProtocol(listener.Protocol) {
-			continue
+		// This is checked by the gateway validator
+		if !SupportsProtocol(listener.Protocol) {
+			return nil, errors.New("no support for protocol")
 		}
 
 		listenerBuilder := GenerateListener(ctx, info)
 
 		routeConfig := GenerateRouteConfig(ctx, info)
 
-		filterChainGen, ok := g.FilterChainGenerators.For(ctx, info)
-		if !ok {
-			continue
-		}
+		filterChainGen := g.FilterChainGenerators.For(ctx, info)
 
 		// Make a pass over the generators for each virtual host.
 		for _, host := range hosts {
@@ -191,48 +176,46 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			// which could happen after redistributing wildcards.
 			host.Routes = merge.UniqueResources(host.Routes)
 
+			// Setup the filter chain
 			chainRes, filterChain, err := filterChainGen.Generate(ctx, info, host)
 			if err != nil {
 				return nil, err
 			}
+			resources.AddSet(chainRes)
 
-			resources.ResourceSet.AddSet(chainRes)
+			entries := GenerateEnvoyRouteEntries(ctx, info, host)
 
-			entries := GenerateRoutes(ctx, info, host)
-
-			if err := resources.AddSet(g.ClusterGenerator.GenerateClusters(ctx, info, entries)); err != nil {
+			clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, entries)
+			if err != nil {
 				return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", proxy.Id)
 			}
+			resources.AddSet(clusterRes)
 
 			vh, err := GenerateVirtualHost(ctx, info, host, entries)
 			if err != nil {
 				return nil, err
 			}
-
 			routeConfig.Configure(envoy_routes.VirtualHost(vh))
 
 			filterChainGen.FinalizeHost(listenerBuilder, filterChain)
 		}
 
-		// Close out filter chain
 		filterChainGen.Finalize(listenerBuilder)
 
 		res, err := BuildResourceSet(listenerBuilder)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to build listener resource")
 		}
-
-		resources.ResourceSet.AddSet(res)
+		resources.AddSet(res)
 
 		res, err = BuildResourceSet(routeConfig)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to build route configuration resource")
 		}
-
-		resources.ResourceSet.AddSet(res)
+		resources.AddSet(res)
 	}
 
-	return resources.Get(), nil
+	return resources, nil
 }
 
 // MakeGatewayListener converts a collapsed set of listener configurations

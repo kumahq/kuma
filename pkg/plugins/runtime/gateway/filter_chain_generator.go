@@ -167,7 +167,6 @@ func (g *HTTPSFilterChainGenerator) Generate(
 
 func (g *HTTPSFilterChainGenerator) FinalizeHost(listenerBuilder *envoy_listeners.ListenerBuilder, filterChain *envoy_listeners.FilterChainBuilder) {
 	listenerBuilder.Configure(envoy_listeners.FilterChain(filterChain))
-
 }
 
 func (g *HTTPSFilterChainGenerator) Finalize(listenerBuilder *envoy_listeners.ListenerBuilder) {
