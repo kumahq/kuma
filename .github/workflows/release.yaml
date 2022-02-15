@@ -9,6 +9,10 @@ jobs:
   create-branch:
     runs-on: ubuntu-latest
     steps:
+      - name: git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: set envs
         run: |
           export RELEASE_BRANCH=$(./.github/scripts/release-branch-name.sh)
@@ -17,10 +21,6 @@ jobs:
           echo "::set-env name=OLD_VERSION::OLD_VERSION"
           export NEW_VERSION=$(./.github/scripts/new-tag.sh)
           echo "::set-env name=NEW_VERSION::NEW_VERSION"
-      - name: git checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
       - name: create branch
         run: |
           git --version
