@@ -1,0 +1,42 @@
+name: "Release"
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseBranch:
+        description: "Release branch name"
+        required: true
+        type: string
+      oldVersion:
+        description: "The last fully released Kuma version"
+        required: true
+        type: string
+      newVersion:
+        description: "New Kuma version"
+        required: true
+        type: string
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_BRANCH: ${{ github.event.inputs.releaseBranch }}
+      OLD_VERSION: ${{ github.event.inputs.oldVersion }}
+      NEW_VERSION: ${{ github.event.inputs.newVersion }}
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: create branch
+        run: |
+          git --version
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git branch $RELEASE_BRANCH
+      - name: create tag
+        run: |
+          bash ./tools/releases/make-release-tag.sh $OLD_VERSION $NEW_VERSION 
+      - name: push
+        run: |
+          git push --atomic origin $RELEASE_BRANCH $NEW_VERSION
