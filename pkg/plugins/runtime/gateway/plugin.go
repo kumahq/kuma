@@ -85,16 +85,13 @@ func NewProxyProfile(zone string, dataSourceLoader datasource.Loader) generator.
 		generator.DNSGenerator{},
 
 		Generator{
-			ListenerGenerator: ListenerGenerator{},
-			FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator{
-				mesh_proto.MeshGateway_Listener_HTTP: &HTTPFilterChainGenerator{},
-				mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{
-					DataSourceLoader: dataSourceLoader,
-				},
-			},
-			RouteConfigurationGenerator: RouteConfigurationGenerator{},
-			RouteEntriesGenerator:       GatewayRouteGenerator{},
-			RouteTableGenerator:         RouteTableGenerator{},
+			FilterChainGenerators: filterChainGenerators{
+				FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator{
+					mesh_proto.MeshGateway_Listener_HTTP: &HTTPFilterChainGenerator{},
+					mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{
+						DataSourceLoader: dataSourceLoader,
+					},
+				}},
 			ClusterGenerator: ClusterGenerator{
 				DataSourceLoader: dataSourceLoader,
 				Zone:             zone,

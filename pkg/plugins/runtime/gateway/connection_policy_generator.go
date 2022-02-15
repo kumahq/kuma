@@ -11,15 +11,15 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-func PopulatePolicies(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo, routes []route.Entry) []route.Entry {
+func PopulatePolicies(ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost, routes []route.Entry) []route.Entry {
 	var routesWithPolicies []route.Entry
 
 	for _, e := range routes {
 		for i, destination := range e.Action.Forward {
-			e.Action.Forward[i].Policies = mapPoliciesForDestination(destination.Destination, info, host.Host)
+			e.Action.Forward[i].Policies = mapPoliciesForDestination(destination.Destination, info, host)
 		}
 		if e.Mirror != nil {
-			e.Mirror.Forward.Policies = mapPoliciesForDestination(e.Mirror.Forward.Destination, info, host.Host)
+			e.Mirror.Forward.Policies = mapPoliciesForDestination(e.Mirror.Forward.Destination, info, host)
 		}
 
 		routesWithPolicies = append(routesWithPolicies, e)
@@ -28,7 +28,7 @@ func PopulatePolicies(ctx xds_context.Context, info *GatewayListenerInfo, host g
 	return routesWithPolicies
 }
 
-func mapPoliciesForDestination(destination envoy.Tags, info *GatewayListenerInfo, host GatewayHost) map[model.ResourceType]model.Resource {
+func mapPoliciesForDestination(destination envoy.Tags, info GatewayListenerInfo, host GatewayHost) map[model.ResourceType]model.Resource {
 	policies := map[model.ResourceType]model.Resource{}
 
 	for _, policyType := range ConnectionPolicyTypes {

@@ -13,24 +13,15 @@ import (
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 )
 
-// RouteTableGenerator generates Envoy xDS resources gateway routes from
-// the current route table.
-type RouteTableGenerator struct{}
-
-// SupportsProtocol is always true for RouteTableGenerator.
-func (*RouteTableGenerator) SupportsProtocol(mesh_proto.MeshGateway_Listener_Protocol) bool {
-	return true
-}
-
-// GenerateHost generates xDS resources for the current route table.
-func (r *RouteTableGenerator) GenerateHost(
-	ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo, routes []route.Entry,
+// GenerateVirtualHost generates xDS resources for the current route table.
+func GenerateVirtualHost(
+	ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost, routes []route.Entry,
 ) (
 	*envoy_routes.VirtualHostBuilder, error,
 ) {
 	vh := envoy_routes.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
-		envoy_routes.CommonVirtualHost(host.Host.Hostname),
-		envoy_routes.DomainNames(host.Host.Hostname),
+		envoy_routes.CommonVirtualHost(host.Hostname),
+		envoy_routes.DomainNames(host.Hostname),
 	)
 
 	// Ensure that we get TLS on HTTPS protocol listeners.

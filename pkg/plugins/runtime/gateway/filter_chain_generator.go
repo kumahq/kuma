@@ -62,14 +62,14 @@ type HTTPFilterChainGenerator struct {
 	builder *envoy_listeners.FilterChainBuilder
 }
 
-func (g *HTTPFilterChainGenerator) Initialize(ctx xds_context.Context, info *GatewayListenerInfo) {
+func (g *HTTPFilterChainGenerator) Initialize(ctx xds_context.Context, info GatewayListenerInfo) {
 	log.V(1).Info("generating filter chain", "protocol", "HTTP")
 
 	g.builder = newFilterChain(ctx, info)
 }
 
 func (g *HTTPFilterChainGenerator) Generate(
-	xds_context.Context, *GatewayListenerInfo, gatewayHostInfo,
+	xds_context.Context, GatewayListenerInfo, GatewayHost,
 ) (
 	*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error,
 ) {
@@ -78,7 +78,7 @@ func (g *HTTPFilterChainGenerator) Generate(
 	return nil, g.builder, nil
 }
 
-func (*HTTPFilterChainGenerator) FinalizeHost(listenerBuilder *envoy_listeners.ListenerBuilder, filterChain *envoy_listeners.FilterChainBuilder) {
+func (*HTTPFilterChainGenerator) FinalizeHost(*envoy_listeners.ListenerBuilder, *envoy_listeners.FilterChainBuilder) {
 }
 
 func (g *HTTPFilterChainGenerator) Finalize(listenerBuilder *envoy_listeners.ListenerBuilder) {
@@ -90,25 +90,24 @@ type HTTPSFilterChainGenerator struct {
 	DataSourceLoader datasource.Loader
 }
 
-func (g *HTTPSFilterChainGenerator) Initialize(ctx xds_context.Context, info *GatewayListenerInfo) {
-}
+func (g *HTTPSFilterChainGenerator) Initialize(xds_context.Context, GatewayListenerInfo) {}
 
 func (g *HTTPSFilterChainGenerator) Generate(
-	ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo,
+	ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost,
 ) (
 	*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error,
 ) {
 	log.V(1).Info("generating filter chain",
-		"hostname", host.Host.Hostname,
+		"hostname", host.Hostname,
 	)
 
 	resources := core_xds.NewResourceSet()
 
-	switch host.Host.TLS.GetMode() {
+	switch host.TLS.GetMode() {
 	case mesh_proto.MeshGateway_TLS_TERMINATE:
 		// Note that Envoy 1.184 and earlier will only accept 1 SDS reference.
-		for _, cert := range host.Host.TLS.GetCertificates() {
-			secret, err := g.generateCertificateSecret(ctx, info, host.Host, cert)
+		for _, cert := range host.TLS.GetCertificates() {
+			secret, err := g.generateCertificateSecret(ctx, info, host, cert)
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "failed to generate TLS certificate")
 			}
@@ -122,17 +121,17 @@ func (g *HTTPSFilterChainGenerator) Generate(
 
 	case mesh_proto.MeshGateway_TLS_PASSTHROUGH:
 		// TODO(jpeach) add support for PASSTHROUGH mode.
-		return nil, nil, errors.Errorf("unsupported TLS mode %q", host.Host.TLS.GetMode())
+		return nil, nil, errors.Errorf("unsupported TLS mode %q", host.TLS.GetMode())
 
 	default:
-		return nil, nil, errors.Errorf("unsupported TLS mode %q", host.Host.TLS.GetMode())
+		return nil, nil, errors.Errorf("unsupported TLS mode %q", host.TLS.GetMode())
 	}
 
 	builder := newFilterChain(ctx, info)
 
 	builder.Configure(
 		envoy_listeners.MatchTransportProtocol("tls"),
-		envoy_listeners.MatchServerNames(host.Host.Hostname),
+		envoy_listeners.MatchServerNames(host.Hostname),
 		envoy_listeners.MatchApplicationProtocols("h2", "http/1.1"),
 	)
 
@@ -176,7 +175,7 @@ func (g *HTTPSFilterChainGenerator) Finalize(listenerBuilder *envoy_listeners.Li
 
 func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
 	ctx xds_context.Context,
-	info *GatewayListenerInfo,
+	info GatewayListenerInfo,
 	host GatewayHost,
 	secret *system_proto.DataSource,
 ) (*envoy_extensions_transport_sockets_tls_v3.Secret, error) {
@@ -233,7 +232,7 @@ func newDownstreamTypedConfig() *envoy_extensions_transport_sockets_tls_v3.Downs
 	return conf
 }
 
-func newFilterChain(ctx xds_context.Context, info *GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
+func newFilterChain(ctx xds_context.Context, info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
 	// A Gateway is a single service across all listeners.
 	service := info.Dataplane.Spec.GetIdentifyingService()
 

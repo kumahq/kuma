@@ -25,18 +25,10 @@ func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.Me
 	return routes
 }
 
-// GatewayRouteGenerator generates Kuma gateway routes from GatewayRoute resources.
-type GatewayRouteGenerator struct {
-}
-
-func (*GatewayRouteGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
-	return p == mesh_proto.MeshGateway_Listener_HTTP || p == mesh_proto.MeshGateway_Listener_HTTPS
-}
-
-func (g *GatewayRouteGenerator) GenerateRoutes(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) []route.Entry {
-	gatewayRoutes := filterGatewayRoutes(host.Host.Routes, func(route *core_mesh.MeshGatewayRouteResource) bool {
+func GenerateRoutes(ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost) []route.Entry {
+	gatewayRoutes := filterGatewayRoutes(host.Routes, func(route *core_mesh.MeshGatewayRouteResource) bool {
 		// Wildcard virtual host accepts all routes.
-		if host.Host.Hostname == WildcardHostname {
+		if host.Hostname == WildcardHostname {
 			return true
 		}
 
@@ -47,7 +39,7 @@ func (g *GatewayRouteGenerator) GenerateRoutes(ctx xds_context.Context, info *Ga
 		}
 
 		// Otherwise, match the virtualhost name to the route names.
-		return match.Hostnames(host.Host.Hostname, names...)
+		return match.Hostnames(host.Hostname, names...)
 	})
 
 	if len(gatewayRoutes) == 0 {

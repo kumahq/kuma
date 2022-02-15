@@ -17,10 +17,7 @@ import (
 // Buffer defaults.
 const DefaultConnectionBuffer = 32 * 1024
 
-// ListenerGenerator generates Kuma gateway listeners.
-type ListenerGenerator struct{}
-
-func (*ListenerGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
+func ListenerSupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
 	switch p {
 	case mesh_proto.MeshGateway_Listener_HTTP,
 		mesh_proto.MeshGateway_Listener_HTTPS:
@@ -30,7 +27,7 @@ func (*ListenerGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Pro
 	}
 }
 
-func (*ListenerGenerator) Generate(ctx xds_context.Context, info *GatewayListenerInfo) *envoy_listeners.ListenerBuilder {
+func GenerateListener(ctx xds_context.Context, info GatewayListenerInfo) *envoy_listeners.ListenerBuilder {
 	// TODO(jpeach) what we really need to do here is to
 	// generate a HTTP filter chain for each
 	// host on the same HTTPConnectionManager. Each HTTP filter

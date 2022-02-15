@@ -31,7 +31,7 @@ func (*ClusterGenerator) SupportsProtocol(mesh_proto.MeshGateway_Listener_Protoc
 }
 
 // GenerateHost generates clusters for all the services targeted in the current route table.
-func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info *GatewayListenerInfo, routes []route.Entry) (*core_xds.ResourceSet, error) {
+func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info GatewayListenerInfo, routes []route.Entry) (*core_xds.ResourceSet, error) {
 	resources := ResourceAggregator{}
 
 	// If there is a service name conflict between external services
@@ -118,7 +118,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info *Gatew
 
 func (c *ClusterGenerator) generateMeshCluster(
 	mesh *core_mesh.MeshResource,
-	info *GatewayListenerInfo,
+	info GatewayListenerInfo,
 	dest *route.Destination,
 	upstreamServiceName string,
 ) (*core_xds.Resource, error) {
@@ -143,7 +143,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 
 func (c *ClusterGenerator) generateExternalCluster(
 	ctx xds_context.Context,
-	info *GatewayListenerInfo,
+	info GatewayListenerInfo,
 	service core_mesh.ExternalServiceResourceList,
 	dest *route.Destination,
 ) (*core_xds.Resource, error) {
