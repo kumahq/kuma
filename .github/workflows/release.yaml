@@ -1,25 +1,18 @@
 name: "Release"
 
 on:
-  push:
-    branches:
-      - feat/gh-release-workflow
-
-
-#on:
-#  workflow_dispatch:
-#    inputs:
-#      increaseMajor:
-#        description: "Increase major version"
-#        type: boolean
-#        required: false
+  workflow_dispatch:
+    inputs:
+      increaseMajor:
+        description: "Increase major version"
+        type: boolean
+        required: false
 
 jobs:
   create-branch:
     runs-on: ubuntu-latest
     env:
-      INCREASE_MAJOR_VERSION: "true"
-#      INCREASE_MAJOR_VERSION: ${{ github.event.inputs.increaseMajor }}
+      INCREASE_MAJOR_VERSION: ${{ github.event.inputs.increaseMajor }}
     steps:
       - name: git checkout
         uses: actions/checkout@v2
@@ -49,4 +42,4 @@ jobs:
           bash ./tools/releases/make-release-tag.sh $OLD_VERSION $NEW_VERSION
           
           # push
-          # git push --atomic origin $RELEASE_BRANCH $NEW_VERSION
+          git push --atomic origin $RELEASE_BRANCH $NEW_VERSION
