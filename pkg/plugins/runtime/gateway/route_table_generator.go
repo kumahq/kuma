@@ -24,12 +24,12 @@ func (*RouteTableGenerator) SupportsProtocol(mesh_proto.MeshGateway_Listener_Pro
 }
 
 // GenerateHost generates xDS resources for the current route table.
-func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
+func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
 	resources := ResourceAggregator{}
 
 	vh := envoy_routes.NewVirtualHostBuilder(info.Proxy.APIVersion).Configure(
-		envoy_routes.CommonVirtualHost(info.Host.Hostname),
-		envoy_routes.DomainNames(info.Host.Hostname),
+		envoy_routes.CommonVirtualHost(host.Host.Hostname),
+		envoy_routes.DomainNames(host.Host.Hostname),
 	)
 
 	// Ensure that we get TLS on HTTPS protocol listeners.
@@ -49,9 +49,9 @@ func (r *RouteTableGenerator) GenerateHost(ctx xds_context.Context, info *Gatewa
 	// TODO(jpeach) apply additional virtual host configuration.
 
 	// Sort routing table entries so the most specific match comes first.
-	sort.Sort(route.Sorter(info.RouteTable.Entries))
+	sort.Sort(route.Sorter(host.RouteTable.Entries))
 
-	for _, e := range info.RouteTable.Entries {
+	for _, e := range host.RouteTable.Entries {
 		routeBuilder := route.RouteBuilder{}
 
 		routeBuilder.Configure(

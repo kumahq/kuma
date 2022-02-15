@@ -59,21 +59,28 @@ type GatewayListener struct {
 	ResourceName string
 }
 
-type GatewayResourceInfo struct {
+// GatewayListenerInfo holds everything needed to generate resources for a
+// listener.
+type GatewayListenerInfo struct {
 	Proxy            *core_xds.Proxy
 	Dataplane        *core_mesh.DataplaneResource
 	Gateway          *core_mesh.MeshGatewayResource
 	ExternalServices *core_mesh.ExternalServiceResourceList
 
-	Listener   GatewayListener
-	Host       GatewayHost
-	Resources  Resources
-	RouteTable route.Table
+	Listener  GatewayListener
+	Resources Resources
+}
+
+type gatewayHostInfo struct {
+	Host GatewayHost
+	// RouteTable is used to accumulate information about routes as we
+	// iterate over the generators.
+	RouteTable *route.Table
 }
 
 // GatewayHostGenerator is responsible for generating xDS resources for a single GatewayHost.
 type GatewayHostGenerator interface {
-	GenerateHost(xds_context.Context, *GatewayResourceInfo) (*core_xds.ResourceSet, error)
+	GenerateHost(xds_context.Context, *GatewayListenerInfo, gatewayHostInfo) (*core_xds.ResourceSet, error)
 	SupportsProtocol(mesh_proto.MeshGateway_Listener_Protocol) bool
 }
 
@@ -144,7 +151,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			return hosts[i].Hostname > hosts[j].Hostname
 		})
 
-		info := GatewayResourceInfo{
+		info := GatewayListenerInfo{
 			Proxy:            proxy,
 			Dataplane:        proxy.Dataplane,
 			Gateway:          gateway,
@@ -154,19 +161,21 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 		// Make a pass over the generators for each virtual host.
 		for _, host := range hosts {
-			info.RouteTable = route.Table{}
-			info.Host = host
-
 			// Ensure that generators don't get duplicate routes,
 			// which could happen after redistributing wildcards.
-			info.Host.Routes = merge.UniqueResources(info.Host.Routes)
+			host.Routes = merge.UniqueResources(host.Routes)
+
+			gatewayHostInfo := gatewayHostInfo{
+				Host:       host,
+				RouteTable: &route.Table{},
+			}
 
 			for _, generator := range g.Generators {
 				if !generator.SupportsProtocol(listener.Protocol) {
 					continue
 				}
 
-				if err := resources.AddSet(generator.GenerateHost(ctx, &info)); err != nil {
+				if err := resources.AddSet(generator.GenerateHost(ctx, &info, gatewayHostInfo)); err != nil {
 					return nil, errors.Wrapf(err, "%T failed to generate resources for dataplane %q",
 						generator, proxy.Id)
 				}

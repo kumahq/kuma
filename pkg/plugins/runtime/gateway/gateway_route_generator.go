@@ -34,10 +34,10 @@ func (*GatewayRouteGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener
 	return p == mesh_proto.MeshGateway_Listener_HTTP || p == mesh_proto.MeshGateway_Listener_HTTPS
 }
 
-func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
-	gatewayRoutes := filterGatewayRoutes(info.Host.Routes, func(route *core_mesh.MeshGatewayRouteResource) bool {
+func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
+	gatewayRoutes := filterGatewayRoutes(host.Host.Routes, func(route *core_mesh.MeshGatewayRouteResource) bool {
 		// Wildcard virtual host accepts all routes.
-		if info.Host.Hostname == WildcardHostname {
+		if host.Host.Hostname == WildcardHostname {
 			return true
 		}
 
@@ -48,7 +48,7 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 		}
 
 		// Otherwise, match the virtualhost name to the route names.
-		return match.Hostnames(info.Host.Hostname, names...)
+		return match.Hostnames(host.Host.Hostname, names...)
 	})
 
 	if len(gatewayRoutes) == 0 {
@@ -85,7 +85,7 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 					prefixEntries[routeEntry.Match.PrefixPath] =
 						append(prefixEntries[routeEntry.Match.PrefixPath], routeEntry)
 				default:
-					info.RouteTable.Entries = append(info.RouteTable.Entries, routeEntry)
+					host.RouteTable.Entries = append(host.RouteTable.Entries, routeEntry)
 				}
 			}
 		}
@@ -106,7 +106,7 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 			// Make sure the prefix has a trailing '/' so that it only matches
 			// complete path components.
 			e.Match.PrefixPath = exactPath + "/"
-			info.RouteTable.Entries = append(info.RouteTable.Entries, e)
+			host.RouteTable.Entries = append(host.RouteTable.Entries, e)
 
 			// If the prefix is '/', it matches everything anyway,
 			// so we don't need to install an exact match.
@@ -126,7 +126,7 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 	}
 
 	for _, entries := range exactEntries {
-		info.RouteTable.Entries = append(info.RouteTable.Entries, entries...)
+		host.RouteTable.Entries = append(host.RouteTable.Entries, entries...)
 	}
 
 	return nil, nil

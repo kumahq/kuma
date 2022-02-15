@@ -23,7 +23,7 @@ func (*RouteConfigurationGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Li
 	}
 }
 
-func (*RouteConfigurationGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
+func (*RouteConfigurationGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, _ gatewayHostInfo) (*core_xds.ResourceSet, error) {
 	if info.Resources.RouteConfiguration != nil {
 		return nil, nil
 	}

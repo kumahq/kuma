@@ -64,19 +64,19 @@ func (*HTTPFilterChainGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Liste
 	return p == mesh_proto.MeshGateway_Listener_HTTP
 }
 
-func (*HTTPFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
+func (*HTTPFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
 	// HTTP listeners get a single filter chain for all hostnames. So
 	// if there's already a filter chain, we have nothing to do.
 	if info.Resources.FilterChain != nil {
 		log.V(1).Info("updating existing filter chain",
-			"hostname", info.Host.Hostname,
+			"hostname", host.Host.Hostname,
 		)
 
 		return nil, nil
 	}
 
 	log.V(1).Info("generating filter chain",
-		"hostname", info.Host.Hostname,
+		"hostname", host.Host.Hostname,
 	)
 
 	info.Resources.FilterChain = newFilterChain(ctx, info)
@@ -92,7 +92,7 @@ func (*HTTPSFilterChainGenerator) SupportsProtocol(p mesh_proto.MeshGateway_List
 	return p == mesh_proto.MeshGateway_Listener_HTTPS
 }
 
-func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
+func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
 	// HTTPS listeners get a filter chain for each hostname. So if
 	// there is already a filter chain (from the previous host), we
 	// close it, and start a new one.
@@ -103,16 +103,16 @@ func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *
 	}
 
 	log.V(1).Info("generating filter chain",
-		"hostname", info.Host.Hostname,
+		"hostname", host.Host.Hostname,
 	)
 
 	resources := core_xds.NewResourceSet()
 
-	switch info.Host.TLS.GetMode() {
+	switch host.Host.TLS.GetMode() {
 	case mesh_proto.MeshGateway_TLS_TERMINATE:
 		// Note that Envoy 1.184 and earlier will only accept 1 SDS reference.
-		for _, cert := range info.Host.TLS.GetCertificates() {
-			secret, err := g.generateCertificateSecret(ctx, info, cert)
+		for _, cert := range host.Host.TLS.GetCertificates() {
+			secret, err := g.generateCertificateSecret(ctx, info, host.Host, cert)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to generate TLS certificate")
 			}
@@ -126,17 +126,17 @@ func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *
 
 	case mesh_proto.MeshGateway_TLS_PASSTHROUGH:
 		// TODO(jpeach) add support for PASSTHROUGH mode.
-		return nil, errors.Errorf("unsupported TLS mode %q", info.Host.TLS.GetMode())
+		return nil, errors.Errorf("unsupported TLS mode %q", host.Host.TLS.GetMode())
 
 	default:
-		return nil, errors.Errorf("unsupported TLS mode %q", info.Host.TLS.GetMode())
+		return nil, errors.Errorf("unsupported TLS mode %q", host.Host.TLS.GetMode())
 	}
 
 	builder := newFilterChain(ctx, info)
 
 	builder.Configure(
 		envoy_listeners.MatchTransportProtocol("tls"),
-		envoy_listeners.MatchServerNames(info.Host.Hostname),
+		envoy_listeners.MatchServerNames(host.Host.Hostname),
 		envoy_listeners.MatchApplicationProtocols("h2", "http/1.1"),
 	)
 
@@ -175,7 +175,8 @@ func (g *HTTPSFilterChainGenerator) GenerateHost(ctx xds_context.Context, info *
 
 func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
 	ctx xds_context.Context,
-	info *GatewayResourceInfo,
+	info *GatewayListenerInfo,
+	host GatewayHost,
 	secret *system_proto.DataSource,
 ) (*envoy_extensions_transport_sockets_tls_v3.Secret, error) {
 	data, err := g.DataSourceLoader.Load(context.Background(), ctx.Mesh.Resource.GetMeta().GetName(), secret)
@@ -201,7 +202,7 @@ func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
 		// different key types, we need to use the key type
 		// to disambiguate when the certificate is provided as
 		// inline data.
-		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "inline", info.Host.Hostname)
+		tlsSecret.Name = names.GetSecretName("cert."+string(ktype), "inline", host.Hostname)
 	default:
 		return nil, errors.Errorf("unsupported datasource type %T", d)
 	}
@@ -231,7 +232,7 @@ func newDownstreamTypedConfig() *envoy_extensions_transport_sockets_tls_v3.Downs
 	return conf
 }
 
-func newFilterChain(ctx xds_context.Context, info *GatewayResourceInfo) *envoy_listeners.FilterChainBuilder {
+func newFilterChain(ctx xds_context.Context, info *GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
 	// A Gateway is a single service across all listeners.
 	service := info.Dataplane.Spec.GetIdentifyingService()
 
