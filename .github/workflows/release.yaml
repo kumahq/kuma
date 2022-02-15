@@ -1,29 +1,22 @@
 name: "Release"
 
 on:
-  workflow_dispatch:
-    inputs:
-      releaseBranch:
-        description: "Release branch name"
-        required: true
-        type: string
-      oldVersion:
-        description: "The last fully released Kuma version"
-        required: true
-        type: string
-      newVersion:
-        description: "New Kuma version"
-        required: true
-        type: string
+  push:
+    branches:
+      - feat/gh-release-workflow
 
 jobs:
   create-branch:
     runs-on: ubuntu-latest
-    env:
-      RELEASE_BRANCH: ${{ github.event.inputs.releaseBranch }}
-      OLD_VERSION: ${{ github.event.inputs.oldVersion }}
-      NEW_VERSION: ${{ github.event.inputs.newVersion }}
     steps:
+      - name: set envs
+        run: |
+          export RELEASE_BRANCH=$(./.github/scripts/release-branch-name.sh)
+          echo "::set-env name=RELEASE_BRANCH::RELEASE_BRANCH"
+          export OLD_VERSION=$(git describe --abbrev=0 --tags)
+          echo "::set-env name=OLD_VERSION::OLD_VERSION"
+          export NEW_VERSION=$(./.github/scripts/new-tag.sh)
+          echo "::set-env name=NEW_VERSION::NEW_VERSION"
       - name: git checkout
         uses: actions/checkout@v2
         with:
