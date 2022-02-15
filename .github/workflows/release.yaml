@@ -16,9 +16,12 @@ jobs:
       - name: compute parameters
         id: computed-params
         run: |
-            echo '::set-output name=release_branch::$(./.github/scripts/release-branch-name.sh)'
-            echo '::set-output name=old_version::$(git describe --abbrev=0 --tags)'
-            echo '::set-output name=new_version::$(./.github/scripts/new-tag.sh)'
+            RELEASE_BRANCH=$(./.github/scripts/release-branch-name.sh)
+            echo '::set-output name=release_branch::$RELEASE_BRANCH'
+            OLD_VERSION=$(git describe --abbrev=0 --tags)
+            echo '::set-output name=old_version::$OLD_VERSION'
+            NEW_VERSION=$(./.github/scripts/new-tag.sh)
+            echo '::set-output name=new_version::$NEW_VERSION'
       - name: create branch
         run: |
           git --version
