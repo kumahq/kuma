@@ -30,7 +30,7 @@ jobs:
           OLD_VERSION=$(git describe --abbrev=0 --tags)
           IFS=. read -r major minor patch <<< "$OLD_VERSION"
           if [ $INCREASE_MAJOR_VERSION == "true" ]; then
-            RELEASE_BRANCH="release-$((+major)).$minor" 
+            RELEASE_BRANCH="release-$((++major)).$minor" 
           else
             RELEASE_BRANCH="release-$major.$((++minor))" 
           fi
