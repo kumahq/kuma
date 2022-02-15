@@ -12,9 +12,10 @@ jobs:
           fetch-depth: 0
       - name: create branch and tag
         run: |
-          RELEASE_BRANCH=$(./.github/scripts/release-branch-name.sh)
           OLD_VERSION=$(git describe --abbrev=0 --tags)
-          NEW_VERSION=$(./.github/scripts/new-tag.sh)
+          IFS=. read -r major minor patch <<< "$OLD_VERSION"
+          RELEASE_BRANCH="release-$major.$((++minor))" 
+          NEW_VERSION="$major.$((++minor)).0-rc1"
 
           # create branch 'release-$major.$minor'
           git --version
