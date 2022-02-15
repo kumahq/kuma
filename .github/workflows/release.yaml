@@ -31,7 +31,7 @@ jobs:
       - name: create branch
         run: |
           git --version
-          git config user.name "GitHub Actions Bot"
+          git config user.name "github-actions[bot]"
           git config user.email "<>"
           git branch $RELEASE_BRANCH
       - name: create tag
