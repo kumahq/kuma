@@ -1,9 +1,6 @@
 name: "Release"
 
-on:
-  push:
-    branches:
-      - feat/gh-release-workflow
+on: workflow_dispatch
 
 jobs:
   create-branch:
