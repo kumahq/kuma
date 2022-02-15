@@ -1,7 +1,10 @@
 name: "Release"
 
-on: workflow_dispatch
-
+#on: workflow_dispatch
+on:
+  push:
+    branches:
+      - feat/gh-release-workflow
 jobs:
   create-branch:
     runs-on: ubuntu-latest
@@ -15,7 +18,7 @@ jobs:
           OLD_VERSION=$(git describe --abbrev=0 --tags)
           IFS=. read -r major minor patch <<< "$OLD_VERSION"
           RELEASE_BRANCH="release-$major.$((++minor))" 
-          NEW_VERSION="$major.$((++minor)).0-rc1"
+          NEW_VERSION="$major.$minor.0-rc1"
 
           # create branch 'release-$major.$minor'
           git --version
