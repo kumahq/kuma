@@ -24,10 +24,10 @@ jobs:
           git --version
           git config user.name "github-actions[bot]"
           git config user.email "<41898282+github-actions[bot]@users.noreply.github.com>"
-          git branch ${{ steps.computed-params.release_branch }}
+          git branch ${{ steps.computed-params.outputs.release_branch }}
       - name: create tag
         run: |
-          bash ./tools/releases/make-release-tag.sh ${{ steps.computed-params.old_version }} ${{ steps.computed-params.new_version }}
+          bash ./tools/releases/make-release-tag.sh ${{ steps.computed-params.outputs.old_version }} ${{ steps.computed-params.outputs.new_version }}
       - name: push
         run: |
-          git push --atomic origin ${{ steps.computed-params.release_branch }} ${{ steps.computed-params.new_version }}
+          git push --atomic origin ${{ steps.computed-params.outputs.release_branch }} ${{ steps.computed-params.outputs.new_version }}
