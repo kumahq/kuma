@@ -199,7 +199,7 @@ mtls:
 		Expect(stat).To(stats.BeGreaterThanZero())
 	})
 
-	FIt("universal should access internal service behind universal zoneingress through zoneegress", func() {
+	It("universal should access internal service behind universal zoneingress through zoneegress", func() {
 		filter := fmt.Sprintf(
 			"cluster.%s_%s.upstream_rq_total",
 			nonDefaultMesh,
