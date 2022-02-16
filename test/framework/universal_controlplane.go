@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
 type UniversalControlPlane struct {
@@ -59,7 +60,7 @@ func (c *UniversalControlPlane) GetAPIServerAddress() string {
 
 func (c *UniversalControlPlane) GetMetrics() (string, error) {
 	return retry.DoWithRetryE(c.t, "fetching CP metrics", DefaultRetries, DefaultTimeout, func() (string, error) {
-		sshApp := NewSshApp(c.verbose, c.cluster.apps[AppModeCP].ports["22"], nil, []string{"curl",
+		sshApp := ssh.NewApp(c.verbose, c.cluster.apps[AppModeCP].ports["22"], nil, []string{"curl",
 			"--fail", "--show-error",
 			"http://localhost:5680/metrics"})
 		if err := sshApp.Run(); err != nil {
@@ -84,7 +85,7 @@ func (c *UniversalControlPlane) generateToken(
 		DefaultRetries,
 		DefaultTimeout,
 		func() (string, error) {
-			sshApp := NewSshApp(
+			sshApp := ssh.NewApp(
 				c.verbose,
 				c.cluster.apps[AppModeCP].ports["22"],
 				nil,

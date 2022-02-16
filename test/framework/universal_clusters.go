@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/framework/envoy_admin"
 )
 
 type UniversalClusters struct {
@@ -29,11 +30,7 @@ func NewUniversalClusters(clusterNames []string, verbose bool) (Clusters, error)
 	clusters := map[string]*UniversalCluster{}
 
 	for _, name := range clusterNames {
-		if name == Kuma4 {
-			clusters[name] = NewUniversalCluster(t, name, true)
-		} else {
-			clusters[name] = NewUniversalCluster(t, name, false)
-		}
+		clusters[name] = NewUniversalCluster(t, name, name == Kuma4)
 	}
 
 	return &UniversalClusters{
@@ -64,13 +61,13 @@ func (cs *UniversalClusters) WithRetries(retries int) Cluster {
 }
 
 func (cs *UniversalClusters) Name() string {
-	panic("not implemented")
+	panic("not supported")
 }
 
 func (cs *UniversalClusters) DismissCluster() error {
 	for name, c := range cs.clusters {
 		if err := c.DismissCluster(); err != nil {
-			return errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
+			return errors.Wrapf(err, "Dismiss cluster %s failed: %v", name, err)
 		}
 	}
 
@@ -111,7 +108,7 @@ func (cs *UniversalClusters) VerifyKuma() error {
 }
 
 func (cs *UniversalClusters) DeleteKuma() error {
-	failed := []string{}
+	var failed []string
 
 	for name, c := range cs.clusters {
 		if err := c.DeleteKuma(); err != nil {
@@ -144,15 +141,16 @@ func (cs *UniversalClusters) CreateNamespace(namespace string) error {
 func (cs *UniversalClusters) DeleteNamespace(namespace string) error {
 	for name, c := range cs.clusters {
 		if err := c.DeleteNamespace(namespace); err != nil {
-			return errors.Wrapf(err, "Creating Namespace %s on %s failed: %v", namespace, name, err)
+			return errors.Wrapf(err, "Delete Namespace %s on %s failed: %v", namespace, name, err)
 		}
 	}
 
 	return nil
 }
 
-func (c *UniversalClusters) GetKumactlOptions() *KumactlOptions {
+func (cs *UniversalClusters) GetKumactlOptions() *KumactlOptions {
 	fmt.Println("Not supported at this level.")
+
 	return nil
 }
 
@@ -189,15 +187,16 @@ func (cs *UniversalClusters) InjectDNS(namespace ...string) error {
 func (cs *UniversalClusters) GetTesting() testing.TestingT {
 	return cs.t
 }
-func (cs *UniversalClusters) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
-	panic("implement me")
+
+func (cs *UniversalClusters) Exec(string, string, string, ...string) (string, string, error) {
+	panic("not supported")
 }
 
-func (cs *UniversalClusters) ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error) {
-	panic("implement me")
+func (cs *UniversalClusters) ExecWithRetries(string, string, string, ...string) (string, string, error) {
+	panic("not supported")
 }
 
-func (cs *UniversalClusters) Deployment(name string) Deployment {
+func (cs *UniversalClusters) Deployment(string) Deployment {
 	panic("not supported")
 }
 
@@ -217,4 +216,12 @@ func (cs *UniversalClusters) DeleteDeployment(deploymentName string) error {
 		}
 	}
 	return nil
+}
+
+func (cs *UniversalClusters) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
+	panic("not supported")
+}
+
+func (cs *UniversalClusters) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+	panic("not supported")
 }

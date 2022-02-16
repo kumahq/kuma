@@ -18,6 +18,9 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/template"
+	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
+	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
 type UniversalCluster struct {
@@ -30,6 +33,39 @@ type UniversalCluster struct {
 	defaultTimeout time.Duration
 	defaultRetries int
 	opts           kumaDeploymentOptions
+
+	envoyTunnels map[string]envoy_admin.Tunnel
+}
+
+func (c *UniversalCluster) addEgressEnvoyTunnel() error {
+	app := c.apps[AppEgress]
+
+	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, app.GetPublicPort(sshPort))
+	if err != nil {
+		return err
+	}
+
+	c.envoyTunnels[Config.ZoneEgressApp] = t
+
+	return nil
+}
+
+func (c *UniversalCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
+	t, err := c.GetZoneEgressEnvoyTunnelE()
+	if err != nil {
+		c.t.Fatal(err)
+	}
+
+	return t
+}
+
+func (c *UniversalCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
+	if !ok {
+		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
+	}
+
+	return t, nil
 }
 
 var _ Cluster = &UniversalCluster{}
@@ -43,6 +79,7 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		deployments:    map[string]Deployment{},
 		defaultRetries: Config.DefaultClusterStartupRetries,
 		defaultTimeout: Config.DefaultClusterStartupTimeout,
+		envoyTunnels:   map[string]envoy_admin.Tunnel{},
 	}
 }
 
@@ -171,13 +208,17 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 }
 
 func (c *UniversalCluster) retrieveAdminToken() (string, error) {
-	return retry.DoWithRetryE(c.t, "fetching user admin token",
+	return retry.DoWithRetryE(
+		c.t, "fetching user admin token",
 		DefaultRetries,
 		DefaultTimeout,
 		func() (string, error) {
-			sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], nil, []string{"curl",
-				"--fail", "--show-error",
-				"http://localhost:5681/global-secrets/admin-user-token"})
+			sshApp := ssh.NewApp(
+				c.verbose, c.apps[AppModeCP].ports["22"], nil, []string{
+					"curl", "--fail", "--show-error",
+					"http://localhost:5681/global-secrets/admin-user-token",
+				},
+			)
 			if err := sshApp.Run(); err != nil {
 				return "", err
 			}
@@ -194,7 +235,8 @@ func (c *UniversalCluster) retrieveAdminToken() (string, error) {
 				return "", err
 			}
 			return string(token), nil
-		})
+		},
+	)
 }
 
 func (c *UniversalCluster) GetKuma() ControlPlane {
@@ -256,6 +298,10 @@ func (c *UniversalCluster) CreateZoneEgress(
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
 
 	app.CreateDP(token, cpAddress, name, "", ip, dpYAML, builtinDNS, "egress", 0)
+
+	if err := c.addEgressEnvoyTunnel(); err != nil {
+		return err
+	}
 
 	return app.dpApp.Start()
 }
@@ -355,7 +401,7 @@ func runPostgresMigration(kumaCP *UniversalApp, envVars map[string]string) error
 		return errors.New("missing public port: 22")
 	}
 
-	app := NewSshApp(kumaCP.verbose, sshPort, envVars, args)
+	app := ssh.NewApp(kumaCP.verbose, sshPort, envVars, args)
 	if err := app.Run(); err != nil {
 		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
 	}
@@ -380,7 +426,7 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 	if !ok {
 		return "", "", errors.Errorf("App %s not found", appname)
 	}
-	sshApp := NewSshApp(c.verbose, app.ports[sshPort], nil, cmd)
+	sshApp := ssh.NewApp(c.verbose, app.ports[sshPort], nil, cmd)
 	err := sshApp.Run()
 	return sshApp.Out(), sshApp.Err(), err
 }
@@ -398,7 +444,7 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 			if !ok {
 				return "", errors.Errorf("App %s not found", appname)
 			}
-			sshApp := NewSshApp(c.verbose, app.ports[sshPort], nil, cmd)
+			sshApp := ssh.NewApp(c.verbose, app.ports[sshPort], nil, cmd)
 			err := sshApp.Run()
 			stdout = sshApp.Out()
 			stderr = sshApp.Err()
