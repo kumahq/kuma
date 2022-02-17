@@ -74,6 +74,16 @@ func createZoneEgressSecrets(
 			continue
 		}
 
+		if len(meshResources.ExternalServices) == 0 {
+			// https://github.com/envoyproxy/envoy/issues/9310
+			// Envoy has a behavior that if you include a secret over ADS that is not referenced anywhere
+			// all secrets are stuck in warming state.
+			// We need to only deliver secrets that are used in other parts of config.
+			// ZoneEgress only use identity and CA certs for external services.
+			// For internal services it just passes the traffic to ZoneIngress through SNI
+			continue
+		}
+
 		identity, ca, err := ctx.ControlPlane.Secrets.GetForZoneEgress(
 			proxy.ZoneEgressProxy.ZoneEgressResource,
 			meshResources.Mesh,

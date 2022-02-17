@@ -68,7 +68,7 @@ networking:
   address: kuma.io:80
 ---
 type: ExternalService
-name: externalservice-1
+name: externalservice-2
 mesh: mesh-1
 tags:
   kuma.io/service: externalservice-2
