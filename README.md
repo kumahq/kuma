@@ -1,9 +1,19 @@
 [![][kuma-logo]][kuma-url]
 
-[![CircleCI](https://circleci.com/gh/kumahq/kuma/tree/release-1.4.svg?style=svg&circle-token=e3f6c5429ee47ca0eb4bd2542e4b8801a7856373)](https://circleci.com/gh/kumahq/kuma/tree/release-1.4)
+**Builds**
+[![CircleCI release-1.5](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.5?label=release-1.5)](https://circleci.com/gh/kumahq/kuma/tree/release-1.5)
+[![CircleCI master](https://img.shields.io/circleci/build/github/kumahq/kuma/master?label=master)](https://circleci.com/gh/kumahq/kuma/tree/master)
+
+**Code quality**
 [![Go Report Card](https://goreportcard.com/badge/github.com/kumahq/kuma)](https://goreportcard.com/report/github.com/kumahq/kuma)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5576/badge)](https://bestpractices.coreinfrastructure.org/projects/5576)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/kumahq/kuma/blob/master/LICENSE)
+
+**Releases**
+[![Docker hub](https://img.shields.io/docker/pulls/kumahq/kuma-cp)](https://hub.docker.com/u/kumahq)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/kuma)](https://artifacthub.io/packages/search?repo=kuma)
+
+**Social**
 [![Slack](https://chat.kuma.io/badge.svg)](https://chat.kuma.io/)
 [![Twitter](https://img.shields.io/twitter/follow/KumaMesh.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=KumaMesh)
 
@@ -119,24 +129,6 @@ See [Developer Guide](DEVELOPER.md) for further details.
 ## Enterprise Support
 
 If you are implementing Kuma in a mission-critical environment and require enterprise support and features, please visit [Enterprise](https://kuma.io/enterprise/) to explore the available offerings.
-
-## License
-
-```
-Copyright 2021 the Kuma Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
 
 [kuma-url]: https://kuma.io/
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png
