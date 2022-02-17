@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
@@ -145,7 +146,7 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(
 // GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
 // excludes Dataplanes, Ingresses and Egresses from 'clusterID' cluster
 func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
-	return func(clusterID string, r model.Resource) bool {
+	return func(clusterID string, features kds.Features, r model.Resource) bool {
 		resName := r.GetMeta().GetName()
 
 		switch r.Descriptor().Name {
@@ -154,11 +155,14 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 		case system.ConfigType:
 			return configs[resName]
 		case system.GlobalSecretType:
-			return util.ResourceNameHasAtLeastOneOfPrefixes(
-				resName,
-				zoneingress.ZoneIngressSigningKeyPrefix,
-				zone_tokens.SigningKeyPrefix,
-			)
+			prefixes := []string{zoneingress.ZoneIngressSigningKeyPrefix}
+			if features.HasFeature(kds.FeatureZoneToken) {
+				// We need to sync Zone Token signing keys only to zone cps that can support it.
+				// Otherwise, Zone CP after the restart of either Zone or Global CP tries to recreate resource
+				// The result is that it NACKs the DiscoveryResponse and gets into a loop.
+				prefixes = append(prefixes, zone_tokens.SigningKeyPrefix)
+			}
+			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, prefixes...)
 		case mesh.ZoneIngressType:
 			zoneTag := util.ZoneTag(r)
 
@@ -185,7 +189,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 // ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses
 // that belongs to another zones
 func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
-	return func(_ string, r model.Resource) bool {
+	return func(_ string, _ kds.Features, r model.Resource) bool {
 		switch r.Descriptor().Name {
 		case mesh.DataplaneType:
 			return clusterName == util.ZoneTag(r)
