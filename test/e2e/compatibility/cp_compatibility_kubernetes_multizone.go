@@ -61,7 +61,6 @@ func CpCompatibilityMultizoneKubernetes() {
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
-
 	})
 
 	AfterEach(func() {
@@ -79,8 +78,8 @@ func CpCompatibilityMultizoneKubernetes() {
 		err := NewClusterSetup().
 			Install(Kuma(core.Global,
 				append(globalConf, WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
-				WithInstallationMode(HelmInstallationMode),
-				WithHelmReleaseName(globalReleaseName))...,
+					WithInstallationMode(HelmInstallationMode),
+					WithHelmReleaseName(globalReleaseName))...,
 			)).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
