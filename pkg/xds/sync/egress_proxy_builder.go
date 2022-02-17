@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"sort"
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
@@ -69,6 +70,11 @@ func (p *EgressProxyBuilder) Build(
 		}
 	}
 
+	// It's done for achieving stable xds config
+	sort.Slice(zoneIngresses, func(a, b int) bool {
+		return zoneIngresses[a].GetMeta().GetName() < zoneIngresses[b].GetMeta().GetName()
+	})
+
 	var meshResourcesList []*xds.MeshResources
 
 	for _, mesh := range meshes {
@@ -82,6 +88,11 @@ func (p *EgressProxyBuilder) Build(
 		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
 		trafficRoutes := meshCtx.Resources.TrafficRoutes().Items
 		externalServices := meshCtx.Resources.ExternalServices().Items
+
+		// It's done for achieving stable xds config
+		sort.Slice(externalServices, func(a, b int) bool {
+			return externalServices[a].GetMeta().GetName() < externalServices[b].GetMeta().GetName()
+		})
 
 		meshResources := &xds.MeshResources{
 			Mesh:             mesh,
