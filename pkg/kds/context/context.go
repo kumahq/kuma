@@ -39,6 +39,7 @@ type Context struct {
 	Configs map[string]bool
 
 	GlobalResourceMapper reconcile.ResourceMapper
+	ZoneResourceMapper   reconcile.ResourceMapper
 }
 
 func DefaultContext(manager manager.ResourceManager, zone string) *Context {
@@ -53,10 +54,8 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
 		ZoneProvidedFilter:   ZoneProvidedFilter(zone),
 		Configs:              configs,
-		GlobalResourceMapper: CompositeResourceMapper(
-			MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
-			MapInsightResourcesZeroGeneration,
-		),
+		GlobalResourceMapper: MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
+		ZoneResourceMapper:   MapInsightResourcesZeroGeneration,
 	}
 }
 
