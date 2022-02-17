@@ -9,6 +9,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -51,21 +52,6 @@ func CpCompatibilityMultizoneKubernetes() {
 			strings.ToLower(random.UniqueId()),
 		)
 
-		err := NewClusterSetup().
-			Install(Kuma(core.Global,
-				WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
-				WithInstallationMode(HelmInstallationMode),
-				WithHelmChartPath(Config.HelmChartPath),
-				WithHelmReleaseName(globalReleaseName),
-				WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
-				WithoutHelmOpt("global.image.tag"),
-				WithHelmOpt("global.image.registry", Config.KumaImageRegistry),
-			)).
-			Setup(globalCluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(globalCluster.VerifyKuma()).To(Succeed())
-
 		// Zone CP
 		zoneCluster = NewK8sCluster(NewTestingT(), Kuma2, Silent).
 			WithTimeout(6 * time.Second).
@@ -76,41 +62,45 @@ func CpCompatibilityMultizoneKubernetes() {
 			strings.ToLower(random.UniqueId()),
 		)
 
-		err = NewClusterSetup().
-			Install(Kuma(core.Zone,
-				WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
-				WithInstallationMode(HelmInstallationMode),
-				WithHelmChartPath(Config.HelmChartName),
-				WithHelmReleaseName(zoneReleaseName),
-				WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
-				WithoutHelmOpt("global.image.tag"),
-				WithHelmOpt("global.image.registry", Config.KumaImageRegistry),
-				WithGlobalAddress(globalCluster.GetKuma().GetKDSServerAddress()),
-				WithHelmOpt("ingress.enabled", "true"),
-			)).
-			Install(NamespaceWithSidecarInjectionOnAnnotation(TestNamespace)).
-			Setup(zoneCluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(zoneCluster.VerifyKuma()).To(Succeed())
 	})
 
 	AfterEach(func() {
 		if ShouldSkipCleanup() {
 			return
 		}
-
 		Expect(zoneCluster.DeleteKuma()).To(Succeed())
 		Expect(zoneCluster.DismissCluster()).To(Succeed())
 
 		Expect(globalCluster.DeleteKuma()).To(Succeed())
 		Expect(globalCluster.DismissCluster()).To(Succeed())
 	})
-
-	It("should sync resources between new global and old zone", func() {
-		// when global is upgraded
-		err := globalCluster.(*K8sCluster).UpgradeKuma(core.Global, WithHelmReleaseName(globalReleaseName))
+	DescribeTable("Cross version check", func(globalConf, zoneConf []KumaDeploymentOption) {
+		// Start a global
+		err := NewClusterSetup().
+			Install(Kuma(core.Global,
+				append(globalConf, WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
+				WithInstallationMode(HelmInstallationMode),
+				WithHelmReleaseName(globalReleaseName))...,
+			)).
+			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(globalCluster.VerifyKuma()).To(Succeed())
+
+		// Start a zone
+		err = NewClusterSetup().
+			Install(Kuma(core.Zone,
+				append(zoneConf,
+					WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
+					WithInstallationMode(HelmInstallationMode),
+					WithHelmReleaseName(zoneReleaseName),
+					WithGlobalAddress(globalCluster.GetKuma().GetKDSServerAddress()),
+					WithHelmOpt("ingress.enabled", "true"))...,
+			)).
+			Install(NamespaceWithSidecarInjectionOnAnnotation(TestNamespace)).
+			Setup(zoneCluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(zoneCluster.VerifyKuma()).To(Succeed())
 
 		// and new resource is created on Global
 		err = YamlK8s(`
@@ -134,5 +124,27 @@ metadata:
 		Eventually(func() (string, error) {
 			return k8s.RunKubectlAndGetOutputE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions("default"), "get", "dataplanes")
 		}, "30s", "1s").Should(ContainSubstring("demo-client"))
-	})
+	}, Entry(
+		"Sync new global and old zone",
+		[]KumaDeploymentOption{
+			WithInstallationMode(HelmInstallationMode),
+			WithHelmChartPath(Config.HelmChartPath),
+		},
+		[]KumaDeploymentOption{
+			WithHelmChartPath(Config.HelmChartName),
+			WithoutHelmOpt("global.image.tag"),
+			WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
+		},
+	), Entry(
+		"Sync old global and new zone",
+		[]KumaDeploymentOption{
+			WithHelmChartPath(Config.HelmChartName),
+			WithoutHelmOpt("global.image.tag"),
+			WithHelmChartVersion(Config.SuiteConfig.Compatibility.HelmVersion),
+		},
+		[]KumaDeploymentOption{
+			WithInstallationMode(HelmInstallationMode),
+			WithHelmChartPath(Config.HelmChartPath),
+		},
+	))
 }
