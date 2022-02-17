@@ -21,13 +21,13 @@ jobs:
       - name: create branch and tag
         run: |
           OLD_VERSION=$(git describe --abbrev=0 --tags)
-          IFS=. read -r major minor patch <<< "$OLD_VERSION"
+          IFS=. read -r major minor patch <<< "${OLD_VERSION#v}"
           if [ $INCREASE_MAJOR_VERSION == "true" ]; then
             RELEASE_BRANCH="release-$((++major)).0" 
-            NEW_VERSION="$major.0.0-rc1"
+            NEW_VERSION="v$major.0.0-rc1"
           else
             RELEASE_BRANCH="release-$major.$((++minor))" 
-            NEW_VERSION="$major.$minor.0-rc1"
+            NEW_VERSION="v$major.$minor.0-rc1"
           fi
 
           # create branch 'release-$major.$minor'
