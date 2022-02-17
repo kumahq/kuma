@@ -83,16 +83,20 @@ func (g Generator) Generate(
 			resources.AddSet(rs)
 		}
 
-		listener, err := listenerBuilder.Build()
-		if err != nil {
-			return nil, err
-		}
+		// If the resources are empty after all generator pass, it means there is filter chain,
+		// if there is no filter chain there is no need to build a listener
+		if !resources.Empty() {
+			listener, err := listenerBuilder.Build()
+			if err != nil {
+				return nil, err
+			}
 
-		resources.Add(&core_xds.Resource{
-			Name:     listener.GetName(),
-			Origin:   OriginEgress,
-			Resource: listener,
-		})
+			resources.Add(&core_xds.Resource{
+				Name:     listener.GetName(),
+				Origin:   OriginEgress,
+				Resource: listener,
+			})
+		}
 	}
 
 	return resources, nil
