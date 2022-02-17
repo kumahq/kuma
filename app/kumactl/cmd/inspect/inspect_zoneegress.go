@@ -12,25 +12,24 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-const inspectZoneIngressError = "Policies are not applied on ZoneIngress, please use '--config-dump' flag to get " +
-	"envoy config dump of the ZoneIngress"
+const inspectZoneEgressError = "Policies are not applied on ZoneEgress, please use '--config-dump' flag to get " +
+	"envoy config dump of the ZoneEgress"
 
-func newInspectZoneIngressCmd(pctx *cmd.RootContext) *cobra.Command {
+func newInspectZoneEgressCmd(pctx *cmd.RootContext) *cobra.Command {
 	var configDump bool
 	cmd := &cobra.Command{
-		Use:   "zoneingress NAME",
-		Short: "Inspect ZoneIngress",
-		Long:  "Inspect ZoneIngress.",
+		Use:   "zoneegress NAME",
+		Short: "Inspect ZoneEgress",
+		Long:  "Inspect ZoneEgress.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !configDump {
-				_, err := fmt.Fprintln(cmd.OutOrStderr(), inspectZoneIngressError)
+				_, err := fmt.Fprintln(cmd.OutOrStderr(), inspectZoneEgressError)
 				return err
 			}
-
-			client, err := pctx.CurrentInspectEnvoyProxyClient(mesh.ZoneIngressResourceTypeDescriptor)
+			client, err := pctx.CurrentInspectEnvoyProxyClient(mesh.ZoneEgressResourceTypeDescriptor)
 			if err != nil {
-				return errors.Wrap(err, "failed to create a zoneingress inspect client")
+				return errors.Wrap(err, "failed to create a zoneegress inspect client")
 			}
 			name := args[0]
 			bytes, err := client.ConfigDump(context.Background(), core_model.ResourceKey{Name: name, Mesh: core_model.NoMesh})

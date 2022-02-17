@@ -81,11 +81,15 @@ func addInspectEndpoints(
 				Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 				Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")),
 		)
-
 		ws.Route(
 			ws.GET("/zoneingresses/{zoneingress}/xds").To(inspectZoneIngressXDS(envoyAdminClient, configDumpAccess, rm, cfg.Multizone.Zone.Name, cfg.GetEnvoyAdminPort())).
 				Doc("inspect zone ingresses XDS configuration").
 				Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")),
+		)
+		ws.Route(
+			ws.GET("/zoneegresses/{zoneegress}/xds").To(inspectZoneEgressXDS(envoyAdminClient, configDumpAccess, rm, cfg.GetEnvoyAdminPort())).
+				Doc("inspect zone egresses XDS configuration").
+				Param(ws.PathParameter("zoneegress", "zoneegress name").DataType("string")),
 		)
 	} else {
 		methodNotAllowed := func(_ *restful.Request, response *restful.Response) {
@@ -102,6 +106,9 @@ func addInspectEndpoints(
 		ws.Route(
 			ws.GET("/zoneingresses/{zoneingress}/xds").To(methodNotAllowed).
 				Param(ws.PathParameter("zoneingress", "zoneingress name").DataType("string")))
+		ws.Route(
+			ws.GET("/zoneegresses/{zoneegress}/xds").To(methodNotAllowed).
+				Param(ws.PathParameter("zoneegress", "zoneegress name").DataType("string")))
 	}
 
 	for _, desc := range registry.Global().ObjectDescriptors(core_model.AllowedToInspect()) {
@@ -263,6 +270,40 @@ func inspectZoneIngressXDS(
 		}
 
 		configDump, err := envoyAdminClient.ConfigDump(zi, defaultAdminPort)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not get config_dump")
+			return
+		}
+
+		if _, err := response.Write(configDump); err != nil {
+			rest_errors.HandleError(response, err, "Could not write response")
+			return
+		}
+	}
+}
+
+func inspectZoneEgressXDS(
+	envoyAdminClient admin.EnvoyAdminClient,
+	access access.ConfigDumpAccess,
+	rm manager.ResourceManager,
+	defaultAdminPort uint32,
+) restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		name := request.PathParameter("zoneegress")
+		ctx := request.Request.Context()
+
+		if err := access.ValidateViewConfigDump(user.FromCtx(ctx)); err != nil {
+			rest_errors.HandleError(response, err, "Could not get config_dump")
+			return
+		}
+
+		ze := core_mesh.NewZoneEgressResource()
+		if err := rm.Get(context.Background(), ze, store.GetByKey(name, core_model.NoMesh)); err != nil {
+			rest_errors.HandleError(response, err, "Could not get zone egress resource")
+			return
+		}
+
+		configDump, err := envoyAdminClient.ConfigDump(ze, defaultAdminPort)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
 			return
