@@ -1,8 +1,8 @@
 [![][kuma-logo]][kuma-url]
 
 **Builds**
-- Release-1.5 [![CircleCI release-1.5](https://circleci.com/gh/kumahq/kuma/tree/release-1.5.svg?style=shield)](https://circleci.com/gh/kumahq/kuma/tree/release-1.5)
-- Master [![CircleCI master](https://circleci.com/gh/kumahq/kuma/tree/master.svg?style=shield)](https://circleci.com/gh/kumahq/kuma/tree/master)
+[![CircleCI release-1.5](https://img.shields.io/circleci/build/github/kumahq/kuma/release-1.5?label=release-1.5)](https://circleci.com/gh/kumahq/kuma/tree/release-1.5)
+[![CircleCI master](https://img.shields.io/circleci/build/github/kumahq/kuma/master?label=master)](https://circleci.com/gh/kumahq/kuma/tree/master)
 
 **Code quality**
 [![Go Report Card](https://goreportcard.com/badge/github.com/kumahq/kuma)](https://goreportcard.com/report/github.com/kumahq/kuma)
