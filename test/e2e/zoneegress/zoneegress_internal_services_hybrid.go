@@ -107,7 +107,7 @@ mtls:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()), WithVerbose())).
 			Install(TestServerUniversal("dp-echo", nonDefaultMesh, zone3TestServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("zone3-test-server"),
@@ -128,7 +128,7 @@ mtls:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()), WithVerbose())).
 			Install(TestServerUniversal("dp-echo", nonDefaultMesh, zone4TestServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("zone4-test-server"),
@@ -173,10 +173,6 @@ mtls:
 			TestNamespace,
 		)
 
-		stat, err := zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat).To(stats.BeEqualZero())
-
 		pods, err := k8s.ListPodsE(
 			zone1.GetTesting(),
 			zone1.GetKubectlOptions(TestNamespace),
@@ -189,14 +185,22 @@ mtls:
 
 		clientPod := pods[0]
 
-		_, stderr, err := zone1.Exec(TestNamespace, clientPod.GetName(), "demo-client",
+		Eventually(func(g Gomega) {
+			stat, err := zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeEqualZero())
+		}, "30s", "1s").Should(Succeed())
+
+		_, stderr, err := zone1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"curl", "-v", "--max-time", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		stat, err = zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat).To(stats.BeGreaterThanZero())
+		Eventually(func(g Gomega) {
+			stat, err := zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeGreaterThanZero())
+		}, "30s", "1s").Should(Succeed())
 	})
 
 	It("universal should access internal service behind universal zoneingress through zoneegress", func() {
@@ -206,18 +210,22 @@ mtls:
 			"zone4-test-server",
 		)
 
-		stat, err := zone3.GetZoneEgressEnvoyTunnel().GetStats(filter)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat).To(stats.BeEqualZero())
+		Eventually(func(g Gomega) {
+			stat, err := zone3.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeEqualZero())
+		}, "30s", "1s").Should(Succeed())
 
-		_, stderr, err := zone3.Exec("", "", "demo-client",
-			"curl", "-v", "--max-time", "3", "--fail", "zone4-test-server.mesh")
+		stdout, _, err := zone3.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "--silent", "--max-time", "3", "--fail", "zone4-test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		stat, err = zone3.GetZoneEgressEnvoyTunnel().GetStats(filter)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat).To(stats.BeGreaterThanZero())
+		Eventually(func(g Gomega) {
+			stat, err := zone3.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeGreaterThanZero())
+		}, "30s", "1s").Should(Succeed())
 	})
 
 	It("k8s should access internal service behind universal zoneingress through zoneegress", func() {
@@ -239,17 +247,21 @@ mtls:
 
 		clientPod := pods[0]
 
-		stat, err := zone4.GetZoneEgressEnvoyTunnel().GetStats(filter)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat).To(stats.BeEqualZero())
+		Eventually(func(g Gomega) {
+			stat, err := zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeEqualZero())
+		}, "30s", "1s").Should(Succeed())
 
-		_, stderr, err := zone1.Exec(TestNamespace, clientPod.GetName(), "demo-client",
+		_, stderr, err := zone1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"curl", "-v", "--max-time", "3", "--fail", "zone3-test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		stat, err = zone4.GetZoneEgressEnvoyTunnel().GetStats(filter)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat).To(stats.BeGreaterThanZero())
+		Eventually(func(g Gomega) {
+			stat, err := zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeGreaterThanZero())
+		}, "30s", "1s").Should(Succeed())
 	})
 }

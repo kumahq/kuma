@@ -11,11 +11,14 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
 func ExternalServicesHybrid() {
+	const defaultMesh = "default"
+	const nonDefaultMesh = "non-default"
+
 	meshMTLSOn := func(mesh string) string {
 		return fmt.Sprintf(`
 type: Mesh
@@ -28,10 +31,46 @@ mtls:
 `, mesh)
 	}
 
-	var global, zone1, zone4 Cluster
+	externalService1 := `
+type: ExternalService
+mesh: %s
+name: external-service-1
+tags:
+  kuma.io/service: external-service-1
+  kuma.io/protocol: http
+networking:
+  address: es-test-server.default.svc.cluster.local:80`
 
-	const defaultMesh = "default"
-	const nonDefaultMesh = "non-default"
+	externalService2 := `
+type: ExternalService
+mesh: %s
+name: external-service-2
+tags:
+  kuma.io/service: external-service-2
+  kuma.io/protocol: http
+networking:
+  address: %s:%s`
+
+	ExternalServerUniversal := func(name string) InstallFunc {
+		return func(cluster Cluster) error {
+			return cluster.DeployApp(
+				WithArgs([]string{"test-server", "echo", "--port", "8080", "--instance", name}),
+				WithName(name),
+				WithoutDataplane(),
+				WithVerbose())
+		}
+	}
+
+	ExternalService1 := func(mesh string) string {
+		return fmt.Sprintf(externalService1, mesh)
+	}
+
+	ExternalService2 := func(mesh, ip, port string) string {
+		return fmt.Sprintf(externalService2, mesh, ip, port)
+	}
+
+	var global, zone1 Cluster
+	var zone4 *UniversalCluster
 
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters(
@@ -51,7 +90,7 @@ mtls:
 			Install(Kuma(config_core.Global)).
 			Install(YamlUniversal(meshMTLSOn(defaultMesh))).
 			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh))).
-			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
+			Install(YamlUniversal(ExternalService1(nonDefaultMesh))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -71,26 +110,42 @@ mtls:
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s(nonDefaultMesh)).
+			Install(testserver.Install(
+				testserver.WithName("es-test-server"),
+				testserver.WithNamespace("default"),
+				testserver.WithArgs("echo", "--instance", "es-test-server"),
+			)).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone1.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		// Universal Cluster 4
-		zone4 = universalClusters.GetCluster(Kuma4)
+		zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
 		Expect(err).ToNot(HaveOccurred())
 		egressTokenKuma4, err := globalCP.GenerateZoneEgressToken(Kuma4)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(
+				AppModeDemoClient,
+				nonDefaultMesh,
+				demoClientToken,
+				WithTransparentProxy(true),
+			)).
 			Install(EgressUniversal(egressTokenKuma4)).
-			Setup(zone4)
-		Expect(err).ToNot(HaveOccurred())
-		err = zone4.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
-		time.Sleep(10 * time.Second)
+			Install(ExternalServerUniversal("es-test-server")).
+			Setup(zone4),
+		).To(Succeed())
+		Expect(zone4.VerifyKuma()).To(Succeed())
+
+		Expect(global.GetKumactlOptions().
+			KumactlApplyFromString(
+				ExternalService2(nonDefaultMesh, zone4.GetApp("es-test-server").GetIP(), "8080")),
+		).To(Succeed())
+
+		time.Sleep(time.Second * 10)
 	})
 
 	AfterEach(func() {
@@ -111,15 +166,10 @@ mtls:
 
 	It("k8s should access external service behind through zoneegress", func() {
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_svc_80.upstream_rq_total",
+			"cluster.%s_%s.upstream_rq_total",
 			nonDefaultMesh,
-			"external-service",
-			TestNamespace,
+			"external-service-1",
 		)
-
-		stat, err := zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat).To(stats.BeEqualZero())
 
 		pods, err := k8s.ListPodsE(
 			zone1.GetTesting(),
@@ -133,34 +183,46 @@ mtls:
 
 		clientPod := pods[0]
 
-		_, stderr, err := zone1.Exec(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "--max-time", "3", "--fail", "external-service.mesh")
+		Eventually(func(g Gomega) {
+			stat, err := zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeEqualZero())
+		}, "30s", "1s").Should(Succeed())
+
+		_, stderr, err := zone1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		stat, err = zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat).To(stats.BeGreaterThanZero())
+		Eventually(func(g Gomega) {
+			stat, err := zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeGreaterThanZero())
+		}, "30s", "1s").Should(Succeed())
 	})
 
 	It("universal should access external service through zoneegress", func() {
 		filter := fmt.Sprintf(
 			"cluster.%s_%s.upstream_rq_total",
 			nonDefaultMesh,
-			"external-service",
+			"external-service-2",
 		)
 
-		stat, err := zone4.GetZoneEgressEnvoyTunnel().GetStats(filter)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat).To(stats.BeEqualZero())
+		Eventually(func(g Gomega) {
+			stat, err := zone4.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeEqualZero())
+		}, "30s", "1s").Should(Succeed())
 
-		_, stderr, err := zone4.Exec("", "", "demo-client",
-			"curl", "-v", "--max-time", "3", "--fail", "external-service.mesh")
+		_, stderr, err := zone4.ExecWithRetries("", "", "demo-client",
+			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-2.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		stat, err = zone4.GetZoneEgressEnvoyTunnel().GetStats(filter)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stat).To(stats.BeGreaterThanZero())
+		Eventually(func(g Gomega) {
+			stat, err := zone4.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeGreaterThanZero())
+		}, "30s", "1s").Should(Succeed())
 	})
 }

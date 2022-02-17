@@ -37,37 +37,6 @@ type UniversalCluster struct {
 	envoyTunnels map[string]envoy_admin.Tunnel
 }
 
-func (c *UniversalCluster) addEgressEnvoyTunnel() error {
-	app := c.apps[AppEgress]
-
-	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, app.GetPublicPort(sshPort))
-	if err != nil {
-		return err
-	}
-
-	c.envoyTunnels[Config.ZoneEgressApp] = t
-
-	return nil
-}
-
-func (c *UniversalCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	t, err := c.GetZoneEgressEnvoyTunnelE()
-	if err != nil {
-		c.t.Fatal(err)
-	}
-
-	return t
-}
-
-func (c *UniversalCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
-	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
-	if !ok {
-		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
-	}
-
-	return t, nil
-}
-
 var _ Cluster = &UniversalCluster{}
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
@@ -479,4 +448,35 @@ func (c *UniversalCluster) DeleteDeployment(name string) error {
 	}
 	delete(c.deployments, name)
 	return nil
+}
+
+func (c *UniversalCluster) addEgressEnvoyTunnel() error {
+	app := c.apps[AppEgress]
+
+	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, app.GetPublicPort(sshPort))
+	if err != nil {
+		return err
+	}
+
+	c.envoyTunnels[Config.ZoneEgressApp] = t
+
+	return nil
+}
+
+func (c *UniversalCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
+	t, err := c.GetZoneEgressEnvoyTunnelE()
+	if err != nil {
+		c.t.Fatal(err)
+	}
+
+	return t
+}
+
+func (c *UniversalCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
+	if !ok {
+		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
+	}
+
+	return t, nil
 }
