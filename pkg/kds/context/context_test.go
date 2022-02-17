@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -249,7 +250,7 @@ var _ = Describe("Context", func() {
 			}
 
 			// when
-			ok := predicate(clusterID, dp)
+			ok := predicate(clusterID, kds.Features{}, dp)
 
 			// then
 			Expect(ok).To(BeFalse())
@@ -269,13 +270,13 @@ var _ = Describe("Context", func() {
 			}
 
 			// when
-			ok := predicate(clusterID, config1)
+			ok := predicate(clusterID, kds.Features{}, config1)
 
 			// then
 			Expect(ok).To(BeTrue())
 
 			// when
-			ok = predicate(clusterID, config2)
+			ok = predicate(clusterID, kds.Features{}, config2)
 
 			// then
 			Expect(ok).To(BeFalse())
@@ -284,7 +285,9 @@ var _ = Describe("Context", func() {
 		DescribeTable("global secrets",
 			func(given testCase) {
 				// when
-				ok := predicate(clusterID, given.resource)
+				ok := predicate(clusterID, kds.Features{
+					kds.FeatureZoneToken: true,
+				}, given.resource)
 
 				// then
 				Expect(ok).To(Equal(given.expect))
@@ -327,7 +330,7 @@ var _ = Describe("Context", func() {
 				}
 
 				// when
-				ok := predicate(clusterID, given.resource)
+				ok := predicate(clusterID, kds.Features{}, given.resource)
 
 				// then
 				Expect(ok).To(Equal(given.expect))
@@ -417,7 +420,7 @@ var _ = Describe("Context", func() {
 			DescribeTable("returned predicate function",
 				func(given testCase) {
 					// when
-					ok := predicate(clusterID, given.resource)
+					ok := predicate(clusterID, kds.Features{}, given.resource)
 
 					// then
 					Expect(ok).To(BeTrue())

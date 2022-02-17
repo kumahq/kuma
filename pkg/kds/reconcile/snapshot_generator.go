@@ -9,19 +9,20 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/cache"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
-type ResourceFilter func(clusterID string, r model.Resource) bool
+type ResourceFilter func(clusterID string, features kds.Features, r model.Resource) bool
 type ResourceMapper func(r model.Resource) (model.Resource, error)
 
 func NoopResourceMapper(r model.Resource) (model.Resource, error) {
 	return r, nil
 }
 
-func Any(clusterID string, r model.Resource) bool {
+func Any(string, kds.Features, model.Resource) bool {
 	return true
 }
 
@@ -72,9 +73,14 @@ func (s *snapshotGenerator) getResources(context context.Context, typ model.Reso
 }
 
 func (s *snapshotGenerator) filter(rs model.ResourceList, node *envoy_core.Node) model.ResourceList {
+	features := kds.Features{}
+	for _, value := range node.GetMetadata().GetFields()[kds.MetadataFeatures].GetListValue().GetValues() {
+		features[value.GetStringValue()] = true
+	}
+
 	rv, _ := registry.Global().NewList(rs.GetItemType())
 	for _, r := range rs.GetItems() {
-		if s.resourceFilter(node.GetId(), r) {
+		if s.resourceFilter(node.GetId(), features, r) {
 			_ = rv.AddItem(r)
 		}
 	}

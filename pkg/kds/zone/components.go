@@ -108,7 +108,7 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 					return util.ResourceNameHasAtLeastOneOfPrefixes(
 						r.GetMeta().GetName(),
 						zoneingress.ZoneIngressSigningKeyPrefix,
-						zone_tokens.SigningKeyPrefix,
+						zone_tokens.SigningPublicKeyPrefix,
 					)
 				}))
 			}
