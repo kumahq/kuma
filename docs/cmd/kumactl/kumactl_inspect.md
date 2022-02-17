@@ -42,6 +42,7 @@ Inspect Kuma resources.
 * [kumactl inspect traffic-route](kumactl_inspect_traffic-route.md)	 - Inspect TrafficRoute
 * [kumactl inspect traffic-trace](kumactl_inspect_traffic-trace.md)	 - Inspect TrafficTrace
 * [kumactl inspect zone-ingresses](kumactl_inspect_zone-ingresses.md)	 - Inspect Zone Ingresses
+* [kumactl inspect zoneegress](kumactl_inspect_zoneegress.md)	 - Inspect ZoneEgress
 * [kumactl inspect zoneegresses](kumactl_inspect_zoneegresses.md)	 - Inspect Zone Egresses
 * [kumactl inspect zoneingress](kumactl_inspect_zoneingress.md)	 - Inspect ZoneIngress
 * [kumactl inspect zones](kumactl_inspect_zones.md)	 - Inspect Zones

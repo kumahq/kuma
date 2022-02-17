@@ -379,9 +379,9 @@ var _ = Describe("Inspect WS", func() {
 					outbound("redis", "192.168.0.3", 8080).
 					build(),
 				newDataplane(). // not matched by TrafficPermission
-					meta("web-1", "default").
-					inbound("web", "192.168.0.1", 80, 81).
-					build(),
+						meta("web-1", "default").
+						inbound("web", "192.168.0.1", 80, 81).
+						build(),
 			},
 		}),
 		Entry("inspect fault injection", testCase{
@@ -413,9 +413,9 @@ var _ = Describe("Inspect WS", func() {
 					outbound("redis", "192.168.0.3", 8080).
 					build(),
 				newDataplane(). // not matched by FaultInjection
-					meta("web-1", "mesh-1").
-					inbound("web", "192.168.0.1", 80, 81).
-					build(),
+						meta("web-1", "mesh-1").
+						inbound("web", "192.168.0.1", 80, 81).
+						build(),
 			},
 		}),
 		Entry("inspect rate limit", testCase{
@@ -444,9 +444,9 @@ var _ = Describe("Inspect WS", func() {
 					outbound("es", "192.168.0.4", 8080).
 					build(),
 				newDataplane(). // not matched by RateLimit
-					meta("web-1", "mesh-1").
-					inbound("web", "192.168.0.1", 80, 81).
-					build(),
+						meta("web-1", "mesh-1").
+						inbound("web", "192.168.0.1", 80, 81).
+						build(),
 				&core_mesh.ExternalServiceResource{
 					Meta: &test_model.ResourceMeta{Name: "es-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.ExternalService{
