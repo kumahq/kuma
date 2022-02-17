@@ -111,9 +111,9 @@ conf:
 
 	It("should apply limit to client", func() {
 		// demo-client specific RateLimit works
-		Eventually(verifyRateLimit("demo-client", 5), "60s", "1s").Should(Equal(2))
+		Eventually(verifyRateLimit("demo-client", 5), "60s", "10s").Should(Equal(2))
 		// verify determinism by running it once again with shorter timeout
-		Eventually(verifyRateLimit("demo-client", 5), "30s", "1s").Should(Equal(2))
+		Eventually(verifyRateLimit("demo-client", 5), "30s", "10s").Should(Equal(2))
 	})
 
 	It("should limit per source", func() {
@@ -141,9 +141,9 @@ conf:
 		Eventually(verifyRateLimit("demo-client", 5), "30s", "10s").Should(Equal(4))
 
 		// catch-all RateLimit still works
-		Eventually(verifyRateLimit("web", 5), "60s", "1s").Should(Equal(2))
+		Eventually(verifyRateLimit("web", 5), "60s", "10s").Should(Equal(2))
 		// verify determinism by running it once again with shorter timeout
-		Eventually(verifyRateLimit("web", 5), "30s", "1s").Should(Equal(2))
+		Eventually(verifyRateLimit("web", 5), "30s", "10s").Should(Equal(2))
 	})
 
 	It("should limit multiple source", func() {
@@ -180,14 +180,14 @@ conf:
 		Expect(err).ToNot(HaveOccurred())
 
 		// demo-client specific RateLimit works
-		Eventually(verifyRateLimit("demo-client", 5), "60s", "1s").Should(Equal(4))
+		Eventually(verifyRateLimit("demo-client", 5), "60s", "10s").Should(Equal(4))
 		// verify determinism by running it once again with shorter timeout
-		Eventually(verifyRateLimit("demo-client", 5), "30s", "1s").Should(Equal(4))
+		Eventually(verifyRateLimit("demo-client", 5), "30s", "10s").Should(Equal(4))
 
 		// web specific RateLimit works
-		Eventually(verifyRateLimit("web", 5), "60s", "1s").Should(Equal(1))
+		Eventually(verifyRateLimit("web", 5), "60s", "10s").Should(Equal(1))
 		// verify determinism by running it once again with shorter timeout
-		Eventually(verifyRateLimit("web", 5), "30s", "1s").Should(Equal(1))
+		Eventually(verifyRateLimit("web", 5), "30s", "10s").Should(Equal(1))
 	})
 
 	It("should limit echo server as external service", func() {
@@ -222,8 +222,8 @@ conf:
 		Expect(err).ToNot(HaveOccurred())
 
 		// demo-client specific RateLimit works
-		Eventually(verifyRateLimitExternal("demo-client", 5), "60s", "1s").Should(Equal(4))
+		Eventually(verifyRateLimitExternal("demo-client", 5), "60s", "10s").Should(Equal(4))
 		// verify determinism by running it once again with shorter timeout
-		Eventually(verifyRateLimitExternal("demo-client", 5), "30s", "1s").Should(Equal(4))
+		Eventually(verifyRateLimitExternal("demo-client", 5), "30s", "10s").Should(Equal(4))
 	})
 }
