@@ -181,14 +181,13 @@ func (a *envoyAdminClient) ConfigDump(proxy ResourceWithAddress, defaultAdminAdd
 	u := &url.URL{}
 
 	switch p := proxy.(type) {
-	// todo(lobkovilya): handle ZoneEgress
 	case *core_mesh.DataplaneResource:
 		httpClient, err = a.buildHTTPClient(p.Meta.GetMesh(), p.Spec.GetIdentifyingService())
 		if err != nil {
 			return nil, err
 		}
 		u.Scheme = "https"
-	case *core_mesh.ZoneIngressResource:
+	case *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
 		httpClient, err = a.buildHTTPClient(core_model.NoMesh, "")
 		if err != nil {
 			return nil, err

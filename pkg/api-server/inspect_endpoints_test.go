@@ -32,12 +32,45 @@ import (
 
 type dataplaneBuilder core_mesh.DataplaneResource
 type zoneIngressBuilder core_mesh.ZoneIngressResource
+type zoneEgressBuilder core_mesh.ZoneEgressResource
 
 func newMesh(name string) *core_mesh.MeshResource {
 	return &core_mesh.MeshResource{
 		Meta: &test_model.ResourceMeta{Name: name},
 		Spec: &mesh_proto.Mesh{},
 	}
+}
+
+func newZoneEgress() *zoneEgressBuilder {
+	return &zoneEgressBuilder{
+		Spec: &mesh_proto.ZoneEgress{
+			Networking: &mesh_proto.ZoneEgress_Networking{},
+		},
+	}
+}
+
+func (b *zoneEgressBuilder) meta(name string) *zoneEgressBuilder {
+	b.Meta = &test_model.ResourceMeta{Name: name, Mesh: core_model.NoMesh}
+	return b
+}
+
+func (b *zoneEgressBuilder) address(address string) *zoneEgressBuilder {
+	b.Spec.Networking.Address = address
+	return b
+}
+
+func (b *zoneEgressBuilder) port(port uint32) *zoneEgressBuilder {
+	b.Spec.Networking.Port = port
+	return b
+}
+
+func (b *zoneEgressBuilder) admin(port uint32) *zoneEgressBuilder {
+	b.Spec.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: port}
+	return b
+}
+
+func (b *zoneEgressBuilder) build() *core_mesh.ZoneEgressResource {
+	return (*core_mesh.ZoneEgressResource)(b)
 }
 
 func newZoneIngress() *zoneIngressBuilder {
@@ -346,9 +379,9 @@ var _ = Describe("Inspect WS", func() {
 					outbound("redis", "192.168.0.3", 8080).
 					build(),
 				newDataplane(). // not matched by TrafficPermission
-						meta("web-1", "default").
-						inbound("web", "192.168.0.1", 80, 81).
-						build(),
+					meta("web-1", "default").
+					inbound("web", "192.168.0.1", 80, 81).
+					build(),
 			},
 		}),
 		Entry("inspect fault injection", testCase{
@@ -380,9 +413,9 @@ var _ = Describe("Inspect WS", func() {
 					outbound("redis", "192.168.0.3", 8080).
 					build(),
 				newDataplane(). // not matched by FaultInjection
-						meta("web-1", "mesh-1").
-						inbound("web", "192.168.0.1", 80, 81).
-						build(),
+					meta("web-1", "mesh-1").
+					inbound("web", "192.168.0.1", 80, 81).
+					build(),
 			},
 		}),
 		Entry("inspect rate limit", testCase{
@@ -411,9 +444,9 @@ var _ = Describe("Inspect WS", func() {
 					outbound("es", "192.168.0.4", 8080).
 					build(),
 				newDataplane(). // not matched by RateLimit
-						meta("web-1", "mesh-1").
-						inbound("web", "192.168.0.1", 80, 81).
-						build(),
+					meta("web-1", "mesh-1").
+					inbound("web", "192.168.0.1", 80, 81).
+					build(),
 				&core_mesh.ExternalServiceResource{
 					Meta: &test_model.ResourceMeta{Name: "es-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.ExternalService{
@@ -737,6 +770,18 @@ var _ = Describe("Inspect WS", func() {
 			global:     true,
 			path:       "/meshes/default/dataplanes/dp-1/xds",
 			goldenFile: "inspect_xds_global_dataplane.json",
+		}),
+		Entry("inspect xds for zone egress", testCase{
+			path:       "/zoneegresses/ze-1/xds",
+			goldenFile: "inspect_xds_zoneegress.json",
+			resources: []core_model.Resource{
+				newZoneEgress().
+					meta("ze-1").
+					address("4.4.4.4").
+					port(8080).
+					admin(4321).
+					build(),
+			},
 		}),
 	)
 

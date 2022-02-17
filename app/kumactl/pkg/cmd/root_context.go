@@ -41,7 +41,7 @@ type RootRuntime struct {
 	NewResourceStore             func(util_http.Client) core_store.ResourceStore
 	NewDataplaneOverviewClient   func(util_http.Client) kumactl_resources.DataplaneOverviewClient
 	NewDataplaneInspectClient    func(util_http.Client) kumactl_resources.DataplaneInspectClient
-	NewZoneIngressInspectClient  func(util_http.Client) kumactl_resources.ZoneIngressInspectClient
+	NewInspectEnvoyProxyClient   func(core_model.ResourceTypeDescriptor, util_http.Client) kumactl_resources.InspectEnvoyProxyClient
 	NewPolicyInspectClient       func(util_http.Client) kumactl_resources.PolicyInspectClient
 	NewZoneIngressOverviewClient func(util_http.Client) kumactl_resources.ZoneIngressOverviewClient
 	NewZoneEgressOverviewClient  func(util_http.Client) kumactl_resources.ZoneEgressOverviewClient
@@ -92,7 +92,7 @@ func DefaultRootContext() *RootContext {
 			},
 			NewDataplaneOverviewClient:   kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneInspectClient:    kumactl_resources.NewDataplaneInspectClient,
-			NewZoneIngressInspectClient:  kumactl_resources.NewZoneIngressInspectClient,
+			NewInspectEnvoyProxyClient:   kumactl_resources.NewInspectEnvoyProxyClient,
 			NewPolicyInspectClient:       kumactl_resources.NewPolicyInspectClient,
 			NewZoneIngressOverviewClient: kumactl_resources.NewZoneIngressOverviewClient,
 			NewZoneEgressOverviewClient:  kumactl_resources.NewZoneEgressOverviewClient,
@@ -209,12 +209,12 @@ func (rc *RootContext) CurrentDataplaneInspectClient() (kumactl_resources.Datapl
 	return rc.Runtime.NewDataplaneInspectClient(client), nil
 }
 
-func (rc *RootContext) CurrentZoneIngressInspectClient() (kumactl_resources.ZoneIngressInspectClient, error) {
+func (rc *RootContext) CurrentInspectEnvoyProxyClient(resDesc core_model.ResourceTypeDescriptor) (kumactl_resources.InspectEnvoyProxyClient, error) {
 	client, err := rc.BaseAPIServerClient()
 	if err != nil {
 		return nil, err
 	}
-	return rc.Runtime.NewZoneIngressInspectClient(client), nil
+	return rc.Runtime.NewInspectEnvoyProxyClient(resDesc, client), nil
 }
 
 func (rc *RootContext) CurrentPolicyInspectClient() (kumactl_resources.PolicyInspectClient, error) {
