@@ -29,7 +29,7 @@ import (
 )
 
 var _ = Describe("Context", func() {
-	Describe("GlobalResourceMapper", func() {
+	Describe("ZoneResourceMapper", func() {
 		var rm manager.ResourceManager
 		var mapper reconcile.ResourceMapper
 
@@ -41,7 +41,7 @@ var _ = Describe("Context", func() {
 		BeforeEach(func() {
 			rm = manager.NewResourceManager(memory.NewStore())
 			defaultContext := context.DefaultContext(rm, "zone")
-			mapper = defaultContext.GlobalResourceMapper
+			mapper = defaultContext.ZoneResourceMapper
 		})
 
 		DescribeTable("should zero generation field",
