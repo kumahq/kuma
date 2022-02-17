@@ -133,7 +133,7 @@ func (*ExternalServicesGenerator) addFilterChains(
 	sniUsed := map[string]bool{}
 
 	for _, es := range meshResources.ExternalServices {
-		serviceName := es.GetMeta().GetName()
+		serviceName := es.Spec.GetService()
 
 		endpoints := endpointMap[serviceName]
 
