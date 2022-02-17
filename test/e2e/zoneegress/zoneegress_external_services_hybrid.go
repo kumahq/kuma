@@ -2,7 +2,6 @@ package zoneegress
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -144,8 +143,6 @@ networking:
 			KumactlApplyFromString(
 				ExternalService2(nonDefaultMesh, zone4.GetApp("es-test-server").GetIP(), "8080")),
 		).To(Succeed())
-
-		time.Sleep(time.Second * 10)
 	})
 
 	AfterEach(func() {
