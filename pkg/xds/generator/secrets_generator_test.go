@@ -191,56 +191,19 @@ var _ = Describe("SecretsGenerator", func() {
 									},
 								},
 							},
-						},
-						{
-							Mesh: &core_mesh.MeshResource{
-								Meta: &test_model.ResourceMeta{
-									Name: "mesh-3",
-								},
-								Spec: &mesh_proto.Mesh{
-									Mtls: &mesh_proto.Mesh_Mtls{
-										EnabledBackend: "ca-1",
-										Backends: []*mesh_proto.CertificateAuthorityBackend{
-											{
-												Name: "ca-1",
-												Type: "builtin",
-											},
-										},
+							// only meshes with external services are taken into account
+							ExternalServices: []*core_mesh.ExternalServiceResource{
+								{
+									Meta: &test_model.ResourceMeta{
+										Name: "es-mesh-2",
+										Mesh: "mesh-2",
 									},
-								},
-							},
-						},
-						{
-							Mesh: &core_mesh.MeshResource{
-								Meta: &test_model.ResourceMeta{
-									Name: "mesh-4",
-								},
-								Spec: &mesh_proto.Mesh{
-									Mtls: &mesh_proto.Mesh_Mtls{
-										EnabledBackend: "ca-1",
-										Backends: []*mesh_proto.CertificateAuthorityBackend{
-											{
-												Name: "ca-1",
-												Type: "builtin",
-											},
+									Spec: &mesh_proto.ExternalService{
+										Networking: &mesh_proto.ExternalService_Networking{
+											Address: "example.com:80",
 										},
-									},
-								},
-							},
-						},
-						{
-							Mesh: &core_mesh.MeshResource{
-								Meta: &test_model.ResourceMeta{
-									Name: "mesh-5",
-								},
-								Spec: &mesh_proto.Mesh{
-									Mtls: &mesh_proto.Mesh_Mtls{
-										EnabledBackend: "ca-1",
-										Backends: []*mesh_proto.CertificateAuthorityBackend{
-											{
-												Name: "ca-1",
-												Type: "builtin",
-											},
+										Tags: map[string]string{
+											"kuma.io/service": "service2",
 										},
 									},
 								},

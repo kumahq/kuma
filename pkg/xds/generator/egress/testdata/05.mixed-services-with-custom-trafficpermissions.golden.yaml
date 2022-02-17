@@ -49,17 +49,17 @@ resources:
           metadata:
             filterMetadata:
               envoy.lb:
-                kuma.io/external-service-name: externalservice-1
+                kuma.io/external-service-name: externalservice-2
                 kuma.io/protocol: http2
                 mesh: mesh-1
               envoy.transport_socket_match:
-                kuma.io/external-service-name: externalservice-1
+                kuma.io/external-service-name: externalservice-2
                 kuma.io/protocol: http2
                 mesh: mesh-1
     name: mesh-1:externalservice-2
     transportSocketMatches:
     - match:
-        kuma.io/external-service-name: externalservice-1
+        kuma.io/external-service-name: externalservice-2
         kuma.io/protocol: http2
         mesh: mesh-1
       name: httpbin.io
@@ -226,6 +226,54 @@ resources:
                 route:
                   cluster: mesh-1:externalservice-1
           statPrefix: externalservice-1
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchSubjectAltNames:
+                - prefix: spiffe://mesh-1/
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:mesh-1
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:mesh-1
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
+    - filterChainMatch:
+        serverNames:
+        - externalservice-2{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules: {}
+          statPrefix: externalservice-2.
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: outbound:externalservice-2
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: externalservice-2
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: mesh-1:externalservice-2
+          statPrefix: externalservice-2
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
