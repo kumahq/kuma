@@ -74,8 +74,6 @@ func createZoneEgressSecrets(
 			continue
 		}
 
-		resources = core_xds.NewResourceSet()
-
 		identity, ca, err := ctx.ControlPlane.Secrets.GetForZoneEgress(
 			proxy.ZoneEgressProxy.ZoneEgressResource,
 			meshResources.Mesh,

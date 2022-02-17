@@ -133,7 +133,10 @@ func (s *secrets) get(
 		return nil, nil, nil
 	}
 
+	meshName := mesh.GetMeta().GetName()
+
 	resourceKey := model.MetaToResourceKey(resource.GetMeta())
+	resourceKey.Mesh = meshName
 	certs := s.certs(resourceKey)
 
 	if shouldGenerate, reason := s.shouldGenerateCerts(
@@ -146,7 +149,7 @@ func (s *secrets) get(
 			string(resource.Descriptor().Name), resourceKey, "reason", reason,
 		)
 
-		certs, err := s.generateCerts(mesh.GetMeta().GetName(), tags, mesh)
+		certs, err := s.generateCerts(meshName, tags, mesh)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "could not generate certificates")
 		}
