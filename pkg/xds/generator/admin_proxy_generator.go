@@ -97,7 +97,7 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 		if err != nil {
 			return nil, err
 		}
-		if (proxy.Dataplane != nil || proxy.ZoneIngress != nil || proxy.ZoneEgressProxy != nil) && hasCpValidationCtx {
+		if hasCpValidationCtx {
 			for _, se := range staticTlsEndpointPaths {
 				se.ClusterName = envoyAdminClusterName
 			}
