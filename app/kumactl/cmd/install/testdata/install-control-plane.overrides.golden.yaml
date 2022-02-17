@@ -1857,7 +1857,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 745fdaaea267fe3c09b45b32b924aca47359ba073d39ada90e7a8f8e5cd41115
-        checksum/tls-secrets: acef35bb9732451f2f5472d3e565881af066a912f5940b0e5811386d7beafdcf
+        checksum/tls-secrets: 41be5502e4a9c964f2c749bd9a220b2f8cff70eeb2523723420619f0ee67621b
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -2068,9 +2068,11 @@ webhooks:
           - externalservices
           - faultinjections
           - healthchecks
-          - retries
+          - meshgateways
+          - meshgatewayroutes
           - proxytemplates
           - ratelimits
+          - retries
           - trafficlogs
           - trafficpermissions
           - trafficroutes
@@ -2178,10 +2180,12 @@ webhooks:
           - faultinjections
           - gatewayinstances
           - healthchecks
-          - retries
           - meshes
+          - meshgateways
+          - meshgatewayroutes
           - proxytemplates
           - ratelimits
+          - retries
           - trafficlogs
           - trafficpermissions
           - trafficroutes
