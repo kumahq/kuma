@@ -172,7 +172,7 @@ var defaultConf = E2eConfig{
 			},
 		},
 		Compatibility: CompatibilitySuiteConfig{
-			HelmVersion: "0.7.0",
+			HelmVersion: "0.8.1",
 		},
 	},
 	K8sType:                      KindK8sType,
