@@ -21,7 +21,6 @@ func PermissiveMode() {
 		universal = clusters.GetCluster(Kuma1)
 		// This option is important for introducing update delays into to enable PERMISSIVE mTLS test
 		Expect(Kuma(core.Standalone, WithEnv("KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL", "1s"))(universal)).To(Succeed())
-		Expect(universal.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

@@ -55,8 +55,6 @@ conf:
 			Install(YamlUniversal(faultInjection)).
 			Setup(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = universalCluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		echoServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())

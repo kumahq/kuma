@@ -53,8 +53,6 @@ mtls:
 			Install(YamlUniversal(meshMTLSOn(defaultMesh))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
-		err = global.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		globalCP := global.GetKuma()
 
@@ -77,8 +75,6 @@ mtls:
 			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
-		err = zone1.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		// K8s Cluster 2
 		zone2 = k8sClusters.GetCluster(Kuma2)
@@ -94,8 +90,6 @@ mtls:
 			Install(testserver.Install(testserver.WithMesh(nonDefaultMesh), testserver.WithServiceAccount("sa-test"))).
 			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(zone2)
-		Expect(err).ToNot(HaveOccurred())
-		err = zone2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		// Universal Cluster 3
@@ -113,8 +107,6 @@ mtls:
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone3)
 		Expect(err).ToNot(HaveOccurred())
-		err = zone3.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		// Universal Cluster 4
 		zone4 = universalClusters.GetCluster(Kuma4)
@@ -126,8 +118,6 @@ mtls:
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone4)
-		Expect(err).ToNot(HaveOccurred())
-		err = zone4.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 

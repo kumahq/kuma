@@ -50,8 +50,6 @@ spec:
 			Install(YamlK8s(meshMTLSOn("default"))).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = globalCluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 		globalCP := globalCluster.GetKuma()
 
 		testServerToken, err := globalCP.GenerateDpToken("default", "test-server")
@@ -70,8 +68,6 @@ spec:
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
-		err = zoneUniversal.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		// Zone kubernetes
 		zoneKube = k8sClusters.GetCluster(Kuma2)
@@ -83,8 +79,6 @@ spec:
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Setup(zoneKube)
-		Expect(err).ToNot(HaveOccurred())
-		err = zoneKube.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		pods, err := k8s.ListPodsE(

@@ -24,8 +24,6 @@ func Jobs() {
 			Install(testserver.Install()).
 			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
-		err = kubernetes.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterSuite(func() {

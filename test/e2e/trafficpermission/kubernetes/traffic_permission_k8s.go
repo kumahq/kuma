@@ -22,7 +22,6 @@ func TrafficPermission() {
 		k8sCluster = k8sClusters.GetCluster(Kuma1)
 
 		Expect(Kuma(config_core.Standalone)(k8sCluster)).To(Succeed())
-		Expect(k8sCluster.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterSuite(func() {
