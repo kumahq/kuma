@@ -112,8 +112,6 @@ func KICKubernetes() {
 			Install(testserver.Install()).
 			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
-		err = kubernetes.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterEach(func() {
 		err := k8s.RunKubectlE(kubernetes.GetTesting(), kubernetes.GetKubectlOptions(), "delete", "ingress", "--all", "-n", "kuma-test")

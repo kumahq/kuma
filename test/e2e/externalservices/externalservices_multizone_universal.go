@@ -78,8 +78,6 @@ networking:
 			Install(YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "false"))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
-		err = global.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		globalCP := global.GetKuma()
 
@@ -97,8 +95,6 @@ networking:
 			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
-		err = zone1.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 2
 		zone2 = clusters.GetCluster(Kuma5)
@@ -110,8 +106,6 @@ networking:
 			)).
 			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Setup(zone2)
-		Expect(err).ToNot(HaveOccurred())
-		err = zone2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 

@@ -65,9 +65,6 @@ conf:
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer81)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		err = cluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterSuite(func() {

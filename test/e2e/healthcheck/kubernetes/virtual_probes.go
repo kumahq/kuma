@@ -25,7 +25,6 @@ func VirtualProbes() {
 
 		Expect(Kuma(config_core.Standalone)(k8sCluster)).To(Succeed())
 		Expect(NamespaceWithSidecarInjection(TestNamespace)(k8sCluster)).To(Succeed())
-		Expect(k8sCluster.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterSuite(func() {

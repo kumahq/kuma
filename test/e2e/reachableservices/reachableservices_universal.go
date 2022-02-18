@@ -18,8 +18,6 @@ func ReachableServicesOnUniversal() {
 			Install(Kuma(config_core.Standalone)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = cluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		firstTestServerToken, err := cluster.GetKuma().GenerateDpToken("default", "first-test-server")
 		Expect(err).ToNot(HaveOccurred())

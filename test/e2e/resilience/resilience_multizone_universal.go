@@ -26,8 +26,6 @@ func ResilienceMultizoneUniversal() {
 			Install(Kuma(core.Global)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
-		err = global.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		globalCP := global.GetKuma()
 
@@ -36,8 +34,6 @@ func ResilienceMultizoneUniversal() {
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Setup(zone1)
-		Expect(err).ToNot(HaveOccurred())
-		err = zone1.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 

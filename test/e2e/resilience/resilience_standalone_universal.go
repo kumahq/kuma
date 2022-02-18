@@ -30,8 +30,6 @@ func ResilienceStandaloneUniversal() {
 			)).
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
-		err = universal.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		demoClientToken, err := universal.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())

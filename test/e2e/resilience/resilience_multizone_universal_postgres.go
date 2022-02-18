@@ -35,8 +35,6 @@ func ResilienceMultizoneUniversalPostgres() {
 			)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
-		err = global.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		globalCP := global.GetKuma()
 
@@ -55,9 +53,6 @@ func ResilienceMultizoneUniversalPostgres() {
 				WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
 			)).
 			Setup(zoneUniversal)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = zoneUniversal.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 

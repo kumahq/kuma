@@ -19,14 +19,12 @@ func MultizoneUniversal() {
 		// Global
 		global = clusters.GetCluster(Kuma1)
 		Expect(Kuma(core.Global)(global)).To(Succeed())
-		Expect(global.VerifyKuma()).To(Succeed())
 
 		// Cluster 1
 		zoneUniversal = clusters.GetCluster(Kuma2)
 		Expect(Kuma(core.Zone,
 			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))(zoneUniversal),
 		).To(Succeed())
-		Expect(zoneUniversal.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

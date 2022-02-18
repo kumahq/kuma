@@ -84,8 +84,6 @@ spec:
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
-		err = zoneUniversal.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
