@@ -432,4 +432,4 @@ access:
 # Configuration of experimental features of Kuma
 experimental:
   # If true, experimental built-in gateway is enabled
-  gateway: false # ENV: KUMA_EXPERIMENTAL_GATEWAY
+  gateway: false # ENV: KUMA_EXPERIMENTAL_MESHGATEWAY

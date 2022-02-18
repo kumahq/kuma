@@ -52,7 +52,7 @@ This command requires that the KUBECONFIG environment is set`,
 				return err
 			}
 
-			if args.ExperimentalGateway {
+			if args.ExperimentalMeshGateway {
 				register.RegisterGatewayTypes()
 				mesh_k8s.RegisterK8SGatewayTypes()
 			}
@@ -145,7 +145,7 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.Egress_drainTime, "egress-drain-time", args.Egress_drainTime, "drain time for Envoy proxy")
 	cmd.Flags().StringVar(&args.Egress_service_type, "egress-service-type", "ClusterIP", "the type for the Egress Service (ie. ClusterIP, NodePort, LoadBalancer)")
 	cmd.Flags().BoolVar(&args.WithoutKubernetesConnection, "without-kubernetes-connection", false, "install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades")
-	cmd.Flags().BoolVar(&args.ExperimentalGateway, "experimental-gateway", false, "install experimental built-in Gateway support")
+	cmd.Flags().BoolVar(&args.ExperimentalMeshGateway, "experimental-meshgateway", false, "install experimental built-in MeshGateway support")
 	return cmd
 }
 

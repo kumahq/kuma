@@ -8,8 +8,8 @@ import (
 )
 
 type InstallCrdsArgs struct {
-	OnlyMissing         bool
-	ExperimentalGateway bool
+	OnlyMissing             bool
+	ExperimentalMeshGateway bool
 }
 
 type InstallCrdsContext struct {
@@ -33,7 +33,7 @@ func DefaultInstallCrdsContext() InstallCrdsContext {
 				return strings.Contains(file.FullPath, "crds/")
 			})
 
-			if !args.ExperimentalGateway {
+			if !args.ExperimentalMeshGateway {
 				crdFiles = crdFiles.Filter(ExcludeGatewayCRDs)
 			}
 
