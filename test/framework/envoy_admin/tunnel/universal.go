@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
@@ -15,42 +16,60 @@ type UniversalTunnel struct {
 	t testing.TestingT
 
 	port string
+
+	verbose bool
 }
 
-func NewUniversalEnvoyAdminTunnel(t testing.TestingT, port string) (envoy_admin.Tunnel, error) {
+var _ envoy_admin.Tunnel = &UniversalTunnel{}
+
+func NewUniversalEnvoyAdminTunnel(t testing.TestingT, port string, verbose bool) (envoy_admin.Tunnel, error) {
 	return &UniversalTunnel{
-		t:    t,
-		port: port,
+		t:       t,
+		port:    port,
+		verbose: verbose,
 	}, nil
 }
 
-func (t *UniversalTunnel) GetStats(name string) (stats.Stats, error) {
+func (t *UniversalTunnel) GetStats(name string) (*stats.Stats, error) {
+	url := fmt.Sprintf("'http://localhost:9901/stats?format=json&filter=%s'", name)
+
 	sshArgs := []string{
-		"curl", "--silent", "--max-time", "3",
-		"localhost:9901/stats?format=json",
+		"curl", "--silent", "--max-time", "3", "--fail", url,
 	}
 
-	app := ssh.NewApp(false, t.port, nil, sshArgs)
+	app := ssh.NewApp(t.verbose, t.port, nil, sshArgs)
 
 	if err := app.Run(); err != nil {
-		return stats.Stats{}, err
+		return nil, err
 	}
 
 	if app.Err() != "" {
-		return stats.Stats{}, errors.New(app.Err())
+		return nil, errors.New(app.Err())
 	}
 
 	var s stats.Stats
 	if err := json.Unmarshal([]byte(app.Out()), &s); err != nil {
-		return stats.Stats{}, err
+		return nil, err
 	}
 
-	var filtered []stats.StatItem
-	for _, stat := range s.Stats {
-		if stat.Name == name {
-			filtered = append(filtered, stat)
-		}
+	return &s, nil
+}
+
+func (t *UniversalTunnel) ResetCounters() error {
+	sshArgs := []string{
+		"curl", "--verbose", "--max-time", "3", "--fail", "-XPOST",
+		"'http://localhost:9901/reset_counters'",
 	}
 
-	return stats.Stats{Stats: filtered}, nil
+	app := ssh.NewApp(t.verbose, t.port, nil, sshArgs)
+
+	if err := app.Run(); err != nil {
+		return err
+	}
+
+	if app.Err() != "" {
+		return errors.New(app.Err())
+	}
+
+	return nil
 }

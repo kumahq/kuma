@@ -453,7 +453,7 @@ func (c *UniversalCluster) DeleteDeployment(name string) error {
 func (c *UniversalCluster) addEgressEnvoyTunnel() error {
 	app := c.apps[AppEgress]
 
-	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, app.GetPublicPort(sshPort))
+	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, app.GetPublicPort(sshPort), c.verbose)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package zoneegress
+package externalservices
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
-func ExternalServicesHybrid() {
+func HybridUniversalGlobal() {
 	const defaultMesh = "default"
 	const nonDefaultMesh = "non-default"
 
@@ -71,7 +71,7 @@ networking:
 	var global, zone1 Cluster
 	var zone4 *UniversalCluster
 
-	BeforeEach(func() {
+	E2EBeforeSuite(func() {
 		k8sClusters, err := NewK8sClusters(
 			[]string{Kuma1},
 			Silent)
@@ -85,15 +85,13 @@ networking:
 		// Global
 		global = universalClusters.GetCluster(Kuma5)
 
-		err = NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Global)).
 			Install(YamlUniversal(meshMTLSOn(defaultMesh))).
 			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh))).
 			Install(YamlUniversal(ExternalService1(nonDefaultMesh))).
-			Setup(global)
-		Expect(err).ToNot(HaveOccurred())
-		err = global.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
+			Setup(global)).To(Succeed())
+		Expect(global.VerifyKuma()).To(Succeed())
 
 		globalCP := global.GetKuma()
 
@@ -102,7 +100,7 @@ networking:
 
 		// K8s Cluster 1
 		zone1 = k8sClusters.GetCluster(Kuma1)
-		err = NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone,
 				WithEgress(true),
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
@@ -114,10 +112,8 @@ networking:
 				testserver.WithNamespace("default"),
 				testserver.WithArgs("echo", "--instance", "es-test-server"),
 			)).
-			Setup(zone1)
-		Expect(err).ToNot(HaveOccurred())
-		err = zone1.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
+			Setup(zone1)).To(Succeed())
+		Expect(zone1.VerifyKuma()).To(Succeed())
 
 		// Universal Cluster 4
 		zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
@@ -145,11 +141,9 @@ networking:
 		).To(Succeed())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
+	E2EAfterEachMarkIfFailed()
 
+	E2EAfterSuite(func() {
 		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
@@ -211,10 +205,10 @@ networking:
 			g.Expect(stat).To(stats.BeEqualZero())
 		}, "30s", "1s").Should(Succeed())
 
-		_, stderr, err := zone4.ExecWithRetries("", "", "demo-client",
+		stdout, _, err := zone4.ExecWithRetries("", "", "demo-client",
 			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-2.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		Eventually(func(g Gomega) {
 			stat, err := zone4.GetZoneEgressEnvoyTunnel().GetStats(filter)

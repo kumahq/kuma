@@ -62,7 +62,7 @@ type statMatcher struct {
 }
 
 func (m *statMatcher) Match(actual interface{}) (success bool, err error) {
-	stats, ok := actual.(Stats)
+	stats, ok := actual.(*Stats)
 	if !ok {
 		return false, fmt.Errorf("BeEqual matcher expects a Stats")
 	}
@@ -79,7 +79,7 @@ func (m *statMatcher) Match(actual interface{}) (success bool, err error) {
 }
 
 func (m *statMatcher) genFailureMessage(toBeOrNotToBe string, actual interface{}) (message string) {
-	actualStats := actual.(Stats)
+	actualStats := actual.(*Stats)
 	actualStat := actualStats.Stats[0]
 
 	var expectation string

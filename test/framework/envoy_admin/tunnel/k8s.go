@@ -3,9 +3,9 @@ package tunnel
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
@@ -19,6 +19,8 @@ type K8sTunnel struct {
 
 	*k8s.Tunnel
 }
+
+var _ envoy_admin.Tunnel = &K8sTunnel{}
 
 func NewK8sEnvoyAdminTunnel(
 	t testing.TestingT,
@@ -45,23 +47,47 @@ func NewK8sEnvoyAdminTunnel(
 	}, nil
 }
 
-func (t *K8sTunnel) GetStats(name string) (stats.Stats, error) {
-	url := fmt.Sprintf("%s/stats?format=json&filter=%s", t.Endpoint(), name)
+func (t *K8sTunnel) GetStats(name string) (*stats.Stats, error) {
+	url := fmt.Sprintf("http://%s/stats?format=json&filter=%s", t.Endpoint(), name)
 
-	cmd := shell.Command{
-		Command: "curl",
-		Args:    []string{"--silent", url},
-	}
-
-	output, err := shell.RunCommandAndGetOutputE(t.t, cmd)
+	response, err := http.Post(url, "application/json", nil)
 	if err != nil {
-		return stats.Stats{}, err
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.Errorf(
+			"got response with unexpected status code: %+q, Expected: %+q",
+			response.Status,
+			http.StatusText(http.StatusOK),
+		)
 	}
 
 	var s stats.Stats
-	if err := json.Unmarshal([]byte(output), &s); err != nil {
-		return stats.Stats{}, err
+	if err := json.NewDecoder(response.Body).Decode(&s); err != nil {
+		return nil, err
 	}
 
-	return s, nil
+	return &s, nil
+}
+
+func (t *K8sTunnel) ResetCounters() error {
+	url := fmt.Sprintf("http://%s/reset_counters", t.Endpoint())
+
+	response, err := http.Post(url, "text", nil)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf(
+			"got response with unexpected status code: %+q, Expected: %+q",
+			response.Status,
+			http.StatusText(http.StatusOK),
+		)
+	}
+
+	return nil
 }
