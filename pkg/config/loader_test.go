@@ -465,7 +465,7 @@ access:
       users: ["zt-admin1", "zt-admin2"]
       groups: ["zt-group1", "zt-group2"]
 experimental:
-  gateway: true
+  meshGateway: true
 `,
 		}),
 		Entry("from env variables", testCase{
