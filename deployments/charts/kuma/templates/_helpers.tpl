@@ -167,8 +167,8 @@ env:
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_SERVICE_ACCOUNT_NAME
   value: "system:serviceaccount:{{ .Release.Namespace }}:{{ include "kuma.name" . }}-control-plane"
-{{- if .Values.experimental.gateway }}
-- name: KUMA_EXPERIMENTAL_GATEWAY
+{{- if .Values.experimental.meshGateway }}
+- name: KUMA_EXPERIMENTAL_MESHGATEWAY
   value: "true"
 {{- end }}
 {{- end }}
