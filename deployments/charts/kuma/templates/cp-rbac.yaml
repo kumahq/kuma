@@ -30,7 +30,7 @@ rules:
       - get
       - list
       - watch
-{{ if .Values.experimental.gateway }}
+{{ if .Values.experimental.meshGateway }}
   - apiGroups:
       - "apps"
     resources:
@@ -137,7 +137,7 @@ rules:
       - update
       - patch
       - delete
-{{ if .Values.experimental.gateway }}
+{{ if .Values.experimental.meshGateway }}
   - apiGroups:
       - kuma.io
     resources:

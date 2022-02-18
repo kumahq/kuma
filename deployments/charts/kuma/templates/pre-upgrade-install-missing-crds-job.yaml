@@ -1,6 +1,6 @@
 {{- if .Values.installCrdsOnUpgrade.enabled }}
   {{ $hook := "pre-upgrade" }}
-  {{ if .Values.experimental.gateway }}
+  {{ if .Values.experimental.meshGateway }}
   {{ $hook = "pre-upgrade,pre-install" }}
   {{ end }}
   {{- $serviceAccountName := printf "%s-install-missing-crds" (include "kuma.name" .) }}
@@ -84,7 +84,7 @@ data:
   save_missing_crds.sh: |
     #!/usr/bin/env sh
 
-    missing_crds="$(kumactl install crds --only-missing {{ if .Values.experimental.gateway }}--experimental-gateway{{end}})"
+    missing_crds="$(kumactl install crds --only-missing {{ if .Values.experimental.meshGateway }}--experimental-meshgateway{{end}})"
 
     if [ -n "${missing_crds}" ]; then
       echo "found missing crds - saving to /kuma/missing/crds.yaml"
