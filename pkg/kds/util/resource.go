@@ -35,11 +35,10 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 		}
 		rv = append(rv, &mesh_proto.KumaResource{
 			Meta: &mesh_proto.KumaResource_Meta{
-				Name:             r.GetMeta().GetName(),
-				Mesh:             r.GetMeta().GetMesh(),
-				CreationTime:     util_proto.MustTimestampProto(r.GetMeta().GetCreationTime()),
-				ModificationTime: util_proto.MustTimestampProto(r.GetMeta().GetModificationTime()),
-				Version:          r.GetMeta().GetVersion(),
+				Name: r.GetMeta().GetName(),
+				Mesh: r.GetMeta().GetMesh(),
+				// KDS ResourceMeta only contains name and mesh.
+				// The rest is managed by the receiver of resources anyways. See ResourceSyncer#Sync
 			},
 			Spec: pbany,
 		})
