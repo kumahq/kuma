@@ -48,8 +48,6 @@ selectors:
 			Install(tracing.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = cluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())

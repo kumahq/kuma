@@ -48,8 +48,6 @@ conf:
 			Install(YamlUniversal(healthCheck("health", "200"))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = cluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "dp-demo-client")
 		Expect(err).ToNot(HaveOccurred())

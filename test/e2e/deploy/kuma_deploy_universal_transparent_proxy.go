@@ -22,8 +22,6 @@ func UniversalTransparentProxyDeployment() {
 			Install(Kuma(core.Standalone)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = cluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())

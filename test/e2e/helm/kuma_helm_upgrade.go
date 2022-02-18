@@ -62,8 +62,6 @@ func UpgradingWithHelmChart() {
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(cluster.VerifyKuma()).To(Succeed())
-
 			k8sCluster := cluster.(*K8sCluster)
 
 			err = k8sCluster.UpgradeKuma(core.Standalone, WithHelmReleaseName(releaseName))

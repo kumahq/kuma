@@ -23,8 +23,6 @@ func Universal() {
 			Install(Kuma(core.Standalone)).
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
-		err = universal.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		demoClientToken1, err := universal.GetKuma().GenerateDpToken("default", "demo-client-1")
 		Expect(err).ToNot(HaveOccurred())

@@ -83,7 +83,6 @@ func CpCompatibilityMultizoneKubernetes() {
 			)).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(globalCluster.VerifyKuma()).To(Succeed())
 
 		// Start a zone
 		err = NewClusterSetup().
@@ -98,8 +97,6 @@ func CpCompatibilityMultizoneKubernetes() {
 			Install(NamespaceWithSidecarInjectionOnAnnotation(TestNamespace)).
 			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		Expect(zoneCluster.VerifyKuma()).To(Succeed())
 
 		// and new resource is created on Global
 		err = YamlK8s(`

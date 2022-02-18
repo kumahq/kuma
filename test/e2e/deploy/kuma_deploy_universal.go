@@ -55,8 +55,6 @@ name: %s
 			Install(YamlUniversal(meshMTLSOff(defaultMesh))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
-		err = global.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		globalCP := global.GetKuma()
 
@@ -84,8 +82,6 @@ name: %s
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
-		err = zone1.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 2
 		zone2 = clusters.GetCluster(Kuma4)
@@ -101,8 +97,6 @@ name: %s
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone2)
-		Expect(err).ToNot(HaveOccurred())
-		err = zone2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 

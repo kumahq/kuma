@@ -27,9 +27,6 @@ func VirtualOutboundOnUniversal() {
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = cluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
-
 		_ = cluster.GetKumactlOptions().RunKumactl("delete", "virtual-outbound", "instances")
 		_ = cluster.GetKumactlOptions().RunKumactl("delete", "virtual-outbound", "all")
 

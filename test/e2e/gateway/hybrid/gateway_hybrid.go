@@ -29,7 +29,6 @@ func GatewayHybrid() {
 			).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(global.VerifyKuma()).To(Succeed())
 
 		k8sZone = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		err = NewClusterSetup().

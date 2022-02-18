@@ -68,16 +68,6 @@ func ZoneAndGlobalWithHelmChart() {
 		zone = c2.GetKuma()
 		Expect(zone).ToNot(BeNil())
 
-		// when
-		err = c1.VerifyKuma()
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		err = c2.VerifyKuma()
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
 		// then
 		logs1, err := global.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())

@@ -32,7 +32,6 @@ func LeaderElectionPostgres() {
 			Setup(standalone1)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(standalone1.VerifyKuma()).To(Succeed())
 
 		// Standalone 2
 		err = NewClusterSetup().
@@ -40,7 +39,6 @@ func LeaderElectionPostgres() {
 			Setup(standalone2)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(standalone2.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
