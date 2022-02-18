@@ -29,7 +29,7 @@ type plugin struct{}
 var _ core_plugins.BootstrapPlugin = &plugin{}
 
 func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
-	if !context.Config().Experimental.Gateway {
+	if !context.Config().Experimental.MeshGateway {
 		log.V(1).Info("gateway plugin is disabled")
 		return nil
 	}
@@ -42,7 +42,7 @@ func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, con
 }
 
 func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
-	if !context.Config().Experimental.Gateway {
+	if !context.Config().Experimental.MeshGateway {
 		log.V(1).Info("gateway plugin is disabled")
 		return nil
 	}

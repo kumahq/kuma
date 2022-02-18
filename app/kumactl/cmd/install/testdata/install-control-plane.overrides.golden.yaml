@@ -1877,7 +1877,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       serviceAccountName: kuma-control-plane
       nodeSelector:
-        
+
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
@@ -1901,7 +1901,7 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
-            - name: KUMA_EXPERIMENTAL_GATEWAY
+            - name: KUMA_EXPERIMENTAL_MESHGATEWAY
               value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
@@ -2023,7 +2023,7 @@ metadata:
   name: kuma-admission-mutating-webhook-configuration
   namespace: kuma
   labels:
-  
+
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -2076,8 +2076,8 @@ webhooks:
           - trafficroutes
           - traffictraces
           - virtualoutbounds
-    
-      
+
+
     sideEffects: None
   - name: namespace-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
@@ -2125,7 +2125,7 @@ webhooks:
     sideEffects: None
   - name: kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore 
+    failurePolicy: Ignore
     clientConfig:
       caBundle: XYZ
       service:
@@ -2149,7 +2149,7 @@ metadata:
   name: kuma-validating-webhook-configuration
   namespace: kuma
   labels:
-  
+
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -2188,8 +2188,8 @@ webhooks:
           - traffictraces
           - virtualoutbounds
           - zones
-    
-      
+
+
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]

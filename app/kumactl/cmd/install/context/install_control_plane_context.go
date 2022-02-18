@@ -50,7 +50,7 @@ type InstallControlPlaneArgs struct {
 	Egress_drainTime                             string            `helm:"egress.drainTime"`
 	Egress_service_type                          string            `helm:"egress.service.type"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
-	ExperimentalGateway                          bool              `helm:"experimental.gateway"`
+	ExperimentalMeshGateway                      bool              `helm:"experimental.meshGateway"`
 }
 
 type ImageEnvSecret struct {
@@ -107,7 +107,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			if err != nil {
 				return nil, err
 			}
-			if !args.ExperimentalGateway {
+			if !args.ExperimentalMeshGateway {
 				files = files.Filter(ExcludeGatewayCRDs)
 			}
 			return files, nil

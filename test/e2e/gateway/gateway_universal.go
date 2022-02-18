@@ -33,7 +33,7 @@ func GatewayOnUniversal() {
 	// provided options, installing an echo service as well as a
 	// gateway and a client container to send HTTP requests.
 	DeployCluster := func(opt ...KumaDeploymentOption) {
-		opt = append(opt, WithVerbose(), WithEnv("KUMA_EXPERIMENTAL_GATEWAY", "true"))
+		opt = append(opt, WithVerbose(), WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"))
 		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 
 		err := NewClusterSetup().
@@ -145,7 +145,7 @@ conf:
 		BeforeEach(func() {
 			cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 			err := NewClusterSetup().
-				Install(Kuma(config_core.Standalone, WithVerbose(), WithEnv("KUMA_EXPERIMENTAL_GATEWAY", "true"))).
+				Install(Kuma(config_core.Standalone, WithVerbose(), WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"))).
 				Install(ExternalServerUniversal("external-echo")).
 				Install(GatewayClientAppUniversal("gateway-client")).
 				Install(GatewayProxyUniversal("gateway-proxy")).

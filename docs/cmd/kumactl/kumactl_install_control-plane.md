@@ -36,7 +36,7 @@ kumactl install control-plane [flags]
       --egress-enabled                              install Kuma with an Egress deployment, using the Data Plane image
       --egress-service-type string                  the type for the Egress Service (ie. ClusterIP, NodePort, LoadBalancer) (default "ClusterIP")
       --env-var stringToString                      environment variables that will be passed to the control plane (default [])
-      --experimental-gateway                        install experimental built-in Gateway support
+      --experimental-meshgateway                    install experimental built-in MeshGateway support
   -h, --help                                        help for control-plane
       --image-pull-policy string                    image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --ingress-drain-time string                   drain time for Envoy proxy (default "30s")
