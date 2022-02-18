@@ -314,5 +314,5 @@ func DefaultGeneralConfig() *GeneralConfig {
 
 type ExperimentalConfig struct {
 	// If true, experimental built-in gateway is enabled.
-	MeshGateway bool `yaml:"gateway" envconfig:"KUMA_EXPERIMENTAL_MESHGATEWAY"`
+	MeshGateway bool `yaml:"meshGateway" envconfig:"KUMA_EXPERIMENTAL_MESHGATEWAY"`
 }
