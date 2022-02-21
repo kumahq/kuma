@@ -29,8 +29,7 @@ func Setup(runtime runtime.Runtime) error {
 	zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
 	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
 		zoneIngressSigningKeyManager,
-		log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix,
-	))); err != nil {
+		log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
 		return err
 	}
 
