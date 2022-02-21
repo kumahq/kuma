@@ -2,10 +2,15 @@ package context
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -14,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
@@ -33,6 +39,7 @@ type Context struct {
 	Configs map[string]bool
 
 	GlobalResourceMapper reconcile.ResourceMapper
+	ZoneResourceMapper   reconcile.ResourceMapper
 }
 
 func DefaultContext(manager manager.ResourceManager, zone string) *Context {
@@ -48,7 +55,54 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 		ZoneProvidedFilter:   ZoneProvidedFilter(zone),
 		Configs:              configs,
 		GlobalResourceMapper: MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
+		ZoneResourceMapper:   MapInsightResourcesZeroGeneration,
 	}
+}
+
+// CompositeResourceMapper combines the given ResourceMappers into
+// a single ResourceMapper which calls each in order. If an error
+// occurs, the first one is returned and no further mappers are executed.
+func CompositeResourceMapper(mappers ...reconcile.ResourceMapper) reconcile.ResourceMapper {
+	return func(r model.Resource) (model.Resource, error) {
+		var err error
+		for _, mapper := range mappers {
+			r, err = mapper(r)
+			if err != nil {
+				return r, err
+			}
+		}
+		return r, nil
+	}
+}
+
+type specWithDiscoverySubscriptions interface {
+	GetSubscriptions() []*mesh_proto.DiscoverySubscription
+	ProtoReflect() protoreflect.Message
+}
+
+// MapInsightResourcesZeroGeneration zeros "generation" field in resources for which
+// the field has only local relevance. This prevents reconciliation from unnecessarily
+// deeming the object to have changed.
+func MapInsightResourcesZeroGeneration(r model.Resource) (model.Resource, error) {
+	if spec, ok := r.GetSpec().(specWithDiscoverySubscriptions); ok {
+		spec = proto.Clone(spec).(specWithDiscoverySubscriptions)
+		for _, sub := range spec.GetSubscriptions() {
+			sub.Generation = 0
+		}
+
+		meta := r.GetMeta()
+		resType := reflect.TypeOf(r).Elem()
+
+		newR := reflect.New(resType).Interface().(model.Resource)
+		newR.SetMeta(meta)
+		if err := newR.SetSpec(spec.(model.ResourceSpec)); err != nil {
+			panic(errors.Wrap(err, "error setting spec on resource"))
+		}
+
+		return newR, nil
+	}
+
+	return r, nil
 }
 
 func MapZoneTokenSigningKeyGlobalToPublicKey(
@@ -91,7 +145,7 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(
 // GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
 // excludes Dataplanes, Ingresses and Egresses from 'clusterID' cluster
 func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
-	return func(clusterID string, r model.Resource) bool {
+	return func(clusterID string, features kds.Features, r model.Resource) bool {
 		resName := r.GetMeta().GetName()
 
 		switch r.Descriptor().Name {
@@ -100,11 +154,14 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 		case system.ConfigType:
 			return configs[resName]
 		case system.GlobalSecretType:
-			return util.ResourceNameHasAtLeastOneOfPrefixes(
-				resName,
-				zoneingress.ZoneIngressSigningKeyPrefix,
-				zone_tokens.SigningKeyPrefix,
-			)
+			prefixes := []string{zoneingress.ZoneIngressSigningKeyPrefix}
+			if features.HasFeature(kds.FeatureZoneToken) {
+				// We need to sync Zone Token signing keys only to zone cps that can support it.
+				// Otherwise, Zone CP after the restart of either Zone or Global CP tries to recreate resource
+				// The result is that it NACKs the DiscoveryResponse and gets into a loop.
+				prefixes = append(prefixes, zone_tokens.SigningKeyPrefix)
+			}
+			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, prefixes...)
 		case mesh.ZoneIngressType:
 			zoneTag := util.ZoneTag(r)
 
@@ -131,7 +188,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 // ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses
 // that belongs to another zones
 func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
-	return func(_ string, r model.Resource) bool {
+	return func(_ string, _ kds.Features, r model.Resource) bool {
 		switch r.Descriptor().Name {
 		case mesh.DataplaneType:
 			return clusterName == util.ZoneTag(r)

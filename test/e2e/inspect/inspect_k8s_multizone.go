@@ -16,7 +16,6 @@ import (
 func KubernetesMultizone() {
 	var globalK8s, zoneK8s *K8sCluster
 	var zoneIngress *kube_core.Pod
-	var kumaControlPlane *kube_core.Pod
 
 	meshMTLSOn := func(mesh string) string {
 		return fmt.Sprintf(`
@@ -85,7 +84,6 @@ spec:
 		}, "60s", "1s").Should(Succeed())
 
 		zoneIngress = GetPod(Config.KumaNamespace, "kuma-ingress")
-		kumaControlPlane = GetPod(Config.KumaNamespace, Config.KumaServiceName)
 	})
 
 	E2EAfterEach(func() {
@@ -99,13 +97,13 @@ spec:
 
 	It("should return envoy config_dump for zone ingress", func() {
 		zoneIngressName := fmt.Sprintf("%s.%s", zoneIngress.GetName(), Config.KumaNamespace)
-		url := fmt.Sprintf("localhost:5681/zoneingresses/%s/xds", zoneIngressName)
-		cmd := []string{"wget", "-O-", url}
+		Eventually(func(g Gomega) {
+			stdout, err := zoneK8s.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zoneingress", zoneIngressName, "--config-dump")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring(`"dataplane.proxyType": "ingress"`))
 
-		stdout, _, err := zoneK8s.ExecWithRetries(Config.KumaNamespace, kumaControlPlane.GetName(), "control-plane", cmd...)
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(stdout).To(ContainSubstring(`"dataplane.proxyType": "ingress"`))
-		Expect(stdout).To(ContainSubstring(`"demo-client_kuma-test_svc{mesh=default}"`))
+			// filterChainMatches could be available not immediately
+			g.Expect(stdout).To(ContainSubstring(`"demo-client_kuma-test_svc{mesh=default}"`))
+		}, "30s", "1s").Should(Succeed())
 	})
 }

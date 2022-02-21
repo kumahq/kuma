@@ -250,7 +250,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ViewConfigDump.Users).To(Equal([]string{"zt-admin1", "zt-admin2"}))
 			Expect(cfg.Access.Static.ViewConfigDump.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
 
-			Expect(cfg.Experimental.Gateway).To(BeTrue())
+			Expect(cfg.Experimental.MeshGateway).To(BeTrue())
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -465,7 +465,7 @@ access:
       users: ["zt-admin1", "zt-admin2"]
       groups: ["zt-group1", "zt-group2"]
 experimental:
-  gateway: true
+  meshGateway: true
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -612,7 +612,7 @@ experimental:
 				"KUMA_ACCESS_STATIC_GENERATE_ZONE_TOKEN_GROUPS":                                            "zt-group1,zt-group2",
 				"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS":                                                 "zt-admin1,zt-admin2",
 				"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS":                                                "zt-group1,zt-group2",
-				"KUMA_EXPERIMENTAL_GATEWAY":                                                                "true",
+				"KUMA_EXPERIMENTAL_MESHGATEWAY":                                                            "true",
 			},
 			yamlFileConfig: "",
 		}),

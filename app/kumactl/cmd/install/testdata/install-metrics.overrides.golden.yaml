@@ -11945,7 +11945,6 @@ spec:
       labels:
         component: "node-exporter"
         app: prometheus
-      labels:
         kuma.io/sidecar-injection: "disabled" # disabled for now, injecting DP crashes K8S cluster
     spec:
       serviceAccountName: prometheus-node-exporter
@@ -12010,7 +12009,7 @@ spec:
       initContainers:
         - name: init-plugins
           image: alpine
-          command: [ '/bin/sh', '-c', 'wget -O /tmp/kuma.zip https://github.com/kumahq/kuma-grafana-datasource/releases/download/v0.0.3/kumahq-kuma-datasource-0.0.3.zip && unzip /tmp/kuma.zip -d /var/lib/grafana/plugins/ && rm /tmp/kuma.zip']
+          command: [ '/bin/sh', '-c', 'wget -O /tmp/kuma.zip https://github.com/kumahq/kuma-grafana-datasource/releases/download/v0.1.0/kumahq-kuma-datasource-0.1.0.zip && unzip /tmp/kuma.zip -d /var/lib/grafana/plugins/ && rm /tmp/kuma.zip']
           volumeMounts:
             - name: plugins-volume
               mountPath: /var/lib/grafana/plugins

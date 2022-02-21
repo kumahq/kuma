@@ -24,18 +24,17 @@ func GatewayHybrid() {
 		global = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Global,
-				WithEnv("KUMA_EXPERIMENTAL_GATEWAY", "true"),
+				WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
 				gateway.OptEnableMeshMTLS),
 			).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(global.VerifyKuma()).To(Succeed())
 
 		k8sZone = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Zone,
 				WithIngress(),
-				WithCtlOpts(map[string]string{"--experimental-gateway": "true"}),
+				WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
 				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
@@ -49,7 +48,7 @@ func GatewayHybrid() {
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Zone,
 				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
-				WithEnv("KUMA_EXPERIMENTAL_GATEWAY", "true"),
+				WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
 			)).
 			Install(gateway.EchoServerApp("echo-server", serviceName, Kuma2)).
 			Install(gateway.GatewayProxyUniversal("gateway-proxy")).
@@ -64,7 +63,7 @@ func GatewayHybrid() {
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Zone,
 				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
-				WithEnv("KUMA_EXPERIMENTAL_GATEWAY", "true"),
+				WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
 			)).
 			Install(gateway.EchoServerApp("echo-server", serviceName, Kuma3)).
 			Install(IngressUniversal(zoneIngressToken)).

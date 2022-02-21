@@ -344,7 +344,7 @@ var _ = Describe("Config WS", func() {
             }
           },
           "experimental": {
-            "gateway": false
+            "meshGateway": false
           }
         }
 		`, port, cfg.HTTPS.Port)

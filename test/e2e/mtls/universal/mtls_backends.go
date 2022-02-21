@@ -19,8 +19,6 @@ func MTLSUniversal() {
 			Install(Kuma(config_core.Standalone)).
 			Setup(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = universalCluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())

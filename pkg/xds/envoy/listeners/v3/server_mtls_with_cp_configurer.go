@@ -18,7 +18,7 @@ type ServerSideMTLSWithCPConfigurer struct {
 var _ FilterChainConfigurer = &ServerSideMTLSWithCPConfigurer{}
 
 func (c *ServerSideMTLSWithCPConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	tlsContext, err := tls.CreateDownstreamTlsContext(c.Ctx)
+	tlsContext, err := tls.CreateDownstreamTlsContext(c.Ctx.Mesh.Resource)
 	if err != nil {
 		return err
 	}

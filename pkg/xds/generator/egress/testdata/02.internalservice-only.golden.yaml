@@ -1,0 +1,66 @@
+resources:
+- name: mesh-1:service-in-zone-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh-1_service-in-zone-2
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - mesh
+    name: mesh-1:service-in-zone-2
+    type: EDS
+- name: mesh-1:service-in-zone-2
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: mesh-1:service-in-zone-2
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 10.0.0.254
+              portValue: 10001
+        loadBalancingWeight: 3
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              mesh: mesh-1
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              mesh: mesh-1
+- name: inbound:192.168.0.1:10002
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 10002
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - service-in-zone-2{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: mesh-1:service-in-zone-2
+          metadataMatch:
+            filterMetadata:
+              envoy.lb:
+                mesh: mesh-1
+          statPrefix: mesh-1_service-in-zone-2
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: inbound:192.168.0.1:10002
+    trafficDirection: INBOUND

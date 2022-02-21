@@ -1856,8 +1856,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 745fdaaea267fe3c09b45b32b924aca47359ba073d39ada90e7a8f8e5cd41115
-        checksum/tls-secrets: acef35bb9732451f2f5472d3e565881af066a912f5940b0e5811386d7beafdcf
+        checksum/config: 8c443d9f48d469a050e9e994d3d839c09b7f22f3c16bbe096c5a7d30f4207d99
+        checksum/tls-secrets: e478434cf09212624ee5588731cf8bb726cc008ddd0170817bebc681fa3a88d7
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -1901,7 +1901,7 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
-            - name: KUMA_EXPERIMENTAL_GATEWAY
+            - name: KUMA_EXPERIMENTAL_MESHGATEWAY
               value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
@@ -2068,9 +2068,11 @@ webhooks:
           - externalservices
           - faultinjections
           - healthchecks
-          - retries
+          - meshgateways
+          - meshgatewayroutes
           - proxytemplates
           - ratelimits
+          - retries
           - trafficlogs
           - trafficpermissions
           - trafficroutes
@@ -2178,10 +2180,12 @@ webhooks:
           - faultinjections
           - gatewayinstances
           - healthchecks
-          - retries
           - meshes
+          - meshgateways
+          - meshgatewayroutes
           - proxytemplates
           - ratelimits
+          - retries
           - trafficlogs
           - trafficpermissions
           - trafficroutes

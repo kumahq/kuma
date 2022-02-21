@@ -28,8 +28,6 @@ func KumaStandalone() {
 			Install(Kuma(core.Standalone)).
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
-		err = universal.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		testServerToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "test-server")
 		Expect(err).ToNot(HaveOccurred())

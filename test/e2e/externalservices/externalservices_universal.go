@@ -58,8 +58,6 @@ networking:
 			Install(Kuma(core.Standalone)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = cluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())

@@ -1,0 +1,83 @@
+type: Mesh
+name: mesh-1
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+---
+type: ZoneEgress
+name: zoneegress-1
+zone: zone-1
+networking:
+  address: 192.168.0.1
+  port: 10002
+---
+type: TrafficPermission
+name: allow-all-traffic
+mesh: zone-1
+sources:
+- match:
+    kuma.io/service: '*'
+destinations:
+- match:
+    kuma.io/service: '*'
+---
+type: TrafficRoute
+name: trafficroute-0
+mesh: mesh-1
+sources:
+- match:
+    kuma.io/service: "*"
+destinations:
+- match:
+    kuma.io/service: "*"
+conf:
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: "*"
+---
+type: ZoneIngress
+name: zone-2-zoneingress-1
+zone: zone-2
+networking:
+  address: 10.0.0.254
+  advertisedAddress: 10.0.0.254
+  port: 10001
+  advertisedPort: 10001
+availableServices:
+- tags:
+    kuma.io/service: service-1-zone-2
+    kuma.io/protocol: http
+  instances: 3
+  mesh: mesh-1
+- tags:
+    kuma.io/service: service-2-zone-2
+    kuma.io/protocol: http2
+  instances: 30
+  mesh: mesh-1
+---
+type: ExternalService
+name: externalservice-1
+mesh: mesh-1
+tags:
+  kuma.io/service: externalservice-1
+  kuma.io/protocol: http
+networking:
+  address: kuma.io:80
+---
+type: ExternalService
+name: externalservice-2
+mesh: mesh-1
+tags:
+  kuma.io/service: externalservice-2
+  kuma.io/protocol: http2
+networking:
+  address: httpbin.io:443
+  tls:
+    enabled: true
+    allowRenegotiation: false
+    sni: httpbin.org
+    caCert:
+      inlineString: xyz

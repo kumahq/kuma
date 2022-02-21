@@ -65,6 +65,11 @@ func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 				Fields: map[string]*structpb.Value{
 					kds.MetadataFieldVersion: {Kind: &structpb.Value_StructValue{StructValue: cpVersion}},
 					kds.MetadataFieldConfig:  {Kind: &structpb.Value_StringValue{StringValue: s.cpConfig}},
+					kds.MetadataFeatures: {Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{Kind: &structpb.Value_StringValue{StringValue: kds.FeatureZoneToken}},
+						},
+					}}},
 				},
 			},
 		},

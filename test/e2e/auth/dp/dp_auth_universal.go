@@ -18,8 +18,6 @@ func DpAuthUniversal() {
 			Install(Kuma(core.Standalone)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = cluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterSuite(func() {

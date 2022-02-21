@@ -2,7 +2,7 @@
 
 A Helm chart for the Kuma Control Plane
 
-![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.8.0](https://img.shields.io/badge/Version-0.8.0-informational?style=flat-square) ![AppVersion: 1.4.0](https://img.shields.io/badge/AppVersion-1.4.0-informational?style=flat-square)
+![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.9.0](https://img.shields.io/badge/Version-0.9.0-informational?style=flat-square) ![AppVersion: 1.5.0](https://img.shields.io/badge/AppVersion-1.5.0-informational?style=flat-square)
 
 **Homepage:** <https://github.com/kumahq/kuma>
 
@@ -94,7 +94,7 @@ A Helm chart for the Kuma Control Plane
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
 | kubectl.image.tag | string | `"1.20"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
-| experimental.gateway | bool | `false` | If true, it installs experimental built-in Gateway support |
+| experimental.meshGateway | bool | `false` | If true, it installs experimental built-in Gateway support |
 
 ## Custom Resource Definitions
 

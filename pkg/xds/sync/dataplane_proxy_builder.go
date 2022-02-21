@@ -71,7 +71,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshConte
 	// pick a single the most specific route for each outbound interface
 	routes := xds_topology.BuildRouteMap(dataplane, meshContext.Resources.TrafficRoutes().Items)
 
-	// create creates a map of selectors to match other dataplanes reachable via given routes
+	// create a map of selectors to match other dataplanes reachable via given routes
 	destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 	// resolve all endpoints that match given selectors
@@ -80,6 +80,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshConte
 		p.Zone,
 		meshContext.Resources.Dataplanes().Items,
 		meshContext.Resources.ZoneIngresses().Items,
+		meshContext.Resources.ZoneEgresses().Items,
 		matchedExternalServices, p.DataSourceLoader,
 	)
 

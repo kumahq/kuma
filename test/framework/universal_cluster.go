@@ -167,7 +167,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		}
 	}
 
-	return nil
+	return c.VerifyKuma()
 }
 
 func (c *UniversalCluster) retrieveAdminToken() (string, error) {

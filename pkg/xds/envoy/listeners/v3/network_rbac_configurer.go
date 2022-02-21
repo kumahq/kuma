@@ -46,7 +46,7 @@ func createRbacFilter(statsName string, permission *core_mesh.TrafficPermissionR
 
 func createRbacRule(statsName string, permission *core_mesh.TrafficPermissionResource) *rbac.RBAC {
 	policies := make(map[string]*rbac_config.Policy)
-	// We only create policy if Traffic Permission is selected. Otherwise we still need to build RBAC filter
+	// We only create policy if Traffic Permission is selected. Otherwise, we still need to build RBAC filter
 	// to restrict all the traffic coming to the dataplane.
 	if permission != nil {
 		policies[permission.GetMeta().GetName()] = createPolicy(permission)
@@ -107,7 +107,7 @@ func principalFromSelector(selector *mesh_proto.Selector, mesh string) *rbac_con
 		return principals[0]
 	default:
 		return &rbac_config.Principal{
-			Identifier: &rbac_config.Principal_AndIds{ // many tags in selector means that all of them have to match therefore AND
+			Identifier: &rbac_config.Principal_AndIds{ // many tags in selector mean that all of them have to match therefore AND
 				AndIds: &rbac_config.Principal_Set{
 					Ids: principals,
 				},

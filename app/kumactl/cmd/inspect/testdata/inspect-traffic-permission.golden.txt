@@ -1,0 +1,10 @@
+Affected data plane proxies:
+
+  backend-1:
+    inbound 127.0.0.1:10010:10011(backend)
+    inbound 127.0.0.1:20010:20011(backend-admin)
+    inbound 127.0.0.1:30010:30011(backend-api)
+
+  web-1:
+    inbound 127.0.0.1:10020:10021(web)
+

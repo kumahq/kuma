@@ -29,8 +29,6 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 			Install(Kuma(core.Global)).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = globalCluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 		globalCP := globalCluster.GetKuma()
 
 		echoServerToken, err := globalCP.GenerateDpToken("default", "test-server")
@@ -49,8 +47,6 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneCluster)
-		Expect(err).ToNot(HaveOccurred())
-		err = zoneCluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 

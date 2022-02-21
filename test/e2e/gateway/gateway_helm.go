@@ -33,7 +33,7 @@ func GatewayHELM() {
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone,
 				WithInstallationMode(HelmInstallationMode),
-				WithHelmOpt("experimental.gateway", "true"),
+				WithHelmOpt("experimental.meshGateway", "true"),
 				WithHelmReleaseName(fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueId()))),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).

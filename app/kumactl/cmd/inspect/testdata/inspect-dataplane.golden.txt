@@ -1,0 +1,22 @@
+DATAPLANE:
+  TrafficTrace
+    backends-eu
+
+INBOUND 127.0.0.1:10010:10011(backend):
+  TrafficPermission
+    allow-all-default
+
+OUTBOUND 127.0.0.1:10006(gateway):
+  Timeout
+    timeout-all-default
+  TrafficRoute
+    route-all-default
+
+SERVICE gateway:
+  CircuitBreaker
+    circuit-breaker-all-default
+  HealthCheck
+    gateway-to-backend
+  Retry
+    retry-all-default
+

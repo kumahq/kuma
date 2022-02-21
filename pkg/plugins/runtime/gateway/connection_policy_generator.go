@@ -21,24 +21,24 @@ func (*ConnectionPolicyGenerator) SupportsProtocol(p mesh_proto.MeshGateway_List
 	return true
 }
 
-func (g *ConnectionPolicyGenerator) GenerateHost(ctx xds_context.Context, info *GatewayResourceInfo) (*core_xds.ResourceSet, error) {
-	for _, e := range info.RouteTable.Entries {
+func (g *ConnectionPolicyGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
+	for _, e := range host.RouteTable.Entries {
 		for i, destination := range e.Action.Forward {
-			e.Action.Forward[i].Policies = mapPoliciesForDestination(destination.Destination, info)
+			e.Action.Forward[i].Policies = mapPoliciesForDestination(destination.Destination, info, host.Host)
 		}
 		if e.Mirror != nil {
-			e.Mirror.Forward.Policies = mapPoliciesForDestination(e.Mirror.Forward.Destination, info)
+			e.Mirror.Forward.Policies = mapPoliciesForDestination(e.Mirror.Forward.Destination, info, host.Host)
 		}
 	}
 
 	return nil, nil
 }
 
-func mapPoliciesForDestination(destination envoy.Tags, info *GatewayResourceInfo) map[model.ResourceType]model.Resource {
+func mapPoliciesForDestination(destination envoy.Tags, info *GatewayListenerInfo, host GatewayHost) map[model.ResourceType]model.Resource {
 	policies := map[model.ResourceType]model.Resource{}
 
 	for _, policyType := range ConnectionPolicyTypes {
-		if policy := matchConnectionPolicy(info.Host.Policies[policyType], destination); policy != nil {
+		if policy := matchConnectionPolicy(host.Policies[policyType], destination); policy != nil {
 			policies[policyType] = policy
 		}
 	}

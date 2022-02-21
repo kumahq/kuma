@@ -1,0 +1,13 @@
+Affected data plane proxies:
+
+  backend-1:
+    service gateway
+    service web
+
+  web-1:
+    service gateway
+
+  redis-1:
+    service gateway
+    service web
+

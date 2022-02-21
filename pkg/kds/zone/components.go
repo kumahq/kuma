@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	"github.com/kumahq/kuma/pkg/kds/mux"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
@@ -34,7 +33,7 @@ func Setup(rt core_runtime.Runtime) error {
 	kdsCtx := rt.KDSContext()
 	kdsServer, err := kds_server.New(kdsZoneLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByZone)),
 		zone, rt.Config().Multizone.Zone.KDS.RefreshInterval,
-		kdsCtx.ZoneProvidedFilter, reconcile.NoopResourceMapper, false)
+		kdsCtx.ZoneProvidedFilter, kdsCtx.ZoneResourceMapper, false)
 	if err != nil {
 		return err
 	}
@@ -108,7 +107,7 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 					return util.ResourceNameHasAtLeastOneOfPrefixes(
 						r.GetMeta().GetName(),
 						zoneingress.ZoneIngressSigningKeyPrefix,
-						zone_tokens.SigningKeyPrefix,
+						zone_tokens.SigningPublicKeyPrefix,
 					)
 				}))
 			}

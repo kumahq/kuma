@@ -1,0 +1,44 @@
+{
+  "total": 1,
+  "items": [
+    {
+      "dataplane": {
+        "mesh": "default",
+        "name": "backend-1"
+      },
+      "attachments": [
+        {
+          "type": "dataplane",
+          "name": "",
+          "service": ""
+        }
+      ]
+    },
+    {
+      "dataplane": {
+        "mesh": "default",
+        "name": "web-1"
+      },
+      "attachments": [
+        {
+          "type": "dataplane",
+          "name": "",
+          "service": ""
+        }
+      ]
+    },
+    {
+      "dataplane": {
+        "mesh": "default",
+        "name": "redis-1"
+      },
+      "attachments": [
+        {
+          "type": "dataplane",
+          "name": "",
+          "service": ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+name: "Release"
+
+on:
+  workflow_dispatch:
+    inputs:
+      increaseMajor:
+        description: "Increase major version"
+        type: boolean
+        required: false
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+    env:
+      INCREASE_MAJOR_VERSION: ${{ github.event.inputs.increaseMajor }}
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: create branch and tag
+        run: |
+          OLD_VERSION=$(git describe --abbrev=0 --tags)
+          IFS=. read -r major minor patch <<< "${OLD_VERSION#v}"
+          if [ $INCREASE_MAJOR_VERSION == "true" ]; then
+            RELEASE_BRANCH="release-$((++major)).0" 
+            NEW_VERSION="v$major.0.0-rc1"
+          else
+            RELEASE_BRANCH="release-$major.$((++minor))" 
+            NEW_VERSION="v$major.$minor.0-rc1"
+          fi
+
+          # create branch 'release-$major.$minor'
+          git --version
+          git config user.name "github-actions[bot]"
+          git config user.email "<41898282+github-actions[bot]@users.noreply.github.com>"
+          git branch $RELEASE_BRANCH
+          
+          # create a new tag
+          bash ./tools/releases/make-release-tag.sh $OLD_VERSION $NEW_VERSION
+          
+          # push
+          git push --atomic origin $RELEASE_BRANCH $NEW_VERSION

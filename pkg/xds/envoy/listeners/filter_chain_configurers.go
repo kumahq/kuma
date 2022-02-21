@@ -40,9 +40,9 @@ func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpoin
 	})
 }
 
-func ServerSideMTLS(ctx xds_context.Context) FilterChainBuilderOpt {
+func ServerSideMTLS(mesh *core_mesh.MeshResource) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
-		Ctx: ctx,
+		Mesh: mesh,
 	})
 }
 

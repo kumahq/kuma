@@ -53,18 +53,24 @@ var CompatibilityMatrix = Compatibility{
 		"~1.3.0": {
 			Envoy: "~1.18.4",
 		},
+		"~1.4.0": {
+			Envoy: "~1.18.4",
+		},
+		"~1.5.0": {
+			Envoy: "~1.21.0",
+		},
 		// This includes all dev versions branched from the first release
 		// candidate (i.e. both master and release-1.4)
 		// and all 1.4 releases and RCs. See Masterminds/semver#21
-		"~1.4.0-1-anyprerelease": {
-			Envoy: "~1.18.4",
+		"~1.5.0-1-anyprerelease": {
+			Envoy: "~1.21.0",
 		},
 	},
 }
 
 var DevVersionPrefix = "dev"
 var DevDataplaneCompatibility = DataplaneCompatibility{
-	Envoy: "~1.18.4",
+	Envoy: "~1.21.0",
 }
 
 // DataplaneConstraints returns which Envoy should be used with given version of Kuma.

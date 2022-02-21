@@ -23,7 +23,8 @@ import (
 var log = core.Log.WithName("xds").WithName("secrets")
 
 type Secrets interface {
-	Get(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
+	GetForDataPlane(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
+	GetForZoneEgress(zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
 	Info(dpKey model.ResourceKey) *Info
 	Cleanup(dpKey model.ResourceKey)
 }
@@ -75,8 +76,8 @@ type secrets struct {
 
 var _ Secrets = &secrets{}
 
-func (c *secrets) Info(dpKey model.ResourceKey) *Info {
-	certs := c.certs(dpKey)
+func (s *secrets) Info(dpKey model.ResourceKey) *Info {
+	certs := s.certs(dpKey)
 	if certs == nil {
 		return nil
 	}
@@ -96,46 +97,84 @@ func (c *certs) Info() *Info {
 	return c.info
 }
 
-func (c *secrets) certs(dpKey model.ResourceKey) *certs {
-	c.RLock()
-	defer c.RUnlock()
-	return c.cachedCerts[dpKey]
+func (s *secrets) certs(dpKey model.ResourceKey) *certs {
+	s.RLock()
+	defer s.RUnlock()
+
+	return s.cachedCerts[dpKey]
 }
 
-func (c *secrets) Get(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
+func (s *secrets) GetForDataPlane(
+	dataplane *core_mesh.DataplaneResource,
+	mesh *core_mesh.MeshResource,
+) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
+	return s.get(dataplane, dataplane.Spec.TagSet(), mesh)
+}
+
+func (s *secrets) GetForZoneEgress(
+	zoneEgress *core_mesh.ZoneEgressResource,
+	mesh *core_mesh.MeshResource,
+) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
+	tags := mesh_proto.MultiValueTagSetFrom(map[string][]string{
+		mesh_proto.ServiceTag: {
+			mesh_proto.ZoneEgressServiceName,
+		},
+	})
+
+	return s.get(zoneEgress, tags, mesh)
+}
+
+func (s *secrets) get(
+	resource model.Resource,
+	tags mesh_proto.MultiValueTagSet,
+	mesh *core_mesh.MeshResource,
+) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
 	if !mesh.MTLSEnabled() {
 		return nil, nil, nil
 	}
 
-	dpKey := model.MetaToResourceKey(dataplane.GetMeta())
-	certs := c.certs(dpKey)
-	tags := dataplane.Spec.TagSet()
-	if shouldGenerate, reason := c.shouldGenerateCerts(certs.Info(), mesh.Spec.Mtls, tags); shouldGenerate {
-		log.Info("generating certificate", "dp", dpKey, "reason", reason)
-		certs, err := c.generateCerts(dataplane, mesh)
+	meshName := mesh.GetMeta().GetName()
+
+	resourceKey := model.MetaToResourceKey(resource.GetMeta())
+	resourceKey.Mesh = meshName
+	certs := s.certs(resourceKey)
+
+	if shouldGenerate, reason := s.shouldGenerateCerts(
+		certs.Info(),
+		mesh.Spec.Mtls,
+		tags,
+	); shouldGenerate {
+		log.Info(
+			"generating certificate",
+			string(resource.Descriptor().Name), resourceKey, "reason", reason,
+		)
+
+		certs, err := s.generateCerts(meshName, tags, mesh)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "could not generate certificates")
 		}
-		c.Lock()
-		c.cachedCerts[dpKey] = certs
-		c.Unlock()
+
+		s.Lock()
+		s.cachedCerts[resourceKey] = certs
+		s.Unlock()
+
 		return certs.identity, certs.ca, nil
 	}
 
-	certs = c.certs(dpKey)
 	if certs == nil { // previous "if" should guarantee that the certs are always there
 		return nil, nil, errors.New("certificates were not generated")
 	}
+
 	return certs.identity, certs.ca, nil
 }
 
-func (c *secrets) Cleanup(dpKey model.ResourceKey) {
-	c.Lock()
-	delete(c.cachedCerts, dpKey)
-	c.Unlock()
+func (s *secrets) Cleanup(dpKey model.ResourceKey) {
+	s.Lock()
+	delete(s.cachedCerts, dpKey)
+	s.Unlock()
 }
 
-func (c *secrets) shouldGenerateCerts(info *Info, mtls *mesh_proto.Mesh_Mtls, tags mesh_proto.MultiValueTagSet) (bool, string) {
+func (s *secrets) shouldGenerateCerts(info *Info, mtls *mesh_proto.Mesh_Mtls, tags mesh_proto.MultiValueTagSet) (bool, string) {
 	if info == nil {
 		return true, "mTLS is enabled and DP hasn't received a certificate yet"
 	}
@@ -151,22 +190,28 @@ func (c *secrets) shouldGenerateCerts(info *Info, mtls *mesh_proto.Mesh_Mtls, ta
 	if info.ExpiringSoon() {
 		return true, fmt.Sprintf("the certificate expiring soon. Generated at %q, expiring at %q", info.Generation, info.Expiration)
 	}
+
 	return false, ""
 }
 
-func (c *secrets) generateCerts(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (*certs, error) {
-	tags := dataplane.Spec.TagSet()
-	requestor := Identity{
+func (s *secrets) generateCerts(
+	resourceMesh string,
+	tags mesh_proto.MultiValueTagSet,
+	mesh *core_mesh.MeshResource,
+) (*certs, error) {
+	requester := Identity{
 		Services: tags,
-		Mesh:     dataplane.GetMeta().GetMesh(),
+		Mesh:     resourceMesh,
 	}
-	identity, issuedBackend, err := c.identityProvider.Get(context.Background(), requestor, mesh)
+
+	identity, issuedBackend, err := s.identityProvider.Get(context.Background(), requester, mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get Dataplane cert pair")
 	}
-	c.certGenerationsMetric.WithLabelValues(requestor.Mesh).Inc()
 
-	ca, supportedBackends, err := c.caProvider.Get(context.Background(), mesh)
+	s.certGenerationsMetric.WithLabelValues(requester.Mesh).Inc()
+
+	ca, supportedBackends, err := s.caProvider.Get(context.Background(), mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get mesh CA cert")
 	}

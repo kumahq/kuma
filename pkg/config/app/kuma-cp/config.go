@@ -199,7 +199,7 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			Gateway: false,
+			MeshGateway: false,
 		},
 	}
 }
@@ -314,5 +314,5 @@ func DefaultGeneralConfig() *GeneralConfig {
 
 type ExperimentalConfig struct {
 	// If true, experimental built-in gateway is enabled.
-	Gateway bool `yaml:"gateway" envconfig:"kuma_experimental_gateway"`
+	MeshGateway bool `yaml:"meshGateway" envconfig:"KUMA_EXPERIMENTAL_MESHGATEWAY"`
 }

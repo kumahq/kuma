@@ -56,8 +56,6 @@ networking:
 			Install(YamlUniversal(healthCheck)).
 			Setup(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = universalCluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
 
 		testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())

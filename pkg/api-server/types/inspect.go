@@ -100,3 +100,39 @@ func (rec *DataplaneInspectEntryReceiver) UnmarshalJSON(bytes []byte) error {
 
 	return nil
 }
+
+type DataplaneInspectEntryListReceiver struct {
+	DataplaneInspectEntryList
+	NewResource func(resourceType core_model.ResourceType) (core_model.Resource, error)
+}
+
+var _ json.Unmarshaler = &DataplaneInspectEntryListReceiver{}
+
+func (rec *DataplaneInspectEntryListReceiver) UnmarshalJSON(bytes []byte) error {
+	if rec.NewResource == nil {
+		return errors.Errorf("NewResource must not be nil")
+	}
+
+	type intermediate struct {
+		Total uint32            `json:"total"`
+		Items []json.RawMessage `json:"items"`
+	}
+
+	inter := &intermediate{}
+	if err := json.Unmarshal(bytes, inter); err != nil {
+		return err
+	}
+
+	rec.Total = inter.Total
+	for _, rawItem := range inter.Items {
+		entryReceiver := &DataplaneInspectEntryReceiver{
+			NewResource: rec.NewResource,
+		}
+		if err := json.Unmarshal(rawItem, entryReceiver); err != nil {
+			return err
+		}
+		rec.Items = append(rec.Items, &entryReceiver.DataplaneInspectEntry)
+	}
+
+	return nil
+}

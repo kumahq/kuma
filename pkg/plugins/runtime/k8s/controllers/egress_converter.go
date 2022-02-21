@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"context"
-
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 
@@ -11,7 +9,9 @@ import (
 )
 
 func (p *PodConverter) EgressFor(
-	_ context.Context, zoneEgress *mesh_proto.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service,
+	zoneEgress *mesh_proto.ZoneEgress,
+	pod *kube_core.Pod,
+	services []*kube_core.Service,
 ) error {
 	if len(services) != 1 {
 		return errors.Errorf("egress should be matched by exactly one service. Matched %d services", len(services))
@@ -28,6 +28,7 @@ func (p *PodConverter) EgressFor(
 		zoneEgress.Networking = &mesh_proto.ZoneEgress_Networking{}
 	}
 
+	zoneEgress.Zone = p.Zone
 	zoneEgress.Networking.Address = pod.Status.PodIP
 	zoneEgress.Networking.Port = ifaces[0].Port
 
