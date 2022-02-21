@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -39,6 +40,12 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 				Mesh: r.GetMeta().GetMesh(),
 				// KDS ResourceMeta only contains name and mesh.
 				// The rest is managed by the receiver of resources anyways. See ResourceSyncer#Sync
+				//
+				// backwards compatibility
+				// Right now we send creation and modification time because the old versions of Kuma CP expects them to be present.
+				CreationTime:     util_proto.MustTimestampProto(time.Unix(0, 0)),
+				ModificationTime: util_proto.MustTimestampProto(time.Unix(0, 0)),
+				Version:          "",
 			},
 			Spec: pbany,
 		})
