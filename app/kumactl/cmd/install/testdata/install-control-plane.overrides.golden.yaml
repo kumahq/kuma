@@ -1857,7 +1857,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 8c443d9f48d469a050e9e994d3d839c09b7f22f3c16bbe096c5a7d30f4207d99
-        checksum/tls-secrets: 55fc6a1f86bb7bc219256440fa7bd7c940c2d60a7d4097d4d6513d8387f1213d
+        checksum/tls-secrets: e478434cf09212624ee5588731cf8bb726cc008ddd0170817bebc681fa3a88d7
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -1877,7 +1877,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       serviceAccountName: kuma-control-plane
       nodeSelector:
-
+        
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
@@ -2023,7 +2023,7 @@ metadata:
   name: kuma-admission-mutating-webhook-configuration
   namespace: kuma
   labels:
-
+  
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -2068,16 +2068,18 @@ webhooks:
           - externalservices
           - faultinjections
           - healthchecks
-          - retries
+          - meshgateways
+          - meshgatewayroutes
           - proxytemplates
           - ratelimits
+          - retries
           - trafficlogs
           - trafficpermissions
           - trafficroutes
           - traffictraces
           - virtualoutbounds
-
-
+    
+      
     sideEffects: None
   - name: namespace-kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
@@ -2125,7 +2127,7 @@ webhooks:
     sideEffects: None
   - name: kuma-injector.kuma.io
     admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore
+    failurePolicy: Ignore 
     clientConfig:
       caBundle: XYZ
       service:
@@ -2149,7 +2151,7 @@ metadata:
   name: kuma-validating-webhook-configuration
   namespace: kuma
   labels:
-
+  
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -2178,18 +2180,20 @@ webhooks:
           - faultinjections
           - gatewayinstances
           - healthchecks
-          - retries
           - meshes
+          - meshgateways
+          - meshgatewayroutes
           - proxytemplates
           - ratelimits
+          - retries
           - trafficlogs
           - trafficpermissions
           - trafficroutes
           - traffictraces
           - virtualoutbounds
           - zones
-
-
+    
+      
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
