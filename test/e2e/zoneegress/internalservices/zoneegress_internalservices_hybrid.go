@@ -58,9 +58,6 @@ mtls:
 
 		globalCP := global.GetKuma()
 
-		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
 		// K8s Cluster 1
 		zone1 = k8sClusters.GetCluster(Kuma1)
 		Expect(NewClusterSetup().
@@ -97,6 +94,8 @@ mtls:
 		Expect(err).ToNot(HaveOccurred())
 		zone3TestServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "zone3-test-server")
 		Expect(err).ToNot(HaveOccurred())
+		demoClientTokenZone3, err := globalCP.GenerateDpToken(nonDefaultMesh, "zone3-demo-client")
+		Expect(err).ToNot(HaveOccurred())
 
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()), WithVerbose())).
@@ -105,9 +104,9 @@ mtls:
 				WithServiceName("zone3-test-server"),
 			)).
 			Install(DemoClientUniversal(
-				AppModeDemoClient,
+				"zone3-demo-client",
 				nonDefaultMesh,
-				demoClientToken,
+				demoClientTokenZone3,
 				WithTransparentProxy(true),
 			)).
 			Install(IngressUniversal(ingressTokenKuma3)).
@@ -127,12 +126,6 @@ mtls:
 			Install(TestServerUniversal("dp-echo", nonDefaultMesh, zone4TestServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("zone4-test-server"),
-			)).
-			Install(DemoClientUniversal(
-				AppModeDemoClient,
-				nonDefaultMesh,
-				demoClientToken,
-				WithTransparentProxy(true),
 			)).
 			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone4)).To(Succeed())
@@ -255,7 +248,7 @@ mtls:
 				g.Expect(stat).To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
 
-			stdout, _, err := zone3.ExecWithRetries("", "", "demo-client",
+			stdout, _, err := zone3.ExecWithRetries("", "", "zone3-demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "zone4-test-server.mesh")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))

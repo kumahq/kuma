@@ -95,9 +95,6 @@ networking:
 
 		globalCP := global.GetKuma()
 
-		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
 		// K8s Cluster 1
 		zone1 = k8sClusters.GetCluster(Kuma1)
 		Expect(NewClusterSetup().
@@ -118,18 +115,20 @@ networking:
 		// Universal Cluster 4
 		zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
 		Expect(err).ToNot(HaveOccurred())
-		egressTokenKuma4, err := globalCP.GenerateZoneEgressToken(Kuma4)
+		egressTokenZone4, err := globalCP.GenerateZoneEgressToken(Kuma4)
+		Expect(err).ToNot(HaveOccurred())
+		demoClientTokenZone4, err := globalCP.GenerateDpToken(nonDefaultMesh, "zone4-demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal(
-				AppModeDemoClient,
+				"zone4-demo-client",
 				nonDefaultMesh,
-				demoClientToken,
+				demoClientTokenZone4,
 				WithTransparentProxy(true),
 			)).
-			Install(EgressUniversal(egressTokenKuma4)).
+			Install(EgressUniversal(egressTokenZone4)).
 			Install(ExternalServerUniversal("es-test-server")).
 			Setup(zone4),
 		).To(Succeed())
@@ -205,7 +204,7 @@ networking:
 			g.Expect(stat).To(stats.BeEqualZero())
 		}, "30s", "1s").Should(Succeed())
 
-		stdout, _, err := zone4.ExecWithRetries("", "", "demo-client",
+		stdout, _, err := zone4.ExecWithRetries("", "", "zone4-demo-client",
 			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-2.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
