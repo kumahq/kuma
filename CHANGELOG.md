@@ -1,5 +1,63 @@
 # CHANGELOG
 
+## [1.5.0]
+> Released on 2022/02/21
+
+Changes:
+* feat(*): zone egress [#3809](https://github.com//kumahq/kuma/pull/3809) [#3757](https://github.com//kumahq/kuma/pull/3757)
+* feat(kuma-cp) data plane proxy membership [#3619](https://github.com//kumahq/kuma/pull/3619)
+* feat(kuma-cp): reachable services in transparent proxying [#3791](https://github.com//kumahq/kuma/pull/3791)
+* feat(inspect-api): retrieve full XDS config [#3768](https://github.com//kumahq/kuma/pull/3768)
+* feat(*): inspect api support [#3805](https://github.com//kumahq/kuma/pull/3805) [#3568](https://github.com//kumahq/kuma/pull/3568) [#3462](https://github.com//kumahq/kuma/pull/3462)
+* feat(kuma-cp): add proxytemplate to matched policies for inspect poli… [#3786](https://github.com//kumahq/kuma/pull/3786) 👍contributed by @tharun208
+* feat(kuma-cp): enable traffic route for inspect endpoints [#3735](https://github.com//kumahq/kuma/pull/3735) 👍contributed by @tharun208
+* feat(*): move adminPort to DPP resource [#3739](https://github.com//kumahq/kuma/pull/3739)
+* feat(helm): add imagePullSecrets support [#3755](https://github.com//kumahq/kuma/pull/3755) 👍contributed by @johnharris85
+* feat(*): enable Gateway with runtime flag [#3736](https://github.com//kumahq/kuma/pull/3736)
+* feat(kumactl): add --api-timeout flag [#3723](https://github.com//kumahq/kuma/pull/3723)
+* feat: allow for ca/identity secrets for every mesh [#3696](https://github.com//kumahq/kuma/pull/3696)
+* feat(kuma-cp): allow extra cm in kuma cp chart [#3671](https://github.com//kumahq/kuma/pull/3671) 👍contributed by @wjrbetts
+* feat(kuma-cp): add gui link in index api response [#3675](https://github.com//kumahq/kuma/pull/3675) 👍contributed by @tharun208
+* feat(*): allow ca.crt to be in separate k8s secret [#3638](https://github.com//kumahq/kuma/pull/3638)
+* feat(kumactl): add type of logging and tracing backends with name in table output [#3636](https://github.com//kumahq/kuma/pull/3636) 👍contributed by @tharun208
+* feat(kuma-cp): enable client side gRPC keepalive [#3574](https://github.com//kumahq/kuma/pull/3574)
+* feat(gui): new onboarding view [kumahq/kuma-gui#194](https://github.com/kumahq/kuma-gui/pull/194)
+* feat(gui): link to documentation from policy view [kumahq/kuma-gui#289](https://github.com/kumahq/kuma-gui/pull/289)
+
+* fix(kuma-cp): do not update unchanged insights [#3819](https://github.com//kumahq/kuma/pull/3819)
+* fix(*): do not annotate gateway services with ingress upstream [#3816](https://github.com//kumahq/kuma/pull/3816)
+* fix(*): properly escape DB password when creating postgres connection string [#3804](https://github.com//kumahq/kuma/pull/3804)
+* fix(kuma-cp): fix missing label sidecar injection [#3740](https://github.com//kumahq/kuma/pull/3740)
+* fix(kuma-dp): fix conntrack collisions  [#3459](https://github.com//kumahq/kuma/pull/3459) 👍contributed by @johnharris85
+* fix(conf): remove invalid health check fields from example [#3697](https://github.com//kumahq/kuma/pull/3697) 👍contributed by @tharun208
+* fix(kuma-dp): binary lookup function skips not available directories [#3667](https://github.com//kumahq/kuma/pull/3667)
+* fix(k8s): make sure controllers start after leader election [#3666](https://github.com//kumahq/kuma/pull/3666)
+* fix(build): fix gomega matchers for inspect resources command test [#3660](https://github.com//kumahq/kuma/pull/3660) [#3651](https://github.com//kumahq/kuma/pull/3651) 👍contributed by @tharun208
+* fix(kumactl): ignore any unregistered CRDs, not only from the root chart [#3643](https://github.com//kumahq/kuma/pull/3643)
+* fix(kumactl): print meta before spec for Kuma resources [#3637](https://github.com//kumahq/kuma/pull/3637)
+* fix(kuma-cp): add cp selector to global sync service [#3579](https://github.com//kumahq/kuma/pull/3579)
+* fix(kuma-cp) do not override other dataplane with dp lifecycle [#3507](https://github.com//kumahq/kuma/pull/3507)
+* fix(helm) Add support to customize nodeport [#1944](https://github.com//kumahq/kuma/pull/1944) 👍contributed by @bhiravabhatla
+
+* perf(kuma-cp): use mesh snapshot in proxy builder [#3700](https://github.com//kumahq/kuma/pull/3700)
+* perf(kuma-cp): use mesh snapshot in gateway [#3710](https://github.com//kumahq/kuma/pull/3710)
+* perf(kuma-cp): share mesh context [#3659](https://github.com//kumahq/kuma/pull/3659)
+
+* improvement(metadata): include name of annotation to parse error message [#3677](https://github.com//kumahq/kuma/pull/3677) 👍contributed by @ChinYing-Li
+* refactor(insights): delete method GetLatestSubscription for insights [#3656](https://github.com//kumahq/kuma/pull/3656) 👍contributed by @tharun208
+* refactor(kuma-cp): unify mesh determination for k8s objects [#3708](https://github.com//kumahq/kuma/pull/3708)
+* refactor(*): replace ensureDefaultXXX functions with a single generic function [#3662](https://github.com//kumahq/kuma/pull/3662) 👍contributed by @tharun208
+* chore(zone-ingress): delete deprecated env KUMA_DATAPLANE_ADMIN_PORT [#3766](https://github.com//kumahq/kuma/pull/3766)
+* chore(k8s): remove GetBool method and use GetEnabled [#3698](https://github.com//kumahq/kuma/pull/3698) 👍contributed by @tharun208
+* chore(*): generate CRD types [#3453](https://github.com//kumahq/kuma/pull/3453)
+* chore(dataplane)!: disallow using 0.0.0.0 in networking.address for dp [#3691](https://github.com//kumahq/kuma/pull/3691)
+* chore(kuma-cp): consolidate mesh defaults creation [#3678](https://github.com//kumahq/kuma/pull/3678)
+* chore(config): remove ability to disable insights [#3501](https://github.com//kumahq/kuma/pull/3501)
+* chore(*): remove old Ingress [#3435](https://github.com//kumahq/kuma/pull/3435)
+* chore(*): upgrade Envoy to v1.21.0 [#3810](https://github.com//kumahq/kuma/pull/3810)
+* chore(grafana): update to latest grafana plugin version [#3812](https://github.com//kumahq/kuma/pull/3812)
+* ci(*): release on every commit in master and release branches [#3712](https://github.com//kumahq/kuma/pull/3712)
+
 ## [1.4.1]
 > Released on 2021/12/15
 
@@ -28,7 +86,7 @@ Changes:
 * refactor: move from io/ioutil to io and os packages [#3265](https://github.com//kumahq/kuma/pull/3265)
   👍contributed by @Juneezee
 * fix: validate newly generated xDS snapshots [#3195](https://github.com//kumahq/kuma/pull/3195)
-* chore: bump k8s.io/apiextensions-apiserver from 0.22.3 to 0.22.4 [#3218](https://github.com//kumahq/kuma/pull/3218)[s
+* chore: bump k8s.io/apiextensions-apiserver from 0.22.3 to 0.22.4 [#3218](https://github.com//kumahq/kuma/pull/3218)
 * chore: bump helm chart version to 0.8 [#3202](https://github.com//kumahq/kuma/pull/3202)
 
 ## [1.4.0]
