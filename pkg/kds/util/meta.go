@@ -5,47 +5,33 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
+// KDS ResourceMeta only contains name and mesh.
+// The rest is managed by the receiver of resources anyways. See ResourceSyncer#Sync
 type resourceMeta struct {
-	name             string
-	version          string
-	mesh             string
-	creationTime     *time.Time
-	modificationTime *time.Time
+	name string
+	mesh string
 }
 
 func NewResourceMeta(name, mesh, version string, creationTime, modificationTime time.Time) model.ResourceMeta {
 	return &resourceMeta{
-		name:             name,
-		mesh:             mesh,
-		version:          version,
-		creationTime:     &creationTime,
-		modificationTime: &modificationTime,
+		name: name,
+		mesh: mesh,
 	}
 }
 
 func CloneResourceMetaWithNewName(meta model.ResourceMeta, name string) model.ResourceMeta {
-	creationTime := meta.GetCreationTime()
-	modificationTime := meta.GetModificationTime()
-
 	return &resourceMeta{
-		name:             name,
-		version:          meta.GetVersion(),
-		mesh:             meta.GetMesh(),
-		creationTime:     &creationTime,
-		modificationTime: &modificationTime,
+		name: name,
+		mesh: meta.GetMesh(),
 	}
 }
 
 func kumaResourceMetaToResourceMeta(meta *mesh_proto.KumaResource_Meta) model.ResourceMeta {
 	return &resourceMeta{
-		name:             meta.Name,
-		mesh:             meta.Mesh,
-		version:          meta.Version,
-		creationTime:     proto.MustTimestampFromProto(meta.CreationTime),
-		modificationTime: proto.MustTimestampFromProto(meta.ModificationTime),
+		name: meta.Name,
+		mesh: meta.Mesh,
 	}
 }
 
@@ -58,7 +44,7 @@ func (r *resourceMeta) GetNameExtensions() model.ResourceNameExtensions {
 }
 
 func (r *resourceMeta) GetVersion() string {
-	return r.version
+	return ""
 }
 
 func (r *resourceMeta) GetMesh() string {
@@ -66,9 +52,9 @@ func (r *resourceMeta) GetMesh() string {
 }
 
 func (r *resourceMeta) GetCreationTime() time.Time {
-	return *r.creationTime
+	return time.Unix(0, 0)
 }
 
 func (r *resourceMeta) GetModificationTime() time.Time {
-	return *r.modificationTime
+	return time.Unix(0, 0)
 }
