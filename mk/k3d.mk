@@ -3,10 +3,41 @@ CI_K3S_VERSION ?= v1.21.1-k3s1
 
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
-PORT_PREFIX:=300
-ifeq ($(KIND_CLUSTER_NAME), kuma-2)
-PORT_PREFIX=301
-endif
+# Comment about PORT_PREFIX generation
+#
+# First step: $(KIND_CLUSTER_NAME:kuma%=300%) will replace a string "kuma" from
+# the $(KIND_CLUSTER_NAME) variable with the string "300" (default/initial
+# prefix):
+#
+#  Initial value				Step#1
+#  KIND_CLUSTER_NAME(kuma) ->	300
+#  KIND_CLUSTER_NAME(kuma-1) ->	300-1
+#  KIND_CLUSTER_NAME(kuma-2) ->	300-2
+#  KIND_CLUSTER_NAME(kuma-3) ->	300-3
+#  [...etc]
+#
+# The next step - $(patsubst 300-%,300+%-1,...) will replace string
+# "300-[1,2,3...]" with string "300+[1,2,3...]-1" ("-1" is necessary to preserve
+# the current overflow, so when the KIND_CLUSTER_NAME is equal "kuma", OR
+# "kuma-1" when value of the port will be equal "300"):
+#
+#  Initial value				Step#1		Step#2
+#  KIND_CLUSTER_NAME(kuma) ->	300 ->		300
+#  KIND_CLUSTER_NAME(kuma-1) ->	300-1 ->	300+1-1
+#  KIND_CLUSTER_NAME(kuma-2) ->	300-2 ->	300+2-1
+#  KIND_CLUSTER_NAME(kuma-3) ->	300-3 ->	300+3-1
+#  [...etc]
+#
+# The last step $$((...)) will call the shell to use the expression we generated
+# earlier and calculate it's arithmetic value:
+#
+#  Initial value				Step#1		Step#2		Step#3	Result
+#  KIND_CLUSTER_NAME(kuma) ->	300 ->		300 ->		300 ->	PORT_PREFIX(300)
+#  KIND_CLUSTER_NAME(kuma-1) ->	300-1 ->	300+1-1 ->	300 ->	PORT_PREFIX(300)
+#  KIND_CLUSTER_NAME(kuma-2) ->	300-2 ->	300+2-1 ->	301 ->	PORT_PREFIX(301)
+#  KIND_CLUSTER_NAME(kuma-3) ->	300-3 ->	300+3-1 ->	302 ->	PORT_PREFIX(302)
+#  [...etc]
+PORT_PREFIX := $$(($(patsubst 300-%,300+%-1,$(KIND_CLUSTER_NAME:kuma%=300%))))
 
 .PHONY: k3d/network/create
 k3d/network/create:
@@ -17,6 +48,7 @@ k3d/network/create:
 
 .PHONY: k3d/start
 k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
+	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		k3d cluster create "$(KIND_CLUSTER_NAME)" \
 			-i rancher/k3s:$(CI_K3S_VERSION) \
