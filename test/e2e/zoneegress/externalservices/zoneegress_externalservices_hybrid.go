@@ -2,6 +2,7 @@ package externalservices
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -48,7 +49,7 @@ tags:
   kuma.io/service: external-service-2
   kuma.io/protocol: http
 networking:
-  address: %s:%s`
+  address: %s`
 
 	ExternalServerUniversal := func(name string) InstallFunc {
 		return func(cluster Cluster) error {
@@ -64,8 +65,8 @@ networking:
 		return fmt.Sprintf(externalService1, mesh)
 	}
 
-	ExternalService2 := func(mesh, ip, port string) string {
-		return fmt.Sprintf(externalService2, mesh, ip, port)
+	ExternalService2 := func(mesh, address string) string {
+		return fmt.Sprintf(externalService2, mesh, address)
 	}
 
 	var global, zone1 Cluster
@@ -136,7 +137,10 @@ networking:
 
 		Expect(global.GetKumactlOptions().
 			KumactlApplyFromString(
-				ExternalService2(nonDefaultMesh, zone4.GetApp("es-test-server").GetIP(), "8080")),
+				ExternalService2(
+					nonDefaultMesh,
+					net.JoinHostPort(zone4.GetApp("es-test-server").GetIP(), "8080"),
+				)),
 		).To(Succeed())
 	})
 
