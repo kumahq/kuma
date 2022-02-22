@@ -109,4 +109,21 @@ var _ = Describe("SyncResourceStore", func() {
 			Expect(item.Spec).To(MatchProto(upstream.Items[i].Spec))
 		}
 	})
+
+	It("should ignore resources from upstream that it does not support", func() {
+		// given
+		upstream := &mesh.MeshResourceList{}
+		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
+
+		// when
+		err := syncer.Sync(upstream, sync_store.PrefilterBy(func(r model.Resource) bool {
+			return r.GetMeta().GetName() != "mesh-1"
+		}))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		actual := &mesh.MeshResourceList{}
+		Expect(resourceStore.List(context.Background(), actual)).To(Succeed())
+		Expect(actual.GetItems()).To(BeEmpty())
+	})
 })
