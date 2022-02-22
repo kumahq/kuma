@@ -7,11 +7,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-func PopulatePolicies(ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost, routes []route.Entry) []route.Entry {
+func PopulatePolicies(info GatewayListenerInfo, host GatewayHost, routes []route.Entry) []route.Entry {
 	var routesWithPolicies []route.Entry
 
 	for _, e := range routes {

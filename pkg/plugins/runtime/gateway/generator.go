@@ -65,10 +65,7 @@ type GatewayListenerInfo struct {
 // a specific protocol.
 // A FilterChainGenerator can be host-specific or shared amongst hosts.
 type FilterChainGenerator interface {
-	Initialize(xds_context.Context, GatewayListenerInfo)
-	Generate(xds_context.Context, GatewayListenerInfo, GatewayHost) (*core_xds.ResourceSet, *envoy_listeners.FilterChainBuilder, error)
-	FinalizeHost(*envoy_listeners.ListenerBuilder, *envoy_listeners.FilterChainBuilder)
-	Finalize(*envoy_listeners.ListenerBuilder)
+	Generate(xds_context.Context, GatewayListenerInfo, []GatewayHost) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error)
 }
 
 // Generator generates xDS resources for an entire Gateway.
@@ -83,9 +80,6 @@ type filterChainGenerators struct {
 
 func (g *filterChainGenerators) For(ctx xds_context.Context, info GatewayListenerInfo) FilterChainGenerator {
 	gen := g.FilterChainGenerators[info.Listener.Protocol]
-
-	gen.Initialize(ctx, info)
-
 	return gen
 }
 
@@ -164,56 +158,75 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			return nil, errors.New("no support for protocol")
 		}
 
-		listenerBuilder := GenerateListener(ctx, info)
-
-		routeConfig := GenerateRouteConfig(ctx, info)
-
-		filterChainGen := g.FilterChainGenerators.For(ctx, info)
-
-		// Make a pass over the generators for each virtual host.
-		for _, host := range hosts {
-			// Ensure that generators don't get duplicate routes,
-			// which could happen after redistributing wildcards.
-			host.Routes = merge.UniqueResources(host.Routes)
-
-			// Setup the filter chain
-			chainRes, filterChain, err := filterChainGen.Generate(ctx, info, host)
-			if err != nil {
-				return nil, err
-			}
-			resources.AddSet(chainRes)
-
-			entries := GenerateEnvoyRouteEntries(ctx, info, host)
-
-			clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, entries)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", proxy.Id)
-			}
-			resources.AddSet(clusterRes)
-
-			vh, err := GenerateVirtualHost(ctx, info, host, entries)
-			if err != nil {
-				return nil, err
-			}
-			routeConfig.Configure(envoy_routes.VirtualHost(vh))
-
-			filterChainGen.FinalizeHost(listenerBuilder, filterChain)
-		}
-
-		filterChainGen.Finalize(listenerBuilder)
-
-		res, err := BuildResourceSet(listenerBuilder)
+		ldsResources, err := g.generateLDS(ctx, info, hosts)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to build listener resource")
+			return nil, err
 		}
-		resources.AddSet(res)
+		resources.AddSet(ldsResources)
 
-		res, err = BuildResourceSet(routeConfig)
+		rdsResources, err := g.generateRDS(ctx, info, hosts)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to build route configuration resource")
+			return nil, err
 		}
-		resources.AddSet(res)
+		resources.AddSet(rdsResources)
 	}
+
+	return resources, nil
+}
+
+func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost) (*core_xds.ResourceSet, error) {
+	resources := core_xds.NewResourceSet()
+	listenerBuilder := GenerateListener(ctx, info)
+
+	res, filterChainBuilders, err := g.FilterChainGenerators.FilterChainGenerators[info.Listener.Protocol].Generate(ctx, info, hosts)
+	if err != nil {
+		return nil, err
+	}
+	resources.AddSet(res)
+
+	for _, filterChainBuilder := range filterChainBuilders {
+		listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
+	}
+
+	res, err = BuildResourceSet(listenerBuilder)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build listener resource")
+	}
+	resources.AddSet(res)
+
+	return resources, nil
+}
+
+func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost) (*core_xds.ResourceSet, error) {
+	resources := core_xds.NewResourceSet()
+	routeConfig := GenerateRouteConfig(ctx, info)
+
+	// Make a pass over the generators for each virtual host.
+	for _, host := range hosts {
+		// Ensure that generators don't get duplicate routes,
+		// which could happen after redistributing wildcards.
+		host.Routes = merge.UniqueResources(host.Routes)
+
+		entries := GenerateEnvoyRouteEntries(ctx, info, host)
+
+		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, entries)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
+		}
+		resources.AddSet(clusterRes)
+
+		vh, err := GenerateVirtualHost(ctx, info, host, entries)
+		if err != nil {
+			return nil, err
+		}
+		routeConfig.Configure(envoy_routes.VirtualHost(vh))
+	}
+
+	res, err := BuildResourceSet(routeConfig)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build route configuration resource")
+	}
+	resources.AddSet(res)
 
 	return resources, nil
 }
