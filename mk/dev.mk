@@ -137,7 +137,7 @@ dev/install/protoc-gen-validate: ## Bootstrap: Install Protoc Gen Validate Plugi
 dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	# see https://github.com/onsi/ginkgo#set-me-up
 	echo "Installing Ginkgo ..."
-	go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)  # installs the ginkgo CLI
+	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)  # installs the ginkgo CLI
 	echo "Ginkgo has been installed at $(GOPATH_BIN_DIR)/ginkgo"
 
 .PHONY: dev/install/kubebuilder
@@ -152,7 +152,7 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and k
 		&& mkdir -p $(KUBEBUILDER_DIR) \
 		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH)/* $(KUBEBUILDER_DIR) \
 		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH) \
-        && for tool in $$( ls $(KUBEBUILDER_DIR)/bin ) ; do if [ ! -e $(CI_TOOLS_DIR)/$${tool} ]; then ln -s $(KUBEBUILDER_DIR)/bin/$${tool} $(CI_TOOLS_DIR)/$${tool} ; echo "Installed $(CI_TOOLS_DIR)/$${tool}" ; else echo "$(CI_TOOLS_DIR)/$${tool} already exists" ; fi; done \
+		&& for tool in $$( ls $(KUBEBUILDER_DIR)/bin ) ; do if [ ! -e $(CI_TOOLS_DIR)/$${tool} ]; then ln -s $(KUBEBUILDER_DIR)/bin/$${tool} $(CI_TOOLS_DIR)/$${tool} ; echo "Installed $(CI_TOOLS_DIR)/$${tool}" ; else echo "$(CI_TOOLS_DIR)/$${tool} already exists" ; fi; done \
 		&& set +x \
 		&& echo "Kubebuilder $(CI_KUBEBUILDER_VERSION) has been installed at $(KUBEBUILDER_PATH)" ; fi
 
