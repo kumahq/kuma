@@ -6,7 +6,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -26,18 +25,10 @@ func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.Me
 	return routes
 }
 
-// GatewayRouteGenerator generates Kuma gateway routes from GatewayRoute resources.
-type GatewayRouteGenerator struct {
-}
-
-func (*GatewayRouteGenerator) SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
-	return p == mesh_proto.MeshGateway_Listener_HTTP || p == mesh_proto.MeshGateway_Listener_HTTPS
-}
-
-func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
-	gatewayRoutes := filterGatewayRoutes(host.Host.Routes, func(route *core_mesh.MeshGatewayRouteResource) bool {
+func GenerateEnvoyRouteEntries(ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost) []route.Entry {
+	gatewayRoutes := filterGatewayRoutes(host.Routes, func(route *core_mesh.MeshGatewayRouteResource) bool {
 		// Wildcard virtual host accepts all routes.
-		if host.Host.Hostname == WildcardHostname {
+		if host.Hostname == WildcardHostname {
 			return true
 		}
 
@@ -48,17 +39,19 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 		}
 
 		// Otherwise, match the virtualhost name to the route names.
-		return match.Hostnames(host.Host.Hostname, names...)
+		return match.Hostnames(host.Hostname, names...)
 	})
 
 	if len(gatewayRoutes) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	log.V(1).Info("applying merged traffic routes",
 		"listener-port", info.Listener.Port,
 		"listener-name", info.Listener.ResourceName,
 	)
+
+	var entries []route.Entry
 
 	// Index the routes by their path. There are typically multiple
 	// routes per path with additional matching criteria.
@@ -85,7 +78,7 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 					prefixEntries[routeEntry.Match.PrefixPath] =
 						append(prefixEntries[routeEntry.Match.PrefixPath], routeEntry)
 				default:
-					host.RouteTable.Entries = append(host.RouteTable.Entries, routeEntry)
+					entries = append(entries, routeEntry)
 				}
 			}
 		}
@@ -97,16 +90,16 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 	// transformations. Unless there is already an exact match for the
 	// path in question, we expand each prefix path to both a prefix and
 	// an exact path, duplicating the route.
-	for path, entries := range prefixEntries {
+	for path, pathEntries := range prefixEntries {
 		exactPath := strings.TrimRight(path, "/")
 
 		_, hasExactMatch := exactEntries[exactPath]
 
-		for _, e := range entries {
+		for _, e := range pathEntries {
 			// Make sure the prefix has a trailing '/' so that it only matches
 			// complete path components.
 			e.Match.PrefixPath = exactPath + "/"
-			host.RouteTable.Entries = append(host.RouteTable.Entries, e)
+			entries = append(entries, e)
 
 			// If the prefix is '/', it matches everything anyway,
 			// so we don't need to install an exact match.
@@ -125,11 +118,11 @@ func (g *GatewayRouteGenerator) GenerateHost(ctx xds_context.Context, info *Gate
 		}
 	}
 
-	for _, entries := range exactEntries {
-		host.RouteTable.Entries = append(host.RouteTable.Entries, entries...)
+	for _, pathEntries := range exactEntries {
+		entries = append(entries, pathEntries...)
 	}
 
-	return nil, nil
+	return PopulatePolicies(info, host, entries)
 }
 
 func makeRouteEntry(rule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule) route.Entry {

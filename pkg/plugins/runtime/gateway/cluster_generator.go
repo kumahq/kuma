@@ -31,8 +31,8 @@ func (*ClusterGenerator) SupportsProtocol(mesh_proto.MeshGateway_Listener_Protoc
 }
 
 // GenerateHost generates clusters for all the services targeted in the current route table.
-func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayListenerInfo, host gatewayHostInfo) (*core_xds.ResourceSet, error) {
-	resources := ResourceAggregator{}
+func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info GatewayListenerInfo, routes []route.Entry) (*core_xds.ResourceSet, error) {
+	resources := core_xds.NewResourceSet()
 
 	// If there is a service name conflict between external services
 	// and mesh services, the external service takes priority since
@@ -42,7 +42,7 @@ func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayLi
 	// an array of endpoint and checks whether the first entry is from
 	// an external service. Because the dataplane endpoints happen to be
 	// generated first, the mesh service will have priority.
-	for _, dest := range routeDestinations(host.RouteTable) {
+	for _, dest := range routeDestinations(routes) {
 		matched := match.ExternalService(info.ExternalServices, mesh_proto.TagSelector(dest.Destination))
 
 		// If there are zone egresses present we want to direct the traffic
@@ -76,9 +76,10 @@ func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayLi
 			return c.generateMeshCluster(ctx.Mesh.Resource, info, dest, upstreamServiceName)
 		}()
 
-		if resources.Add(r, err) != nil {
+		if err != nil {
 			return nil, err
 		}
+		resources.Add(r)
 
 		// Assign the generated unique cluster name to the
 		// destination so that subsequent generator passes can
@@ -110,15 +111,15 @@ func (c *ClusterGenerator) GenerateHost(ctx xds_context.Context, info *GatewayLi
 			return nil, errors.Wrapf(err, "failed to build LoadAssignment for cluster %q", dest.Name)
 		}
 
-		resources.Get().Add(NewResource(dest.Name, loadAssignment))
+		resources.Add(NewResource(dest.Name, loadAssignment))
 	}
 
-	return resources.Get(), nil
+	return resources, nil
 }
 
 func (c *ClusterGenerator) generateMeshCluster(
 	mesh *core_mesh.MeshResource,
-	info *GatewayListenerInfo,
+	info GatewayListenerInfo,
 	dest *route.Destination,
 	upstreamServiceName string,
 ) (*core_xds.Resource, error) {
@@ -143,7 +144,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 
 func (c *ClusterGenerator) generateExternalCluster(
 	ctx xds_context.Context,
-	info *GatewayListenerInfo,
+	info GatewayListenerInfo,
 	service core_mesh.ExternalServiceResourceList,
 	dest *route.Destination,
 ) (*core_xds.Resource, error) {
@@ -222,10 +223,10 @@ func buildClusterResource(dest *route.Destination, c *clusters.ClusterBuilder) (
 	}, nil
 }
 
-func routeDestinations(table *route.Table) []*route.Destination {
+func routeDestinations(entries []route.Entry) []*route.Destination {
 	var destinations []*route.Destination
 
-	for _, e := range table.Entries {
+	for _, e := range entries {
 		if m := e.Mirror; m != nil {
 			destinations = append(destinations, &m.Forward)
 		}

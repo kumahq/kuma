@@ -37,40 +37,6 @@ func BuildResourceSet(b ResourceBuilder) (*xds.ResourceSet, error) {
 	return set, nil
 }
 
-// ResourceAggregator is a convenience wrapper over ResourceSet that
-// simplifies code that accumulates resources from xDS generators.
-type ResourceAggregator struct{ *xds.ResourceSet }
-
-func (r *ResourceAggregator) Get() *xds.ResourceSet {
-	return r.ResourceSet
-}
-
-func (r *ResourceAggregator) Add(resource *xds.Resource, err error) error {
-	if err != nil {
-		return err
-	}
-
-	if r.ResourceSet == nil {
-		r.ResourceSet = xds.NewResourceSet()
-	}
-
-	r.ResourceSet.Add(resource)
-	return nil
-}
-
-func (r *ResourceAggregator) AddSet(set *xds.ResourceSet, err error) error {
-	if err != nil {
-		return err
-	}
-
-	if r.ResourceSet == nil {
-		r.ResourceSet = xds.NewResourceSet()
-	}
-
-	r.ResourceSet.AddSet(set)
-	return nil
-}
-
 func NewResource(name string, resource proto.Message) *xds.Resource {
 	return &xds.Resource{
 		Name:     name,
