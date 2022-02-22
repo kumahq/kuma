@@ -29,8 +29,11 @@ ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)
 GINKGO_E2E_FLAGS ?=
 
-ifdef GINKGO_XUNIT_RESULTS_DIR
-	GINKGO_E2E_FLAGS += --junit-report $(GINKGO_XUNIT_RESULTS_DIR).xml
+ifdef GINKGO_TEST_RESULTS_DIR
+	GINKGO_E2E_FLAGS += \
+		--output-dir $(GINKGO_TEST_RESULTS_DIR) \
+		--junit-report results.xml \
+		--json-report results.json
 endif
 
 GO_TEST_E2E:=ginkgo $(GOFLAGS) $(LD_FLAGS) $(GINKGO_E2E_FLAGS)
