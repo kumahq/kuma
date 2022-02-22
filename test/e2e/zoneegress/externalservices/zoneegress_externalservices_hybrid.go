@@ -49,7 +49,7 @@ tags:
   kuma.io/service: external-service-2
   kuma.io/protocol: http
 networking:
-  address: %s`
+  address: "%s"`
 
 	ExternalServerUniversal := func(name string) InstallFunc {
 		return func(cluster Cluster) error {
