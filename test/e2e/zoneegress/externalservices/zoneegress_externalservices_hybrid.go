@@ -92,7 +92,6 @@ networking:
 			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh))).
 			Install(YamlUniversal(ExternalService1(nonDefaultMesh))).
 			Setup(global)).To(Succeed())
-		Expect(global.VerifyKuma()).To(Succeed())
 
 		globalCP := global.GetKuma()
 
@@ -111,7 +110,6 @@ networking:
 				testserver.WithArgs("echo", "--instance", "es-test-server"),
 			)).
 			Setup(zone1)).To(Succeed())
-		Expect(zone1.VerifyKuma()).To(Succeed())
 
 		// Universal Cluster 4
 		zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
@@ -133,7 +131,6 @@ networking:
 			Install(ExternalServerUniversal("es-test-server")).
 			Setup(zone4),
 		).To(Succeed())
-		Expect(zone4.VerifyKuma()).To(Succeed())
 
 		Expect(global.GetKumactlOptions().
 			KumactlApplyFromString(

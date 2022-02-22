@@ -54,7 +54,6 @@ mtls:
 			Install(YamlUniversal(meshMTLSOn(defaultMesh))).
 			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh))).
 			Setup(global)).To(Succeed())
-		Expect(global.VerifyKuma()).To(Succeed())
 
 		globalCP := global.GetKuma()
 
@@ -68,7 +67,6 @@ mtls:
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(zone1)).To(Succeed())
-		Expect(zone1.VerifyKuma()).To(Succeed())
 
 		// K8s Cluster 2
 		zone2 = k8sClusters.GetCluster(Kuma2)
@@ -83,7 +81,6 @@ mtls:
 				testserver.WithServiceAccount("sa-test"),
 			)).
 			Setup(zone2)).To(Succeed())
-		Expect(zone2.VerifyKuma()).To(Succeed())
 
 		// Universal Cluster 3
 		zone3 = universalClusters.GetCluster(Kuma3)
@@ -111,7 +108,6 @@ mtls:
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Install(EgressUniversal(egressTokenKuma3)).
 			Setup(zone3)).To(Succeed())
-		Expect(zone3.VerifyKuma()).To(Succeed())
 
 		// Universal Cluster 4
 		zone4 = universalClusters.GetCluster(Kuma4)
@@ -128,7 +124,6 @@ mtls:
 			)).
 			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone4)).To(Succeed())
-		Expect(zone4.VerifyKuma()).To(Succeed())
 	})
 
 	E2EAfterEachMarkIfFailed()
