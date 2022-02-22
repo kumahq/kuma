@@ -88,6 +88,7 @@ func (g *HTTPSFilterChainGenerator) Generate(
 	var filterChainBuilders []*envoy_listeners.FilterChainBuilder
 
 	for _, host := range hosts {
+		hostResources := core_xds.NewResourceSet()
 		log.V(1).Info("generating filter chain",
 			"hostname", host.Hostname,
 		)
@@ -101,11 +102,11 @@ func (g *HTTPSFilterChainGenerator) Generate(
 					return nil, nil, errors.Wrap(err, "failed to generate TLS certificate")
 				}
 
-				if resources.Contains(secret.Name, secret) {
+				if hostResources.Contains(secret.Name, secret) {
 					return nil, nil, errors.Errorf("duplicate TLS certificate %q", secret.Name)
 				}
 
-				resources.Add(NewResource(secret.Name, secret))
+				hostResources.Add(NewResource(secret.Name, secret))
 			}
 
 		case mesh_proto.MeshGateway_TLS_PASSTHROUGH:
@@ -127,7 +128,7 @@ func (g *HTTPSFilterChainGenerator) Generate(
 		downstream := newDownstreamTypedConfig()
 
 		// If we generated any secrets, attach their references to the downstream validation context.
-		for _, s := range resources.ListOf(envoy_resource.SecretType) {
+		for _, s := range hostResources.ListOf(envoy_resource.SecretType) {
 			downstream.CommonTlsContext.TlsCertificateSdsSecretConfigs = append(
 				downstream.CommonTlsContext.TlsCertificateSdsSecretConfigs, envoy_tls_v3.NewSecretConfigSource(s.Name),
 			)
@@ -152,6 +153,8 @@ func (g *HTTPSFilterChainGenerator) Generate(
 		)
 
 		filterChainBuilders = append(filterChainBuilders, builder)
+
+		resources.AddSet(hostResources)
 	}
 
 	return resources, filterChainBuilders, nil
