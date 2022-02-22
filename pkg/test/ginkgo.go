@@ -1,15 +1,10 @@
 package test
 
 import (
-	"fmt"
-	"os"
-	"path"
-	"strings"
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -32,18 +27,5 @@ func RunSpecs(t *testing.T, description string) {
 
 	gomega.RegisterFailHandler(ginkgo.Fail)
 
-	resultsDir, ok := os.LookupEnv("GINKGO_XUNIT_RESULTS_DIR")
-	if !ok {
-		ginkgo.RunSpecs(t, description)
-		return
-	}
-
-	// Silence deprecation warning for using custom reporters. Ginkgo V2
-	// will apparently have a command-line flag to do xunit reporting.
-	_ = os.Setenv("ACK_GINKGO_DEPRECATIONS", "1.16.4")
-
-	filename := fmt.Sprintf("%s.xml", strings.ReplaceAll(strings.ToLower(description), " ", "-"))
-	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, description, []ginkgo.Reporter{
-		reporters.NewJUnitReporter(path.Join(resultsDir, filename)),
-	})
+	ginkgo.RunSpecs(t, description)
 }

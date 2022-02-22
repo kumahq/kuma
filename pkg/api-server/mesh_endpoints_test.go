@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -43,7 +43,7 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}()
 		waitForServer(&client)
-	}, 5)
+	})
 
 	AfterEach(func() {
 		close(stop)

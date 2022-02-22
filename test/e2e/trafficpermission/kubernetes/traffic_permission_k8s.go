@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"

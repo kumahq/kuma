@@ -2,7 +2,7 @@ package cache_test
 
 import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	observability_proto "github.com/kumahq/kuma/api/observability/v1"

@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"

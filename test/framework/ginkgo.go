@@ -1,12 +1,13 @@
 package framework
 
 import (
-	"github.com/onsi/ginkgo"
-	ginkgo_config "github.com/onsi/ginkgo/config"
+	"github.com/onsi/ginkgo/v2"
 )
 
 func ShouldSkipCleanup() bool {
-	return ginkgo.CurrentGinkgoTestDescription().Failed && ginkgo_config.GinkgoConfig.FailFast
+	suiteConfig, _ := ginkgo.GinkgoConfiguration()
+
+	return ginkgo.CurrentSpecReport().Failed() && suiteConfig.FailFast
 }
 
 func E2EAfterEach(fn func()) {

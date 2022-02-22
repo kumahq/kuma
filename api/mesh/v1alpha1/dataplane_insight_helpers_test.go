@@ -4,8 +4,7 @@ import (
 	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/api/mesh/v1alpha1"

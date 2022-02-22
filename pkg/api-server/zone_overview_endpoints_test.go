@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -43,7 +43,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}()
 		waitForServer(&client)
-	}, 5)
+	})
 
 	AfterEach(func() {
 		close(stop)

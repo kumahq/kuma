@@ -5,8 +5,7 @@ import (
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/ghodss/yaml"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -1031,7 +1030,7 @@ conf:
 				// then
 				Expect(snap.Consistent()).To(Succeed())
 			},
-			entries...,
+			entries,
 		)
 	})
 
@@ -1057,7 +1056,7 @@ conf:
 					To(matchers.MatchGoldenYAML(path.Join("testdata", "https", goldenFileName)))
 
 			},
-			entries...,
+			entries,
 		)
 	})
 

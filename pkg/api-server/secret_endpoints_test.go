@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -47,7 +47,7 @@ var _ = Describe("Secret Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}()
 		waitForServer(&client)
-	}, 5)
+	})
 
 	AfterEach(func() {
 		close(stop)
