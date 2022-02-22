@@ -8,7 +8,6 @@ import (
 
 	"github.com/emicklei/go-restful"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -31,18 +30,10 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 
-type fakeDataSourceLoader struct {
-}
-
-func (f fakeDataSourceLoader) Load(ctx context.Context, mesh string, source *system_proto.DataSource) ([]byte, error) {
-	return []byte("secret"), nil
-}
-
 var CustomizeProxy func(meshContext xds_context.MeshContext, proxy *core_xds.Proxy) error
 
 func getMatchedPolicies(cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey) (*core_xds.MatchedPolicies, *core_mesh.DataplaneResource, error) {
 	proxyBuilder := sync.DefaultDataplaneProxyBuilder(
-		&fakeDataSourceLoader{},
 		*cfg,
 		callbacks.NewDataplaneMetadataTracker(),
 		envoy.APIV3)
