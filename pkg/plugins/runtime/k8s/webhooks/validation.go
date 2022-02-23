@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"k8s.io/api/admission/v1"
+	v1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -57,7 +57,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Allowed("")
 	}
 
-	if resp := h.isOperationAllowed(resType, req.UserInfo, req.Operation); !resp.Allowed {
+	if resp := h.isOperationAllowed(resType, req.UserInfo); !resp.Allowed {
 		return resp
 	}
 
@@ -109,7 +109,7 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 }
 
 // Note that this func does not validate ConfigMap and Secret since this webhook does not support those
-func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, userInfo authenticationv1.UserInfo, op v1.Operation) admission.Response {
+func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, userInfo authenticationv1.UserInfo) admission.Response {
 	if userInfo.Username == h.cpServiceAccountName {
 		// Assume this means sync from another zone. Not security; protecting user from self.
 		return admission.Allowed("")
@@ -117,15 +117,15 @@ func (h *validatingHandler) isOperationAllowed(resType core_model.ResourceType, 
 
 	descriptor, err := h.coreRegistry.DescriptorFor(resType)
 	if err != nil {
-		return syncErrorResponse(resType, h.mode, op)
+		return syncErrorResponse(resType, h.mode)
 	}
 	if (h.mode == core.Global && descriptor.KDSFlags.Has(core_model.ConsumedByGlobal)) || (h.mode == core.Zone && resType != core_mesh.DataplaneType && descriptor.KDSFlags.Has(core_model.ConsumedByZone)) {
-		return syncErrorResponse(resType, h.mode, op)
+		return syncErrorResponse(resType, h.mode)
 	}
 	return admission.Allowed("")
 }
 
-func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode, op v1.Operation) admission.Response {
+func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admission.Response {
 	otherCpMode := ""
 	if cpMode == core.Zone {
 		otherCpMode = core.Global

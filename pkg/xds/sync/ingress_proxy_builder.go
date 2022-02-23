@@ -42,10 +42,7 @@ func (p *IngressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, err
 	}
 	allMeshDataplanes.Items = xds_topology.ResolveAddresses(syncLog, p.LookupIP, allMeshDataplanes.Items)
 
-	routing, err := p.resolveRouting(zoneIngress, allMeshDataplanes)
-	if err != nil {
-		return nil, err
-	}
+	routing := p.resolveRouting(zoneIngress, allMeshDataplanes)
 
 	zoneIngressProxy, err := p.buildZoneIngressProxy(ctx)
 	if err != nil {
@@ -98,14 +95,14 @@ func (p *IngressProxyBuilder) getZoneIngress(key core_model.ResourceKey) (*core_
 	return zoneIngress, nil
 }
 
-func (p *IngressProxyBuilder) resolveRouting(zoneIngress *core_mesh.ZoneIngressResource, dataplanes *core_mesh.DataplaneResourceList) (*xds.Routing, error) {
+func (p *IngressProxyBuilder) resolveRouting(zoneIngress *core_mesh.ZoneIngressResource, dataplanes *core_mesh.DataplaneResourceList) *xds.Routing {
 	destinations := ingress.BuildDestinationMap(zoneIngress)
 	endpoints := ingress.BuildEndpointMap(destinations, dataplanes.Items)
 
 	routing := &xds.Routing{
 		OutboundTargets: endpoints,
 	}
-	return routing, nil
+	return routing
 }
 
 func (p *IngressProxyBuilder) updateIngress(zoneIngress *core_mesh.ZoneIngressResource) error {

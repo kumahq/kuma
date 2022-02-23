@@ -9,6 +9,7 @@ linters:
     - importas
     - misspell
     - unconvert
+    - unparam
     - whitespace
 
 run:

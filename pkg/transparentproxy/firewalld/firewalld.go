@@ -35,10 +35,7 @@ func (fit *FirewalldIptablesTranslator) StoreRules(rules map[string][]string) (s
 
 	for table, rules := range rules {
 		for _, rule := range rules {
-			translated, err := fit.translateRule(rule)
-			if err != nil {
-				return "", err
-			}
+			translated := fit.translateRule(rule)
 
 			mode := translated[iptablesMode]
 			chain := translated[iptablesChain]
@@ -62,7 +59,7 @@ func (fit *FirewalldIptablesTranslator) StoreRules(rules map[string][]string) (s
 	return fit.store(direct)
 }
 
-func (fit *FirewalldIptablesTranslator) translateRule(rule string) (map[string]string, error) {
+func (fit *FirewalldIptablesTranslator) translateRule(rule string) map[string]string {
 	match := fit.parser.FindStringSubmatch(rule)
 	result := make(map[string]string)
 	for i, name := range fit.parser.SubexpNames() {
@@ -71,7 +68,7 @@ func (fit *FirewalldIptablesTranslator) translateRule(rule string) (map[string]s
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 func (fit *FirewalldIptablesTranslator) getPersistentDirect() (*Direct, error) {

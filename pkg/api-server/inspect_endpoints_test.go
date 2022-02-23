@@ -138,11 +138,11 @@ func (b *dataplaneBuilder) meta(name, mesh string) *dataplaneBuilder {
 	return b
 }
 
-func (b *dataplaneBuilder) inbound(service, ip string, dpPort, workloadPort uint32) *dataplaneBuilder {
+func (b *dataplaneBuilder) inbound80to81(service, ip string) *dataplaneBuilder {
 	b.Spec.Networking.Inbound = append(b.Spec.Networking.Inbound, &mesh_proto.Dataplane_Networking_Inbound{
 		Address:     ip,
-		Port:        dpPort,
-		ServicePort: workloadPort,
+		Port:        80,
+		ServicePort: 81,
 		Tags: map[string]string{
 			mesh_proto.ServiceTag:  service,
 			mesh_proto.ProtocolTag: "http",
@@ -151,10 +151,10 @@ func (b *dataplaneBuilder) inbound(service, ip string, dpPort, workloadPort uint
 	return b
 }
 
-func (b *dataplaneBuilder) outbound(service, ip string, port uint32) *dataplaneBuilder {
+func (b *dataplaneBuilder) outbound8080(service, ip string) *dataplaneBuilder {
 	b.Spec.Networking.Outbound = append(b.Spec.Networking.Outbound, &mesh_proto.Dataplane_Networking_Outbound{
 		Address: ip,
-		Port:    port,
+		Port:    8080,
 		Tags: map[string]string{
 			mesh_proto.ServiceTag: service,
 		},
@@ -263,11 +263,11 @@ var _ = Describe("Inspect WS", func() {
 				newMesh("default"),
 				newDataplane().
 					meta("backend-1", "default").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
-					outbound("postgres", "192.168.0.4", 8080).
-					outbound("web", "192.168.0.2", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("postgres", "192.168.0.4").
+					outbound8080("web", "192.168.0.2").
 					build(),
 				&core_mesh.TrafficPermissionResource{
 					Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
@@ -335,11 +335,11 @@ var _ = Describe("Inspect WS", func() {
 				newMesh("default"),
 				newDataplane().
 					meta("backend-1", "default").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
-					outbound("postgres", "192.168.0.4", 8080).
-					outbound("web", "192.168.0.2", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("postgres", "192.168.0.4").
+					outbound8080("web", "192.168.0.2").
 					build(),
 			},
 		}),
@@ -361,25 +361,25 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("backend-1", "default").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
 					build(),
 				newDataplane().
 					meta("redis-1", "default").
-					inbound("redis", "192.168.0.1", 80, 81).
-					outbound("backend", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
+					inbound80to81("redis", "192.168.0.1").
+					outbound8080("backend", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
 					build(),
 				newDataplane().
 					meta("gateway-1", "default").
-					inbound("gateway", "192.168.0.1", 80, 81).
-					outbound("backend", "192.168.0.2", 8080).
-					outbound("redis", "192.168.0.3", 8080).
+					inbound80to81("gateway", "192.168.0.1").
+					outbound8080("backend", "192.168.0.2").
+					outbound8080("redis", "192.168.0.3").
 					build(),
 				newDataplane(). // not matched by TrafficPermission
 						meta("web-1", "default").
-						inbound("web", "192.168.0.1", 80, 81).
+						inbound80to81("web", "192.168.0.1").
 						build(),
 			},
 		}),
@@ -402,18 +402,18 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("backend-redis-1", "mesh-1").
-					inbound("backend", "192.168.0.1", 80, 81).
-					inbound("redis", "192.168.0.2", 80, 81).
+					inbound80to81("backend", "192.168.0.1").
+					inbound80to81("redis", "192.168.0.2").
 					build(),
 				newDataplane().
 					meta("gateway-1", "mesh-1").
-					inbound("gateway", "192.168.0.1", 80, 81).
-					outbound("backend", "192.168.0.2", 8080).
-					outbound("redis", "192.168.0.3", 8080).
+					inbound80to81("gateway", "192.168.0.1").
+					outbound8080("backend", "192.168.0.2").
+					outbound8080("redis", "192.168.0.3").
 					build(),
 				newDataplane(). // not matched by FaultInjection
 						meta("web-1", "mesh-1").
-						inbound("web", "192.168.0.1", 80, 81).
+						inbound80to81("web", "192.168.0.1").
 						build(),
 			},
 		}),
@@ -437,14 +437,14 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("gateway-1", "mesh-1").
-					inbound("gateway", "192.168.0.1", 80, 81).
-					outbound("backend", "192.168.0.2", 8080).
-					outbound("redis", "192.168.0.3", 8080).
-					outbound("es", "192.168.0.4", 8080).
+					inbound80to81("gateway", "192.168.0.1").
+					outbound8080("backend", "192.168.0.2").
+					outbound8080("redis", "192.168.0.3").
+					outbound8080("es", "192.168.0.4").
 					build(),
 				newDataplane(). // not matched by RateLimit
 						meta("web-1", "mesh-1").
-						inbound("web", "192.168.0.1", 80, 81).
+						inbound80to81("web", "192.168.0.1").
 						build(),
 				&core_mesh.ExternalServiceResource{
 					Meta: &test_model.ResourceMeta{Name: "es-1", Mesh: "mesh-1"},
@@ -475,16 +475,16 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
 					build(),
 				newDataplane().
 					meta("redis-1", "mesh-1").
-					inbound("redis", "192.168.0.1", 80, 81).
-					outbound("gateway", "192.168.0.2", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("redis", "192.168.0.1").
+					outbound8080("gateway", "192.168.0.2").
+					outbound8080("web", "192.168.0.4").
 					build(),
 			},
 		}),
@@ -506,16 +506,16 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
 					build(),
 				newDataplane().
 					meta("redis-1", "mesh-1").
-					inbound("redis", "192.168.0.1", 80, 81).
-					outbound("gateway", "192.168.0.2", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("redis", "192.168.0.1").
+					outbound8080("gateway", "192.168.0.2").
+					outbound8080("web", "192.168.0.4").
 					build(),
 			},
 		}),
@@ -537,16 +537,16 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
 					build(),
 				newDataplane().
 					meta("redis-1", "mesh-1").
-					inbound("redis", "192.168.0.1", 80, 81).
-					outbound("gateway", "192.168.0.2", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("redis", "192.168.0.1").
+					outbound8080("gateway", "192.168.0.2").
+					outbound8080("web", "192.168.0.4").
 					build(),
 			},
 		}),
@@ -568,16 +568,16 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
 					build(),
 				newDataplane().
 					meta("redis-1", "mesh-1").
-					inbound("redis", "192.168.0.1", 80, 81).
-					outbound("gateway", "192.168.0.2", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("redis", "192.168.0.1").
+					outbound8080("gateway", "192.168.0.2").
+					outbound8080("web", "192.168.0.4").
 					build(),
 			},
 		}),
@@ -599,16 +599,16 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
 					build(),
 				newDataplane().
 					meta("redis-1", "mesh-1").
-					inbound("redis", "192.168.0.1", 80, 81).
-					outbound("gateway", "192.168.0.2", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("redis", "192.168.0.1").
+					outbound8080("gateway", "192.168.0.2").
+					outbound8080("web", "192.168.0.4").
 					build(),
 			},
 		}),
@@ -627,15 +627,15 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("web", "192.168.0.4").
 					build(),
 				newDataplane().
 					meta("redis-1", "mesh-1").
-					inbound("redis", "192.168.0.1", 80, 81).
-					outbound("gateway", "192.168.0.2", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("redis", "192.168.0.1").
+					outbound8080("gateway", "192.168.0.2").
+					outbound8080("web", "192.168.0.4").
 					build(),
 			},
 		}),
@@ -653,22 +653,22 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
 					build(),
 				newDataplane().
 					meta("redis-1", "mesh-1").
-					inbound("redis", "192.168.0.1", 80, 81).
-					outbound("gateway", "192.168.0.2", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("redis", "192.168.0.1").
+					outbound8080("gateway", "192.168.0.2").
+					outbound8080("web", "192.168.0.4").
 					build(),
 				newDataplane().
 					meta("web-1", "mesh-1").
-					inbound("web", "192.168.0.1", 80, 81).
-					outbound("gateway", "192.168.0.2", 8080).
-					outbound("backend", "192.168.0.4", 8080).
+					inbound80to81("web", "192.168.0.1").
+					outbound8080("gateway", "192.168.0.2").
+					outbound8080("backend", "192.168.0.4").
 					build(),
 			},
 		}),
@@ -686,22 +686,22 @@ var _ = Describe("Inspect WS", func() {
 				},
 				newDataplane().
 					meta("backend-1", "mesh-1").
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
 					build(),
 				newDataplane().
 					meta("redis-1", "mesh-1").
-					inbound("redis", "192.168.0.1", 80, 81).
-					outbound("gateway", "192.168.0.2", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("redis", "192.168.0.1").
+					outbound8080("gateway", "192.168.0.2").
+					outbound8080("web", "192.168.0.4").
 					build(),
 				newDataplane().
 					meta("web-1", "mesh-1").
-					inbound("web", "192.168.0.1", 80, 81).
-					outbound("gateway", "192.168.0.2", 8080).
-					outbound("backend", "192.168.0.4", 8080).
+					inbound80to81("web", "192.168.0.1").
+					outbound8080("gateway", "192.168.0.2").
+					outbound8080("backend", "192.168.0.4").
 					build(),
 			},
 		}),
@@ -727,10 +727,10 @@ var _ = Describe("Inspect WS", func() {
 				newDataplane().
 					meta("backend-1", "mesh-1").
 					admin(3301).
-					inbound("backend", "192.168.0.1", 80, 81).
-					outbound("redis", "192.168.0.2", 8080).
-					outbound("gateway", "192.168.0.3", 8080).
-					outbound("web", "192.168.0.4", 8080).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
 					build(),
 			},
 		}),
@@ -816,15 +816,15 @@ var _ = Describe("Inspect WS", func() {
 			},
 			newDataplane().
 				meta("backend-1", "default").
-				inbound("backend", "192.168.0.1", 80, 81).
-				outbound("redis", "192.168.0.2", 8080).
-				outbound("gateway", "192.168.0.3", 8080).
+				inbound80to81("backend", "192.168.0.1").
+				outbound8080("redis", "192.168.0.2").
+				outbound8080("gateway", "192.168.0.3").
 				build(),
 			newDataplane().
 				meta("redis-1", "default").
-				inbound("redis", "192.168.0.1", 80, 81).
-				outbound("backend", "192.168.0.2", 8080).
-				outbound("gateway", "192.168.0.3", 8080).
+				inbound80to81("redis", "192.168.0.1").
+				outbound8080("backend", "192.168.0.2").
+				outbound8080("gateway", "192.168.0.3").
 				build(),
 		}
 		for _, resource := range initState {

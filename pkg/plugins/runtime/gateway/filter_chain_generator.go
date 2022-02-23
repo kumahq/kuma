@@ -97,7 +97,7 @@ func (g *HTTPSFilterChainGenerator) Generate(
 		case mesh_proto.MeshGateway_TLS_TERMINATE:
 			// Note that Envoy 1.184 and earlier will only accept 1 SDS reference.
 			for _, cert := range host.TLS.GetCertificates() {
-				secret, err := g.generateCertificateSecret(ctx, info, host, cert)
+				secret, err := g.generateCertificateSecret(ctx, host, cert)
 				if err != nil {
 					return nil, nil, errors.Wrap(err, "failed to generate TLS certificate")
 				}
@@ -162,7 +162,6 @@ func (g *HTTPSFilterChainGenerator) Generate(
 
 func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
 	ctx xds_context.Context,
-	info GatewayListenerInfo,
 	host GatewayHost,
 	secret *system_proto.DataSource,
 ) (*envoy_extensions_transport_sockets_tls_v3.Secret, error) {

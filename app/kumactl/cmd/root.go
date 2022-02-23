@@ -82,7 +82,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 
 	// sub-commands
 	cmd.AddCommand(apply.NewApplyCmd(root))
-	cmd.AddCommand(completion.NewCompletionCommand(root))
+	cmd.AddCommand(completion.NewCompletionCommand())
 	cmd.AddCommand(config.NewConfigCmd(root))
 	cmd.AddCommand(delete.NewDeleteCmd(root))
 	cmd.AddCommand(generate.NewGenerateCmd(root))
