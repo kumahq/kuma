@@ -54,7 +54,7 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 
 	for _, route := range gatewayRoutes {
 		for _, rule := range route.Spec.GetConf().GetHttp().GetRules() {
-			entry := makeRouteEntry(rule)
+			entry := makeRouteEntry(route.GetMeta().GetName(), rule)
 
 			// The rule matches if any of the matches is successful (it has OR
 			// semantics). That means that we have to duplicate the route table
@@ -119,8 +119,10 @@ func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 	return PopulatePolicies(host, entries)
 }
 
-func makeRouteEntry(rule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule) route.Entry {
-	entry := route.Entry{}
+func makeRouteEntry(name string, rule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule) route.Entry {
+	entry := route.Entry{
+		Route: name,
+	}
 
 	for _, b := range rule.GetBackends() {
 		target := route.Destination{

@@ -37,19 +37,23 @@ func NewPolicyInspectEntryList() *PolicyInspectEntryList {
 	}
 }
 
+type MatchedPolicies map[core_model.ResourceType][]*rest.Resource
+
 type DataplaneInspectEntry struct {
 	AttachmentEntry
-	MatchedPolicies map[core_model.ResourceType][]*rest.Resource `json:"matchedPolicies"`
+	MatchedPolicies MatchedPolicies `json:"matchedPolicies"`
 }
 
 type DataplaneInspectEntryList struct {
 	Total uint32                   `json:"total"`
+	Kind  string                   `json:"kind"`
 	Items []*DataplaneInspectEntry `json:"items"`
 }
 
 func NewDataplaneInspectEntryList() *DataplaneInspectEntryList {
 	return &DataplaneInspectEntryList{
 		Total: 0,
+		Kind:  "SidecarDataplane",
 		Items: []*DataplaneInspectEntry{},
 	}
 }

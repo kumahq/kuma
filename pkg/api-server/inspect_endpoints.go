@@ -24,6 +24,8 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
@@ -32,20 +34,35 @@ import (
 
 var CustomizeProxy func(meshContext xds_context.MeshContext, proxy *core_xds.Proxy) error
 
-func getMatchedPolicies(cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey) (*core_xds.MatchedPolicies, *core_mesh.DataplaneResource, error) {
+func getMatchedPolicies(
+	cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
+) (
+	*core_xds.MatchedPolicies, *api_server_types.GatewayDataplaneInspectResult, *core_mesh.DataplaneResource, error,
+) {
 	proxyBuilder := sync.DefaultDataplaneProxyBuilder(
 		*cfg,
 		callbacks.NewDataplaneMetadataTracker(),
 		envoy.APIV3)
 	if proxy, err := proxyBuilder.Build(dataplaneKey, meshContext); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	} else {
 		if CustomizeProxy != nil {
 			if err := CustomizeProxy(meshContext, proxy); err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 		}
-		return &proxy.Policies, proxy.Dataplane, nil
+		if proxy.Dataplane.Spec.IsBuiltinGateway() {
+			entries, err := gateway.GatewayListenerInfoFromProxy(
+				meshContext, proxy, proxyBuilder.Zone,
+			)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+
+			result := newGatewayDataplaneInspectResponse(*proxy, entries)
+			return nil, &result, proxy.Dataplane, nil
+		}
+		return &proxy.Policies, nil, proxy.Dataplane, nil
 	}
 }
 
@@ -124,19 +141,26 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			return
 		}
 
-		matchedPolicies, dp, err := getMatchedPolicies(cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName})
+		matchedPolicies, gatewayResult, dp, err := getMatchedPolicies(cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName})
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
 			return
 		}
 
-		result := api_server_types.NewDataplaneInspectEntryList()
-		result.Items = append(result.Items, newDataplaneInspectResponse(matchedPolicies, dp)...)
-		result.Total = uint32(len(result.Items))
+		if matchedPolicies != nil {
+			result := api_server_types.NewDataplaneInspectEntryList()
+			result.Items = append(result.Items, newDataplaneInspectResponse(matchedPolicies, dp)...)
+			result.Total = uint32(len(result.Items))
 
-		if err := response.WriteAsJson(result); err != nil {
-			rest_errors.HandleError(response, err, "Could not write response")
-			return
+			if err := response.WriteAsJson(result); err != nil {
+				rest_errors.HandleError(response, err, "Could not write response")
+				return
+			}
+		} else {
+			if err := response.WriteAsJson(gatewayResult); err != nil {
+				rest_errors.HandleError(response, err, "Could not write response")
+				return
+			}
 		}
 	}
 }
@@ -160,7 +184,7 @@ func inspectPolicies(
 
 		for _, dp := range meshContext.Resources.Dataplanes().Items {
 			dpKey := core_model.MetaToResourceKey(dp.GetMeta())
-			matchedPolicies, _, err := getMatchedPolicies(cfg, meshContext, dpKey)
+			matchedPolicies, _, _, err := getMatchedPolicies(cfg, meshContext, dpKey)
 			if err != nil {
 				rest_errors.HandleError(response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
@@ -305,6 +329,75 @@ func inspectZoneEgressXDS(
 			return
 		}
 	}
+}
+
+func routeDestinationToAPIDestination(des route.Destination) api_server_types.Destination {
+	policies := api_server_types.PolicyMap{}
+	for kind, p := range des.Policies {
+		policies[kind] = rest.From.Resource(p)
+	}
+
+	return api_server_types.Destination{
+		Tags:     des.Destination,
+		Policies: policies,
+	}
+}
+
+func newGatewayDataplaneInspectResponse(
+	proxy core_xds.Proxy,
+	listenerInfos []gateway.GatewayListenerInfo,
+) api_server_types.GatewayDataplaneInspectResult {
+	var listeners []api_server_types.GatewayListenerInspectEntry
+
+	for _, info := range listenerInfos {
+		var hostInfos []api_server_types.HostInspectEntry
+		for _, info := range info.HostInfos {
+			var routeRes []api_server_types.RouteInspectEntry
+			routeMap := map[string][]api_server_types.Destination{}
+			for _, entry := range info.Entries {
+				destinations := routeMap[entry.Route]
+
+				if entry.Mirror != nil {
+					destinations = append(destinations, routeDestinationToAPIDestination(entry.Mirror.Forward))
+				}
+
+				for _, forward := range entry.Action.Forward {
+					routeMap[entry.Route] = append(destinations, routeDestinationToAPIDestination(forward))
+				}
+			}
+			for name, destinations := range routeMap {
+				if len(destinations) > 0 {
+					routeRes = append(routeRes, api_server_types.RouteInspectEntry{
+						Route:        name,
+						Destinations: destinations,
+					})
+				}
+			}
+			hostInfos = append(hostInfos, api_server_types.HostInspectEntry{
+				HostName: info.Host.Hostname,
+				Routes:   routeRes,
+			})
+		}
+		listeners = append(listeners, api_server_types.GatewayListenerInspectEntry{
+			Port:     info.Listener.Port,
+			Protocol: info.Listener.Protocol.String(),
+			Hosts:    hostInfos,
+		})
+	}
+
+	result := api_server_types.NewGatewayDataplaneInspectResult()
+	result.Listeners = listeners
+
+	gatewayPolicies := api_server_types.PolicyMap{}
+
+	if logging, ok := proxy.Policies.TrafficLogs[core_mesh.PassThroughService]; ok {
+		gatewayPolicies[core_mesh.TrafficLogType] = rest.From.Resource(logging)
+	}
+	if trace := proxy.Policies.TrafficTrace; trace != nil {
+		gatewayPolicies[core_mesh.TrafficTraceType] = rest.From.Resource(trace)
+	}
+
+	return result
 }
 
 func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {

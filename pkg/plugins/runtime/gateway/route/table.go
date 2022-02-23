@@ -25,6 +25,7 @@ type Table struct {
 // and dispatched according to the Action. Other optional field specify
 // additional processing.
 type Entry struct {
+	Route  string
 	Match  Match
 	Action Action
 
