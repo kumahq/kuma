@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
 
 type listenerModificator mesh_proto.ProxyTemplate_Modifications_Listener
@@ -19,7 +20,7 @@ func (l *listenerModificator) apply(resources *core_xds.ResourceSet) error {
 	}
 	switch l.Operation {
 	case mesh_proto.OpAdd:
-		l.app(resources, listener)
+		l.add(resources, listener)
 	case mesh_proto.OpRemove:
 		l.remove(resources)
 	case mesh_proto.OpPatch:
@@ -46,7 +47,7 @@ func (l *listenerModificator) remove(resources *core_xds.ResourceSet) {
 	}
 }
 
-func (l *listenerModificator) app(resources *core_xds.ResourceSet, listener *envoy_listener.Listener) *core_xds.ResourceSet {
+func (l *listenerModificator) add(resources *core_xds.ResourceSet, listener *envoy_listener.Listener) *core_xds.ResourceSet {
 	return resources.Add(&core_xds.Resource{
 		Name:     listener.Name,
 		Origin:   OriginProxyTemplateModifications,
@@ -60,6 +61,14 @@ func (l *listenerModificator) listenerMatches(listener *core_xds.Resource) bool 
 	}
 	if l.Match.GetOrigin() != "" && l.Match.GetOrigin() != listener.Origin {
 		return false
+	}
+	if len(l.Match.GetTags()) > 0 {
+		if listenerProto, ok := listener.Resource.(*envoy_listener.Listener); ok {
+			listenerTags := envoy_metadata.ExtractTags(listenerProto.Metadata)
+			if !mesh_proto.TagSelector(l.Match.GetTags()).Matches(listenerTags) {
+				return false
+			}
+		}
 	}
 	return true
 }

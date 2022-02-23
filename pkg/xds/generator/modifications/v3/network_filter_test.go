@@ -612,5 +612,88 @@ var _ = Describe("Network Filter modifications", func() {
                       statPrefix: backend
                 name: inbound:192.168.0.1:8080`,
 		}),
+		Entry("should patch resource matching listener tags", testCase{
+			listeners: []string{
+				`
+                name: inbound:192.168.0.1:8080
+                metadata:
+                  filterMetadata:
+                    io.kuma.tags:
+                      kuma.io/service: backend
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+`,
+			},
+			modifications: []string{`
+               networkFilter:
+                 operation: patch
+                 match:
+                   name: envoy.filters.network.http_connection_manager
+                   listenerTags:
+                       kuma.io/service: backend
+                 value: |
+                   name: envoy.filters.network.http_connection_manager
+                   typedConfig:
+                     '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                     statPrefix: backend`,
+			},
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8080
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                metadata:
+                  filterMetadata:
+                    io.kuma.tags:
+                      kuma.io/service: backend
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                      statPrefix: backend
+                name: inbound:192.168.0.1:8080`,
+		}),
+		Entry("should not patch resource with non matching listener tags", testCase{
+			listeners: []string{
+				`
+                name: inbound:192.168.0.1:8080
+                metadata:
+                  filterMetadata:
+                    io.kuma.tags:
+                      kuma.io/service: backend
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+`,
+			},
+			modifications: []string{`
+               networkFilter:
+                 operation: patch
+                 match:
+                   name: envoy.filters.network.http_connection_manager
+                   listenerTags:
+                       kuma.io/service: web
+                 value: |
+                   name: envoy.filters.network.http_connection_manager
+                   typedConfig:
+                     '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                     statPrefix: backend`,
+			},
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8080
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                metadata:
+                  filterMetadata:
+                    io.kuma.tags:
+                      kuma.io/service: backend
+                filterChains:
+                - filters:
+                  - name: envoy.filters.network.http_connection_manager
+                name: inbound:192.168.0.1:8080`,
+		}),
 	)
 })

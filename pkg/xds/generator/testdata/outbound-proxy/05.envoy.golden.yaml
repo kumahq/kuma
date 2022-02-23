@@ -61,5 +61,9 @@ resources:
                   autoHostRewrite: true
                   cluster: es-_0_
           statPrefix: es
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: es
     name: outbound:127.0.0.1:18081
     trafficDirection: OUTBOUND

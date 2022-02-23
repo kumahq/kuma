@@ -60,6 +60,10 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend.kuma-system
           statPrefix: backend_kuma-system
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend.kuma-system
     name: outbound:127.0.0.1:18080
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:54321
@@ -76,5 +80,9 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: db-_0_
           statPrefix: db_kuma-system
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: db.kuma-system
     name: outbound:127.0.0.1:54321
     trafficDirection: OUTBOUND

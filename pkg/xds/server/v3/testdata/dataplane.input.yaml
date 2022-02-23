@@ -6,11 +6,19 @@ networking:
   inbound:
     - port: 80
       servicePort: 8080
+      tags:
+        kuma.io/service: backend-1
     - port: 443
       servicePort: 8443
+      tags:
+        kuma.io/service: backend-2
     - address: 192.168.0.2
       port: 80
       servicePort: 8080
+      tags:
+        kuma.io/service: backend-3
     - address: 192.168.0.2
       port: 443
       servicePort: 8443
+      tags:
+        kuma.io/service: backend-4

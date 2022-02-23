@@ -71,6 +71,10 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend2
     name: inbound:192.168.0.1:443
     trafficDirection: INBOUND
 - name: inbound:192.168.0.1:80
@@ -217,6 +221,11 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/protocol: http
+          kuma.io/service: backend1
     name: inbound:192.168.0.1:80
     trafficDirection: INBOUND
 - name: inbound:192.168.0.2:443
@@ -259,6 +268,10 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend4
     name: inbound:192.168.0.2:443
     trafficDirection: INBOUND
 - name: inbound:192.168.0.2:80
@@ -319,5 +332,10 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/protocol: http
+          kuma.io/service: backend3
     name: inbound:192.168.0.2:80
     trafficDirection: INBOUND
