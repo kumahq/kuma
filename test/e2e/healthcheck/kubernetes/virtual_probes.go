@@ -14,25 +14,24 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
-func VirtualProbes() {
-	var k8sCluster Cluster
+var k8sCluster Cluster
 
-	E2EBeforeSuite(func() {
-		k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
-		Expect(err).ToNot(HaveOccurred())
+var _ = E2EBeforeSuite(func() {
+	k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
+	Expect(err).ToNot(HaveOccurred())
 
-		k8sCluster = k8sClusters.GetCluster(Kuma1)
+	k8sCluster = k8sClusters.GetCluster(Kuma1)
+	Expect(Kuma(config_core.Standalone)(k8sCluster)).To(Succeed())
+	Expect(NamespaceWithSidecarInjection(TestNamespace)(k8sCluster)).To(Succeed())
 
-		Expect(Kuma(config_core.Standalone)(k8sCluster)).To(Succeed())
-		Expect(NamespaceWithSidecarInjection(TestNamespace)(k8sCluster)).To(Succeed())
-	})
-
-	E2EAfterSuite(func() {
+	E2EDeferCleanup(func() {
 		Expect(k8sCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})
+})
 
+func VirtualProbes() {
 	PollPodsReady := func(name string, namespace string) error {
 		pods, err := k8s.ListPodsE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(namespace),
 			metav1.ListOptions{LabelSelector: fmt.Sprintf("app=%s", name)})

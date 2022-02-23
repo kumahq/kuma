@@ -12,9 +12,8 @@ import (
 	. "github.com/kumahq/kuma/test/framework/client"
 )
 
-func KumaMultizone() {
-	var meshMTLSOn = func(mesh, localityAware string) string {
-		return fmt.Sprintf(`
+func meshMTLSOn(mesh, localityAware string) string {
+	return fmt.Sprintf(`
 type: Mesh
 name: %s
 mtls:
@@ -25,82 +24,87 @@ mtls:
 routing:
   localityAwareLoadBalancing: %s
 `, mesh, localityAware)
-	}
+}
 
-	const defaultMesh = "default"
+const defaultMesh = "default"
 
-	var global, zone1, zone2 Cluster
-	E2EBeforeSuite(func() {
-		clusters, err := NewUniversalClusters(
-			[]string{Kuma3, Kuma4, Kuma5},
-			Verbose)
-		Expect(err).ToNot(HaveOccurred())
+var global, zone1, zone2 Cluster
 
-		// Global
-		global = clusters.GetCluster(Kuma5)
-		err = NewClusterSetup().
-			Install(Kuma(core.Global)).
-			Install(YamlUniversal(meshMTLSOn(defaultMesh, "false"))).
-			Setup(global)
-		Expect(err).ToNot(HaveOccurred())
+var _ = E2EBeforeSuite(func() {
+	clusters, err := NewUniversalClusters(
+		[]string{Kuma3, Kuma4, Kuma5},
+		Verbose)
+	Expect(err).ToNot(HaveOccurred())
 
-		globalCP := global.GetKuma()
+	// Global
+	global = clusters.GetCluster(Kuma5)
+	Expect(NewClusterSetup().
+		Install(Kuma(core.Global)).
+		Install(YamlUniversal(meshMTLSOn(defaultMesh, "false"))).
+		Setup(global)).To(Succeed())
 
-		testServerToken, err := globalCP.GenerateDpToken(defaultMesh, "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		anotherTestServerToken, err := globalCP.GenerateDpToken(defaultMesh, "another-test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := globalCP.GenerateDpToken(defaultMesh, "demo-client")
-		Expect(err).ToNot(HaveOccurred())
+	E2EDeferCleanup(global.DismissCluster)
 
-		// Cluster 1
-		zone1 = clusters.GetCluster(Kuma3)
-		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
-		Expect(err).ToNot(HaveOccurred())
+	globalCP := global.GetKuma()
 
-		err = NewClusterSetup().
-			Install(Kuma(core.Zone,
-				WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			)).
-			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true), WithConcurrency(8))).
-			Install(IngressUniversal(ingressTokenKuma3)).
-			Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v1"}),
-				WithServiceVersion("v1"),
-			)).
-			Setup(zone1)
-		Expect(err).ToNot(HaveOccurred())
+	testServerToken, err := globalCP.GenerateDpToken(defaultMesh, "test-server")
+	Expect(err).ToNot(HaveOccurred())
+	anotherTestServerToken, err := globalCP.GenerateDpToken(defaultMesh, "another-test-server")
+	Expect(err).ToNot(HaveOccurred())
+	demoClientToken, err := globalCP.GenerateDpToken(defaultMesh, "demo-client")
+	Expect(err).ToNot(HaveOccurred())
 
-		// Cluster 2
-		zone2 = clusters.GetCluster(Kuma4)
-		ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
-		Expect(err).ToNot(HaveOccurred())
+	// Cluster 1
+	zone1 = clusters.GetCluster(Kuma3)
+	ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+	Expect(err).ToNot(HaveOccurred())
 
-		err = NewClusterSetup().
-			Install(Kuma(core.Zone,
-				WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			)).
-			Install(TestServerUniversal("dp-echo-2", defaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v2"}),
-				WithServiceVersion("v2"),
-			)).
-			Install(TestServerUniversal("dp-echo-3", defaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v3"}),
-				WithServiceVersion("v3"),
-			)).
-			Install(TestServerUniversal("dp-echo-4", defaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v4"}),
-				WithServiceVersion("v4"),
-			)).
-			Install(TestServerUniversal("dp-another-test", defaultMesh, anotherTestServerToken,
-				WithArgs([]string{"echo", "--instance", "another-test-server"}),
-				WithServiceName("another-test-server"),
-			)).
-			Install(IngressUniversal(ingressTokenKuma4)).
-			Setup(zone2)
-		Expect(err).ToNot(HaveOccurred())
-	})
+	Expect(NewClusterSetup().
+		Install(Kuma(core.Zone,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		)).
+		Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true), WithConcurrency(8))).
+		Install(IngressUniversal(ingressTokenKuma3)).
+		Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
+			WithArgs([]string{"echo", "--instance", "echo-v1"}),
+			WithServiceVersion("v1"),
+		)).
+		Setup(zone1)).To(Succeed())
 
+	E2EDeferCleanup(zone1.DismissCluster)
+
+	// Cluster 2
+	zone2 = clusters.GetCluster(Kuma4)
+	ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
+	Expect(err).ToNot(HaveOccurred())
+
+	Expect(NewClusterSetup().
+		Install(Kuma(core.Zone,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		)).
+		Install(TestServerUniversal("dp-echo-2", defaultMesh, testServerToken,
+			WithArgs([]string{"echo", "--instance", "echo-v2"}),
+			WithServiceVersion("v2"),
+		)).
+		Install(TestServerUniversal("dp-echo-3", defaultMesh, testServerToken,
+			WithArgs([]string{"echo", "--instance", "echo-v3"}),
+			WithServiceVersion("v3"),
+		)).
+		Install(TestServerUniversal("dp-echo-4", defaultMesh, testServerToken,
+			WithArgs([]string{"echo", "--instance", "echo-v4"}),
+			WithServiceVersion("v4"),
+		)).
+		Install(TestServerUniversal("dp-another-test", defaultMesh, anotherTestServerToken,
+			WithArgs([]string{"echo", "--instance", "another-test-server"}),
+			WithServiceName("another-test-server"),
+		)).
+		Install(IngressUniversal(ingressTokenKuma4)).
+		Setup(zone2)).To(Succeed())
+
+	E2EDeferCleanup(zone2.DismissCluster)
+})
+
+func KumaMultizone() {
 	E2EAfterEach(func() {
 		// remove all TrafficRoutes
 		items, err := global.GetKumactlOptions().KumactlList("traffic-routes", "default")
@@ -115,17 +119,6 @@ routing:
 
 		// reapply Mesh with localityawareloadbalancing off
 		YamlUniversal(meshMTLSOn(defaultMesh, "false"))
-	})
-
-	E2EAfterSuite(func() {
-		Expect(zone1.DeleteKuma()).To(Succeed())
-		Expect(zone1.DismissCluster()).To(Succeed())
-
-		Expect(zone2.DeleteKuma()).To(Succeed())
-		Expect(zone2.DismissCluster()).To(Succeed())
-
-		Expect(global.DeleteKuma()).To(Succeed())
-		Expect(global.DismissCluster()).To(Succeed())
 	})
 
 	It("should access all instances of the service", func() {

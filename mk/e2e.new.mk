@@ -31,6 +31,7 @@ GINKGO_E2E_FLAGS ?=
 
 ifdef GINKGO_TEST_RESULTS_DIR
 	GINKGO_E2E_FLAGS += \
+		--keep-separate-reports \
 		--output-dir $(GINKGO_TEST_RESULTS_DIR) \
 		--junit-report results.xml \
 		--json-report results.json

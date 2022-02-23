@@ -15,30 +15,28 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
+// Ensure that the upstream Kuma help repository is configured
+// and refreshed. This is needed for helm to be able to pull the
+// OldChart version of the Kuma helm chart.
+var _ = E2EBeforeSuite(func() {
+	t := NewTestingT()
+	opts := helm.Options{}
+
+	// Adding the same repo multiple times is idempotent. The
+	// `--force-update` flag prevents helm emitting an error
+	// in this case.
+	Expect(helm.RunHelmCommandAndGetOutputE(t, &opts,
+		"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)).Error().To(BeNil())
+
+	Expect(helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")).Error().To(BeNil())
+})
+
 func CpCompatibilityMultizoneKubernetes() {
 	var globalCluster Cluster
 	var globalReleaseName string
 
 	var zoneCluster Cluster
 	var zoneReleaseName string
-
-	// Ensure that the upstream Kuma help repository is configured
-	// and refreshed. This is needed for helm to be able to pull the
-	// OldChart version of the Kuma helm chart.
-	BeforeSuite(func() {
-		t := NewTestingT()
-		opts := helm.Options{}
-
-		// Adding the same repo multiple times is idempotent. The
-		// `--force-update` flag prevents heml emitting an error
-		// in this case.
-		_, err := helm.RunHelmCommandAndGetOutputE(t, &opts,
-			"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)
-		Expect(err).To(Succeed())
-
-		_, err = helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")
-		Expect(err).To(Succeed())
-	})
 
 	BeforeEach(func() {
 		// Global CP
@@ -51,6 +49,11 @@ func CpCompatibilityMultizoneKubernetes() {
 			strings.ToLower(random.UniqueId()),
 		)
 
+		E2EDeferCleanup(func() {
+			Expect(globalCluster.DeleteKuma()).To(Succeed())
+			Expect(globalCluster.DismissCluster()).To(Succeed())
+		})
+
 		// Zone CP
 		zoneCluster = NewK8sCluster(NewTestingT(), Kuma2, Silent).
 			WithTimeout(6 * time.Second).
@@ -60,18 +63,13 @@ func CpCompatibilityMultizoneKubernetes() {
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
+
+		E2EDeferCleanup(func() {
+			Expect(zoneCluster.DeleteKuma()).To(Succeed())
+			Expect(zoneCluster.DismissCluster()).To(Succeed())
+		})
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		Expect(zoneCluster.DeleteKuma()).To(Succeed())
-		Expect(zoneCluster.DismissCluster()).To(Succeed())
-
-		Expect(globalCluster.DeleteKuma()).To(Succeed())
-		Expect(globalCluster.DismissCluster()).To(Succeed())
-	})
 	DescribeTable("Cross version check", func(globalConf, zoneConf []KumaDeploymentOption) {
 		// Start a global
 		err := NewClusterSetup().

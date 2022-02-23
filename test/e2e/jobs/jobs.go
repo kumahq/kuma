@@ -10,28 +10,27 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
-func Jobs() {
-	var kubernetes Cluster
+var kubernetes Cluster
 
-	E2EBeforeSuite(func() {
-		k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
-		Expect(err).ToNot(HaveOccurred())
+var _ = E2EBeforeSuite(func() {
+	k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
+	Expect(err).ToNot(HaveOccurred())
 
-		kubernetes = k8sClusters.GetCluster(Kuma1)
-		err = NewClusterSetup().
-			Install(Kuma(config_core.Standalone)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(testserver.Install()).
-			Setup(kubernetes)
-		Expect(err).ToNot(HaveOccurred())
-	})
+	kubernetes = k8sClusters.GetCluster(Kuma1)
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Standalone)).
+		Install(NamespaceWithSidecarInjection(TestNamespace)).
+		Install(testserver.Install()).
+		Setup(kubernetes)).To(Succeed())
 
-	E2EAfterSuite(func() {
+	E2EDeferCleanup(func() {
 		Expect(kubernetes.DeleteKuma()).To(Succeed())
 		Expect(kubernetes.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(kubernetes.DismissCluster()).To(Succeed())
 	})
+})
 
+func Jobs() {
 	It("should terminate jobs without mTLS", func() {
 		// when
 		err := DemoClientJobK8s(TestNamespace, model.DefaultMesh, "test-server_kuma-test_svc_80.mesh")(kubernetes)
@@ -42,7 +41,7 @@ func Jobs() {
 
 	It("should terminate jobs with mTLS", func() {
 		// given mTLS in the Mesh
-		meshDefaulMtlsOn := `
+		meshDefaultMtlsOn := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
@@ -54,7 +53,7 @@ spec:
       - name: ca-1
         type: builtin
 `
-		err := YamlK8s(meshDefaulMtlsOn)(kubernetes)
+		err := YamlK8s(meshDefaultMtlsOn)(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

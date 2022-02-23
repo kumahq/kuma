@@ -84,8 +84,28 @@ spec:
           servicePort: 80
 `
 
+var kubernetes Cluster
+
+var _ = E2EBeforeSuite(func() {
+	k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
+	Expect(err).ToNot(HaveOccurred())
+
+	kubernetes = k8sClusters.GetCluster(Kuma1)
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Standalone)).
+		Install(NamespaceWithSidecarInjection(TestNamespace)).
+		Install(testserver.Install()).
+		Setup(kubernetes)).To(Succeed())
+
+	E2EDeferCleanup(func() {
+		Expect(kubernetes.DeleteKuma()).To(Succeed())
+		Expect(kubernetes.DeleteNamespace(TestNamespace)).To(Succeed())
+		Expect(kubernetes.DismissCluster()).To(Succeed())
+	})
+})
+
 func KICKubernetes() {
-	// IPv6 curently not supported by Kong Ingress Controller
+	// IPv6 currently not supported by Kong Ingress Controller
 	// https://github.com/Kong/kubernetes-ingress-controller/issues/1017
 	if Config.IPV6 {
 		fmt.Println("Test not supported on IPv6")
@@ -100,63 +120,41 @@ func KICKubernetes() {
 
 	var ingressNamespace string
 	var altIngressNamespace = "kuma-yawetag"
-	var kubernetes Cluster
-	E2EBeforeSuite(func() {
-		k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
-		Expect(err).ToNot(HaveOccurred())
 
-		kubernetes = k8sClusters.GetCluster(Kuma1)
-		err = NewClusterSetup().
-			Install(Kuma(config_core.Standalone)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(testserver.Install()).
-			Setup(kubernetes)
-		Expect(err).ToNot(HaveOccurred())
-	})
 	E2EAfterEach(func() {
-		err := k8s.RunKubectlE(kubernetes.GetTesting(), kubernetes.GetKubectlOptions(), "delete", "ingress", "--all", "-n", "kuma-test")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(k8s.RunKubectlE(kubernetes.GetTesting(), kubernetes.GetKubectlOptions(), "delete", "ingress", "--all", "-n", "kuma-test")).To(Succeed())
 		Expect(kubernetes.DeleteNamespace(ingressNamespace)).To(Succeed())
 	})
-	E2EAfterSuite(func() {
-		Expect(kubernetes.DeleteKuma()).To(Succeed())
-		Expect(kubernetes.DeleteNamespace(TestNamespace)).To(Succeed())
-		Expect(kubernetes.DismissCluster()).To(Succeed())
-	})
+
 	It("should install kong ingress into default namespace", func() {
 		ingressNamespace = Config.DefaultGatewayNamespace
 		// given kong ingress
-		err := NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(kic.KongIngressController()).
 			Install(kic.KongIngressNodePort()).
 			Install(YamlK8s(ingress)).
-			Setup(kubernetes)
-		Expect(err).ToNot(HaveOccurred())
+			Setup(kubernetes)).To(Succeed())
 
 		retry.DoWithRetry(kubernetes.GetTesting(), "connect to test server via KIC",
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				return "", requestTestServerThroughKong(kic.NodePortHTTP())
 			})
-
-		Expect(err).ToNot(HaveOccurred())
 	})
+
 	It("should install kong ingress into non-default namespace", func() {
 		ingressNamespace = altIngressNamespace
 		// given kong ingress
-		err := NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(kic.KongIngressController(kic.WithNamespace(ingressNamespace))).
 			Install(kic.KongIngressNodePort(kic.WithNamespace(ingressNamespace))).
 			Install(YamlK8s(ingressMeshDNS)).
-			Setup(kubernetes)
-		Expect(err).ToNot(HaveOccurred())
+			Setup(kubernetes)).To(Succeed())
 
 		retry.DoWithRetry(kubernetes.GetTesting(), "connect to test server via KIC",
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				return "", requestTestServerThroughKong(kic.NodePortHTTP())
 			})
-
-		Expect(err).ToNot(HaveOccurred())
 	})
 }

@@ -12,12 +12,11 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func TrafficPermissionHybrid() {
-	var globalCluster, zoneUniversal, zoneKube Cluster
-	var clientPodName string
+var globalCluster, zoneUniversal, zoneKube Cluster
+var clientPodName string
 
-	meshMTLSOn := func(mesh string) string {
-		return fmt.Sprintf(`
+func meshMTLSOn(mesh string) string {
+	return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
@@ -29,77 +28,87 @@ spec:
     - name: ca-1
       type: builtin
 `, mesh)
-	}
+}
 
-	E2EBeforeSuite(func() {
-		k8sClusters, err := NewK8sClusters(
-			[]string{Kuma1, Kuma2},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
+var _ = E2EBeforeSuite(func() {
+	k8sClusters, err := NewK8sClusters(
+		[]string{Kuma1, Kuma2},
+		Silent)
+	Expect(err).ToNot(HaveOccurred())
 
-		universalClusters, err := NewUniversalClusters(
-			[]string{Kuma3},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
+	universalClusters, err := NewUniversalClusters(
+		[]string{Kuma3},
+		Silent)
+	Expect(err).ToNot(HaveOccurred())
 
-		// Global
-		globalCluster = k8sClusters.GetCluster(Kuma1)
+	// Global
+	globalCluster = k8sClusters.GetCluster(Kuma1)
 
-		err = NewClusterSetup().
-			Install(Kuma(config_core.Global)).
-			Install(YamlK8s(meshMTLSOn("default"))).
-			Setup(globalCluster)
-		Expect(err).ToNot(HaveOccurred())
-		globalCP := globalCluster.GetKuma()
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Global)).
+		Install(YamlK8s(meshMTLSOn("default"))).
+		Setup(globalCluster)).To(Succeed())
 
-		testServerToken, err := globalCP.GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-
-		// Zone universal
-		zoneUniversal = universalClusters.GetCluster(Kuma3)
-		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(Kuma(config_core.Zone,
-				WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			)).
-			Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
-			Install(IngressUniversal(ingressTokenKuma3)).
-			Setup(zoneUniversal)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Zone kubernetes
-		zoneKube = k8sClusters.GetCluster(Kuma2)
-
-		err = NewClusterSetup().
-			Install(Kuma(config_core.Zone,
-				WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default")).
-			Setup(zoneKube)
-		Expect(err).ToNot(HaveOccurred())
-
-		pods, err := k8s.ListPodsE(
-			zoneKube.GetTesting(),
-			zoneKube.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		clientPodName = pods[0].GetName()
+	E2EDeferCleanup(func() {
+		Expect(globalCluster.DeleteKuma()).To(Succeed())
+		Expect(globalCluster.DismissCluster()).To(Succeed())
 	})
 
+	globalCP := globalCluster.GetKuma()
+
+	testServerToken, err := globalCP.GenerateDpToken("default", "test-server")
+	Expect(err).ToNot(HaveOccurred())
+
+	// Zone universal
+	zoneUniversal = universalClusters.GetCluster(Kuma3)
+	ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+	Expect(err).ToNot(HaveOccurred())
+
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Zone,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		)).
+		Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
+		Install(IngressUniversal(ingressTokenKuma3)).
+		Setup(zoneUniversal)).To(Succeed())
+
+	E2EDeferCleanup(zoneUniversal.DismissCluster)
+
+	// Zone kubernetes
+	zoneKube = k8sClusters.GetCluster(Kuma2)
+
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Zone,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		)).
+		Install(NamespaceWithSidecarInjection(TestNamespace)).
+		Install(DemoClientK8s("default")).
+		Setup(zoneKube)).To(Succeed())
+
+	pods, err := k8s.ListPodsE(
+		zoneKube.GetTesting(),
+		zoneKube.GetKubectlOptions(TestNamespace),
+		metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
+		},
+	)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(pods).To(HaveLen(1))
+
+	clientPodName = pods[0].GetName()
+
+	E2EDeferCleanup(func() {
+		Expect(zoneKube.DeleteKuma()).To(Succeed())
+		Expect(zoneKube.DismissCluster()).To(Succeed())
+	})
+})
+
+func TrafficPermissionHybrid() {
 	E2EAfterEach(func() {
 		// remove all TrafficPermissions and restore the default
-		err := k8s.RunKubectlE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions(), "delete", "trafficpermissions", "--all")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(k8s.RunKubectlE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions(), "delete", "trafficpermissions", "--all")).To(Succeed())
 
-		err = k8s.KubectlApplyFromStringE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions(), `
+		Expect(k8s.KubectlApplyFromStringE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions(), `
 apiVersion: kuma.io/v1alpha1
 kind: TrafficPermission
 mesh: default
@@ -113,26 +122,7 @@ spec:
     - match:
         kuma.io/service: '*'
 
-`)
-
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	E2EAfterSuite(func() {
-		err := zoneUniversal.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-		err = zoneUniversal.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = zoneKube.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-		err = zoneKube.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = globalCluster.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-		err = globalCluster.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+`)).To(Succeed())
 	})
 
 	trafficAllowed := func() {
