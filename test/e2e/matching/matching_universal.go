@@ -87,7 +87,7 @@ conf:
 				return false
 			}
 			return strings.Contains(stdout, "HTTP/1.1 401 Unauthorized")
-		}, "10s", "100ms").Should(BeTrue())
+		}, "60s", "1s").Should(BeTrue())
 
 		Eventually(func() bool {
 			stdout, _, err := universal.Exec("", "", "demo-client-2", "curl", "-v", "test-server.mesh")
@@ -95,6 +95,6 @@ conf:
 				return false
 			}
 			return strings.Contains(stdout, "HTTP/1.1 402 Payment Required")
-		}, "10s", "100ms").Should(BeTrue())
+		}, "60s", "1s").Should(BeTrue())
 	})
 }
