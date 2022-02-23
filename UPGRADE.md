@@ -8,6 +8,8 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+## Upgrade to `1.5.0`
+
 ### Any type
 
 The `kuma.metrics.dataplane.enabled` and `kuma.metrics.zone.enabled` configurations have been removed.
