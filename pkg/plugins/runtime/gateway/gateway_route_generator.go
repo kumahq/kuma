@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
 func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.MeshGatewayRouteResource) bool) []*core_mesh.MeshGatewayRouteResource {
@@ -25,7 +24,7 @@ func filterGatewayRoutes(in []model.Resource, accept func(resource *core_mesh.Me
 	return routes
 }
 
-func GenerateEnvoyRouteEntries(ctx xds_context.Context, info GatewayListenerInfo, host GatewayHost) []route.Entry {
+func GenerateEnvoyRouteEntries(host GatewayHost) []route.Entry {
 	gatewayRoutes := filterGatewayRoutes(host.Routes, func(route *core_mesh.MeshGatewayRouteResource) bool {
 		// Wildcard virtual host accepts all routes.
 		if host.Hostname == WildcardHostname {
@@ -45,11 +44,6 @@ func GenerateEnvoyRouteEntries(ctx xds_context.Context, info GatewayListenerInfo
 	if len(gatewayRoutes) == 0 {
 		return nil
 	}
-
-	log.V(1).Info("applying merged traffic routes",
-		"listener-port", info.Listener.Port,
-		"listener-name", info.Listener.ResourceName,
-	)
 
 	var entries []route.Entry
 
