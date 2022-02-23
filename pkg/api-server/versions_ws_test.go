@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"path"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	config "github.com/kumahq/kuma/pkg/config/api-server"

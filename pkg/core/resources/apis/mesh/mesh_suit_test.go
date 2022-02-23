@@ -3,7 +3,7 @@ package mesh_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -49,7 +49,7 @@ func DescribeValidCases(generator ResourceGenerator, cases ...TableEntry) {
 			// then
 			Expect(verr).ToNot(HaveOccurred())
 		},
-		cases...)
+		cases)
 }
 
 // DescribeErrorCases creates a Ginkgo table test for the given entries, where each entry
@@ -75,7 +75,7 @@ func DescribeErrorCases(generator ResourceGenerator, cases ...TableEntry) {
 			// then
 			Expect(resource.Validate()).To(Equal(expected.OrNil()))
 		},
-		cases...,
+		cases,
 	)
 }
 

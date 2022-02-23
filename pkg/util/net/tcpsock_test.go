@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/test"
@@ -139,7 +138,7 @@ var _ = Describe("PickTCPPort()", func() {
 				// and
 				Expect(actualPort).To(Equal(highestPort))
 			},
-			testSet(10)...,
+			testSet(10),
 		)
 	})
 

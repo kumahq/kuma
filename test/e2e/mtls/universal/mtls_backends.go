@@ -1,36 +1,34 @@
 package universal
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
+var universalCluster Cluster
+
+var _ = E2EBeforeSuite(func() {
+	universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
+
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Standalone)).
+		Setup(universalCluster)).To(Succeed())
+
+	testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
+	Expect(err).ToNot(HaveOccurred())
+	demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
+	Expect(err).ToNot(HaveOccurred())
+
+	Expect(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))(universalCluster)).To(Succeed())
+	Expect(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)).To(Succeed())
+
+	E2EDeferCleanup(universalCluster.DismissCluster)
+})
+
 func MTLSUniversal() {
-	var universalCluster Cluster
-
-	E2EBeforeSuite(func() {
-		universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
-
-		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone)).
-			Setup(universalCluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))(universalCluster)
-		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
 	BeforeEach(func() {
 		// remove all TrafficPermissions
 		items, err := universalCluster.GetKumactlOptions().KumactlList("traffic-permissions", "default")
@@ -46,11 +44,6 @@ name: default`
 
 		err = YamlUniversal(defaultNonMtlsMesh)(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
-	})
-
-	E2EAfterSuite(func() {
-		Expect(universalCluster.DeleteKuma()).To(Succeed())
-		Expect(universalCluster.DismissCluster()).To(Succeed())
 	})
 
 	trafficAllowed := func() {

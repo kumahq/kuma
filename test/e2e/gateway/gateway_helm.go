@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/random"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -30,7 +30,7 @@ func GatewayHELM() {
 			WithRetries(60)
 
 		// todo(jakubdyszkiewicz) when we release Kuma with experimental Gateway, change HELM version to released one that does not contain Gateway CRDs
-		err := NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(Kuma(core.Standalone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmOpt("experimental.meshGateway", "true"),
@@ -38,17 +38,13 @@ func GatewayHELM() {
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(testserver.Install()).
-			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-	})
+			Setup(cluster)).To(Succeed())
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
-		Expect(cluster.DeleteKuma()).To(Succeed())
-		Expect(cluster.DismissCluster()).To(Succeed())
+		E2EDeferCleanup(func() {
+			Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
+			Expect(cluster.DeleteKuma()).To(Succeed())
+			Expect(cluster.DismissCluster()).To(Succeed())
+		})
 	})
 
 	It("should check if Gateway CRD is installed", func() {

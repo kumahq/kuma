@@ -1,30 +1,26 @@
 package dp
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
+var cluster Cluster
+
+var _ = E2EBeforeSuite(func() {
+	cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
+
+	Expect(NewClusterSetup().
+		Install(Kuma(core.Standalone)).
+		Setup(cluster)).To(Succeed())
+
+	E2EDeferCleanup(cluster.DismissCluster)
+})
+
 func DpAuthUniversal() {
-	var cluster Cluster
-
-	E2EBeforeSuite(func() {
-		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-
-		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
-			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	E2EAfterSuite(func() {
-		Expect(cluster.DeleteKuma()).To(Succeed())
-		Expect(cluster.DismissCluster()).To(Succeed())
-	})
-
 	It("should not be able to override someone else Dataplane", func() {
 		// given other dataplane
 		dp := `

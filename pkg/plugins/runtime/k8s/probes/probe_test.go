@@ -2,7 +2,7 @@ package probes_test
 
 import (
 	"github.com/ghodss/yaml"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 

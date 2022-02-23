@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -15,77 +14,71 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
-func GatewayHybrid() {
-	const serviceName = "test-server_kuma-test_svc_80"
+const serviceName = "test-server_kuma-test_svc_80"
 
-	var global, k8sZone, zone1, zone2 Cluster
+var global, k8sZone, zone1, zone2 Cluster
 
-	E2EBeforeSuite(func() {
-		global = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
-		err := NewClusterSetup().
-			Install(Kuma(config_core.Global,
-				WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
-				gateway.OptEnableMeshMTLS),
-			).
-			Setup(global)
-		Expect(err).ToNot(HaveOccurred())
+var _ = E2EBeforeSuite(func() {
+	global = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 
-		k8sZone = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		err = NewClusterSetup().
-			Install(Kuma(config_core.Zone,
-				WithIngress(),
-				WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
-				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
-			)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(testserver.Install(
-				testserver.WithArgs("echo", "--instance", Kuma1),
-			)).
-			Setup(k8sZone)
-		Expect(err).ToNot(HaveOccurred())
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Global,
+			WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
+			gateway.OptEnableMeshMTLS),
+		).
+		Setup(global)).To(Succeed())
 
-		zone1 = NewUniversalCluster(NewTestingT(), Kuma2, Silent)
-		err = NewClusterSetup().
-			Install(Kuma(config_core.Zone,
-				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
-				WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
-			)).
-			Install(gateway.EchoServerApp("echo-server", serviceName, Kuma2)).
-			Install(gateway.GatewayProxyUniversal("gateway-proxy")).
-			Install(gateway.GatewayClientAppUniversal("gateway-client")).
-			Setup(zone1)
-		Expect(err).ToNot(HaveOccurred())
+	E2EDeferCleanup(global.DismissCluster)
 
-		zoneIngressToken, err := global.GetKuma().GenerateZoneIngressToken(Kuma3)
-		Expect(err).ToNot(HaveOccurred())
+	k8sZone = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Zone,
+			WithIngress(),
+			WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
+			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
+		)).
+		Install(NamespaceWithSidecarInjection(TestNamespace)).
+		Install(testserver.Install(
+			testserver.WithArgs("echo", "--instance", Kuma1),
+		)).
+		Setup(k8sZone)).To(Succeed())
 
-		zone2 = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		err = NewClusterSetup().
-			Install(Kuma(config_core.Zone,
-				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
-				WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
-			)).
-			Install(gateway.EchoServerApp("echo-server", serviceName, Kuma3)).
-			Install(IngressUniversal(zoneIngressToken)).
-			Setup(zone2)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	E2EAfterSuite(func() {
+	E2EDeferCleanup(func() {
 		Expect(k8sZone.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(k8sZone.DeleteKuma()).To(Succeed())
 		Expect(k8sZone.DismissCluster()).To(Succeed())
-
-		Expect(zone1.DeleteKuma()).To(Succeed())
-		Expect(zone1.DismissCluster()).To(Succeed())
-
-		Expect(zone2.DeleteKuma()).To(Succeed())
-		Expect(zone2.DismissCluster()).To(Succeed())
-
-		Expect(global.DeleteKuma()).To(Succeed())
-		Expect(global.DismissCluster()).To(Succeed())
 	})
 
+	zone1 = NewUniversalCluster(NewTestingT(), Kuma2, Silent)
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Zone,
+			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
+			WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
+		)).
+		Install(gateway.EchoServerApp("echo-server", serviceName, Kuma2)).
+		Install(gateway.GatewayProxyUniversal("gateway-proxy")).
+		Install(gateway.GatewayClientAppUniversal("gateway-client")).
+		Setup(zone1)).To(Succeed())
+
+	E2EDeferCleanup(zone1.DismissCluster)
+
+	zoneIngressToken, err := global.GetKuma().GenerateZoneIngressToken(Kuma3)
+	Expect(err).ToNot(HaveOccurred())
+
+	zone2 = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
+
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Zone,
+			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
+			WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
+		)).
+		Install(gateway.EchoServerApp("echo-server", serviceName, Kuma3)).
+		Install(IngressUniversal(zoneIngressToken)).
+		Setup(zone2)).To(Succeed())
+	E2EDeferCleanup(zone2.DismissCluster)
+})
+
+func GatewayHybrid() {
 	type testCase struct {
 		path              string
 		expectedInstances []string

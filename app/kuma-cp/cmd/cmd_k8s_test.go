@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,8 +51,8 @@ var _ = XDescribe("K8S CMD test", func() {
 
 	AfterEach(func() {
 		By("tearing down the test environment")
-		Expect(testEnv.Stop()).To(Succeed())
-	}, 60)
+		Eventually(testEnv.Stop, 60*time.Second).Should(Succeed())
+	})
 
 	RunSmokeTest(ConfigFactoryFunc(func() string {
 		admissionServerPort, _, err := addr.Suggest()

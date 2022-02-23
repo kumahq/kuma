@@ -3,7 +3,7 @@ package matching
 import (
 	"strings"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -48,7 +48,7 @@ func Universal() {
 		Expect(universal.DismissCluster()).To(Succeed())
 	})
 
-	It("should both fault injections with the same destination proxy", func() {
+	It("should both fault injections with the same destination proxy", FlakeAttempts(3), func() {
 		Expect(YamlUniversal(`
 type: FaultInjection
 mesh: default
