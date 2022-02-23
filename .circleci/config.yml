@@ -141,6 +141,7 @@ commands:
 
 executors:
   golang:
+    resource_class: large
     docker:
     - image: *golang_image
     environment:
@@ -671,8 +672,6 @@ jobs:
 
   check:
     executor: golang
-    # we need a large resource class to satisfy the needs of golangci-lint run under `make check`
-    resource_class: large
     steps:
     - checkout
     - restore_cache:
