@@ -48,7 +48,7 @@ func Universal() {
 		Expect(universal.DismissCluster()).To(Succeed())
 	})
 
-	It("should both fault injections with the same destination proxy", func() {
+	It("should both fault injections with the same destination proxy", FlakeAttempts(3), func() {
 		Expect(YamlUniversal(`
 type: FaultInjection
 mesh: default
