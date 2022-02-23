@@ -8,7 +8,7 @@ import (
 	"os/exec"
 
 	"github.com/gruntwork-io/terratest/modules/logger"
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/test/framework/utils"
 )
