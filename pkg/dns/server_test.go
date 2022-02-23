@@ -6,8 +6,7 @@ import (
 	"runtime"
 
 	"github.com/miekg/dns"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/dns"
@@ -250,7 +249,7 @@ var _ = Describe("DNS server", func() {
 			err = server.Start(stop)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unable to bind the DNS server to 0.0.0.0:53"))
-		}, 1)
+		})
 	})
 
 })

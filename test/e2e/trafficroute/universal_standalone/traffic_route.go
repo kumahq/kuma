@@ -3,7 +3,7 @@ package universal_standalone
 import (
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/pkg/errors"
@@ -13,60 +13,55 @@ import (
 	. "github.com/kumahq/kuma/test/framework/client"
 )
 
+const defaultMesh = "default"
+
+var universal Cluster
+
+var _ = E2EBeforeSuite(func() {
+	clusters, err := NewUniversalClusters([]string{Kuma3}, Verbose)
+	Expect(err).ToNot(HaveOccurred())
+
+	universal = clusters.GetCluster(Kuma3)
+
+	Expect(NewClusterSetup().
+		Install(Kuma(core.Standalone)).
+		Setup(universal)).To(Succeed())
+
+	testServerToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "test-server")
+	Expect(err).ToNot(HaveOccurred())
+	anotherTestServerToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "another-test-server")
+	Expect(err).ToNot(HaveOccurred())
+	demoClientToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "demo-client")
+	Expect(err).ToNot(HaveOccurred())
+
+	Expect(NewClusterSetup().
+		Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
+			WithArgs([]string{"echo", "--instance", "echo-v1"}),
+			WithServiceVersion("v1"),
+		)).
+		Install(TestServerUniversal("dp-echo-2", defaultMesh, testServerToken,
+			WithArgs([]string{"echo", "--instance", "echo-v2"}),
+			WithServiceVersion("v2"),
+		)).
+		Install(TestServerUniversal("dp-echo-3", defaultMesh, testServerToken,
+			WithArgs([]string{"echo", "--instance", "echo-v3"}),
+			WithServiceVersion("v3"),
+		)).
+		Install(TestServerUniversal("dp-echo-4", defaultMesh, testServerToken,
+			WithArgs([]string{"echo", "--instance", "echo-v4"}),
+			WithServiceVersion("v4"),
+		)).
+		Install(TestServerUniversal("dp-another-test", defaultMesh, anotherTestServerToken,
+			WithArgs([]string{"echo", "--instance", "another-test-server"}),
+			WithServiceName("another-test-server"),
+		)).
+		Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
+		Setup(universal)).To(Succeed())
+
+	E2EDeferCleanup(universal.DismissCluster)
+})
+
 func KumaStandalone() {
-	const defaultMesh = "default"
-
-	var universal Cluster
-
-	E2EBeforeSuite(func() {
-		clusters, err := NewUniversalClusters([]string{Kuma3}, Verbose)
-		Expect(err).ToNot(HaveOccurred())
-
-		universal = clusters.GetCluster(Kuma3)
-
-		err = NewClusterSetup().
-			Install(Kuma(core.Standalone)).
-			Setup(universal)
-		Expect(err).ToNot(HaveOccurred())
-
-		testServerToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		anotherTestServerToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "another-test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v1"}),
-				WithServiceVersion("v1"),
-			)).
-			Install(TestServerUniversal("dp-echo-2", defaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v2"}),
-				WithServiceVersion("v2"),
-			)).
-			Install(TestServerUniversal("dp-echo-3", defaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v3"}),
-				WithServiceVersion("v3"),
-			)).
-			Install(TestServerUniversal("dp-echo-4", defaultMesh, testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v4"}),
-				WithServiceVersion("v4"),
-			)).
-			Install(TestServerUniversal("dp-another-test", defaultMesh, anotherTestServerToken,
-				WithArgs([]string{"echo", "--instance", "another-test-server"}),
-				WithServiceName("another-test-server"),
-			)).
-			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Setup(universal)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	E2EAfterSuite(func() {
-		Expect(universal.DeleteKuma()).To(Succeed())
-		Expect(universal.DismissCluster()).To(Succeed())
-	})
-
 	E2EAfterEach(func() {
 		// remove all TrafficRoutes
 		items, err := universal.GetKumactlOptions().KumactlList("traffic-routes", "default")

@@ -2,16 +2,16 @@ package framework
 
 import (
 	"github.com/gruntwork-io/terratest/modules/logger"
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 )
 
 type TestingT struct {
 	ginkgo.GinkgoTInterface
-	desc ginkgo.GinkgoTestDescription
+	desc ginkgo.SpecReport
 }
 
 func NewTestingT() *TestingT {
-	return &TestingT{ginkgo.GinkgoT(), ginkgo.CurrentGinkgoTestDescription()}
+	return &TestingT{ginkgo.GinkgoT(), ginkgo.CurrentSpecReport()}
 }
 
 func (i *TestingT) Helper() {
@@ -19,7 +19,7 @@ func (i *TestingT) Helper() {
 }
 
 func (i *TestingT) Name() string {
-	return i.desc.FullTestText
+	return i.desc.FullText()
 }
 
 // Logf logs a test progress message.
