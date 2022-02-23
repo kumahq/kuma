@@ -768,7 +768,7 @@ jobs:
     - run:
         name: "Run tests"
         command: |
-          export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
+          export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
           make << parameters.target >>
     - run:
         # Ref https://docs.codecov.com/docs/about-the-codecov-bash-uploader
@@ -790,7 +790,7 @@ jobs:
         path: build/coverage
         destination: /coverage
     - store_test_results:
-        path: /tmp/xunit
+        path: /tmp/ginkgo-test-results
 
   e2e:
     executor: vm
@@ -860,10 +860,10 @@ jobs:
                   export IPV6=true
                   export KUMA_DEFAULT_RETRIES=60
                   export KUMA_DEFAULT_TIMEOUT="6s"
-                  export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
+                  export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
                   make -j2 test/e2e
             - store_test_results:
-                path: /tmp/xunit
+                path: /tmp/ginkgo-test-results
       - unless:
           condition: << parameters.ipv6 >>
           steps:
@@ -873,11 +873,11 @@ jobs:
                   export CI_K3S_VERSION=<< parameters.k3sVersion >>
                   export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
-                  export GINKGO_XUNIT_RESULTS_DIR=/tmp/xunit
+                  export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
                   export K3D=true
                   make -j2 test/e2e
             - store_test_results:
-                path: /tmp/xunit
+                path: /tmp/ginkgo-test-results
 
   build:
     executor: golang

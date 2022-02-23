@@ -3,7 +3,7 @@ package api_server_test
 import (
 	"io"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
@@ -45,7 +45,7 @@ var _ = Describe("Read only Resource Endpoints", func() {
 		waitForServer(&client)
 
 		putSampleResourceIntoStore(resourceStore, resourceName, mesh)
-	}, 5)
+	})
 
 	AfterEach(func() {
 		close(stop)

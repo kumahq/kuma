@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"

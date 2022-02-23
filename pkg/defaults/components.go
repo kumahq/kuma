@@ -27,12 +27,17 @@ func Setup(runtime runtime.Runtime) error {
 	defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
 
 	zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)
-	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(zoneIngressSigningKeyManager, log)); err != nil {
+	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
+		zoneIngressSigningKeyManager,
+		log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix))); err != nil {
 		return err
 	}
 
 	zoneSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zone.SigningKeyPrefix)
-	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(zoneSigningKeyManager, log)); err != nil {
+	if err := runtime.Add(tokens.NewDefaultSigningKeyComponent(
+		zoneSigningKeyManager,
+		log.WithValues("secretPrefix", zoneingress.ZoneIngressSigningKeyPrefix),
+	)); err != nil {
 		return err
 	}
 

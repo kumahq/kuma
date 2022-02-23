@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -84,22 +85,16 @@ func NewProxyProfile(zone string, dataSourceLoader datasource.Loader) generator.
 		generator.DNSGenerator{},
 
 		Generator{
-			Generators: []GatewayHostGenerator{
-				// The order here matters because generators can
-				// depend on state created by a previous generator.
-				&ListenerGenerator{},
-				&HTTPFilterChainGenerator{},
-				&HTTPSFilterChainGenerator{
-					DataSourceLoader: dataSourceLoader,
-				},
-				&RouteConfigurationGenerator{},
-				&GatewayRouteGenerator{},
-				&ConnectionPolicyGenerator{},
-				&ClusterGenerator{
-					DataSourceLoader: dataSourceLoader,
-					Zone:             zone,
-				},
-				&RouteTableGenerator{},
+			FilterChainGenerators: filterChainGenerators{
+				FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator{
+					mesh_proto.MeshGateway_Listener_HTTP: &HTTPFilterChainGenerator{},
+					mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{
+						DataSourceLoader: dataSourceLoader,
+					},
+				}},
+			ClusterGenerator: ClusterGenerator{
+				DataSourceLoader: dataSourceLoader,
+				Zone:             zone,
 			},
 		},
 	}
