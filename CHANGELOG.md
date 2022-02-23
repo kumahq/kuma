@@ -54,7 +54,7 @@ Changes:
 * chore(kuma-cp): consolidate mesh defaults creation [#3678](https://github.com//kumahq/kuma/pull/3678)
 * chore(config): remove ability to disable insights [#3501](https://github.com//kumahq/kuma/pull/3501)
 * chore(*): remove old Ingress [#3435](https://github.com//kumahq/kuma/pull/3435)
-* chore(*): upgrade Envoy to v1.21.0 [#3810](https://github.com//kumahq/kuma/pull/3810)
+* chore(*): upgrade Envoy to v1.21.1 [#3909](https://github.com//kumahq/kuma/pull/3909)
 * chore(grafana): update to latest grafana plugin version [#3812](https://github.com//kumahq/kuma/pull/3812)
 * ci(*): release on every commit in master and release branches [#3712](https://github.com//kumahq/kuma/pull/3712)
 
