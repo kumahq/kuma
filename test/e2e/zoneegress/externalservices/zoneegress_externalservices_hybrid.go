@@ -15,12 +15,11 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
-func HybridUniversalGlobal() {
-	const defaultMesh = "default"
-	const nonDefaultMesh = "non-default"
+const defaultMesh = "default"
+const nonDefaultMesh = "non-default"
 
-	meshMTLSOn := func(mesh string) string {
-		return fmt.Sprintf(`
+func meshMTLSOn(mesh string) string {
+	return fmt.Sprintf(`
 type: Mesh
 name: %s
 mtls:
@@ -29,9 +28,9 @@ mtls:
   - name: ca-1
     type: builtin
 `, mesh)
-	}
+}
 
-	externalService1 := `
+var externalService1 = `
 type: ExternalService
 mesh: %s
 name: external-service-1
@@ -41,7 +40,7 @@ tags:
 networking:
   address: es-test-server.default.svc.cluster.local:80`
 
-	externalService2 := `
+var externalService2 = `
 type: ExternalService
 mesh: %s
 name: external-service-2
@@ -51,110 +50,107 @@ tags:
 networking:
   address: "%s"`
 
-	ExternalServerUniversal := func(name string) InstallFunc {
-		return func(cluster Cluster) error {
-			return cluster.DeployApp(
-				WithArgs([]string{"test-server", "echo", "--port", "8080", "--instance", name}),
-				WithName(name),
-				WithoutDataplane(),
-				WithVerbose())
-		}
+func ExternalServerUniversal(name string) InstallFunc {
+	return func(cluster Cluster) error {
+		return cluster.DeployApp(
+			WithArgs([]string{"test-server", "echo", "--port", "8080", "--instance", name}),
+			WithName(name),
+			WithoutDataplane(),
+			WithVerbose())
 	}
+}
 
-	ExternalService1 := func(mesh string) string {
-		return fmt.Sprintf(externalService1, mesh)
-	}
+func ExternalService1(mesh string) string {
+	return fmt.Sprintf(externalService1, mesh)
+}
 
-	ExternalService2 := func(mesh, address string) string {
-		return fmt.Sprintf(externalService2, mesh, address)
-	}
+func ExternalService2(mesh, address string) string {
+	return fmt.Sprintf(externalService2, mesh, address)
+}
 
-	var global, zone1 Cluster
-	var zone4 *UniversalCluster
+var global, zone1 Cluster
+var zone4 *UniversalCluster
 
-	E2EBeforeSuite(func() {
-		k8sClusters, err := NewK8sClusters(
-			[]string{Kuma1},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
+var _ = E2EBeforeSuite(func() {
+	k8sClusters, err := NewK8sClusters(
+		[]string{Kuma1},
+		Silent)
+	Expect(err).ToNot(HaveOccurred())
 
-		universalClusters, err := NewUniversalClusters(
-			[]string{Kuma4, Kuma5},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
+	universalClusters, err := NewUniversalClusters(
+		[]string{Kuma4, Kuma5},
+		Silent)
+	Expect(err).ToNot(HaveOccurred())
 
-		// Global
-		global = universalClusters.GetCluster(Kuma5)
+	// Global
+	global = universalClusters.GetCluster(Kuma5)
 
-		Expect(NewClusterSetup().
-			Install(Kuma(config_core.Global)).
-			Install(YamlUniversal(meshMTLSOn(defaultMesh))).
-			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh))).
-			Install(YamlUniversal(ExternalService1(nonDefaultMesh))).
-			Setup(global)).To(Succeed())
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Global)).
+		Install(YamlUniversal(meshMTLSOn(defaultMesh))).
+		Install(YamlUniversal(meshMTLSOn(nonDefaultMesh))).
+		Install(YamlUniversal(ExternalService1(nonDefaultMesh))).
+		Setup(global)).To(Succeed())
 
-		globalCP := global.GetKuma()
+	E2EDeferCleanup(global.DismissCluster)
 
-		// K8s Cluster 1
-		zone1 = k8sClusters.GetCluster(Kuma1)
-		Expect(NewClusterSetup().
-			Install(Kuma(config_core.Zone,
-				WithEgress(true),
-				WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s(nonDefaultMesh)).
-			Install(testserver.Install(
-				testserver.WithName("es-test-server"),
-				testserver.WithNamespace("default"),
-				testserver.WithArgs("echo", "--instance", "es-test-server"),
-			)).
-			Setup(zone1)).To(Succeed())
+	globalCP := global.GetKuma()
 
-		// Universal Cluster 4
-		zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
-		Expect(err).ToNot(HaveOccurred())
-		egressTokenZone4, err := globalCP.GenerateZoneEgressToken(Kuma4)
-		Expect(err).ToNot(HaveOccurred())
-		demoClientTokenZone4, err := globalCP.GenerateDpToken(nonDefaultMesh, "zone4-demo-client")
-		Expect(err).ToNot(HaveOccurred())
+	// K8s Cluster 1
+	zone1 = k8sClusters.GetCluster(Kuma1)
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Zone,
+			WithEgress(true),
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		)).
+		Install(NamespaceWithSidecarInjection(TestNamespace)).
+		Install(DemoClientK8s(nonDefaultMesh)).
+		Install(testserver.Install(
+			testserver.WithName("es-test-server"),
+			testserver.WithNamespace("default"),
+			testserver.WithArgs("echo", "--instance", "es-test-server"),
+		)).
+		Setup(zone1)).To(Succeed())
 
-		Expect(NewClusterSetup().
-			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(DemoClientUniversal(
-				"zone4-demo-client",
-				nonDefaultMesh,
-				demoClientTokenZone4,
-				WithTransparentProxy(true),
-			)).
-			Install(EgressUniversal(egressTokenZone4)).
-			Install(ExternalServerUniversal("es-test-server")).
-			Setup(zone4),
-		).To(Succeed())
-
-		Expect(global.GetKumactlOptions().
-			KumactlApplyFromString(
-				ExternalService2(
-					nonDefaultMesh,
-					net.JoinHostPort(zone4.GetApp("es-test-server").GetIP(), "8080"),
-				)),
-		).To(Succeed())
-	})
-
-	E2EAfterEachMarkIfFailed()
-
-	E2EAfterSuite(func() {
+	E2EDeferCleanup(func() {
 		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
-
-		Expect(zone4.DeleteKuma()).To(Succeed())
-		Expect(zone4.DismissCluster()).To(Succeed())
-
-		Expect(global.DeleteKuma()).To(Succeed())
-		Expect(global.DismissCluster()).To(Succeed())
 	})
 
+	// Universal Cluster 4
+	zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
+	Expect(err).ToNot(HaveOccurred())
+	egressTokenZone4, err := globalCP.GenerateZoneEgressToken(Kuma4)
+	Expect(err).ToNot(HaveOccurred())
+	demoClientTokenZone4, err := globalCP.GenerateDpToken(nonDefaultMesh, "zone4-demo-client")
+	Expect(err).ToNot(HaveOccurred())
+
+	Expect(NewClusterSetup().
+		Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+		Install(DemoClientUniversal(
+			"zone4-demo-client",
+			nonDefaultMesh,
+			demoClientTokenZone4,
+			WithTransparentProxy(true),
+		)).
+		Install(EgressUniversal(egressTokenZone4)).
+		Install(ExternalServerUniversal("es-test-server")).
+		Setup(zone4),
+	).To(Succeed())
+
+	E2EDeferCleanup(zone4.DismissCluster)
+
+	Expect(global.GetKumactlOptions().
+		KumactlApplyFromString(
+			ExternalService2(
+				nonDefaultMesh,
+				net.JoinHostPort(zone4.GetApp("es-test-server").GetIP(), "8080"),
+			)),
+	).To(Succeed())
+})
+
+func HybridUniversalGlobal() {
 	It("k8s should access external service behind through zoneegress", func() {
 		filter := fmt.Sprintf(
 			"cluster.%s_%s.upstream_rq_total",
