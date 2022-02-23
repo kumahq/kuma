@@ -40,32 +40,15 @@ reusable:
   - &ubuntu_vm_image "ubuntu-2004:202111-01"
 
   snippets:
-
-    # apparently, a job can run on a tag only if it has an explicit configuration for tag filters
-    release_workflow_filters: &release_workflow_filters
-      filters:
-        branches:
-          ignore: /.*/
-        tags:
-          only: /.*/
-
-    # release the charts only on tagged releases
-    helm_release_workflow_filters: &helm_release_workflow_filters
-      filters:
-        branches:
-          ignore: /.*/
-        tags:
-          only: /^v?(\d+)\.(\d+)\.(\d+)$/
-
-    # filters for the kuma-commit workflow
-    master_workflow_filters: &master_workflow_filters
+    # on tags and branches master or release-*
+    work_branch_or_tags_workflow_filter: &work_branch_workflow_filter
       filters:
         branches:
           only:
            - master
            - /^release-.*/
         tags:
-          ignore: /.*/ # we don't want to run master workflow on commits with tag because use_local_kuma_images has to be false for all the jobs to pass
+          only: /.*/
 
     # filters for the {a,e}ks-e2e workflow
     master_only_workflow_filters: &master_only_workflow_filters
@@ -73,15 +56,6 @@ reusable:
         branches:
           only:
             - master
-
-    # filters for the kuma-commit workflow
-    commit_workflow_filters: &commit_workflow_filters
-      filters:
-        branches:
-          ignore:
-           - master
-           - /^release-.*/
-           - gh-pages
 
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
@@ -1014,46 +988,6 @@ jobs:
 #
 workflows:
   version: 2
-  kuma-commit:
-    jobs:
-    - go_cache: *commit_workflow_filters
-    - check:
-        <<: *commit_workflow_filters
-        requires:
-        - go_cache
-    - build:
-        <<: *commit_workflow_filters
-        requires:
-        - go_cache
-    - test:
-        <<: *commit_workflow_filters
-        requires:
-        - check
-    - images:
-        <<: *commit_workflow_filters
-        requires:
-        - build
-    - e2e:
-        <<: *commit_workflow_filters
-        name: test/e2e-ipv4
-        requires:
-          - images
-          - check
-    - e2e:
-        <<: *commit_workflow_filters
-        name: test/e2e-ipv4-oldk8s
-        k3sVersion: v1.19.16-k3s1
-        requires:
-          - images
-          - check
-    - e2e:
-        <<: *commit_workflow_filters
-        name: test/e2e-ipv6
-        requires:
-          - images
-          - check
-        # custom parameters
-        ipv6: true
 
   clean-eks:
     when: << pipeline.parameters.run_workflow_clean_eks >>
@@ -1129,47 +1063,61 @@ workflows:
         requires:
         - images
 
-  kuma-master:
+  kuma-commit:
     jobs:
-      - dev_mac: *master_workflow_filters
-      - dev_ubuntu: *master_workflow_filters
-      - go_cache: *master_workflow_filters
+      - dev_mac:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
+      - dev_ubuntu:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
+      - go_cache
       - check:
-          <<: *master_workflow_filters
           requires:
             - go_cache
       - build:
-          <<: *master_workflow_filters
           requires:
             - go_cache
       - test:
-          <<: *master_workflow_filters
           requires:
             - check
       - images:
-          <<: *master_workflow_filters
+          name: local-images
           requires:
             - build
       - e2e:
-          <<: *master_workflow_filters
-          name: test/e2e
+          name: test/e2e-ipv4
           requires:
-            - images
+            - local-images
             - check
       - e2e:
-          <<: *master_workflow_filters
           name: test/e2e-ipv6
           requires:
-            - images
+            - local-images
             - check
           # custom parameters
           ipv6: true
-      - release:
-          <<: *master_workflow_filters
+      - e2e:
+          name: test/e2e-ipv4-oldk8s
+          k3sVersion: v1.19.16-k3s1
           requires:
+            - local-images
+            - check
+      - release:
+          <<: *work_branch_workflow_filter
+          requires:
+            - dev_mac
+            - dev_ubuntu
             - test
-            - test/e2e
+            - test/e2e-ipv4
+            - test/e2e-ipv6
+            - test/e2e-ipv4-oldk8s
       - helm-release:
-          <<: *helm_release_workflow_filters
+          # Ideally we should be able to do CD on helm as well so this would be work_branch_workflow_filter
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v?(\d+)\.(\d+)\.(\d+)$/
           requires:
           - release
