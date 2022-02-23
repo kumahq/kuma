@@ -161,6 +161,12 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 
 		hosts = RedistributeWildcardRoutes(hosts)
 
+		// Ensure that generators don't get duplicate routes,
+		// which could happen after redistributing wildcards.
+		for i, host := range hosts {
+			hosts[i].Routes = merge.UniqueResources(host.Routes)
+		}
+
 		// Sort by reverse hostname, so that fully qualified hostnames sort
 		// before wildcard domains, and "*" is last.
 		sort.Slice(hosts, func(i, j int) bool {
@@ -226,10 +232,6 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 
 	// Make a pass over the generators for each virtual host.
 	for _, host := range hosts {
-		// Ensure that generators don't get duplicate routes,
-		// which could happen after redistributing wildcards.
-		host.Routes = merge.UniqueResources(host.Routes)
-
 		entries := GenerateEnvoyRouteEntries(ctx, info, host)
 
 		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, entries)
