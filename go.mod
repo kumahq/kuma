@@ -28,7 +28,6 @@ require (
 	github.com/kumahq/protoc-gen-kumadoc v0.1.7
 	github.com/lib/pq v1.10.4
 	github.com/miekg/dns v1.1.46
-	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.18.1
 	github.com/operator-framework/operator-lib v0.10.0
