@@ -33,39 +33,21 @@ reusable:
     - &go_version "1.17.3"
 
   docker_images:
-    - &golang_image "golang:1.17.3"
-    - &circleci_golang_image "circleci/golang:1.17.3"
+    - &golang_image "circleci/golang:1.17.3"
 
   vm_images:
   - &ubuntu_vm_image "ubuntu-2004:202111-01"
 
   snippets:
-
-    # apparently, a job can run on a tag only if it has an explicit configuration for tag filters
-    release_workflow_filters: &release_workflow_filters
-      filters:
-        branches:
-          ignore: /.*/
-        tags:
-          only: /.*/
-
-    # release the charts only on tagged releases
-    helm_release_workflow_filters: &helm_release_workflow_filters
-      filters:
-        branches:
-          ignore: /.*/
-        tags:
-          only: /^v?(\d+)\.(\d+)\.(\d+)$/
-
-    # filters for the kuma-commit workflow
-    master_workflow_filters: &master_workflow_filters
+    # on tags and branches master or release-*
+    work_branch_or_tags_workflow_filter: &work_branch_workflow_filter
       filters:
         branches:
           only:
            - master
            - /^release-.*/
         tags:
-          ignore: /.*/ # we don't want to run master workflow on commits with tag because use_local_kuma_images has to be false for all the jobs to pass
+          only: /.*/
 
     # filters for the {a,e}ks-e2e workflow
     master_only_workflow_filters: &master_only_workflow_filters
@@ -73,15 +55,6 @@ reusable:
         branches:
           only:
             - master
-
-    # filters for the kuma-commit workflow
-    commit_workflow_filters: &commit_workflow_filters
-      filters:
-        branches:
-          ignore:
-           - master
-           - /^release-.*/
-           - gh-pages
 
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
@@ -167,19 +140,13 @@ commands:
 
 executors:
   golang:
+    resource_class: large
     docker:
     - image: *golang_image
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
     working_directory: /go/src/github.com/kumahq/kuma
-
-  remote-docker:
-    docker:
-    - image: *circleci_golang_image
-    environment:
-      GO_VERSION: *go_version
-      GO111MODULE: "on"
 
   vm:
     resource_class: large
@@ -697,8 +664,6 @@ jobs:
 
   check:
     executor: golang
-    # we need a large resource class to satisfy the needs of golangci-lint run under `make check`
-    resource_class: large
     steps:
     - checkout
     - restore_cache:
@@ -706,32 +671,11 @@ jobs:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
-        name: "Install pre-requirements"
-        # `unzip` is necessary to install `protoc`
-        # `xz-utils` is necessary to decompress xz files
-        command: apt update && apt install -y unzip xz-utils
-    - run:
         name: "Install all development tools"
         command: make dev/tools
     - run:
         name: "Install check tools (clang-format, ...)"
-        command: |
-         # see https://apt.llvm.org/
-
-         # Assuming this is Debian, $VERSION_CODENAME nas the release name we
-         # need for apt.
-         . /etc/os-release
-
-         cat  >>/etc/apt/sources.list \<<EOF
-
-         deb https://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME} main
-         deb-src https://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME} main
-
-         EOF
-
-         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
-
-         apt update && apt install -y clang-format
+        command: sudo apt install -y clang-format
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
@@ -881,6 +825,11 @@ jobs:
 
   build:
     executor: golang
+    parameters:
+      docker_registry:
+        description: "Registry for container images"
+        type: string
+        default: "docker.io/kumahq"
     steps:
     - checkout
     - restore_cache:
@@ -890,25 +839,6 @@ jobs:
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
-
-    # Persist the specified paths into the workspace for use in downstream jobs
-    - persist_to_workspace:
-        root: build
-        paths:
-        - artifacts-linux-amd64
-
-  images:
-    executor: remote-docker
-    parameters:
-      docker_registry:
-        description: "Registry for container images"
-        type: string
-        default: "docker.io/kumahq"
-    steps:
-    - checkout
-    # Mount files from the upstream jobs
-    - attach_workspace:
-        at: build
     - setup_remote_docker:
         version: 20.10.7
     - run:
@@ -926,36 +856,7 @@ jobs:
         root: build
         paths:
         - docker-images
-
-  images-kumactl:
-    executor: remote-docker
-    parameters:
-      docker_registry:
-        description: "Registry for container images"
-        type: string
-        default: "docker.io/kumahq"
-    steps:
-    - checkout
-    # Mount files from the upstream jobs
-    - attach_workspace:
-        at: build
-    - setup_remote_docker:
-        version: 20.10.7
-    - run:
-        name: Build kumactl's Docker image
-        command: |
-          make image/kumactl \
-            DOCKER_REGISTRY="<< parameters.docker_registry >>"
-    - run:
-        name: Save kumactl's Docker image into TAR archives
-        command: |
-          make docker/save/kumactl \
-            DOCKER_REGISTRY="<< parameters.docker_registry >>"
-    # Persist the specified paths into the workspace for use in downstream jobs
-    - persist_to_workspace:
-        root: build
-        paths:
-        - docker-images
+        - artifacts-linux-amd64
 
   release:
     executor: vm
@@ -1014,46 +915,6 @@ jobs:
 #
 workflows:
   version: 2
-  kuma-commit:
-    jobs:
-    - go_cache: *commit_workflow_filters
-    - check:
-        <<: *commit_workflow_filters
-        requires:
-        - go_cache
-    - build:
-        <<: *commit_workflow_filters
-        requires:
-        - go_cache
-    - test:
-        <<: *commit_workflow_filters
-        requires:
-        - check
-    - images:
-        <<: *commit_workflow_filters
-        requires:
-        - build
-    - e2e:
-        <<: *commit_workflow_filters
-        name: test/e2e-ipv4
-        requires:
-          - images
-          - check
-    - e2e:
-        <<: *commit_workflow_filters
-        name: test/e2e-ipv4-oldk8s
-        k3sVersion: v1.19.16-k3s1
-        requires:
-          - images
-          - check
-    - e2e:
-        <<: *commit_workflow_filters
-        name: test/e2e-ipv6
-        requires:
-          - images
-          - check
-        # custom parameters
-        ipv6: true
 
   clean-eks:
     when: << pipeline.parameters.run_workflow_clean_eks >>
@@ -1092,18 +953,14 @@ workflows:
     - go_cache: *master_only_workflow_filters
     - build:
         <<: *master_only_workflow_filters
+        docker_registry: ${ECR_REGISTRY}
         requires:
         - go_cache
-    - images:
-        <<: *master_only_workflow_filters
-        requires:
-        - build
-        docker_registry: ${ECR_REGISTRY}
     - eks-e2e:
         <<: *master_only_workflow_filters
         name: test/e2e/eks
         requires:
-        - images
+        - build
 
   e2e-aks:
     when: << pipeline.parameters.run_workflow_e2e_aks >>
@@ -1116,60 +973,66 @@ workflows:
     - go_cache: *master_only_workflow_filters
     - build:
         <<: *master_only_workflow_filters
+        docker_registry: ${AZURE_ACR_REGISTRY}.azurecr.io
         requires:
         - go_cache
-    - images:
-        <<: *master_only_workflow_filters
-        requires:
-        - build
-        docker_registry: ${AZURE_ACR_REGISTRY}.azurecr.io
     - aks-e2e:
         <<: *master_only_workflow_filters
         name: test/e2e/aks
         requires:
-        - images
+        - build
 
-  kuma-master:
+  kuma-commit:
     jobs:
-      - dev_mac: *master_workflow_filters
-      - dev_ubuntu: *master_workflow_filters
-      - go_cache: *master_workflow_filters
+      - dev_mac:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
+      - dev_ubuntu:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
+      - go_cache
       - check:
-          <<: *master_workflow_filters
           requires:
             - go_cache
       - build:
-          <<: *master_workflow_filters
           requires:
             - go_cache
       - test:
-          <<: *master_workflow_filters
           requires:
             - check
-      - images:
-          <<: *master_workflow_filters
+      - e2e:
+          name: test/e2e-ipv4
           requires:
             - build
-      - e2e:
-          <<: *master_workflow_filters
-          name: test/e2e
-          requires:
-            - images
             - check
       - e2e:
-          <<: *master_workflow_filters
           name: test/e2e-ipv6
           requires:
-            - images
+            - build
             - check
           # custom parameters
           ipv6: true
-      - release:
-          <<: *master_workflow_filters
+      - e2e:
+          name: test/e2e-ipv4-oldk8s
+          k3sVersion: v1.19.16-k3s1
           requires:
+            - build
+            - check
+      - release:
+          <<: *work_branch_workflow_filter
+          requires:
+            - dev_mac
+            - dev_ubuntu
             - test
-            - test/e2e
+            - test/e2e-ipv4
+            - test/e2e-ipv6
+            - test/e2e-ipv4-oldk8s
       - helm-release:
-          <<: *helm_release_workflow_filters
+          # Ideally we should be able to do CD on helm as well so this would be work_branch_workflow_filter
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v?(\d+)\.(\d+)\.(\d+)$/
           requires:
           - release
