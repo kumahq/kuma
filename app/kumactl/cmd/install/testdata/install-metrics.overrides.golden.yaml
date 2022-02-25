@@ -6078,6 +6078,49 @@ metadata:
 data:
   kuma-cp.json: |
     {
+      "__inputs": [
+        {
+          "name": "DS_PROMETHEUS",
+          "label": "Prometheus",
+          "description": "",
+          "type": "datasource",
+          "pluginId": "prometheus",
+          "pluginName": "Prometheus"
+        }
+      ],
+      "__elements": [],
+      "__requires": [
+        {
+          "type": "grafana",
+          "id": "grafana",
+          "name": "Grafana",
+          "version": "8.3.3"
+        },
+        {
+          "type": "panel",
+          "id": "graph",
+          "name": "Graph (old)",
+          "version": ""
+        },
+        {
+          "type": "datasource",
+          "id": "prometheus",
+          "name": "Prometheus",
+          "version": "1.0.0"
+        },
+        {
+          "type": "panel",
+          "id": "stat",
+          "name": "Stat",
+          "version": ""
+        },
+        {
+          "type": "panel",
+          "id": "table",
+          "name": "Table",
+          "version": ""
+        }
+      ],
       "annotations": {
         "list": [
           {
@@ -6087,19 +6130,30 @@ data:
             "hide": true,
             "iconColor": "rgba(0, 211, 255, 1)",
             "name": "Annotations & Alerts",
+            "target": {
+              "limit": 100,
+              "matchAny": false,
+              "tags": [],
+              "type": "dashboard"
+            },
             "type": "dashboard"
           }
         ]
       },
       "editable": true,
-      "gnetId": null,
+      "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "iteration": 1611213414839,
+      "id": null,
+      "iteration": 1645785455248,
       "links": [],
+      "liveNow": false,
       "panels": [
         {
           "collapsed": false,
-          "datasource": "Prometheus",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
@@ -6112,26 +6166,35 @@ data:
           "type": "row"
         },
         {
-          "datasource": "Prometheus",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
+              "color": {
+                "mode": "thresholds"
+              },
               "mappings": [
                 {
-                  "from": "",
-                  "id": 0,
-                  "text": "OFF",
-                  "to": "",
-                  "type": 1,
-                  "value": "0"
+                  "options": {
+                    "from": 1,
+                    "result": {
+                      "color": "green",
+                      "index": 0,
+                      "text": "LIVE"
+                    },
+                    "to": 9999
+                  },
+                  "type": "range"
                 },
                 {
-                  "from": "1",
-                  "id": 1,
-                  "text": "LIVE",
-                  "to": "999",
-                  "type": 2,
-                  "value": "1"
+                  "options": {
+                    "from": 0,
+                    "result": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "UNAVAILABLE"
+                    },
+                    "to": 0.999
+                  },
+                  "type": "range"
                 }
               ],
               "thresholds": {
@@ -6158,6 +6221,10 @@ data:
           },
           "id": 39,
           "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
             "reduceOptions": {
               "calcs": [
                 "last"
@@ -6165,29 +6232,38 @@ data:
               "fields": "",
               "values": false
             },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false
+            "text": {},
+            "textMode": "auto"
           },
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "targets": [
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
               "expr": "sum(cp_info{instance=~\"$instance\"} OR on() vector(0))",
+              "instant": false,
               "interval": "",
+              "intervalFactor": 1,
               "legendFormat": "",
               "refId": "A"
             }
           ],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Live",
-          "type": "gauge"
+          "title": "Condition",
+          "type": "stat"
         },
         {
-          "datasource": "Prometheus",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
           "fieldConfig": {
             "defaults": {
               "custom": {
-                "align": null
+                "align": "auto",
+                "displayMode": "auto"
               },
               "mappings": [],
               "thresholds": {
@@ -6215,9 +6291,16 @@ data:
           "id": 41,
           "maxDataPoints": 1,
           "options": {
+            "footer": {
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
             "showHeader": true
           },
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "targets": [
             {
               "expr": "cp_info{instance=~\"$instance\"}",
@@ -6227,12 +6310,14 @@ data:
               "refId": "A"
             }
           ],
-          "timeFrom": null,
-          "timeShift": null,
           "title": "Control Plane information",
           "transformations": [
             {
               "id": "labelsToFields",
+              "options": {}
+            },
+            {
+              "id": "merge",
               "options": {}
             },
             {
@@ -6272,14 +6357,11 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Only one instance should be a leader at a given point of time in every zone",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "Only one instance should be a leader at a given point of time in every zone",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -6302,8 +6384,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6320,9 +6405,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Leader",
           "tooltip": {
             "shared": true,
@@ -6331,9 +6414,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -6341,30 +6422,26 @@ data:
             {
               "$$hashKey": "object:3281",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             },
             {
               "$$hashKey": "object:3282",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
           "collapsed": false,
-          "datasource": "Prometheus",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
@@ -6381,20 +6458,97 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Number of ADS messages exchanged between Control Plane and Dataplane over XDS",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "fill": 0,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 0,
+            "y": 10
+          },
+          "hiddenSeries": false,
+          "id": 20,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 2,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.3.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "xds_streams_active{instance=~\"$instance\"}",
+              "interval": "",
+              "legendFormat": "{{ instance }}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "XDS active connections",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:258",
+              "format": "short",
+              "logBase": 1,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:259",
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "description": "Number of ADS messages exchanged between Control Plane and Dataplane over XDS",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 6,
-            "x": 0,
+            "w": 5,
+            "x": 4,
             "y": 10
           },
           "hiddenSeries": false,
@@ -6411,8 +6565,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6443,32 +6600,57 @@ data:
           "steppedLine": false,
           "targets": [
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
               "expr": "sum(rate(xds_responses_sent{instance=~\"$instance\"}[1m]))",
               "interval": "",
               "legendFormat": "Configuration sent",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(xds_confirmation_received{confirmation=\"ACK\",instance=~\"$instance\"}[1m]))",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "sum(rate(xds_requests_received{confirmation=\"ACK\",instance=~\"$instance\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Configuration accepted",
               "refId": "B"
             },
             {
-              "expr": "sum(rate(xds_confirmation_received{confirmation=\"NACK\",instance=~\"$instance\"}[1m]))",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "sum(rate(xds_requests_received{confirmation=\"NACK\",instance=~\"$instance\"}[1m]))",
               "interval": "",
               "legendFormat": "Configuration rejected",
               "refId": "C"
             },
             {
-              "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"envoy.service.discovery.v2.AggregatedDiscoveryService\",grpc_code!=\"OK\",instance=~\"$instance\"}[1m]))",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",grpc_code!=\"OK\",instance=~\"$instance\"}[1m]))",
               "interval": "",
               "legendFormat": "RPC Errors",
               "refId": "D"
             },
             {
-              "expr": "sum(rate(grpc_server_started_total{grpc_service=\"envoy.service.discovery.v2.AggregatedDiscoveryService\",instance=~\"$instance\"}[1m]))",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "sum(rate(grpc_server_started_total{grpc_service=\"envoy.service.discovery.v3.AggregatedDiscoveryService\",instance=~\"$instance\"}[1m]))",
               "hide": true,
               "interval": "",
               "legendFormat": "Rate",
@@ -6476,9 +6658,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "XDS message exchange",
           "tooltip": {
             "shared": true,
@@ -6487,9 +6667,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -6497,25 +6675,18 @@ data:
             {
               "$$hashKey": "object:458",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             },
             {
               "$$hashKey": "object:459",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -6523,114 +6694,17 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
-          "fill": 0,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 6,
-            "x": 6,
-            "y": 10
-          },
-          "hiddenSeries": false,
-          "id": 20,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 2,
-          "nullPointMode": "null",
-          "percentage": false,
-          "pluginVersion": "7.1.4",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": true,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "xds_streams_active{instance=~\"$instance\"}",
-              "interval": "",
-              "legendFormat": "{{ instance }}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "XDS active connections",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:258",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "$$hashKey": "object:259",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
           "description": "Number of Envoy XDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected dataplanes * KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 6,
-            "x": 12,
+            "w": 5,
+            "x": 9,
             "y": 10
           },
           "hiddenSeries": false,
@@ -6648,8 +6722,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6678,9 +6755,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "XDS config generations",
           "tooltip": {
             "shared": true,
@@ -6689,9 +6764,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -6699,25 +6772,19 @@ data:
             {
               "$$hashKey": "object:456",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:457",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -6725,20 +6792,17 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "How much it took to generate Envoy configuration for a single dataplane",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "How much it took to generate Envoy configuration for a single dataplane",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 6,
-            "x": 18,
+            "w": 5,
+            "x": 14,
             "y": 10
           },
           "hiddenSeries": false,
@@ -6755,8 +6819,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6773,9 +6840,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Latency of XDS config generation (99th percentile)",
           "tooltip": {
             "shared": true,
@@ -6784,9 +6849,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -6794,25 +6857,19 @@ data:
             {
               "$$hashKey": "object:309",
               "format": "ms",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:310",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -6820,19 +6877,102 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Cache protects ClusterLoadAssignments resources by sharing them between many goroutines which reconcile Dataplanes.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
+          "description": "How much it took to deliver Envoy configuration and receive ACK/NACK for a single dataplane",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 7,
-            "w": 12,
+            "h": 8,
+            "w": 5,
+            "x": 19,
+            "y": 10
+          },
+          "hiddenSeries": false,
+          "id": 82,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.3.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "xds_delivery{quantile=\"0.99\",instance=~\"$instance\"}",
+              "interval": "",
+              "legendFormat": "{{ instance }}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Latency of XDS config delivery (99th percentile)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:309",
+              "format": "ms",
+              "logBase": 1,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:310",
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "description": "Cache protects ClusterLoadAssignments resources by sharing them between many goroutines which reconcile Dataplanes.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 13,
             "x": 0,
             "y": 18
           },
@@ -6854,8 +6994,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": true,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6884,9 +7027,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Endpoints cache performance",
           "tooltip": {
             "shared": true,
@@ -6895,36 +7036,28 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
           "yaxes": [
             {
               "$$hashKey": "object:645",
-              "decimals": null,
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:646",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -6932,20 +7065,17 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Mesh Cache protects hashes calculated periodically for each Mesh in order to avoid the excessive generation of xDS resources.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "Mesh Cache protects hashes calculated periodically for each Mesh in order to avoid the excessive generation of xDS resources.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
+            "h": 8,
+            "w": 11,
+            "x": 13,
             "y": 18
           },
           "hiddenSeries": false,
@@ -6966,8 +7096,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": true,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6996,9 +7129,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Mesh resources hash cache performance",
           "tooltip": {
             "shared": true,
@@ -7007,46 +7138,41 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
           "yaxes": [
             {
               "$$hashKey": "object:645",
-              "decimals": null,
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:646",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
           "collapsed": false,
-          "datasource": "Prometheus",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 25
+            "y": 26
           },
           "id": 73,
           "panels": [],
@@ -7058,20 +7184,13 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 26
+            "y": 27
           },
           "hiddenSeries": false,
           "id": 75,
@@ -7087,8 +7206,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7111,9 +7233,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "HDS message exchange",
           "tooltip": {
             "shared": true,
@@ -7122,9 +7242,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -7132,25 +7250,18 @@ data:
             {
               "$$hashKey": "object:310",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             },
             {
               "$$hashKey": "object:311",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -7158,20 +7269,13 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 0,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 26
+            "y": 27
           },
           "hiddenSeries": false,
           "id": 77,
@@ -7187,8 +7291,11 @@ data:
           "lines": true,
           "linewidth": 2,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7205,9 +7312,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "HDS active connections",
           "tooltip": {
             "shared": true,
@@ -7216,9 +7321,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -7226,25 +7329,19 @@ data:
             {
               "$$hashKey": "object:797",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:798",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -7252,21 +7349,14 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
           "description": "Number of Envoy HDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected dataplanes * KUMA_DP_SERVER_HDS_REFRESH_INTERVAL",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 26
+            "y": 27
           },
           "hiddenSeries": false,
           "id": 79,
@@ -7282,8 +7372,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7299,22 +7392,29 @@ data:
           "steppedLine": false,
           "targets": [
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
               "expr": "sum(rate(hds_generation_count{instance=~\"$instance\"}[1m])) - sum(rate(hds_generation_errors{instance=~\"$instance\"}[1m]))",
               "interval": "",
               "legendFormat": "Success",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(xds_generation_errors{instance=~\"$instance\"}[1m]))",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "sum(rate(hds_generation_errors{instance=~\"$instance\"}[1m]))",
               "interval": "",
               "legendFormat": "Errors",
               "refId": "B"
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "HDS config generations",
           "tooltip": {
             "shared": true,
@@ -7323,9 +7423,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -7333,25 +7431,18 @@ data:
             {
               "$$hashKey": "object:1493",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             },
             {
               "$$hashKey": "object:1494",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -7359,21 +7450,14 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": null,
           "description": "How much it took to generate Envoy configuration for a single dataplane",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 26
+            "y": 27
           },
           "hiddenSeries": false,
           "id": 81,
@@ -7389,8 +7473,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7400,16 +7487,19 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "xds_generation{quantile=\"0.99\",instance=~\"$instance\"}",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "hds_generation{quantile=\"0.99\",instance=~\"$instance\"}",
               "interval": "",
               "legendFormat": "{{ instance }}",
               "refId": "A"
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Latency of HDS config generation (99th percentile)",
           "tooltip": {
             "shared": true,
@@ -7418,9 +7508,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -7428,35 +7516,32 @@ data:
             {
               "$$hashKey": "object:1825",
               "format": "ms",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:1826",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
           "collapsed": false,
-          "datasource": "Prometheus",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 34
+            "y": 35
           },
           "id": 5,
           "panels": [],
@@ -7468,12 +7553,9 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
           "fill": 1,
           "fillGradient": 0,
@@ -7481,7 +7563,7 @@ data:
             "h": 8,
             "w": 16,
             "x": 0,
-            "y": 35
+            "y": 36
           },
           "hiddenSeries": false,
           "id": 2,
@@ -7493,15 +7575,17 @@ data:
             "min": false,
             "rightSide": true,
             "show": true,
-            "sideWidth": null,
             "total": false,
             "values": false
           },
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7518,9 +7602,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Latency of API Server Requests (99th percentile)",
           "tooltip": {
             "shared": true,
@@ -7529,36 +7611,27 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
           "yaxes": [
             {
               "$$hashKey": "object:853",
-              "decimals": null,
               "format": "s",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:854",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -7566,21 +7639,18 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 35
+            "y": 36
           },
           "hiddenSeries": false,
           "id": 9,
@@ -7596,8 +7666,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7630,9 +7703,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Response Codes",
           "tooltip": {
             "shared": true,
@@ -7641,46 +7712,39 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
           "yaxes": [
             {
               "$$hashKey": "object:796",
-              "decimals": null,
               "format": "cps",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             },
             {
               "$$hashKey": "object:797",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
           "collapsed": false,
-          "datasource": "Prometheus",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 43
+            "y": 44
           },
           "id": 54,
           "panels": [],
@@ -7692,21 +7756,18 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "XDS and SDS requests are not taken into account because they are long-running requests",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "XDS and SDS requests are not taken into account because they are long-running requests",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 7,
             "w": 16,
             "x": 0,
-            "y": 44
+            "y": 45
           },
           "hiddenSeries": false,
           "id": 55,
@@ -7718,15 +7779,17 @@ data:
             "min": false,
             "rightSide": true,
             "show": true,
-            "sideWidth": null,
             "total": false,
             "values": false
           },
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7743,9 +7806,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Latency of Dataplane Server Requests (99th percentile)",
           "tooltip": {
             "shared": true,
@@ -7754,36 +7815,27 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
           "yaxes": [
             {
               "$$hashKey": "object:853",
-              "decimals": null,
               "format": "s",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:854",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -7791,21 +7843,18 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "XDS and SDS requests are not taken into account because they are long-running requests",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "XDS and SDS requests are not taken into account because they are long-running requests",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 16,
-            "y": 44
+            "y": 45
           },
           "hiddenSeries": false,
           "id": 56,
@@ -7821,8 +7870,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7855,9 +7907,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Response Codes",
           "tooltip": {
             "shared": true,
@@ -7866,501 +7916,43 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
           "yaxes": [
             {
               "$$hashKey": "object:796",
-              "decimals": null,
               "format": "cps",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             },
             {
               "$$hashKey": "object:797",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
           "collapsed": false,
-          "datasource": "Prometheus",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 51
-          },
-          "id": 22,
-          "panels": [],
-          "title": "Secret Discovery Service (SDS) - Certificates provider for Kuma DP",
-          "type": "row"
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Number of SDS messages exchanged between Control Plane and Dataplane over SDS",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 6,
-            "x": 0,
             "y": 52
-          },
-          "hiddenSeries": false,
-          "id": 52,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "percentage": false,
-          "pluginVersion": "7.1.4",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [
-            {
-              "$$hashKey": "object:194",
-              "alias": "Configuration sent",
-              "color": "#5794F2"
-            },
-            {
-              "$$hashKey": "object:195",
-              "alias": "Configuration accepted",
-              "color": "#73BF69"
-            },
-            {
-              "$$hashKey": "object:196",
-              "alias": "Configuration rejected",
-              "color": "#F2495C"
-            },
-            {
-              "$$hashKey": "object:197",
-              "alias": "RPC Errors",
-              "color": "#C4162A"
-            }
-          ],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(rate(sds_responses_sent{instance=~\"$instance\"}[1m]))",
-              "interval": "",
-              "legendFormat": "Configuration sent",
-              "refId": "A"
-            },
-            {
-              "expr": "sum(rate(sds_confirmation_received{confirmation=\"ACK\",instance=~\"$instance\"}[1m]))",
-              "interval": "",
-              "legendFormat": "Configuration accepted",
-              "refId": "B"
-            },
-            {
-              "expr": "sum(rate(sds_confirmation_received{confirmation=\"NACK\",instance=~\"$instance\"}[1m]))",
-              "interval": "",
-              "legendFormat": "Configuration rejected",
-              "refId": "C"
-            },
-            {
-              "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"envoy.service.discovery.v2.SecretDiscoveryService\",grpc_code!=\"OK\",instance=~\"$instance\"}[1m]))",
-              "interval": "",
-              "legendFormat": "RPC Errors",
-              "refId": "D"
-            },
-            {
-              "expr": "sum(rate(grpc_server_started_total{grpc_service=\"envoy.service.discovery.v2.SecretDiscoveryService\",instance=~\"$instance\"}[1m]))",
-              "hide": true,
-              "interval": "",
-              "legendFormat": "Rate",
-              "refId": "E"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "SDS message exchange",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:1007",
-              "format": "ops",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            },
-            {
-              "$$hashKey": "object:1008",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "fill": 0,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 6,
-            "x": 6,
-            "y": 52
-          },
-          "hiddenSeries": false,
-          "id": 50,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 2,
-          "nullPointMode": "null",
-          "percentage": false,
-          "pluginVersion": "7.1.4",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": true,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sds_streams_active{instance=~\"$instance\"}",
-              "interval": "",
-              "legendFormat": "{{ instance }}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "SDS active connections",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:534",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "$$hashKey": "object:535",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Number of Envoy SDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected dataplanes * KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 6,
-            "x": 12,
-            "y": 52
-          },
-          "hiddenSeries": false,
-          "id": 42,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "hideZero": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "percentage": false,
-          "pluginVersion": "7.1.4",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [
-            {
-              "alias": "Errors",
-              "color": "#F2495C"
-            }
-          ],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(rate(sds_generation_count{instance=~\"$instance\"}[1m])) - sum(rate(sds_generation_errors{instance=~\"$instance\"}[1m]))",
-              "interval": "",
-              "legendFormat": "Success",
-              "refId": "A"
-            },
-            {
-              "expr": "sum(rate(sds_generation_errors{instance=~\"$instance\"}[1m]))",
-              "interval": "",
-              "legendFormat": "Errors",
-              "refId": "B"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "SDS config generations",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:850",
-              "format": "ops",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "$$hashKey": "object:851",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "description": "How much it took to generate SDS Envoy configuration for a single dataplane",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 6,
-            "x": 18,
-            "y": 52
-          },
-          "hiddenSeries": false,
-          "id": 19,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "percentage": false,
-          "pluginVersion": "7.1.4",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sds_generation{quantile=\"0.99\",instance=~\"$instance\"}",
-              "interval": "",
-              "legendFormat": "{{ instance }}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Latency of SDS config generation (99th percentile)",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:988",
-              "format": "ms",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "$$hashKey": "object:989",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "collapsed": false,
-          "datasource": "Prometheus",
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 60
           },
           "id": 26,
           "panels": [],
-          "title": "Kuma Discovery Service (KDS) - Multicluster communication",
+          "title": "Kuma Discovery Service (KDS) - Mutltizone communication",
           "type": "row"
         },
         {
@@ -8368,21 +7960,14 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
           "description": "This metric presents if policies are properly propagated from Global to Zones. All instances of global and zones in the system should have the same number of policies. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 0,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 61
+            "y": 53
           },
           "hiddenSeries": false,
           "id": 61,
@@ -8400,8 +7985,11 @@ data:
           "lines": true,
           "linewidth": 2,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8411,16 +7999,19 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (zone, instance) (resources_count{instance=~\"$instance\",resource_type!~\"Dataplane|DataplaneInsight|Zone|ZoneInsight\"})",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "sum by (zone, instance) (resources_count{instance=~\"$instance\",resource_type!~\"Dataplane|DataplaneInsight|Zone|ZoneInsight|ZoneIngress|ZoneIngressInsight|ZoneEgress|ZoneEgressInsight\"})",
               "interval": "",
               "legendFormat": "{{ zone }} - {{ instance }}",
               "refId": "A"
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Policies count (sync check)",
           "tooltip": {
             "shared": true,
@@ -8429,9 +8020,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -8439,25 +8028,19 @@ data:
             {
               "$$hashKey": "object:534",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:535",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -8465,21 +8048,18 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "This metric presents if Dataplanes are properly propagated from Zones to Global. Keep in mind that Dataplanes from all zones != Dataplanes from global. All zones receive additional one dataplane of Ingress from other Zones. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "This metric presents if Dataplanes are properly propagated from Zones to Global. Keep in mind that Dataplanes from all zones != Dataplanes from global. All zones receive additional one dataplane of Ingress from other Zones. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
           "fill": 0,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 61
+            "y": 53
           },
           "hiddenSeries": false,
           "id": 66,
@@ -8497,8 +8077,11 @@ data:
           "lines": true,
           "linewidth": 2,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8515,9 +8098,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Dataplane count",
           "tooltip": {
             "shared": true,
@@ -8526,9 +8107,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -8536,25 +8115,19 @@ data:
             {
               "$$hashKey": "object:534",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:535",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -8562,21 +8135,99 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Number of KDS messages exchanged between Global Control Plane and Zone Control Plane over KDS. Global sends to Zone policies and Ingress Dataplanes",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "Number of zone CP connected to Global.",
+          "fill": 0,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 0,
+            "y": 61
+          },
+          "hiddenSeries": false,
+          "id": 58,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 2,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.3.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "kds_streams_active{instance=~\"$instance\",zone=\"Global\"}",
+              "interval": "",
+              "legendFormat": "{{ instance }}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Global - KDS active connections",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:534",
+              "format": "short",
+              "logBase": 1,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:535",
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "description": "Number of KDS messages exchanged between Global Control Plane and Zone Control Plane over KDS. Global sends to Zone policies and Ingress Dataplanes",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 6,
-            "x": 0,
-            "y": 69
+            "w": 5,
+            "x": 4,
+            "y": 61
           },
           "hiddenSeries": false,
           "id": 57,
@@ -8592,8 +8243,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8624,31 +8278,54 @@ data:
           "steppedLine": false,
           "targets": [
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
               "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone=\"Global\"}[1m]))",
               "interval": "",
               "legendFormat": "Configuration sent",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(kds_confirmation_received{confirmation=\"ACK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
               "hide": true,
               "interval": "",
               "legendFormat": "Configuration accepted",
               "refId": "B"
             },
             {
-              "expr": "sum(rate(kds_confirmation_received{confirmation=\"NACK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
               "interval": "",
               "legendFormat": "Configuration rejected",
               "refId": "C"
             },
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
               "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
               "interval": "",
               "legendFormat": "RPC Errors",
               "refId": "D"
             },
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
               "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone=\"Global\"}[1m]))",
               "hide": true,
               "interval": "",
@@ -8657,9 +8334,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Global - KDS message exchange",
           "tooltip": {
             "shared": true,
@@ -8668,9 +8343,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -8678,25 +8351,18 @@ data:
             {
               "$$hashKey": "object:1007",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             },
             {
               "$$hashKey": "object:1008",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -8704,116 +8370,18 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Number of zone CP connected to Global.",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
-          "fill": 0,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 6,
-            "x": 6,
-            "y": 69
-          },
-          "hiddenSeries": false,
-          "id": 58,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 2,
-          "nullPointMode": "null",
-          "percentage": false,
-          "pluginVersion": "7.1.4",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": true,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "kds_streams_active{instance=~\"$instance\",zone=\"Global\"}",
-              "interval": "",
-              "legendFormat": "{{ instance }}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Global - KDS active connections",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:534",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "$$hashKey": "object:535",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
           "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 6,
-            "x": 12,
-            "y": 69
+            "w": 5,
+            "x": 9,
+            "y": 61
           },
           "hiddenSeries": false,
           "id": 59,
@@ -8830,8 +8398,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8859,9 +8430,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Global - KDS config generations",
           "tooltip": {
             "shared": true,
@@ -8870,9 +8439,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -8880,25 +8447,19 @@ data:
             {
               "$$hashKey": "object:850",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:851",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -8906,21 +8467,14 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
           "description": "How much it took to generate KDS configuration for a single zone control plane",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 6,
-            "x": 18,
-            "y": 69
+            "w": 5,
+            "x": 14,
+            "y": 61
           },
           "hiddenSeries": false,
           "id": 60,
@@ -8936,8 +8490,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8947,6 +8504,11 @@ data:
           "steppedLine": false,
           "targets": [
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
               "expr": "kds_generation{quantile=\"0.99\",instance=~\"$instance\",zone=\"Global\"}",
               "interval": "",
               "legendFormat": "{{ instance }}",
@@ -8954,9 +8516,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Global - Latency of KDS config generation (99th percentile)",
           "tooltip": {
             "shared": true,
@@ -8965,9 +8525,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -8975,25 +8533,19 @@ data:
             {
               "$$hashKey": "object:988",
               "format": "ms",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:989",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -9001,21 +8553,185 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Number of KDS messages exchanged between Global Control Plane and Zone Control Plane over KDS. Zone sends to Global its Dataplanes and DataplaneInsights",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
+          "description": "How much it took to deliver Envoy configuration and receive ACK/NACK for a single dataplane",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 6,
+            "w": 5,
+            "x": 19,
+            "y": 61
+          },
+          "hiddenSeries": false,
+          "id": 83,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.3.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "kds_delivery{quantile=\"0.99\",instance=~\"$instance\",zone=\"Global\"}",
+              "interval": "",
+              "legendFormat": "{{ instance }}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Global - Latency of KDS config delivery (99th percentile)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:309",
+              "format": "ms",
+              "logBase": 1,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:310",
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "description": "Number of global CP connected to Zone.",
+          "fill": 0,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 4,
             "x": 0,
-            "y": 77
+            "y": 69
+          },
+          "hiddenSeries": false,
+          "id": 63,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 2,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.3.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "kds_streams_active{instance=~\"$instance\",zone!=\"Global\"}",
+              "interval": "",
+              "legendFormat": "{{ instance }}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Zone - KDS active connections",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:534",
+              "format": "short",
+              "logBase": 1,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:535",
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "description": "Number of KDS messages exchanged between Global Control Plane and Zone Control Plane over KDS. Zone sends to Global its Dataplanes and DataplaneInsights",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 5,
+            "x": 4,
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 62,
@@ -9031,8 +8747,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -9063,31 +8782,54 @@ data:
           "steppedLine": false,
           "targets": [
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
               "expr": "sum(rate(kds_responses_sent{instance=~\"$instance\",zone!=\"Global\"}[1m]))",
               "interval": "",
               "legendFormat": "Configuration sent",
               "refId": "A"
             },
             {
-              "expr": "sum(rate(kds_confirmation_received{confirmation=\"ACK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "sum(rate(kds_requests_received{confirmation=\"ACK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
               "hide": true,
               "interval": "",
               "legendFormat": "Configuration accepted",
               "refId": "B"
             },
             {
-              "expr": "sum(rate(kds_confirmation_received{confirmation=\"NACK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "sum(rate(kds_requests_received{confirmation=\"NACK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
               "interval": "",
               "legendFormat": "Configuration rejected",
               "refId": "C"
             },
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
               "expr": "sum(rate(grpc_server_handled_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",grpc_code!=\"OK\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
               "interval": "",
               "legendFormat": "RPC Errors",
               "refId": "D"
             },
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
               "expr": "sum(rate(grpc_server_started_total{grpc_service=\"kuma.mesh.v1alpha1.MultiplexService\",instance=~\"$instance\",zone!=\"Global\"}[1m]))",
               "hide": true,
               "interval": "",
@@ -9096,9 +8838,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Zone - KDS message exchange",
           "tooltip": {
             "shared": true,
@@ -9107,9 +8847,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -9117,25 +8855,18 @@ data:
             {
               "$$hashKey": "object:1007",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             },
             {
               "$$hashKey": "object:1008",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -9143,116 +8874,18 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Number of global CP connected to Zone.",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
-          "fill": 0,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 6,
-            "x": 6,
-            "y": 77
-          },
-          "hiddenSeries": false,
-          "id": 63,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 2,
-          "nullPointMode": "null",
-          "percentage": false,
-          "pluginVersion": "7.1.4",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": true,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "kds_streams_active{instance=~\"$instance\",zone!=\"Global\"}",
-              "interval": "",
-              "legendFormat": "{{ instance }}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Zone - KDS active connections",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:534",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "$$hashKey": "object:535",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
           "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 6,
-            "x": 12,
-            "y": 77
+            "w": 5,
+            "x": 9,
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 64,
@@ -9269,8 +8902,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -9298,9 +8934,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Zone - KDS config generations",
           "tooltip": {
             "shared": true,
@@ -9309,9 +8943,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -9319,25 +8951,19 @@ data:
             {
               "$$hashKey": "object:850",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:851",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -9345,21 +8971,14 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
           "description": "How much it took to generate KDS configuration for a global control plane",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 6,
-            "x": 18,
-            "y": 77
+            "w": 5,
+            "x": 14,
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 65,
@@ -9375,8 +8994,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -9386,6 +9008,11 @@ data:
           "steppedLine": false,
           "targets": [
             {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
               "expr": "kds_generation{quantile=\"0.99\",instance=~\"$instance\",zone!=\"Global\"}",
               "interval": "",
               "legendFormat": "{{ instance }}",
@@ -9393,9 +9020,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Zone - Latency of KDS config generation (99th percentile)",
           "tooltip": {
             "shared": true,
@@ -9404,9 +9029,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -9414,63 +9037,37 @@ data:
             {
               "$$hashKey": "object:988",
               "format": "ms",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:989",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
-        },
-        {
-          "collapsed": false,
-          "datasource": "Prometheus",
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 85
-          },
-          "id": 46,
-          "panels": [],
-          "title": "DNS Server",
-          "type": "row"
         },
         {
           "aliasColors": {},
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
+          "description": "How much it took to deliver Envoy configuration and receive ACK/NACK for a single dataplane",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 86
+            "w": 5,
+            "x": 19,
+            "y": 69
           },
           "hiddenSeries": false,
-          "id": 48,
+          "id": 84,
           "legend": {
             "avg": false,
             "current": false,
@@ -9483,8 +9080,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -9494,17 +9094,20 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "dns_server{quantile=\"0.99\",instance=~\"$instance\"}",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "Prometheus"
+              },
+              "exemplar": true,
+              "expr": "kds_delivery{quantile=\"0.99\",instance=~\"$instance\",zone!=\"Global\"}",
               "interval": "",
               "legendFormat": "{{ instance }}",
               "refId": "A"
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
-          "title": "Latency of DNS response (99th percentile)",
+          "title": "Global - Latency of KDS config delivery (99th percentile)",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -9512,147 +9115,40 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1813",
-              "format": "dtdurationms",
-              "label": null,
+              "$$hashKey": "object:309",
+              "format": "ms",
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
-              "$$hashKey": "object:1814",
+              "$$hashKey": "object:310",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 86
-          },
-          "hiddenSeries": false,
-          "id": 49,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "percentage": false,
-          "pluginVersion": "7.1.4",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(rate(dns_server_resolution{instance=~\"$instance\",result=\"resolved\"}[1m]))",
-              "instant": false,
-              "interval": "",
-              "legendFormat": "Resolved",
-              "refId": "A"
-            },
-            {
-              "expr": "sum(rate(dns_server_resolution{instance=~\"$instance\",result=\"unresolved\"}[1m]))",
-              "instant": false,
-              "interval": "",
-              "legendFormat": "Unresolved",
-              "refId": "B"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "DNS responses",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:2031",
-              "format": "ops",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "$$hashKey": "object:2032",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
           "collapsed": false,
-          "datasource": "Prometheus",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 94
+            "y": 77
           },
           "id": 11,
           "panels": [],
@@ -9664,21 +9160,18 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Latency of underlying storage (API Server on K8S, Postgres on Universal etc.)",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "Latency of underlying storage (API Server on K8S, Postgres on Universal etc.)",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
             "w": 7,
             "x": 0,
-            "y": 95
+            "y": 78
           },
           "hiddenSeries": false,
           "id": 12,
@@ -9694,8 +9187,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -9712,9 +9208,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Latency of Store operations (99th percentile)",
           "tooltip": {
             "shared": true,
@@ -9723,36 +9217,27 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
           "yaxes": [
             {
               "$$hashKey": "object:545",
-              "decimals": null,
               "format": "s",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:546",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -9760,21 +9245,18 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Cache protects underlying storage by sharing responses between many goroutines accessing the storage.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "Cache protects underlying storage by sharing responses between many goroutines accessing the storage.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
             "w": 5,
             "x": 7,
-            "y": 95
+            "y": 78
           },
           "hiddenSeries": false,
           "id": 14,
@@ -9794,8 +9276,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": true,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -9824,9 +9309,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Store cache performance",
           "tooltip": {
             "shared": true,
@@ -9835,36 +9318,28 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
           "yaxes": [
             {
               "$$hashKey": "object:645",
-              "decimals": null,
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:646",
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -9872,21 +9347,18 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Real requests executed on the underlying storage (Postgres/Kubernetes API Server)",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
+          "description": "Real requests executed on the underlying storage (Postgres/Kubernetes API Server)",
           "fill": 0,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 95
+            "y": 78
           },
           "hiddenSeries": false,
           "id": 13,
@@ -9906,8 +9378,11 @@ data:
           "lines": true,
           "linewidth": 2,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -9924,9 +9399,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Store operations",
           "tooltip": {
             "shared": true,
@@ -9935,9 +9408,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -9945,34 +9416,31 @@ data:
             {
               "decimals": 2,
               "format": "ops",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
           "collapsed": false,
-          "datasource": "Prometheus",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 104
+            "y": 87
           },
           "id": 35,
           "panels": [],
@@ -9984,12 +9452,9 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
           "fill": 1,
           "fillGradient": 0,
@@ -9997,7 +9462,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 105
+            "y": 88
           },
           "hiddenSeries": false,
           "id": 30,
@@ -10013,8 +9478,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -10031,9 +9499,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Goroutines",
           "tooltip": {
             "shared": true,
@@ -10042,9 +9508,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -10052,25 +9516,19 @@ data:
             {
               "$$hashKey": "object:1463",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:1464",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -10078,12 +9536,9 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
           "fill": 1,
           "fillGradient": 0,
@@ -10091,7 +9546,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 105
+            "y": 88
           },
           "hiddenSeries": false,
           "id": 31,
@@ -10107,8 +9562,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -10125,9 +9583,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Threads",
           "tooltip": {
             "shared": true,
@@ -10136,9 +9592,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -10146,25 +9600,19 @@ data:
             {
               "$$hashKey": "object:1544",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:1545",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -10172,12 +9620,9 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
           "fill": 1,
           "fillGradient": 0,
@@ -10185,7 +9630,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 105
+            "y": 88
           },
           "hiddenSeries": false,
           "id": 33,
@@ -10201,8 +9646,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -10219,9 +9667,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Memory allocated",
           "tooltip": {
             "shared": true,
@@ -10230,9 +9676,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -10240,25 +9684,19 @@ data:
             {
               "$$hashKey": "object:1693",
               "format": "bytes",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:1694",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         },
         {
@@ -10266,12 +9704,9 @@ data:
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
           },
           "fill": 1,
           "fillGradient": 0,
@@ -10279,7 +9714,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 105
+            "y": 88
           },
           "hiddenSeries": false,
           "id": 32,
@@ -10295,8 +9730,11 @@ data:
           "lines": true,
           "linewidth": 1,
           "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
           "percentage": false,
-          "pluginVersion": "7.1.4",
+          "pluginVersion": "8.3.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -10313,9 +9751,7 @@ data:
             }
           ],
           "thresholds": [],
-          "timeFrom": null,
           "timeRegions": [],
-          "timeShift": null,
           "title": "Latency of GC time (75th percentile)",
           "tooltip": {
             "shared": true,
@@ -10324,9 +9760,7 @@ data:
           },
           "type": "graph",
           "xaxis": {
-            "buckets": null,
             "mode": "time",
-            "name": null,
             "show": true,
             "values": []
           },
@@ -10334,42 +9768,34 @@ data:
             {
               "$$hashKey": "object:1774",
               "format": "s",
-              "label": null,
               "logBase": 1,
-              "max": null,
               "min": "0",
               "show": true
             },
             {
               "$$hashKey": "object:1775",
               "format": "short",
-              "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
               "show": true
             }
           ],
           "yaxis": {
-            "align": false,
-            "alignLevel": null
+            "align": false
           }
         }
       ],
       "refresh": "5s",
-      "schemaVersion": 26,
+      "schemaVersion": 34,
       "style": "dark",
       "tags": [],
       "templating": {
         "list": [
           {
-            "allValue": null,
-            "current": {
-              "selected": false,
-              "text": "All",
-              "value": "$__all"
+            "current": {},
+            "datasource": {
+              "type": "prometheus",
+              "uid": "Prometheus"
             },
-            "datasource": "Prometheus",
             "definition": "label_values(cp_info, zone)",
             "hide": 0,
             "includeAll": true,
@@ -10377,25 +9803,25 @@ data:
             "multi": false,
             "name": "zone",
             "options": [],
-            "query": "label_values(cp_info, zone)",
+            "query": {
+              "query": "label_values(cp_info, zone)",
+              "refId": "Prometheus-zone-Variable-Query"
+            },
             "refresh": 2,
             "regex": "",
             "skipUrlSync": false,
             "sort": 0,
             "tagValuesQuery": "",
-            "tags": [],
             "tagsQuery": "",
             "type": "query",
             "useTags": false
           },
           {
-            "allValue": null,
-            "current": {
-              "selected": false,
-              "text": "All",
-              "value": "$__all"
+            "current": {},
+            "datasource": {
+              "type": "prometheus",
+              "uid": "Prometheus"
             },
-            "datasource": "Prometheus",
             "definition": "label_values(cp_info{zone=~\"$zone\"}, instance)",
             "hide": 0,
             "includeAll": true,
@@ -10403,13 +9829,15 @@ data:
             "multi": false,
             "name": "instance",
             "options": [],
-            "query": "label_values(cp_info{zone=~\"$zone\"}, instance)",
+            "query": {
+              "query": "label_values(cp_info{zone=~\"$zone\"}, instance)",
+              "refId": "Prometheus-instance-Variable-Query"
+            },
             "refresh": 2,
             "regex": "",
             "skipUrlSync": false,
             "sort": 0,
             "tagValuesQuery": "",
-            "tags": [],
             "tagsQuery": "",
             "type": "query",
             "useTags": false
@@ -10417,7 +9845,7 @@ data:
         ]
       },
       "time": {
-        "from": "now-5m",
+        "from": "now-15m",
         "to": "now"
       },
       "timepicker": {

@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
 
@@ -21,7 +22,11 @@ var _ = Describe("Gateway Listener", func() {
 
 	Do := func(gateway string) (cache.Snapshot, error) {
 		serverCtx := xds_server.NewXdsContext()
-		reconciler := xds_server.DefaultReconciler(rt, serverCtx)
+		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
+		if err != nil {
+			return cache.Snapshot{}, err
+		}
+		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks)
 
 		Expect(StoreInlineFixture(rt, []byte(gateway))).To(Succeed())
 

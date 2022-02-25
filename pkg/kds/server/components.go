@@ -24,12 +24,12 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 	hasher, cache := newKDSContext(log)
 	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter, mapper)
 	versioner := util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
-	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode)
-	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds")
 	if err != nil {
 		return nil, err
 	}
-	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds")
+	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode, statsCallbacks)
+	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +95,9 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 			OnError: func(err error) {
 				kdsGenerationsErrors.Inc()
 				log.Error(err, "OnTick() failed")
+			},
+			OnStop: func() {
+				reconciler.Clear(node)
 			},
 		}, nil
 	}), nil
