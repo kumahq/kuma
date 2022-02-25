@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
@@ -71,6 +72,7 @@ type RuntimeContext interface {
 	Access() Access
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
+	StartTime() time.Time
 }
 
 type Access struct {
@@ -121,31 +123,32 @@ func (i *runtimeInfo) GetClusterId() string {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg      kuma_cp.Config
-	rm       core_manager.ResourceManager
-	rs       core_store.ResourceStore
-	ss       store.SecretStore
-	cs       core_store.ResourceStore
-	rom      core_manager.ReadOnlyResourceManager
-	cam      ca.Managers
-	dsl      datasource.Loader
-	ext      context.Context
-	dns      resolver.DNSResolver
-	configm  config_manager.ConfigManager
-	leadInfo component.LeaderInfo
-	lif      lookup.LookupIPFunc
-	eac      admin.EnvoyAdminClient
-	metrics  metrics.Metrics
-	erf      events.ListenerFactory
-	apim     api_server.APIInstaller
-	xdsh     *xds_hooks.Hooks
-	cap      secrets.CaProvider
-	dps      *dp_server.DpServer
-	kdsctx   *kds_context.Context
-	rv       ResourceValidators
-	au       authn.Authenticator
-	acc      Access
-	appCtx   context.Context
+	cfg       kuma_cp.Config
+	rm        core_manager.ResourceManager
+	rs        core_store.ResourceStore
+	ss        store.SecretStore
+	cs        core_store.ResourceStore
+	rom       core_manager.ReadOnlyResourceManager
+	cam       ca.Managers
+	dsl       datasource.Loader
+	ext       context.Context
+	dns       resolver.DNSResolver
+	configm   config_manager.ConfigManager
+	leadInfo  component.LeaderInfo
+	lif       lookup.LookupIPFunc
+	eac       admin.EnvoyAdminClient
+	metrics   metrics.Metrics
+	erf       events.ListenerFactory
+	apim      api_server.APIInstaller
+	xdsh      *xds_hooks.Hooks
+	cap       secrets.CaProvider
+	dps       *dp_server.DpServer
+	kdsctx    *kds_context.Context
+	rv        ResourceValidators
+	au        authn.Authenticator
+	acc       Access
+	appCtx    context.Context
+	startTime time.Time
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -245,4 +248,8 @@ func (rc *runtimeContext) Access() Access {
 
 func (rc *runtimeContext) AppContext() context.Context {
 	return rc.appCtx
+}
+
+func (rc *runtimeContext) StartTime() time.Time {
+	return rc.startTime
 }
