@@ -327,12 +327,9 @@ func (OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh
 
 			// We assume that all the targets are either ExternalServices or not
 			// therefore we check only the first one
-			isExternalService := false
+			var isExternalService bool
 			if endpoints := proxy.Routing.OutboundTargets[service]; len(endpoints) > 0 {
-				ep := endpoints[0]
-				if ep.IsExternalService() {
-					isExternalService = true
-				}
+				isExternalService = endpoints[0].IsExternalService()
 			}
 
 			cluster := envoy_common.NewCluster(

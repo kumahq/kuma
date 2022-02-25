@@ -41,12 +41,9 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 		matched := match.ExternalService(info.ExternalServices.Items, mesh_proto.TagSelector(dest.Destination))
 		service := dest.Destination[mesh_proto.ServiceTag]
 
-		firstEndpointExternalService := false
+		var firstEndpointExternalService bool
 		if endpoints := info.OutboundEndpoints[service]; len(endpoints) > 0 {
-			ep := endpoints[0]
-			if ep.IsExternalService() {
-				firstEndpointExternalService = true
-			}
+			firstEndpointExternalService = endpoints[0].IsExternalService()
 		}
 
 		// If there are zone egresses present we want to direct the traffic
