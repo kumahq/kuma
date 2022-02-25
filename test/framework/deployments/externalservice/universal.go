@@ -13,6 +13,7 @@ import (
 
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
 type universalDeployment struct {
@@ -22,7 +23,7 @@ type universalDeployment struct {
 	name      string
 	cert      string
 	commands  []Command
-	app       *framework.SshApp
+	app       *ssh.App
 	verbose   bool
 }
 
@@ -75,25 +76,25 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 
 	port := u.ports["22"]
 
-	// ceritficates
+	// certificates
 	cert, key, err := framework.CreateCertsFor("localhost", ip, name)
 	if err != nil {
 		return err
 	}
 
-	err = framework.NewSshApp(u.verbose, port, nil, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
+	err = ssh.NewApp(u.verbose, port, nil, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
-	err = framework.NewSshApp(u.verbose, port, nil, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
+	err = ssh.NewApp(u.verbose, port, nil, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
 	u.cert = cert
 	for _, arg := range u.commands {
-		u.app = framework.NewSshApp(u.verbose, port, nil, arg)
+		u.app = ssh.NewApp(u.verbose, port, nil, arg)
 		err = u.app.Start()
 		if err != nil {
 			return err

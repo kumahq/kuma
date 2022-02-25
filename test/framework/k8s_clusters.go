@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/framework/envoy_admin"
 )
 
 type K8sClusters struct {
@@ -47,8 +48,8 @@ func (cs *K8sClusters) WithTimeout(timeout time.Duration) Cluster {
 	return cs
 }
 
-func (c *K8sClusters) Verbose() bool {
-	return c.verbose
+func (cs *K8sClusters) Verbose() bool {
+	return cs.verbose
 }
 
 func (cs *K8sClusters) WithRetries(retries int) Cluster {
@@ -158,14 +159,14 @@ func (cs *K8sClusters) CreateNamespace(namespace string) error {
 func (cs *K8sClusters) DeleteNamespace(namespace string) error {
 	for name, c := range cs.clusters {
 		if err := c.DeleteNamespace(namespace); err != nil {
-			return errors.Wrapf(err, "Creating Namespace %s on %s failed: %v", namespace, name, err)
+			return errors.Wrapf(err, "Delete Namespace %s on %s failed: %v", namespace, name, err)
 		}
 	}
 
 	return nil
 }
 
-func (c *K8sClusters) GetKumactlOptions() *KumactlOptions {
+func (cs *K8sClusters) GetKumactlOptions() *KumactlOptions {
 	fmt.Println("Not supported at this level.")
 	return nil
 }
@@ -224,4 +225,12 @@ func (cs *K8sClusters) DeleteDeployment(deploymentName string) error {
 		}
 	}
 	return nil
+}
+
+func (cs *K8sClusters) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
+	panic("not supported")
+}
+
+func (cs *K8sClusters) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+	panic("not supported")
 }
