@@ -203,7 +203,7 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 	}
 	b.mutable["signal"] = pingType
 	b.mutable["cluster_id"] = rt.GetClusterId()
-	b.mutable["uptime"] = strconv.FormatInt(int64(time.Now().Sub(rt.StartTime())/time.Second), 10)
+	b.mutable["uptime"] = strconv.FormatInt(int64(time.Since(rt.StartTime())/time.Second), 10)
 	pingData, err := b.marshall()
 	if err != nil {
 		return err
