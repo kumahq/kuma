@@ -22,10 +22,8 @@ func defaultHandler(log logr.Logger, msg *envoy_accesslog.StreamAccessLogsMessag
 		return nil, err
 	}
 
-	sender, err := defaultSender(log, address)
-	if err != nil {
-		return nil, err
-	}
+	sender := defaultSender(log, address)
+
 	if err := sender.Connect(); err != nil {
 		return nil, err
 	}
@@ -36,9 +34,9 @@ func defaultHandler(log logr.Logger, msg *envoy_accesslog.StreamAccessLogsMessag
 	}, nil
 }
 
-func defaultSender(log logr.Logger, address string) (logSender, error) {
+func defaultSender(log logr.Logger, address string) logSender {
 	return &sender{
 		log:     log,
 		address: address,
-	}, nil
+	}
 }

@@ -122,7 +122,7 @@ func GenerateEnvoyRouteEntries(ctx xds_context.Context, info GatewayListenerInfo
 		entries = append(entries, pathEntries...)
 	}
 
-	return PopulatePolicies(info, host, entries)
+	return PopulatePolicies(host, entries)
 }
 
 func makeRouteEntry(rule *mesh_proto.MeshGatewayRoute_HttpRoute_Rule) route.Entry {

@@ -50,10 +50,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	for _, outbound := range outbounds {
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
-		routes, err := g.determineRoutes(proxy, outbound, splitCounter)
-		if err != nil {
-			return nil, err
-		}
+		routes := g.determineRoutes(proxy, outbound, splitCounter)
 		clusters := routes.Clusters()
 		servicesAcc.Add(clusters...)
 
@@ -292,14 +289,14 @@ func (OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []envoy
 	return InferServiceProtocol(allEndpoints)
 }
 
-func (OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh_proto.Dataplane_Networking_Outbound, splitCounter *splitCounter) (envoy_common.Routes, error) {
+func (OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh_proto.Dataplane_Networking_Outbound, splitCounter *splitCounter) envoy_common.Routes {
 	var routes envoy_common.Routes
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 	route := proxy.Routing.TrafficRoutes[oface]
 	if route == nil {
 		outboundLog.Info("there is no selected TrafficRoute for the outbound interface, which means that the traffic won't be routed. Visit https://kuma.io/docs/latest/policies/traffic-route/ to check how to introduce the routing.", "dataplane", proxy.Dataplane.Meta.GetName(), "mesh", proxy.Dataplane.Meta.GetMesh(), "outbound", oface)
-		return nil, nil
+		return nil
 	}
 
 	timeoutConf := proxy.Policies.Timeouts[oface]
@@ -392,5 +389,5 @@ func (OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh
 		routes = appendRoute(routes, nil, nil, clustersExternal, proxy.Policies.RateLimitsOutbound[oface])
 	}
 
-	return routes, nil
+	return routes
 }

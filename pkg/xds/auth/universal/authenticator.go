@@ -46,7 +46,7 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, resource mode
 	case *core_mesh.DataplaneResource:
 		return u.authDataplane(ctx, resource, credential)
 	case *core_mesh.ZoneIngressResource:
-		return u.authZoneIngress(ctx, resource, credential)
+		return u.authZoneIngress(ctx, credential)
 	case *core_mesh.ZoneEgressResource:
 		return u.authZoneEgress(ctx, credential)
 	default:
@@ -72,7 +72,7 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	return nil
 }
 
-func (u *universalAuthenticator) authZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
+func (u *universalAuthenticator) authZoneIngress(ctx context.Context, credential auth.Credential) error {
 	identity, err := u.zoneIngressValidator.Validate(ctx, credential)
 	if err != nil {
 		return err

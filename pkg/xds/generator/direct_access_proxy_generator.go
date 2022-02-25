@@ -87,10 +87,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 
 func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_mesh.DataplaneResourceList, mesh *core_mesh.MeshResource) (Endpoints, error) {
 	// collect endpoints that are already created so we don't create 2 listeners with same IP:PORT
-	takenEndpoints, err := takenEndpoints(dataplane)
-	if err != nil {
-		return nil, err
-	}
+	takenEndpoints := takenEndpoints(dataplane)
 
 	services := map[string]bool{}
 	for _, service := range dataplane.Spec.Networking.TransparentProxying.DirectAccessServices {
@@ -123,7 +120,7 @@ func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_m
 	return fromMap(endpoints), nil
 }
 
-func takenEndpoints(dataplane *core_mesh.DataplaneResource) (map[Endpoint]bool, error) {
+func takenEndpoints(dataplane *core_mesh.DataplaneResource) map[Endpoint]bool {
 	takenEndpoints := map[Endpoint]bool{}
 	for _, oface := range dataplane.Spec.GetNetworking().GetOutboundInterfaces() {
 		endpoint := Endpoint{
@@ -132,7 +129,7 @@ func takenEndpoints(dataplane *core_mesh.DataplaneResource) (map[Endpoint]bool, 
 		}
 		takenEndpoints[endpoint] = true
 	}
-	return takenEndpoints, nil
+	return takenEndpoints
 }
 
 type Endpoint struct {

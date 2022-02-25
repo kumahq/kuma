@@ -56,12 +56,9 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 			Origin:   OriginInbound,
 		})
 
-		routes, err := g.buildInboundRoutes(
+		routes := g.buildInboundRoutes(
 			envoy_common.NewCluster(envoy_common.WithService(localClusterName)),
 			proxy.Policies.RateLimitsInbound[endpoint])
-		if err != nil {
-			return nil, err
-		}
 
 		// generate LDS resource
 		service := iface.GetService()
@@ -145,7 +142,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 	return resources, nil
 }
 
-func (g *InboundProxyGenerator) buildInboundRoutes(cluster envoy_common.Cluster, rateLimits []*core_mesh.RateLimitResource) (envoy_common.Routes, error) {
+func (g *InboundProxyGenerator) buildInboundRoutes(cluster envoy_common.Cluster, rateLimits []*core_mesh.RateLimitResource) envoy_common.Routes {
 	routes := envoy_common.Routes{}
 
 	// Iterate over that RateLimits and generate the relevant Routes.
@@ -185,5 +182,5 @@ func (g *InboundProxyGenerator) buildInboundRoutes(cluster envoy_common.Cluster,
 	// Add the defaul fall-back route
 	routes = append(routes, envoy_common.NewRouteFromCluster(cluster))
 
-	return routes, nil
+	return routes
 }

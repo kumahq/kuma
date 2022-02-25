@@ -2,8 +2,6 @@ package completion
 
 import (
 	"github.com/spf13/cobra"
-
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 )
 
 const completionLong = `
@@ -26,19 +24,19 @@ Additionally, you may want to output the completion to a file and source in your
 Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2
 `
 
-func NewCompletionCommand(pctx *kumactl_cmd.RootContext) *cobra.Command {
+func NewCompletionCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "completion",
 		Short: "Output shell completion code for bash, fish or zsh",
 		Long:  completionLong,
 	}
-	cmd.AddCommand(newBashCommand(pctx))
-	cmd.AddCommand(newFishCommand(pctx))
-	cmd.AddCommand(newZshCommand(pctx))
+	cmd.AddCommand(newBashCommand())
+	cmd.AddCommand(newFishCommand())
+	cmd.AddCommand(newZshCommand())
 	return cmd
 }
 
-func newBashCommand(pctx *kumactl_cmd.RootContext) *cobra.Command {
+func newBashCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bash",
 		Short: "Output shell completions for bash",
@@ -50,7 +48,7 @@ func newBashCommand(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-func newFishCommand(pctx *kumactl_cmd.RootContext) *cobra.Command {
+func newFishCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fish",
 		Short: "Output shell completions for fish",
@@ -62,7 +60,7 @@ func newFishCommand(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-func newZshCommand(pctx *kumactl_cmd.RootContext) *cobra.Command {
+func newZshCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "zsh",
 		Short: "Output shell completions for zsh",

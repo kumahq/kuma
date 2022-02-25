@@ -195,10 +195,10 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 func (c *memoryStore) Delete(ctx context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.delete(ctx, r, fs...)
+	return c.delete(r, fs...)
 }
 
-func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
+func (c *memoryStore) delete(r model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
 	_, ok := (r.GetMeta()).(memoryMeta)
@@ -223,7 +223,7 @@ func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.
 		if err := c.unmarshalRecord(childRecord, obj); err != nil {
 			return fmt.Errorf("MemoryStore.Delete() couldn't unmarshal child resource")
 		}
-		if err := c.delete(ctx, obj, store.DeleteByKey(childRecord.Name, childRecord.Mesh)); err != nil {
+		if err := c.delete(obj, store.DeleteByKey(childRecord.Name, childRecord.Mesh)); err != nil {
 			return fmt.Errorf("MemoryStore.Delete() couldn't delete linked child resource")
 		}
 	}

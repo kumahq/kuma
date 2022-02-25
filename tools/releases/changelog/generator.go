@@ -69,21 +69,20 @@ func (g *Generator) formatTime(c *object.Commit) string {
 	return fmt.Sprintf("%d/%02d/%02d", t.Year(), t.Month(), t.Day())
 }
 
-func (g *Generator) addToLog(tag string, c *object.Commit) error {
+func (g *Generator) addToLog(tag string, c *object.Commit) {
 	if _, found := g.log.Get(tag); !found {
 		g.log.Set(tag, []*object.Commit{})
 	}
 	entry, _ := g.log.Get(tag)
 	entry = append(entry.([]*object.Commit), c)
 	g.log.Set(tag, entry)
-	return nil
 }
 
 func (g *Generator) addChangelog(add string) {
 	g.changelog += add
 }
 
-func (g *Generator) Generate() error {
+func (g *Generator) Generate() {
 	g.changelog = ""
 
 	g.addChangelog("# CHANGELOG \n")
@@ -102,8 +101,6 @@ func (g *Generator) Generate() error {
 			g.addChangelog(fmt.Sprintln("*", g.formatTitle(c), "\n 👍contributed by", c.Author.Name))
 		}
 	}
-
-	return nil
 }
 
 func (g *Generator) Changelog() string {

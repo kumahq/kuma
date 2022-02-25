@@ -15,7 +15,7 @@ import (
 
 func (r *HTTPRouteReconciler) updateStatus(ctx context.Context, route *gatewayapi.HTTPRoute, conditions ParentConditions) error {
 	updated := route.DeepCopy()
-	mergeHTTPRouteStatus(ctx, updated, conditions)
+	mergeHTTPRouteStatus(updated, conditions)
 
 	if err := r.Client.Status().Patch(ctx, updated, kube_client.MergeFrom(route)); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -29,7 +29,7 @@ func (r *HTTPRouteReconciler) updateStatus(ctx context.Context, route *gatewayap
 
 // mergeHTTPRouteStatus updates the route status with the list of conditions for
 // each parent ref by mutating the given HTTPRoute.
-func mergeHTTPRouteStatus(ctx context.Context, route *gatewayapi.HTTPRoute, parentConditions ParentConditions) {
+func mergeHTTPRouteStatus(route *gatewayapi.HTTPRoute, parentConditions ParentConditions) {
 	var mergedStatuses []gatewayapi.RouteParentStatus
 	var previousStatuses []gatewayapi.RouteParentStatus
 

@@ -124,13 +124,13 @@ func (p formatParser) parseCommandOperator(token, command, args, limit string) (
 		}
 		return &FilterStateOperator{Key: key, MaxLength: maxLen}, nil
 	case CMD_START_TIME:
-		format, err := p.parseStartTimeOperator(token, command, args, limit)
+		format, err := p.parseStartTimeOperator(token, args)
 		if err != nil {
 			return nil, err
 		}
 		return StartTimeOperator(format), nil
 	default:
-		field, err := p.parseFieldOperator(token, command, args, limit)
+		field, err := p.parseFieldOperator(token, command)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +185,7 @@ func (p formatParser) parseFilterStateOperator(token, command, args, limit strin
 	return key, maxLen, nil
 }
 
-func (p formatParser) parseStartTimeOperator(token, command, args, limit string) (format string, err error) {
+func (p formatParser) parseStartTimeOperator(token, args string) (format string, err error) {
 	// Validate the input specifier here. The formatted string may be destined for a header, and
 	// should not contain invalid characters {NUL, LR, CF}.
 	if startTimeNewlineRE.MatchString(args) {
@@ -194,7 +194,7 @@ func (p formatParser) parseStartTimeOperator(token, command, args, limit string)
 	return args, nil
 }
 
-func (p formatParser) parseFieldOperator(token, command, args, limit string) (field string, err error) {
+func (p formatParser) parseFieldOperator(token, command string) (field string, err error) {
 	if token[1:len(token)-1] != command {
 		return "", errors.Errorf(`command %q doesn't support arguments or max length constraint, instead got %q`, CommandOperatorDescriptor(command), token)
 	}

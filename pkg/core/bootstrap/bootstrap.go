@@ -82,12 +82,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		system.ConfigType:       builder.ConfigStore(),
 	}))
 
-	if err := initializeConfigManager(cfg, builder); err != nil {
-		return nil, err
-	}
-	if err := initializeDNSResolver(cfg, builder); err != nil {
-		return nil, err
-	}
+	initializeConfigManager(builder)
+	initializeDNSResolver(cfg, builder)
+
 	builder.WithResourceValidators(core_runtime.ResourceValidators{
 		Dataplane: dataplane.NewMembershipValidator(),
 		Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
@@ -437,14 +434,12 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	return nil
 }
 
-func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) {
 	builder.WithDNSResolver(resolver.NewDNSResolver(cfg.DNSServer.Domain))
-	return nil
 }
 
-func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+func initializeConfigManager(builder *core_runtime.Builder) {
 	builder.WithConfigManager(config_manager.NewConfigManager(builder.ConfigStore()))
-	return nil
 }
 
 func customizeRuntime(rt core_runtime.Runtime) error {
