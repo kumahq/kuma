@@ -119,7 +119,7 @@ const gatewayIndexField = ".metadata.gateway"
 
 // gatewaysForRoute returns a function that calculates which MeshGateways might
 // be affected by changes in an HTTPRoute so they can be reconciled.
-func gatewaysForRoute(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+func gatewaysForRoute(l logr.Logger) kube_handler.MapFunc {
 	l = l.WithName("gatewaysForRoute")
 
 	return func(obj kube_client.Object) []kube_reconcile.Request {
@@ -179,7 +179,7 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Owns(&mesh_k8s.MeshGatewayInstance{}).
 		Watches(
 			&kube_source.Kind{Type: &gatewayapi.HTTPRoute{}},
-			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForRoute(r.Log, r.Client)),
+			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForRoute(r.Log)),
 		).
 		Complete(r)
 }

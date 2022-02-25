@@ -20,10 +20,7 @@ func CreateDownstreamTlsContext(mesh *core_mesh.MeshResource) (*envoy_tls.Downst
 		return nil, nil
 	}
 	validationSANMatcher := MeshSpiffeIDPrefixMatcher(mesh.Meta.GetName())
-	commonTlsContext, err := createCommonTlsContext(mesh, validationSANMatcher)
-	if err != nil {
-		return nil, err
-	}
+	commonTlsContext := createCommonTlsContext(mesh, validationSANMatcher)
 	return &envoy_tls.DownstreamTlsContext{
 		CommonTlsContext:         commonTlsContext,
 		RequireClientCertificate: util_proto.Bool(true),
@@ -48,10 +45,7 @@ func CreateUpstreamTlsContext(mesh *core_mesh.MeshResource, upstreamService stri
 	} else {
 		validationSANMatcher = ServiceSpiffeIDMatcher(meshName, upstreamService)
 	}
-	commonTlsContext, err := createCommonTlsContext(mesh, validationSANMatcher)
-	if err != nil {
-		return nil, err
-	}
+	commonTlsContext := createCommonTlsContext(mesh, validationSANMatcher)
 	commonTlsContext.AlpnProtocols = xds_tls.KumaALPNProtocols
 	return &envoy_tls.UpstreamTlsContext{
 		CommonTlsContext: commonTlsContext,
@@ -59,7 +53,7 @@ func CreateUpstreamTlsContext(mesh *core_mesh.MeshResource, upstreamService stri
 	}, nil
 }
 
-func createCommonTlsContext(mesh *core_mesh.MeshResource, validationSANMatcher *envoy_type_matcher.StringMatcher) (*envoy_tls.CommonTlsContext, error) {
+func createCommonTlsContext(mesh *core_mesh.MeshResource, validationSANMatcher *envoy_type_matcher.StringMatcher) *envoy_tls.CommonTlsContext {
 	meshName := mesh.GetMeta().GetName()
 	meshCaSecret := NewSecretConfigSource(names.GetSecretName(xds_tls.MeshCaResource, "secret", meshName))
 	identitySecret := NewSecretConfigSource(names.GetSecretName(xds_tls.IdentityCertResource, "secret", meshName))
@@ -76,7 +70,7 @@ func createCommonTlsContext(mesh *core_mesh.MeshResource, validationSANMatcher *
 		TlsCertificateSdsSecretConfigs: []*envoy_tls.SdsSecretConfig{
 			identitySecret,
 		},
-	}, nil
+	}
 }
 
 func NewSecretConfigSource(secretName string) *envoy_tls.SdsSecretConfig {

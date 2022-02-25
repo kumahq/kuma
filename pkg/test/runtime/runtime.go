@@ -95,21 +95,19 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
 	})
 
-	_ = initializeConfigManager(cfg, builder)
-	_ = initializeDNSResolver(cfg, builder)
+	initializeConfigManager(builder)
+	initializeDNSResolver(builder)
 
 	return builder, nil
 }
 
-func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+func initializeConfigManager(builder *core_runtime.Builder) {
 	configm := config_manager.NewConfigManager(builder.ResourceStore())
 	builder.WithConfigManager(configm)
-	return nil
 }
 
-func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+func initializeDNSResolver(builder *core_runtime.Builder) {
 	builder.WithDNSResolver(resolver.NewDNSResolver("mesh"))
-	return nil
 }
 
 func newResourceManager(builder *core_runtime.Builder) core_manager.CustomizableResourceManager {

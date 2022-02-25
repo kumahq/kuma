@@ -72,13 +72,13 @@ var rootCmd = &cobra.Command{
 			if tag, found := tagMap[c.Hash.String()]; found {
 				currentTag = tag
 			}
-			_ = generator.addToLog(currentTag, c)
+			generator.addToLog(currentTag, c)
 			return nil
 		})
 		CheckIfError(err)
 
 		Info("Generate the formatted log")
-		_ = generator.Generate()
+		generator.Generate()
 		fmt.Println(generator.Changelog())
 	},
 }
