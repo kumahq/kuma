@@ -27,6 +27,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 )
 
 type K8sCluster struct {
@@ -40,6 +42,7 @@ type K8sCluster struct {
 	defaultTimeout      time.Duration
 	defaultRetries      int
 	opts                kumaDeploymentOptions
+	envoyTunnels        map[string]envoy_admin.Tunnel
 }
 
 var _ Cluster = &K8sCluster{}
@@ -54,6 +57,7 @@ func NewK8sCluster(t *TestingT, clusterName string, verbose bool) *K8sCluster {
 		deployments:         map[string]Deployment{},
 		defaultRetries:      Config.DefaultClusterStartupRetries,
 		defaultTimeout:      Config.DefaultClusterStartupTimeout,
+		envoyTunnels:        map[string]envoy_admin.Tunnel{},
 	}
 }
 
@@ -61,6 +65,41 @@ func (c *K8sCluster) WithTimeout(timeout time.Duration) Cluster {
 	c.defaultTimeout = timeout
 
 	return c
+}
+
+func (c *K8sCluster) addEgressEnvoyTunnel() error {
+	t, err := tunnel.NewK8sEnvoyAdminTunnel(
+		c.t,
+		c.GetKubectlOptions(Config.KumaNamespace),
+		k8s.ResourceTypeService,
+		Config.ZoneEgressApp,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	c.envoyTunnels[Config.ZoneEgressApp] = t
+
+	return nil
+}
+
+func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
+	t, err := c.GetZoneEgressEnvoyTunnelE()
+	if err != nil {
+		c.t.Fatal(err)
+	}
+
+	return t
+}
+
+func (c *K8sCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
+	if !ok {
+		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
+	}
+
+	return t, nil
 }
 
 func (c *K8sCluster) Verbose() bool {
@@ -202,7 +241,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--ingress-use-node-port"] = ""
 	}
 
-	if c.opts.egress {
+	if c.opts.zoneEgress {
 		argsMap["--egress-enabled"] = ""
 	}
 
@@ -399,6 +438,22 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	if c.opts.cni {
 		err = c.WaitApp(Config.CNIApp, Config.CNINamespace, 1)
 		if err != nil {
+			return err
+		}
+	}
+
+	if c.opts.zoneEgress {
+		if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
+			return err
+		}
+	}
+
+	if c.opts.zoneEgressEnvoyAdminTunnel {
+		if !c.opts.zoneEgress {
+			return errors.New("cannot create tunnel to zone egress's envoy admin without egress")
+		}
+
+		if err := c.addEgressEnvoyTunnel(); err != nil {
 			return err
 		}
 	}
