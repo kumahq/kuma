@@ -12,19 +12,18 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/envoy"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var availableProfiles map[string]bool
 var availableProfilesMsg string
 
 func init() {
-	profiles := []string{}
 	availableProfiles = map[string]bool{}
-	for _, profile := range AvailableProfiles {
+	for _, profile := range generator.AvailableProfiles {
 		availableProfiles[profile] = true
-		profiles = append(profiles, profile)
 	}
-	availableProfilesMsg = strings.Join(profiles, ",")
+	availableProfilesMsg = strings.Join(generator.AvailableProfiles, ",")
 }
 
 func (t *ProxyTemplateResource) Validate() error {
