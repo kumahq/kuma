@@ -59,33 +59,34 @@ var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg       kuma_cp.Config
-	cm        component.Manager
-	rs        core_store.ResourceStore
-	ss        store.SecretStore
-	cs        core_store.ResourceStore
-	rm        core_manager.CustomizableResourceManager
-	rom       core_manager.ReadOnlyResourceManager
-	cam       core_ca.Managers
-	dsl       datasource.Loader
-	ext       context.Context
-	dns       resolver.DNSResolver
-	configm   config_manager.ConfigManager
-	leadInfo  component.LeaderInfo
-	lif       lookup.LookupIPFunc
-	eac       admin.EnvoyAdminClient
-	metrics   metrics.Metrics
-	erf       events.ListenerFactory
-	apim      api_server.APIManager
-	xdsh      *xds_hooks.Hooks
-	cap       secrets.CaProvider
-	dps       *dp_server.DpServer
-	kdsctx    *kds_context.Context
-	rv        ResourceValidators
-	au        authn.Authenticator
-	acc       Access
-	appCtx    context.Context
-	startTime time.Time
+	cfg            kuma_cp.Config
+	cm             component.Manager
+	rs             core_store.ResourceStore
+	ss             store.SecretStore
+	cs             core_store.ResourceStore
+	rm             core_manager.CustomizableResourceManager
+	rom            core_manager.ReadOnlyResourceManager
+	cam            core_ca.Managers
+	dsl            datasource.Loader
+	ext            context.Context
+	dns            resolver.DNSResolver
+	configm        config_manager.ConfigManager
+	leadInfo       component.LeaderInfo
+	lif            lookup.LookupIPFunc
+	eac            admin.EnvoyAdminClient
+	metrics        metrics.Metrics
+	erf            events.ListenerFactory
+	apim           api_server.APIManager
+	xdsh           *xds_hooks.Hooks
+	cap            secrets.CaProvider
+	dps            *dp_server.DpServer
+	kdsctx         *kds_context.Context
+	rv             ResourceValidators
+	au             authn.Authenticator
+	acc            Access
+	appCtx         context.Context
+	startTime      time.Time
+	extraReportsFn ExtraReportsFn
 	*runtimeInfo
 }
 
@@ -241,6 +242,11 @@ func (b *Builder) WithStartTime(startTime time.Time) *Builder {
 	return b
 }
 
+func (b *Builder) WithExtraReportsFn(fn ExtraReportsFn) *Builder {
+	b.extraReportsFn = fn
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -308,31 +314,32 @@ func (b *Builder) Build() (Runtime, error) {
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
-			cfg:       b.cfg,
-			rm:        b.rm,
-			rom:       b.rom,
-			rs:        b.rs,
-			ss:        b.ss,
-			cam:       b.cam,
-			dsl:       b.dsl,
-			ext:       b.ext,
-			dns:       b.dns,
-			configm:   b.configm,
-			leadInfo:  b.leadInfo,
-			lif:       b.lif,
-			eac:       b.eac,
-			metrics:   b.metrics,
-			erf:       b.erf,
-			apim:      b.apim,
-			xdsh:      b.xdsh,
-			cap:       b.cap,
-			dps:       b.dps,
-			kdsctx:    b.kdsctx,
-			rv:        b.rv,
-			au:        b.au,
-			acc:       b.acc,
-			appCtx:    b.appCtx,
-			startTime: b.startTime,
+			cfg:            b.cfg,
+			rm:             b.rm,
+			rom:            b.rom,
+			rs:             b.rs,
+			ss:             b.ss,
+			cam:            b.cam,
+			dsl:            b.dsl,
+			ext:            b.ext,
+			dns:            b.dns,
+			configm:        b.configm,
+			leadInfo:       b.leadInfo,
+			lif:            b.lif,
+			eac:            b.eac,
+			metrics:        b.metrics,
+			erf:            b.erf,
+			apim:           b.apim,
+			xdsh:           b.xdsh,
+			cap:            b.cap,
+			dps:            b.dps,
+			kdsctx:         b.kdsctx,
+			rv:             b.rv,
+			au:             b.au,
+			acc:            b.acc,
+			appCtx:         b.appCtx,
+			startTime:      b.startTime,
+			extraReportsFn: b.extraReportsFn,
 		},
 		Manager: b.cm,
 	}, nil
@@ -415,4 +422,7 @@ func (b *Builder) AppCtx() context.Context {
 }
 func (b *Builder) StartTime() time.Time {
 	return b.startTime
+}
+func (b *Builder) ExtraReportsFn() ExtraReportsFn {
+	return b.extraReportsFn
 }

@@ -197,13 +197,20 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	return nil
 }
 
-func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int, pingType string) error {
+func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int, pingType string, extraFn core_runtime.ExtraReportsFn) error {
 	if err := b.updateEntitiesReport(rt); err != nil {
 		return err
 	}
 	b.mutable["signal"] = pingType
 	b.mutable["cluster_id"] = rt.GetClusterId()
 	b.mutable["uptime"] = strconv.FormatInt(int64(time.Since(rt.StartTime())/time.Second), 10)
+	if extraFn != nil {
+		if valMap, err := extraFn(rt); err != nil {
+			return err
+		} else {
+			b.Append(valMap)
+		}
+	}
 	pingData, err := b.marshall()
 	if err != nil {
 		return err
@@ -247,14 +254,14 @@ func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {
 	}
 }
 
-func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer) {
+func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer, extraFn core_runtime.ExtraReportsFn) {
 	go func() {
-		err := buffer.dispatch(rt, pingHost, pingPort, "start")
+		err := buffer.dispatch(rt, pingHost, pingPort, "start", extraFn)
 		if err != nil {
 			log.V(2).Info("failed sending usage info", "cause", err.Error())
 		}
 		for range time.Tick(time.Second * pingInterval) {
-			err := buffer.dispatch(rt, pingHost, pingPort, "ping")
+			err := buffer.dispatch(rt, pingHost, pingPort, "ping", extraFn)
 			if err != nil {
 				log.V(2).Info("failed sending usage info", "cause", err.Error())
 			}
@@ -263,7 +270,7 @@ func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer) {
 }
 
 // Init core reports
-func Init(rt core_runtime.Runtime, cfg kuma_cp.Config) {
+func Init(rt core_runtime.Runtime, cfg kuma_cp.Config, extraFn core_runtime.ExtraReportsFn) {
 	var buffer reportsBuffer
 	buffer.immutable = make(map[string]string)
 	buffer.mutable = make(map[string]string)
@@ -271,6 +278,6 @@ func Init(rt core_runtime.Runtime, cfg kuma_cp.Config) {
 	buffer.initImmutable(rt)
 
 	if cfg.Reports.Enabled {
-		startReportTicker(rt, &buffer)
+		startReportTicker(rt, &buffer, extraFn)
 	}
 }
