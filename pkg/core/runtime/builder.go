@@ -85,7 +85,6 @@ type Builder struct {
 	au             authn.Authenticator
 	acc            Access
 	appCtx         context.Context
-	startTime      time.Time
 	extraReportsFn ExtraReportsFn
 	*runtimeInfo
 }
@@ -102,6 +101,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*Builder, error) {
 		cam: core_ca.Managers{},
 		runtimeInfo: &runtimeInfo{
 			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
+			startTime:  time.Now(),
 		},
 		appCtx: appCtx,
 	}, nil
@@ -237,11 +237,6 @@ func (b *Builder) WithAccess(acc Access) *Builder {
 	return b
 }
 
-func (b *Builder) WithStartTime(startTime time.Time) *Builder {
-	b.startTime = startTime
-	return b
-}
-
 func (b *Builder) WithExtraReportsFn(fn ExtraReportsFn) *Builder {
 	b.extraReportsFn = fn
 	return b
@@ -308,9 +303,6 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.acc == (Access{}) {
 		return nil, errors.Errorf("Access has not been configured")
 	}
-	if b.startTime.IsZero() {
-		return nil, errors.Errorf("Start time not set")
-	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -338,7 +330,6 @@ func (b *Builder) Build() (Runtime, error) {
 			au:             b.au,
 			acc:            b.acc,
 			appCtx:         b.appCtx,
-			startTime:      b.startTime,
 			extraReportsFn: b.extraReportsFn,
 		},
 		Manager: b.cm,
@@ -419,9 +410,6 @@ func (b *Builder) Access() Access {
 }
 func (b *Builder) AppCtx() context.Context {
 	return b.appCtx
-}
-func (b *Builder) StartTime() time.Time {
-	return b.startTime
 }
 func (b *Builder) ExtraReportsFn() ExtraReportsFn {
 	return b.extraReportsFn

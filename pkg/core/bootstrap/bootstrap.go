@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"context"
 	"net"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -131,8 +130,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 		ZoneTokenAccess:      zone_access.NewStaticZoneTokenAccess(builder.Config().Access.Static.GenerateZoneToken),
 		ConfigDumpAccess:     access.NewStaticConfigDumpAccess(builder.Config().Access.Static.ViewConfigDump),
 	})
-
-	builder.WithStartTime(time.Now())
 
 	if err := initializeAPIServerAuthenticator(builder); err != nil {
 		return nil, err

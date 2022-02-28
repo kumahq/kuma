@@ -43,6 +43,7 @@ var _ core_runtime.RuntimeInfo = &TestRuntimeInfo{}
 type TestRuntimeInfo struct {
 	InstanceId string
 	ClusterId  string
+	StartTime  time.Time
 }
 
 func (i *TestRuntimeInfo) GetInstanceId() string {
@@ -55,6 +56,10 @@ func (i *TestRuntimeInfo) SetClusterId(clusterId string) {
 
 func (i *TestRuntimeInfo) GetClusterId() string {
 	return i.ClusterId
+}
+
+func (i *TestRuntimeInfo) GetStartTime() time.Time {
+	return i.StartTime
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {
@@ -95,7 +100,6 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
 		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
 	})
-	builder.WithStartTime(time.Now())
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)

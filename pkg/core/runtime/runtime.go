@@ -43,6 +43,7 @@ type RuntimeInfo interface {
 	GetInstanceId() string
 	SetClusterId(clusterId string)
 	GetClusterId() string
+	GetStartTime() time.Time
 }
 
 type RuntimeContext interface {
@@ -72,7 +73,6 @@ type RuntimeContext interface {
 	Access() Access
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
-	StartTime() time.Time
 	ExtraReportsFn() ExtraReportsFn
 }
 
@@ -105,6 +105,7 @@ type runtimeInfo struct {
 
 	instanceId string
 	clusterId  string
+	startTime  time.Time
 }
 
 func (i *runtimeInfo) GetInstanceId() string {
@@ -121,6 +122,10 @@ func (i *runtimeInfo) GetClusterId() string {
 	i.mtx.RLock()
 	defer i.mtx.RUnlock()
 	return i.clusterId
+}
+
+func (i *runtimeInfo) GetStartTime() time.Time {
+	return i.startTime
 }
 
 var _ RuntimeContext = &runtimeContext{}
@@ -151,7 +156,6 @@ type runtimeContext struct {
 	au             authn.Authenticator
 	acc            Access
 	appCtx         context.Context
-	startTime      time.Time
 	extraReportsFn ExtraReportsFn
 }
 
@@ -252,10 +256,6 @@ func (rc *runtimeContext) Access() Access {
 
 func (rc *runtimeContext) AppContext() context.Context {
 	return rc.appCtx
-}
-
-func (rc *runtimeContext) StartTime() time.Time {
-	return rc.startTime
 }
 
 func (rc *runtimeContext) ExtraReportsFn() ExtraReportsFn {
