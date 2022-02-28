@@ -86,58 +86,64 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string) error {
 }
 
 func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) {
-	byMesh, err := d.persistence.Get()
+	meshViews, globalView, err := d.fetchViews()
 	if err != nil {
 		return err
 	}
 
+	for _, mesh := range meshes {
+		meshView, ok := meshViews[mesh]
+		if !ok {
+			meshView = vips.NewEmptyVirtualOutboundView()
+		}
+		if err := d.createOrUpdateMeshVIPConfig(mesh, meshView, globalView); err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+
+	d.resolver.SetVIPs(globalView.ToVIPMap())
+	return errs
+}
+
+func (d *VIPsAllocator) fetchViews() (map[string]*vips.VirtualOutboundMeshView, *vips.GlobalView, error) {
+	byMesh, err := d.persistence.Get()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	gv, err := vips.NewGlobalView(d.cidr)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	for _, meshView := range byMesh {
 		for _, hostEntry := range meshView.HostnameEntries() {
 			vo := meshView.Get(hostEntry)
 			err := gv.Reserve(hostEntry, vo.Address)
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
 		}
 	}
+	return byMesh, gv, nil
+}
 
-	forEachMesh := func(mesh string, meshed *vips.VirtualOutboundMeshView) error {
-		newVirtualOutboundView, err := BuildVirtualOutboundMeshView(d.rm, d.serviceVipEnabled, mesh)
-		if err != nil {
-			return err
-		}
-
-		err = AllocateVIPs(gv, newVirtualOutboundView)
-		if err != nil {
-			// Error might occur only if we run out of VIPs. There is no point to pass it through,
-			// we must notify user in logs and proceed
-			vipsAllocatorLog.Error(err, "failed to allocate new VIPs", "mesh", mesh)
-		}
-		changes, out := meshed.Update(newVirtualOutboundView)
-		if len(changes) == 0 {
-			return nil
-		}
-		vipsAllocatorLog.Info("mesh vip changes", "mesh", mesh, "changes", changes)
-		return d.persistence.Set(mesh, out)
+func (d *VIPsAllocator) createOrUpdateMeshVIPConfig(mesh string, meshView *vips.VirtualOutboundMeshView, globalView *vips.GlobalView) error {
+	newVirtualOutboundView, err := BuildVirtualOutboundMeshView(d.rm, d.serviceVipEnabled, mesh)
+	if err != nil {
+		return err
 	}
 
-	for _, mesh := range meshes {
-		meshView, ok := byMesh[mesh]
-		if !ok {
-			meshView = vips.NewEmptyVirtualOutboundView()
-		}
-		if err := forEachMesh(mesh, meshView); err != nil {
-			errs = multierr.Append(errs, err)
-		}
+	if err := AllocateVIPs(globalView, newVirtualOutboundView); err != nil {
+		// Error might occur only if we run out of VIPs. There is no point to pass it through,
+		// we must notify user in logs and proceed
+		vipsAllocatorLog.Error(err, "failed to allocate new VIPs", "mesh", mesh)
 	}
-
-	d.resolver.SetVIPs(gv.ToVIPMap())
-
-	return errs
+	changes, out := meshView.Update(newVirtualOutboundView)
+	if len(changes) == 0 {
+		return nil
+	}
+	vipsAllocatorLog.Info("mesh vip changes", "mesh", mesh, "changes", changes)
+	return d.persistence.Set(mesh, out)
 }
 
 func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, serviceVipEnabled bool, mesh string) (*vips.VirtualOutboundMeshView, error) {
