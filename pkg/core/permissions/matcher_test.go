@@ -205,7 +205,7 @@ var _ = Describe("Match", func() {
 				tp := &core_mesh.TrafficPermissionResourceList{
 					Items: given.policies,
 				}
-				matchedEs, err := permissions.MatchExternalServices(given.dataplane, es, tp)
+				matchedEs, err := permissions.MatchExternalServicesTrafficPermissions(given.dataplane, es, tp)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(given.expected).To(HaveLen(len(matchedEs)))
