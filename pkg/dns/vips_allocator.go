@@ -95,12 +95,9 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 	if err != nil {
 		return err
 	}
-	for _, mesh := range meshes {
-		if _, ok := byMesh[mesh]; !ok {
-			byMesh[mesh] = vips.NewEmptyVirtualOutboundView()
-		}
-		for _, hostEntry := range byMesh[mesh].HostnameEntries() {
-			vo := byMesh[mesh].Get(hostEntry)
+	for _, meshView := range byMesh {
+		for _, hostEntry := range meshView.HostnameEntries() {
+			vo := meshView.Get(hostEntry)
 			err := gv.Reserve(hostEntry, vo.Address)
 			if err != nil {
 				return err
@@ -129,7 +126,11 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 	}
 
 	for _, mesh := range meshes {
-		if err := forEachMesh(mesh, byMesh[mesh]); err != nil {
+		meshView, ok := byMesh[mesh]
+		if !ok {
+			meshView = vips.NewEmptyVirtualOutboundView()
+		}
+		if err := forEachMesh(mesh, meshView); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
