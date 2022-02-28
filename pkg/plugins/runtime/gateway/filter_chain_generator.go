@@ -220,7 +220,7 @@ func newDownstreamTypedConfig() *envoy_extensions_transport_sockets_tls_v3.Downs
 
 func newFilterChain(ctx xds_context.Context, info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
 	// A Gateway is a single service across all listeners.
-	service := info.Dataplane.Spec.GetIdentifyingService()
+	service := info.Proxy.Dataplane.Spec.GetIdentifyingService()
 
 	builder := envoy_listeners.NewFilterChainBuilder(info.Proxy.APIVersion).Configure(
 		// Note that even for HTTPS cases, we don't enable client certificate

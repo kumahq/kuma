@@ -14,6 +14,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -40,6 +41,11 @@ var ConnectionPolicyTypes = []model.ResourceType{
 	core_mesh.TimeoutType,
 }
 
+type GatewayHostInfo struct {
+	Host    GatewayHost
+	Entries []route.Entry
+}
+
 type GatewayHost struct {
 	Hostname string
 	Routes   []model.Resource
@@ -57,12 +63,12 @@ type GatewayListener struct {
 // listener.
 type GatewayListenerInfo struct {
 	Proxy             *core_xds.Proxy
-	Dataplane         *core_mesh.DataplaneResource
 	Gateway           *core_mesh.MeshGatewayResource
 	ExternalServices  *core_mesh.ExternalServiceResourceList
 	OutboundEndpoints core_xds.EndpointMap
 
-	Listener GatewayListener
+	Listener  GatewayListener
+	HostInfos []GatewayHostInfo
 }
 
 // FilterChainGenerator is responsible for handling the filter chain for
@@ -89,8 +95,15 @@ func (g *filterChainGenerators) For(ctx xds_context.Context, info GatewayListene
 	return gen
 }
 
-func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	gateway := match.Gateway(ctx.Mesh.Resources.Gateways(), proxy.Dataplane.Spec.Matches)
+// GatewayListenerInfoFromProxy processes a Dataplane and the corresponding
+// Gateway and returns information about the listeners, routes and applied
+// policies.
+func GatewayListenerInfoFromProxy(
+	ctx xds_context.MeshContext, proxy *core_xds.Proxy, zone string, dataSourceLoader datasource.Loader,
+) (
+	[]GatewayListenerInfo, error,
+) {
+	gateway := match.Gateway(ctx.Resources.Gateways(), proxy.Dataplane.Spec.Matches)
 
 	if gateway == nil {
 		log.V(1).Info("no matching gateway for dataplane",
@@ -123,24 +136,24 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 		collapsed[ep.GetPort()] = append(collapsed[ep.GetPort()], ep)
 	}
 
-	resources := core_xds.NewResourceSet()
+	externalServices := ctx.Resources.ExternalServices()
 
-	externalServices := ctx.Mesh.Resources.ExternalServices()
+	var listenerInfos []GatewayListenerInfo
 
 	matchedExternalServices, err := permissions.MatchExternalServicesTrafficPermissions(
-		proxy.Dataplane, ctx.Mesh.Resources.ExternalServices(), ctx.Mesh.Resources.TrafficPermissions(),
+		proxy.Dataplane, ctx.Resources.ExternalServices(), ctx.Resources.TrafficPermissions(),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to find external services matched by traffic permissions")
 	}
 
 	outboundEndpoints := topology.BuildEndpointMap(
-		ctx.Mesh.Resource,
-		g.Zone,
-		ctx.Mesh.Resources.Dataplanes().Items,
-		ctx.Mesh.Resources.ZoneIngresses().Items,
-		ctx.Mesh.Resources.ZoneEgresses().Items,
-		matchedExternalServices, g.DataSourceLoader,
+		ctx.Resource,
+		zone,
+		ctx.Resources.Dataplanes().Items,
+		ctx.Resources.ZoneIngresses().Items,
+		ctx.Resources.ZoneEgresses().Items,
+		matchedExternalServices, dataSourceLoader,
 	)
 
 	for port, listeners := range collapsed {
@@ -154,7 +167,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			}
 		}
 
-		listener, hosts, err := MakeGatewayListener(ctx.Mesh, gateway, listeners)
+		listener, hosts, err := MakeGatewayListener(ctx, gateway, listeners)
 		if err != nil {
 			return nil, err
 		}
@@ -167,27 +180,53 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			return hosts[i].Hostname > hosts[j].Hostname
 		})
 
-		info := GatewayListenerInfo{
-			Proxy:             proxy,
-			Dataplane:         proxy.Dataplane,
-			Gateway:           gateway,
-			ExternalServices:  externalServices,
-			Listener:          listener,
-			OutboundEndpoints: outboundEndpoints,
+		var hostInfos []GatewayHostInfo
+		for _, host := range hosts {
+			log.V(1).Info("applying merged traffic routes",
+				"listener-port", listener.Port,
+				"listener-name", listener.ResourceName,
+			)
+
+			hostInfos = append(hostInfos, GatewayHostInfo{
+				Host:    host,
+				Entries: GenerateEnvoyRouteEntries(host),
+			})
 		}
 
+		listenerInfos = append(listenerInfos, GatewayListenerInfo{
+			Proxy:             proxy,
+			Gateway:           gateway,
+			ExternalServices:  externalServices,
+			OutboundEndpoints: outboundEndpoints,
+			Listener:          listener,
+			HostInfos:         hostInfos,
+		})
+	}
+
+	return listenerInfos, nil
+}
+
+func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	resources := core_xds.NewResourceSet()
+
+	listenerInfos, err := GatewayListenerInfoFromProxy(ctx.Mesh, proxy, g.Zone, g.DataSourceLoader)
+	if err != nil {
+		return nil, errors.Wrap(err, "error generating listener info from Proxy")
+	}
+
+	for _, info := range listenerInfos {
 		// This is checked by the gateway validator
-		if !SupportsProtocol(listener.Protocol) {
+		if !SupportsProtocol(info.Listener.Protocol) {
 			return nil, errors.New("no support for protocol")
 		}
 
-		ldsResources, err := g.generateLDS(ctx, info, hosts)
+		ldsResources, err := g.generateLDS(ctx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
 		}
 		resources.AddSet(ldsResources)
 
-		rdsResources, err := g.generateRDS(ctx, info, hosts)
+		rdsResources, err := g.generateRDS(ctx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
 		}
@@ -197,11 +236,16 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 	return resources, nil
 }
 
-func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost) (*core_xds.ResourceSet, error) {
+func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	listenerBuilder := GenerateListener(ctx, info)
 
-	res, filterChainBuilders, err := g.FilterChainGenerators.FilterChainGenerators[info.Listener.Protocol].Generate(ctx, info, hosts)
+	var gatewayHosts []GatewayHost
+	for _, hostInfo := range hostInfos {
+		gatewayHosts = append(gatewayHosts, hostInfo.Host)
+	}
+
+	res, filterChainBuilders, err := g.FilterChainGenerators.FilterChainGenerators[info.Listener.Protocol].Generate(ctx, info, gatewayHosts)
 	if err != nil {
 		return nil, err
 	}
@@ -220,25 +264,19 @@ func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo
 	return resources, nil
 }
 
-func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost) (*core_xds.ResourceSet, error) {
+func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	routeConfig := GenerateRouteConfig(ctx, info)
+	routeConfig := GenerateRouteConfig(info)
 
 	// Make a pass over the generators for each virtual host.
-	for _, host := range hosts {
-		// Ensure that generators don't get duplicate routes,
-		// which could happen after redistributing wildcards.
-		host.Routes = merge.UniqueResources(host.Routes)
-
-		entries := GenerateEnvoyRouteEntries(ctx, info, host)
-
-		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, entries)
+	for _, hostInfo := range hostInfos {
+		clusterRes, err := g.ClusterGenerator.GenerateClusters(ctx, info, hostInfo.Entries)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate clusters for dataplane %q", info.Proxy.Id)
 		}
 		resources.AddSet(clusterRes)
 
-		vh, err := GenerateVirtualHost(ctx, info, host, entries)
+		vh, err := GenerateVirtualHost(ctx, info, hostInfo.Host, hostInfo.Entries)
 		if err != nil {
 			return nil, err
 		}
@@ -390,6 +428,11 @@ func RedistributeWildcardRoutes(
 	var flattened []GatewayHost
 	for _, host := range hostsByName {
 		flattened = append(flattened, host)
+	}
+
+	// return a set of routes for each host
+	for i, host := range flattened {
+		flattened[i].Routes = merge.UniqueResources(host.Routes)
 	}
 
 	return flattened

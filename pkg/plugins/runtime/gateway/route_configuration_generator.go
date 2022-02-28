@@ -1,11 +1,10 @@
 package gateway
 
 import (
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
-func GenerateRouteConfig(ctx xds_context.Context, info GatewayListenerInfo) *envoy_routes.RouteConfigurationBuilder {
+func GenerateRouteConfig(info GatewayListenerInfo) *envoy_routes.RouteConfigurationBuilder {
 	return envoy_routes.NewRouteConfigurationBuilder(info.Proxy.APIVersion).
 		Configure(
 			envoy_routes.CommonRouteConfiguration(info.Listener.ResourceName),
