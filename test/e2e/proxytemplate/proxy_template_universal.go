@@ -1,7 +1,7 @@
 package proxytemplate
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -9,33 +9,33 @@ import (
 	"github.com/kumahq/kuma/test/framework/client"
 )
 
+var universalCluster Cluster
+
+var _ = E2EBeforeSuite(func() {
+	universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
+
+	err := NewClusterSetup().
+		Install(Kuma(config_core.Standalone)).
+		Setup(universalCluster)
+	Expect(err).ToNot(HaveOccurred())
+
+	testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
+	Expect(err).ToNot(HaveOccurred())
+	demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
+	Expect(err).ToNot(HaveOccurred())
+
+	err = TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))(universalCluster)
+	Expect(err).ToNot(HaveOccurred())
+	err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)
+	Expect(err).ToNot(HaveOccurred())
+})
+
+var _ = E2EAfterSuite(func() {
+	Expect(universalCluster.DeleteKuma()).To(Succeed())
+	Expect(universalCluster.DismissCluster()).To(Succeed())
+})
+
 func ProxyTemplateUniversal() {
-	var universalCluster Cluster
-
-	E2EBeforeSuite(func() {
-		universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
-
-		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone)).
-			Setup(universalCluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))(universalCluster)
-		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	E2EAfterSuite(func() {
-		Expect(universalCluster.DeleteKuma()).To(Succeed())
-		Expect(universalCluster.DismissCluster()).To(Succeed())
-	})
-
 	It("should add a header using Lua filter", func() {
 		// given
 		proxyTemplate := `
