@@ -6,8 +6,10 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
@@ -54,7 +56,7 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 			cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
 				Name: ep.Target,
 				Match: &structpb.Struct{
-					Fields: envoy_metadata.MetadataFields(ep.Tags),
+					Fields: envoy_metadata.MetadataFields(envoy_common.Tags(ep.Tags).WithoutTags(mesh_proto.ServiceTag)),
 				},
 				TransportSocket: transportSocket,
 			})

@@ -90,3 +90,9 @@ func EnableFreebind(enable bool) ListenerBuilderOpt {
 			l.Freebind = wrapperspb.Bool(enable)
 		}))
 }
+
+func TagsMetadata(tags map[string]string) ListenerBuilderOpt {
+	return AddListenerConfigurer(&v3.TagsMetadataConfigurer{
+		Tags: tags,
+	})
+}

@@ -187,6 +187,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
                   inbound:
                     - port: 80
                       servicePort: 8080
+                      tags:
+                        kuma.io/service: backend
 `,
 				proxyTemplateFile: "1-proxy-template.input.yaml",
 				expected:          "1-envoy-config.golden.yaml",
@@ -201,6 +203,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
                   inbound:
                     - port: 80
                       servicePort: 8080
+                      tags:
+                        kuma.io/service: backend
 `,
 				proxyTemplateFile: "2-proxy-template.input.yaml",
 				expected:          "2-envoy-config.golden.yaml",

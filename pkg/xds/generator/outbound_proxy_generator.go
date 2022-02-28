@@ -168,6 +168,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+		Configure(envoy_listeners.TagsMetadata(outbound.GetTagsIncludingLegacy())).
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)

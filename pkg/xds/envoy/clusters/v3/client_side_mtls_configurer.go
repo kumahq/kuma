@@ -58,7 +58,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 			cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
 				Name: sni,
 				Match: &structpb.Struct{
-					Fields: envoy_metadata.MetadataFields(tags),
+					Fields: envoy_metadata.MetadataFields(tags.WithoutTags(mesh_proto.ServiceTag)),
 				},
 				TransportSocket: transportSocket,
 			})

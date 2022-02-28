@@ -91,6 +91,10 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
     name: inbound:192.168.0.1:80
     trafficDirection: INBOUND
 - name: inbound:passthrough:ipv4

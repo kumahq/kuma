@@ -103,7 +103,8 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 
 		listenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP)).
-			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))
+			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+			Configure(envoy_listeners.TagsMetadata(iface.GetTags()))
 
 		switch ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
 		case mesh_proto.CertificateAuthorityBackend_STRICT:

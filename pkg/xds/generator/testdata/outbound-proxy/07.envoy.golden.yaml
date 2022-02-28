@@ -8,5 +8,9 @@ resources:
         portValue: 4040
     filterChains:
     - {}
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: service-without-traffic-route
     name: outbound:127.0.0.1:4040
     trafficDirection: OUTBOUND
