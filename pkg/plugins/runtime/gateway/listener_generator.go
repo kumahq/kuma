@@ -40,7 +40,7 @@ func GenerateListener(ctx xds_context.Context, info GatewayListenerInfo) *envoy_
 	// A new listener gets a new filter chain.
 	port := info.Listener.Port
 	protocol := info.Listener.Protocol
-	address := info.Dataplane.Spec.GetNetworking().Address
+	address := info.Proxy.Dataplane.Spec.GetNetworking().Address
 
 	log.V(1).Info("generating listener",
 		"address", address,
