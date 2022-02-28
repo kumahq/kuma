@@ -174,12 +174,6 @@ func GatewayListenerInfoFromProxy(
 
 		hosts = RedistributeWildcardRoutes(hosts)
 
-		// Ensure that generators don't get duplicate routes,
-		// which could happen after redistributing wildcards.
-		for i, host := range hosts {
-			hosts[i].Routes = merge.UniqueResources(host.Routes)
-		}
-
 		// Sort by reverse hostname, so that fully qualified hostnames sort
 		// before wildcard domains, and "*" is last.
 		sort.Slice(hosts, func(i, j int) bool {
@@ -434,6 +428,11 @@ func RedistributeWildcardRoutes(
 	var flattened []GatewayHost
 	for _, host := range hostsByName {
 		flattened = append(flattened, host)
+	}
+
+	// return a set of routes for each host
+	for i, host := range flattened {
+		flattened[i].Routes = merge.UniqueResources(host.Routes)
 	}
 
 	return flattened
