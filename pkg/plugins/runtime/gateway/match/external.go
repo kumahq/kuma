@@ -9,16 +9,14 @@ import (
 // serviceTags. Note that for service matching to work correctly,
 // both the service and the tags must have the `kuma.io/service` tag.
 func ExternalService(
-	services *mesh.ExternalServiceResourceList,
+	services []*mesh.ExternalServiceResource,
 	serviceTags mesh_proto.TagSelector,
-) mesh.ExternalServiceResourceList {
-	var matched mesh.ExternalServiceResourceList
+) []*mesh.ExternalServiceResource {
+	var matched []*mesh.ExternalServiceResource
 
-	for _, s := range services.Items {
+	for _, s := range services {
 		if serviceTags.Matches(s.Spec.GetTags()) {
-			if err := matched.AddItem(s); err != nil {
-				panic(err.Error()) // Can't fail because we have consistent types.
-			}
+			matched = append(matched, s)
 		}
 	}
 

@@ -50,7 +50,7 @@ func BuildTrafficPermissionMap(
 	return result
 }
 
-func MatchExternalServices(
+func MatchExternalServicesTrafficPermissions(
 	dataplane *core_mesh.DataplaneResource,
 	externalServices *core_mesh.ExternalServiceResourceList,
 	permissions *core_mesh.TrafficPermissionResourceList,
