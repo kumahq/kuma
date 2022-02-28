@@ -13,5 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E RateLimit Suite")
 }
 
-// Pending while we fix the flakiness of checking the rate limit
-var _ = XDescribe("Test RateLimit on Universal", ratelimit.RateLimitOnUniversal)
+var _ = Describe("Test RateLimit on Universal", ratelimit.RateLimitOnUniversal)
