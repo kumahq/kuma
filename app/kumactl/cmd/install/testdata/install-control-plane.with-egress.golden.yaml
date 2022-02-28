@@ -1676,22 +1676,18 @@ spec:
           ports:
             - containerPort: 10002
           livenessProbe:
-            exec:
-              command:
-                - wget
-                - -qO-
-                - http://127.0.0.1:9901
+            httpGet:
+              path: "/ready"
+              port: 9901
             failureThreshold: 12
             initialDelaySeconds: 60
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 3
           readinessProbe:
-            exec:
-              command:
-                - wget
-                - -qO-
-                - http://127.0.0.1:9901
+            httpGet:
+              path: "/ready"
+              port: 9901
             failureThreshold: 12
             initialDelaySeconds: 1
             periodSeconds: 5
