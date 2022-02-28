@@ -300,6 +300,10 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
           statPrefix: backend
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
     name: outbound:127.0.0.1:18080
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:40001
@@ -342,6 +346,10 @@ resources:
                 route:
                   cluster: api-http
           statPrefix: api-http
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: api-http
     name: outbound:127.0.0.1:40001
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:40002
@@ -369,6 +377,10 @@ resources:
                 transportApiVersion: V3
           cluster: api-tcp
           statPrefix: api-tcp
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: api-tcp
     name: outbound:127.0.0.1:40002
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:40003
@@ -402,6 +414,10 @@ resources:
                 route:
                   cluster: api-http2
           statPrefix: api-http2
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: api-http2
     name: outbound:127.0.0.1:40003
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:40004
@@ -440,6 +456,10 @@ resources:
                 route:
                   cluster: api-grpc
           statPrefix: api-grpc
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: api-grpc
     name: outbound:127.0.0.1:40004
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:54321
@@ -461,5 +481,9 @@ resources:
               weight: 10
             - name: db-_1_
               weight: 90
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: db
     name: outbound:127.0.0.1:54321
     trafficDirection: OUTBOUND

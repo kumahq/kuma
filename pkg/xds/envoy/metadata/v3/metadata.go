@@ -14,7 +14,7 @@ func EndpointMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
 		return nil
 	}
 	fields := MetadataFields(tags)
-	metadata := &envoy_core.Metadata{
+	return &envoy_core.Metadata{
 		FilterMetadata: map[string]*structpb.Struct{
 			"envoy.lb": {
 				Fields: fields,
@@ -24,7 +24,6 @@ func EndpointMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
 			},
 		},
 	}
-	return metadata
 }
 
 func LbMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
@@ -33,22 +32,18 @@ func LbMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
 		return nil
 	}
 	fields := MetadataFields(tags)
-	metadata := &envoy_core.Metadata{
+	return &envoy_core.Metadata{
 		FilterMetadata: map[string]*structpb.Struct{
 			"envoy.lb": {
 				Fields: fields,
 			},
 		},
 	}
-	return metadata
 }
 
 func MetadataFields(tags envoy_common.Tags) map[string]*structpb.Value {
 	fields := map[string]*structpb.Value{}
 	for key, value := range tags {
-		if key == mesh_proto.ServiceTag {
-			continue
-		}
 		fields[key] = &structpb.Value{
 			Kind: &structpb.Value_StringValue{
 				StringValue: value,
@@ -56,4 +51,14 @@ func MetadataFields(tags envoy_common.Tags) map[string]*structpb.Value {
 		}
 	}
 	return fields
+}
+
+const TagsKey = "io.kuma.tags"
+
+func ExtractTags(metadata *envoy_core.Metadata) envoy_common.Tags {
+	tags := envoy_common.Tags{}
+	for key, value := range metadata.GetFilterMetadata()[TagsKey].GetFields() {
+		tags[key] = value.GetStringValue()
+	}
+	return tags
 }

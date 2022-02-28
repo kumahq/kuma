@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
 
 type networkFilterModificator mesh_proto.ProxyTemplate_Modifications_NetworkFilter
@@ -110,6 +111,14 @@ func (n *networkFilterModificator) listenerMatches(resource *core_xds.Resource) 
 	}
 	if n.Match.GetOrigin() != "" && n.Match.GetOrigin() != resource.Origin {
 		return false
+	}
+	if len(n.Match.GetListenerTags()) > 0 {
+		if listenerProto, ok := resource.Resource.(*envoy_listener.Listener); ok {
+			listenerTags := envoy_metadata.ExtractTags(listenerProto.Metadata)
+			if !mesh_proto.TagSelector(n.Match.GetListenerTags()).Matches(listenerTags) {
+				return false
+			}
+		}
 	}
 	return true
 }

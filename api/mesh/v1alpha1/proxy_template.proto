@@ -93,6 +93,8 @@ message ProxyTemplate {
         string origin = 1;
         // Name of the listener to match
         string name = 2 [ (doc.required) = true ];
+        // Tags available in Listener#Metadata#FilterMetadata[io.kuma.tags]
+        map<string, string> tags = 4;
       }
     }
 
@@ -116,6 +118,9 @@ message ProxyTemplate {
         // Name of the listener that network filter modifications will be
         // applied to
         string listenerName = 3;
+        // ListenerTags available in
+        // Listener#Metadata#FilterMetadata[io.kuma.tags]
+        map<string, string> listenerTags = 4;
       }
     }
 
@@ -139,6 +144,9 @@ message ProxyTemplate {
         // Name of the listener that http filter modifications will be applied
         // to
         string listenerName = 3;
+        // ListenerTags available in
+        // Listener#Metadata#FilterMetadata[io.kuma.tags]
+        map<string, string> listenerTags = 4;
       }
     }
 
