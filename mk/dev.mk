@@ -12,7 +12,6 @@ DATAPLANE_API_LATEST_VERSION := main
 SHELLCHECK_VERSION := v0.8.0
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
-CI_MINIKUBE_VERSION ?= v1.24.0
 CI_KUBECTL_VERSION ?= v1.18.14
 
 CI_TOOLS_DIR ?= $(HOME)/bin
@@ -29,7 +28,6 @@ PROTOBUF_WKT_DIR := $(CI_TOOLS_DIR)/protobuf.d
 KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
 KUBEBUILDER_PATH := $(CI_TOOLS_DIR)/kubebuilder
 KUSTOMIZE_PATH := $(CI_TOOLS_DIR)/kustomize
-MINIKUBE_PATH := $(CI_TOOLS_DIR)/minikube
 KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
 KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
 ETCD_PATH := $(CI_TOOLS_DIR)/etcd
@@ -76,7 +74,6 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/kustomize \
 	dev/install/kind \
 	dev/install/k3d \
-	dev/install/minikube \
 	dev/install/golangci-lint \
 	dev/install/helm3 \
 	dev/install/helm-docs \
@@ -210,21 +207,6 @@ dev/install/k3d: ## Bootstrap: Install K3D (K3s in Docker)
 		&& set +x \
 		&& echo "K3d $(CI_K3D_VERSION) has been installed at $(CI_TOOLS_DIR)/k3d" ; \
 	else echo "K3d version: \"$$( $(CI_TOOLS_DIR)/k3d version )\" is already installed at $(CI_TOOLS_DIR)/k3d"; fi
-
-
-.PHONY: dev/install/minikube
-dev/install/minikube: ## Bootstrap: Install Minikube
-	# see https://kubernetes.io/docs/tasks/tools/install-minikube/#linux
-	@if [ -e $(MINIKUBE_PATH) ]; then echo "Minikube $$( $(MINIKUBE_PATH) version ) is already installed at $(MINIKUBE_PATH)" ; fi
-	@if [ ! -e $(MINIKUBE_PATH) ]; then \
-		echo "Installing Minikube $(CI_MINIKUBE_VERSION) ..." \
-		&& set -x \
-		&& $(CURL_DOWNLOAD) -o minikube https://github.com/kubernetes/minikube/releases/download/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
-		&& chmod +x minikube \
-		&& mkdir -p $(CI_TOOLS_DIR) \
-		&& mv minikube $(MINIKUBE_PATH) \
-		&& set +x \
-		&& echo "Minikube $(CI_MINIKUBE_VERSION) has been installed at $(MINIKUBE_PATH)" ; fi
 
 .PHONY: dev/install/golangci-lint
 dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
