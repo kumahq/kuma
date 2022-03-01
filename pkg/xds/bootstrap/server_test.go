@@ -35,7 +35,7 @@ var _ = Describe("Bootstrap Server", func() {
 
 	var stop chan struct{}
 	var resManager manager.ResourceManager
-	var baseUrl string
+	var baseURL string
 	var metrics core_metrics.Metrics
 
 	core.TempDir = func() string {
@@ -67,7 +67,7 @@ var _ = Describe("Bootstrap Server", func() {
 		config.Params.XdsPort = 5678
 
 		port, err := test.GetFreePort()
-		baseUrl = "https://localhost:" + strconv.Itoa(port)
+		baseURL = "https://localhost:" + strconv.Itoa(port)
 		Expect(err).ToNot(HaveOccurred())
 		metrics, err = core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
@@ -93,7 +93,7 @@ var _ = Describe("Bootstrap Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}()
 		Eventually(func() bool {
-			resp, err := httpClient.Get(baseUrl)
+			resp, err := httpClient.Get(baseURL)
 			if err != nil {
 				return false
 			}
@@ -140,6 +140,7 @@ var _ = Describe("Bootstrap Server", func() {
 		dataplane          func() *mesh.DataplaneResource
 		body               string
 		expectedConfigFile string
+		overrideReqHost    string
 	}
 	DescribeTable("should return configuration",
 		func(given testCase) {
@@ -148,7 +149,15 @@ var _ = Describe("Bootstrap Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			resp, err := httpClient.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(given.body))
+			req, err := http.NewRequest(http.MethodPost, baseURL+"/bootstrap", strings.NewReader(given.body))
+			Expect(err).ToNot(HaveOccurred())
+			req.Header.Set("Content-Type", "application/json")
+
+			if given.overrideReqHost != "" {
+				req.Host = given.overrideReqHost
+			}
+
+			resp, err := httpClient.Do(req)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -159,6 +168,13 @@ var _ = Describe("Bootstrap Server", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(received).To(matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedConfigFile)))
 		},
+		Entry("minimal data provided with no port in host", testCase{
+			dataplaneName:      "dp-1",
+			dataplane:          defaultDataplane,
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneToken": "token", %s }`, version),
+			expectedConfigFile: "bootstrap.universal.golden.yaml",
+			overrideReqHost:    "localhost",
+		}),
 		Entry("minimal data provided (universal)", testCase{
 			dataplaneName:      "dp-1",
 			dataplane:          defaultDataplane,
@@ -193,7 +209,7 @@ var _ = Describe("Bootstrap Server", func() {
 		}
 		`
 
-		resp, err := httpClient.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(json))
+		resp, err := httpClient.Post(baseURL+"/bootstrap", "application/json", strings.NewReader(json))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
@@ -229,7 +245,7 @@ var _ = Describe("Bootstrap Server", func() {
 		}
 		`
 
-		resp, err := httpClient.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(json))
+		resp, err := httpClient.Post(baseURL+"/bootstrap", "application/json", strings.NewReader(json))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		bytes, err := io.ReadAll(resp.Body)
@@ -262,7 +278,7 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = httpClient.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(`{ "mesh": "default", "name": "dp-1" }`))
+		_, err = httpClient.Post(baseURL+"/bootstrap", "application/json", strings.NewReader(`{ "mesh": "default", "name": "dp-1" }`))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
