@@ -949,7 +949,6 @@ workflows:
     - go_cache: *master_only_workflow_filters
     - build:
         <<: *master_only_workflow_filters
-        docker_registry: ${ECR_REGISTRY}
         requires:
         - go_cache
     - eks-e2e:
@@ -969,7 +968,6 @@ workflows:
     - go_cache: *master_only_workflow_filters
     - build:
         <<: *master_only_workflow_filters
-        docker_registry: ${AZURE_ACR_REGISTRY}.azurecr.io
         requires:
         - go_cache
     - aks-e2e:
