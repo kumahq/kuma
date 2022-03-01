@@ -883,29 +883,6 @@ jobs:
         command: |
           ./tools/releases/docker.sh --push
 
-  helm-release:
-    executor: golang
-    steps:
-    - checkout
-    - run:
-        name: "Install Helm Chart Releaser"
-        command: |
-          VER="1.1.1"
-          curl -L -o /tmp/cr-$VER.tgz https://github.com/helm/chart-releaser/releases/download/v$VER/chart-releaser_${VER}_linux_amd64.tar.gz
-          mkdir -p /tmp/cr
-          tar -xz -C /tmp/cr -f /tmp/cr-$VER.tgz
-          mv /tmp/cr/cr /usr/bin
-    - run:
-        name: "Package Helm Charts"
-        command: |
-          ./tools/releases/helm.sh --package
-    - run:
-        name: "Release Helm Charts"
-        command: |
-          ./tools/releases/helm.sh --release
-
-
-#
 # Below, the tag filter needs to be in all jobs
 # transitively required by the push job; otherwise,
 # the build isn't triggered.
@@ -1027,12 +1004,3 @@ workflows:
             - test/e2e-ipv4
             - test/e2e-ipv6
             - test/e2e-ipv4-oldk8s
-      - helm-release:
-          # Ideally we should be able to do CD on helm as well so this would be work_branch_workflow_filter
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v?(\d+)\.(\d+)\.(\d+)$/
-          requires:
-          - release

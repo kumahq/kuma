@@ -10,6 +10,8 @@ lastGitTag=$(git describe --abbrev=0 --tags)
 shortHash=$(git rev-parse --short HEAD)
 currentBranch=$(git rev-parse --abbrev-ref HEAD)
 
+# Note: this format must be changed carefully, other scripts depend on it
+
 if git describe --exact-match --tags > /dev/null 2>&1; then # if we are on tag
   echo "$lastGitTag"
 else

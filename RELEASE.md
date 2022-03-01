@@ -35,6 +35,7 @@ To release a new version of Kuma follow these steps:
 - [ ] Push the Git tag. This will trigger the release job on CI.
 - [ ] Make sure the new binaries are available in [Bintray](https://bintray.com/kong/kuma).
 - [ ] Download the new Kuma version and double-check that it works with the demo app. Check that is works both in `universal` and `kubernetes` modes.
+- [ ] Run the [Helm Release workflow](https://github.com/kumahq/kuma/actions/workflows/helm-release.yaml) on the new tag with the "Release charts" check box checked
 - [ ] Merge PR to website repository.
 - [ ] Create a new [Github release](https://github.com/kumahq/kuma/releases) and create a link to both the changelog and to the assets download.
 - [ ] Make sure the `kumactl` formula is updated at [Homebrew](https://github.com/Homebrew/homebrew-core/blob/master/Formula/kumactl.rb)
