@@ -16,12 +16,21 @@ import (
 
 type ListenerConditions map[gatewayapi.SectionName][]kube_meta.Condition
 
-func validateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, ListenerConditions) {
+func validProtocol(protocol gatewayapi.ProtocolType) bool {
+	switch protocol {
+	case gatewayapi.HTTPProtocolType:
+		return true
+	case gatewayapi.HTTPSProtocolType:
+		// TODO HTTPS https://github.com/kumahq/kuma/issues/3679
+	default:
+	}
+
+	return false
+}
+
+func ValidateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, ListenerConditions) {
 	var validListeners []gatewayapi.Listener
 	listenerConditions := ListenerConditions{}
-
-	portHostnames := map[gatewayapi.PortNumber]gatewayapi.Hostname{}
-	portProtocols := map[gatewayapi.PortNumber]gatewayapi.ProtocolType{}
 
 	appendDetachedCondition := func(
 		listener gatewayapi.SectionName,
@@ -67,13 +76,38 @@ func validateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 		)
 	}
 
+	// Collect information about used hostnames and protocols
+	// We can only have at most one listener for each HostnamePort
+	type HostnamePort struct {
+		hostname gatewayapi.Hostname
+		port     gatewayapi.PortNumber
+	}
+	portHostnames := map[HostnamePort]int{}
+	// We can only have one protocol for each port
+	portProtocols := map[gatewayapi.PortNumber]map[gatewayapi.ProtocolType]struct{}{}
+
 	for _, l := range listeners {
-		switch l.Protocol {
-		case gatewayapi.HTTPProtocolType:
-		case gatewayapi.HTTPSProtocolType:
-			// TODO HTTPS https://github.com/kumahq/kuma/issues/3679
-			fallthrough
-		default:
+		if hn := l.Hostname; hn != nil {
+			hostnamePort := HostnamePort{
+				hostname: *hn,
+				port:     l.Port,
+			}
+			portHostnames[hostnamePort]++
+		}
+
+		protocols, ok := portProtocols[l.Port]
+		if !ok {
+			protocols = map[gatewayapi.ProtocolType]struct{}{}
+		}
+
+		if validProtocol(l.Protocol) {
+			protocols[l.Protocol] = struct{}{}
+		}
+		portProtocols[l.Port] = protocols
+	}
+
+	for _, l := range listeners {
+		if !validProtocol(l.Protocol) {
 			appendDetachedCondition(
 				l.Name,
 				gatewayapi.ListenerReasonUnsupportedProtocol,
@@ -86,7 +120,11 @@ func validateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 		// need more information from Envoy Gateway
 
 		if hn := l.Hostname; hn != nil {
-			if otherHn := portHostnames[l.Port]; otherHn == *hn {
+			hostnamePort := HostnamePort{
+				hostname: *hn,
+				port:     l.Port,
+			}
+			if num := portHostnames[hostnamePort]; num > 1 {
 				appendConflictedCondition(
 					l.Name,
 					gatewayapi.ListenerReasonHostnameConflict,
@@ -94,18 +132,16 @@ func validateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 				)
 				continue
 			}
-			portHostnames[l.Port] = *hn
 		}
 
-		if otherProtocol, ok := portProtocols[l.Port]; ok && otherProtocol != l.Protocol {
+		if protocols := portProtocols[l.Port]; len(protocols) > 1 {
 			appendConflictedCondition(
 				l.Name,
 				gatewayapi.ListenerReasonProtocolConflict,
-				fmt.Sprintf("multiple listeners on %d with conflicting protocols %s and %s", l.Port, otherProtocol, l.Protocol),
+				fmt.Sprintf("multiple listeners on %d with conflicting protocols", l.Port),
 			)
 			continue
 		}
-		portProtocols[l.Port] = l.Protocol
 
 		// We don't set ListenerReasonRouteConflict because we already check the
 		// routes with ListenerReasonInvalidRouteKinds
@@ -123,7 +159,7 @@ func validateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 func (r *GatewayReconciler) gapiToKumaGateway(
 	ctx context.Context, gateway *gatewayapi.Gateway,
 ) (*mesh_proto.MeshGateway, ListenerConditions, error) {
-	validListeners, listenerConditions := validateListeners(gateway.Spec.Listeners)
+	validListeners, listenerConditions := ValidateListeners(gateway.Spec.Listeners)
 
 	var listeners []*mesh_proto.MeshGateway_Listener
 
