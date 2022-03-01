@@ -76,7 +76,7 @@ func fetchNumPolicies(rt core_runtime.Runtime) (map[string]string, error) {
 
 	for _, descr := range registry.Global().ObjectDescriptors() {
 		typedList := descr.NewList()
-		k := "n_" + string(descr.Name)
+		k := "n_" + strings.ToLower(string(descr.Name))
 		if err := rt.ReadOnlyResourceManager().List(context.Background(), typedList); err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("could not fetch %s", k))
 		}
