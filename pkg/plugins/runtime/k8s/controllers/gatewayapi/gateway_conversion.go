@@ -16,14 +16,79 @@ import (
 
 type ListenerConditions map[gatewayapi.SectionName][]kube_meta.Condition
 
+func validateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, ListenerConditions) {
+	var validListeners []gatewayapi.Listener
+	listenerConditions := ListenerConditions{}
+
+	portHostnames := map[gatewayapi.PortNumber]gatewayapi.Hostname{}
+	portProtocols := map[gatewayapi.PortNumber]gatewayapi.ProtocolType{}
+
+	appendConflictedCondition := func(
+		listener gatewayapi.SectionName,
+		reason gatewayapi.ListenerConditionReason,
+		message string,
+	) {
+		listenerConditions[listener] = append(
+			listenerConditions[listener],
+			kube_meta.Condition{
+				Type:    string(gatewayapi.ListenerConditionConflicted),
+				Status:  kube_meta.ConditionTrue,
+				Reason:  string(reason),
+				Message: message,
+			},
+			kube_meta.Condition{
+				Type:    string(gatewayapi.ListenerConditionReady),
+				Status:  kube_meta.ConditionFalse,
+				Reason:  string(gatewayapi.ListenerReasonInvalid),
+				Message: "conflicts found",
+			},
+		)
+	}
+
+	for _, l := range listeners {
+		if hn := l.Hostname; hn != nil {
+			if otherHn := portHostnames[l.Port]; otherHn == *hn {
+				appendConflictedCondition(
+					l.Name,
+					gatewayapi.ListenerReasonHostnameConflict,
+					fmt.Sprintf("multiple listeners for %s:%d", *hn, l.Port),
+				)
+				continue
+			}
+			portHostnames[l.Port] = *hn
+		}
+
+		if otherProtocol, ok := portProtocols[l.Port]; ok && otherProtocol != l.Protocol {
+			appendConflictedCondition(
+				l.Name,
+				gatewayapi.ListenerReasonProtocolConflict,
+				fmt.Sprintf("multiple listeners on %d with conflicting protocols %s and %s", l.Port, otherProtocol, l.Protocol),
+			)
+			continue
+		}
+		portProtocols[l.Port] = l.Protocol
+
+		// We don't set ListenerReasonRouteConflict because we already check the
+		// routes with ListenerReasonInvalidRouteKinds
+		// Once we support more than HTTPRoute it may be fitting to set this
+		// depending on the listener protocol
+
+		validListeners = append(validListeners, l)
+	}
+
+	return validListeners, listenerConditions
+}
+
+// gapiToKumaGateway returns a converted gateway (if possible) and any
+// conditions to set on the gatewayapi listeners
 func (r *GatewayReconciler) gapiToKumaGateway(
 	ctx context.Context, gateway *gatewayapi.Gateway,
 ) (*mesh_proto.MeshGateway, ListenerConditions, error) {
+	validListeners, listenerConditions := validateListeners(gateway.Spec.Listeners)
+
 	var listeners []*mesh_proto.MeshGateway_Listener
 
-	listenerConditions := ListenerConditions{}
-
-	for _, l := range gateway.Spec.Listeners {
+	for _, l := range validListeners {
 		listener := &mesh_proto.MeshGateway_Listener{
 			Port: uint32(l.Port),
 			Tags: map[string]string{
@@ -89,12 +154,22 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			}
 		}
 
-		var changedListenerConditions []kube_meta.Condition
+		// We've already cleared this listener of conflicts
+		listenerConditions[l.Name] = append(
+			listenerConditions[l.Name],
+			kube_meta.Condition{
+				Type:   string(gatewayapi.ListenerConditionConflicted),
+				Status: kube_meta.ConditionFalse,
+				Reason: string(gatewayapi.ListenerReasonNoConflicts),
+			},
+		)
+
+		var resolvedRefConditions []kube_meta.Condition
 
 		if len(unresolvableRefs) == 0 {
 			listeners = append(listeners, listener)
 
-			changedListenerConditions = []kube_meta.Condition{
+			resolvedRefConditions = []kube_meta.Condition{
 				{
 					Type:   string(gatewayapi.ListenerConditionResolvedRefs),
 					Status: kube_meta.ConditionTrue,
@@ -107,7 +182,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 				},
 			}
 		} else {
-			changedListenerConditions = []kube_meta.Condition{
+			resolvedRefConditions = []kube_meta.Condition{
 				{
 					Type:    string(gatewayapi.ListenerConditionResolvedRefs),
 					Status:  kube_meta.ConditionFalse,
@@ -123,7 +198,7 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			}
 		}
 
-		listenerConditions[l.Name] = append(listenerConditions[l.Name], changedListenerConditions...)
+		listenerConditions[l.Name] = append(listenerConditions[l.Name], resolvedRefConditions...)
 	}
 
 	var kumaGateway *mesh_proto.MeshGateway
