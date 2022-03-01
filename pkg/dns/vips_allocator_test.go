@@ -177,6 +177,27 @@ var _ = Describe("VIP Allocator", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError("error during update, mesh = mesh-1; error during update, mesh = mesh-2"))
 	})
+
+	It("should not allocate the same VIPs for different services in multiple meshes", func() {
+		// given VIPs in mesh-1
+		err := allocator.CreateOrUpdateVIPConfig("mesh-1")
+		Expect(err).ToNot(HaveOccurred())
+
+		// when VIPs from other meshes are created
+		err = allocator.CreateOrUpdateVIPConfig("mesh-2")
+
+		// then the addresses should not overlap
+		Expect(err).ToNot(HaveOccurred())
+
+		mesh1View, err := vips.NewPersistence(rm, cm).GetByMesh("mesh-1")
+		Expect(err).ToNot(HaveOccurred())
+		mesh2View, err := vips.NewPersistence(rm, cm).GetByMesh("mesh-2")
+		Expect(err).ToNot(HaveOccurred())
+
+		mesh1Address := mesh1View.Get(mesh1View.HostnameEntries()[0]).Address
+		mesh2Address := mesh2View.Get(mesh2View.HostnameEntries()[0]).Address
+		Expect(mesh1Address).ToNot(Equal(mesh2Address))
+	})
 })
 
 type outboundViewTestCase struct {
