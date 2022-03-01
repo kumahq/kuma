@@ -119,6 +119,7 @@ var _ = Describe("RetryConfigurer", func() {
                           prefix: /
                         route:
                           cluster: backend
+                          timeout: 0s
                   statPrefix: "127_0_0_1_17777"
             name: outbound:127.0.0.1:17777
             trafficDirection: OUTBOUND`,
@@ -197,6 +198,7 @@ var _ = Describe("RetryConfigurer", func() {
                           prefix: /
                         route:
                           cluster: backend
+                          timeout: 0s
                   statPrefix: "127_0_0_1_18080"
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,
@@ -262,6 +264,7 @@ var _ = Describe("RetryConfigurer", func() {
                           prefix: /
                         route:
                           cluster: backend
+                          timeout: 0s
                   statPrefix: "127_0_0_1_17777"
             name: outbound:127.0.0.1:17777
             trafficDirection: OUTBOUND`,
@@ -340,6 +343,7 @@ var _ = Describe("RetryConfigurer", func() {
                           prefix: /
                         route:
                           cluster: backend
+                          timeout: 0s
                   statPrefix: "127_0_0_1_18080"
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,

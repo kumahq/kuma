@@ -341,6 +341,7 @@ resources:
                   prefix: /
                 route:
                   cluster: api-http
+                  timeout: 0s
           statPrefix: api-http
     name: outbound:127.0.0.1:40001
     trafficDirection: OUTBOUND
@@ -401,6 +402,7 @@ resources:
                   prefix: /
                 route:
                   cluster: api-http2
+                  timeout: 0s
           statPrefix: api-http2
     name: outbound:127.0.0.1:40003
     trafficDirection: OUTBOUND
@@ -439,6 +441,7 @@ resources:
                   prefix: /
                 route:
                   cluster: api-grpc
+                  timeout: 0s
           statPrefix: api-grpc
     name: outbound:127.0.0.1:40004
     trafficDirection: OUTBOUND

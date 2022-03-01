@@ -379,6 +379,7 @@ resources:
                   prefix: /
                 route:
                   cluster: api-http
+                  timeout: 0s
           statPrefix: api-http
     name: outbound:127.0.0.1:40001
     trafficDirection: OUTBOUND
