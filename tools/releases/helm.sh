@@ -140,6 +140,10 @@ function main {
       package
       ;;
     dev-version)
+      if ! command -v yq >/dev/null || ! [[ $(command yq --version) =~ "mikefarah" ]]; then
+        msg_err "mikefarah/yq not installed"
+      fi
+
       dev_version
       ;;
     release)
