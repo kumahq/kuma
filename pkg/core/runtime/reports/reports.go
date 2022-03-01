@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -19,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -72,26 +72,11 @@ func fetchZones(rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
 }
 
 func fetchNumPolicies(rt core_runtime.Runtime) (map[string]string, error) {
-	policyTypes := map[string]core_model.ResourceList{
-		"health_checks":       &mesh.HealthCheckResourceList{},
-		"traffic_traces":      &mesh.TrafficTraceResourceList{},
-		"traffic_routes":      &mesh.TrafficRouteResourceList{},
-		"retries":             &mesh.RetryResourceList{},
-		"traffic_permissions": &mesh.TrafficPermissionResourceList{},
-		"traffic_logs":        &mesh.TrafficLogResourceList{},
-		"fault_injections":    &mesh.FaultInjectionResourceList{},
-		"timeouts":            &mesh.TimeoutResourceList{},
-		"rate_limits":         &mesh.RateLimitResourceList{},
-		"circuit_breakers":    &mesh.CircuitBreakerResourceList{},
-		"zone_ingresses":      &mesh.ZoneIngressResourceList{},
-		"zone_egresses":       &mesh.ZoneEgressResourceList{},
-		"gateway_routes":      &mesh.MeshGatewayRouteResourceList{},
-		"proxy_templates":     &mesh.ProxyTemplateResourceList{},
-	}
-
 	policyCounts := map[string]string{}
 
-	for k, typedList := range policyTypes {
+	for _, descr := range registry.Global().ObjectDescriptors() {
+		typedList := descr.NewList()
+		k := "n_" + string(descr.Name)
 		if err := rt.ReadOnlyResourceManager().List(context.Background(), typedList); err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("could not fetch %s", k))
 		}
