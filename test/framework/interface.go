@@ -41,7 +41,7 @@ type kumaDeploymentOptions struct {
 	helmOpts                   map[string]string
 	noHelmOpts                 []string
 	env                        map[string]string
-	ingress                    bool
+	zoneIngress                bool
 	zoneEgress                 bool
 	zoneEgressEnvoyAdminTunnel bool
 	cni                        bool
@@ -259,7 +259,7 @@ func WithEnvs(entries map[string]string) KumaDeploymentOption {
 
 func WithIngress() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.ingress = true
+		o.zoneIngress = true
 	})
 }
 

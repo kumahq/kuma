@@ -20,6 +20,7 @@ type E2eConfig struct {
 	HelmSubChartPrefix            string            `yaml:"helmSubChartPrefix,omitempty"`
 	HelmChartName                 string            `yaml:"helmChartName,omitempty"`
 	HelmRepoUrl                   string            `yaml:"helmRepoUrl,omitempty"`
+	HelmGlobalExtraYaml           string            `yaml:"HelmGlobalExtraYaml,omitempty"`
 	CNIApp                        string            `yaml:"CNIApp,omitempty"`
 	CNINamespace                  string            `yaml:"CNINamespace,omitempty"`
 	CNIConf                       CniConf           `yaml:"CNIConf,omitempty"`
@@ -58,8 +59,7 @@ type CompatibilitySuiteConfig struct {
 }
 
 type HelmSuiteConfig struct {
-	Versions      []string `yaml:"versions,omitempty"`
-	ExtraYamlPath string   `yaml:"extraYaml,omitempty"`
+	Versions []string `yaml:"versions,omitempty"`
 }
 
 func (c E2eConfig) Sanitize() {
@@ -70,12 +70,6 @@ func (c E2eConfig) Validate() error {
 		_, err := os.Stat(Config.KumactlBin)
 		if os.IsNotExist(err) {
 			return errors.Wrapf(err, "unable to find kumactl at:%s", Config.KumactlBin)
-		}
-	}
-	if Config.SuiteConfig.Helm.ExtraYamlPath != "" {
-		_, err := os.Stat(Config.SuiteConfig.Helm.ExtraYamlPath)
-		if os.IsNotExist(err) {
-			return errors.Wrapf(err, "unable to find extra yaml for helm tests at: %s", Config.SuiteConfig.Helm.ExtraYamlPath)
 		}
 	}
 	return nil

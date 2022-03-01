@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -37,11 +36,6 @@ func UpgradingWithHelmChart() {
 			cluster = NewK8sCluster(t, Kuma1, Silent).
 				WithTimeout(6 * time.Second).
 				WithRetries(60)
-
-			// Sometimes it might be necessary to run some stuff on k8s first
-			if Config.SuiteConfig.Helm.ExtraYamlPath != "" {
-				k8s.KubectlApply(t, cluster.(*K8sCluster).GetKubectlOptions(), Config.SuiteConfig.Helm.ExtraYamlPath)
-			}
 
 			releaseName := fmt.Sprintf(
 				"kuma-%s",
