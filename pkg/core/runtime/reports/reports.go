@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -20,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
