@@ -126,14 +126,20 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 		listenerConditions[l.Name] = append(listenerConditions[l.Name], changedListenerConditions...)
 	}
 
-	match := common.ServiceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
+	var kumaGateway *mesh_proto.MeshGateway
 
-	return &mesh_proto.MeshGateway{
-		Selectors: []*mesh_proto.Selector{
-			{Match: match},
-		},
-		Conf: &mesh_proto.MeshGateway_Conf{
-			Listeners: listeners,
-		},
-	}, listenerConditions, nil
+	if len(listeners) > 0 {
+		match := common.ServiceTagForGateway(kube_client.ObjectKeyFromObject(gateway))
+
+		kumaGateway = &mesh_proto.MeshGateway{
+			Selectors: []*mesh_proto.Selector{
+				{Match: match},
+			},
+			Conf: &mesh_proto.MeshGateway_Conf{
+				Listeners: listeners,
+			},
+		}
+	}
+
+	return kumaGateway, listenerConditions, nil
 }

@@ -71,8 +71,10 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating GatewayRoute.kuma.io")
 	}
 
-	if err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGatewayRoute{}, spec); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned GatewayRoute.kuma.io")
+	if spec != nil {
+		if err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGatewayRoute{}, spec); err != nil {
+			return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned GatewayRoute.kuma.io")
+		}
 	}
 
 	if err := r.updateStatus(ctx, httpRoute, conditions); err != nil {
@@ -110,12 +112,10 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 		return nil, nil, err
 	}
 
-	kumaRoute := &mesh_proto.MeshGatewayRoute{
-		Conf: routeConf,
-	}
-
 	// The conditions we accumulate for each ParentRef
 	conditions := ParentConditions{}
+
+	var selectors []*mesh_proto.Selector
 
 	// Convert GAPI parent refs into selectors
 	for i, ref := range route.Spec.ParentRefs {
@@ -146,14 +146,23 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 		case attachment.Unknown:
 			// We don't care about this ref
 		case attachment.Allowed:
-			kumaRoute.Selectors = append(
-				kumaRoute.Selectors,
+			selectors = append(
+				selectors,
 				&mesh_proto.Selector{
 					Match: tagsForRef(route, ref),
 				},
 			)
 
 			conditions[ref] = routeConditions
+		}
+	}
+
+	var kumaRoute *mesh_proto.MeshGatewayRoute
+
+	if routeConf != nil {
+		kumaRoute = &mesh_proto.MeshGatewayRoute{
+			Conf:      routeConf,
+			Selectors: selectors,
 		}
 	}
 

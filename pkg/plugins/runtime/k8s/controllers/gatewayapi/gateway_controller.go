@@ -69,20 +69,23 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating MeshGateway.kuma.io")
 	}
 
-	ns := kube_core.Namespace{}
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gateway.Namespace}, &ns); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGateway")
-	}
+	var gatewayInstance *mesh_k8s.MeshGatewayInstance
+	if gatewaySpec != nil {
+		ns := kube_core.Namespace{}
+		if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gateway.Namespace}, &ns); err != nil {
+			return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGateway")
+		}
 
-	mesh := k8s_util.MeshOf(gateway, &ns)
+		mesh := k8s_util.MeshOf(gateway, &ns)
 
-	if err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGateway{}, gatewaySpec); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned MeshGateway.kuma.io")
-	}
+		if err := common.ReconcileLabelledObject(ctx, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &mesh_proto.MeshGateway{}, gatewaySpec); err != nil {
+			return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned MeshGateway.kuma.io")
+		}
 
-	gatewayInstance, err := r.createOrUpdateInstance(ctx, gateway)
-	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile MeshGatewayInstance")
+		gatewayInstance, err = r.createOrUpdateInstance(ctx, gateway)
+		if err != nil {
+			return kube_ctrl.Result{}, errors.Wrap(err, "unable to reconcile MeshGatewayInstance")
+		}
 	}
 
 	if err := r.updateStatus(ctx, gateway, gatewayInstance, listenerConditions); err != nil {
