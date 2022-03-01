@@ -43,6 +43,10 @@ func (r *GatewayReconciler) updateStatus(
 }
 
 func gatewayAddresses(instance *mesh_k8s.MeshGatewayInstance) []gatewayapi.GatewayAddress {
+	if instance == nil {
+		return nil
+	}
+
 	ipType := gatewayapi.IPAddressType
 	hostnameType := gatewayapi.HostnameAddressType
 
