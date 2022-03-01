@@ -125,8 +125,16 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			}
 
 			var ports []kube_core.ServicePort
+			seenPorts := map[uint32]struct{}{}
 
 			for _, listener := range gateway.Spec.GetConf().GetListeners() {
+				if _, sawPort := seenPorts[listener.Port]; sawPort {
+					// There can be multiple listeners with the same port
+					// if they have different hostnames
+					continue
+				}
+				seenPorts[listener.Port] = struct{}{}
+
 				servicePort := kube_core.ServicePort{
 					Name:     strconv.Itoa(int(listener.Port)),
 					Protocol: kube_core.ProtocolTCP,
