@@ -35,17 +35,17 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hostname, _, err := net.SplitHostPort(req.Host)
-	if err != nil {
-		log.Error(err, "Could not parse a request")
-		resp.WriteHeader(http.StatusBadRequest)
-		_, err := resp.Write([]byte("Invalid Host header"))
-		if err != nil {
-			log.Error(err, "Error while writing the response")
-			return
-		}
-		return
+	host := req.Host
+	if host == "" {
+		host = req.URL.Host
 	}
+
+	hostname, _, err := net.SplitHostPort(host)
+	if err != nil {
+		// The host doesn't have a port so we just use it directly
+		hostname = host
+	}
+
 	reqParams.Host = hostname
 	logger := log.WithValues("params", reqParams)
 
