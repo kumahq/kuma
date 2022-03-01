@@ -2,7 +2,8 @@
 
 set -e
 
-source "$(dirname -- "${BASH_SOURCE[0]}")/../common.sh"
+SCRIPT_DIR="$(dirname -- "${BASH_SOURCE[0]}")"
+source "${SCRIPT_DIR}/../common.sh"
 
 [ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
 [ -z "$GH_REPO" ] && GH_REPO="charts"
@@ -11,7 +12,39 @@ CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
 GH_PAGES_BRANCH="gh-pages"
-[ -z "$GH_REPO_URL" ] && GH_REPO_URL="git@github.com:${GH_OWNER}/${GH_REPO}.git"
+
+# dev_version updates Chart.yaml with:
+#  appVersion equal to the kuma version
+#  version:
+#    with the git commit suffix, if the kuma version has a git commit suffix
+#    otherwise it leaves version alone, assuming it's been chosen intentionally
+function dev_version {
+  for dir in "${CHARTS_DIR}"/*; do
+    if [ ! -d "${dir}" ]; then
+      continue
+    fi
+
+    # Fail if there are uncommitted changes
+    git diff --exit-code HEAD -- "${dir}"
+
+    kuma_version=$("${SCRIPT_DIR}/version.sh")
+    yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
+
+    IFS=- read -r _version_core version_extra <<< "${kuma_version}"
+
+    chart_version=$(yq '.version' "${dir}/Chart.yaml")
+
+    # helm is semver-friendly, so we tweak the version.sh output a bit
+    short_hash=$(git rev-parse --short HEAD)
+
+    chart_version_extra=""
+    if [[ "${short_hash}" == "${version_extra}" ]]; then
+        chart_version_extra="+${version_extra}"
+    fi
+
+    yq -i ".version = \"${chart_version}${chart_version_extra}\"" "${dir}/Chart.yaml"
+  done
+}
 
 function package {
   # First package all the charts
@@ -39,6 +72,8 @@ function package {
 }
 
 function release {
+  [ -z "$GH_REPO_URL" ] && GH_REPO_URL="https://${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
+
   # First upload the packaged charts to the release
   cr upload \
     --owner "${GH_OWNER}" \
@@ -46,9 +81,8 @@ function release {
     --token "${GH_TOKEN}" \
     --package-path "${CHARTS_PACKAGE_PATH}"
 
-
   # Then build and upload the index file to github pages
-  git clone --single-branch --branch "${GH_PAGES_BRANCH}" $GH_REPO_URL
+  git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
   cr index \
     --owner "${GH_OWNER}" \
@@ -58,12 +92,14 @@ function release {
     --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
 
   pushd ${GH_REPO}
-  # tell git who we are before adding the index file
-  git config user.email "helm@kuma.io"
-  git config user.name "Helm Releaser"
+
+  git config user.name "${GH_USER}"
+  git config user.email "${GH_EMAIL}"
+
   git add "${CHARTS_INDEX_FILE}"
-  git commit -m "ci(helm) publish charts"
+  git commit -m "ci(helm): publish charts"
   git push
+
   popd
   rm -rf ${GH_REPO}
 }
@@ -88,6 +124,9 @@ function main {
       --release)
         op="release"
         ;;
+      --dev-version)
+        op="dev-version"
+        ;;
       *)
         usage
         break
@@ -100,8 +139,17 @@ function main {
     package)
       package
       ;;
+    dev-version)
+      if ! command -v yq >/dev/null || ! [[ $(command yq --version) =~ "mikefarah" ]]; then
+        msg_err "mikefarah/yq not installed"
+      fi
+
+      dev_version
+      ;;
     release)
-      [ -z "${GH_TOKEN}" ] && msg_err "GH_TOKEN required"
+      if [ -z "${GH_TOKEN}" ] || [ -z "${GH_USER}" ] || [ -z "${GH_EMAIL}" ]; then
+        msg_err "GH_TOKEN, GH_USER and GH_EMAIL required"
+      fi
 
       release
       ;;
