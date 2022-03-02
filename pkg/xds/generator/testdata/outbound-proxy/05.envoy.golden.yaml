@@ -60,6 +60,7 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: es-_0_
+                  timeout: 0s
           statPrefix: es
     metadata:
       filterMetadata:

@@ -383,6 +383,7 @@ resources:
                   prefix: /
                 route:
                   cluster: api-http
+                  timeout: 0s
           statPrefix: api-http
     metadata:
       filterMetadata:

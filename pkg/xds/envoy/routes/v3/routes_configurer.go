@@ -7,6 +7,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -160,6 +161,8 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *m
 	if len(clusters) != 0 {
 		if timeout := clusters[0].Timeout(); timeout != nil {
 			routeAction.Timeout = timeout.Spec.GetConf().GetHttp().GetRequestTimeout()
+		} else {
+			routeAction.Timeout = durationpb.New(0)
 		}
 	}
 	if len(clusters) == 1 {

@@ -345,6 +345,7 @@ resources:
                   prefix: /
                 route:
                   cluster: api-http
+                  timeout: 0s
           statPrefix: api-http
     metadata:
       filterMetadata:
@@ -413,6 +414,7 @@ resources:
                   prefix: /
                 route:
                   cluster: api-http2
+                  timeout: 0s
           statPrefix: api-http2
     metadata:
       filterMetadata:
@@ -455,6 +457,7 @@ resources:
                   prefix: /
                 route:
                   cluster: api-grpc
+                  timeout: 0s
           statPrefix: api-grpc
     metadata:
       filterMetadata:
