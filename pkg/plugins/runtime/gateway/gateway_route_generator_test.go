@@ -1067,6 +1067,123 @@ conf:
           kuma.io/service: echo-service
 `,
 		),
+
+		Entry("should distribute partial matching routes across wildcard listener",
+			"23-gateway-route.yaml", `
+type: MeshGateway
+mesh: default
+name: edge-gateway
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - port: 8080
+    protocol: HTTP
+    hostname: example.com
+    tags:
+      hostname: example.com
+      port: http/8080
+  - port: 8080
+    protocol: HTTP
+    tags:
+      hostname: all
+      port: http/8080
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+    hostname: example.com
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: EXACT
+          value: /v2
+      backends:
+      - destination:
+          kuma.io/service: api-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-extra
+selectors:
+- match:
+    kuma.io/service: gateway-default
+    hostname: all
+conf:
+  http:
+    hostnames:
+    - "*.com"
+    rules:
+    - matches:
+      - path:
+          match: EXACT
+          value: /
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
+
+		Entry("should distribute partial matching routes for one listener",
+			"24-gateway-route.yaml", `
+type: MeshGateway
+mesh: default
+name: edge-gateway
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  listeners:
+  - port: 8080
+    protocol: HTTP
+    tags:
+      port: http/8080
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    hostnames:
+    - "example.com"
+    rules:
+    - matches:
+      - path:
+          match: EXACT
+          value: /v2
+      backends:
+      - destination:
+          kuma.io/service: api-service
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service-extra
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    hostnames:
+    - "*.com"
+    rules:
+    - matches:
+      - path:
+          match: EXACT
+          value: /
+      backends:
+      - destination:
+          kuma.io/service: echo-service
+`,
+		),
 	}
 
 	Context("with a HTTP gateway", func() {
