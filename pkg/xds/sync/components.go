@@ -5,7 +5,6 @@ import (
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -18,16 +17,14 @@ var (
 )
 
 func DefaultDataplaneProxyBuilder(
-	dataSourceLoader datasource.Loader,
 	config kuma_cp.Config,
 	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
 ) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
-		DataSourceLoader: dataSourceLoader,
-		MetadataTracker:  metadataTracker,
-		Zone:             config.Multizone.Zone.Name,
-		APIVersion:       apiVersion,
+		MetadataTracker: metadataTracker,
+		Zone:            config.Multizone.Zone.Name,
+		APIVersion:      apiVersion,
 	}
 }
 
@@ -55,7 +52,6 @@ func defaultEgressProxyBuilder(
 		LookupIP:           rt.LookupIP(),
 		MetadataTracker:    metadataTracker,
 		meshCache:          meshCache,
-		DataSourceLoader:   rt.DataSourceLoader(),
 		apiVersion:         apiVersion,
 		zone:               rt.Config().Multizone.Zone.Name,
 	}
@@ -76,7 +72,6 @@ func DefaultDataplaneWatchdogFactory(
 	config := rt.Config()
 
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
-		rt.DataSourceLoader(),
 		config,
 		metadataTracker,
 		apiVersion,

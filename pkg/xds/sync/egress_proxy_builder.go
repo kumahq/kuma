@@ -4,7 +4,6 @@ import (
 	"context"
 	"sort"
 
-	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -25,7 +24,6 @@ type EgressProxyBuilder struct {
 	LookupIP           lookup.LookupIPFunc
 	MetadataTracker    DataplaneMetadataTracker
 	meshCache          *xds_cache.Cache
-	DataSourceLoader   datasource.Loader
 
 	zone       string
 	apiVersion envoy_common.APIVersion
@@ -103,7 +101,7 @@ func (p *EgressProxyBuilder) Build(
 				p.zone,
 				zoneIngresses,
 				externalServices,
-				p.DataSourceLoader,
+				meshCtx.DataSourceLoader,
 			),
 			ExternalServicePermissionMap: permissions.BuildExternalServicesPermissionsMapForZoneEgress(
 				externalServices,

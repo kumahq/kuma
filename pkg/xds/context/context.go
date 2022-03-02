@@ -3,6 +3,7 @@ package context
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/tls"
@@ -40,6 +41,7 @@ type MeshContext struct {
 	VIPDomains          []xds.VIPDomains
 	VIPOutbounds        []*mesh_proto.Dataplane_Networking_Outbound
 	ServiceTLSReadiness map[string]bool
+	DataSourceLoader    datasource.Loader
 }
 
 func (mc *MeshContext) GetTracingBackend(tt *core_mesh.TrafficTraceResource) *mesh_proto.TracingBackend {

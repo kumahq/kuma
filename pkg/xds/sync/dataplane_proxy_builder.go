@@ -5,7 +5,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -24,8 +23,7 @@ import (
 var syncLog = core.Log.WithName("sync")
 
 type DataplaneProxyBuilder struct {
-	DataSourceLoader datasource.Loader
-	MetadataTracker  DataplaneMetadataTracker
+	MetadataTracker DataplaneMetadataTracker
 
 	Zone       string
 	APIVersion envoy.APIVersion
@@ -81,7 +79,8 @@ func (p *DataplaneProxyBuilder) resolveRouting(meshContext xds_context.MeshConte
 		meshContext.Resources.Dataplanes().Items,
 		meshContext.Resources.ZoneIngresses().Items,
 		meshContext.Resources.ZoneEgresses().Items,
-		matchedExternalServices, p.DataSourceLoader,
+		matchedExternalServices,
+		meshContext.DataSourceLoader,
 	)
 
 	routing := &xds.Routing{

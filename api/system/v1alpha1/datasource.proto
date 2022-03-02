@@ -13,6 +13,7 @@ message DataSource {
     // Data source is a secret with given Secret key.
     string secret = 1;
     // Data source is a path to a file.
+    // Deprecated, use other sources of a data.
     string file = 2;
     // Data source is inline bytes.
     google.protobuf.BytesValue inline = 3;

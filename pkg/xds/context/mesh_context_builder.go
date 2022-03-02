@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -111,6 +112,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		VIPDomains:          domains,
 		VIPOutbounds:        outbounds,
 		ServiceTLSReadiness: m.resolveTLSReadiness(mesh, resources.ServiceInsights()),
+		DataSourceLoader:    datasource.NewStaticLoader(resources.Secrets().Items),
 	}, nil
 }
 
