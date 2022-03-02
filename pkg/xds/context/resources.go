@@ -2,6 +2,7 @@ package context
 
 import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
@@ -90,4 +91,8 @@ func (r Resources) GatewayRoutes() *core_mesh.MeshGatewayRouteResourceList {
 
 func (r Resources) ProxyTemplates() *core_mesh.ProxyTemplateResourceList {
 	return r.ListOrEmpty(core_mesh.ProxyTemplateType).(*core_mesh.ProxyTemplateResourceList)
+}
+
+func (r Resources) Secrets() *system.SecretResourceList {
+	return r.ListOrEmpty(system.SecretType).(*system.SecretResourceList)
 }

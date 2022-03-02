@@ -113,6 +113,7 @@ type DataSource_Secret struct {
 
 type DataSource_File struct {
 	// Data source is a path to a file.
+	// Deprecated, use other sources of a data.
 	File string `protobuf:"bytes,2,opt,name=file,proto3,oneof"`
 }
 
