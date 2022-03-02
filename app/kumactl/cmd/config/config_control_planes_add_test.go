@@ -30,6 +30,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 		var err error
 		configFile, err = os.CreateTemp("", "")
 		Expect(err).ToNot(HaveOccurred())
+		Expect(configFile.Close()).To(Succeed())
 	})
 	AfterEach(func() {
 		if configFile != nil {
@@ -44,7 +45,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 		rootCmd = test.DefaultTestingRootCmd()
 
 		// Different versions of cobra might emit errors to stdout
-		// or stderr. It's too fragile to depend on precidely what
+		// or stderr. It's too fragile to depend on precisely what
 		// it does, and that's not something that needs to be tested
 		// within Kuma anyway. So we just combine all the output
 		// and validate the aggregate.
@@ -117,13 +118,13 @@ var _ = Describe("kumactl config control-planes add", func() {
 		It("should fail when CP timeouts", func() {
 			// setup
 			server, port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
-				time.Sleep(time.Millisecond * 20)
+				time.Sleep(time.Millisecond * 200)
 			})
 			defer server.Close()
 
 			// given
 			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-				"--api-timeout", "10ms",
+				"--api-timeout", "100ms",
 				"config", "control-planes", "add",
 				"--name", "example",
 				"--address", fmt.Sprintf("http://localhost:%d", port),
