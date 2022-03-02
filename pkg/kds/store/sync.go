@@ -69,7 +69,6 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	opts := NewSyncOptions(fs...)
 	ctx := context.Background()
 	log := s.log.WithValues("type", upstream.GetItemType())
-	log.V(1).Info("sync", "upstream", upstream)
 	downstream, err := registry.Global().NewList(upstream.GetItemType())
 	if err != nil {
 		return err
@@ -77,7 +76,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	if err := s.resourceStore.List(ctx, downstream); err != nil {
 		return err
 	}
-	log.V(1).Info("before filtering", "downstream", downstream)
+	log.V(1).Info("before filtering", "downstream", downstream, "upstream", upstream)
 
 	if opts.Predicate != nil {
 		if filtered, err := filter(downstream, opts.Predicate); err != nil {
@@ -85,8 +84,13 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 		} else {
 			downstream = filtered
 		}
+		if filtered, err := filter(upstream, opts.Predicate); err != nil {
+			return err
+		} else {
+			upstream = filtered
+		}
 	}
-	log.V(1).Info("after filtering", "downstream", downstream)
+	log.V(1).Info("after filtering", "downstream", downstream, "upstream", upstream)
 
 	indexedUpstream := newIndexed(upstream)
 	indexedDownstream := newIndexed(downstream)
