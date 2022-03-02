@@ -127,7 +127,7 @@ kind/deploy/kuma/local: kind/deploy/kuma
 
 .PHONY: kind/deploy/metrics
 kind/deploy/metrics: build/kumactl
-	@KUBECONFIG=$(KIND_KUBECONFIG) ${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install metrics $(KUMACTL_INSTALL_METRICS_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) ${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install metrics | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-metrics pods -l app=prometheus
 
 .PHONY: kind/deploy/metrics-server
