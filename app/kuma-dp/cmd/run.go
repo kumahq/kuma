@@ -207,6 +207,16 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			runLog.Info("fetched Envoy version", "version", envoyVersion)
 
+			compatible, err := envoy.EnvoyVersionCompatible(envoyVersion.Version)
+			if err != nil {
+				runLog.Error(err, "cannot determine envoy version compatibility")
+				rootCtx.BootstrapDynamicMetadata["envoy_version_supported"] = "false"
+			}
+			if !compatible {
+				runLog.Info("envoy version incompatible", "compatibility", envoy.EnvoyCompatibility)
+				rootCtx.BootstrapDynamicMetadata["envoy_version_supported"] = "false"
+			}
+
 			runLog.Info("generating bootstrap configuration")
 			bootstrap, bootstrapBytes, err := rootCtx.BootstrapGenerator(opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
 				Dataplane:       opts.Dataplane,
