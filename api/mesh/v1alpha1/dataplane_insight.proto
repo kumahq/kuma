@@ -128,6 +128,9 @@ message Version {
 
   // Versions of other dependencies, i.e. CoreDNS
   map<string, string> dependencies = 3;
+
+  // Are Envoy and Kuma DP compatible?
+  bool KumaDpEnvoyVersionCompatible = 4;
 }
 
 // KumaDpVersion describes details of Kuma Dataplane version
