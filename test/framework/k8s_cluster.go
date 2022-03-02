@@ -236,7 +236,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--kds-global-address"] = c.opts.globalAddress
 	}
 
-	if c.opts.ingress {
+	if c.opts.zoneIngress {
 		argsMap["--ingress-enabled"] = ""
 		argsMap["--ingress-use-node-port"] = ""
 	}
@@ -421,6 +421,11 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	case KumactlInstallationMode:
 		err = c.deployKumaViaKubectl(mode)
 	case HelmInstallationMode:
+		if mode == core.Global && Config.HelmGlobalExtraYaml != "" {
+			if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), Config.HelmGlobalExtraYaml); err != nil {
+				return nil
+			}
+		}
 		err = c.deployKumaViaHelm(mode)
 	default:
 		return errors.Errorf("invalid installation mode: %s", c.opts.installationMode)
@@ -442,8 +447,14 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 	}
 
+	if c.opts.zoneIngress {
+		if err := c.WaitApp("kuma-ingress", Config.KumaNamespace, 1); err != nil {
+			return err
+		}
+	}
+
 	if c.opts.zoneEgress {
-		if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
+		if err := c.WaitApp("kuma-egress", Config.KumaNamespace, 1); err != nil {
 			return err
 		}
 	}

@@ -754,6 +754,7 @@ jobs:
     parallelism: 8
     environment:
       GOPATH: /home/circleci/.go-kuma-go
+      DOCKER_REGISTRY: kumahq
     steps:
       - install_build_tools
       - checkout
@@ -825,11 +826,8 @@ jobs:
 
   build:
     executor: golang
-    parameters:
-      docker_registry:
-        description: "Registry for container images"
-        type: string
-        default: "docker.io/kumahq"
+    environment:
+      DOCKER_REGISTRY: kumahq
     steps:
     - checkout
     - restore_cache:
@@ -844,13 +842,11 @@ jobs:
     - run:
         name: Build Docker images
         command: |
-          make images \
-            DOCKER_REGISTRY="<< parameters.docker_registry >>"
+          make images
     - run:
         name: Save Docker images into TAR archives
         command: |
-          make docker/save \
-            DOCKER_REGISTRY="<< parameters.docker_registry >>"
+          make docker/save
     # Persist the specified paths into the workspace for use in downstream jobs
     - persist_to_workspace:
         root: build
@@ -930,7 +926,6 @@ workflows:
     - go_cache: *master_only_workflow_filters
     - build:
         <<: *master_only_workflow_filters
-        docker_registry: ${ECR_REGISTRY}
         requires:
         - go_cache
     - eks-e2e:
@@ -950,7 +945,6 @@ workflows:
     - go_cache: *master_only_workflow_filters
     - build:
         <<: *master_only_workflow_filters
-        docker_registry: ${AZURE_ACR_REGISTRY}.azurecr.io
         requires:
         - go_cache
     - aks-e2e:
