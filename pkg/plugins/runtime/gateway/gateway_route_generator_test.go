@@ -11,6 +11,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
 
@@ -20,7 +21,11 @@ var _ = Describe("Gateway Route", func() {
 
 	Do := func() (cache.Snapshot, error) {
 		serverCtx := xds_server.NewXdsContext()
-		reconciler := xds_server.DefaultReconciler(rt, serverCtx)
+		statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
+		if err != nil {
+			return cache.Snapshot{}, err
+		}
+		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks)
 
 		// We expect there to be a Dataplane fixture named
 		// "default" in the current mesh.

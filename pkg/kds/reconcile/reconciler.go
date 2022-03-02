@@ -8,27 +8,49 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 var log = core.Log.WithName("kds").WithName("reconcile")
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache, generator SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner, mode config_core.CpMode) Reconciler {
+func NewReconciler(
+	hasher envoy_cache.NodeHash,
+	cache util_xds_v3.SnapshotCache,
+	generator SnapshotGenerator,
+	versioner util_xds_v3.SnapshotVersioner,
+	mode config_core.CpMode,
+	statsCallbacks xds.StatsCallbacks,
+) Reconciler {
 	return &reconciler{
-		hasher:    hasher,
-		cache:     cache,
-		generator: generator,
-		versioner: versioner,
-		mode:      mode,
+		hasher:         hasher,
+		cache:          cache,
+		generator:      generator,
+		versioner:      versioner,
+		mode:           mode,
+		statsCallbacks: statsCallbacks,
 	}
 }
 
 type reconciler struct {
-	hasher    envoy_cache.NodeHash
-	cache     util_xds_v3.SnapshotCache
-	generator SnapshotGenerator
-	versioner util_xds_v3.SnapshotVersioner
-	mode      config_core.CpMode
+	hasher         envoy_cache.NodeHash
+	cache          util_xds_v3.SnapshotCache
+	generator      SnapshotGenerator
+	versioner      util_xds_v3.SnapshotVersioner
+	mode           config_core.CpMode
+	statsCallbacks xds.StatsCallbacks
+}
+
+func (r *reconciler) Clear(node *envoy_core.Node) {
+	id := r.hasher.ID(node)
+	snapshot, err := r.cache.GetSnapshot(id)
+	if err != nil {
+		return // snapshot is not present
+	}
+	r.cache.ClearSnapshot(id)
+	for _, typ := range snapshot.GetSupportedTypes() {
+		r.statsCallbacks.DiscardConfig(snapshot.GetVersion(typ))
+	}
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error {
@@ -43,6 +65,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 	old, _ := r.cache.GetSnapshot(id)
 	new = r.versioner.Version(new, old)
 	r.logChanges(new, old, node)
+	r.meterConfigReadyForDelivery(new, old)
 	return r.cache.SetSnapshot(id, new)
 }
 
@@ -55,6 +78,14 @@ func (r *reconciler) logChanges(new util_xds_v3.Snapshot, old util_xds_v3.Snapsh
 				client = "global"
 			}
 			log.Info("detected changes in the resources. Sending changes to the client.", "resourceType", typ, "client", client)
+		}
+	}
+}
+
+func (r *reconciler) meterConfigReadyForDelivery(new util_xds_v3.Snapshot, old util_xds_v3.Snapshot) {
+	for _, typ := range new.GetSupportedTypes() {
+		if old == nil || old.GetVersion(typ) != new.GetVersion(typ) {
+			r.statsCallbacks.ConfigReadyForDelivery(new.GetVersion(typ))
 		}
 	}
 }

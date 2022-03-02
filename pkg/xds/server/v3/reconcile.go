@@ -12,6 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
@@ -26,13 +27,28 @@ var (
 var _ xds_sync.SnapshotReconciler = &reconciler{}
 
 type reconciler struct {
-	generator snapshotGenerator
-	cacher    snapshotCacher
+	generator      snapshotGenerator
+	cacher         snapshotCacher
+	statsCallbacks util_xds.StatsCallbacks
 }
 
 func (r *reconciler) Clear(proxyId *model.ProxyId) error {
-	r.cacher.Clear(&envoy_core.Node{Id: proxyId.String()})
+	nodeId := &envoy_core.Node{Id: proxyId.String()}
+	r.clearUndeliveredConfigStats(nodeId)
+	r.cacher.Clear(nodeId)
 	return nil
+}
+
+func (r *reconciler) clearUndeliveredConfigStats(nodeId *envoy_core.Node) {
+	snap, err := r.cacher.Get(nodeId)
+	if err != nil {
+		return // already cleared
+	}
+	for _, res := range snap.Resources {
+		if res.Version != "" {
+			r.statsCallbacks.DiscardConfig(res.Version)
+		}
+	}
 }
 
 func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) error {
@@ -56,7 +72,7 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 	// to Envoy. This ensures that we have as much in-band error
 	// information as possible, which is especially useful for tests
 	// that don't actually program an Envoy instance.
-	if changed {
+	if len(changed) > 0 {
 		for _, resources := range snapshot.Resources {
 			for name, resource := range resources.Items {
 				if err := validateResource(resource.Resource); err != nil {
@@ -75,6 +91,10 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 		return errors.Wrap(err, "failed to store snapshot")
 	}
 
+	for _, version := range changed {
+		r.statsCallbacks.ConfigReadyForDelivery(version)
+	}
+
 	return nil
 }
 
@@ -91,18 +111,19 @@ func validateResource(r envoy_types.Resource) error {
 	}
 }
 
-func autoVersion(old envoy_cache.Snapshot, new envoy_cache.Snapshot) (envoy_cache.Snapshot, bool) {
+func autoVersion(old envoy_cache.Snapshot, new envoy_cache.Snapshot) (envoy_cache.Snapshot, []string) {
 	for resourceType, resources := range old.Resources {
 		new.Resources[resourceType] = reuseVersion(resources, new.Resources[resourceType])
 	}
 
+	var changed []string
 	for resourceType, resource := range new.Resources {
 		if old.Resources[resourceType].Version != resource.Version {
-			return new, true
+			changed = append(changed, resource.Version)
 		}
 	}
 
-	return new, false
+	return new, changed
 }
 
 func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {

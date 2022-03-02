@@ -17,8 +17,10 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	xds_model "github.com/kumahq/kuma/pkg/core/xds"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -122,12 +124,18 @@ var _ = Describe("Reconcile", func() {
 			snapshots <- snapshot               // same Dataplane configuration
 			snapshots <- envoy_cache.Snapshot{} // new Dataplane configuration
 
+			metrics, err := core_metrics.NewMetrics("standalone")
+			Expect(err).ToNot(HaveOccurred())
+			statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "xds")
+			Expect(err).ToNot(HaveOccurred())
+
 			// setup
 			r := &reconciler{
 				snapshotGeneratorFunc(func(ctx xds_context.Context, proxy *xds_model.Proxy) (envoy_cache.Snapshot, error) {
 					return <-snapshots, nil
 				}),
 				&simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
+				statsCallbacks,
 			}
 
 			// given
@@ -146,7 +154,7 @@ var _ = Describe("Reconcile", func() {
 				Id:        *xds_model.BuildProxyId("demo", "example"),
 				Dataplane: dataplane,
 			}
-			err := r.Reconcile(xds_context.Context{}, proxy)
+			err = r.Reconcile(xds_context.Context{}, proxy)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot.Resources[envoy_types.Listener].Version).To(BeEmpty())
