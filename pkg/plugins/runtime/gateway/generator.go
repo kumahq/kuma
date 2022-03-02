@@ -173,14 +173,6 @@ func GatewayListenerInfoFromProxy(
 			return nil, err
 		}
 
-		hosts = RedistributeWildcardRoutes(hosts)
-
-		// Sort by reverse hostname, so that fully qualified hostnames sort
-		// before wildcard domains, and "*" is last.
-		sort.Slice(hosts, func(i, j int) bool {
-			return hosts[i].Hostname > hosts[j].Hostname
-		})
-
 		var hostInfos []GatewayHostInfo
 		for _, host := range hosts {
 			log.V(1).Info("applying merged traffic routes",
@@ -355,6 +347,14 @@ func MakeGatewayListener(
 	for _, host := range hostsByName {
 		hosts = append(hosts, host)
 	}
+
+	hosts = RedistributeWildcardRoutes(hosts)
+
+	// Sort by reverse hostname, so that fully qualified hostnames sort
+	// before wildcard domains, and "*" is last.
+	sort.Slice(hosts, func(i, j int) bool {
+		return hosts[i].Hostname > hosts[j].Hostname
+	})
 
 	return listener, hosts, nil
 }
