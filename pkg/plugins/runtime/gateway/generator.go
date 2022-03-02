@@ -3,6 +3,7 @@ package gateway
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -171,14 +172,6 @@ func GatewayListenerInfoFromProxy(
 		if err != nil {
 			return nil, err
 		}
-
-		hosts = RedistributeWildcardRoutes(hosts)
-
-		// Sort by reverse hostname, so that fully qualified hostnames sort
-		// before wildcard domains, and "*" is last.
-		sort.Slice(hosts, func(i, j int) bool {
-			return hosts[i].Hostname > hosts[j].Hostname
-		})
 
 		var hostInfos []GatewayHostInfo
 		for _, host := range hosts {
@@ -355,6 +348,14 @@ func MakeGatewayListener(
 		hosts = append(hosts, host)
 	}
 
+	hosts = RedistributeWildcardRoutes(hosts)
+
+	// Sort by reverse hostname, so that fully qualified hostnames sort
+	// before wildcard domains, and "*" is last.
+	sort.Slice(hosts, func(i, j int) bool {
+		return hosts[i].Hostname > hosts[j].Hostname
+	})
+
 	return listener, hosts, nil
 }
 
@@ -403,6 +404,13 @@ func RedistributeWildcardRoutes(
 			continue
 		}
 
+		appendRoutesToHost := func(host GatewayHost) {
+			// Note that if we already have a virtualhost for this
+			// name, and add the route to it, it might be a duplicate.
+			host.Routes = append(host.Routes, r)
+			hostsByName[host.Hostname] = host
+		}
+
 		for _, n := range names {
 			host, ok := hostsByName[n]
 
@@ -412,14 +420,21 @@ func RedistributeWildcardRoutes(
 			if !ok {
 				host = wild
 				host.Routes = nil
+				host.Hostname = n
 			}
 
-			// Note that if we already have a virtualhost for this
-			// name, and add the route to it, it might be a duplicate.
-			host.Routes = append(host.Routes, r)
-			host.Hostname = n
+			appendRoutesToHost(host)
 
-			hostsByName[n] = host
+			if suffix := strings.TrimPrefix(n, "*."); len(suffix) != len(n) {
+				// An alternative to this might be precalculating
+				// a table of suffixes to hosts
+				for hostName, host := range hostsByName {
+					if !strings.HasSuffix(hostName, suffix) {
+						continue
+					}
+					appendRoutesToHost(host)
+				}
+			}
 		}
 	}
 
