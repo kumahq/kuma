@@ -23,6 +23,28 @@ func validateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 	portHostnames := map[gatewayapi.PortNumber]gatewayapi.Hostname{}
 	portProtocols := map[gatewayapi.PortNumber]gatewayapi.ProtocolType{}
 
+	appendDetachedCondition := func(
+		listener gatewayapi.SectionName,
+		reason gatewayapi.ListenerConditionReason,
+		message string,
+	) {
+		listenerConditions[listener] = append(
+			listenerConditions[listener],
+			kube_meta.Condition{
+				Type:    string(gatewayapi.ListenerConditionDetached),
+				Status:  kube_meta.ConditionTrue,
+				Reason:  string(reason),
+				Message: message,
+			},
+			kube_meta.Condition{
+				Type:    string(gatewayapi.ListenerConditionReady),
+				Status:  kube_meta.ConditionFalse,
+				Reason:  string(gatewayapi.ListenerReasonInvalid),
+				Message: "detached",
+			},
+		)
+	}
+
 	appendConflictedCondition := func(
 		listener gatewayapi.SectionName,
 		reason gatewayapi.ListenerConditionReason,
@@ -46,6 +68,23 @@ func validateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 	}
 
 	for _, l := range listeners {
+		switch l.Protocol {
+		case gatewayapi.HTTPProtocolType:
+		case gatewayapi.HTTPSProtocolType:
+			// TODO HTTPS https://github.com/kumahq/kuma/issues/3679
+			fallthrough
+		default:
+			appendDetachedCondition(
+				l.Name,
+				gatewayapi.ListenerReasonUnsupportedProtocol,
+				fmt.Sprintf("unsupported protocol %s", l.Protocol),
+			)
+			continue
+		}
+
+		// TODO ListenerReasonUnsupportedAddress and ListenerReasonPortUnavailable
+		// need more information from Envoy Gateway
+
 		if hn := l.Hostname; hn != nil {
 			if otherHn := portHostnames[l.Port]; otherHn == *hn {
 				appendConflictedCondition(
@@ -154,9 +193,14 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			}
 		}
 
-		// We've already cleared this listener of conflicts
+		// We've already cleared this listener of conflicts and being detached
 		listenerConditions[l.Name] = append(
 			listenerConditions[l.Name],
+			kube_meta.Condition{
+				Type:   string(gatewayapi.ListenerConditionDetached),
+				Status: kube_meta.ConditionFalse,
+				Reason: string(gatewayapi.ListenerReasonAttached),
+			},
 			kube_meta.Condition{
 				Type:   string(gatewayapi.ListenerConditionConflicted),
 				Status: kube_meta.ConditionFalse,
