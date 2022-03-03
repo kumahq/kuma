@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -76,7 +75,7 @@ type GatewayListenerInfo struct {
 // a specific protocol.
 // A FilterChainGenerator can be host-specific or shared amongst hosts.
 type FilterChainGenerator interface {
-	Generate(xds_context.Context, GatewayListenerInfo, []GatewayHost) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error)
+	Generate(xds_context.MeshContext, GatewayListenerInfo, []GatewayHost) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error)
 }
 
 // Generator generates xDS resources for an entire Gateway.
@@ -84,7 +83,6 @@ type Generator struct {
 	FilterChainGenerators filterChainGenerators
 	ClusterGenerator      ClusterGenerator
 	Zone                  string
-	DataSourceLoader      datasource.Loader
 }
 
 type filterChainGenerators struct {
@@ -100,7 +98,7 @@ func (g *filterChainGenerators) For(ctx xds_context.Context, info GatewayListene
 // Gateway and returns information about the listeners, routes and applied
 // policies.
 func GatewayListenerInfoFromProxy(
-	ctx xds_context.MeshContext, proxy *core_xds.Proxy, zone string, dataSourceLoader datasource.Loader,
+	ctx xds_context.MeshContext, proxy *core_xds.Proxy, zone string,
 ) (
 	[]GatewayListenerInfo, error,
 ) {
@@ -154,7 +152,8 @@ func GatewayListenerInfoFromProxy(
 		ctx.Resources.Dataplanes().Items,
 		ctx.Resources.ZoneIngresses().Items,
 		ctx.Resources.ZoneEgresses().Items,
-		matchedExternalServices, dataSourceLoader,
+		matchedExternalServices,
+		ctx.DataSourceLoader,
 	)
 
 	for port, listeners := range collapsed {
@@ -202,7 +201,7 @@ func GatewayListenerInfoFromProxy(
 func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 
-	listenerInfos, err := GatewayListenerInfoFromProxy(ctx.Mesh, proxy, g.Zone, g.DataSourceLoader)
+	listenerInfos, err := GatewayListenerInfoFromProxy(ctx.Mesh, proxy, g.Zone)
 	if err != nil {
 		return nil, errors.Wrap(err, "error generating listener info from Proxy")
 	}
@@ -213,7 +212,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			return nil, errors.New("no support for protocol")
 		}
 
-		ldsResources, err := g.generateLDS(ctx, info, info.HostInfos)
+		ldsResources, err := g.generateLDS(ctx.Mesh, info, info.HostInfos)
 		if err != nil {
 			return nil, err
 		}
@@ -229,9 +228,9 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 	return resources, nil
 }
 
-func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (g Generator) generateLDS(ctx xds_context.MeshContext, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-	listenerBuilder := GenerateListener(ctx, info)
+	listenerBuilder := GenerateListener(info)
 
 	var gatewayHosts []GatewayHost
 	for _, hostInfo := range hostInfos {
