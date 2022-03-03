@@ -37,18 +37,18 @@ var CustomizeProxy func(meshContext xds_context.MeshContext, proxy *core_xds.Pro
 func getMatchedPolicies(
 	cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
 ) (
-	*core_xds.MatchedPolicies, *api_server_types.GatewayDataplaneInspectResult, *core_mesh.DataplaneResource, error,
+	*core_xds.MatchedPolicies, []gateway.GatewayListenerInfo, core_xds.Proxy, error,
 ) {
 	proxyBuilder := sync.DefaultDataplaneProxyBuilder(
 		*cfg,
 		callbacks.NewDataplaneMetadataTracker(),
 		envoy.APIV3)
 	if proxy, err := proxyBuilder.Build(dataplaneKey, meshContext); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, core_xds.Proxy{}, err
 	} else {
 		if CustomizeProxy != nil {
 			if err := CustomizeProxy(meshContext, proxy); err != nil {
-				return nil, nil, nil, err
+				return nil, nil, core_xds.Proxy{}, err
 			}
 		}
 		if proxy.Dataplane.Spec.IsBuiltinGateway() {
@@ -56,13 +56,12 @@ func getMatchedPolicies(
 				meshContext, proxy, proxyBuilder.Zone,
 			)
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, core_xds.Proxy{}, err
 			}
 
-			result := newGatewayDataplaneInspectResponse(*proxy, entries)
-			return nil, &result, proxy.Dataplane, nil
+			return nil, entries, *proxy, nil
 		}
-		return &proxy.Policies, nil, proxy.Dataplane, nil
+		return &proxy.Policies, nil, *proxy, nil
 	}
 }
 
@@ -141,7 +140,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			return
 		}
 
-		matchedPolicies, gatewayResult, dp, err := getMatchedPolicies(cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName})
+		matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName})
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
 			return
@@ -149,7 +148,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 
 		if matchedPolicies != nil {
 			result := api_server_types.NewDataplaneInspectEntryList()
-			result.Items = append(result.Items, newDataplaneInspectResponse(matchedPolicies, dp)...)
+			result.Items = append(result.Items, newDataplaneInspectResponse(matchedPolicies, proxy.Dataplane)...)
 			result.Total = uint32(len(result.Items))
 
 			if err := response.WriteAsJson(result); err != nil {
@@ -157,7 +156,8 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 				return
 			}
 		} else {
-			if err := response.WriteAsJson(gatewayResult); err != nil {
+			result := newGatewayDataplaneInspectResponse(proxy, gatewayEntries)
+			if err := response.WriteAsJson(result); err != nil {
 				rest_errors.HandleError(response, err, "Could not write response")
 				return
 			}
@@ -387,6 +387,14 @@ func newGatewayDataplaneInspectResponse(
 
 	result := api_server_types.NewGatewayDataplaneInspectResult()
 	result.Listeners = listeners
+
+	if len(listeners) > 0 {
+		gatewayKey := core_model.MetaToResourceKey(listenerInfos[0].Gateway.GetMeta())
+		result.Gateway = api_server_types.ResourceKeyEntry{
+			Mesh: gatewayKey.Mesh,
+			Name: gatewayKey.Name,
+		}
+	}
 
 	gatewayPolicies := api_server_types.PolicyMap{}
 

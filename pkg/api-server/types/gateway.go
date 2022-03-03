@@ -31,6 +31,7 @@ type GatewayListenerInspectEntry struct {
 
 type GatewayDataplaneInspectResult struct {
 	Kind      string                        `json:"kind"`
+	Gateway   ResourceKeyEntry              `json:"gateway"`
 	Listeners []GatewayListenerInspectEntry `json:"listeners"`
 	Policies  PolicyMap                     `json:"policies,omitempty"`
 }
