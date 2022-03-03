@@ -18,7 +18,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -62,7 +61,7 @@ type HTTPFilterChainGenerator struct {
 }
 
 func (g *HTTPFilterChainGenerator) Generate(
-	ctx xds_context.Context, info GatewayListenerInfo, _ []GatewayHost,
+	ctx xds_context.MeshContext, info GatewayListenerInfo, _ []GatewayHost,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
 ) {
@@ -75,11 +74,10 @@ func (g *HTTPFilterChainGenerator) Generate(
 
 // HTTPSFilterChainGenerator generates a filter chain for an HTTPS listener.
 type HTTPSFilterChainGenerator struct {
-	DataSourceLoader datasource.Loader
 }
 
 func (g *HTTPSFilterChainGenerator) Generate(
-	ctx xds_context.Context, info GatewayListenerInfo, hosts []GatewayHost,
+	ctx xds_context.MeshContext, info GatewayListenerInfo, hosts []GatewayHost,
 ) (
 	*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error,
 ) {
@@ -161,11 +159,11 @@ func (g *HTTPSFilterChainGenerator) Generate(
 }
 
 func (g *HTTPSFilterChainGenerator) generateCertificateSecret(
-	ctx xds_context.Context,
+	ctx xds_context.MeshContext,
 	host GatewayHost,
 	secret *system_proto.DataSource,
 ) (*envoy_extensions_transport_sockets_tls_v3.Secret, error) {
-	data, err := g.DataSourceLoader.Load(context.Background(), ctx.Mesh.Resource.GetMeta().GetName(), secret)
+	data, err := ctx.DataSourceLoader.Load(context.Background(), ctx.Resource.GetMeta().GetName(), secret)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +216,7 @@ func newDownstreamTypedConfig() *envoy_extensions_transport_sockets_tls_v3.Downs
 	return conf
 }
 
-func newFilterChain(ctx xds_context.Context, info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
+func newFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *envoy_listeners.FilterChainBuilder {
 	// A Gateway is a single service across all listeners.
 	service := info.Proxy.Dataplane.Spec.GetIdentifyingService()
 
@@ -263,7 +261,7 @@ func newFilterChain(ctx xds_context.Context, info GatewayListenerInfo) *envoy_li
 		// is a no-op unless we later add a per-route configuration.
 		envoy_listeners.RateLimit([]*core_mesh.RateLimitResource{nil}),
 		envoy_listeners.DefaultCompressorFilter(),
-		envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service),
+		envoy_listeners.Tracing(ctx.GetTracingBackend(info.Proxy.Policies.TrafficTrace), service),
 		// In mesh proxies, the access log is configured on the outbound
 		// listener, which is why we index the Logs slice by destination
 		// service name.  A Gateway listener by definition forwards traffic
@@ -272,11 +270,11 @@ func newFilterChain(ctx xds_context.Context, info GatewayListenerInfo) *envoy_li
 		// match the log policy for the generic pass through service. This
 		// will be the only policy available for a Dataplane with no outbounds.
 		envoy_listeners.HttpAccessLog(
-			ctx.Mesh.Resource.Meta.GetName(),
+			ctx.Resource.Meta.GetName(),
 			envoy.TrafficDirectionInbound,
 			service,                // Source service is the gateway service.
 			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
-			ctx.Mesh.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
+			ctx.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
 			info.Proxy,
 		),
 	)

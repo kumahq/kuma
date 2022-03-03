@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
@@ -21,8 +20,7 @@ import (
 // ClusterGenerator generates Envoy clusters and their corresponding
 // load assignments for both mesh services and external services.
 type ClusterGenerator struct {
-	DataSourceLoader datasource.Loader
-	Zone             string
+	Zone string
 }
 
 // GenerateHost generates clusters for all the services targeted in the current route table.
@@ -62,7 +60,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 				"service", service,
 			)
 
-			r, err = c.generateExternalCluster(ctx, info, matched, dest)
+			r, err = c.generateExternalCluster(ctx.Mesh, info, matched, dest)
 		} else {
 			log.Info("generating mesh cluster resource",
 				"service", service,
@@ -143,7 +141,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 }
 
 func (c *ClusterGenerator) generateExternalCluster(
-	ctx xds_context.Context,
+	ctx xds_context.MeshContext,
 	info GatewayListenerInfo,
 	externalServices []*core_mesh.ExternalServiceResource,
 	dest *route.Destination,
@@ -151,7 +149,7 @@ func (c *ClusterGenerator) generateExternalCluster(
 	var endpoints []core_xds.Endpoint
 
 	for _, ext := range externalServices {
-		ep, err := topology.NewExternalServiceEndpoint(ext, ctx.Mesh.Resource, c.DataSourceLoader, c.Zone)
+		ep, err := topology.NewExternalServiceEndpoint(ext, ctx.Resource, ctx.DataSourceLoader, c.Zone)
 		if err != nil {
 			return nil, err
 		}

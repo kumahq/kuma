@@ -4,7 +4,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
@@ -55,7 +54,7 @@ func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, conf
 		generator.DefaultTemplateResolver,
 	)
 
-	generator.RegisterProfile(ProfileGatewayProxy, NewProxyProfile(context.Config().Multizone.Zone.Name, context.DataSourceLoader()))
+	generator.RegisterProfile(ProfileGatewayProxy, NewProxyProfile(context.Config().Multizone.Zone.Name))
 
 	log.Info("registered gateway plugin")
 	return nil
@@ -75,7 +74,7 @@ const ProfileGatewayProxy = "gateway-proxy"
 
 // NewProxyProfile returns a new resource generator profile for builtin
 // gateway dataplanes.
-func NewProxyProfile(zone string, dataSourceLoader datasource.Loader) generator.ResourceGenerator {
+func NewProxyProfile(zone string) generator.ResourceGenerator {
 	return generator.CompositeResourceGenerator{
 		generator.AdminProxyGenerator{},
 		generator.PrometheusEndpointGenerator{},
@@ -87,17 +86,13 @@ func NewProxyProfile(zone string, dataSourceLoader datasource.Loader) generator.
 		Generator{
 			FilterChainGenerators: filterChainGenerators{
 				FilterChainGenerators: map[mesh_proto.MeshGateway_Listener_Protocol]FilterChainGenerator{
-					mesh_proto.MeshGateway_Listener_HTTP: &HTTPFilterChainGenerator{},
-					mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{
-						DataSourceLoader: dataSourceLoader,
-					},
+					mesh_proto.MeshGateway_Listener_HTTP:  &HTTPFilterChainGenerator{},
+					mesh_proto.MeshGateway_Listener_HTTPS: &HTTPSFilterChainGenerator{},
 				}},
 			ClusterGenerator: ClusterGenerator{
-				DataSourceLoader: dataSourceLoader,
-				Zone:             zone,
+				Zone: zone,
 			},
-			Zone:             zone,
-			DataSourceLoader: dataSourceLoader,
+			Zone: zone,
 		},
 	}
 }
