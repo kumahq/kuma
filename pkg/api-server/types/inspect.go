@@ -1,6 +1,10 @@
 package types
 
 import (
+	"encoding/json"
+
+	"github.com/pkg/errors"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
@@ -23,14 +27,71 @@ func ResourceKeyEntryFromModelKey(key core_model.ResourceKey) ResourceKeyEntry {
 	}
 }
 
-type PolicyInspectEntry interface {
+type PolicyInspectEntryKind interface {
 	policyInspectEntry()
+}
+
+type PolicyInspectEntry struct {
+	PolicyInspectEntryKind
+}
+
+func NewPolicyInspectEntry(k PolicyInspectEntryKind) PolicyInspectEntry {
+	return PolicyInspectEntry{PolicyInspectEntryKind: k}
+}
+
+func (w *PolicyInspectEntry) UnmarshalJSON(data []byte) error {
+	i := KindTag{}
+	if err := json.Unmarshal(data, &i); err != nil {
+		return errors.Wrap(err, `unable to find "kind"`)
+	}
+	var entry PolicyInspectEntryKind
+	switch i.Kind {
+	case SidecarDataplane:
+		entry = &PolicyInspectSidecarEntry{}
+	case GatewayDataplane:
+		entry = &PolicyInspectGatewayEntry{}
+	default:
+		return errors.Errorf("invalid PolicyInspectEntry kind %q", i.Kind)
+	}
+	if err := json.Unmarshal(data, entry); err != nil {
+		return errors.Wrapf(err, "unable to parse PolicyInspectEntry of kind %q", i.Kind)
+	}
+	w.PolicyInspectEntryKind = entry
+	return nil
 }
 
 type PolicyInspectSidecarEntry struct {
 	DataplaneKey ResourceKeyEntry  `json:"dataplane"`
-	Kind         string            `json:"kind"`
 	Attachments  []AttachmentEntry `json:"attachments"`
+}
+
+const SidecarDataplane = "SidecarDataplane"
+const GatewayDataplane = "GatewayDataplane"
+
+type KindTag struct {
+	Kind string `json:"kind"`
+}
+
+func (e PolicyInspectEntry) MarshalJSON() ([]byte, error) {
+	switch concrete := e.PolicyInspectEntryKind.(type) {
+	case *PolicyInspectSidecarEntry:
+		return json.Marshal(struct {
+			KindTag
+			*PolicyInspectSidecarEntry
+		}{
+			KindTag:                   KindTag{SidecarDataplane},
+			PolicyInspectSidecarEntry: concrete,
+		})
+	case *PolicyInspectGatewayEntry:
+		return json.Marshal(struct {
+			KindTag
+			*PolicyInspectGatewayEntry
+		}{
+			KindTag:                   KindTag{GatewayDataplane},
+			PolicyInspectGatewayEntry: concrete,
+		})
+	}
+	panic("internal error")
 }
 
 func (*PolicyInspectSidecarEntry) policyInspectEntry() {
@@ -39,7 +100,6 @@ func (*PolicyInspectSidecarEntry) policyInspectEntry() {
 func NewPolicyInspectSidecarEntry(key ResourceKeyEntry) PolicyInspectSidecarEntry {
 	return PolicyInspectSidecarEntry{
 		DataplaneKey: key,
-		Kind:         "SidecarDataplane",
 	}
 }
 
@@ -57,6 +117,42 @@ func NewPolicyInspectEntryList() *PolicyInspectEntryList {
 
 type MatchedPolicies map[core_model.ResourceType][]*rest.Resource
 
+type DataplaneInspectResponseKind interface {
+	dataplaneInspectEntry()
+}
+
+type DataplaneInspectResponse struct {
+	DataplaneInspectResponseKind
+}
+
+func NewDataplaneInspectResponse(k DataplaneInspectResponseKind) DataplaneInspectResponse {
+	return DataplaneInspectResponse{
+		DataplaneInspectResponseKind: k,
+	}
+}
+
+func (e DataplaneInspectResponse) MarshalJSON() ([]byte, error) {
+	switch concrete := e.DataplaneInspectResponseKind.(type) {
+	case *DataplaneInspectEntryList:
+		return json.Marshal(struct {
+			KindTag
+			*DataplaneInspectEntryList
+		}{
+			KindTag:                   KindTag{SidecarDataplane},
+			DataplaneInspectEntryList: concrete,
+		})
+	case *GatewayDataplaneInspectResult:
+		return json.Marshal(struct {
+			KindTag
+			*GatewayDataplaneInspectResult
+		}{
+			KindTag:                       KindTag{GatewayDataplane},
+			GatewayDataplaneInspectResult: concrete,
+		})
+	}
+	panic("internal error")
+}
+
 type DataplaneInspectEntry struct {
 	AttachmentEntry
 	MatchedPolicies MatchedPolicies `json:"matchedPolicies"`
@@ -64,14 +160,15 @@ type DataplaneInspectEntry struct {
 
 type DataplaneInspectEntryList struct {
 	Total uint32                   `json:"total"`
-	Kind  string                   `json:"kind"`
 	Items []*DataplaneInspectEntry `json:"items"`
 }
 
 func NewDataplaneInspectEntryList() *DataplaneInspectEntryList {
 	return &DataplaneInspectEntryList{
 		Total: 0,
-		Kind:  "SidecarDataplane",
 		Items: []*DataplaneInspectEntry{},
 	}
+}
+
+func (*DataplaneInspectEntryList) dataplaneInspectEntry() {
 }

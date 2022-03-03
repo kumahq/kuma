@@ -148,21 +148,19 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			return
 		}
 
+		var result api_server_types.DataplaneInspectResponse
 		if matchedPolicies != nil {
-			result := api_server_types.NewDataplaneInspectEntryList()
-			result.Items = append(result.Items, newDataplaneInspectResponse(matchedPolicies, proxy.Dataplane)...)
-			result.Total = uint32(len(result.Items))
-
-			if err := response.WriteAsJson(result); err != nil {
-				rest_errors.HandleError(response, err, "Could not write response")
-				return
-			}
+			inner := api_server_types.NewDataplaneInspectEntryList()
+			inner.Items = append(inner.Items, newDataplaneInspectResponse(matchedPolicies, proxy.Dataplane)...)
+			inner.Total = uint32(len(inner.Items))
+			result = api_server_types.NewDataplaneInspectResponse(inner)
 		} else {
-			result := newGatewayDataplaneInspectResponse(proxy, gatewayEntries)
-			if err := response.WriteAsJson(result); err != nil {
-				rest_errors.HandleError(response, err, "Could not write response")
-				return
-			}
+			inner := newGatewayDataplaneInspectResponse(proxy, gatewayEntries)
+			result = api_server_types.NewDataplaneInspectResponse(&inner)
+		}
+		if err := response.WriteAsJson(result); err != nil {
+			rest_errors.HandleError(response, err, "Could not write response")
+			return
 		}
 	}
 }
@@ -208,7 +206,7 @@ func inspectPolicies(
 						}
 						entry := api_server_types.NewPolicyInspectSidecarEntry(resourceKey)
 						entry.Attachments = attachmentList
-						result.Items = append(result.Items, &entry)
+						result.Items = append(result.Items, api_server_types.NewPolicyInspectEntry(&entry))
 					}
 				}
 			} else {
@@ -555,7 +553,7 @@ func gatewayEntriesByPolicy(
 
 		policyMap[policy] = append(
 			policyMap[policy],
-			&result,
+			api_server_types.NewPolicyInspectEntry(&result),
 		)
 	}
 
@@ -567,7 +565,7 @@ func gatewayEntriesByPolicy(
 		}
 		policyMap[policyKey] = append(
 			policyMap[policyKey],
-			&wholeGateway,
+			api_server_types.NewPolicyInspectEntry(&wholeGateway),
 		)
 	}
 	if trace := proxy.Policies.TrafficTrace; trace != nil {
@@ -578,7 +576,7 @@ func gatewayEntriesByPolicy(
 		}
 		policyMap[policyKey] = append(
 			policyMap[policyKey],
-			&wholeGateway,
+			api_server_types.NewPolicyInspectEntry(&wholeGateway),
 		)
 	}
 

@@ -30,15 +30,16 @@ type GatewayListenerInspectEntry struct {
 }
 
 type GatewayDataplaneInspectResult struct {
-	Kind      string                        `json:"kind"`
 	Gateway   ResourceKeyEntry              `json:"gateway"`
 	Listeners []GatewayListenerInspectEntry `json:"listeners"`
 	Policies  PolicyMap                     `json:"policies,omitempty"`
 }
 
+func (*GatewayDataplaneInspectResult) dataplaneInspectEntry() {
+}
+
 func NewGatewayDataplaneInspectResult() GatewayDataplaneInspectResult {
 	return GatewayDataplaneInspectResult{
-		Kind:      "GatewayDataplane",
 		Listeners: []GatewayListenerInspectEntry{},
 	}
 }
@@ -63,7 +64,6 @@ type PolicyInspectGatewayEntry struct {
 	DataplaneKey ResourceKeyEntry                    `json:"dataplane"`
 	Gateway      ResourceKeyEntry                    `json:"gateway,omitempty"`
 	Listeners    []PolicyInspectGatewayListenerEntry `json:"listeners,omitempty"`
-	Kind         string                              `json:"kind"`
 }
 
 func (*PolicyInspectGatewayEntry) policyInspectEntry() {
@@ -73,6 +73,5 @@ func NewPolicyInspectGatewayEntry(key ResourceKeyEntry, gateway ResourceKeyEntry
 	return PolicyInspectGatewayEntry{
 		DataplaneKey: key,
 		Gateway:      gateway,
-		Kind:         "GatewayDataplane",
 	}
 }

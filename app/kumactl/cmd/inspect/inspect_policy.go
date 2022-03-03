@@ -30,7 +30,7 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 	tmpl, err := template.New("policy_inspect").Funcs(template.FuncMap{
 		"FormatAttachment": attachmentToStr(false),
 		"PrintAttachments": func(e api_server_types.PolicyInspectEntry) bool {
-			sidecarEntry, ok := e.(*api_server_types.PolicyInspectSidecarEntry)
+			sidecarEntry, ok := e.PolicyInspectEntryKind.(*api_server_types.PolicyInspectSidecarEntry)
 			if !ok {
 				return true
 			}
