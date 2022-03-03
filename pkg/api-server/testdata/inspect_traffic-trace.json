@@ -1,6 +1,17 @@
 {
- "total": 3,
+ "total": 4,
  "items": [
+  {
+   "dataplane": {
+    "mesh": "mesh-1",
+    "name": "meshgateway-1"
+   },
+   "gateway": {
+    "mesh": "mesh-1",
+    "name": "meshgateway"
+   },
+   "kind": "GatewayDataplane"
+  },
   {
    "dataplane": {
     "mesh": "mesh-1",

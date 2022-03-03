@@ -676,6 +676,68 @@ var _ = Describe("Inspect WS", func() {
 			goldenFile: "inspect_retry.json",
 			resources: []core_model.Resource{
 				newMesh("mesh-1"),
+				&core_mesh.MeshGatewayResource{
+					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "mesh-1"},
+					Spec: &mesh_proto.MeshGateway{
+						Selectors: selectors{
+							serviceSelector("meshgateway", ""),
+						},
+						Conf: &mesh_proto.MeshGateway_Conf{
+							Listeners: []*mesh_proto.MeshGateway_Listener{
+								{
+									Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+									Port:     80,
+								},
+							},
+						},
+					},
+				},
+				&core_mesh.MeshGatewayRouteResource{
+					Meta: &test_model.ResourceMeta{Name: "route-1", Mesh: "mesh-1"},
+					Spec: &mesh_proto.MeshGatewayRoute{
+						Selectors: selectors{
+							serviceSelector("meshgateway", ""),
+						},
+						Conf: &mesh_proto.MeshGatewayRoute_Conf{
+							Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
+								Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
+									Rules: []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
+										{
+											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
+												{
+													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
+														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
+														Value: "/redis",
+													},
+												},
+											},
+											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
+												{
+													Destination: serviceSelector("redis", "").Match,
+												},
+											},
+										},
+										{
+											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
+												{
+													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
+														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
+														Value: "/backend",
+													},
+												},
+											},
+											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
+												{
+													Destination: serviceSelector("backend", "").Match,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 				&core_mesh.RetryResource{
 					Meta: &test_model.ResourceMeta{Name: "r-1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.Retry{
@@ -687,6 +749,10 @@ var _ = Describe("Inspect WS", func() {
 						Conf: samples.Retry.Conf,
 					},
 				},
+				newDataplane().
+					meta("meshgateway-1", "mesh-1").
+					builtin("meshgateway").
+					build(),
 				newDataplane().
 					meta("backend-1", "mesh-1").
 					inbound80to81("backend", "192.168.0.1").
@@ -772,6 +838,57 @@ var _ = Describe("Inspect WS", func() {
 						Conf:      samples.TrafficTrace.Conf,
 					},
 				},
+				&core_mesh.MeshGatewayResource{
+					Meta: &test_model.ResourceMeta{Name: "meshgateway", Mesh: "mesh-1"},
+					Spec: &mesh_proto.MeshGateway{
+						Selectors: selectors{
+							serviceSelector("meshgateway", ""),
+						},
+						Conf: &mesh_proto.MeshGateway_Conf{
+							Listeners: []*mesh_proto.MeshGateway_Listener{
+								{
+									Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+									Port:     80,
+								},
+							},
+						},
+					},
+				},
+				&core_mesh.MeshGatewayRouteResource{
+					Meta: &test_model.ResourceMeta{Name: "route-1", Mesh: "mesh-1"},
+					Spec: &mesh_proto.MeshGatewayRoute{
+						Selectors: selectors{
+							serviceSelector("meshgateway", ""),
+						},
+						Conf: &mesh_proto.MeshGatewayRoute_Conf{
+							Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
+								Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
+									Rules: []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
+										{
+											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
+												{
+													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
+														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
+														Value: "/redis",
+													},
+												},
+											},
+											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
+												{
+													Destination: serviceSelector("redis", "").Match,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				newDataplane().
+					meta("meshgateway-1", "mesh-1").
+					builtin("meshgateway").
+					build(),
 				newDataplane().
 					meta("backend-1", "mesh-1").
 					inbound80to81("backend", "192.168.0.1").
