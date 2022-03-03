@@ -2,6 +2,7 @@
  "total": 3,
  "items": [
   {
+   "kind": "GatewayDataplane",
    "dataplane": {
     "mesh": "mesh-1",
     "name": "meshgateway-1"
@@ -30,15 +31,14 @@
       }
      ]
     }
-   ],
-   "kind": "GatewayDataplane"
+   ]
   },
   {
+   "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "mesh-1",
     "name": "backend-1"
    },
-   "kind": "SidecarDataplane",
    "attachments": [
     {
      "type": "service",
@@ -53,11 +53,11 @@
    ]
   },
   {
+   "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "mesh-1",
     "name": "redis-1"
    },
-   "kind": "SidecarDataplane",
    "attachments": [
     {
      "type": "service",

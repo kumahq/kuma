@@ -2,11 +2,11 @@
  "total": 3,
  "items": [
   {
+   "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "mesh-1",
     "name": "backend-1"
    },
-   "kind": "SidecarDataplane",
    "attachments": [
     {
      "type": "dataplane",
@@ -16,11 +16,11 @@
    ]
   },
   {
+   "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "mesh-1",
     "name": "redis-1"
    },
-   "kind": "SidecarDataplane",
    "attachments": [
     {
      "type": "dataplane",
@@ -30,11 +30,11 @@
    ]
   },
   {
+   "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "mesh-1",
     "name": "web-1"
    },
-   "kind": "SidecarDataplane",
    "attachments": [
     {
      "type": "dataplane",
