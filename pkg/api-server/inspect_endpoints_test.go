@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -138,6 +139,16 @@ func (b *dataplaneBuilder) meta(name, mesh string) *dataplaneBuilder {
 	return b
 }
 
+func (b *dataplaneBuilder) builtin(service string) *dataplaneBuilder {
+	b.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
+		Tags: map[string]string{
+			mesh_proto.ServiceTag: service,
+		},
+		Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+	}
+	return b
+}
+
 func (b *dataplaneBuilder) inbound80to81(service, ip string) *dataplaneBuilder {
 	b.Spec.Networking.Inbound = append(b.Spec.Networking.Inbound, &mesh_proto.Dataplane_Networking_Inbound{
 		Address:     ip,
@@ -207,6 +218,7 @@ var _ = Describe("Inspect WS", func() {
 
 	DescribeTable("should return valid response",
 		func(given testCase) {
+			register.RegisterGatewayTypes()
 			// setup
 			resourceStore := memory.NewStore()
 			metrics, err := metrics.NewMetrics("Standalone")
@@ -341,6 +353,108 @@ var _ = Describe("Inspect WS", func() {
 					outbound8080("postgres", "192.168.0.4").
 					outbound8080("web", "192.168.0.2").
 					build(),
+			},
+		}),
+		Entry("inspect gateway dataplane", testCase{
+			path:       "/meshes/default/dataplanes/gateway-1/policies",
+			goldenFile: "inspect_gateway_dataplane.json",
+			resources: []core_model.Resource{
+				newMesh("default"),
+				newDataplane().
+					meta("gateway-1", "default").
+					builtin("gateway").
+					build(),
+				&core_mesh.TrafficPermissionResource{
+					Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
+					Spec: &mesh_proto.TrafficPermission{
+						Sources:      anyService(),
+						Destinations: anyService(),
+					},
+				},
+				&core_mesh.MeshGatewayResource{
+					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
+					Spec: &mesh_proto.MeshGateway{
+						Selectors: selectors{
+							serviceSelector("gateway", ""),
+						},
+						Conf: &mesh_proto.MeshGateway_Conf{
+							Listeners: []*mesh_proto.MeshGateway_Listener{
+								{
+									Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+									Port:     80,
+								},
+							},
+						},
+					},
+				},
+				&core_mesh.MeshGatewayRouteResource{
+					Meta: &test_model.ResourceMeta{Name: "route-1", Mesh: "default"},
+					Spec: &mesh_proto.MeshGatewayRoute{
+						Selectors: selectors{
+							serviceSelector("gateway", ""),
+						},
+						Conf: &mesh_proto.MeshGatewayRoute_Conf{
+							Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
+								Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
+									Rules: []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
+										{
+											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
+												{
+													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
+														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
+														Value: "/redis",
+													},
+												},
+											},
+											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
+												{
+													Destination: serviceSelector("redis", "").Match,
+												},
+											},
+										},
+										{
+											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
+												{
+													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
+														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
+														Value: "/backend",
+													},
+												},
+											},
+											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
+												{
+													Destination: serviceSelector("backend", "").Match,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				&core_mesh.TimeoutResource{
+					Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "default"},
+					Spec: &mesh_proto.Timeout{
+						Sources: anyService(),
+						Destinations: selectors{
+							serviceSelector("redis", ""),
+						},
+						Conf: samples.Timeout.Conf,
+					},
+				},
+				&core_mesh.HealthCheckResource{
+					Meta: &test_model.ResourceMeta{Name: "hc-1", Mesh: "default"},
+					Spec: &mesh_proto.HealthCheck{
+						Sources: selectors{
+							serviceSelector("gateway", ""),
+						},
+						Destinations: selectors{
+							serviceSelector("backend", ""),
+						},
+						Conf: samples.HealthCheck.Conf,
+					},
+				},
 			},
 		}),
 		Entry("inspect traffic permission", testCase{
