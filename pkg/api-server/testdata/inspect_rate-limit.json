@@ -6,6 +6,7 @@
     "mesh": "mesh-1",
     "name": "gateway-1"
    },
+   "kind": "SidecarDataplane",
    "attachments": [
     {
      "type": "inbound",

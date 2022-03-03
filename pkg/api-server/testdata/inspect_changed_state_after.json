@@ -6,6 +6,7 @@
     "mesh": "default",
     "name": "redis-1"
    },
+   "kind": "SidecarDataplane",
    "attachments": [
     {
      "type": "inbound",

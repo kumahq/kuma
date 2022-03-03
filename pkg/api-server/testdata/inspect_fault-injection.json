@@ -6,6 +6,7 @@
     "mesh": "mesh-1",
     "name": "backend-redis-1"
    },
+   "kind": "SidecarDataplane",
    "attachments": [
     {
      "type": "inbound",
@@ -24,6 +25,7 @@
     "mesh": "mesh-1",
     "name": "gateway-1"
    },
+   "kind": "SidecarDataplane",
    "attachments": [
     {
      "type": "inbound",
