@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -91,5 +92,17 @@ func attachmentToStr(upperCase bool) func(api_server_types.AttachmentEntry) stri
 		default:
 			return fmt.Sprintf("%s %s(%s)", typeToStr(a.Type), a.Name, a.Service)
 		}
+	}
+}
+
+func tagsToStr(upperCase bool) func(map[string]string) string {
+	return func(destinationTags map[string]string) string {
+		service := destinationTags[mesh_proto.ServiceTag]
+
+		label := "service"
+		if upperCase {
+			label = strings.ToUpper(label)
+		}
+		return fmt.Sprintf("%s %s", label, service)
 	}
 }

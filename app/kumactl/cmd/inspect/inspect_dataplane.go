@@ -9,19 +9,44 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-var dataplaneInspectTemplate = `{{ range $num, $item := .Items }}{{ .AttachmentEntry | FormatAttachment }}:
+var dataplaneInspectTemplate = `{{ with IsSidecar . }}{{ range $num, $item := .Items }}{{ .AttachmentEntry | FormatAttachment }}:
 {{ range $typ, $policies := .MatchedPolicies }}  {{ $typ }}
     {{ range $policies }}{{ .Meta.Name }}
 {{ end }}{{ end }}
-{{ end }}`
+{{ end }}{{ end }}{{ with IsGateway . }}GATEWAY:
+{{ range $typ, $policy := .Policies }}  {{ $typ }}
+    {{ .Meta.Name }}
+{{ end }}
+{{ range .Listeners }}LISTENER ({{ .Protocol }}:{{ .Port }}):
+{{ range .Hosts }}  {{ .HostName }}:
+{{ range .Routes }}    {{ .Route }}:
+{{ range .Destinations }}      {{ FormatTags .Tags }}:
+{{ range $typ, $policy := .Policies }}        {{ $typ }}
+          {{ .Meta.Name }}
+{{ end }}
+{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}`
 
 func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 	tmpl, err := template.New("dataplane_inspect").Funcs(template.FuncMap{
+		"IsSidecar": func(e api_server_types.DataplaneInspectResponse) *api_server_types.DataplaneInspectEntryList {
+			if concrete, ok := e.DataplaneInspectResponseKind.(*api_server_types.DataplaneInspectEntryList); ok {
+				return concrete
+			}
+			return nil
+		},
+		"IsGateway": func(e api_server_types.DataplaneInspectResponse) *api_server_types.GatewayDataplaneInspectResult {
+			if concrete, ok := e.DataplaneInspectResponseKind.(*api_server_types.GatewayDataplaneInspectResult); ok {
+				return concrete
+			}
+			return nil
+		},
 		"FormatAttachment": attachmentToStr(true),
+		"FormatTags":       tagsToStr(true),
 	}).Parse(dataplaneInspectTemplate)
 	if err != nil {
 		panic("unable to parse template")
