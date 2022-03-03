@@ -350,9 +350,9 @@ func newGatewayDataplaneInspectResponse(
 	var listeners []api_server_types.GatewayListenerInspectEntry
 
 	for _, info := range listenerInfos {
-		var hostInfos []api_server_types.HostInspectEntry
+		var hosts []api_server_types.HostInspectEntry
 		for _, info := range info.HostInfos {
-			var routeRes []api_server_types.RouteInspectEntry
+			var routes []api_server_types.RouteInspectEntry
 			routeMap := map[string][]api_server_types.Destination{}
 			for _, entry := range info.Entries {
 				destinations := routeMap[entry.Route]
@@ -367,21 +367,30 @@ func newGatewayDataplaneInspectResponse(
 			}
 			for name, destinations := range routeMap {
 				if len(destinations) > 0 {
-					routeRes = append(routeRes, api_server_types.RouteInspectEntry{
+					sort.SliceStable(destinations, func(i, j int) bool {
+						return destinations[i].Tags.String() < destinations[j].Tags.String()
+					})
+					routes = append(routes, api_server_types.RouteInspectEntry{
 						Route:        name,
 						Destinations: destinations,
 					})
 				}
 			}
-			hostInfos = append(hostInfos, api_server_types.HostInspectEntry{
+			sort.SliceStable(routes, func(i, j int) bool {
+				return routes[i].Route < routes[j].Route
+			})
+			hosts = append(hosts, api_server_types.HostInspectEntry{
 				HostName: info.Host.Hostname,
-				Routes:   routeRes,
+				Routes:   routes,
 			})
 		}
+		sort.SliceStable(hosts, func(i, j int) bool {
+			return hosts[i].HostName < hosts[j].HostName
+		})
 		listeners = append(listeners, api_server_types.GatewayListenerInspectEntry{
 			Port:     info.Listener.Port,
 			Protocol: info.Listener.Protocol.String(),
-			Hosts:    hostInfos,
+			Hosts:    hosts,
 		})
 	}
 
