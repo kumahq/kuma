@@ -1,7 +1,7 @@
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images
 KUMA_VERSION ?= master
 
-DOCKER_REGISTRY ?= docker.io/kumahq
+DOCKER_REGISTRY ?= kumahq
 DOCKER_USERNAME ?=
 DOCKER_API_KEY ?=
 
