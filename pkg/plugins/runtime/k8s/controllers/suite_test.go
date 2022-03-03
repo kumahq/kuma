@@ -20,7 +20,7 @@ var testEnv *envtest.Environment
 var k8sClientScheme *runtime.Scheme
 
 func TestAPIs(t *testing.T) {
-	test.RunSpecs(t, "Namespace Controller Suite")
+	test.RunSpecs(t, "K8s Controller Suite")
 }
 
 var _ = BeforeSuite(test.Within(time.Minute, func() {
