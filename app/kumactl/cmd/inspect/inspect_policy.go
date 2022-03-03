@@ -16,6 +16,7 @@ import (
 
 var policyInspectTemplate = "Affected data plane proxies:\n\n" +
 	"{{ range .Items }}" +
+	"{{ with IsSidecar . }}" +
 	"  {{ .DataplaneKey.Name }}" +
 	"{{ if . | PrintAttachments }}" +
 	":\n" +
@@ -24,16 +25,25 @@ var policyInspectTemplate = "Affected data plane proxies:\n\n" +
 	"{{ end }}" +
 	"{{ end }}" +
 	"\n" +
+	"{{ end }}" +
 	"{{ end }}"
 
 func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd.RootContext) *cobra.Command {
 	tmpl, err := template.New("policy_inspect").Funcs(template.FuncMap{
-		"FormatAttachment": attachmentToStr(false),
-		"PrintAttachments": func(e api_server_types.PolicyInspectEntry) bool {
-			sidecarEntry, ok := e.PolicyInspectEntryKind.(*api_server_types.PolicyInspectSidecarEntry)
-			if !ok {
-				return true
+		"IsSidecar": func(e api_server_types.PolicyInspectEntry) *api_server_types.PolicyInspectSidecarEntry {
+			if concrete, ok := e.PolicyInspectEntryKind.(*api_server_types.PolicyInspectSidecarEntry); ok {
+				return concrete
 			}
+			return nil
+		},
+		"IsGateway": func(e api_server_types.PolicyInspectEntry) *api_server_types.PolicyInspectGatewayEntry {
+			if concrete, ok := e.PolicyInspectEntryKind.(*api_server_types.PolicyInspectGatewayEntry); ok {
+				return concrete
+			}
+			return nil
+		},
+		"FormatAttachment": attachmentToStr(false),
+		"PrintAttachments": func(sidecarEntry *api_server_types.PolicyInspectSidecarEntry) bool {
 			if len(sidecarEntry.Attachments) == 1 && sidecarEntry.Attachments[0].Type == "dataplane" {
 				return false
 			}
