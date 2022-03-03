@@ -9,6 +9,7 @@ type EntryType int
 const (
 	Service EntryType = iota
 	Host
+	KubeHost
 	FullyQualifiedDomain
 )
 
@@ -20,6 +21,8 @@ func (t EntryType) String() string {
 		return "host"
 	case FullyQualifiedDomain:
 		return "fqdn"
+	case KubeHost:
+		return "kubeHost"
 	default:
 		return "undefined"
 	}
@@ -54,6 +57,10 @@ func (e *HostnameEntry) Less(o *HostnameEntry) bool {
 
 func NewHostEntry(host string) HostnameEntry {
 	return HostnameEntry{Host, host}
+}
+
+func NewKubeHostEntry(host string) HostnameEntry {
+	return HostnameEntry{KubeHost, host}
 }
 
 func NewServiceEntry(name string) HostnameEntry {

@@ -34,6 +34,9 @@ func (vo *VirtualOutboundMeshView) Get(entry HostnameEntry) *VirtualOutbound {
 func (vo *VirtualOutboundMeshView) Add(entry HostnameEntry, outbound OutboundEntry) error {
 	if vo.byHostname[entry] == nil {
 		vo.byHostname[entry] = &VirtualOutbound{Outbounds: []OutboundEntry{outbound}}
+		if entry.Type == KubeHost {
+			vo.byHostname[entry].Address = entry.Name
+		}
 		return nil
 	}
 	for _, existingOutbound := range vo.byHostname[entry].Outbounds {
@@ -101,6 +104,17 @@ func (vo *VirtualOutboundMeshView) Update(new *VirtualOutboundMeshView) (changes
 		return changes[i].Entry.String() < changes[j].Entry.String()
 	})
 	return
+}
+
+func (vo *VirtualOutboundMeshView) ReplaceByType(entryType EntryType, new *VirtualOutboundMeshView) {
+	for entry, _ := range vo.byHostname {
+		if entry.Type == entryType {
+			delete(vo.byHostname, entry)
+		}
+	}
+	for entry, outbound := range new.byHostname {
+		vo.byHostname[entry] = outbound
+	}
 }
 
 type ChangeType string

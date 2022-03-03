@@ -47,7 +47,12 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	r.Log.V(1).Info("updating VIPs", "mesh", mesh)
 
-	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh); err != nil {
+	kubeHostsView, err := KubeHosts(ctx, r.Client, r.ResourceManager, mesh)
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
+
+	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh, kubeHostsView); err != nil {
 		if store.IsResourceConflict(err) {
 			r.Log.V(1).Info("VIPs were updated in the other place. Retrying")
 			return kube_ctrl.Result{Requeue: true}, nil

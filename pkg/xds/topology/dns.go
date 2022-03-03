@@ -49,6 +49,7 @@ func VIPOutbounds(
 					Tags:    voutbound.Outbounds[0].TagSet,
 				})
 			}
+			vipDomains = append(vipDomains, domain)
 		case vips.Service:
 			ob := voutbound.Outbounds[0]
 			service := ob.TagSet[mesh_proto.ServiceTag]
@@ -72,8 +73,16 @@ func VIPOutbounds(
 					Tags:    ob.TagSet,
 				})
 			}
+			vipDomains = append(vipDomains, domain)
+		case vips.KubeHost:
+			for _, ob := range voutbound.Outbounds {
+				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+					Address: voutbound.Address,
+					Port:    ob.Port,
+					Tags:    ob.TagSet,
+				})
+			}
 		}
-		vipDomains = append(vipDomains, domain)
 	}
 	return vipDomains, outbounds
 }
