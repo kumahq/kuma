@@ -62,8 +62,9 @@ type Envoy struct {
 }
 
 type EnvoyVersion struct {
-	Build   string
-	Version string
+	Build      string
+	Version    string
+	Compatible bool
 }
 
 func (e *Envoy) NeedLeaderElection() bool {
