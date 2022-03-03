@@ -754,7 +754,6 @@ jobs:
     parallelism: 8
     environment:
       GOPATH: /home/circleci/.go-kuma-go
-      DOCKER_REGISTRY: kumahq
     steps:
       - install_build_tools
       - checkout
@@ -826,8 +825,6 @@ jobs:
 
   build:
     executor: golang
-    environment:
-      DOCKER_REGISTRY: kumahq
     steps:
     - checkout
     - restore_cache:
