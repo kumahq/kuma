@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_record "k8s.io/client-go/tools/record"
@@ -23,7 +24,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 // ConfigMapReconciler reconciles a ConfigMap object
@@ -70,7 +71,7 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Complete(r)
 }
 
-func ServiceToConfigMapsMapper(client kube_client.Reader, l logr.Logger, ns string) kube_handler.MapFunc {
+func ServiceToConfigMapsMapper(client kube_client.Reader, l logr.Logger, systemNamespace string) kube_handler.MapFunc {
 	l = l.WithName("service-to-configmap-mapper")
 	return func(obj kube_client.Object) []kube_reconile.Request {
 		cause, ok := obj.(*kube_core.Service)
@@ -83,21 +84,24 @@ func ServiceToConfigMapsMapper(client kube_client.Reader, l logr.Logger, ns stri
 		svcName := fmt.Sprintf("%s/%s", cause.Namespace, cause.Name)
 		// List Pods in the same namespace
 		pods := &kube_core.PodList{}
-		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace())); err != nil {
+		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace()), kube_client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(cause.Spec.Selector)}); err != nil {
 			l.WithValues("service", svcName).Error(err, "failed to fetch Dataplanes in namespace")
 			return nil
 		}
+		ns := kube_core.Namespace{}
+		if err := client.Get(ctx, kube_types.NamespacedName{Name: cause.Namespace}, &ns); err != nil {
+			l.WithValues("service", svcName).Error(err, "failed to fetch Namespace")
+			return nil
+		}
 
-		meshSet := map[string]bool{}
+		meshSet := map[string]struct{}{}
 		for _, pod := range pods.Items {
-			if mesh, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
-				meshSet[mesh] = true
-			}
+			meshSet[k8s_util.MeshOf(&pod, &ns)] = struct{}{}
 		}
 		var req []kube_reconile.Request
 		for mesh := range meshSet {
 			req = append(req, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: ns, Name: vips.ConfigKey(mesh)},
+				NamespacedName: kube_types.NamespacedName{Namespace: systemNamespace, Name: vips.ConfigKey(mesh)},
 			})
 		}
 
