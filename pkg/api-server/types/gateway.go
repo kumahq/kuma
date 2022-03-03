@@ -42,3 +42,37 @@ func NewGatewayDataplaneInspectResult() GatewayDataplaneInspectResult {
 		Listeners: []GatewayListenerInspectEntry{},
 	}
 }
+
+type PolicyInspectGatewayRouteEntry struct {
+	Route        string       `json:"route"`
+	Destinations []envoy.Tags `json:"destinations"`
+}
+
+type PolicyInspectGatewayHostEntry struct {
+	HostName string                           `json:"hostName"`
+	Routes   []PolicyInspectGatewayRouteEntry `json:"routes"`
+}
+
+type PolicyInspectGatewayListenerEntry struct {
+	Port     uint32                          `json:"port"`
+	Protocol string                          `json:"protocol"`
+	Hosts    []PolicyInspectGatewayHostEntry `json:"hosts"`
+}
+
+type PolicyInspectGatewayEntry struct {
+	DataplaneKey ResourceKeyEntry                    `json:"dataplane"`
+	Gateway      ResourceKeyEntry                    `json:"gateway,omitempty"`
+	Listeners    []PolicyInspectGatewayListenerEntry `json:"listeners,omitempty"`
+	Kind         string                              `json:"kind"`
+}
+
+func (*PolicyInspectGatewayEntry) policyInspectEntry() {
+}
+
+func NewPolicyInspectGatewayEntry(key ResourceKeyEntry, gateway ResourceKeyEntry) PolicyInspectGatewayEntry {
+	return PolicyInspectGatewayEntry{
+		DataplaneKey: key,
+		Gateway:      gateway,
+		Kind:         "GatewayDataplane",
+	}
+}

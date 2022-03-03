@@ -16,20 +16,42 @@ type ResourceKeyEntry struct {
 	Name string `json:"name"`
 }
 
-type PolicyInspectEntry struct {
+func ResourceKeyEntryFromModelKey(key core_model.ResourceKey) ResourceKeyEntry {
+	return ResourceKeyEntry{
+		Mesh: key.Mesh,
+		Name: key.Name,
+	}
+}
+
+type PolicyInspectEntry interface {
+	policyInspectEntry()
+}
+
+type PolicyInspectSidecarEntry struct {
 	DataplaneKey ResourceKeyEntry  `json:"dataplane"`
+	Kind         string            `json:"kind"`
 	Attachments  []AttachmentEntry `json:"attachments"`
 }
 
+func (*PolicyInspectSidecarEntry) policyInspectEntry() {
+}
+
+func NewPolicyInspectSidecarEntry(key ResourceKeyEntry) PolicyInspectSidecarEntry {
+	return PolicyInspectSidecarEntry{
+		DataplaneKey: key,
+		Kind:         "SidecarDataplane",
+	}
+}
+
 type PolicyInspectEntryList struct {
-	Total uint32                `json:"total"`
-	Items []*PolicyInspectEntry `json:"items"`
+	Total uint32               `json:"total"`
+	Items []PolicyInspectEntry `json:"items"`
 }
 
 func NewPolicyInspectEntryList() *PolicyInspectEntryList {
 	return &PolicyInspectEntryList{
 		Total: 0,
-		Items: []*PolicyInspectEntry{},
+		Items: []PolicyInspectEntry{},
 	}
 }
 
