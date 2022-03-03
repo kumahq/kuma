@@ -193,7 +193,7 @@ func Bootstrap(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runtime
 
 func startReporter(runtime core_runtime.Runtime) error {
 	return runtime.Add(component.ComponentFunc(func(stop <-chan struct{}) error {
-		runtime_reports.Init(runtime, runtime.Config())
+		runtime_reports.Init(runtime, runtime.Config(), runtime.ExtraReportsFn())
 		<-stop
 		return nil
 	}))

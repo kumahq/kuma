@@ -13,11 +13,13 @@ import (
 
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -67,6 +69,20 @@ func fetchZones(rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
 		return nil, errors.Wrap(err, "could not fetch zones")
 	}
 	return &zones, nil
+}
+
+func fetchNumPolicies(rt core_runtime.Runtime) (map[string]string, error) {
+	policyCounts := map[string]string{}
+
+	for _, descr := range registry.Global().ObjectDescriptors() {
+		typedList := descr.NewList()
+		k := "n_" + strings.ToLower(string(descr.Name))
+		if err := rt.ReadOnlyResourceManager().List(context.Background(), typedList); err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("could not fetch %s", k))
+		}
+		policyCounts[k] = strconv.Itoa(len(typedList.GetItems()))
+	}
+	return policyCounts, nil
 }
 
 func fetchNumOfServices(rt core_runtime.Runtime) (int, int, error) {
@@ -121,6 +137,22 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	}
 	b.mutable["dps_total"] = strconv.Itoa(len(dps.Items))
 
+	ngateways := 0
+	gatewayTypes := map[string]int{}
+	for _, dp := range dps.Items {
+		spec := dp.GetSpec().(*mesh_proto.Dataplane)
+		gateway := spec.GetNetworking().GetGateway()
+		if gateway != nil {
+			ngateways++
+			gatewayType := strings.ToLower(gateway.GetType().String())
+			gatewayTypes["gateway_dp_type_"+gatewayType] += 1
+		}
+	}
+	b.mutable["gateway_dps"] = strconv.Itoa(ngateways)
+	for gtype, n := range gatewayTypes {
+		b.mutable[gtype] = strconv.Itoa(n)
+	}
+
 	meshes, err := fetchMeshes(rt)
 	if err != nil {
 		return err
@@ -145,15 +177,32 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	b.mutable["internal_services"] = strconv.Itoa(internalServices)
 	b.mutable["external_services"] = strconv.Itoa(externalServices)
 	b.mutable["services_total"] = strconv.Itoa(internalServices + externalServices)
+
+	policyCounts, err := fetchNumPolicies(rt)
+	if err != nil {
+		return err
+	}
+
+	for k, count := range policyCounts {
+		b.mutable[k] = count
+	}
 	return nil
 }
 
-func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int, pingType string) error {
+func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int, pingType string, extraFn core_runtime.ExtraReportsFn) error {
 	if err := b.updateEntitiesReport(rt); err != nil {
 		return err
 	}
 	b.mutable["signal"] = pingType
 	b.mutable["cluster_id"] = rt.GetClusterId()
+	b.mutable["uptime"] = strconv.FormatInt(int64(time.Since(rt.GetStartTime())/time.Second), 10)
+	if extraFn != nil {
+		if valMap, err := extraFn(rt); err != nil {
+			return err
+		} else {
+			b.Append(valMap)
+		}
+	}
 	pingData, err := b.marshall()
 	if err != nil {
 		return err
@@ -197,14 +246,14 @@ func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {
 	}
 }
 
-func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer) {
+func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer, extraFn core_runtime.ExtraReportsFn) {
 	go func() {
-		err := buffer.dispatch(rt, pingHost, pingPort, "start")
+		err := buffer.dispatch(rt, pingHost, pingPort, "start", extraFn)
 		if err != nil {
 			log.V(2).Info("failed sending usage info", "cause", err.Error())
 		}
 		for range time.Tick(time.Second * pingInterval) {
-			err := buffer.dispatch(rt, pingHost, pingPort, "ping")
+			err := buffer.dispatch(rt, pingHost, pingPort, "ping", extraFn)
 			if err != nil {
 				log.V(2).Info("failed sending usage info", "cause", err.Error())
 			}
@@ -213,7 +262,7 @@ func startReportTicker(rt core_runtime.Runtime, buffer *reportsBuffer) {
 }
 
 // Init core reports
-func Init(rt core_runtime.Runtime, cfg kuma_cp.Config) {
+func Init(rt core_runtime.Runtime, cfg kuma_cp.Config, extraFn core_runtime.ExtraReportsFn) {
 	var buffer reportsBuffer
 	buffer.immutable = make(map[string]string)
 	buffer.mutable = make(map[string]string)
@@ -221,6 +270,6 @@ func Init(rt core_runtime.Runtime, cfg kuma_cp.Config) {
 	buffer.initImmutable(rt)
 
 	if cfg.Reports.Enabled {
-		startReportTicker(rt, &buffer)
+		startReportTicker(rt, &buffer, extraFn)
 	}
 }
