@@ -1,5 +1,6 @@
 {
  "total": 6,
+ "kind": "SidecarDataplane",
  "items": [
   {
    "type": "inbound",
