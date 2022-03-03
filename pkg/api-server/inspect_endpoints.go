@@ -407,6 +407,8 @@ func newGatewayDataplaneInspectResponse(
 
 	gatewayPolicies := api_server_types.PolicyMap{}
 
+	// TrafficLog and TrafficeTrace are applied to the entire MeshGateway
+	// see pkg/plugins/runtime/gateway.newFilterChain
 	if logging, ok := proxy.Policies.TrafficLogs[core_mesh.PassThroughService]; ok {
 		gatewayPolicies[core_mesh.TrafficLogType] = rest.From.Resource(logging)
 	}
