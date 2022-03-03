@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -42,6 +43,7 @@ var _ core_runtime.RuntimeInfo = &TestRuntimeInfo{}
 type TestRuntimeInfo struct {
 	InstanceId string
 	ClusterId  string
+	StartTime  time.Time
 }
 
 func (i *TestRuntimeInfo) GetInstanceId() string {
@@ -54,6 +56,10 @@ func (i *TestRuntimeInfo) SetClusterId(clusterId string) {
 
 func (i *TestRuntimeInfo) GetClusterId() string {
 	return i.ClusterId
+}
+
+func (i *TestRuntimeInfo) GetStartTime() time.Time {
+	return i.StartTime
 }
 
 func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Builder, error) {

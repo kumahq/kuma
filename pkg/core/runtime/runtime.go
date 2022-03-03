@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/api-server/authn"
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
@@ -42,6 +43,7 @@ type RuntimeInfo interface {
 	GetInstanceId() string
 	SetClusterId(clusterId string)
 	GetClusterId() string
+	GetStartTime() time.Time
 }
 
 type RuntimeContext interface {
@@ -71,6 +73,7 @@ type RuntimeContext interface {
 	Access() Access
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
+	ExtraReportsFn() ExtraReportsFn
 }
 
 type Access struct {
@@ -84,6 +87,8 @@ type ResourceValidators struct {
 	Dataplane managers_dataplane.Validator
 	Mesh      managers_mesh.MeshValidator
 }
+
+type ExtraReportsFn func(Runtime) (map[string]string, error)
 
 var _ Runtime = &runtime{}
 
@@ -100,6 +105,7 @@ type runtimeInfo struct {
 
 	instanceId string
 	clusterId  string
+	startTime  time.Time
 }
 
 func (i *runtimeInfo) GetInstanceId() string {
@@ -118,34 +124,39 @@ func (i *runtimeInfo) GetClusterId() string {
 	return i.clusterId
 }
 
+func (i *runtimeInfo) GetStartTime() time.Time {
+	return i.startTime
+}
+
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg      kuma_cp.Config
-	rm       core_manager.ResourceManager
-	rs       core_store.ResourceStore
-	ss       store.SecretStore
-	cs       core_store.ResourceStore
-	rom      core_manager.ReadOnlyResourceManager
-	cam      ca.Managers
-	dsl      datasource.Loader
-	ext      context.Context
-	dns      resolver.DNSResolver
-	configm  config_manager.ConfigManager
-	leadInfo component.LeaderInfo
-	lif      lookup.LookupIPFunc
-	eac      admin.EnvoyAdminClient
-	metrics  metrics.Metrics
-	erf      events.ListenerFactory
-	apim     api_server.APIInstaller
-	xdsh     *xds_hooks.Hooks
-	cap      secrets.CaProvider
-	dps      *dp_server.DpServer
-	kdsctx   *kds_context.Context
-	rv       ResourceValidators
-	au       authn.Authenticator
-	acc      Access
-	appCtx   context.Context
+	cfg            kuma_cp.Config
+	rm             core_manager.ResourceManager
+	rs             core_store.ResourceStore
+	ss             store.SecretStore
+	cs             core_store.ResourceStore
+	rom            core_manager.ReadOnlyResourceManager
+	cam            ca.Managers
+	dsl            datasource.Loader
+	ext            context.Context
+	dns            resolver.DNSResolver
+	configm        config_manager.ConfigManager
+	leadInfo       component.LeaderInfo
+	lif            lookup.LookupIPFunc
+	eac            admin.EnvoyAdminClient
+	metrics        metrics.Metrics
+	erf            events.ListenerFactory
+	apim           api_server.APIInstaller
+	xdsh           *xds_hooks.Hooks
+	cap            secrets.CaProvider
+	dps            *dp_server.DpServer
+	kdsctx         *kds_context.Context
+	rv             ResourceValidators
+	au             authn.Authenticator
+	acc            Access
+	appCtx         context.Context
+	extraReportsFn ExtraReportsFn
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -245,4 +256,8 @@ func (rc *runtimeContext) Access() Access {
 
 func (rc *runtimeContext) AppContext() context.Context {
 	return rc.appCtx
+}
+
+func (rc *runtimeContext) ExtraReportsFn() ExtraReportsFn {
+	return rc.extraReportsFn
 }
