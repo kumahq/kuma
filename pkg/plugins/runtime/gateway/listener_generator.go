@@ -3,7 +3,6 @@ package gateway
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -27,7 +26,7 @@ func SupportsProtocol(p mesh_proto.MeshGateway_Listener_Protocol) bool {
 	}
 }
 
-func GenerateListener(ctx xds_context.Context, info GatewayListenerInfo) *envoy_listeners.ListenerBuilder {
+func GenerateListener(info GatewayListenerInfo) *envoy_listeners.ListenerBuilder {
 	// TODO(jpeach) what we really need to do here is to
 	// generate a HTTP filter chain for each
 	// host on the same HTTPConnectionManager. Each HTTP filter
