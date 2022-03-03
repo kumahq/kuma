@@ -131,6 +131,9 @@ func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
 }
 
 func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMetadata {
+	// Be extra careful here about nil checks since xdsMetadata is a "user" input.
+	// Even if we know that something should not be nil since we are generating metadata,
+	// the DiscoveryRequest can still be crafted manually to crash the CP.
 	metadata := DataplaneMetadata{}
 	if xdsMetadata == nil {
 		return &metadata
@@ -172,7 +175,9 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 		for field, val := range value.GetStructValue().GetFields() {
 			if strings.HasPrefix(field, FieldPrefixDependenciesVersion) {
 				dependencyName := strings.TrimPrefix(field, FieldPrefixDependenciesVersion+".")
-				metadata.Version.Dependencies[dependencyName] = val.GetStringValue()
+				if metadata.GetVersion().GetDependencies() != nil {
+					metadata.Version.Dependencies[dependencyName] = val.GetStringValue()
+				}
 			} else {
 				dynamicMetadata[field] = val.GetStringValue()
 			}
