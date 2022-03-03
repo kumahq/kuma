@@ -13,14 +13,11 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-var dataplaneInspectTemplate = "{{ range .Items }}" +
-	"{{ .AttachmentEntry | FormatAttachment }}:\n" +
-	"{{ range $typ, $policies := .MatchedPolicies }}" +
-	"  {{ $typ }}\n" +
-	"    {{ range $policies }}{{ .Meta.Name }}\n{{ end }}" +
-	"{{ end }}" +
-	"\n" +
-	"{{ end }}"
+var dataplaneInspectTemplate = `{{ range $num, $item := .Items }}{{ .AttachmentEntry | FormatAttachment }}:
+{{ range $typ, $policies := .MatchedPolicies }}  {{ $typ }}
+    {{ range $policies }}{{ .Meta.Name }}
+{{ end }}{{ end }}
+{{ end }}`
 
 func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 	tmpl, err := template.New("dataplane_inspect").Funcs(template.FuncMap{
