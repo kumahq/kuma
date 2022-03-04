@@ -2,6 +2,7 @@
  "total": 2,
  "items": [
   {
+   "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "default",
     "name": "backend-1"
@@ -15,6 +16,7 @@
    ]
   },
   {
+   "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "default",
     "name": "redis-1"
