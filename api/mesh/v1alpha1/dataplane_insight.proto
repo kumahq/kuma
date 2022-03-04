@@ -155,6 +155,6 @@ message EnvoyVersion {
   // Full build tag of Envoy version
   string build = 2;
 
-  // Is this Envoy version compatible with the KumaDP?
+  // True iff Envoy version is compatible with Kuma DP version
   bool KumaDpCompatible = 3;
 }

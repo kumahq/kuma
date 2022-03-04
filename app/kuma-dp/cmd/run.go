@@ -210,7 +210,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if envoyVersion.Compatible, err = envoy.EnvoyVersionCompatible(envoyVersion.Version); err != nil {
 				runLog.Error(err, "cannot determine envoy version compatibility")
 			} else if !envoyVersion.Compatible {
-				runLog.Info("envoy version incompatible", "compatibility", envoy.EnvoyCompatibility)
+				runLog.Info("Envoy version incompatible", "expected", envoy.EnvoyCompatibility, "current", envoyVersion.Version)
 			}
 
 			runLog.Info("generating bootstrap configuration")
