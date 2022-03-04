@@ -97,5 +97,28 @@
     }
    ]
   }
- ]
+ ],
+ "policies": {
+  "TrafficLog": {
+   "type": "TrafficLog",
+   "mesh": "default",
+   "name": "tl-1",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "sources": [
+    {
+     "match": {
+      "kuma.io/service": "*"
+     }
+    }
+   ],
+   "destinations": [
+    {
+     "match": {
+      "kuma.io/service": "*"
+     }
+    }
+   ]
+  }
+ }
 }
