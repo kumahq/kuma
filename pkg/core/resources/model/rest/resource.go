@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 type ResourceMeta struct {
@@ -106,7 +107,11 @@ func (r *Resource) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if r.Spec == nil {
-		return nil
+		newR, err := registry.Global().NewObject(model.ResourceType(r.Meta.Type))
+		if err != nil {
+			return err
+		}
+		r.Spec = newR.GetSpec()
 	}
 	if err := (&jsonpb.Unmarshaler{AllowUnknownFields: true}).Unmarshal(bytes.NewReader(data), r.Spec); err != nil {
 		return err

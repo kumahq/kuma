@@ -13,7 +13,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -72,18 +71,14 @@ var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 			bytes, err := ioutil.ReadAll(inputFile)
 			Expect(err).ToNot(HaveOccurred())
 
-			receiver := &types.DataplaneInspectEntryReceiver{
-				NewResource: registry.Global().NewObject,
-			}
-			err = json.Unmarshal(bytes, receiver)
+			entry := &types.DataplaneInspectEntry{}
+			err = json.Unmarshal(bytes, entry)
 			Expect(err).ToNot(HaveOccurred())
 
-			unmarshaledInspectEntry := receiver.DataplaneInspectEntry
-
-			Expect(unmarshaledInspectEntry.Name).To(Equal(given.output.Name))
-			Expect(unmarshaledInspectEntry.Type).To(Equal(given.output.Type))
-			Expect(unmarshaledInspectEntry.MatchedPolicies).To(HaveLen(len(given.output.MatchedPolicies)))
-			for resType, mp := range unmarshaledInspectEntry.MatchedPolicies {
+			Expect(entry.Name).To(Equal(given.output.Name))
+			Expect(entry.Type).To(Equal(given.output.Type))
+			Expect(entry.MatchedPolicies).To(HaveLen(len(given.output.MatchedPolicies)))
+			for resType, mp := range entry.MatchedPolicies {
 				Expect(given.output.MatchedPolicies[resType]).ToNot(BeNil())
 				Expect(mp).To(HaveLen(len(given.output.MatchedPolicies[resType])))
 				for i, item := range mp {
@@ -131,11 +126,8 @@ var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		receiver := &types.DataplaneInspectEntryListReceiver{
-			NewResource: registry.Global().NewObject,
-		}
-		Expect(json.Unmarshal(input, receiver)).To(Succeed())
-		entryList := receiver.DataplaneInspectEntryList
+		entryList := &types.DataplaneInspectEntryList{}
+		Expect(json.Unmarshal(input, entryList)).To(Succeed())
 
 		// then
 		Expect(entryList.Total).To(Equal(uint32(3)))
@@ -149,10 +141,8 @@ var _ = Describe("Unmarshal DataplaneInspectEntry", func() {
 			bytes, err := ioutil.ReadAll(inputFile)
 			Expect(err).ToNot(HaveOccurred())
 
-			receiver := &types.DataplaneInspectEntryReceiver{
-				NewResource: registry.Global().NewObject,
-			}
-			err = json.Unmarshal(bytes, receiver)
+			entry := &types.DataplaneInspectEntry{}
+			err = json.Unmarshal(bytes, entry)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(given.errMsg))
 		},
