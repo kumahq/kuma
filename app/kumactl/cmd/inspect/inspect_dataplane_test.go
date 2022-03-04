@@ -85,6 +85,11 @@ var _ = Describe("kumactl inspect dataplane", func() {
 			goldenFile:   "inspect-dataplane.golden.txt",
 			matcher:      matchers.MatchGoldenEqual,
 		}),
+		Entry("default output (no kind in response)", testCase{
+			serverOutput: "inspect-dataplane-1.5.server-response.json",
+			goldenFile:   "inspect-dataplane.golden.txt",
+			matcher:      matchers.MatchGoldenEqual,
+		}),
 		Entry("builtin gateway dataplane", testCase{
 			serverOutput: "inspect-gateway-dataplane.server-response.json",
 			goldenFile:   "inspect-gateway-dataplane.golden.txt",

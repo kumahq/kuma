@@ -46,7 +46,9 @@ func (w *PolicyInspectEntry) UnmarshalJSON(data []byte) error {
 	}
 	var entry PolicyInspectEntryKind
 	switch i.Kind {
-	case SidecarDataplane:
+	// We treat a non-kinded entry as a SidecarDataplane for backwards
+	// compatibility
+	case SidecarDataplane, "":
 		entry = &PolicyInspectSidecarEntry{}
 	case GatewayDataplane:
 		entry = &PolicyInspectGatewayEntry{}
