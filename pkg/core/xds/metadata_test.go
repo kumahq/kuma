@@ -56,6 +56,28 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				EmptyDNSPort: 8001,
 			},
 		}),
+		Entry("should ignore dependencies version provided through metadata if version is not set at all", testCase{
+			node: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"dynamicMetadata": {
+						Kind: &structpb.Value_StructValue{
+							StructValue: &structpb.Struct{
+								Fields: map[string]*structpb.Value{
+									"version.dependencies.coredns": {
+										Kind: &structpb.Value_StringValue{
+											StringValue: "8000",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: xds.DataplaneMetadata{
+				DynamicMetadata: map[string]string{},
+			},
+		}),
 	)
 
 	It("should parse version", func() { // this has to be separate test because Equal does not work on proto
