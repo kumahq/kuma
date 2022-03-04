@@ -1,5 +1,4 @@
 {
-  "kind": "SidecarDataplane",
   "total": 4,
   "items": [
     {
@@ -201,9 +200,7 @@
               "noTrafficInterval": "1s",
               "tcp": {
                 "send": "Zm9v",
-                "receive": [
-                  "YmFy"
-                ]
+                "receive": ["YmFy"]
               },
               "reuseConnection": true
             }

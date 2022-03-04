@@ -1,7 +1,40 @@
 {
- "total": 2,
+ "total": 3,
  "items": [
   {
+   "kind": "GatewayDataplane",
+   "dataplane": {
+    "mesh": "mesh-1",
+    "name": "meshgateway-1"
+   },
+   "gateway": {
+    "mesh": "mesh-1",
+    "name": "gateway"
+   },
+   "listeners": [
+    {
+     "port": 80,
+     "protocol": "HTTP",
+     "hosts": [
+      {
+       "hostName": "*",
+       "routes": [
+        {
+         "route": "route-1",
+         "destinations": [
+          {
+           "kuma.io/service": "redis"
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "mesh-1",
     "name": "backend-1"
@@ -20,6 +53,7 @@
    ]
   },
   {
+   "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "mesh-1",
     "name": "redis-1"

@@ -41,50 +41,59 @@ var _ = Describe("kumactl inspect dataplane", func() {
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
 
-	BeforeEach(func() {
-		rawResponse, err := os.ReadFile(path.Join("testdata", "inspect-dataplane.server-response.json"))
-		Expect(err).ToNot(HaveOccurred())
-
-		list := api_server_types.DataplaneInspectEntryList{}
-		Expect(json.Unmarshal(rawResponse, &list)).To(Succeed())
-
-		testClient := &testDataplaneInspectClient{
-			response: &list,
-		}
-
-		rootCtx, err := test_kumactl.MakeRootContext(time.Now(), nil)
-		Expect(err).ToNot(HaveOccurred())
-
-		rootCtx.Runtime.NewDataplaneInspectClient = func(client util_http.Client) resources.DataplaneInspectClient {
-			return testClient
-		}
-
-		rootCmd = cmd.NewRootCmd(rootCtx)
-		buf = &bytes.Buffer{}
-		rootCmd.SetOut(buf)
-	})
-
 	type testCase struct {
-		goldenFile string
-		matcher    func(path ...string) gomega_types.GomegaMatcher
+		serverOutput string
+		goldenFile   string
+		matcher      func(path ...string) gomega_types.GomegaMatcher
 	}
 	DescribeTable("kumactl inspect dataplane",
 		func(given testCase) {
+			rawResponse, err := os.ReadFile(path.Join("testdata", given.serverOutput))
+			Expect(err).ToNot(HaveOccurred())
+
+			list := api_server_types.DataplaneInspectEntryList{}
+			Expect(json.Unmarshal(rawResponse, &list)).To(Succeed())
+
+			testClient := &testDataplaneInspectClient{
+				response: &list,
+			}
+
+			rootCtx, err := test_kumactl.MakeRootContext(time.Now(), nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			rootCtx.Runtime.NewDataplaneInspectClient = func(client util_http.Client) resources.DataplaneInspectClient {
+				return testClient
+			}
+
+			rootCmd = cmd.NewRootCmd(rootCtx)
+			buf = &bytes.Buffer{}
+			rootCmd.SetOut(buf)
 			// given
 			rootCmd.SetArgs([]string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
 				"inspect", "dataplane", "backend-1"})
 
 			// when
-			err := rootCmd.Execute()
+			err = rootCmd.Execute()
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(buf.String()).To(given.matcher("testdata", given.goldenFile))
 		},
 		Entry("default output", testCase{
-			goldenFile: "inspect-dataplane.golden.txt",
-			matcher:    matchers.MatchGoldenEqual,
+			serverOutput: "inspect-dataplane.server-response.json",
+			goldenFile:   "inspect-dataplane.golden.txt",
+			matcher:      matchers.MatchGoldenEqual,
+		}),
+		Entry("default output (no kind in response)", testCase{
+			serverOutput: "inspect-dataplane-1.5.server-response.json",
+			goldenFile:   "inspect-dataplane.golden.txt",
+			matcher:      matchers.MatchGoldenEqual,
+		}),
+		Entry("builtin gateway dataplane", testCase{
+			serverOutput: "inspect-gateway-dataplane.server-response.json",
+			goldenFile:   "inspect-gateway-dataplane.golden.txt",
+			matcher:      matchers.MatchGoldenEqual,
 		}),
 	)
 })

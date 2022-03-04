@@ -34,6 +34,8 @@ import (
 
 var CustomizeProxy func(meshContext xds_context.MeshContext, proxy *core_xds.Proxy) error
 
+// getMatchedPolicies returns information about either sidecar dataplanes or
+// builtin gateway dataplanes as well as the proxy and a potential error.
 func getMatchedPolicies(
 	cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
 ) (
@@ -146,21 +148,19 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			return
 		}
 
+		var result api_server_types.DataplaneInspectResponse
 		if matchedPolicies != nil {
-			result := api_server_types.NewDataplaneInspectEntryList()
-			result.Items = append(result.Items, newDataplaneInspectResponse(matchedPolicies, proxy.Dataplane)...)
-			result.Total = uint32(len(result.Items))
-
-			if err := response.WriteAsJson(result); err != nil {
-				rest_errors.HandleError(response, err, "Could not write response")
-				return
-			}
+			inner := api_server_types.NewDataplaneInspectEntryList()
+			inner.Items = append(inner.Items, newDataplaneInspectResponse(matchedPolicies, proxy.Dataplane)...)
+			inner.Total = uint32(len(inner.Items))
+			result = api_server_types.NewDataplaneInspectResponse(inner)
 		} else {
-			result := newGatewayDataplaneInspectResponse(proxy, gatewayEntries)
-			if err := response.WriteAsJson(result); err != nil {
-				rest_errors.HandleError(response, err, "Could not write response")
-				return
-			}
+			inner := newGatewayDataplaneInspectResponse(proxy, gatewayEntries)
+			result = api_server_types.NewDataplaneInspectResponse(&inner)
+		}
+		if err := response.WriteAsJson(result); err != nil {
+			rest_errors.HandleError(response, err, "Could not write response")
+			return
 		}
 	}
 }
@@ -184,28 +184,36 @@ func inspectPolicies(
 
 		for _, dp := range meshContext.Resources.Dataplanes().Items {
 			dpKey := core_model.MetaToResourceKey(dp.GetMeta())
-			matchedPolicies, _, _, err := getMatchedPolicies(cfg, meshContext, dpKey)
+			resourceKey := api_server_types.ResourceKeyEntry{
+				Mesh: dpKey.Mesh,
+				Name: dpKey.Name,
+			}
+			matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(cfg, meshContext, dpKey)
 			if err != nil {
 				rest_errors.HandleError(response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
 			}
-			for policy, attachments := range core_xds.GroupByPolicy(matchedPolicies, dp.Spec.Networking) {
-				if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
-					attachmentList := []api_server_types.AttachmentEntry{}
-					for _, attachment := range attachments {
-						attachmentList = append(attachmentList, api_server_types.AttachmentEntry{
-							Type:    attachment.Type.String(),
-							Name:    attachment.Name,
-							Service: attachment.Service,
-						})
+			if matchedPolicies != nil {
+				for policy, attachments := range core_xds.GroupByPolicy(matchedPolicies, dp.Spec.Networking) {
+					if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
+						attachmentList := []api_server_types.AttachmentEntry{}
+						for _, attachment := range attachments {
+							attachmentList = append(attachmentList, api_server_types.AttachmentEntry{
+								Type:    attachment.Type.String(),
+								Name:    attachment.Name,
+								Service: attachment.Service,
+							})
+						}
+						entry := api_server_types.NewPolicyInspectSidecarEntry(resourceKey)
+						entry.Attachments = attachmentList
+						result.Items = append(result.Items, api_server_types.NewPolicyInspectEntry(&entry))
 					}
-					result.Items = append(result.Items, &api_server_types.PolicyInspectEntry{
-						DataplaneKey: api_server_types.ResourceKeyEntry{
-							Mesh: dpKey.Mesh,
-							Name: dpKey.Name,
-						},
-						Attachments: attachmentList,
-					})
+				}
+			} else {
+				for policy, attachments := range gatewayEntriesByPolicy(proxy, gatewayEntries) {
+					if policy.Type == resType && policy.Key.Name == policyName && policy.Key.Mesh == meshName {
+						result.Items = append(result.Items, attachments...)
+					}
 				}
 			}
 		}
@@ -343,6 +351,38 @@ func routeDestinationToAPIDestination(des route.Destination) api_server_types.De
 	}
 }
 
+func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {
+	attachmentMap := core_xds.GroupByAttachment(matchedPolicies, dp.Spec.Networking)
+
+	entries := make([]*api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
+	attachments := []core_xds.Attachment{}
+	for attachment := range attachmentMap {
+		attachments = append(attachments, attachment)
+	}
+
+	sort.Stable(core_xds.AttachmentList(attachments))
+
+	for _, attachment := range attachments {
+		entry := &api_server_types.DataplaneInspectEntry{
+			AttachmentEntry: api_server_types.AttachmentEntry{
+				Type:    attachment.Type.String(),
+				Name:    attachment.Name,
+				Service: attachment.Service,
+			},
+			MatchedPolicies: map[core_model.ResourceType][]*rest.Resource{},
+		}
+		for typ, resList := range attachmentMap[attachment] {
+			for _, res := range resList {
+				entry.MatchedPolicies[typ] = append(entry.MatchedPolicies[typ], rest.From.Resource(res))
+			}
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries
+}
+
 func newGatewayDataplaneInspectResponse(
 	proxy core_xds.Proxy,
 	listenerInfos []gateway.GatewayListenerInfo,
@@ -423,34 +463,122 @@ func newGatewayDataplaneInspectResponse(
 	return result
 }
 
-func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {
-	attachmentMap := core_xds.GroupByAttachment(matchedPolicies, dp.Spec.Networking)
+func routeToPolicyInspect(
+	policyMap map[core_xds.PolicyKey][]envoy.Tags,
+	des route.Destination,
+) map[core_xds.PolicyKey][]envoy.Tags {
+	for kind, p := range des.Policies {
+		policyKey := core_xds.PolicyKey{
+			Type: kind,
+			Key:  core_model.MetaToResourceKey(p.GetMeta()),
+		}
 
-	entries := make([]*api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
-	attachments := []core_xds.Attachment{}
-	for attachment := range attachmentMap {
-		attachments = append(attachments, attachment)
+		policies := policyMap[policyKey]
+		policies = append(policies, des.Destination)
+		policyMap[policyKey] = policies
 	}
 
-	sort.Stable(core_xds.AttachmentList(attachments))
+	return policyMap
+}
 
-	for _, attachment := range attachments {
-		entry := &api_server_types.DataplaneInspectEntry{
-			AttachmentEntry: api_server_types.AttachmentEntry{
-				Type:    attachment.Type.String(),
-				Name:    attachment.Name,
-				Service: attachment.Service,
-			},
-			MatchedPolicies: map[core_model.ResourceType][]*rest.Resource{},
-		}
-		for typ, resList := range attachmentMap[attachment] {
-			for _, res := range resList {
-				entry.MatchedPolicies[typ] = append(entry.MatchedPolicies[typ], rest.From.Resource(res))
+func gatewayEntriesByPolicy(
+	proxy core_xds.Proxy,
+	listenerInfos []gateway.GatewayListenerInfo,
+) map[core_xds.PolicyKey][]api_server_types.PolicyInspectEntry {
+	policyMap := map[core_xds.PolicyKey][]api_server_types.PolicyInspectEntry{}
+
+	dpKey := core_model.MetaToResourceKey(proxy.Dataplane.GetMeta())
+	resourceKey := api_server_types.ResourceKeyEntry{
+		Mesh: dpKey.Mesh,
+		Name: dpKey.Name,
+	}
+
+	listenersMap := map[core_xds.PolicyKey][]api_server_types.PolicyInspectGatewayListenerEntry{}
+	for _, info := range listenerInfos {
+		hostMap := map[core_xds.PolicyKey][]api_server_types.PolicyInspectGatewayHostEntry{}
+		for _, info := range info.HostInfos {
+			routeMap := map[core_xds.PolicyKey][]api_server_types.PolicyInspectGatewayRouteEntry{}
+			for _, entry := range info.Entries {
+				entryMap := map[core_xds.PolicyKey][]envoy.Tags{}
+				if entry.Mirror != nil {
+					entryMap = routeToPolicyInspect(entryMap, entry.Mirror.Forward)
+				}
+
+				for _, forward := range entry.Action.Forward {
+					entryMap = routeToPolicyInspect(entryMap, forward)
+				}
+
+				for policy, destinations := range entryMap {
+					routeMap[policy] = append(
+						routeMap[policy],
+						api_server_types.PolicyInspectGatewayRouteEntry{
+							Route:        entry.Route,
+							Destinations: destinations,
+						})
+				}
+			}
+
+			for policy, routes := range routeMap {
+				hostMap[policy] = append(
+					hostMap[policy],
+					api_server_types.PolicyInspectGatewayHostEntry{
+						HostName: info.Host.Hostname,
+						Routes:   routes,
+					})
 			}
 		}
 
-		entries = append(entries, entry)
+		for policy, hosts := range hostMap {
+			listenersMap[policy] = append(
+				listenersMap[policy],
+				api_server_types.PolicyInspectGatewayListenerEntry{
+					Port:     info.Listener.Port,
+					Protocol: info.Listener.Protocol.String(),
+					Hosts:    hosts,
+				},
+			)
+		}
 	}
 
-	return entries
+	var gatewayKey api_server_types.ResourceKeyEntry
+	if len(listenerInfos) > 0 {
+		gatewayKey = api_server_types.ResourceKeyEntryFromModelKey(core_model.MetaToResourceKey(listenerInfos[0].Gateway.GetMeta()))
+	}
+	for policy, listeners := range listenersMap {
+		result := api_server_types.NewPolicyInspectGatewayEntry(resourceKey, gatewayKey)
+
+		result.Listeners = listeners
+
+		result.Gateway = gatewayKey
+
+		policyMap[policy] = append(
+			policyMap[policy],
+			api_server_types.NewPolicyInspectEntry(&result),
+		)
+	}
+
+	if logging, ok := proxy.Policies.TrafficLogs[core_mesh.PassThroughService]; ok {
+		wholeGateway := api_server_types.NewPolicyInspectGatewayEntry(resourceKey, gatewayKey)
+		policyKey := core_xds.PolicyKey{
+			Type: core_mesh.TrafficLogType,
+			Key:  core_model.MetaToResourceKey(logging.GetMeta()),
+		}
+		policyMap[policyKey] = append(
+			policyMap[policyKey],
+			api_server_types.NewPolicyInspectEntry(&wholeGateway),
+		)
+	}
+	if trace := proxy.Policies.TrafficTrace; trace != nil {
+		wholeGateway := api_server_types.NewPolicyInspectGatewayEntry(resourceKey, gatewayKey)
+		policyKey := core_xds.PolicyKey{
+			Type: core_mesh.TrafficTraceType,
+			Key:  core_model.MetaToResourceKey(trace.GetMeta()),
+		}
+		policyMap[policyKey] = append(
+			policyMap[policyKey],
+			api_server_types.NewPolicyInspectEntry(&wholeGateway),
+		)
+	}
+
+	return policyMap
 }
