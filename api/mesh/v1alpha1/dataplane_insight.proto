@@ -156,5 +156,5 @@ message EnvoyVersion {
   string build = 2;
 
   // True iff Envoy version is compatible with Kuma DP version
-  bool KumaDpCompatible = 3;
+  bool kumaDpCompatible = 3;
 }

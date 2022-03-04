@@ -67,8 +67,9 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				BuildDate: "2019-08-07T11:26:06Z",
 			},
 			Envoy: &mesh_proto.EnvoyVersion{
-				Version: "1.15.0",
-				Build:   "hash/1.15.0/RELEASE",
+				Version:          "1.15.0",
+				Build:            "hash/1.15.0/RELEASE",
+				KumaDpCompatible: true,
 			},
 		}
 
