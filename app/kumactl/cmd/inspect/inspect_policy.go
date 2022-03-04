@@ -15,19 +15,12 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-var policyInspectTemplate = "Affected data plane proxies:\n\n" +
-	"{{ range .Items }}" +
-	"{{ with IsSidecar . }}" +
-	"  {{ .DataplaneKey.Name }}" +
-	"{{ if . | PrintAttachments }}" +
-	":\n" +
-	"{{ range .Attachments }}" +
-	"    {{ . | FormatAttachment }}\n" +
-	"{{ end }}" +
-	"{{ end }}" +
-	"\n" +
-	"{{ end }}" +
-	"{{ end }}"
+var policyInspectTemplate = `Affected data plane proxies:
+
+{{ range .Items }}{{ with IsSidecar . }}  {{ .DataplaneKey.Name }}{{ if . | PrintAttachments }}:
+{{ range .Attachments }}    {{ . | FormatAttachment }}
+{{ end }}{{ end }}
+{{ end }}{{ end }}`
 
 func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd.RootContext) *cobra.Command {
 	tmpl, err := template.New("policy_inspect").Funcs(template.FuncMap{
