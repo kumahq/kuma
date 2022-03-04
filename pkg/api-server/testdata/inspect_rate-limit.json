@@ -2,6 +2,7 @@
  "total": 1,
  "items": [
   {
+   "kind": "SidecarDataplane",
    "dataplane": {
     "mesh": "mesh-1",
     "name": "gateway-1"
