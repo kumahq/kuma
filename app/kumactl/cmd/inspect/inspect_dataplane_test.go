@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -46,13 +45,11 @@ var _ = Describe("kumactl inspect dataplane", func() {
 		rawResponse, err := os.ReadFile(path.Join("testdata", "inspect-dataplane.server-response.json"))
 		Expect(err).ToNot(HaveOccurred())
 
-		receiver := &api_server_types.DataplaneInspectEntryListReceiver{
-			NewResource: registry.Global().NewObject,
-		}
-		Expect(json.Unmarshal(rawResponse, receiver)).To(Succeed())
+		list := api_server_types.DataplaneInspectEntryList{}
+		Expect(json.Unmarshal(rawResponse, &list)).To(Succeed())
 
 		testClient := &testDataplaneInspectClient{
-			response: &receiver.DataplaneInspectEntryList,
+			response: &list,
 		}
 
 		rootCtx, err := test_kumactl.MakeRootContext(time.Now(), nil)

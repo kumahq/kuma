@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
@@ -46,11 +45,9 @@ func (h *httpDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, 
 	if statusCode != 200 {
 		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
 	}
-	receiver := &api_server_types.DataplaneInspectEntryListReceiver{
-		NewResource: registry.Global().NewObject,
-	}
+	receiver := &api_server_types.DataplaneInspectEntryList{}
 	if err := json.Unmarshal(b, receiver); err != nil {
 		return nil, err
 	}
-	return &receiver.DataplaneInspectEntryList, nil
+	return receiver, nil
 }
