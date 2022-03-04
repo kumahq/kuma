@@ -364,6 +364,13 @@ var _ = Describe("Inspect WS", func() {
 					meta("gateway-1", "default").
 					builtin("gateway").
 					build(),
+				&core_mesh.TrafficLogResource{
+					Meta: &test_model.ResourceMeta{Name: "tl-1", Mesh: "default"},
+					Spec: &mesh_proto.TrafficLog{
+						Sources:      anyService(),
+						Destinations: anyService(),
+					},
+				},
 				&core_mesh.TrafficPermissionResource{
 					Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
 					Spec: &mesh_proto.TrafficPermission{

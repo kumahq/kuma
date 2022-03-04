@@ -416,6 +416,10 @@ func newGatewayDataplaneInspectResponse(
 		gatewayPolicies[core_mesh.TrafficTraceType] = rest.From.Resource(trace)
 	}
 
+	if len(gatewayPolicies) > 0 {
+		result.Policies = gatewayPolicies
+	}
+
 	return result
 }
 
