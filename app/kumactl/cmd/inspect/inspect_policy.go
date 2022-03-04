@@ -20,6 +20,12 @@ var policyInspectTemplate = `Affected data plane proxies:
 {{ range .Items }}{{ with IsSidecar . }}  {{ .DataplaneKey.Name }}{{ if . | PrintAttachments }}:
 {{ range .Attachments }}    {{ . | FormatAttachment }}
 {{ end }}{{ end }}
+{{ end }}{{ with IsGateway . }}  {{ .Gateway.Name }}:
+{{ range .Listeners }}    listener ({{ .Protocol }}:{{ .Port }}):
+{{ range .Hosts }}      {{ .HostName }}:
+{{ range .Routes }}        {{ .Route }}:
+{{ range .Destinations }}          {{ FormatTags . }}
+{{ end }}{{ end }}{{ end }}{{ end }}
 {{ end }}{{ end }}`
 
 func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd.RootContext) *cobra.Command {
@@ -43,6 +49,7 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 			}
 			return true
 		},
+		"FormatTags": tagsToStr(false),
 	}).Parse(policyInspectTemplate)
 	if err != nil {
 		panic("unable to parse template")
