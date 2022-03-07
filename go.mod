@@ -11,7 +11,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490
 	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/envoyproxy/go-control-plane v0.10.1
-	github.com/envoyproxy/protoc-gen-validate v0.6.6
+	github.com/envoyproxy/protoc-gen-validate v0.6.7
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-logr/logr v1.2.2
