@@ -14,7 +14,7 @@ import (
 )
 
 type DataplaneInspectClient interface {
-	InspectPolicies(ctx context.Context, mesh, name string) (*api_server_types.DataplaneInspectEntryList, error)
+	InspectPolicies(ctx context.Context, mesh, name string) (api_server_types.DataplaneInspectResponse, error)
 }
 
 func NewDataplaneInspectClient(client util_http.Client) DataplaneInspectClient {
@@ -29,25 +29,25 @@ type httpDataplaneInspectClient struct {
 
 var _ DataplaneInspectClient = &httpDataplaneInspectClient{}
 
-func (h *httpDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, name string) (*api_server_types.DataplaneInspectEntryList, error) {
+func (h *httpDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, name string) (api_server_types.DataplaneInspectResponse, error) {
 	resUrl, err := url.Parse(fmt.Sprintf("/meshes/%s/dataplanes/%s/policies", mesh, name))
 	if err != nil {
-		return nil, errors.Wrap(err, "could not construct the url")
+		return api_server_types.DataplaneInspectResponse{}, errors.Wrap(err, "could not construct the url")
 	}
 	req, err := http.NewRequest("GET", resUrl.String(), nil)
 	if err != nil {
-		return nil, err
+		return api_server_types.DataplaneInspectResponse{}, err
 	}
 	statusCode, b, err := doRequest(h.Client, ctx, req)
 	if err != nil {
-		return nil, err
+		return api_server_types.DataplaneInspectResponse{}, err
 	}
 	if statusCode != 200 {
-		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
+		return api_server_types.DataplaneInspectResponse{}, errors.Errorf("(%d): %s", statusCode, string(b))
 	}
-	receiver := &api_server_types.DataplaneInspectEntryList{}
-	if err := json.Unmarshal(b, receiver); err != nil {
-		return nil, err
+	response := &api_server_types.DataplaneInspectResponse{}
+	if err := json.Unmarshal(b, &response); err != nil {
+		return api_server_types.DataplaneInspectResponse{}, err
 	}
-	return receiver, nil
+	return *response, nil
 }

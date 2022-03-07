@@ -1,11 +1,5 @@
 Affected data plane proxies:
 
-  meshgateway:
-    listener (HTTP:80):
-      *:
-        route-1:
-          service redis
-
   web-1:
     service backend
 

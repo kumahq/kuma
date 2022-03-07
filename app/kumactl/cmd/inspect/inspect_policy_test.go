@@ -86,7 +86,7 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			cmdArgs:            []string{"inspect", "healthcheck", "hc1"},
 		}),
 		Entry("service policy (no kind in response)", testCase{
-			goldenFile:         "inspect-health-check.golden.txt",
+			goldenFile:         "inspect-health-check-1.5.golden.txt",
 			serverResponseFile: "inspect-health-check-1.5.server-response.json",
 			cmdArgs:            []string{"inspect", "healthcheck", "hc1"},
 		}),
