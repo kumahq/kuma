@@ -112,7 +112,8 @@ var _ = Describe("Remote Bootstrap", func() {
 						},
 						"envoy": {
 						  "version": "1.15.0",
-						  "build": "hash/1.15.0/RELEASE"
+						  "build": "hash/1.15.0/RELEASE",
+						  "kumaDpCompatible": false
 						}
 					  },
 					  "caCert": "",
@@ -158,7 +159,8 @@ var _ = Describe("Remote Bootstrap", func() {
                         },
                         "envoy": {
                           "version": "1.15.0",
-                          "build": "hash/1.15.0/RELEASE"
+                          "build": "hash/1.15.0/RELEASE",
+                          "kumaDpCompatible": false
                         }
                       },
                       "caCert": "",
@@ -200,7 +202,8 @@ var _ = Describe("Remote Bootstrap", func() {
                         },
                         "envoy": {
                           "version": "1.15.0",
-                          "build": "hash/1.15.0/RELEASE"
+                          "build": "hash/1.15.0/RELEASE",
+                          "kumaDpCompatible": false
                         }
                       },
                       "caCert": "",
