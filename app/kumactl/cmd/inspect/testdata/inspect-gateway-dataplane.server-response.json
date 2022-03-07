@@ -97,5 +97,45 @@
     }
    ]
   }
- ]
+ ],
+ "policies": {
+  "TrafficLog": {
+   "type": "TrafficLog",
+   "mesh": "default",
+   "name": "all-traffic",
+   "creationTime": "2022-03-03T22:24:14Z",
+   "modificationTime": "2022-03-03T22:24:14Z",
+   "sources": [
+    {
+     "match": {
+      "kuma.io/service": "*"
+     }
+    }
+   ],
+   "destinations": [
+    {
+     "match": {
+      "kuma.io/service": "*"
+     }
+    }
+   ]
+  },
+  "TrafficTrace": {
+   "type": "TrafficTrace",
+   "mesh": "default",
+   "name": "all-traffic",
+   "creationTime": "2022-03-03T22:25:34Z",
+   "modificationTime": "2022-03-03T22:25:34Z",
+   "selectors": [
+    {
+     "match": {
+      "kuma.io/service": "*"
+     }
+    }
+   ],
+   "conf": {
+    "backend": "go"
+   }
+  }
+ }
 }

@@ -9,24 +9,24 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-var policyInspectTemplate = "Affected data plane proxies:\n\n" +
-	"{{ range .Items }}" +
-	"{{ with IsSidecar . }}" +
-	"  {{ .DataplaneKey.Name }}" +
-	"{{ if . | PrintAttachments }}" +
-	":\n" +
-	"{{ range .Attachments }}" +
-	"    {{ . | FormatAttachment }}\n" +
-	"{{ end }}" +
-	"{{ end }}" +
-	"\n" +
-	"{{ end }}" +
-	"{{ end }}"
+var policyInspectTemplate = `Affected data plane proxies:
+
+{{ range .Items }}{{ with IsSidecar . }}  {{ .DataplaneKey.Name }}{{ if . | PrintAttachments }}:
+{{ range .Attachments }}    {{ . | FormatAttachment }}
+{{ end }}{{ end }}
+{{ end }}{{ with IsGateway . }}  {{ .Gateway.Name }}:
+{{ range .Listeners }}    listener ({{ .Protocol }}:{{ .Port }}):
+{{ range .Hosts }}      {{ .HostName }}:
+{{ range .Routes }}        {{ .Route }}:
+{{ range .Destinations }}          {{ FormatTags . }}
+{{ end }}{{ end }}{{ end }}{{ end }}
+{{ end }}{{ end }}`
 
 func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd.RootContext) *cobra.Command {
 	tmpl, err := template.New("policy_inspect").Funcs(template.FuncMap{
@@ -49,6 +49,7 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 			}
 			return true
 		},
+		"FormatTags": tagsToStr(false),
 	}).Parse(policyInspectTemplate)
 	if err != nil {
 		panic("unable to parse template")
@@ -91,5 +92,17 @@ func attachmentToStr(upperCase bool) func(api_server_types.AttachmentEntry) stri
 		default:
 			return fmt.Sprintf("%s %s(%s)", typeToStr(a.Type), a.Name, a.Service)
 		}
+	}
+}
+
+func tagsToStr(upperCase bool) func(map[string]string) string {
+	return func(destinationTags map[string]string) string {
+		service := destinationTags[mesh_proto.ServiceTag]
+
+		label := "service"
+		if upperCase {
+			label = strings.ToUpper(label)
+		}
+		return fmt.Sprintf("%s %s", label, service)
 	}
 }
