@@ -1,0 +1,17 @@
+GATEWAY:
+  TrafficLog
+    all-traffic
+  TrafficTrace
+    all-traffic
+
+LISTENER (HTTP:80):
+  *:
+    route-1:
+      SERVICE backend:
+        HealthCheck
+          hc-1
+
+      SERVICE redis:
+        Timeout
+          t-1
+
