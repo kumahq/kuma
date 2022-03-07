@@ -75,6 +75,7 @@ node:
       dependencies: {}
       envoy:
         build: hash/1.15.0/RELEASE
+        kumaDpCompatible: false
         version: 1.15.0
       kumaDp:
         buildDate: "2019-08-07T11:26:06Z"
