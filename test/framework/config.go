@@ -46,7 +46,7 @@ type E2eConfig struct {
 	DefaultClusterStartupTimeout  time.Duration     `yaml:"defaultClusterStartupTimeout,omitempty" envconfig:"KUMA_DEFAULT_TIMEOUT"`
 	KumactlBin                    string            `yaml:"kumactlBin,omitempty" envconfig:"KUMACTLBIN"`
 	ZoneEgressApp                 string            `yaml:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
-	ARM64                         bool              `yaml:"arm64,omitempty" envconfig:"ARM64"`
+	Arch                          string            `yaml:"arch,omitempty" envconfig:"ARCH"`
 
 	SuiteConfig SuiteConfig `yaml:"suites,omitempty"`
 }
@@ -111,9 +111,7 @@ func (c E2eConfig) AutoConfigure() error {
 	if Config.IPV6 && Config.CIDR == "" {
 		Config.CIDR = "fd00:fd00::/64"
 	}
-	if runtime.GOARCH == "arm64" {
-		Config.ARM64 = true
-	}
+	Config.Arch = runtime.GOARCH
 	return nil
 }
 
