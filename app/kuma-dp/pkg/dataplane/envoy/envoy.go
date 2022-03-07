@@ -62,8 +62,9 @@ type Envoy struct {
 }
 
 type EnvoyVersion struct {
-	Build   string
-	Version string
+	Build            string
+	Version          string
+	KumaDpCompatible bool
 }
 
 func (e *Envoy) NeedLeaderElection() bool {

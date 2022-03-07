@@ -30,8 +30,9 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 						"buildDate": parameters.KumaDpBuildDate,
 					},
 					"envoy": map[string]interface{}{
-						"version": parameters.EnvoyVersion,
-						"build":   parameters.EnvoyBuild,
+						"version":          parameters.EnvoyVersion,
+						"build":            parameters.EnvoyBuild,
+						"kumaDpCompatible": parameters.EnvoyKumaDpCompatible,
 					},
 					"dependencies": map[string]interface{}{},
 				},
