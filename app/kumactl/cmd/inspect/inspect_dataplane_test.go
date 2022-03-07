@@ -23,10 +23,10 @@ import (
 )
 
 type testDataplaneInspectClient struct {
-	response *api_server_types.DataplaneInspectEntryList
+	response api_server_types.DataplaneInspectResponse
 }
 
-func (t *testDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, name string) (*api_server_types.DataplaneInspectEntryList, error) {
+func (t *testDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, name string) (api_server_types.DataplaneInspectResponse, error) {
 	return t.response, nil
 }
 
@@ -51,11 +51,11 @@ var _ = Describe("kumactl inspect dataplane", func() {
 			rawResponse, err := os.ReadFile(path.Join("testdata", given.serverOutput))
 			Expect(err).ToNot(HaveOccurred())
 
-			list := api_server_types.DataplaneInspectEntryList{}
-			Expect(json.Unmarshal(rawResponse, &list)).To(Succeed())
+			response := api_server_types.DataplaneInspectResponse{}
+			Expect(json.Unmarshal(rawResponse, &response)).To(Succeed())
 
 			testClient := &testDataplaneInspectClient{
-				response: &list,
+				response: response,
 			}
 
 			rootCtx, err := test_kumactl.MakeRootContext(time.Now(), nil)

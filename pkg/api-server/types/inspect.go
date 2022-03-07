@@ -155,6 +155,27 @@ func (e DataplaneInspectResponse) MarshalJSON() ([]byte, error) {
 	panic("internal error")
 }
 
+func (w *DataplaneInspectResponse) UnmarshalJSON(data []byte) error {
+	i := KindTag{}
+	if err := json.Unmarshal(data, &i); err != nil {
+		return errors.Wrap(err, `unable to find "kind"`)
+	}
+	var entry DataplaneInspectResponseKind
+	switch i.Kind {
+	case SidecarDataplane, "":
+		entry = &DataplaneInspectEntryList{}
+	case GatewayDataplane:
+		entry = &GatewayDataplaneInspectResult{}
+	default:
+		return errors.Errorf("invalid DataplaneInspectResponse kind %q", i.Kind)
+	}
+	if err := json.Unmarshal(data, entry); err != nil {
+		return errors.Wrapf(err, "unable to parse DataplaneInspectResponse of kind %q", i.Kind)
+	}
+	w.DataplaneInspectResponseKind = entry
+	return nil
+}
+
 type DataplaneInspectEntry struct {
 	AttachmentEntry
 	MatchedPolicies MatchedPolicies `json:"matchedPolicies"`

@@ -9,7 +9,7 @@
       },
       "gateway": {
         "mesh": "mesh-1",
-        "name": "gateway"
+        "name": "meshgateway"
       },
       "listeners": [
         {
@@ -37,32 +37,13 @@
       "kind": "SidecarDataplane",
       "dataplane": {
         "mesh": "default",
-        "name": "backend-1"
-      },
-      "attachments": [
-        {
-          "type": "service",
-          "name": "gateway",
-          "service": "gateway"
-        },
-        {
-          "type": "service",
-          "name": "web",
-          "service": "web"
-        }
-      ]
-    },
-    {
-      "kind": "SidecarDataplane",
-      "dataplane": {
-        "mesh": "default",
         "name": "web-1"
       },
       "attachments": [
         {
           "type": "service",
-          "name": "gateway",
-          "service": "gateway"
+          "name": "backend",
+          "service": "backend"
         }
       ]
     },
@@ -70,18 +51,18 @@
       "kind": "SidecarDataplane",
       "dataplane": {
         "mesh": "default",
-        "name": "redis-1"
+        "name": "backend-1"
       },
       "attachments": [
         {
           "type": "service",
-          "name": "gateway",
-          "service": "gateway"
+          "name": "redis",
+          "service": "redis"
         },
         {
           "type": "service",
-          "name": "web",
-          "service": "web"
+          "name": "external",
+          "service": "external"
         }
       ]
     }
