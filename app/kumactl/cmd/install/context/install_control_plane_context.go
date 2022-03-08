@@ -24,6 +24,7 @@ type InstallControlPlaneArgs struct {
 	ControlPlane_injectorFailurePolicy           string            `helm:"controlPlane.injectorFailurePolicy"`
 	ControlPlane_secrets                         []ImageEnvSecret  `helm:"controlPlane.secrets"`
 	ControlPlane_envVars                         map[string]string `helm:"controlPlane.envVars"`
+	ControlPlane_nodeSelector                    map[string]string `helm:"controlPlane.nodeSelector"`
 	DataPlane_image_registry                     string            `helm:"dataPlane.image.registry"`
 	DataPlane_image_repository                   string            `helm:"dataPlane.image.repository"`
 	DataPlane_image_tag                          string            `helm:"dataPlane.image.tag"`
@@ -39,6 +40,7 @@ type InstallControlPlaneArgs struct {
 	Cni_image_registry                           string            `helm:"cni.image.registry"`
 	Cni_image_repository                         string            `helm:"cni.image.repository"`
 	Cni_image_tag                                string            `helm:"cni.image.tag"`
+	Cni_nodeSelector                             map[string]string `helm:"cni.nodeSelector"`
 	ControlPlane_mode                            string            `helm:"controlPlane.mode"`
 	ControlPlane_zone                            string            `helm:"controlPlane.zone"`
 	ControlPlane_globalZoneSyncService_type      string            `helm:"controlPlane.globalZoneSyncService.type"`
@@ -46,9 +48,12 @@ type InstallControlPlaneArgs struct {
 	Ingress_mesh                                 string            `helm:"ingress.mesh"`
 	Ingress_drainTime                            string            `helm:"ingress.drainTime"`
 	Ingress_service_type                         string            `helm:"ingress.service.type"`
+	Ingress_nodeSelector                         map[string]string `helm:"ingress.nodeSelector"`
 	Egress_enabled                               bool              `helm:"egress.enabled"`
 	Egress_drainTime                             string            `helm:"egress.drainTime"`
 	Egress_service_type                          string            `helm:"egress.service.type"`
+	Egress_nodeSelector                          map[string]string `helm:"egress.nodeSelector"`
+	Hooks_nodeSelector                           map[string]string `helm:"hooks.nodeSelector"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
 	ExperimentalMeshGateway                      bool              `helm:"experimental.meshGateway"`
 }

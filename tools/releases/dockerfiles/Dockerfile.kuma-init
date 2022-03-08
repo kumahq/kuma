@@ -1,10 +1,12 @@
 FROM ubuntu:focal
 
+ARG ARCH
+
 RUN apt-get update && \
     apt-get -y install iptables iproute2 && \
     rm -rf /var/lib/apt/lists/*
 
-ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
 
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE \
     $KUMA_ROOT/tools/releases/templates/README \
