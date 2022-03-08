@@ -2,7 +2,7 @@ package ratelimit
 
 import (
 	"fmt"
-	"time"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,10 +14,8 @@ import (
 
 const kumaClusterId = Kuma3
 
-const limitInterval = 10 * time.Second
-
 var cluster Cluster
-var rateLimitPolicy = fmt.Sprintf(`
+var rateLimitPolicy = `
 type: RateLimit
 mesh: default
 name: rate-limit-all-sources
@@ -29,14 +27,13 @@ destinations:
    kuma.io/service: test-server
 conf:
   http:
-    requests: 2
-    interval: %s
+    requests: 1
+    interval: 10s
     onRateLimit:
       status: 429
       headers:
         - key: "x-kuma-rate-limited"
-          value: "true"
-`, limitInterval)
+          value: "true"`
 
 var _ = E2EBeforeSuite(func() {
 	clusters, err := NewUniversalClusters(
@@ -73,62 +70,13 @@ var _ = E2EBeforeSuite(func() {
 })
 
 func RateLimitOnUniversal() {
-	// In the best case, we start sending requests and can send all successfully
-	// and consecutively before the bucket is empty.
-	// Otherwise the bucket empties before we've sent all which will lead to the
-	// number of successes being more than the limit.
-	// So we send requests until the rate limit is first hit, send failing
-	// requests until the first one succeeds, then we send as
-	// many requests as we can until we are rate limited again.
-	// We compare that number of successes to the expected number.
-	// The assumption here is that we can send enough requests to hit the limit
-	// within the interval.
-	verifyRateLimit := func(client string, svc string, expected int) {
-		// This is wrapped in Eventually. Shortly after new
-		// RateLimits are applied, there appears to be some nondeterminism around how
-		// many tokens are put in the bucket at one time.
-		verify := func() error {
-			verifyErrorMsg := fmt.Sprintf("couldn't verify rate limit for %s to %s to equal %d", client, svc, expected)
-
-			begin := time.Now()
-			succeeded := 0
-			var haveFailedRequest bool
-			for {
-				_, _, err := cluster.Exec("", "", client, "curl", "-v", "--fail", fmt.Sprintf("%s.mesh", svc))
-				if err != nil {
-					haveFailedRequest = true
-					if succeeded > 0 {
-						// we've failed, then succeeded and are now failing again
-						if succeeded == expected {
-							return nil
-						}
-						return fmt.Errorf("%s: sent %d successful requests", verifyErrorMsg, succeeded)
-					}
-				} else if haveFailedRequest {
-					// We've failed at least once and have n >= 0 consecutive,
-					// successful requests before this one
-					succeeded++
-				}
-				if time.Now().After(begin.Add(2 * limitInterval)) {
-					return fmt.Errorf("%s: couldn't send a terminated string of successful requests", verifyErrorMsg)
-				}
-			}
-		}
-
-		const verifyTimeout = 30 * time.Second
-		verifyPollingInterval := limitInterval + 1*time.Second
-
-		Eventually(verify, verifyTimeout, verifyPollingInterval).Should(Succeed())
-		Consistently(verify, verifyTimeout, 1*time.Second).Should(Succeed())
+	requestRateLimited := func(client string, svc string, status string) bool {
+		stdout, _, err := cluster.Exec("", "", client, "curl", "-v", fmt.Sprintf("%s.mesh", svc))
+		return err == nil && strings.Contains(stdout, status)
 	}
 
-	It("should apply limit to client", func() {
-		// demo-client specific RateLimit works
-		verifyRateLimit("demo-client", "test-server", 2)
-	})
-
 	It("should limit per source", func() {
-		specificRateLimitPolicy := fmt.Sprintf(`
+		specificRateLimitPolicy := `
 type: RateLimit
 mesh: default
 name: rate-limit-demo-client
@@ -140,57 +88,23 @@ destinations:
     kuma.io/service: test-server
 conf:
   http:
-    requests: 4
-    interval: %s
-`, limitInterval)
+    onRateLimit:
+      status: 400
+    requests: 1
+    interval: 10s
+`
 		err := YamlUniversal(specificRateLimitPolicy)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// demo-client specific RateLimit works
-		verifyRateLimit("demo-client", "test-server", 4)
+		Eventually(func() bool {
+			return requestRateLimited("demo-client", "test-server", "400")
+		}, "30s", "100ms").Should(BeTrue())
 
 		// catch-all RateLimit still works
-		verifyRateLimit("web", "test-server", 2)
-	})
-
-	It("should limit multiple source", func() {
-		specificRateLimitPolicy := fmt.Sprintf(`
-type: RateLimit
-mesh: default
-name: rate-limit-demo-client
-sources:
-- match:
-    kuma.io/service: "demo-client"
-destinations:
-- match:
-    kuma.io/service: test-server
-conf:
-  http:
-    requests: 4
-    interval: %[1]s
----
-type: RateLimit
-mesh: default
-name: rate-limit-web
-sources:
-- match:
-    kuma.io/service: "web"
-destinations:
-- match:
-    kuma.io/service: test-server
-conf:
-  http:
-    requests: 1
-    interval: %[1]s
-`, limitInterval)
-		err := YamlUniversal(specificRateLimitPolicy)(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		// demo-client specific RateLimit works
-		verifyRateLimit("demo-client", "test-server", 4)
-
-		// demo-client specific RateLimit works
-		verifyRateLimit("web", "test-server", 1)
+		Eventually(func() bool {
+			return requestRateLimited("web", "test-server", "429")
+		}, "30s", "100ms").Should(BeTrue())
 	})
 
 	It("should limit echo server as external service", func() {
@@ -204,7 +118,7 @@ tags:
 networking:
   address: "%s_externalservice-http-server:81"
 `, kumaClusterId)
-		specificRateLimitPolicy := fmt.Sprintf(`
+		specificRateLimitPolicy := `
 type: RateLimit
 mesh: default
 name: rate-limit-demo-client
@@ -216,15 +130,19 @@ destinations:
     kuma.io/service: "external-service"
 conf:
   http:
-    requests: 4
-    interval: %s
-`, limitInterval)
+    onRateLimit:
+      status: 429
+    requests: 1
+    interval: 10s
+`
 		err := YamlUniversal(externalService)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = YamlUniversal(specificRateLimitPolicy)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// demo-client specific RateLimit works
-		verifyRateLimit("demo-client", "external-service", 4)
+		Eventually(func() bool {
+			return requestRateLimited("demo-client", "external-service", "429")
+		}, "30s", "100ms").Should(BeTrue())
 	})
 }
