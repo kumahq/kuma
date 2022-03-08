@@ -2,6 +2,7 @@ package builtin
 
 import (
 	"github.com/kumahq/kuma/pkg/config/core"
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -33,25 +34,27 @@ func NewZoneTokenIssuer(resManager manager.ResourceManager) zone.TokenIssuer {
 	)
 }
 
-func NewDataplaneTokenValidator(resManager manager.ResourceManager) issuer.Validator {
+func NewDataplaneTokenValidator(resManager manager.ResourceManager, storeType store_config.StoreType) issuer.Validator {
 	return issuer.NewValidator(func(meshName string) tokens.Validator {
 		return tokens.NewValidator(
 			tokens.NewMeshedSigningKeyAccessor(resManager, issuer.DataplaneTokenSigningKeyPrefix(meshName), meshName),
 			tokens.NewRevocations(resManager, issuer.DataplaneTokenRevocationsSecretKey(meshName)),
+			storeType,
 		)
 	})
 }
 
-func NewZoneIngressTokenValidator(resManager manager.ResourceManager) zoneingress.Validator {
+func NewZoneIngressTokenValidator(resManager manager.ResourceManager, storeType store_config.StoreType) zoneingress.Validator {
 	return zoneingress.NewValidator(
 		tokens.NewValidator(
 			tokens.NewSigningKeyAccessor(resManager, zoneingress.ZoneIngressSigningKeyPrefix),
 			tokens.NewRevocations(resManager, zoneingress.ZoneIngressTokenRevocationsGlobalSecretKey),
+			storeType,
 		),
 	)
 }
 
-func NewZoneTokenValidator(resManager manager.ResourceManager, mode core.CpMode) zone.Validator {
+func NewZoneTokenValidator(resManager manager.ResourceManager, mode core.CpMode, storeType store_config.StoreType) zone.Validator {
 	var signingKeyAccessor tokens.SigningKeyAccessor
 
 	if mode == core.Zone {
@@ -64,6 +67,7 @@ func NewZoneTokenValidator(resManager manager.ResourceManager, mode core.CpMode)
 		tokens.NewValidator(
 			signingKeyAccessor,
 			tokens.NewRevocations(resManager, zone.TokenRevocationsGlobalSecretKey),
+			storeType,
 		),
 	)
 }

@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -89,6 +90,7 @@ var _ = Describe("Token issuer", func() {
 			validator = tokens.NewValidator(
 				tokens.NewSigningKeyAccessor(secretManager, TestTokenSigningKeyPrefix),
 				tokens.NewRevocations(secretManager, TokenRevocationsGlobalSecretKey),
+				store_config.MemoryStore,
 			)
 
 			Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
@@ -186,6 +188,7 @@ var _ = Describe("Token issuer", func() {
 			validator = tokens.NewValidator(
 				tokens.NewMeshedSigningKeyAccessor(secretManager, TestTokenSigningKeyPrefix, core_model.DefaultMesh),
 				tokens.NewRevocations(secretManager, TokenRevocationsSecretKey(core_model.DefaultMesh)),
+				store_config.MemoryStore,
 			)
 
 			Expect(secretManager.Create(ctx, mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))).To(Succeed())
