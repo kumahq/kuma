@@ -22,10 +22,11 @@ var (
 )
 
 type PodConverter struct {
-	ServiceGetter     kube_client.Reader
-	NodeGetter        kube_client.Reader
-	ResourceConverter k8s_common.Converter
-	Zone              string
+	ServiceGetter       kube_client.Reader
+	NodeGetter          kube_client.Reader
+	ResourceConverter   k8s_common.Converter
+	Zone                string
+	KubeOutboundsAsVIPs bool
 }
 
 func (p *PodConverter) PodToDataplane(
@@ -137,11 +138,13 @@ func (p *PodConverter) dataplaneFor(
 		dataplane.Networking.Inbound = ifaces
 	}
 
-	ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, reachableServices)
-	if err != nil {
-		return nil, err
+	if !p.KubeOutboundsAsVIPs {
+		ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, reachableServices)
+		if err != nil {
+			return nil, err
+		}
+		dataplane.Networking.Outbound = ofaces
 	}
-	dataplane.Networking.Outbound = ofaces
 
 	metrics, err := MetricsFor(pod)
 	if err != nil {

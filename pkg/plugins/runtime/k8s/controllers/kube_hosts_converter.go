@@ -40,7 +40,7 @@ func KubeHosts(
 		if isHeadlessService(service) {
 			// Generate outbound listeners for every endpoint of services.
 			for _, endpoint := range endpoints[serviceTag] {
-				hostnameEntry := vips.NewKubeHostEntry(endpoint.Address)
+				hostnameEntry := vips.NewHostEntry(endpoint.Address)
 				err := view.Add(hostnameEntry, vips.OutboundEntry{
 					Port:   endpoint.Port,
 					TagSet: map[string]string{
@@ -55,7 +55,7 @@ func KubeHosts(
 			}
 		} else {
 			// generate outbound based on ClusterIP. Transparent Proxy will work only if DNS name that resolves to ClusterIP is used
-			hostnameEntry := vips.NewKubeHostEntry(service.Spec.ClusterIP)
+			hostnameEntry := vips.NewHostEntry(service.Spec.ClusterIP)
 			err := view.Add(hostnameEntry, vips.OutboundEntry{
 				Port:   port,
 				TagSet: map[string]string{

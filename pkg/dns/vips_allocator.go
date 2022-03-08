@@ -2,6 +2,7 @@ package dns
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"go.uber.org/multierr"
@@ -81,7 +82,7 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfigs() error {
 	return d.createOrUpdateVIPConfigs(meshes...)
 }
 
-func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string, kubeHostsView *vips.VirtualOutboundMeshView) error {
+func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string, viewModificator func(*vips.VirtualOutboundMeshView)) error {
 	meshViews, globalView, err := d.fetchViews()
 	if err != nil {
 		return err
@@ -96,7 +97,7 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string, kubeHostsView *vips
 	if err != nil {
 		return err
 	}
-	newView.ReplaceByType(vips.KubeHost, kubeHostsView)
+	viewModificator(newView)
 
 	if err := d.createOrUpdateMeshVIPConfig(mesh, oldView, newView, globalView); err != nil {
 		return err
@@ -141,7 +142,7 @@ func (d *VIPsAllocator) fetchViews() (map[string]*vips.VirtualOutboundMeshView, 
 	}
 	for _, meshView := range byMesh {
 		for _, hostEntry := range meshView.HostnameEntries() {
-			if hostEntry.Type == vips.KubeHost {
+			if hostEntry.Type == vips.Host && net.ParseIP(hostEntry.Name) != nil {
 				continue
 			}
 			vo := meshView.Get(hostEntry)

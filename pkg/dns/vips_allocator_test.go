@@ -59,6 +59,8 @@ var _ = Describe("VIP Allocator", func() {
 	var allocator *dns.VIPsAllocator
 	var r resolver.DNSResolver
 
+	NoModifications := func(view *vips.VirtualOutboundMeshView) {}
+
 	BeforeEach(func() {
 		s := memory.NewStore()
 		rm = manager.NewResourceManager(s)
@@ -125,7 +127,7 @@ var _ = Describe("VIP Allocator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = allocator.CreateOrUpdateVIPConfig("mesh-1")
+		err = allocator.CreateOrUpdateVIPConfig("mesh-1", NoModifications)
 		Expect(err).ToNot(HaveOccurred())
 
 		vipList, err := persistence.GetByMesh("mesh-1")
@@ -148,13 +150,13 @@ var _ = Describe("VIP Allocator", func() {
 		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24", r)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1")
+		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1", NoModifications)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1")
+		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1", NoModifications)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("error during update, mesh = mesh-1"))
 	})
@@ -180,11 +182,11 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should not allocate the same VIPs for different services in multiple meshes", func() {
 		// given VIPs in mesh-1
-		err := allocator.CreateOrUpdateVIPConfig("mesh-1")
+		err := allocator.CreateOrUpdateVIPConfig("mesh-1", NoModifications)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when VIPs from other meshes are created
-		err = allocator.CreateOrUpdateVIPConfig("mesh-2")
+		err = allocator.CreateOrUpdateVIPConfig("mesh-2", NoModifications)
 
 		// then the addresses should not overlap
 		Expect(err).ToNot(HaveOccurred())

@@ -2,6 +2,7 @@ package vips
 
 import (
 	"fmt"
+	"net"
 	"sort"
 )
 
@@ -34,7 +35,7 @@ func (vo *VirtualOutboundMeshView) Get(entry HostnameEntry) *VirtualOutbound {
 func (vo *VirtualOutboundMeshView) Add(entry HostnameEntry, outbound OutboundEntry) error {
 	if vo.byHostname[entry] == nil {
 		vo.byHostname[entry] = &VirtualOutbound{Outbounds: []OutboundEntry{outbound}}
-		if entry.Type == KubeHost {
+		if entry.Type == Host && net.ParseIP(entry.Name) != nil {
 			vo.byHostname[entry].Address = entry.Name
 		}
 		return nil
@@ -106,9 +107,9 @@ func (vo *VirtualOutboundMeshView) Update(new *VirtualOutboundMeshView) (changes
 	return
 }
 
-func (vo *VirtualOutboundMeshView) ReplaceByType(entryType EntryType, new *VirtualOutboundMeshView) {
+func (vo *VirtualOutboundMeshView) ReplaceByOrigin(origin string, new *VirtualOutboundMeshView) {
 	for entry, _ := range vo.byHostname {
-		if entry.Type == entryType {
+		if len(vo.byHostname[entry].Outbounds) > 0 && vo.byHostname[entry].Outbounds[0].Origin == origin {
 			delete(vo.byHostname, entry)
 		}
 	}

@@ -31,12 +31,13 @@ import (
 type ConfigMapReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder
-	Scheme            *kube_runtime.Scheme
-	Log               logr.Logger
-	ResourceManager   manager.ResourceManager
-	ResourceConverter k8s_common.Converter
-	VIPsAllocator     *dns.VIPsAllocator
-	SystemNamespace   string
+	Scheme              *kube_runtime.Scheme
+	Log                 logr.Logger
+	ResourceManager     manager.ResourceManager
+	ResourceConverter   k8s_common.Converter
+	VIPsAllocator       *dns.VIPsAllocator
+	SystemNamespace     string
+	KubeOutboundsAsVIPs bool
 }
 
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -52,7 +53,14 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, err
 	}
 
-	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh, kubeHostsView); err != nil {
+	viewModificator := func(view *vips.VirtualOutboundMeshView) {}
+	if r.KubeOutboundsAsVIPs {
+		viewModificator = func(view *vips.VirtualOutboundMeshView) {
+			view.ReplaceByOrigin(vips.OriginKube, kubeHostsView)
+		}
+	}
+
+	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh, viewModificator); err != nil {
 		if store.IsResourceConflict(err) {
 			r.Log.V(1).Info("VIPs were updated in the other place. Retrying")
 			return kube_ctrl.Result{Requeue: true}, nil
