@@ -73,14 +73,6 @@ func VIPOutbounds(
 				})
 			}
 			vipDomains = append(vipDomains, domain)
-		//case vips.KubeHost:
-		//	for _, ob := range voutbound.Outbounds {
-		//		outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
-		//			Address: voutbound.Address,
-		//			Port:    ob.Port,
-		//			Tags:    ob.TagSet,
-		//		})
-		//	}
 		}
 	}
 	return vipDomains, outbounds

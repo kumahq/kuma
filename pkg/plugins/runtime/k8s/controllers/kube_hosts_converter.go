@@ -3,12 +3,13 @@ package controllers
 import (
 	"context"
 
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	resources_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func KubeHosts(
@@ -42,7 +43,7 @@ func KubeHosts(
 			for _, endpoint := range endpoints[serviceTag] {
 				hostnameEntry := vips.NewHostEntry(endpoint.Address)
 				err := view.Add(hostnameEntry, vips.OutboundEntry{
-					Port:   endpoint.Port,
+					Port: endpoint.Port,
 					TagSet: map[string]string{
 						mesh_proto.ServiceTag:  serviceTag,
 						mesh_proto.InstanceTag: endpoint.Instance,
@@ -57,9 +58,9 @@ func KubeHosts(
 			// generate outbound based on ClusterIP. Transparent Proxy will work only if DNS name that resolves to ClusterIP is used
 			hostnameEntry := vips.NewHostEntry(service.Spec.ClusterIP)
 			err := view.Add(hostnameEntry, vips.OutboundEntry{
-				Port:   port,
+				Port: port,
 				TagSet: map[string]string{
-					mesh_proto.ServiceTag:  serviceTag,
+					mesh_proto.ServiceTag: serviceTag,
 				},
 				Origin: vips.OriginKube,
 			})

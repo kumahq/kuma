@@ -108,7 +108,7 @@ func (vo *VirtualOutboundMeshView) Update(new *VirtualOutboundMeshView) (changes
 }
 
 func (vo *VirtualOutboundMeshView) ReplaceByOrigin(origin string, new *VirtualOutboundMeshView) {
-	for entry, _ := range vo.byHostname {
+	for entry := range vo.byHostname {
 		if len(vo.byHostname[entry].Outbounds) > 0 && vo.byHostname[entry].Outbounds[0].Origin == origin {
 			delete(vo.byHostname, entry)
 		}
