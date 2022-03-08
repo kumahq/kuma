@@ -33,6 +33,10 @@ build/envoy:
 build/artifacts-linux-amd64/envoy/envoy:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/envoy
 
+.PHONY: build/artifacts-linux-arm64/envoy/envoy
+build/artifacts-linux-arm64/envoy/envoy:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/envoy
+
 build/artifacts-${GOOS}-${GOARCH}/envoy/envoy-${ENVOY_VERSION}-${ENVOY_DISTRO}:
 ifeq ($(BUILD_ENVOY_FROM_SOURCES),true)
 	ENVOY_TAG=${ENVOY_TAG} \

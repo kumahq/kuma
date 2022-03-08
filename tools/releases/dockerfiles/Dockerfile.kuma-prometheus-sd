@@ -1,6 +1,8 @@
 FROM alpine:3.15.0
 
-ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-prometheus-sd/kuma-prometheus-sd /usr/bin
+ARG ARCH
+
+ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/kuma-prometheus-sd/kuma-prometheus-sd /usr/bin
 
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE \
     $KUMA_ROOT/tools/releases/templates/README \
