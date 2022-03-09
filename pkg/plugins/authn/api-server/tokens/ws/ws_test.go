@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
@@ -42,6 +43,7 @@ var _ = Describe("Auth Tokens WS", func() {
 			core_tokens.NewValidator(
 				core_tokens.NewSigningKeyAccessor(resManager, issuer.UserTokenSigningKeyPrefix),
 				core_tokens.NewRevocations(resManager, issuer.UserTokenRevocationsGlobalSecretKey),
+				store_config.MemoryStore,
 			),
 		)
 
