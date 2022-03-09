@@ -549,7 +549,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 `,
 			expected: "07.envoy.golden.yaml",
 		}),
-		FEntry("08. several outbounds for the same external service with TrafficRoute", testCase{
+		Entry("08. several outbounds for the same external service with TrafficRoute", testCase{
 			ctx: mtlsCtx,
 			dataplane: `
             networking:
