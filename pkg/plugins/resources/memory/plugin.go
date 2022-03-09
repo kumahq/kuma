@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/events"
 )
 
-var log = core.Log.WithName("plugins")
+var log = core.Log.WithName("plugins").WithName("resources").WithName("memory")
 var _ core_plugins.ResourceStorePlugin = &plugin{}
 
 type plugin struct{}

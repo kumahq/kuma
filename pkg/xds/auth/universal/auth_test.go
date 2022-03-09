@@ -211,31 +211,16 @@ var _ = Describe("Authentication flow", func() {
 	})
 
 	It("should throw an error when signing key used for validation is different than for generation", func() {
-		// when
+		// given
 		credential, err := issuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
 			Name: "dp-1",
 			Mesh: "default",
 		}, 24*time.Hour)
-
-		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		// when
-		err = authenticator.Authenticate(context.Background(), &dpRes, credential)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		err = resManager.DeleteAll(context.Background(), &system.SecretResourceList{})
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
+		// and new signing key
 		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
-
-		// then
+		Expect(resManager.DeleteAll(context.Background(), &system.SecretResourceList{})).To(Succeed())
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
 		// when
