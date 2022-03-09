@@ -316,6 +316,54 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							DataplaneIP:   "127.0.0.1",
 							DataplanePort: 4040,
 						}: nil,
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "240.0.0.0",
+							DataplanePort: 80,
+						}: &core_mesh.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      util_proto.UInt32(10),
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "role": "master"},
+									}, {
+										Weight:      util_proto.UInt32(90),
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "role": "replica"},
+									}},
+								},
+							},
+						},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "240.0.0.1",
+							DataplanePort: 80,
+						}: &core_mesh.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      util_proto.UInt32(10),
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "role": "master"},
+									}, {
+										Weight:      util_proto.UInt32(90),
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "role": "replica"},
+									}},
+								},
+							},
+						},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "240.0.0.2",
+							DataplanePort: 80,
+						}: &core_mesh.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      util_proto.UInt32(10),
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "role": "master"},
+									}, {
+										Weight:      util_proto.UInt32(90),
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "role": "replica"},
+									}},
+								},
+							},
+						},
 					},
 					OutboundTargets: outboundTargets,
 				},
@@ -500,6 +548,34 @@ var _ = Describe("OutboundProxyGenerator", func() {
                   kuma.io/service: service-without-traffic-route
 `,
 			expected: "07.envoy.golden.yaml",
+		}),
+		FEntry("08. several outbounds for the same external service with TrafficRoute", testCase{
+			ctx: mtlsCtx,
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              inbound:
+              - port: 8080
+                tags:
+                  kuma.io/service: web
+              outbound:
+              - port: 80
+                address: 240.0.0.0
+                tags:
+                  kuma.io/service: es2
+              - port: 80
+                address: 240.0.0.1
+                tags:
+                  kuma.io/service: es2
+              - port: 80
+                address: 240.0.0.2
+                tags:
+                  kuma.io/service: es2
+              transparentProxying:
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
+`,
+			expected: "08.envoy.golden.yaml",
 		}),
 	)
 
