@@ -6,6 +6,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
+
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 )
 
 type Validator interface {
@@ -16,12 +18,14 @@ type Validator interface {
 type jwtTokenValidator struct {
 	keyAccessor SigningKeyAccessor
 	revocations Revocations
+	storeType   store_config.StoreType
 }
 
-func NewValidator(keyAccessor SigningKeyAccessor, revocations Revocations) Validator {
+func NewValidator(keyAccessor SigningKeyAccessor, revocations Revocations, storeType store_config.StoreType) Validator {
 	return &jwtTokenValidator{
 		keyAccessor: keyAccessor,
 		revocations: revocations,
+		storeType:   storeType,
 	}
 }
 
@@ -47,6 +51,10 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 			if singingKeyErr, ok := verr.Inner.(*SigningKeyNotFound); ok {
 				return singingKeyErr
 			}
+		}
+		if j.storeType == store_config.MemoryStore {
+			return errors.Wrap(err, "could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts."+
+				" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane")
 		}
 		return errors.Wrap(err, "could not parse token")
 	}

@@ -36,6 +36,7 @@ func (c plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authentic
 		core_tokens.NewValidator(
 			core_tokens.NewSigningKeyAccessor(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix),
 			core_tokens.NewRevocations(context.ResourceManager(), issuer.UserTokenRevocationsGlobalSecretKey),
+			context.Config().Store.Type,
 		),
 	)
 	return UserTokenAuthenticator(validator), nil
