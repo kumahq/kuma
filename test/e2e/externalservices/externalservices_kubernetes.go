@@ -14,7 +14,15 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
-func ExternalServicesOnKubernetes() {
+func ExternalServicesOnKubernetesWithEgress() {
+	ExternalServicesOnKubernetes(WithEgress(true))
+}
+
+func ExternalServicesOnKubernetesWithoutEgress() {
+	ExternalServicesOnKubernetes(WithEgress(false))
+}
+
+func ExternalServicesOnKubernetes(opt ...KumaDeploymentOption) {
 	meshDefaulMtlsOn := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -78,7 +86,7 @@ spec:
 		// Global
 		cluster = clusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Standalone, opt...)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(externalservice.Install(externalservice.HttpServer, []string{})).
