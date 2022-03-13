@@ -9,7 +9,9 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -26,6 +28,7 @@ var _ = Describe("Authentication flow", func() {
 	var issuer builtin_issuer.DataplaneTokenIssuer
 	var authenticator auth.Authenticator
 	var resStore core_store.ResourceStore
+	var resManager manager.ResourceManager
 	var ctx context.Context
 
 	dpRes := core_mesh.DataplaneResource{
@@ -61,15 +64,15 @@ var _ = Describe("Authentication flow", func() {
 	BeforeEach(func() {
 		ctx = context.Background()
 		resStore = memory.NewStore()
-		resManager := manager.NewResourceManager(resStore)
+		resManager = manager.NewResourceManager(resStore)
 
 		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("default", model.NoMesh))).To(Succeed())
 		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("demo", model.NoMesh))).To(Succeed())
 		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("demo-2", model.NoMesh))).To(Succeed())
 
-		dataplaneValidator := builtin.NewDataplaneTokenValidator(resManager)
-		zoneIngressValidator := builtin.NewZoneIngressTokenValidator(resManager)
-		zoneTokenValidator := builtin.NewZoneTokenValidator(resManager, config_core.Global)
+		dataplaneValidator := builtin.NewDataplaneTokenValidator(resManager, store_config.MemoryStore)
+		zoneIngressValidator := builtin.NewZoneIngressTokenValidator(resManager, store_config.MemoryStore)
+		zoneTokenValidator := builtin.NewZoneTokenValidator(resManager, config_core.Global, store_config.MemoryStore)
 		issuer = builtin.NewDataplaneTokenIssuer(resManager)
 		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneIngressValidator, zoneTokenValidator, "zone-1")
 
@@ -157,7 +160,7 @@ var _ = Describe("Authentication flow", func() {
 				Name: "dp-1",
 			},
 			dpRes: &dpRes,
-			err:   "could not parse token: crypto/rsa: verification error",
+			err:   "could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts. Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: crypto/rsa: verification error",
 		}),
 		Entry("on token with different tags", testCase{
 			id: builtin_issuer.DataplaneIdentity{
@@ -203,7 +206,29 @@ var _ = Describe("Authentication flow", func() {
 		err := authenticator.Authenticate(context.Background(), &dpRes, "this-is-not-valid-jwt-token")
 
 		// then
-		Expect(err).To(MatchError("could not parse token: token contains an invalid number of segments"))
+		Expect(err.Error()).To(ContainSubstring("could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts." +
+			" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: token contains an invalid number of segments"))
+	})
+
+	It("should throw an error when signing key used for validation is different than for generation", func() {
+		// given
+		credential, err := issuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
+			Name: "dp-1",
+			Mesh: "default",
+		}, 24*time.Hour)
+		Expect(err).ToNot(HaveOccurred())
+
+		// and new signing key
+		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
+		Expect(resManager.DeleteAll(context.Background(), &system.SecretResourceList{})).To(Succeed())
+		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
+
+		// when
+		err = authenticator.Authenticate(context.Background(), &dpRes, credential)
+
+		// then
+		Expect(err.Error()).To(ContainSubstring("could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts." +
+			" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: crypto/rsa: verification error"))
 	})
 
 	It("should throw an error when signing key is not found", func() {
