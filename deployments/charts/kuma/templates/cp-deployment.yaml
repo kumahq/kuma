@@ -27,6 +27,9 @@ spec:
     spec:
       {{- with .Values.controlPlane.affinity }}
       affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- else }}
+      affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - weight: 100
