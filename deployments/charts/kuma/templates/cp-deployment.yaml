@@ -27,9 +27,6 @@ spec:
     spec:
       {{- with .Values.controlPlane.affinity }}
       affinity:
-        {{ toYaml . | nindent 8 }}
-      {{- else }}
-      affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - weight: 100
@@ -44,6 +41,7 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
       {{- with .Values.controlPlane.nodeSelector }}
+      hostNetwork: true
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
