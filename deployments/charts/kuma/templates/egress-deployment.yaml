@@ -31,21 +31,10 @@ spec:
         app: {{ include "kuma.name" . }}-egress
     spec:
       {{- with .Values.egress.affinity }}
-      affinity:
-        {{ toYaml . | nindent 8 }}
-      {{- else }}
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - {{ include "kuma.name" . }}-egress
-              topologyKey: kubernetes.io/hostname
+      affinity: {{ tpl (toYaml . | nindent 8) $ }}
+      {{- end }}
+      {{- with .Values.egress.topologySpreadConstraints }}
+      topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
       {{- if .Values.egress.podSecurityContext }}
       securityContext:

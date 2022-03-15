@@ -59,8 +59,33 @@ controlPlane:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
 
-  # -- Affinity placement rule for the Kuma Control Plane pods
-  affinity: {}
+  # -- Affinity placement rule for the Kuma Control Plane pods.
+  # This is rendered as a template, so you can reference other helm variables or includes.
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            # These match the selector labels used on the deployment.
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}'
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - '{{ .Release.Name }}'
+              - key: app
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}-control-plane'
+          topologyKey: kubernetes.io/hostname
+
+  # -- Topology spread constraints rule for the Kuma Control Plane pods
+  # Don't set this and affinity at the same time
+  topologySpreadConstraints:
 
   # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
   injectorFailurePolicy: Fail
@@ -309,7 +334,33 @@ ingress:
     kubernetes.io/arch: amd64
 
   # -- Affinity placement rule for the Kuma Ingress pods
-  affinity: {}
+  # This is rendered as a template, so you can reference other helm variables
+  # or includes.
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            # These match the selector labels used on the deployment.
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}'
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - '{{ .Release.Name }}'
+              - key: app
+                operator: In
+                values:
+                  - kuma-ingress
+          topologyKey: kubernetes.io/hostname
+
+  # -- Topology spread constraints rule for the Kuma Mesh Ingress pods
+  # Don't set this and affinity at the same time
+  topologySpreadConstraints:
 
   # -- Security context at the pod level for ingress
   podSecurityContext: {}
@@ -360,8 +411,33 @@ egress:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
 
-  # -- Affinity placement rule for the Kuma Ingress pods
-  affinity: {}
+  # -- Affinity placement rule for the Kuma Egress pods.
+  # This is rendered as a template, so you can reference other helm variables or includes.
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            # These match the selector labels used on the deployment.
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}'
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - '{{ .Release.Name }}'
+              - key: app
+                operator: In
+                values:
+                  - kuma-egress
+          topologyKey: kubernetes.io/hostname
+
+  # -- Topology spread constraints rule for the Kuma Egress pods
+  # Don't set this and affinity at the same time
+  topologySpreadConstraints:
 
   # -- Security context at the pod level for egress
   podSecurityContext: {}
