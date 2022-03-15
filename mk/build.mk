@@ -52,12 +52,24 @@ build/test: $(patsubst %,build/%,$(BUILD_TEST_BINARIES)) ## Dev: Build testing b
 build/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build
 
+.PHONY: build/linux-arm64
+build/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build
+
 .PHONY: build/release/linux-amd64
 build/release/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/release
 
+.PHONY: build/release/linux-arm64
+build/release/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/release
+
 .PHONY: build/test/linux-amd64
 build/test/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/test
+
+.PHONY: build/test/linux-arm64
+build/test/linux-arm64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/test
 
 .PHONY: build/kuma-cp
@@ -99,25 +111,49 @@ build/test-server: ## Dev: Build `test-server` binary
 build/kuma-cp/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cp
 
+.PHONY: build/kuma-cp/linux-arm64
+build/kuma-cp/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-cp
+
 .PHONY: build/kuma-dp/linux-amd64
 build/kuma-dp/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-dp
+
+.PHONY: build/kuma-dp/linux-arm64
+build/kuma-dp/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-dp
 
 .PHONY: build/kumactl/linux-amd64
 build/kumactl/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/kumactl
 
+.PHONY: build/kumactl/linux-arm64
+build/kumactl/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/kumactl
+
 .PHONY: build/kuma-prometheus-sd/linux-amd64
 build/kuma-prometheus-sd/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-prometheus-sd
+
+.PHONY: build/kuma-prometheus-sd/linux-arm64
+build/kuma-prometheus-sd/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/kuma-prometheus-sd
 
 .PHONY: build/coredns/linux-amd64
 build/coredns/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/coredns
 
+.PHONY: build/coredns/linux-arm64
+build/coredns/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/coredns
+
 .PHONY: build/test-server/linux-amd64
 build/test-server/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/test-server
+
+.PHONY: build/test-server/linux-arm64
+build/test-server/linux-arm64:
+	GOOS=linux GOARCH=arm64 $(MAKE) build/test-server
 
 .PHONY: clean
 clean: clean/build ## Dev: Clean

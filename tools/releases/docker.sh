@@ -13,7 +13,7 @@ ENVOY_VERSION="${ENVOY_VERSION:-1.21.1}"
 function build() {
   for component in ${KUMA_COMPONENTS}; do
     msg "Building $component..."
-    docker build --build-arg KUMA_ROOT="$(pwd)" --build-arg ENVOY_VERSION="${ENVOY_VERSION}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}" \
+    docker build --build-arg KUMA_ROOT="$(pwd)" --build-arg ARCH="amd64" --build-arg ENVOY_VERSION="${ENVOY_VERSION}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}" \
       -f tools/releases/dockerfiles/Dockerfile."${component}" .
     docker tag "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}" "${KUMA_DOCKER_REPO_ORG}/${component}:latest"
     msg_green "... done!"
