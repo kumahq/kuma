@@ -5,7 +5,9 @@ import (
 	"sort"
 
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/permissions"
+	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -86,6 +88,8 @@ func (p *EgressProxyBuilder) Build(
 		trafficPermissions := meshCtx.Resources.TrafficPermissions().Items
 		trafficRoutes := meshCtx.Resources.TrafficRoutes().Items
 		externalServices := meshCtx.Resources.ExternalServices().Items
+		faultInjections := meshCtx.Resources.FaultInjections().Items
+		rateLimits := meshCtx.Resources.RateLimits().Items
 
 		// It's done for achieving stable xds config
 		sort.Slice(externalServices, func(a, b int) bool {
@@ -106,6 +110,14 @@ func (p *EgressProxyBuilder) Build(
 			ExternalServicePermissionMap: permissions.BuildExternalServicesPermissionsMapForZoneEgress(
 				externalServices,
 				trafficPermissions,
+			),
+			ExternalServiceFaultInjections: faultinjections.BuildExternalServiceFaultInjectionMapForZoneEgress(
+				externalServices,
+				faultInjections,
+			),
+			ExternalServiceRateLimits: ratelimits.BuildExternalServiceRateLimitMapForZoneEgress(
+				externalServices,
+				rateLimits,
 			),
 		}
 

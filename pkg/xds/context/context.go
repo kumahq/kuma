@@ -74,6 +74,10 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	}
 }
 
+func (mc *MeshContext) HasEgress() bool {
+	return len(mc.Resources.ZoneEgresses().Items) > 0 && mc.Resource.MTLSEnabled()
+}
+
 func BuildControlPlaneContext(claCache xds.CLACache, secrets secrets.Secrets) (*ControlPlaneContext, error) {
 	adminKeyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, tls.DefaultKeyType, "localhost")
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
@@ -101,5 +102,45 @@ func splitPoliciesBySourceMatch(rateLimits []*core_mesh.RateLimitResource) []*co
 		}
 	}
 
+	return result
+}
+
+func BuildExternalServiceRateLimitMapForZoneEgress(
+	externalServices []*core_mesh.ExternalServiceResource,
+	rateLimits []*core_mesh.RateLimitResource,
+) core_xds.ExternalServiceRateLimitMap {
+	policies := make([]policy.ConnectionPolicy, len(rateLimits))
+	for i, rateLimit := range rateLimits {
+		policies[i] = rateLimit
+	}
+
+	result := core_xds.ExternalServiceRateLimitMap{}
+	for _, externalService := range externalServices {
+		tags := externalService.Spec.GetTags()
+		serviceName := tags[mesh_proto.ServiceTag]
+
+		matchedPolicies := policy.SelectInboundConnectionAllPolicies(tags, policies)
+		for _, matchedPolicy := range matchedPolicies {
+			result[serviceName] = append(result[serviceName], matchedPolicy.(*core_mesh.RateLimitResource))
+		}
+	}
+
+	for service, resources := range result {
+		result[service] = dedup(resources)
+	}
+
+	return result
+}
+
+func dedup(policies []*core_mesh.RateLimitResource) []*core_mesh.RateLimitResource {
+	seen := map[core_model.ResourceKey]struct{}{}
+	result := []*core_mesh.RateLimitResource{}
+	for _, p := range policies {
+		if _, ok := seen[core_model.MetaToResourceKey(p.GetMeta())]; ok {
+			continue
+		}
+		seen[core_model.MetaToResourceKey(p.GetMeta())] = struct{}{}
+		result = append(result, p)
+	}
 	return result
 }

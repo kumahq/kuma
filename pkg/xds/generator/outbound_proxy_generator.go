@@ -55,7 +55,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	for _, outbound := range outbounds {
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
-		routes := g.determineRoutes(proxy, outbound, clusterCache, splitCounter)
+		routes := g.determineRoutes(proxy, outbound, clusterCache, splitCounter, ctx.Mesh.HasEgress())
 		clusters := routes.Clusters()
 		servicesAcc.Add(clusters...)
 
@@ -116,14 +116,16 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName,
 					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]), proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
-				Configure(envoy_listeners.RateLimit(rateLimits)).
+				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
+				ConfigureIf(ctx.Mesh.HasEgress(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
 				Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), sourceService)).
-				Configure(envoy_listeners.RateLimit(rateLimits)).
+				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
+				ConfigureIf(ctx.Mesh.HasEgress(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.HttpAccessLog(
 					meshName,
 					envoy_common.TrafficDirectionOutbound,
@@ -202,8 +204,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 			clusterTags := []envoy_common.Tags{cluster.Tags()}
 
 			if service.HasExternalService() {
-				if len(ctx.Mesh.Resources.ZoneEgresses().Items) > 0 &&
-					ctx.Mesh.Resource.MTLSEnabled() {
+				if ctx.Mesh.HasEgress() {
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster(clusterName)).
 						Configure(envoy_clusters.ClientSideMTLS(
@@ -264,9 +265,7 @@ func (OutboundProxyGenerator) generateEDS(
 		// When no zone egress is present in a mesh Endpoints for ExternalServices
 		// are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
-		if !services[serviceName].HasExternalService() ||
-			(len(ctx.Mesh.Resources.ZoneEgresses().Items) > 0 &&
-				ctx.Mesh.Resource.MTLSEnabled()) {
+		if !services[serviceName].HasExternalService() || ctx.Mesh.HasEgress() {
 			for _, cluster := range services[serviceName].Clusters() {
 				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion, ctx.Mesh.EndpointMap)
 				if err != nil {
@@ -300,6 +299,7 @@ func (OutboundProxyGenerator) determineRoutes(
 	outbound *mesh_proto.Dataplane_Networking_Outbound,
 	clusterCache map[string]string,
 	splitCounter *splitCounter,
+	hasEgress bool,
 ) envoy_common.Routes {
 	var routes envoy_common.Routes
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
@@ -366,18 +366,25 @@ func (OutboundProxyGenerator) determineRoutes(
 			return routes
 		}
 
-		var rlSpec *mesh_proto.RateLimit
-		if rateLimit != nil {
-			rlSpec = rateLimit.Spec
+		// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
+		if hasEgress {
+			return append(routes, envoy_common.Route{
+				Match:    match,
+				Modify:   modify,
+				Clusters: clusters,
+			})
+		} else {
+			var rlSpec *mesh_proto.RateLimit
+			if rateLimit != nil {
+				rlSpec = rateLimit.Spec
+			}
+			return append(routes, envoy_common.Route{
+				Match:     match,
+				Modify:    modify,
+				RateLimit: rlSpec,
+				Clusters:  clusters,
+			})
 		}
-
-		route := envoy_common.Route{
-			Match:     match,
-			Modify:    modify,
-			RateLimit: rlSpec,
-			Clusters:  clusters,
-		}
-		return append(routes, route)
 	}
 
 	for _, http := range route.Spec.GetConf().GetHttp() {
