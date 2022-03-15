@@ -21,7 +21,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.40.5
+	github.com/gruntwork-io/terratest v0.40.6
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -40,7 +40,7 @@ require (
 	github.com/sethvargo/go-retry v0.2.3
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
-	github.com/spf13/cobra v1.3.0
+	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.10.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
@@ -57,7 +57,7 @@ require (
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
-	helm.sh/helm/v3 v3.8.0
+	helm.sh/helm/v3 v3.8.1
 	istio.io/pkg v0.0.0-20201202160453-b7f8c8c88ca3
 	k8s.io/api v0.23.4
 	k8s.io/apiextensions-apiserver v0.23.4
