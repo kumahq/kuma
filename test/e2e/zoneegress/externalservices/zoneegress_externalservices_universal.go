@@ -66,10 +66,8 @@ networking:
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Install(EgressUniversal(egressToken)).
+			Install(YamlUniversal(meshDefaulMtlsOn)).
 			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlUniversal(meshDefaulMtlsOn)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
