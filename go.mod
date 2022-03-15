@@ -57,7 +57,7 @@ require (
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
-	helm.sh/helm/v3 v3.8.0
+	helm.sh/helm/v3 v3.8.1
 	istio.io/pkg v0.0.0-20201202160453-b7f8c8c88ca3
 	k8s.io/api v0.23.4
 	k8s.io/apiextensions-apiserver v0.23.4
