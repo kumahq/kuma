@@ -49,7 +49,6 @@ networking:
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Global
 		cluster = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
@@ -65,8 +64,6 @@ networking:
 
 		err = NewClusterSetup().
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
-			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
-			Install(externalservice.Install("http-server-80-81", externalservice.UniversalAppEchoServer, externalservice.UniversalAppEchoServer81)).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Install(EgressUniversal(egressToken)).
 			Setup(cluster)
