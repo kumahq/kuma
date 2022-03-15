@@ -45,12 +45,17 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	}
 
 	servicesAcc := envoy_common.NewServicesAccumulator(ctx.Mesh.ServiceTLSReadiness)
+
+	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of caches.
+	// For one outbound we pick one traffic route so LB and Timeout are the same.
+	// If we have same split in many HTTP matches we can use the same cluster with different weight
+	clusterCache := map[string]string{}
 	splitCounter := &splitCounter{}
 
 	for _, outbound := range outbounds {
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
-		routes := g.determineRoutes(proxy, outbound, splitCounter)
+		routes := g.determineRoutes(proxy, outbound, clusterCache, splitCounter)
 		clusters := routes.Clusters()
 		servicesAcc.Add(clusters...)
 
@@ -290,7 +295,12 @@ func (OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []envoy
 	return InferServiceProtocol(allEndpoints)
 }
 
-func (OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh_proto.Dataplane_Networking_Outbound, splitCounter *splitCounter) envoy_common.Routes {
+func (OutboundProxyGenerator) determineRoutes(
+	proxy *model.Proxy,
+	outbound *mesh_proto.Dataplane_Networking_Outbound,
+	clusterCache map[string]string,
+	splitCounter *splitCounter,
+) envoy_common.Routes {
 	var routes envoy_common.Routes
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
@@ -301,11 +311,6 @@ func (OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *mesh
 	}
 
 	timeoutConf := proxy.Policies.Timeouts[oface]
-
-	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of caches.
-	// For one outbound we pick one traffic route so LB and Timeout are the same.
-	// If we have same split in many HTTP matches we can use the same cluster with different weight
-	clusterCache := map[string]string{}
 
 	// Return internal, external
 	clustersFromSplit := func(splits []*mesh_proto.TrafficRoute_Split) ([]envoy_common.Cluster, []envoy_common.Cluster) {
