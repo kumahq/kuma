@@ -97,6 +97,9 @@ controlPlane:
   injectorFailurePolicy: Fail
 
   service:
+    # -- Whether or not to create a service resource.
+    enabled: true
+
     # -- (string) Optionally override of the Kuma Control Plane Service's name
     name:
 
@@ -124,6 +127,9 @@ controlPlane:
 
   # -- URL of Global Kuma CP
   globalZoneSyncService:
+    # -- Whether or not to create a k8s service for the global zone sync
+    # service. If null, it will be created only if mode is set to global.
+    enabled: null
     # -- Service type of the Global-zone sync
     type: LoadBalancer
     # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
@@ -345,6 +351,8 @@ ingress:
             averageUtilization: 80
 
   service:
+    # -- Whether or not to create a Service resource.
+    enabled: true
     # -- Service type of the Ingress
     type: LoadBalancer
     # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
@@ -451,6 +459,8 @@ egress:
             averageUtilization: 80
 
   service:
+    # -- Whether or not to create the service object
+    enabled: true
     # -- Service type of the Egress
     type: ClusterIP
     # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer

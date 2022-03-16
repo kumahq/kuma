@@ -2,6 +2,8 @@
 {{- if eq .Values.controlPlane.mode "global" }}
 {{ fail "You shouldn't run zoneEgress when running the CP in global" }}
 {{- end }}
+{{- end }}
+{{- if and .Values.egress.enabled .Values.egress.service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:

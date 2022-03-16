@@ -1,4 +1,4 @@
-{{- if eq .Values.controlPlane.mode "global" }}
+{{- if or (and (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.globalZoneSyncService.enabled nil)) .Values.controlPlane.globalZoneSyncService.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -22,4 +22,4 @@ spec:
   selector:
     app: {{ include "kuma.name" . }}-control-plane
   {{ include "kuma.selectorLabels" . | nindent 4 }}
-  {{- end }}
+{{- end }}
