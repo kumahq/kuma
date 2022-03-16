@@ -48,15 +48,25 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	r.Log.V(1).Info("updating VIPs", "mesh", mesh)
 
-	kubeHostsView, err := KubeHosts(ctx, r.Client, r.ResourceManager, mesh)
-	if err != nil {
-		return kube_ctrl.Result{}, err
+	viewModificator := func(view *vips.VirtualOutboundMeshView) error {
+		return nil
 	}
-
-	viewModificator := func(view *vips.VirtualOutboundMeshView) {}
 	if r.KubeOutboundsAsVIPs {
-		viewModificator = func(view *vips.VirtualOutboundMeshView) {
-			view.ReplaceByOrigin(vips.OriginKube, kubeHostsView)
+		kubeHostsView, err := KubeHosts(ctx, r.Client, r.ResourceManager, mesh)
+		if err != nil {
+			return kube_ctrl.Result{}, err
+		}
+
+		viewModificator = func(view *vips.VirtualOutboundMeshView) error {
+			view.DeleteByOrigin(vips.OriginKube)
+			for _, entry := range kubeHostsView.HostnameEntries() {
+				for _, outbound := range kubeHostsView.Get(entry).Outbounds {
+					if err := view.Add(entry, outbound); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
 		}
 	}
 

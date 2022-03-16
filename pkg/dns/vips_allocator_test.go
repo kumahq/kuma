@@ -59,7 +59,9 @@ var _ = Describe("VIP Allocator", func() {
 	var allocator *dns.VIPsAllocator
 	var r resolver.DNSResolver
 
-	NoModifications := func(view *vips.VirtualOutboundMeshView) {}
+	NoModifications := func(view *vips.VirtualOutboundMeshView) error {
+		return nil
+	}
 
 	BeforeEach(func() {
 		s := memory.NewStore()

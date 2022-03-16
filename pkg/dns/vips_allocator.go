@@ -82,7 +82,7 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfigs() error {
 	return d.createOrUpdateVIPConfigs(meshes...)
 }
 
-func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string, viewModificator func(*vips.VirtualOutboundMeshView)) error {
+func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string, viewModificator func(*vips.VirtualOutboundMeshView) error) error {
 	meshViews, globalView, err := d.fetchViews()
 	if err != nil {
 		return err
@@ -97,7 +97,9 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string, viewModificator fun
 	if err != nil {
 		return err
 	}
-	viewModificator(newView)
+	if err := viewModificator(newView); err != nil {
+		return err
+	}
 
 	if err := d.createOrUpdateMeshVIPConfig(mesh, oldView, newView, globalView); err != nil {
 		return err

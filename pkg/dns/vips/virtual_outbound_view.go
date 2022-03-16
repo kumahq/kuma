@@ -36,6 +36,7 @@ func (vo *VirtualOutboundMeshView) Add(entry HostnameEntry, outbound OutboundEnt
 	if vo.byHostname[entry] == nil {
 		vo.byHostname[entry] = &VirtualOutbound{Outbounds: []OutboundEntry{outbound}}
 		if entry.Type == Host && net.ParseIP(entry.Name) != nil {
+			// Entry name can be IP in case of providing IP in ExternalService or building VIPs based on ClusterIP/PodIP on Kubernetes
 			vo.byHostname[entry].Address = entry.Name
 		}
 		return nil
@@ -107,14 +108,11 @@ func (vo *VirtualOutboundMeshView) Update(new *VirtualOutboundMeshView) (changes
 	return
 }
 
-func (vo *VirtualOutboundMeshView) ReplaceByOrigin(origin string, new *VirtualOutboundMeshView) {
+func (vo *VirtualOutboundMeshView) DeleteByOrigin(origin string) {
 	for entry := range vo.byHostname {
 		if len(vo.byHostname[entry].Outbounds) > 0 && vo.byHostname[entry].Outbounds[0].Origin == origin {
 			delete(vo.byHostname, entry)
 		}
-	}
-	for entry, outbound := range new.byHostname {
-		vo.byHostname[entry] = outbound
 	}
 }
 
