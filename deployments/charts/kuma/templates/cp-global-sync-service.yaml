@@ -8,6 +8,10 @@ metadata:
     {{- range $key, $value := .Values.controlPlane.globalZoneSyncService.annotations }}
       {{ $key }}: {{ $value | quote }}
     {{- end }}
+  labels:
+    {{ range $key, $value := .Values.controlPlane.extraLabels }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{ end }}
 spec:
   type: {{ .Values.controlPlane.globalZoneSyncService.type }}
   {{- if .Values.controlPlane.globalZoneSyncService.loadBalancerIP }}

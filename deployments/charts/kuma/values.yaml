@@ -18,6 +18,9 @@ installCrdsOnUpgrade:
   imagePullSecrets: []
 
 controlPlane:
+  # -- Labels to add to resources in addition to default labels
+  extraLabels: {}
+
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
 
@@ -323,6 +326,10 @@ dataPlane:
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
   enabled: false
+
+  # -- Labels to add to resources, in addition to default labels
+  extraLabels: {}
+
   # -- Time for which old listener will still be active as draining
   drainTime: 30s
 
@@ -432,6 +439,8 @@ ingress:
 egress:
   # -- If true, it deploys Egress for cross cluster communication
   enabled: false
+  # -- Labels to add to resources, in addition to the default labels.
+  extraLabels: {}
   # -- Time for which old listener will still be active as draining
   drainTime: 30s
   # -- Number of replicas of the Egress. Ignored when autoscaling is enabled.

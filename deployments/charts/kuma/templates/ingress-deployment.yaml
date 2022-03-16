@@ -7,6 +7,9 @@ metadata:
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
     app: {{ include "kuma.name" . }}-ingress
+    {{ range $key, $value := .Values.ingress.extraLabels }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{ end }}
 spec:
   strategy:
     rollingUpdate:
@@ -29,6 +32,9 @@ spec:
       labels:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
         app: {{ include "kuma.name" . }}-ingress
+        {{ range $key, $value := .Values.ingress.extraLabels }}
+        {{ $key | quote }}: {{ $value | quote }}
+        {{ end }}
     spec:
       {{- with .Values.ingress.affinity }}
       affinity: {{ tpl (toYaml . | nindent 8) $ }}

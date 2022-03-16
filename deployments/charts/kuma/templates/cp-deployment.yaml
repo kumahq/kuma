@@ -6,6 +6,9 @@ metadata:
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
     app: {{ include "kuma.name" . }}-control-plane
+    {{ range $key, $value := .Values.controlPlane.extraLabels }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{ end }}
 spec:
   replicas: {{ .Values.controlPlane.replicas }}
   strategy:
@@ -24,6 +27,9 @@ spec:
       labels:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
         app: {{ include "kuma.name" . }}-control-plane
+        {{ range $key, $value := .Values.controlPlane.extraLabels }}
+        {{ $key | quote }}: {{ $value | quote }}
+        {{ end }}
     spec:
       {{- with .Values.controlPlane.affinity }}
       affinity: {{ tpl (toYaml . | nindent 8) $ }}

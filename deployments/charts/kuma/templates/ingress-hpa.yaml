@@ -11,6 +11,9 @@ metadata:
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
     app: kuma-ingress
+    {{ range $key, $value := .Values.ingress.extraLabels }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{ end }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

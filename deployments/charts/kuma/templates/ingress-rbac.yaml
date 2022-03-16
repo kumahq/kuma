@@ -6,6 +6,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
+    {{ range $key, $value := .Values.ingress.extraLabels }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{ end }}
 {{- with .Values.global.imagePullSecrets }}
 imagePullSecrets:
   {{- range . }}

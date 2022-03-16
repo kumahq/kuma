@@ -11,6 +11,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
+    {{ range $key, $value := .Values.egress.extraLabels }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{ end }}
   annotations:
     {{- range $key, $value := .Values.egress.service.annotations }}
       {{ $key }}: {{ $value | quote }}

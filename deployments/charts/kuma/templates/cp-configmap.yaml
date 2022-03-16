@@ -5,6 +5,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
+    {{ range $key, $value := .Values.controlPlane.extraLabels }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{ end }}
 data:
   config.yaml: |
     # use this file to override default configuration of `kuma-cp`
@@ -26,6 +29,9 @@ metadata:
   namespace: {{ $releaseNamespace }}
   labels:
   {{- $kumaLabels | nindent 4 }}
+    {{ range $key, $value := .Values.controlPlane.extraLabels }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{ end }}
 data:
   {{- range $fileName, $fileContents := $extraConfigMap.values }}
   {{- $fileName | nindent 2 }}: |

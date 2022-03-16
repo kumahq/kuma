@@ -11,6 +11,9 @@ metadata:
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
     app: {{ include "kuma.name" . }}-control-plane
+    {{ range $key, $value := .Values.controlPlane.extraLabels }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{ end }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

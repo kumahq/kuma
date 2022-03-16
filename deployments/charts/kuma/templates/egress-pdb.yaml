@@ -13,6 +13,9 @@ metadata:
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
     app: kuma-egress
+    {{ range $key, $value := .Values.egress.extraLabels }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{ end }}
 spec:
   maxUnavailable: {{ .Values.egress.podDisruptionBudget.maxUnavailable }}
   selector:
