@@ -30,16 +30,15 @@ type PortFwd struct {
 }
 
 type K8sControlPlane struct {
-	t                testing.TestingT
-	mode             core.CpMode
-	name             string
-	kubeconfig       string
-	kumactl          *KumactlOptions
-	cluster          *K8sCluster
-	portFwd          PortFwd
-	verbose          bool
-	replicas         int
-	localhostIsAdmin bool
+	t          testing.TestingT
+	mode       core.CpMode
+	name       string
+	kubeconfig string
+	kumactl    *KumactlOptions
+	cluster    *K8sCluster
+	portFwd    PortFwd
+	verbose    bool
+	replicas   int
 }
 
 func NewK8sControlPlane(
@@ -50,20 +49,18 @@ func NewK8sControlPlane(
 	cluster *K8sCluster,
 	verbose bool,
 	replicas int,
-	localhostIsAdmin bool,
 ) *K8sControlPlane {
 	name := clusterName + "-" + mode
 	kumactl, _ := NewKumactlOptions(t, name, verbose)
 	return &K8sControlPlane{
-		t:                t,
-		mode:             mode,
-		name:             name,
-		kubeconfig:       kubeconfig,
-		kumactl:          kumactl,
-		cluster:          cluster,
-		verbose:          verbose,
-		replicas:         replicas,
-		localhostIsAdmin: localhostIsAdmin,
+		t:          t,
+		mode:       mode,
+		name:       name,
+		kubeconfig: kubeconfig,
+		kumactl:    kumactl,
+		cluster:    cluster,
+		verbose:    verbose,
+		replicas:   replicas,
 	}
 }
 
@@ -178,13 +175,11 @@ func (c *K8sControlPlane) GetKumaCPLogs() (string, error) {
 func (c *K8sControlPlane) FinalizeAdd() error {
 	c.PortForwardKumaCP()
 	var token string
-	if !c.localhostIsAdmin {
-		t, err := c.retrieveAdminToken()
-		if err != nil {
-			return err
-		}
-		token = t
+	t, err := c.retrieveAdminToken()
+	if err != nil {
+		return err
 	}
+	token = t
 	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token)
 }
 
@@ -267,15 +262,9 @@ func (c *K8sControlPlane) generateToken(
 	tokenPath string,
 	data string,
 ) (string, error) {
-	var token string
-
-	if !c.localhostIsAdmin {
-		t, err := c.retrieveAdminToken()
-		if err != nil {
-			return "", err
-		}
-
-		token = t
+	token, err := c.retrieveAdminToken()
+	if err != nil {
+		return "", err
 	}
 
 	return http_helper.HTTPDoWithRetryE(

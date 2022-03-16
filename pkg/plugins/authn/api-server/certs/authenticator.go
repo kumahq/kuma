@@ -7,6 +7,7 @@ import (
 )
 
 // backwards compatibility with Kuma 1.3.x
+// https://github.com/kumahq/kuma/issues/4004
 func ClientCertAuthenticator(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 	if user.FromCtx(request.Request.Context()).Name == user.Anonymous.Name && // do not overwrite existing user
 		request.Request.TLS != nil &&

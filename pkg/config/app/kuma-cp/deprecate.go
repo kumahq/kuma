@@ -40,6 +40,7 @@ func (c Config) GetEnvoyAdminPort() uint32 {
 	}
 
 	// start of the backwards compatibility code
+	// https://github.com/kumahq/kuma/issues/4002
 	deprecatedAdminPort := func() uint32 {
 		if c.Runtime == nil || c.Runtime.Kubernetes == nil {
 			return 0

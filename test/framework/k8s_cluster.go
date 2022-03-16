@@ -418,9 +418,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		replicas = c.opts.cpReplicas
 	}
 
-	// backwards compatibility, check for 1.3.x localhost is admin env variable.
-	localhostIsAdmin := c.opts.env["KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST"] == "true"
-	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas, localhostIsAdmin)
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas)
 
 	switch mode {
 	case core.Zone:
