@@ -59,6 +59,12 @@ controlPlane:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
 
+  podDisruptionBudget:
+    # -- Whether or not to create a pod disruption budget
+    enabled: false
+    # -- The maximum number of unavailable pods allowed by the budget
+    maxUnavailable: 1
+
   # -- Affinity placement rule for the Kuma Control Plane pods.
   # This is rendered as a template, so you can reference other helm variables or includes.
   affinity:
@@ -333,6 +339,12 @@ ingress:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
 
+  podDisruptionBudget:
+    # -- Whether or not to create a pod disruption budget
+    enabled: false
+    # -- The maximum number of unavailable pods allowed by the budget
+    maxUnavailable: 1
+
   # -- Affinity placement rule for the Kuma Ingress pods
   # This is rendered as a template, so you can reference other helm variables
   # or includes.
@@ -410,6 +422,12 @@ egress:
   nodeSelector:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
+
+  podDisruptionBudget:
+    # -- Whether or not to create a pod disruption budget
+    enabled: false
+    # -- The maximum number of unavailable pods allowed by the budget
+    maxUnavailable: 1
 
   # -- Affinity placement rule for the Kuma Egress pods.
   # This is rendered as a template, so you can reference other helm variables or includes.
