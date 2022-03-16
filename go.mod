@@ -66,7 +66,7 @@ require (
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed
 	sigs.k8s.io/controller-runtime v0.11.1
 	sigs.k8s.io/controller-tools v0.8.0
-	sigs.k8s.io/gateway-api v0.4.1
+	sigs.k8s.io/gateway-api v0.4.2
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
 
