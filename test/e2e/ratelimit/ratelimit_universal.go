@@ -107,7 +107,7 @@ conf:
 		}, "30s", "100ms").Should(BeTrue())
 	})
 
-	FIt("should limit echo server as external service", func() {
+	It("should limit echo server as external service", func() {
 		externalService := fmt.Sprintf(`
 type: ExternalService
 mesh: default
