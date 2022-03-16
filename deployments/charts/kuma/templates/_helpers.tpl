@@ -213,13 +213,13 @@ env:
 - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   value: /var/run/secrets/kuma.io/api-server-client-certs/
 {{- end }}
-{{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+{{- if or .Values.controlPlane.tls.kdsGlobalServer.secretName .Values.controlPlane.kdsGlobalServerTLSSecret.enabled }}
 - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
   value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
 - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
 {{- end }}
-{{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
+{{- if or .Values.controlPlane.tls.kdsZoneClient.secretName .Values.controlPlane.kdsZoneClientTLSSecret.enabled }}
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
 {{- end }}

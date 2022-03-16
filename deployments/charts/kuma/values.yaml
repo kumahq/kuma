@@ -94,6 +94,7 @@ controlPlane:
 
   # -- Topology spread constraints rule for the Kuma Control Plane pods
   # Don't set this and affinity at the same time
+  # This is rendered as a template so you can use variables to generate match labels.
   topologySpreadConstraints:
 
   # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
@@ -176,10 +177,28 @@ controlPlane:
       clientCertsSecretName: ""
     kdsGlobalServer:
       # -- Secret that contains tls.crt, tls.key for protecting cross cluster communication
+      # If kdsGlobalServerTLSSecret is enabled, the generated secret's name
+      # will be used by default, and this would override it.
       secretName: ""
     kdsZoneClient:
       # -- Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
+      # If kdsZoneClientTLSSecret is enabled, the generated secret's name will
+      # be used by default, and this would override it.
       secretName: ""
+
+  kdsGlobalServerTLSSecret:
+    # -- Whether or not to create the global server secret. Leave set to false if you created the secret manually.
+    enabled: false
+    # -- The TLS certificate to offer
+    cert: ""
+    # -- The TLS key to use
+    key: ""
+
+  kdsZoneClientTLSSecret:
+    # -- Whether or not to create the zone client secret. Leave set to false if you created the secret manually.
+    enabled: false
+    # -- The TLS certificate to expect
+    cert: ""
 
   image:
     # -- Kuma CP ImagePullPolicy
@@ -410,6 +429,7 @@ ingress:
 
   # -- Topology spread constraints rule for the Kuma Mesh Ingress pods
   # Don't set this and affinity at the same time
+  # This is rendered as a template so you can use variables to generate match labels.
   topologySpreadConstraints:
 
   # -- Security context at the pod level for ingress
@@ -519,6 +539,7 @@ egress:
 
   # -- Topology spread constraints rule for the Kuma Egress pods
   # Don't set this and affinity at the same time
+  # This is rendered as a template so you can use variables to generate match labels.
   topologySpreadConstraints:
 
   # -- Security context at the pod level for egress

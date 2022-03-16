@@ -1,3 +1,11 @@
+{{ $kdsGlobalServerTLSSecretName := .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+{{ if and .Values.controlPlane.kdsGlobalServerTLSSecret.enabled (eq $kdsGlobalServerTLSSecretName "") }}
+{{ $kdsGlobalServerTLSSecretName = print (include "kuma.name" .) "-kds-global-server-tls" }}
+{{ end }}
+{{ $kdsZoneClientTLSSecretName := .Values.controlPlane.tls.kdsZoneClient.secretName }}
+{{ if and .Values.controlPlane.kdsZoneClientTLSSecret.enabled (eq $kdsZoneClientTLSSecretName "") }}
+{{ $kdsZoneClientTLSSecretName = print (include "kuma.name" .) "-kds-zone-client-tls" }}
+{{ end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -148,12 +156,12 @@ spec:
               mountPath: /var/run/secrets/kuma.io/api-server-client-certs
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+          {{- if $kdsGlobalServerTLSSecretName }}
             - name: kds-server-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-server-tls-cert
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
+          {{- if $kdsZoneClientTLSSecretName }}
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
@@ -193,15 +201,15 @@ spec:
           secret:
             secretName: {{ .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
         {{- end }}
-        {{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+        {{- if $kdsGlobalServerTLSSecretName }}
         - name: kds-server-tls-cert
           secret:
-            secretName: {{ .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+            secretName: {{ $kdsGlobalServerTLSSecretName }}
         {{- end }}
-        {{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
+        {{- if $kdsZoneClientTLSSecretName }}
         - name: kds-client-tls-cert
           secret:
-            secretName: {{ .Values.controlPlane.tls.kdsZoneClient.secretName }}
+            secretName: {{ $kdsZoneClientTLSSecretName }}
         {{- end }}
         - name: {{ include "kuma.name" . }}-control-plane-config
           configMap:
