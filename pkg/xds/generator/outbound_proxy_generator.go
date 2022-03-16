@@ -117,7 +117,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]), proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
 				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
-				ConfigureIf(ctx.Mesh.HasEgress(), envoy_listeners.RateLimit(rateLimits)).
+				ConfigureIf(!ctx.Mesh.HasEgress(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
@@ -125,7 +125,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
 				Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), sourceService)).
 				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
-				ConfigureIf(ctx.Mesh.HasEgress(), envoy_listeners.RateLimit(rateLimits)).
+				ConfigureIf(!ctx.Mesh.HasEgress(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.HttpAccessLog(
 					meshName,
 					envoy_common.TrafficDirectionOutbound,
