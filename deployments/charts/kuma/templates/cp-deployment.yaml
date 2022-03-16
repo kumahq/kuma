@@ -44,7 +44,6 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
       {{- with .Values.controlPlane.nodeSelector }}
-      hostNetwork: true
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
