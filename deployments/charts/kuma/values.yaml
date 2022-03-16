@@ -319,8 +319,31 @@ ingress:
   enabled: false
   # -- Time for which old listener will still be active as draining
   drainTime: 30s
-  # -- Number of replicas of the Ingress
+
+  # -- Number of replicas of the Ingress. Ignored when autoscaling is enabled.
   replicas: 1
+
+  # Horizontal Pod Autoscaling configuration
+  autoscaling:
+    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
+    enabled: false
+
+    # -- The minimum CP pods to allow
+    minReplicas: 2
+    # -- The max CP pods to scale to
+    maxReplicas: 5
+
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    targetCPUUtilizationPercentage: 80
+    # -- For clusters that do support autoscaling/v2beta, use metrics
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+
   service:
     # -- Service type of the Ingress
     type: LoadBalancer
@@ -403,8 +426,30 @@ egress:
   enabled: false
   # -- Time for which old listener will still be active as draining
   drainTime: 30s
-  # -- Number of replicas of the Egress
+  # -- Number of replicas of the Egress. Ignored when autoscaling is enabled.
   replicas: 1
+
+  # Horizontal Pod Autoscaling configuration
+  autoscaling:
+    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
+    enabled: false
+
+    # -- The minimum CP pods to allow
+    minReplicas: 2
+    # -- The max CP pods to scale to
+    maxReplicas: 5
+
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    targetCPUUtilizationPercentage: 80
+    # -- For clusters that do support autoscaling/v2beta, use metrics
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+
   service:
     # -- Service type of the Egress
     type: ClusterIP
