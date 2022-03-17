@@ -88,7 +88,12 @@
         "mTLS": {
           "certificateExpirationTime": "2020-05-08T08:28:22Z",
           "lastCertificateRegeneration": "2019-07-16T19:48:08Z",
-          "certificateRegenerations": 10
+          "certificateRegenerations": 10,
+          "issuedBackend": "ca-1",
+          "supportedBackends": [
+            "ca-1",
+            "ca-2"
+          ]
         }
       }
     },
@@ -274,7 +279,12 @@
         "mTLS": {
           "certificateExpirationTime": "2020-05-08T08:28:22Z",
           "lastCertificateRegeneration": "2019-07-16T19:48:08Z",
-          "certificateRegenerations": 10
+          "certificateRegenerations": 10,
+          "issuedBackend": "ca-1",
+          "supportedBackends": [
+            "ca-1",
+            "ca-2"
+          ]
         }
       }
     },

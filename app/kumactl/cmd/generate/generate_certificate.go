@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
@@ -103,16 +102,6 @@ func NewGenerateCertificateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringSliceVar(&ctx.args.hostnames, "hostname", []string{}, "DNS hostname(s) to issue the certificate for")
 	_ = cmd.MarkFlagRequired("type")
 	_ = cmd.MarkFlagRequired("hostname")
-
-	// Alias "--cp-hostname" to "--hostname" for backwards compatibility. Unfortunately,
-	// we can't emit a deprecation message when "--cp-hostname" is used, since the two
-	// are indistinguishable to pflag.
-	cmd.Flags().SetNormalizeFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {
-		if name == "cp-hostname" {
-			return pflag.NormalizedName("hostname")
-		}
-		return pflag.NormalizedName(name)
-	})
 
 	return cmd
 }
