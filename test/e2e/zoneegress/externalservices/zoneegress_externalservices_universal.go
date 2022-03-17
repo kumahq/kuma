@@ -24,6 +24,8 @@ mtls:
 networking:
   outbound:
     passthrough: false
+routing:
+  zoneEgress: true
 `
 
 	externalService := `
@@ -82,6 +84,12 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	serviceUnreachable := func() error {
+		_, _, err := cluster.Exec("", "", "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
+		return err
+	}
+
 	It("should access external service through zoneegress", func() {
 		filter := fmt.Sprintf(
 			"cluster.%s_%s.upstream_rq_total",
@@ -112,5 +120,44 @@ networking:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stat).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should not access external service when zone egress is down", func() {
+		// given universal cluster
+		universalClusters, ok := cluster.(*UniversalCluster)
+		Expect(ok).To(BeTrue())
+
+		filter := fmt.Sprintf(
+			"cluster.%s_%s.upstream_rq_total",
+			"default",
+			"external-service-1",
+		)
+
+		// when external service configuration is provided
+		err := YamlUniversal(fmt.Sprintf(externalService,
+			"1", "1",
+			"kuma-3_externalservice-http-server:80",
+			"false", ""))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then should reach external service
+		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+
+		// and increase stats at egress
+		Eventually(func(g Gomega) {
+			stat, err := cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeGreaterThanZero())
+		}, "30s", "1s").Should(Succeed())
+
+		// when egress is down
+		_, _, err = universalClusters.Exec("", "", AppEgress, "pkill", "-9", "kuma-dp")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then traffic shouldn't reach external service
+		Eventually(serviceUnreachable, "30s", "1s").Should(HaveOccurred())
 	})
 }

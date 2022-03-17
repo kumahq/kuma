@@ -22,6 +22,7 @@ func (m *MeshResource) Validate() error {
 	verr.AddError("tracing", validateTracing(m.Spec.Tracing))
 	verr.AddError("metrics", validateMetrics(m.Spec.Metrics))
 	verr.AddError("constraints", validateConstraints(m.Spec.Constraints))
+	verr.AddError("", validateZoneEgress(m.Spec.Routing, m.Spec.Mtls))
 	return verr.OrNil()
 }
 
@@ -250,6 +251,19 @@ func validateMetrics(metrics *mesh_proto.Metrics) validators.ValidationError {
 	}
 	if metrics.GetEnabledBackend() != "" && !usedNames[metrics.GetEnabledBackend()] {
 		verr.AddViolation("enabledBackend", "has to be set to one of the backends in the mesh")
+	}
+	return verr
+}
+
+func validateZoneEgress(routing *mesh_proto.Routing, mtls *mesh_proto.Mesh_Mtls) validators.ValidationError {
+	var verr validators.ValidationError
+	if routing == nil {
+		return verr
+	}
+	if routing.ZoneEgress {
+		if mtls == nil {
+			verr.AddViolation("mtls", "has to be set when zoneEgress enabled")
+		}
 	}
 	return verr
 }
