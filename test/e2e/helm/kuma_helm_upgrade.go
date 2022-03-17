@@ -44,7 +44,6 @@ func UpgradingWithHelmChart() {
 
 			err := NewClusterSetup().
 				Install(Kuma(core.Standalone,
-					WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmChartPath(Config.HelmChartName),
 					WithHelmReleaseName(releaseName),

@@ -166,7 +166,7 @@ var defaultConf = E2eConfig{
 	SuiteConfig: SuiteConfig{
 		Helm: HelmSuiteConfig{
 			Versions: []string{
-				"0.4.5",
+				"0.8.1",
 			},
 		},
 		Compatibility: CompatibilitySuiteConfig{

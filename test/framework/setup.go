@@ -283,6 +283,7 @@ metadata:
 // NamespaceWithSidecarInjectionOnAnnotation creates namespace with sidecar-injection annotation
 // Since we still support annotations for backwards compatibility, we should also test it.
 // Use NamespaceWithSidecarInjection unless you want to explicitly check backwards compatibility.
+// https://github.com/kumahq/kuma/issues/4005
 func NamespaceWithSidecarInjectionOnAnnotation(namespace string) InstallFunc {
 	return YamlK8s(fmt.Sprintf(`
 apiVersion: v1
