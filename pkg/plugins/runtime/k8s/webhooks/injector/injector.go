@@ -149,6 +149,7 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 	}
 
 	// support annotations for backwards compatibility
+	// https://github.com/kumahq/kuma/issues/4005
 	annotationWarningMsg := "WARNING: you are using kuma.io/sidecar-injection as annotation. Please migrate it to label to have strong guarantee that application can only start with sidecar"
 	enabled, exist, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
@@ -174,6 +175,7 @@ func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (
 	}
 
 	// support annotations for backwards compatibility
+	// https://github.com/kumahq/kuma/issues/4005
 	enabled, exist, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return false, err

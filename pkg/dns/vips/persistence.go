@@ -80,6 +80,7 @@ func (m *Persistence) unmarshal(config string, mesh string) (*VirtualOutboundMes
 	backCompat := map[HostnameEntry]string{}
 	if err := json.Unmarshal([]byte(config), &backCompat); err != nil {
 		// backwards compatibility
+		// https://github.com/kumahq/kuma/issues/4003
 		backwardCompatible := map[string]string{}
 		if err := json.Unmarshal([]byte(config), &backwardCompatible); err != nil {
 			return nil, err

@@ -1,13 +1,7 @@
 package generator
 
 import (
-	"strings"
-
-	"github.com/Masterminds/semver/v3"
-
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/version"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -39,23 +33,6 @@ var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{
 // AdminProxyGenerator generates resources to expose some endpoints of Admin API on public interface.
 // By default, Admin API is exposed only on loopback interface because of security reasons.
 type AdminProxyGenerator struct {
-}
-
-// backwards compatibility with 1.3.x
-var HasCPValidationCtxInBootstrap = func(ver *mesh_proto.Version) (bool, error) {
-	if ver.GetKumaDp().GetVersion() == "" { // mostly for tests but also for very old version of Kuma
-		return false, nil
-	}
-
-	if strings.HasPrefix(ver.GetKumaDp().GetVersion(), version.DevVersionPrefix) {
-		return true, nil
-	}
-
-	semverVer, err := semver.NewVersion(ver.KumaDp.GetVersion())
-	if err != nil {
-		return false, err
-	}
-	return !semverVer.LessThan(semver.MustParse("1.4.0")), nil
 }
 
 func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
@@ -93,20 +70,14 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 				Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticEndpointPaths)),
 			),
 		}
-		hasCpValidationCtx, err := HasCPValidationCtxInBootstrap(proxy.Metadata.Version)
-		if err != nil {
-			return nil, err
+		for _, se := range staticTlsEndpointPaths {
+			se.ClusterName = envoyAdminClusterName
 		}
-		if hasCpValidationCtx {
-			for _, se := range staticTlsEndpointPaths {
-				se.ClusterName = envoyAdminClusterName
-			}
-			filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-				Configure(envoy_listeners.MatchTransportProtocol("tls")).
-				Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticTlsEndpointPaths)).
-				Configure(envoy_listeners.ServerSideMTLSWithCP(ctx)),
-			))
-		}
+		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+			Configure(envoy_listeners.MatchTransportProtocol("tls")).
+			Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticTlsEndpointPaths)).
+			Configure(envoy_listeners.ServerSideMTLSWithCP(ctx)),
+		))
 		listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.InboundListener(envoy_names.GetAdminListenerName(), g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP)).
 			Configure(envoy_listeners.TLSInspector()).
