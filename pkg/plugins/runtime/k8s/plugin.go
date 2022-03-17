@@ -151,10 +151,11 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		Scheme:        mgr.GetScheme(),
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
 		PodConverter: k8s_controllers.PodConverter{
-			ServiceGetter:     mgr.GetClient(),
-			NodeGetter:        mgr.GetClient(),
-			Zone:              rt.Config().Multizone.Zone.Name,
-			ResourceConverter: converter,
+			ServiceGetter:       mgr.GetClient(),
+			NodeGetter:          mgr.GetClient(),
+			Zone:                rt.Config().Multizone.Zone.Name,
+			ResourceConverter:   converter,
+			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
 		},
 		ResourceConverter: converter,
 		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
@@ -190,14 +191,15 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 		return err
 	}
 	reconciler := &k8s_controllers.ConfigMapReconciler{
-		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/vips-generator"),
-		Scheme:            mgr.GetScheme(),
-		Log:               core.Log.WithName("controllers").WithName("ConfigMap"),
-		ResourceManager:   rt.ResourceManager(),
-		VIPsAllocator:     vipsAllocator,
-		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
-		ResourceConverter: converter,
+		Client:              mgr.GetClient(),
+		EventRecorder:       mgr.GetEventRecorderFor("k8s.kuma.io/vips-generator"),
+		Scheme:              mgr.GetScheme(),
+		Log:                 core.Log.WithName("controllers").WithName("ConfigMap"),
+		ResourceManager:     rt.ResourceManager(),
+		VIPsAllocator:       vipsAllocator,
+		SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
+		ResourceConverter:   converter,
+		KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
 	}
 	if err := reconciler.SetupWithManager(mgr); err != nil {
 		return err
