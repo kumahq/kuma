@@ -8,6 +8,25 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Zone egress
+
+Previously, when mTLS was configured and `ZoneEgress` deployed, requests were routed automatically through `ZoneEgress`. Now it's required to
+explicitly set that traffic should be routed through `ZoneEgress` by setting `Mesh` configuration property `routing.zoneEgress: true`. The
+default value of the property is set to `false` so in case your network policies don't allow you to reach other external services/zone without
+using `ZoneEgress`, set `routing.zoneEgress: true`.
+
+```yaml
+type: Mesh
+name: default
+mtls: # mTLS is required for zoneEgress
+ [...]
+routing:
+ zoneEgress: true
+```
+
+The new approach changes the flow of requests to external services. Previously when there was no instance of `ZoneEgress` traffic was routed
+directly to the destination, now it won't reach the destination.
+
 ## Upgrade to `1.5.0`
 
 ### Any type
