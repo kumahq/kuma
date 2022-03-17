@@ -57,14 +57,6 @@ comma := ,
 empty:=
 space := $(empty) $(empty)
 
-DOCS_OUTPUT_PATH ?= .
-
-additional_params ?=
-
-ifdef PLUGIN
-	additional_params += --plugin=protoc-gen-kumadoc=$(PLUGIN)
-endif
-
 go_mapping_with_spaces := $(foreach entry,$(go_import_mapping_entries),M$(entry),)
 go_mapping := $(subst $(space),$(empty),$(go_mapping_with_spaces))
 
@@ -77,9 +69,6 @@ PROTOC_GO := $(PROTOC) \
 	--go_opt=paths=source_relative \
 	--go_out=plugins=grpc,$(go_mapping):.
 
-PROTOC_KUMADOC := $(PROTOC) \
-	--kumadoc_out=$(DOCS_OUTPUT_PATH) \
-	$(additional_params)
 
 protoc/mesh:
 	cd api && $(PROTOC_GO) mesh/*.proto
