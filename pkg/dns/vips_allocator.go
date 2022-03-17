@@ -2,6 +2,7 @@ package dns
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"go.uber.org/multierr"
@@ -81,8 +82,30 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfigs() error {
 	return d.createOrUpdateVIPConfigs(meshes...)
 }
 
-func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string) error {
-	return d.createOrUpdateVIPConfigs(mesh)
+func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string, viewModificator func(*vips.VirtualOutboundMeshView) error) error {
+	meshViews, globalView, err := d.fetchViews()
+	if err != nil {
+		return err
+	}
+
+	oldView, ok := meshViews[mesh]
+	if !ok {
+		oldView = vips.NewEmptyVirtualOutboundView()
+	}
+
+	newView, err := BuildVirtualOutboundMeshView(d.rm, d.serviceVipEnabled, mesh)
+	if err != nil {
+		return err
+	}
+	if err := viewModificator(newView); err != nil {
+		return err
+	}
+
+	if err := d.createOrUpdateMeshVIPConfig(mesh, oldView, newView, globalView); err != nil {
+		return err
+	}
+	d.resolver.SetVIPs(globalView.ToVIPMap())
+	return nil
 }
 
 func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) {
@@ -92,11 +115,15 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 	}
 
 	for _, mesh := range meshes {
-		meshView, ok := meshViews[mesh]
+		oldView, ok := meshViews[mesh]
 		if !ok {
-			meshView = vips.NewEmptyVirtualOutboundView()
+			oldView = vips.NewEmptyVirtualOutboundView()
 		}
-		if err := d.createOrUpdateMeshVIPConfig(mesh, meshView, globalView); err != nil {
+		newView, err := BuildVirtualOutboundMeshView(d.rm, d.serviceVipEnabled, mesh)
+		if err != nil {
+			return err
+		}
+		if err := d.createOrUpdateMeshVIPConfig(mesh, oldView, newView, globalView); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
@@ -117,6 +144,9 @@ func (d *VIPsAllocator) fetchViews() (map[string]*vips.VirtualOutboundMeshView, 
 	}
 	for _, meshView := range byMesh {
 		for _, hostEntry := range meshView.HostnameEntries() {
+			if hostEntry.Type == vips.Host && net.ParseIP(hostEntry.Name) != nil {
+				continue
+			}
 			vo := meshView.Get(hostEntry)
 			err := gv.Reserve(hostEntry, vo.Address)
 			if err != nil {
@@ -127,18 +157,18 @@ func (d *VIPsAllocator) fetchViews() (map[string]*vips.VirtualOutboundMeshView, 
 	return byMesh, gv, nil
 }
 
-func (d *VIPsAllocator) createOrUpdateMeshVIPConfig(mesh string, meshView *vips.VirtualOutboundMeshView, globalView *vips.GlobalView) error {
-	newVirtualOutboundView, err := BuildVirtualOutboundMeshView(d.rm, d.serviceVipEnabled, mesh)
-	if err != nil {
-		return err
-	}
-
-	if err := AllocateVIPs(globalView, newVirtualOutboundView); err != nil {
+func (d *VIPsAllocator) createOrUpdateMeshVIPConfig(
+	mesh string,
+	oldView *vips.VirtualOutboundMeshView,
+	newView *vips.VirtualOutboundMeshView,
+	globalView *vips.GlobalView,
+) error {
+	if err := AllocateVIPs(globalView, newView); err != nil {
 		// Error might occur only if we run out of VIPs. There is no point to pass it through,
 		// we must notify user in logs and proceed
 		vipsAllocatorLog.Error(err, "failed to allocate new VIPs", "mesh", mesh)
 	}
-	changes, out := meshView.Update(newVirtualOutboundView)
+	changes, out := oldView.Update(newView)
 	if len(changes) == 0 {
 		return nil
 	}
