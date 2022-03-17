@@ -77,7 +77,7 @@ var _ = Describe("Tokens Client", func() {
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
 		defer server.Close()
-		mux.HandleFunc("/tokens", func(writer http.ResponseWriter, req *http.Request) {
+		mux.HandleFunc("/tokens/dataplane", func(writer http.ResponseWriter, req *http.Request) {
 			defer GinkgoRecover()
 			writer.WriteHeader(500)
 			_, err := writer.Write([]byte("Internal Server Error"))

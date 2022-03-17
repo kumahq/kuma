@@ -248,6 +248,45 @@ resources:
                   cluster: kuma:envoy:admin
                   prefixRewrite: /ready
           statPrefix: kuma_envoy_admin
+    - filterChainMatch:
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: kuma:envoy:admin
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: kuma:envoy:admin
+                  prefixRewrite: /
+              - match:
+                  prefix: /config_dump
+                route:
+                  cluster: kuma:envoy:admin
+                  prefixRewrite: /config_dump
+          statPrefix: kuma_envoy_admin
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:demo
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+            validationContextSdsSecretConfig:
+              name: cp_validation_ctx
+          requireClientCertificate: true
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

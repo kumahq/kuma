@@ -115,6 +115,7 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 
 func validateValidFor(validForRequest string) (verr validators.ValidationError, validFor time.Duration) {
 	if validForRequest == "" {
+		// https://github.com/kumahq/kuma/issues/4001
 		validFor = time.Hour * 24 * 365 * 10 // 10 years. Backwards compatibility. In future releases we should make it required
 	} else {
 		dur, err := time.ParseDuration(validForRequest)

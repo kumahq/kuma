@@ -473,9 +473,6 @@ func updateMTLS(mtlsInsight *mesh_proto.DataplaneInsight_MTLS, status core_mesh.
 	}
 
 	backend := mtlsInsight.GetIssuedBackend()
-	if backend == "" {
-		backend = "unknown" // backwards compatibility for Kuma 1.2.x
-	}
 	if stat := stats.IssuedBackends[backend]; stat == nil {
 		stats.IssuedBackends[backend] = &mesh_proto.MeshInsight_DataplaneStat{}
 	}
