@@ -207,6 +207,16 @@ controlPlane:
     repository: "kuma-cp"
     # -- Kuma CP Image tag. When not specified, the value is copied from global.tag
     tag:
+
+  # -- list of additional secret resources to create; for each specify the name and stringData
+  # name is rendered as a template using (tpl $)
+  additionalK8sSecrets:
+    # example
+    # - name: {{ include "kuma.name" . }}-extra-secret
+    #   stringData:
+    #     myKey: myValue
+    #     mySecondKey: mySecondValue
+
   # -- (list of { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
   # where `Env` is the name of the env variable,
   # `Secret` is the name of the Secret,
