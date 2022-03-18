@@ -159,7 +159,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 	var kumaRoute *mesh_proto.MeshGatewayRoute
 
-	if routeConf != nil {
+	if routeConf != nil && len(selectors) > 0 {
+		// We can only build MeshGatewayRoute if any attachment has matched, and we've got selectors
 		kumaRoute = &mesh_proto.MeshGatewayRoute{
 			Conf:      routeConf,
 			Selectors: selectors,
