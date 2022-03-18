@@ -200,6 +200,7 @@ var DefaultConfig = func() Config {
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
 			MeshGateway:         false,
+			GatewayAPI:          false,
 			KubeOutboundsAsVIPs: false,
 		},
 	}
@@ -277,6 +278,9 @@ func (c *Config) Validate() error {
 	if err := c.Diagnostics.Validate(); err != nil {
 		return errors.Wrap(err, "Diagnostics validation failed")
 	}
+	if err := c.Experimental.Validate(); err != nil {
+		return errors.Wrap(err, "Experimental validation failed")
+	}
 	return nil
 }
 
@@ -316,7 +320,16 @@ func DefaultGeneralConfig() *GeneralConfig {
 type ExperimentalConfig struct {
 	// If true, experimental built-in gateway is enabled.
 	MeshGateway bool `yaml:"meshGateway" envconfig:"KUMA_EXPERIMENTAL_MESHGATEWAY"`
+	// If true, experimental Gateway API is enabled
+	GatewayAPI bool `yaml:"gatewayAPI" envconfig:"KUMA_EXPERIMENTAL_GATEWAY_API"`
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
 	// This can improve performance, but it should be enabled only after all instances are migrated to version that supports this config
 	KubeOutboundsAsVIPs bool `yaml:"kubeOutboundsAsVIPs" envconfig:"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS"`
+}
+
+func (e ExperimentalConfig) Validate() error {
+	if e.GatewayAPI && !e.MeshGateway {
+		return errors.New("GatewayAPI cannot be enabled without MeshGateway")
+	}
+	return nil
 }
