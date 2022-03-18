@@ -20,7 +20,7 @@ import (
 	k8s_webhooks "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 )
 
-func crdsPresent(mgr kube_ctrl.Manager) bool {
+func gatewayAPICRDsPresent(mgr kube_ctrl.Manager) bool {
 	gk := schema.GroupKind{
 		Group: gatewayapi.SchemeGroupVersion.Group,
 		Kind:  "Gateway",
@@ -34,7 +34,7 @@ func crdsPresent(mgr kube_ctrl.Manager) bool {
 	return len(mappings) > 0
 }
 
-func gatewayPresent() bool {
+func meshGatewayCRDsPresent() bool {
 	// If we haven't registered our type, we're not reconciling MeshGatewayInstance
 	// or gatewayapi objects.
 	if _, err := k8s_registry.Global().NewObject(&mesh_proto.MeshGateway{}); err != nil {
@@ -48,7 +48,11 @@ func gatewayPresent() bool {
 }
 
 func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	if !gatewayPresent() {
+	if !rt.Config().Experimental.MeshGateway {
+		return nil
+	}
+	if !meshGatewayCRDsPresent() {
+		log.Info("[WARNING] Experimental MeshGateway feature is enabled, but CRDs are not registered. Disabling support")
 		return nil
 	}
 
@@ -81,8 +85,18 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		return errors.Wrap(err, "could not setup MeshGatewayInstance reconciler")
 	}
 
-	if !crdsPresent(mgr) {
-		log.Info("Gateway API CRDs not registered")
+	if rt.Config().Experimental.GatewayAPI {
+		if err := addGatewayAPIReconcillers(mgr, rt, proxyFactory); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, proxyFactory *containers.DataplaneProxyFactory) error {
+	if !gatewayAPICRDsPresent(mgr) {
+		log.Info("[WARNING] Experimental GatewayAPI feature is enabled, but CRDs are not registered. Disabling support")
 		return nil
 	}
 
@@ -118,14 +132,13 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 	if err := gatewayAPIHTTPRouteReconciler.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup Gateway API HTTPRoute reconciler")
 	}
-
 	return nil
 }
 
 // gatewayValidators returns all the Gateway-related validators we want to
 // start.
 func gatewayValidators(rt core_runtime.Runtime, converter k8s_common.Converter) []k8s_common.AdmissionValidator {
-	if !gatewayPresent() {
+	if !meshGatewayCRDsPresent() {
 		return nil
 	}
 
