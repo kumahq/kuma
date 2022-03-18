@@ -21,6 +21,7 @@ func (k *k8SDeployment) Name() string {
 }
 
 func (k *k8SDeployment) service() *corev1.Service {
+	appProtocol := "http"
 	return &corev1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -29,13 +30,14 @@ func (k *k8SDeployment) service() *corev1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      k.Name(),
 			Namespace: k.opts.Namespace,
-			Annotations: map[string]string{
-				"80.service.kuma.io/protocol": "http",
-			},
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
-				{Name: "http", Port: 80},
+				{
+					Name:        "http",
+					Port:        80,
+					AppProtocol: &appProtocol,
+				},
 			},
 			Selector: map[string]string{
 				"app": k.Name(),

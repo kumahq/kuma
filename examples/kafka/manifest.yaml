@@ -32,8 +32,6 @@ kind: Service
 metadata:
   name: kafka-service
   namespace: kuma-kafka
-  annotations:
-    9092.service.kuma.io/protocol: kafka
   labels:
     name: kafka
 spec:
@@ -41,6 +39,7 @@ spec:
     - port: 9092
       name: kafka-port
       protocol: TCP
+      appProtocol: kafka
   selector:
     app: kafka
     id: "0"
