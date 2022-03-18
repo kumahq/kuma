@@ -24,13 +24,12 @@ kind: Service
 metadata:
   name: demo-app
   namespace: kuma-demo
-  annotations:
-    5000.service.kuma.io/protocol: http
 spec:
   selector:
     app: demo-app
   ports:
   - protocol: TCP
+    appProtocol: http
     port: 5000
 ---
 apiVersion: apps/v1
