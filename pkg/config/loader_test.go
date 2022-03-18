@@ -250,6 +250,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ViewConfigDump.Groups).To(Equal([]string{"zt-group1", "zt-group2"}))
 
 			Expect(cfg.Experimental.MeshGateway).To(BeTrue())
+			Expect(cfg.Experimental.GatewayAPI).To(BeTrue())
 			Expect(cfg.Experimental.KubeOutboundsAsVIPs).To(BeTrue())
 		},
 		Entry("from config file", testCase{
@@ -466,6 +467,7 @@ access:
       groups: ["zt-group1", "zt-group2"]
 experimental:
   meshGateway: true
+  gatewayAPI: true
   kubeOutboundsAsVIPs: true
 `,
 		}),
@@ -614,6 +616,7 @@ experimental:
 				"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_USERS":                                                 "zt-admin1,zt-admin2",
 				"KUMA_ACCESS_STATIC_GET_CONFIG_DUMP_GROUPS":                                                "zt-group1,zt-group2",
 				"KUMA_EXPERIMENTAL_MESHGATEWAY":                                                            "true",
+				"KUMA_EXPERIMENTAL_GATEWAY_API":                                                            "true",
 				"KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS":                                                 "true",
 			},
 			yamlFileConfig: "",
