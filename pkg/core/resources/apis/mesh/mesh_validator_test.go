@@ -526,6 +526,19 @@ var _ = Describe("Mesh", func() {
                 - field: mtls.backends[1].name
                   message: '"backend-1" name is already used for another backend'`,
 			}),
+			Entry("zoneEgress and mTLS enabled but no enabledBackend provided", testCase{
+				mesh: `
+                mtls:
+                  backends:
+                  - name: backend-1
+                    type: builtin
+                routing:
+                  zoneEgress: true`,
+				expected: `
+                violations:
+                - field: mtls
+                  message: has to be set when zoneEgress enabled`,
+			}),
 		)
 	})
 })

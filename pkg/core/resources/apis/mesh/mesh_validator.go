@@ -261,7 +261,7 @@ func validateZoneEgress(routing *mesh_proto.Routing, mtls *mesh_proto.Mesh_Mtls)
 		return verr
 	}
 	if routing.ZoneEgress {
-		if mtls == nil {
+		if mtls.GetEnabledBackend() == "" {
 			verr.AddViolation("mtls", "has to be set when zoneEgress enabled")
 		}
 	}
