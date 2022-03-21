@@ -3,6 +3,8 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -211,6 +213,43 @@ func CollectResponse(
 	}
 
 	return *response, nil
+}
+
+// CollectResponseDirectly collects responses using http client that calls the server from outside the cluster
+func CollectResponseDirectly(
+	destination string,
+	fn ...CollectResponsesOptsFn,
+) (types.EchoResponse, error) {
+	opts := collectOptions(destination, fn...)
+
+	req, err := http.NewRequest(opts.Method, opts.URL, nil)
+	if err != nil {
+		return types.EchoResponse{}, err
+	}
+
+	for k, v := range opts.Headers {
+		req.Header.Set(k, v)
+	}
+	if host, ok := opts.Headers["host"]; ok {
+		req.Host = host
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return types.EchoResponse{}, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return types.EchoResponse{}, err
+	}
+
+	response := types.EchoResponse{}
+	if err := json.Unmarshal(body, &response); err != nil {
+		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", string(body))
+	}
+	return response, nil
 }
 
 // FailureResponse is the JSON output for a Curl command. Note that the available
