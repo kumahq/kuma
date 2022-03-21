@@ -63,8 +63,6 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	resp.Header().Set("content-type", "text/x-yaml")
-	// backwards compatibility
-	resp.Header().Set(types.BootstrapVersionHeader, string(types.BootstrapV3))
 	resp.WriteHeader(http.StatusOK)
 	_, err = resp.Write(bytes)
 	if err != nil {

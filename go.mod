@@ -11,7 +11,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490
 	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/envoyproxy/go-control-plane v0.10.1
-	github.com/envoyproxy/protoc-gen-validate v0.6.6
+	github.com/envoyproxy/protoc-gen-validate v0.6.7
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-logr/logr v1.2.2
@@ -27,7 +27,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/protoc-gen-kumadoc v0.1.7
 	github.com/lib/pq v1.10.4
-	github.com/miekg/dns v1.1.46
+	github.com/miekg/dns v1.1.47
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.18.1
 	github.com/operator-framework/operator-lib v0.10.0
@@ -41,7 +41,6 @@ require (
 	github.com/slok/go-http-metrics v0.10.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.4.0
-	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.10.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v1.2.0
@@ -53,7 +52,7 @@ require (
 	golang.org/x/sys v0.0.0-20220204135822-1c1b9b1eba6a
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 	google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368
-	google.golang.org/grpc v1.44.0
+	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -66,7 +65,7 @@ require (
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed
 	sigs.k8s.io/controller-runtime v0.11.1
 	sigs.k8s.io/controller-tools v0.8.0
-	sigs.k8s.io/gateway-api v0.4.1
+	sigs.k8s.io/gateway-api v0.4.2
 	sigs.k8s.io/testing_frameworks v0.1.2
 )
 
@@ -163,6 +162,7 @@ require (
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/urfave/cli v1.22.2 // indirect

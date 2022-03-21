@@ -42,7 +42,7 @@ func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[s
 	if err != nil {
 		return "", errors.Wrap(err, "could not marshal token request to json")
 	}
-	req, err := http.NewRequest("POST", "/tokens", bytes.NewReader(reqBytes))
+	req, err := http.NewRequest("POST", "/tokens/dataplane", bytes.NewReader(reqBytes))
 	if err != nil {
 		return "", errors.Wrap(err, "could not construct the request")
 	}

@@ -74,11 +74,7 @@ func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bo
 	if d == nil {
 		return false
 	}
-	ifaces, err := d.Spec.Networking.GetInboundInterfaces()
-	if err != nil {
-		return false
-	}
-	for _, iface := range ifaces {
+	for _, iface := range d.Spec.Networking.GetInboundInterfaces() {
 		// compare against port and IP address of the dataplane
 		if port == iface.DataplanePort && overlap(address, net.ParseIP(iface.DataplaneIP)) {
 			return true

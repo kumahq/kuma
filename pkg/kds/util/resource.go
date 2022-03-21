@@ -41,7 +41,8 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 				// KDS ResourceMeta only contains name and mesh.
 				// The rest is managed by the receiver of resources anyways. See ResourceSyncer#Sync
 				//
-				// backwards compatibility
+				// backwards compatibility with Kuma 1.4.x
+				// https://github.com/kumahq/kuma/issues/4007
 				// Right now we send creation and modification time because the old versions of Kuma CP expects them to be present.
 				CreationTime:     util_proto.MustTimestampProto(time.Unix(0, 0)),
 				ModificationTime: util_proto.MustTimestampProto(time.Unix(0, 0)),

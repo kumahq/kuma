@@ -91,3 +91,14 @@ Like `make test`, you can append the app name to the target to build a specific 
 make build/kumactl
 ```
 This could help expedite your development process if you only made changes to the `kumactl` files.
+
+## Running
+
+### Kubernetes
+
+Execute
+```bash
+make -j k3d/restart
+```
+
+To stop any existing Kuma K3D cluster, start a new K3D cluster, load images, deploy Kuma and Kuma counter demo. 

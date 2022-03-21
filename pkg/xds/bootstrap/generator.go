@@ -104,6 +104,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			params.AdminPort = adminPortFromResource
 		} else {
 			if request.AdminPort != 0 {
+				// https://github.com/kumahq/kuma/issues/4002
 				// Backwards compatibility, Inspect API may not work properly if the port
 				// was set through the '--admin-port' flag. It affects only ability to get
 				// config_dump through the Inspect API and it's done that way to avoid updating
