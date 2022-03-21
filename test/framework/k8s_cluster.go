@@ -588,6 +588,30 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 	return nil
 }
 
+// StopZoneEgress scales the replicas of a zone egress to 0 and wait for it to complete. Useful for testing behavior when traffic goes through egress but there is no instance.
+func (c *K8sCluster) StopZoneEgress() error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
+		return err
+	}
+	_, err := retry.DoWithRetryE(c.t,
+		"wait for zone egress to be down",
+		c.defaultRetries,
+		c.defaultTimeout,
+		func() (string, error) {
+			pods := c.getPods(Config.KumaNamespace, Config.ZoneEgressApp)
+			if len(pods) == 0 {
+				return "Done", nil
+			}
+			names := []string{}
+			for _, p := range pods {
+				names = append(names, p.Name)
+			}
+			return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
+		},
+	)
+	return err
+}
+
 // StopControlPlane scales the replicas of a control plane to 0 and wait for it to complete. Useful for testing restarts in combination with RestartControlPlane.
 func (c *K8sCluster) StopControlPlane() error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.KumaServiceName)); err != nil {
@@ -699,6 +723,15 @@ func (c *K8sCluster) deleteKumaViaHelm() (errs error) {
 	}
 
 	return errs
+}
+
+func (c *K8sCluster) getPods(namespace string, appName string) []v1.Pod {
+	return k8s.ListPods(c.t,
+		c.GetKubectlOptions(namespace),
+		metav1.ListOptions{
+			LabelSelector: "app=" + appName,
+		},
+	)
 }
 
 func (c *K8sCluster) deleteKumaViaKumactl() error {
