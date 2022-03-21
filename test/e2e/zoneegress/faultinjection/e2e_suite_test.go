@@ -13,4 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E ZoneEgress with Fault Injection Suite")
 }
 
-var _ = Describe("Test ZoneEgress with Fault Injection", faultinjection.MultizoneUniversal)
+var _ = Describe("Test ZoneEgress with Fault Injection", faultinjection.StandaloneUniversal)

@@ -13,4 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E ZoneEgress with Rate Limit Suite")
 }
 
-var _ = Describe("Test ZoneEgress with Rate Limit", ratelimit.MultizoneUniversal)
+var _ = Describe("Test ZoneEgress with Rate Limit", ratelimit.StandaloneUniversal)

@@ -10,6 +10,7 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
 func meshMTLSOn(mesh string) string {
@@ -21,6 +22,8 @@ mtls:
   backends:
   - name: ca-1
     type: builtin
+routing:
+  zoneEgress: true
 `, mesh)
 }
 
@@ -64,74 +67,67 @@ func ExternalServiceV2(mesh, address string) string {
 	return fmt.Sprintf(externalServiceV2, mesh, address)
 }
 
-var global, universalZone *UniversalCluster
+var cluster *UniversalCluster
 
 var _ = E2EBeforeSuite(func() {
 
-	universalClusters, err := NewUniversalClusters(
-		[]string{Kuma4, Kuma5},
+	clusters, err := NewUniversalClusters(
+		[]string{Kuma3},
 		Silent)
 	Expect(err).ToNot(HaveOccurred())
 
-	// Global
-	global = universalClusters.GetCluster(Kuma5).(*UniversalCluster)
-	Expect(NewClusterSetup().
-		Install(Kuma(config_core.Global)).
+	cluster = clusters.GetCluster(Kuma3).(*UniversalCluster)
+
+	err = NewClusterSetup().
+		Install(Kuma(config_core.Standalone)).
+		Setup(cluster)
+	Expect(err).ToNot(HaveOccurred())
+
+	demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
+	Expect(err).ToNot(HaveOccurred())
+
+	egressToken, err := cluster.GetKuma().GenerateZoneEgressToken("")
+	Expect(err).ToNot(HaveOccurred())
+
+	err = NewClusterSetup().
+		Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
+		Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
+		Install(EgressUniversal(egressToken)).
 		Install(YamlUniversal(meshMTLSOn("default"))).
-		Setup(global)).To(Succeed())
-
-	demoClientToken, err := global.GetKuma().GenerateDpToken("default", "dp-demo-client")
-	Expect(err).ToNot(HaveOccurred())
-
-	egressTokenZone4, err := global.GetKuma().GenerateZoneEgressToken(Kuma4)
-	Expect(err).ToNot(HaveOccurred())
-
-	testServerToken, err := global.GetKuma().GenerateDpToken("default", "test-server")
-	Expect(err).ToNot(HaveOccurred())
-
-	// Universal Zone
-	universalZone = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
-	Expect(NewClusterSetup().
-		Install(Kuma(config_core.Zone, WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))).
-		Install(DemoClientUniversal("dp-demo-client", "default", demoClientToken, WithTransparentProxy(true))).
-		Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "universal1"}))).
-		Install(EgressUniversal(egressTokenZone4)).
 		Install(ExternalServerUniversal("es-test-server-v1")).
 		Install(ExternalServerUniversal("es-test-server-v2")).
-		Setup(universalZone)).To(Succeed())
+		Setup(cluster)
+	Expect(err).ToNot(HaveOccurred())
 
-	Expect(global.GetKumactlOptions().
+	Expect(cluster.GetKumactlOptions().
 		KumactlApplyFromString(
 			ExternalServiceV1(
 				"default",
-				net.JoinHostPort(universalZone.GetApp("es-test-server-v1").GetIP(), "8080"),
+				net.JoinHostPort(cluster.GetApp("es-test-server-v1").GetIP(), "8080"),
 			)),
 	).To(Succeed())
 
-	Expect(global.GetKumactlOptions().
+	Expect(cluster.GetKumactlOptions().
 		KumactlApplyFromString(
 			ExternalServiceV2(
 				"default",
-				net.JoinHostPort(universalZone.GetApp("es-test-server-v2").GetIP(), "8080"),
+				net.JoinHostPort(cluster.GetApp("es-test-server-v2").GetIP(), "8080"),
 			)),
 	).To(Succeed())
 
 	E2EDeferCleanup(func() {
-		Expect(global.DeleteKuma()).To(Succeed())
-		Expect(global.DismissCluster()).To(Succeed())
-
-		Expect(universalZone.DeleteKuma()).To(Succeed())
-		Expect(universalZone.DismissCluster()).To(Succeed())
+		Expect(cluster.DeleteKuma()).To(Succeed())
+		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 })
 
-func MultizoneUniversal() {
+func StandaloneUniversal() {
 	E2EAfterEach(func() {
 		// remove all RateLimits
-		items, err := global.GetKumactlOptions().KumactlList("rate-limits", "default")
+		items, err := cluster.GetKumactlOptions().KumactlList("rate-limits", "default")
 		Expect(err).ToNot(HaveOccurred())
 		for _, item := range items {
-			err := global.GetKumactlOptions().KumactlDelete("rate-limit", item, "default")
+			err := cluster.GetKumactlOptions().KumactlDelete("rate-limit", item, "default")
 			Expect(err).ToNot(HaveOccurred())
 		}
 	})
@@ -143,7 +139,7 @@ mesh: default
 name: rate-limit-demo-client
 sources:
 - match:
-    kuma.io/service: dp-demo-client
+    kuma.io/service: demo-client
 destinations:
 - match:
     kuma.io/service: external-service
@@ -154,10 +150,10 @@ conf:
     requests: 1
     interval: 10s
 `
-		Expect(YamlUniversal(specificRateLimitPolicy)(global)).To(Succeed())
+		Expect(YamlUniversal(specificRateLimitPolicy)(cluster)).To(Succeed())
 
 		Eventually(func() bool {
-			stdout, _, err := universalZone.Exec("", "", "dp-demo-client", "curl", "-v", "external-service.mesh")
+			stdout, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "external-service.mesh")
 			return err == nil && strings.Contains(stdout, "429")
 		}, "30s", "100ms").Should(BeTrue())
 	})
