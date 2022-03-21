@@ -243,4 +243,8 @@ message TcpLoggingBackendConfig {
 message Routing {
   // Enable the Locality Aware Load Balancing
   bool localityAwareLoadBalancing = 1;
+
+  // Enable routing traffic to services in other zone or external services
+  // through ZoneEgress. Default: false
+  bool zoneEgress = 2;
 }

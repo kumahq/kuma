@@ -27,6 +27,11 @@ mtls:
   backends:
   - name: ca-1
     type: builtin
+networking:
+  outbound:
+    passthrough: %s
+routing:
+  zoneEgress: %s
 `
 
 	externalService1 := `
@@ -70,8 +75,8 @@ networking:
 
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Global)).
-			Install(YamlUniversal(fmt.Sprintf(meshMTLSOn, defaultMesh))).
-			Install(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh))).
+			Install(YamlUniversal(fmt.Sprintf(meshMTLSOn, defaultMesh, "true", "true"))).
+			Install(YamlUniversal(fmt.Sprintf(meshMTLSOn, nonDefaultMesh, "true", "true"))).
 			Install(YamlUniversal(fmt.Sprintf(externalService1, nonDefaultMesh))).
 			Setup(global)).To(Succeed())
 
@@ -137,7 +142,7 @@ networking:
 		).To(Succeed())
 	})
 
-	It("k8s should access external service behind through zoneegress", func() {
+	It("k8s should access external service through zoneegress", func() {
 		filter := fmt.Sprintf(
 			"cluster.%s_%s.upstream_rq_total",
 			nonDefaultMesh,
@@ -197,5 +202,73 @@ networking:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stat).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("k8s should not reach external service when zone egress is down", func() {
+		// given k8s cluster
+		k8sCluster := zone1.(*K8sCluster)
+
+		pods, err := k8s.ListPodsE(
+			zone1.GetTesting(),
+			zone1.GetKubectlOptions(TestNamespace),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
+			},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(pods).To(HaveLen(1))
+
+		clientPod := pods[0]
+		serviceUnreachable := func() error {
+			_, _, err := k8sCluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+				"curl", "--verbose", "--max-time", "3", "--fail", "external-service-1.mesh")
+			return err
+		}
+
+		// when zone egress is unreachable
+		Expect(k8sCluster.StopZoneEgress()).To(Succeed())
+
+		// then traffic shouldn't reach external service
+		Eventually(serviceUnreachable, "30s", "1s").Should(HaveOccurred())
+	})
+
+	It("universal should not reach external service when zone egress is down", func() {
+		serviceUnreachable := func() error {
+			_, _, err := zone4.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
+			return err
+		}
+
+		filter := fmt.Sprintf(
+			"cluster.%s_%s.upstream_rq_total",
+			nonDefaultMesh,
+			"external-service-2",
+		)
+
+		Eventually(func(g Gomega) {
+			stat, err := zone4.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeEqualZero())
+		}, "30s", "1s").Should(Succeed())
+
+		// when request external service
+		stdout, _, err := zone4.ExecWithRetries("", "", "zone4-demo-client",
+			"curl", "--verbose", "--max-time", "3", "--fail", "external-service-2.mesh")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+
+		// then stats at zone egress increase
+		Eventually(func(g Gomega) {
+			stat, err := zone4.GetZoneEgressEnvoyTunnel().GetStats(filter)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stat).To(stats.BeGreaterThanZero())
+		}, "30s", "1s").Should(Succeed())
+
+		// when egress is down
+		_, _, err = zone4.Exec("", "", AppEgress, "pkill", "-9", "kuma-dp")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then traffic shouldn't reach external service
+		Eventually(serviceUnreachable, "30s", "1s").Should(HaveOccurred())
 	})
 }
