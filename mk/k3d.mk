@@ -82,9 +82,8 @@ k3d/stop/all:
 
 .PHONY: k3d/load/images
 k3d/load/images:
-	@k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose
 	# https://github.com/k3d-io/k3d/issues/900 can cause failures that simple retry will fix
-	if [[ $? -ne 0 ]]; then k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose; fi
+	@k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose; if [[ ${?} -ne 0 ]]; then k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose; fi
 
 .PHONY: k3d/load
 k3d/load: images k3d/load/images

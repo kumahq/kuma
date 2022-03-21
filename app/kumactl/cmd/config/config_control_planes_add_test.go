@@ -118,7 +118,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 		It("should fail when CP timeouts", func() {
 			// setup
 			server, port := setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
-				time.Sleep(time.Millisecond * 200)
+				time.Sleep(time.Millisecond * 500)
 			})
 			defer server.Close()
 
