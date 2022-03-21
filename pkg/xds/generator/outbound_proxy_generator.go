@@ -202,8 +202,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 			clusterTags := []envoy_common.Tags{cluster.Tags()}
 
 			if service.HasExternalService() {
-				if len(ctx.Mesh.Resources.ZoneEgresses().Items) > 0 &&
-					ctx.Mesh.Resource.MTLSEnabled() {
+				if ctx.Mesh.Resource.ZoneEgressEnabled() {
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster(clusterName)).
 						Configure(envoy_clusters.ClientSideMTLS(
@@ -264,9 +263,7 @@ func (OutboundProxyGenerator) generateEDS(
 		// When no zone egress is present in a mesh Endpoints for ExternalServices
 		// are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
-		if !services[serviceName].HasExternalService() ||
-			(len(ctx.Mesh.Resources.ZoneEgresses().Items) > 0 &&
-				ctx.Mesh.Resource.MTLSEnabled()) {
+		if !services[serviceName].HasExternalService() || ctx.Mesh.Resource.ZoneEgressEnabled() {
 			for _, cluster := range services[serviceName].Clusters() {
 				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion, ctx.Mesh.EndpointMap)
 				if err != nil {

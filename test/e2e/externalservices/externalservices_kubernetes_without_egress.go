@@ -14,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
-func ExternalServicesOnKubernetes() {
+func ExternalServicesOnKubernetesWithoutEgress() {
 	meshDefaulMtlsOn := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -30,7 +30,7 @@ spec:
     outbound:
       passthrough: %s
   routing:
-    zoneEgress: true
+    zoneEgress: %s
 `
 
 	externalService := `
@@ -52,22 +52,6 @@ spec:
 	es1 := "1"
 	es2 := "2"
 
-	trafficPermission := `
-apiVersion: kuma.io/v1alpha1
-kind: TrafficPermission
-mesh: default
-metadata:
-  name: traffic-to-es
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: external-service
-
-`
-
 	var cluster Cluster
 	var clientPod *v1.Pod
 
@@ -79,7 +63,7 @@ spec:
 
 		cluster = clusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, WithEgress(true))).
+			Install(Kuma(core.Standalone)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(externalservice.Install(externalservice.HttpServer, []string{})).
@@ -87,7 +71,7 @@ spec:
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)
+		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false", "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		pods, err := k8s.ListPodsE(
@@ -125,12 +109,8 @@ spec:
 	}
 
 	It("should route to external-service", func() {
-		// given Mesh with passthrough enabled
-		err := YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		// and no default traffic permission
-		err = k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-default")
+		// given Mesh with passthrough enabled and no egress
+		err := YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true", "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication outside of the Mesh works
@@ -139,12 +119,15 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		// when passthrough is disabled on the Mesh
-		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)
+		// when passthrough is disabled on the Mesh and no egress
+		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false", "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then accessing the external service is no longer possible
-		Eventually(trafficBlocked, "30s", "1s").Should(HaveOccurred())
+		// then communication outside of the Mesh works
+		_, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// when apply external service
 		err = YamlK8s(fmt.Sprintf(externalService,
@@ -153,47 +136,28 @@ spec:
 			"false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then traffic is still blocked because of lack of the traffic permission
-		Consistently(trafficBlocked, "10s", "1s").Should(HaveOccurred())
-
-		// when TrafficPermission is added
-		err = YamlK8s(trafficPermission)(cluster)
+		// and passthrough is disabled on the Mesh and zone egress enabled
+		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false", "true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then you can access external service again
-		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
-
-		// and you can also use .mesh on port of the provided host
-		stdout, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
-
-		// and you can also use .mesh on port 80
-		// todo (lobkovilya): check of backward compatibility, could be deleted in the next major release Kuma 1.2.x
-		stdout, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
+		// then accessing the external service is no longer possible
+		Eventually(trafficBlocked, "30s", "1s").Should(HaveOccurred())
 	})
 
 	It("should route to external-service over tls", func() {
-		err := YamlK8s(fmt.Sprintf(externalService,
+		// given Mesh with passthrough enabled and with zone egress
+		err := YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true", "true"))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when apply external service
+		err = YamlK8s(fmt.Sprintf(externalService,
 			es2, es2,
 			"externalservice-https-server.externalservice-namespace.svc.cluster.local", 10080,
 			"true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		_, _, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).To(ContainSubstring("externalservice-https-server"))
+		Expect(err).To(HaveOccurred())
 	})
 }

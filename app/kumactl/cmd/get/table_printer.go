@@ -44,7 +44,7 @@ var CustomTablePrinters = map[model.ResourceType]TablePrinter{
 		},
 	},
 	model.ScopeMesh: RowPrinter{
-		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING", "LOCALITY", "AGE"},
+		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING", "LOCALITY", "ZONEEGRESS", "AGE"},
 		RowFn: func(rootTime time.Time, item model.Resource) []string {
 			mesh := item.(*mesh.MeshResource)
 
@@ -77,6 +77,10 @@ var CustomTablePrinters = map[model.ResourceType]TablePrinter{
 			if mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
 				locality = "on"
 			}
+			zoneEgress := "off"
+			if mesh.Spec.GetRouting().GetZoneEgress() {
+				zoneEgress = "on"
+			}
 			return []string{
 				mesh.GetMeta().GetName(), // NAME
 				mtls,                     // mTLS
@@ -84,6 +88,7 @@ var CustomTablePrinters = map[model.ResourceType]TablePrinter{
 				logging,                  // LOGGING
 				tracing,                  // TRACING
 				locality,                 // LOCALITY
+				zoneEgress,               // ZONEEGRESS
 				table.TimeSince(mesh.GetMeta().GetModificationTime(), rootTime), // AGE
 			}
 		},

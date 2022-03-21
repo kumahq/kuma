@@ -34,6 +34,7 @@ items:
   name: mesh1
   routing:
     localityAwareLoadBalancing: true
+    zoneEgress: true
   tracing:
     backends:
     - conf:
