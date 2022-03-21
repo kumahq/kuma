@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -69,6 +70,28 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve namespace for pod")
 	}
+
+	// Validating labels and annotations
+	r := regexp.MustCompile(`.*\.?kuma.io\/`)
+	for a := range pod.Annotations {
+		if r.MatchString(a) {
+			ok := metadata.ValidEndUserAnnotations[a]
+			if !ok {
+				log.V(1).Info("pod has an invalid annotation", "annotation", a)
+				return errors.New("pod has an invalid annotation " + a)
+			}
+		}
+	}
+	for l := range pod.Labels {
+		if r.MatchString(l) {
+			ok := metadata.ValidEndUserAnnotations[l]
+			if !ok {
+				log.V(1).Info("pod has an invalid label", "label", l)
+				return errors.New("pod has an invalid label " + l)
+			}
+		}
+	}
+
 	if inject, err := i.needInject(pod, ns); err != nil {
 		return err
 	} else if !inject {
