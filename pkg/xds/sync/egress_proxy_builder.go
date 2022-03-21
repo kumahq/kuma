@@ -49,10 +49,10 @@ func (p *EgressProxyBuilder) Build(
 	}
 
 	// As egress is using SNI to identify the services, we need to filter out
-	// meshes with no mTLS enabled
+	// meshes with no mTLS enabled and with ZoneEgress enabled
 	var meshes []*core_mesh.MeshResource
 	for _, mesh := range meshList.Items {
-		if mesh.MTLSEnabled() {
+		if mesh.ZoneEgressEnabled() {
 			meshes = append(meshes, mesh)
 		}
 	}

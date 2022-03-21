@@ -44,12 +44,10 @@ func (c *ClusterGenerator) GenerateClusters(ctx xds_context.Context, info Gatewa
 			firstEndpointExternalService = endpoints[0].IsExternalService()
 		}
 
-		// If there are zone egresses present we want to direct the traffic
-		// through tem. The condition is, the mesh must have mTLS enabled
-		zoneEgresses := ctx.Mesh.Resources.ZoneEgresses().Items
-		mtlsEnabled := ctx.Mesh.Resource.MTLSEnabled()
-
-		isDirectExternalService := firstEndpointExternalService && (len(zoneEgresses) == 0 || !mtlsEnabled)
+		// If there is Mesh property ZoneEgress enabled we want always to
+		// direct the traffic through them. The condition is, the mesh must
+		// have mTLS enabled and traffic through zoneEgress is enabled.
+		isDirectExternalService := firstEndpointExternalService && !ctx.Mesh.Resource.ZoneEgressEnabled()
 		isExternalServiceThroughZoneEgress := firstEndpointExternalService && !isDirectExternalService
 
 		var r *core_xds.Resource

@@ -31,6 +31,13 @@ func (m *MeshResource) MTLSEnabled() bool {
 	return m != nil && m.Spec.GetMtls().GetEnabledBackend() != ""
 }
 
+// ZoneEgress works only when mTLS is enabled.
+// Configuration of mTLS is validated on Mesh configuration
+// change and when zoneEgress is enabled.
+func (m *MeshResource) ZoneEgressEnabled() bool {
+	return m != nil && m.Spec.GetRouting().GetZoneEgress()
+}
+
 func (m *MeshResource) GetLoggingBackend(name string) *mesh_proto.LoggingBackend {
 	backends := map[string]*mesh_proto.LoggingBackend{}
 	for _, backend := range m.Spec.GetLogging().GetBackends() {

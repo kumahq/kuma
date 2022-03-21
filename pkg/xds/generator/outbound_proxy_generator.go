@@ -55,7 +55,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	for _, outbound := range outbounds {
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
-		routes := g.determineRoutes(proxy, outbound, clusterCache, splitCounter, ctx.Mesh.HasEgress())
+		routes := g.determineRoutes(proxy, outbound, clusterCache, splitCounter, ctx.Mesh.Resource.ZoneEgressEnabled())
 		clusters := routes.Clusters()
 		servicesAcc.Add(clusters...)
 
@@ -117,7 +117,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]), proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
 				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
-				ConfigureIf(!ctx.Mesh.HasEgress(), envoy_listeners.RateLimit(rateLimits)).
+				ConfigureIf(!ctx.Mesh.Resource.ZoneEgressEnabled(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
@@ -125,7 +125,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
 				Configure(envoy_listeners.Tracing(ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), sourceService)).
 				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
-				ConfigureIf(!ctx.Mesh.HasEgress(), envoy_listeners.RateLimit(rateLimits)).
+				ConfigureIf(!ctx.Mesh.Resource.ZoneEgressEnabled(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.HttpAccessLog(
 					meshName,
 					envoy_common.TrafficDirectionOutbound,
@@ -204,7 +204,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 			clusterTags := []envoy_common.Tags{cluster.Tags()}
 
 			if service.HasExternalService() {
-				if ctx.Mesh.HasEgress() {
+				if ctx.Mesh.Resource.ZoneEgressEnabled() {
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster(clusterName)).
 						Configure(envoy_clusters.ClientSideMTLS(
@@ -265,7 +265,7 @@ func (OutboundProxyGenerator) generateEDS(
 		// When no zone egress is present in a mesh Endpoints for ExternalServices
 		// are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
-		if !services[serviceName].HasExternalService() || ctx.Mesh.HasEgress() {
+		if !services[serviceName].HasExternalService() || ctx.Mesh.Resource.ZoneEgressEnabled() {
 			for _, cluster := range services[serviceName].Clusters() {
 				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion, ctx.Mesh.EndpointMap)
 				if err != nil {

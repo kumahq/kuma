@@ -11,6 +11,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server/v3"
 )
@@ -31,6 +32,11 @@ var _ = Describe("Gateway Route", func() {
 		// "default" in the current mesh.
 		ctx, proxy := MakeGeneratorContext(rt,
 			core_model.ResourceKey{Mesh: "default", Name: "default"})
+
+		// Tokens for zone egress needs to be generated
+		// Without test configuration each run will generates
+		// new tokens for authentication.
+		ctx.ControlPlane.Secrets = &xds.TestSecrets{}
 
 		Expect(proxy.Dataplane.Spec.IsBuiltinGateway()).To(BeTrue())
 
@@ -1187,6 +1193,100 @@ conf:
       backends:
       - destination:
           kuma.io/service: echo-service
+`,
+		),
+
+		Entry("generates external service endpoints with zone egress ip when zone egress enabled and zone egress instances available",
+			"25-gateway-route.yaml", `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+routing:
+  zoneEgress: true`, `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+  kuma.io/protocol: http2
+networking:
+  address: httpbin.com:443
+  tls:
+    enabled: true
+`, `
+type: ZoneEgress
+name: zone-egress
+networking:
+  address: 1.1.1.1
+  port: 12345
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
+`,
+		),
+
+		Entry("generates external service cluster without endpoint ip because there is no zone egress instance",
+			"26-gateway-route.yaml", `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+routing:
+  zoneEgress: true`, `
+type: ExternalService
+mesh: default
+name: external-httpbin
+tags:
+  kuma.io/service: external-httpbin
+  kuma.io/protocol: http2
+networking:
+  address: httpbin.com:443
+  tls:
+    enabled: true
+`, `
+type: MeshGatewayRoute
+mesh: default
+name: echo-service
+selectors:
+- match:
+    kuma.io/service: gateway-default
+selectors:
+- match:
+    kuma.io/service: gateway-default
+conf:
+  http:
+    rules:
+    - matches:
+      - path:
+          match: PREFIX
+          value: "/"
+      backends:
+      - destination:
+          kuma.io/service: external-httpbin
 `,
 		),
 	}
