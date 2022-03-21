@@ -3,6 +3,7 @@ package framework
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/pkg/errors"
@@ -45,6 +46,7 @@ type E2eConfig struct {
 	DefaultClusterStartupTimeout  time.Duration     `yaml:"defaultClusterStartupTimeout,omitempty" envconfig:"KUMA_DEFAULT_TIMEOUT"`
 	KumactlBin                    string            `yaml:"kumactlBin,omitempty" envconfig:"KUMACTLBIN"`
 	ZoneEgressApp                 string            `yaml:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
+	Arch                          string            `yaml:"arch,omitempty" envconfig:"ARCH"`
 
 	SuiteConfig SuiteConfig `yaml:"suites,omitempty"`
 }
@@ -109,6 +111,7 @@ func (c E2eConfig) AutoConfigure() error {
 	if Config.IPV6 && Config.CIDR == "" {
 		Config.CIDR = "fd00:fd00::/64"
 	}
+	Config.Arch = runtime.GOARCH
 	return nil
 }
 
@@ -163,7 +166,7 @@ var defaultConf = E2eConfig{
 	SuiteConfig: SuiteConfig{
 		Helm: HelmSuiteConfig{
 			Versions: []string{
-				"0.4.5",
+				"0.8.1",
 			},
 		},
 		Compatibility: CompatibilitySuiteConfig{

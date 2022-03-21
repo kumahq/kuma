@@ -120,8 +120,6 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *core_mesh.Datapl
 				certBackend := dataplaneInsight.GetMTLS().GetIssuedBackend()
 				if dataplaneInsight.GetMTLS() == nil {
 					certBackend = "-"
-				} else if dataplaneInsight.GetMTLS().GetIssuedBackend() == "" {
-					certBackend = "unknown" // backwards compatibility with Kuma 1.2.x
 				}
 				supportedBackend := strings.Join(dataplaneInsight.GetMTLS().GetSupportedBackends(), ",")
 

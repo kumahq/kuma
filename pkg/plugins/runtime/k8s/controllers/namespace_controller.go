@@ -65,6 +65,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection label on namespace %s", ns.Name)
 	}
 	// support annotations for backwards compatibility
+	// https://github.com/kumahq/kuma/issues/4005
 	injectedAnnotation := false
 	injectedAnnotation, _, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {

@@ -128,15 +128,15 @@ func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInte
 	return nil, errors.Errorf("Dataplane has no Inbound Interface for service %q", service)
 }
 
-func (n *Dataplane_Networking) GetInboundInterfaces() ([]InboundInterface, error) {
+func (n *Dataplane_Networking) GetInboundInterfaces() []InboundInterface {
 	if n == nil {
-		return nil, nil
+		return nil
 	}
 	ifaces := make([]InboundInterface, len(n.Inbound))
 	for i, inbound := range n.Inbound {
 		ifaces[i] = n.ToInboundInterface(inbound)
 	}
-	return ifaces, nil
+	return ifaces
 }
 
 func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_Inbound) InboundInterface {

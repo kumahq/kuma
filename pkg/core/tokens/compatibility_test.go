@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -38,6 +39,7 @@ var _ = Describe("Compatibility with old ASN.1 format", func() {
 		validator = tokens.NewValidator(
 			tokens.NewMeshedSigningKeyAccessor(resManager, TestTokenSigningKeyPrefix, model.DefaultMesh),
 			tokens.NewRevocations(resManager, TokenRevocationsGlobalSecretKey),
+			store_config.MemoryStore,
 		)
 
 		Expect(resManager.Create(ctx, mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())

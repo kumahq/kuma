@@ -40,6 +40,7 @@ type KumaDpVersion struct {
 }
 
 type EnvoyVersion struct {
-	Version string `json:"version"`
-	Build   string `json:"build"`
+	Version          string `json:"version"`
+	Build            string `json:"build"`
+	KumaDpCompatible bool   `json:"kumaDpCompatible"`
 }

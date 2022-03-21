@@ -31,12 +31,13 @@ import (
 type ConfigMapReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder
-	Scheme            *kube_runtime.Scheme
-	Log               logr.Logger
-	ResourceManager   manager.ResourceManager
-	ResourceConverter k8s_common.Converter
-	VIPsAllocator     *dns.VIPsAllocator
-	SystemNamespace   string
+	Scheme              *kube_runtime.Scheme
+	Log                 logr.Logger
+	ResourceManager     manager.ResourceManager
+	ResourceConverter   k8s_common.Converter
+	VIPsAllocator       *dns.VIPsAllocator
+	SystemNamespace     string
+	KubeOutboundsAsVIPs bool
 }
 
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -47,7 +48,29 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 	r.Log.V(1).Info("updating VIPs", "mesh", mesh)
 
-	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh); err != nil {
+	viewModificator := func(view *vips.VirtualOutboundMeshView) error {
+		return nil
+	}
+	if r.KubeOutboundsAsVIPs {
+		kubeHostsView, err := KubeHosts(ctx, r.Client, r.ResourceManager, mesh)
+		if err != nil {
+			return kube_ctrl.Result{}, err
+		}
+
+		viewModificator = func(view *vips.VirtualOutboundMeshView) error {
+			view.DeleteByOrigin(vips.OriginKube)
+			for _, entry := range kubeHostsView.HostnameEntries() {
+				for _, outbound := range kubeHostsView.Get(entry).Outbounds {
+					if err := view.Add(entry, outbound); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		}
+	}
+
+	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh, viewModificator); err != nil {
 		if store.IsResourceConflict(err) {
 			r.Log.V(1).Info("VIPs were updated in the other place. Retrying")
 			return kube_ctrl.Result{Requeue: true}, nil

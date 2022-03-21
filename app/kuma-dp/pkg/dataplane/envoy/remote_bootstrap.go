@@ -137,8 +137,9 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 				BuildDate: kuma_version.Build.BuildDate,
 			},
 			Envoy: types.EnvoyVersion{
-				Version: params.EnvoyVersion.Version,
-				Build:   params.EnvoyVersion.Build,
+				Version:          params.EnvoyVersion.Version,
+				Build:            params.EnvoyVersion.Build,
+				KumaDpCompatible: params.EnvoyVersion.KumaDpCompatible,
 			},
 		},
 		DynamicMetadata: params.DynamicMetadata,

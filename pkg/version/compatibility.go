@@ -1,12 +1,5 @@
 package version
 
-import (
-	"strings"
-
-	"github.com/Masterminds/semver/v3"
-	"github.com/pkg/errors"
-)
-
 type DataplaneCompatibility struct {
 	Envoy string `json:"envoy"`
 }
@@ -69,49 +62,3 @@ var CompatibilityMatrix = Compatibility{
 }
 
 var DevVersionPrefix = "dev"
-var DevDataplaneCompatibility = DataplaneCompatibility{
-	Envoy: "~1.21.1",
-}
-
-// DataplaneConstraints returns which Envoy should be used with given version of Kuma.
-// This information is later used in the GUI as a warning.
-// Kuma ships with given Envoy version, but user can use their own Envoy version (especially on Universal)
-// therefore we need to inform them that they are not using compatible version.
-func (c Compatibility) DataplaneConstraints(version string) (*DataplaneCompatibility, error) {
-	if strings.HasPrefix(version, DevVersionPrefix) {
-		return &DevDataplaneCompatibility, nil
-	}
-
-	v, err := semver.NewVersion(version)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not build a constraint for Kuma version %s", version)
-	}
-
-	var matchedCompat []DataplaneCompatibility
-	for constraintRaw, dpCompat := range c.KumaDP {
-		constraint, err := semver.NewConstraint(constraintRaw)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not build a constraint %s", constraintRaw)
-		}
-		if constraint.Check(v) {
-			matchedCompat = append(matchedCompat, dpCompat)
-		}
-	}
-
-	if len(matchedCompat) == 0 {
-		return nil, errors.Errorf("no constraints for version: %s found", version)
-	}
-
-	if len(matchedCompat) > 1 {
-		var matched []string
-		for _, c := range matchedCompat {
-			matched = append(matched, c.Envoy)
-		}
-		return nil, errors.Errorf(
-			"more than one constraint for version %s: %s",
-			version,
-			strings.Join(matched, ", "),
-		)
-	}
-	return &matchedCompat[0], nil
-}

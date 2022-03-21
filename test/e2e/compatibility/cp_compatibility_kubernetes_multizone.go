@@ -74,7 +74,7 @@ func CpCompatibilityMultizoneKubernetes() {
 		// Start a global
 		err := NewClusterSetup().
 			Install(Kuma(core.Global,
-				append(globalConf, WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
+				append(globalConf,
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmReleaseName(globalReleaseName))...,
 			)).
@@ -85,7 +85,6 @@ func CpCompatibilityMultizoneKubernetes() {
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
 				append(zoneConf,
-					WithEnv("KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST", "true"),
 					WithInstallationMode(HelmInstallationMode),
 					WithHelmReleaseName(zoneReleaseName),
 					WithGlobalAddress(globalCluster.GetKuma().GetKDSServerAddress()),

@@ -219,6 +219,12 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		"--dataplane-repository":      Config.KumaDPImageRepo,
 		"--dataplane-init-repository": Config.KumaInitImageRepo,
 	}
+	if Config.Arch == "arm64" {
+		argsMap["--control-plane-node-selector"] = "kubernetes.io/arch=arm64"
+		argsMap["--cni-node-selector"] = "kubernetes.io/arch=arm64"
+		argsMap["--ingress-node-selector"] = "kubernetes.io/arch=arm64"
+		argsMap["--egress-node-selector"] = "kubernetes.io/arch=arm64"
+	}
 	if Config.KumaImageRegistry != "" {
 		argsMap["--control-plane-registry"] = Config.KumaImageRegistry
 		argsMap["--dataplane-registry"] = Config.KumaImageRegistry
@@ -284,6 +290,13 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		"dataPlane.image.repository":             Config.KumaDPImageRepo,
 		"dataPlane.initImage.repository":         Config.KumaInitImageRepo,
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(c.opts.skipDefaultMesh),
+	}
+	if Config.Arch == "arm64" {
+		values[`controlPlane.nodeSelector.kubernetes\.io/arch`] = "arm64"
+		values[`cni.nodeSelector.kubernetes\.io/arch`] = "arm64"
+		values[`ingress.nodeSelector.kubernetes\.io/arch`] = "arm64"
+		values[`egress.nodeSelector.kubernetes\.io/arch`] = "arm64"
+		values[`hooks.nodeSelector.kubernetes\.io/arch`] = "arm64"
 	}
 	if Config.KumaImageRegistry != "" {
 		values["global.image.registry"] = Config.KumaImageRegistry
@@ -405,9 +418,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		replicas = c.opts.cpReplicas
 	}
 
-	// backwards compatibility, check for 1.3.x localhost is admin env variable.
-	localhostIsAdmin := c.opts.env["KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST"] == "true"
-	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas, localhostIsAdmin)
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.verbose, replicas)
 
 	switch mode {
 	case core.Zone:

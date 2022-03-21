@@ -74,25 +74,26 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 	params := configParameters{
-		Id:                 proxyId.String(),
-		AdminAddress:       b.config.Params.AdminAddress,
-		AdminAccessLogPath: b.config.Params.AdminAccessLogPath,
-		XdsHost:            b.xdsHost(request),
-		XdsPort:            b.config.Params.XdsPort,
-		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout,
-		AccessLogPipe:      envoy_common.AccessLogSocketName(request.Name, request.Mesh),
-		DataplaneToken:     request.DataplaneToken,
-		DataplaneResource:  request.DataplaneResource,
-		KumaDpVersion:      request.Version.KumaDp.Version,
-		KumaDpGitTag:       request.Version.KumaDp.GitTag,
-		KumaDpGitCommit:    request.Version.KumaDp.GitCommit,
-		KumaDpBuildDate:    request.Version.KumaDp.BuildDate,
-		EnvoyVersion:       request.Version.Envoy.Version,
-		EnvoyBuild:         request.Version.Envoy.Build,
-		DynamicMetadata:    request.DynamicMetadata,
-		DNSPort:            request.DNSPort,
-		EmptyDNSPort:       request.EmptyDNSPort,
-		ProxyType:          request.ProxyType,
+		Id:                    proxyId.String(),
+		AdminAddress:          b.config.Params.AdminAddress,
+		AdminAccessLogPath:    b.config.Params.AdminAccessLogPath,
+		XdsHost:               b.xdsHost(request),
+		XdsPort:               b.config.Params.XdsPort,
+		XdsConnectTimeout:     b.config.Params.XdsConnectTimeout,
+		AccessLogPipe:         envoy_common.AccessLogSocketName(request.Name, request.Mesh),
+		DataplaneToken:        request.DataplaneToken,
+		DataplaneResource:     request.DataplaneResource,
+		KumaDpVersion:         request.Version.KumaDp.Version,
+		KumaDpGitTag:          request.Version.KumaDp.GitTag,
+		KumaDpGitCommit:       request.Version.KumaDp.GitCommit,
+		KumaDpBuildDate:       request.Version.KumaDp.BuildDate,
+		EnvoyVersion:          request.Version.Envoy.Version,
+		EnvoyBuild:            request.Version.Envoy.Build,
+		EnvoyKumaDpCompatible: request.Version.Envoy.KumaDpCompatible,
+		DynamicMetadata:       request.DynamicMetadata,
+		DNSPort:               request.DNSPort,
+		EmptyDNSPort:          request.EmptyDNSPort,
+		ProxyType:             request.ProxyType,
 	}
 	if params.ProxyType == "" {
 		params.ProxyType = string(mesh_proto.DataplaneProxyType)
@@ -103,6 +104,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			params.AdminPort = adminPortFromResource
 		} else {
 			if request.AdminPort != 0 {
+				// https://github.com/kumahq/kuma/issues/4002
 				// Backwards compatibility, Inspect API may not work properly if the port
 				// was set through the '--admin-port' flag. It affects only ability to get
 				// config_dump through the Inspect API and it's done that way to avoid updating
