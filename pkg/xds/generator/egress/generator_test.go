@@ -128,6 +128,7 @@ var _ = Describe("EgressGenerator", func() {
 				Generators: []egress.ZoneEgressGenerator{
 					&egress.InternalServicesGenerator{},
 					&egress.ExternalServicesGenerator{},
+					&egress.ZoneExternalServicesGenerator{},
 				},
 			}
 
@@ -179,6 +180,10 @@ var _ = Describe("EgressGenerator", func() {
 		Entry("05. custom trafficpermission, mixed internal and external services", testCase{
 			fileWithResourcesName: "05.mixed-services-with-custom-trafficpermissions.yaml",
 			expected:              "05.mixed-services-with-custom-trafficpermissions.golden.yaml",
+		}),
+		Entry("06. mixed-services-with-external-in-other-zone", testCase{
+			fileWithResourcesName: "06.mixed-services-with-external-in-other-zone.yaml",
+			expected:              "06.mixed-services-with-external-in-other-zone.golden.yaml",
 		}),
 	)
 })

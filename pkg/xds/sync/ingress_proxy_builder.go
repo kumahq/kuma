@@ -2,7 +2,9 @@ package sync
 
 import (
 	"context"
+	"sort"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -10,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	xds_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -20,18 +23,27 @@ type IngressProxyBuilder struct {
 	ReadOnlyResManager manager.ReadOnlyResourceManager
 	LookupIP           lookup.LookupIPFunc
 	MetadataTracker    DataplaneMetadataTracker
+	meshCache          *xds_cache.Cache
 
 	apiVersion envoy.APIVersion
+	zone       string
 }
 
 func (p *IngressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, error) {
 	ctx := context.Background()
 
-	zoneIngress, err := p.getZoneIngress(key)
+	zoneIngress, err := p.getZoneIngress(ctx, key)
 	if err != nil {
 		return nil, err
 	}
+	zoneIngress.Spec.Zone = p.zone
+
 	zoneIngress, err = xds_topology.ResolveZoneIngressPublicAddress(p.LookupIP, zoneIngress)
+	if err != nil {
+		return nil, err
+	}
+
+	zoneEgress, err := p.getLocalZoneEgress(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +54,11 @@ func (p *IngressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, err
 	}
 	allMeshDataplanes.Items = xds_topology.ResolveAddresses(syncLog, p.LookupIP, allMeshDataplanes.Items)
 
-	routing := p.resolveRouting(zoneIngress, allMeshDataplanes)
+	availableExternalServices, err := p.getIngressExternalServices(ctx)
+	if err != nil {
+		return nil, err
+	}
+	routing := p.resolveRouting(zoneIngress, zoneEgress, allMeshDataplanes, availableExternalServices)
 
 	zoneIngressProxy, err := p.buildZoneIngressProxy(ctx)
 	if err != nil {
@@ -79,9 +95,7 @@ func (p *IngressProxyBuilder) buildZoneIngressProxy(ctx context.Context) (*xds.Z
 	}, nil
 }
 
-func (p *IngressProxyBuilder) getZoneIngress(key core_model.ResourceKey) (*core_mesh.ZoneIngressResource, error) {
-	ctx := context.Background()
-
+func (p *IngressProxyBuilder) getZoneIngress(ctx context.Context, key core_model.ResourceKey) (*core_mesh.ZoneIngressResource, error) {
 	zoneIngress := core_mesh.NewZoneIngressResource()
 	if err := p.ReadOnlyResManager.Get(ctx, zoneIngress, core_store.GetBy(key)); err != nil {
 		return nil, err
@@ -89,15 +103,20 @@ func (p *IngressProxyBuilder) getZoneIngress(key core_model.ResourceKey) (*core_
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
-	if err := p.updateIngress(zoneIngress); err != nil {
+	if err := p.updateIngress(ctx, zoneIngress); err != nil {
 		return nil, err
 	}
 	return zoneIngress, nil
 }
 
-func (p *IngressProxyBuilder) resolveRouting(zoneIngress *core_mesh.ZoneIngressResource, dataplanes *core_mesh.DataplaneResourceList) *xds.Routing {
+func (p *IngressProxyBuilder) resolveRouting(
+	zoneIngress *core_mesh.ZoneIngressResource,
+	zoneEgress *core_mesh.ZoneEgressResource,
+	dataplanes *core_mesh.DataplaneResourceList,
+	externalServices *core_mesh.ExternalServiceResourceList,
+) *xds.Routing {
 	destinations := ingress.BuildDestinationMap(zoneIngress)
-	endpoints := ingress.BuildEndpointMap(destinations, dataplanes.Items)
+	endpoints := ingress.BuildEndpointMap(destinations, dataplanes.Items, externalServices.Items, zoneEgress)
 
 	routing := &xds.Routing{
 		OutboundTargets: endpoints,
@@ -105,17 +124,82 @@ func (p *IngressProxyBuilder) resolveRouting(zoneIngress *core_mesh.ZoneIngressR
 	return routing
 }
 
-func (p *IngressProxyBuilder) updateIngress(zoneIngress *core_mesh.ZoneIngressResource) error {
-	ctx := context.Background()
-
+func (p *IngressProxyBuilder) updateIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource) error {
 	allMeshDataplanes := &core_mesh.DataplaneResourceList{}
 	if err := p.ReadOnlyResManager.List(ctx, allMeshDataplanes); err != nil {
 		return err
 	}
 	allMeshDataplanes.Items = xds_topology.ResolveAddresses(syncLog, p.LookupIP, allMeshDataplanes.Items)
 
+	availableExternalServices, err := p.getIngressExternalServices(ctx)
+	if err != nil {
+		return err
+	}
+
 	// Update Ingress' Available Services
 	// This was placed as an operation of DataplaneWatchdog out of the convenience.
 	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
-	return ingress.UpdateAvailableServices(ctx, p.ResManager, zoneIngress, allMeshDataplanes.Items)
+	return ingress.UpdateAvailableServices(ctx, p.ResManager, zoneIngress, allMeshDataplanes.Items, availableExternalServices.Items)
+}
+
+func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*core_mesh.ExternalServiceResourceList, error) {
+	var meshList core_mesh.MeshResourceList
+	if err := p.ReadOnlyResManager.List(ctx, &meshList); err != nil {
+		return nil, err
+	}
+
+	var meshes []*core_mesh.MeshResource
+
+	for _, mesh := range meshList.Items {
+		if mesh.ZoneEgressEnabled() && mesh.LocalityAwareLbEnabled() {
+			meshes = append(meshes, mesh)
+		}
+	}
+
+	allMeshExternalServices := &core_mesh.ExternalServiceResourceList{}
+	var externalServices []*core_mesh.ExternalServiceResource
+	for _, mesh := range meshes {
+		meshName := mesh.GetMeta().GetName()
+
+		meshCtx, err := p.meshCache.GetMeshContext(ctx, syncLog, meshName)
+		if err != nil {
+			return nil, err
+		}
+
+		meshExternalServices := meshCtx.Resources.ExternalServices().Items
+
+		// look for external services that are only available in my zone and expose them
+		for _, es := range meshExternalServices {
+			if es.Spec.Tags[mesh_proto.ZoneTag] == p.zone {
+				es.Spec.Tags[mesh_proto.ZoneExternalServiceTag] = "true"
+				externalServices = append(externalServices, es)
+			}
+		}
+	}
+
+	// It's done for achieving stable xds config
+	sort.Slice(externalServices, func(a, b int) bool {
+		return externalServices[a].GetMeta().GetName() < externalServices[b].GetMeta().GetName()
+	})
+
+	allMeshExternalServices.Items = externalServices
+	return allMeshExternalServices, nil
+}
+
+func (p *IngressProxyBuilder) getLocalZoneEgress(ctx context.Context) (*core_mesh.ZoneEgressResource, error) {
+	// resource manager has in database only local zone egress so we don't have to compare
+	// zone name. The problem is for Universal where field is empty
+	var zoneEgressesList core_mesh.ZoneEgressResourceList
+	if err := p.ReadOnlyResManager.List(ctx, &zoneEgressesList); err != nil {
+		return nil, err
+	}
+
+	// we take first instance
+	var zoneEgress *core_mesh.ZoneEgressResource
+	for _, ze := range zoneEgressesList.Items {
+		zoneEgress = ze
+		break
+	}
+
+	return zoneEgress, nil
 }

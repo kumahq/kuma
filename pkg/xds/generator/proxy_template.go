@@ -100,6 +100,7 @@ func NewEgressProxyProfile() ResourceGenerator {
 			Generators: []egress.ZoneEgressGenerator{
 				&egress.InternalServicesGenerator{},
 				&egress.ExternalServicesGenerator{},
+				&egress.ZoneExternalServicesGenerator{},
 			},
 		},
 	}

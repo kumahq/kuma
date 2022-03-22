@@ -41,6 +41,20 @@ var _ = Describe("TrafficRoute", func() {
 			},
 		},
 	}
+	defaultMeshWithMTLSAndZoneEgressAndLB := &core_mesh.MeshResource{
+		Meta: &test_model.ResourceMeta{
+			Name: defaultMeshName,
+		},
+		Spec: &mesh_proto.Mesh{
+			Mtls: &mesh_proto.Mesh_Mtls{
+				EnabledBackend: "ca-1",
+			},
+			Routing: &mesh_proto.Routing{
+				LocalityAwareLoadBalancing: true,
+				ZoneEgress:                 true,
+			},
+		},
+	}
 	defaultMeshWithMTLSAndZoneEgressDisabled := &core_mesh.MeshResource{
 		Meta: &test_model.ResourceMeta{
 			Name: defaultMeshName,
@@ -954,6 +968,199 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
+			Entry("external service based on ingress informations with tls context for external available service", testCase{
+				zoneIngresses: []*core_mesh.ZoneIngressResource{
+					{
+						Spec: &mesh_proto.ZoneIngress{
+							Zone: "zone-2",
+							Networking: &mesh_proto.ZoneIngress_Networking{
+								Address:           "10.20.1.2",
+								Port:              10001,
+								AdvertisedAddress: "192.168.0.100",
+								AdvertisedPort:    12345,
+							},
+							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+								{
+									Instances: 2,
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "service-zone2", mesh_proto.ZoneTag: "zone-2", mesh_proto.ZoneExternalServiceTag: "true"},
+								},
+								{
+									Instances: 3,
+									Mesh:      defaultMeshName,
+									Tags:      map[string]string{mesh_proto.ServiceTag: "test", mesh_proto.ZoneTag: "zone-2"},
+								},
+							},
+						},
+					},
+				},
+				zoneEgresses: []*core_mesh.ZoneEgressResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "egress",
+							Mesh: "default",
+						},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{
+								Address: "1.1.1.1",
+								Port:    10002,
+							},
+						},
+					},
+				},
+				dataplanes: []*core_mesh.DataplaneResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
+								},
+							},
+						},
+					},
+				},
+				externalServices: []*core_mesh.ExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: &mesh_proto.ExternalService{
+							Networking: &mesh_proto.ExternalService_Networking{
+								Address: "example.com:443",
+							},
+							Tags: map[string]string{mesh_proto.ServiceTag: "example"},
+						},
+					},
+				},
+				mesh: defaultMeshWithMTLSAndZoneEgressAndLB,
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{
+							Target: "192.168.0.1",
+							Port:   6379,
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
+						},
+					},
+					"test": []core_xds.Endpoint{
+						{
+							Target:   "1.1.1.1",
+							Port:     10002,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "test", mesh_proto.ZoneTag: "zone-2"},
+							Weight:   1, // local weight is bumped to 2 to factor two instances of Ingresses
+							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 1},
+						},
+					},
+					"example": []core_xds.Endpoint{
+						{
+							Target:          "1.1.1.1",
+							Port:            10002,
+							Tags:            map[string]string{mesh_proto.ServiceTag: "example"},
+							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
+							ExternalService: &core_xds.ExternalService{},
+						},
+					},
+					"service-zone2": []core_xds.Endpoint{
+						{
+							Target:          "1.1.1.1",
+							Port:            10002,
+							Tags:            map[string]string{mesh_proto.ServiceTag: "service-zone2", mesh_proto.ZoneTag: "zone-2", mesh_proto.ZoneExternalServiceTag: "true"},
+							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
+							ExternalService: &core_xds.ExternalService{},
+							Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 1},
+						},
+					},
+				},
+			}),
 		)
+		Describe("BuildRemoteEndpointMap()", func() {
+			type testCase struct {
+				zoneIngresses    []*core_mesh.ZoneIngressResource
+				externalServices []*core_mesh.ExternalServiceResource
+				mesh             *core_mesh.MeshResource
+				expected         core_xds.EndpointMap
+			}
+
+			DescribeTable("should generate endpoints map for zone egress",
+				func(given testCase) {
+					// when
+					endpoints := BuildRemoteEndpointMap(given.mesh, "zone-1", given.zoneIngresses, given.externalServices, dataSourceLoader)
+					// then
+					Expect(endpoints).To(Equal(given.expected))
+				},
+				Entry("generate map for zone egress with ingress instances", testCase{
+					zoneIngresses: []*core_mesh.ZoneIngressResource{
+						{
+							Spec: &mesh_proto.ZoneIngress{
+								Zone: "zone-2",
+								Networking: &mesh_proto.ZoneIngress_Networking{
+									Address:           "10.20.1.2",
+									Port:              10001,
+									AdvertisedAddress: "192.168.0.100",
+									AdvertisedPort:    12345,
+								},
+								AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+									{
+										Instances: 2,
+										Mesh:      defaultMeshName,
+										Tags:      map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2", mesh_proto.ZoneExternalServiceTag: "true"},
+									},
+									{
+										Instances: 3,
+										Mesh:      defaultMeshName,
+										Tags:      map[string]string{mesh_proto.ServiceTag: "test", mesh_proto.ZoneTag: "zone-2"},
+									},
+								},
+							},
+						},
+					},
+					externalServices: []*core_mesh.ExternalServiceResource{
+						{
+							Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+							Spec: &mesh_proto.ExternalService{
+								Networking: &mesh_proto.ExternalService_Networking{
+									Address: "httpbin.org:80",
+								},
+								Tags: map[string]string{mesh_proto.ServiceTag: "httpbin"},
+							},
+						},
+					},
+					mesh: defaultMeshWithMTLSAndZoneEgressAndLB,
+					expected: core_xds.EndpointMap{
+						"service-in-zone2": []core_xds.Endpoint{
+							{
+								Target:   "192.168.0.100",
+								Port:     12345,
+								Tags:     map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2", mesh_proto.ZoneExternalServiceTag: "true", "mesh": "default"},
+								Weight:   2, // local weight is bumped to 2 to factor two instances of Ingresses
+								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 1},
+							},
+						},
+						"test": []core_xds.Endpoint{
+							{
+								Target:   "192.168.0.100",
+								Port:     12345,
+								Tags:     map[string]string{mesh_proto.ServiceTag: "test", mesh_proto.ZoneTag: "zone-2", "mesh": "default"},
+								Weight:   3, // local weight is bumped to 2 to factor two instances of Ingresses
+								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 1},
+							},
+						},
+						"httpbin": []core_xds.Endpoint{
+							{
+								Target:          "httpbin.org",
+								Port:            80,
+								Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", "mesh": "default"},
+								Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
+								ExternalService: &core_xds.ExternalService{TLSEnabled: false},
+							},
+						},
+					},
+				}),
+			)
+		})
 	})
 })

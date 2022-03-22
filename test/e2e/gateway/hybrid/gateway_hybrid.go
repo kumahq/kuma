@@ -33,7 +33,7 @@ var _ = E2EBeforeSuite(func() {
 	k8sZone = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Zone,
-			WithIngress(),
+			WithIngress(false),
 			WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
 			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
 		)).

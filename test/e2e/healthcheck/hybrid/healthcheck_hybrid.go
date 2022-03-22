@@ -51,7 +51,7 @@ spec:
 		zoneK8s = k8sClusters.GetCluster(Kuma2)
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
-				WithIngress(),
+				WithIngress(false),
 				WithGlobalAddress(globalK8s.GetKuma().GetKDSServerAddress()),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).

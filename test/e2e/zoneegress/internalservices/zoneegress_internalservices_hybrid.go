@@ -81,7 +81,7 @@ var _ = E2EBeforeSuite(func() {
 	zone2 = k8sClusters.GetCluster(Kuma2)
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Zone,
-			WithIngress(),
+			WithIngress(false),
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 		)).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).

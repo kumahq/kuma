@@ -65,7 +65,7 @@ var _ = E2EBeforeSuite(func() {
 	zone1 = k8sClusters.GetCluster(Kuma1)
 	Expect(NewClusterSetup().
 		Install(Kuma(core.Zone,
-			WithIngress(),
+			WithIngress(false),
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithCNI(),
 			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false"), // check if old resolving still works
@@ -86,7 +86,7 @@ var _ = E2EBeforeSuite(func() {
 
 	Expect(NewClusterSetup().
 		Install(Kuma(core.Zone,
-			WithIngress(),
+			WithIngress(false),
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false"),
 		)).

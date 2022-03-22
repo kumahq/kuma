@@ -13,21 +13,25 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-type InternalServicesGenerator struct {
+type ZoneExternalServicesGenerator struct {
 }
 
 // Generate will generate envoy resources for one mesh (when mTLS enabled)
-func (g *InternalServicesGenerator) Generate(
+func (g *ZoneExternalServicesGenerator) Generate(
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
+	if !zoneExternalServiceEnabled(meshResources) {
+		return resources, nil
+	}
 
+	zone := proxy.ZoneEgressProxy.ZoneEgressResource.Spec.GetZone()
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
 	destinations := buildDestinations(meshResources.TrafficRoutes)
-	services := g.buildServices(endpointMap, meshResources)
+	services := g.buildServices(endpointMap, zone)
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	g.addFilterChains(
@@ -54,7 +58,7 @@ func (g *InternalServicesGenerator) Generate(
 	return resources, nil
 }
 
-func (*InternalServicesGenerator) generateEDS(
+func (*ZoneExternalServicesGenerator) generateEDS(
 	meshName string,
 	apiVersion envoy_common.APIVersion,
 	services []string,
@@ -84,7 +88,7 @@ func (*InternalServicesGenerator) generateEDS(
 	return resources, nil
 }
 
-func (*InternalServicesGenerator) generateCDS(
+func (*ZoneExternalServicesGenerator) generateCDS(
 	meshName string,
 	apiVersion envoy_common.APIVersion,
 	services []string,
@@ -122,16 +126,14 @@ func (*InternalServicesGenerator) generateCDS(
 	return resources, nil
 }
 
-func (*InternalServicesGenerator) buildServices(
+func (*ZoneExternalServicesGenerator) buildServices(
 	endpointMap core_xds.EndpointMap,
-	meshResources *core_xds.MeshResources,
+	zone string,
 ) []string {
 	var services []string
 
 	for serviceName, endpoints := range endpointMap {
-		if len(endpoints) > 0 &&
-			!endpoints[0].IsExternalService() &&
-			(!zoneExternalServiceEnabled(meshResources) || !isZoneExternalService(&endpoints[0])) {
+		if len(endpoints) > 0 && isZoneExternalService(&endpoints[0]) && isNotSpecificZoneExternalService(&endpoints[0], zone) {
 			services = append(services, serviceName)
 		}
 	}
@@ -141,7 +143,7 @@ func (*InternalServicesGenerator) buildServices(
 	return services
 }
 
-func (*InternalServicesGenerator) addFilterChains(
+func (*ZoneExternalServicesGenerator) addFilterChains(
 	apiVersion envoy_common.APIVersion,
 	destinationsPerService map[string][]envoy_common.Tags,
 	endpointMap core_xds.EndpointMap,
@@ -168,44 +170,45 @@ func (*InternalServicesGenerator) addFilterChains(
 				continue
 			}
 
-			if zoneExternalServiceEnabled(meshResources) &&
-				isZoneExternalService(&endpoints[0]) {
-				// This generator is for internal services only
+			if !isZoneExternalService(&endpoints[0]) {
+				// We need to generate filter chain for external services only
 				continue
 			}
 
-			destinations := destinationsPerService[serviceName]
-			destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
+			if isZoneExternalService(&endpoints[0]) && isSpecificZoneExternalService(&endpoints[0], zoneIngress.Spec.Zone) {
+				destinations := destinationsPerService[serviceName]
+				destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
 
-			for _, destination := range destinations {
-				meshDestination := destination.
-					WithTags(mesh_proto.ServiceTag, serviceName).
-					WithTags("mesh", meshName)
+				for _, destination := range destinations {
+					meshDestination := destination.
+						WithTags(mesh_proto.ServiceTag, serviceName).
+						WithTags("mesh", meshName)
 
-				sni := tls.SNIFromTags(meshDestination)
+					sni := tls.SNIFromTags(meshDestination)
 
-				if sniUsed[sni] {
-					continue
+					if sniUsed[sni] {
+						continue
+					}
+
+					sniUsed[sni] = true
+
+					// There is a case where multiple meshes contain services with
+					// the same names, so we cannot use just "serviceName" as a cluster
+					// name as we would overwrite some clusters with the latest one
+					clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
+
+					listenerBuilder.Configure(envoy_listeners.FilterChain(
+						envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
+							envoy_listeners.MatchTransportProtocol("tls"),
+							envoy_listeners.MatchServerNames(sni),
+							envoy_listeners.TcpProxyWithMetadata(clusterName, envoy_common.NewCluster(
+								envoy_common.WithName(clusterName),
+								envoy_common.WithService(serviceName),
+								envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
+							)),
+						),
+					))
 				}
-
-				sniUsed[sni] = true
-
-				// There is a case where multiple meshes contain services with
-				// the same names, so we cannot use just "serviceName" as a cluster
-				// name as we would overwrite some clusters with the latest one
-				clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
-
-				listenerBuilder.Configure(envoy_listeners.FilterChain(
-					envoy_listeners.NewFilterChainBuilder(apiVersion).Configure(
-						envoy_listeners.MatchTransportProtocol("tls"),
-						envoy_listeners.MatchServerNames(sni),
-						envoy_listeners.TcpProxyWithMetadata(clusterName, envoy_common.NewCluster(
-							envoy_common.WithName(clusterName),
-							envoy_common.WithService(serviceName),
-							envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
-						)),
-					),
-				))
 			}
 		}
 	}

@@ -22,12 +22,12 @@ func (g *ExternalServicesGenerator) Generate(
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
+	zone := proxy.ZoneEgressProxy.ZoneEgressResource.Spec.GetZone()
 	resources := core_xds.NewResourceSet()
-
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
 	destinations := buildDestinations(meshResources.TrafficRoutes)
-	services := g.buildServices(endpointMap)
+	services := g.buildServices(endpointMap, zone, meshResources)
 
 	g.addFilterChains(
 		apiVersion,
@@ -35,6 +35,7 @@ func (g *ExternalServicesGenerator) Generate(
 		endpointMap,
 		meshResources,
 		listenerBuilder,
+		zone,
 	)
 
 	cds, err := g.generateCDS(
@@ -107,17 +108,19 @@ func (*ExternalServicesGenerator) generateCDS(
 
 func (*ExternalServicesGenerator) buildServices(
 	endpointMap core_xds.EndpointMap,
+	zone string,
+	meshResources *core_xds.MeshResources,
 ) []string {
 	var services []string
 
 	for serviceName, endpoints := range endpointMap {
-		if len(endpoints) > 0 && endpoints[0].IsExternalService() {
+		if len(endpoints) > 0 && endpoints[0].IsExternalService() &&
+			(!zoneExternalServiceEnabled(meshResources) || isSpecificZoneOrAllZonesExternalService(&endpoints[0], zone)) {
 			services = append(services, serviceName)
 		}
 	}
 
 	sort.Strings(services)
-
 	return services
 }
 
@@ -127,6 +130,7 @@ func (*ExternalServicesGenerator) addFilterChains(
 	endpointMap core_xds.EndpointMap,
 	meshResources *core_xds.MeshResources,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
+	zone string,
 ) {
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
@@ -141,6 +145,13 @@ func (*ExternalServicesGenerator) addFilterChains(
 			log.Info("no endpoints for service", "serviceName", serviceName)
 			// There is no need to generate filter chain if there is no
 			// endpoints for the service
+			continue
+		}
+
+		if zoneExternalServiceEnabled(meshResources) &&
+			isNotSpecificZoneExternalService(&endpoints[0], zone) {
+			// we dont generate zone external service here because
+			// it should be accessed through zone ingress of zone were it belongs
 			continue
 		}
 
