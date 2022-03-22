@@ -39,6 +39,16 @@ func (b *FilterChainBuilder) Configure(opts ...FilterChainBuilderOpt) *FilterCha
 	return b
 }
 
+func (b *FilterChainBuilder) ConfigureIf(condition bool, opts ...FilterChainBuilderOpt) *FilterChainBuilder {
+	if !condition {
+		return b
+	}
+	for _, opt := range opts {
+		opt.ApplyTo(&b.config)
+	}
+	return b
+}
+
 // Build generates an Envoy filter chain by applying a series of FilterChainConfigurers.
 func (b *FilterChainBuilder) Build() (envoy_types.Resource, error) {
 	switch b.apiVersion {
