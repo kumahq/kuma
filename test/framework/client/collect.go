@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
@@ -234,7 +235,10 @@ func CollectResponseDirectly(
 		req.Host = host
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return types.EchoResponse{}, err
 	}

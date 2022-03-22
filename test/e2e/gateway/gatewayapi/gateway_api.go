@@ -38,6 +38,10 @@ spec:
 var cluster *K8sCluster
 
 var _ = E2EBeforeSuite(func() {
+	if Config.IPV6 {
+		return // KIND which is used for IPV6 tests does not support load balancer that is used in this test.
+	}
+
 	cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 	err := NewClusterSetup().
@@ -69,6 +73,9 @@ var _ = E2EBeforeSuite(func() {
 })
 
 func GatewayAPI() {
+	if Config.IPV6 {
+		return // KIND which is used for IPV6 tests does not support load balancer that is used in this test.
+	}
 	Context("HTTP Gateway", func() {
 		gateway := `
 apiVersion: gateway.networking.k8s.io/v1alpha2
@@ -94,7 +101,7 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(out).ToNot(BeEmpty())
 				ip = out
-			}, "30s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
+			}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
 			return net.JoinHostPort(ip, "8080")
 		}
 
