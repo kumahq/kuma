@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
@@ -48,6 +49,50 @@ func BuildFaultInjectionMap(
 		for _, connectionPolicy := range connectionPolicies {
 			result[inbound] = append(result[inbound], connectionPolicy.(*core_mesh.FaultInjectionResource))
 		}
+	}
+	return result
+}
+
+// BuildExternalServiceFaultInjectionMapForZoneEgress creates mapping between Service's name and the list of FaultInjections.
+// todo(lobkovilya): that's not really correct way to build a policy map for External Services. Policies such as
+// Fault Injections, Rate Limit and Traffic Permissions support arbitrary tags in Destination, but we lose this
+// information if putting policies in map just by Service's name. See https://github.com/kumahq/kuma/issues/3999
+func BuildExternalServiceFaultInjectionMapForZoneEgress(
+	externalServices []*core_mesh.ExternalServiceResource,
+	faultInjections []*core_mesh.FaultInjectionResource,
+) core_xds.ExternalServiceFaultInjectionMap {
+	policies := make([]policy.ConnectionPolicy, len(faultInjections))
+	for i, faultInjection := range faultInjections {
+		policies[i] = faultInjection
+	}
+
+	result := core_xds.ExternalServiceFaultInjectionMap{}
+	for _, externalService := range externalServices {
+		tags := externalService.Spec.GetTags()
+		serviceName := tags[mesh_proto.ServiceTag]
+
+		matchedPolicies := policy.SelectInboundConnectionAllPolicies(tags, policies)
+		for _, matchedPolicy := range matchedPolicies {
+			result[serviceName] = append(result[serviceName], matchedPolicy.(*core_mesh.FaultInjectionResource))
+		}
+	}
+
+	for service, resources := range result {
+		result[service] = dedup(resources)
+	}
+
+	return result
+}
+
+func dedup(policies []*core_mesh.FaultInjectionResource) []*core_mesh.FaultInjectionResource {
+	seen := map[core_model.ResourceKey]struct{}{}
+	result := []*core_mesh.FaultInjectionResource{}
+	for _, p := range policies {
+		if _, ok := seen[core_model.MetaToResourceKey(p.GetMeta())]; ok {
+			continue
+		}
+		seen[core_model.MetaToResourceKey(p.GetMeta())] = struct{}{}
+		result = append(result, p)
 	}
 	return result
 }

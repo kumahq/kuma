@@ -12,7 +12,7 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
@@ -42,19 +42,36 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 			clusterBuilder.Configure(envoy_clusters.Http2())
 		}
-		cluster, err := clusterBuilder.Build()
+		envoyCluster, err := clusterBuilder.Build()
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName)
 		}
 		resources.Add(&core_xds.Resource{
 			Name:     localClusterName,
-			Resource: cluster,
+			Resource: envoyCluster,
 			Origin:   OriginInbound,
 		})
 
-		routes := g.buildInboundRoutes(
-			envoy_common.NewCluster(envoy_common.WithService(localClusterName)),
-			proxy.Policies.RateLimitsInbound[endpoint])
+		cluster := envoy_common.NewCluster(envoy_common.WithService(localClusterName))
+		routes := envoy_common.Routes{}
+
+		// Iterate over that RateLimits and generate the relevant Routes.
+		// We do assume that the rateLimits resource is sorted, so the most
+		// specific source matches come first.
+		for _, rl := range proxy.Policies.RateLimitsInbound[endpoint] {
+			if rl.Spec.GetConf().GetHttp() == nil {
+				continue
+			}
+
+			routes = append(routes, envoy_common.NewRoute(
+				envoy_common.WithCluster(cluster),
+				envoy_common.WithMatchHeaderRegex(envoy_routes.TagsHeaderName, tags.MatchSourceRegex(rl)),
+				envoy_common.WithRateLimit(rl.Spec),
+			))
+		}
+
+		// Add the default fall-back route
+		routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
 
 		// generate LDS resource
 		service := iface.GetService()
@@ -137,47 +154,4 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 		})
 	}
 	return resources, nil
-}
-
-func (g *InboundProxyGenerator) buildInboundRoutes(cluster envoy_common.Cluster, rateLimits []*core_mesh.RateLimitResource) envoy_common.Routes {
-	routes := envoy_common.Routes{}
-
-	// Iterate over that RateLimits and generate the relevant Routes.
-	// We do assume that the rateLimits resource is sorted, so the most
-	// specific source matches come first.
-	for _, rateLimit := range rateLimits {
-		if rateLimit.Spec.GetConf().GetHttp() != nil {
-			route := envoy_common.NewRouteFromCluster(cluster)
-			if len(rateLimit.Spec.GetSources()) > 0 {
-				if route.Match == nil {
-					route.Match = &mesh_proto.TrafficRoute_Http_Match{}
-				}
-
-				if route.Match.Headers == nil {
-					route.Match.Headers = make(map[string]*mesh_proto.TrafficRoute_Http_Match_StringMatcher)
-				}
-
-				var selectorRegexs []string
-				for _, selector := range rateLimit.Spec.SourceTags() {
-					selectorRegexs = append(selectorRegexs, tags.MatchingRegex(selector))
-				}
-				regexOR := tags.RegexOR(selectorRegexs...)
-
-				route.Match.Headers[v3.TagsHeaderName] = &mesh_proto.TrafficRoute_Http_Match_StringMatcher{
-					MatcherType: &mesh_proto.TrafficRoute_Http_Match_StringMatcher_Regex{
-						Regex: regexOR,
-					},
-				}
-			}
-
-			route.RateLimit = rateLimit.Spec
-
-			routes = append(routes, route)
-		}
-	}
-
-	// Add the defaul fall-back route
-	routes = append(routes, envoy_common.NewRouteFromCluster(cluster))
-
-	return routes
 }

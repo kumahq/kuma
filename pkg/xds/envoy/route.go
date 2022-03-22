@@ -27,3 +27,49 @@ func (r Routes) Clusters() (clusters []Cluster) {
 	}
 	return
 }
+
+type NewRouteOpt interface {
+	apply(route *Route)
+}
+
+type newRouteOptFunc func(route *Route)
+
+func (f newRouteOptFunc) apply(route *Route) {
+	f(route)
+}
+
+func NewRoute(opts ...NewRouteOpt) Route {
+	r := Route{}
+	for _, opt := range opts {
+		opt.apply(&r)
+	}
+	return r
+}
+
+func WithCluster(cluster Cluster) NewRouteOpt {
+	return newRouteOptFunc(func(route *Route) {
+		route.Clusters = append(route.Clusters, cluster)
+	})
+}
+
+func WithMatchHeaderRegex(name, regex string) NewRouteOpt {
+	return newRouteOptFunc(func(route *Route) {
+		if route.Match == nil {
+			route.Match = &mesh_proto.TrafficRoute_Http_Match{}
+		}
+		if route.Match.Headers == nil {
+			route.Match.Headers = make(map[string]*mesh_proto.TrafficRoute_Http_Match_StringMatcher)
+		}
+		route.Match.Headers[name] = &mesh_proto.TrafficRoute_Http_Match_StringMatcher{
+			MatcherType: &mesh_proto.TrafficRoute_Http_Match_StringMatcher_Regex{
+				Regex: regex,
+			},
+		}
+	})
+}
+
+func WithRateLimit(rl *mesh_proto.RateLimit) NewRouteOpt {
+	return newRouteOptFunc(func(route *Route) {
+		route.RateLimit = rl
+	})
+}
