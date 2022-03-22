@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_policy "github.com/kumahq/kuma/pkg/core/policy"
 )
 
 func MatchingRegex(tags mesh_proto.SingleValueTagSet) (re string) {
@@ -33,4 +34,12 @@ func RegexOR(r ...string) string {
 		return r[0]
 	}
 	return fmt.Sprintf("(%s)", strings.Join(r, "|"))
+}
+
+func MatchSourceRegex(policy core_policy.ConnectionPolicy) string {
+	var selectorRegexs []string
+	for _, selector := range policy.Sources() {
+		selectorRegexs = append(selectorRegexs, MatchingRegex(selector.Match))
+	}
+	return RegexOR(selectorRegexs...)
 }
