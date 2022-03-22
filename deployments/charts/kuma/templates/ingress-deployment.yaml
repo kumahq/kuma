@@ -103,13 +103,7 @@ spec:
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 3
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 1000m
-              memory: 512Mi
+          resources: {{ toYaml .Values.ingress.resources | nindent 12 }}
           volumeMounts:
             - name: {{ include "kuma.name" . }}-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert
