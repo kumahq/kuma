@@ -43,6 +43,7 @@ type GatewayReconciler struct {
 // Reconcile handles transforming a gateway-api MeshGateway into a Kuma MeshGateway and
 // managing the status of the gateway-api objects.
 func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
+	r.Log.V(1).Info("reconcile", "req", req)
 	gateway := &gatewayapi.Gateway{}
 	if err := r.Get(ctx, req.NamespacedName, gateway); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -88,7 +89,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		}
 	}
 
-	if err := r.updateStatus(ctx, gateway, gatewayInstance, listenerConditions); err != nil {
+	if err := r.updateStatus(ctx, r.Log, gateway, gatewayInstance, listenerConditions); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update MeshGateway status")
 	}
 
