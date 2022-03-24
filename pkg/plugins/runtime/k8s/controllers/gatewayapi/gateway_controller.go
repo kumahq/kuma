@@ -88,7 +88,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		}
 	}
 
-	if err := r.updateStatus(ctx, gateway, gatewayInstance, listenerConditions); err != nil {
+	if err := r.updateStatus(ctx, r.Log, gateway, gatewayInstance, listenerConditions); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to update MeshGateway status")
 	}
 
