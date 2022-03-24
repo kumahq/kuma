@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -48,6 +49,7 @@ type GatewayInstanceReconciler struct {
 // Reconcile handles ensuring both a Service and a Deployment exist for an
 // instance as well as setting the status.
 func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
+	r.Log.V(1).Info("reconcile", "req", req)
 	gatewayInstance := &mesh_k8s.MeshGatewayInstance{}
 	if err := r.Get(ctx, req.NamespacedName, gatewayInstance); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -73,11 +75,14 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 
 	updateStatus(gatewayInstance, svc, deployment)
 
-	if err := r.Client.Status().Patch(ctx, gatewayInstance, kube_client.MergeFrom(orig)); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			return kube_ctrl.Result{}, nil
+	if !equality.Semantic.DeepEqual(gatewayInstance.Status, orig.(*mesh_k8s.MeshGatewayInstance).Status) {
+		r.Log.Info("updating MeshGatewayInstance status")
+		if err := r.Client.Status().Patch(ctx, gatewayInstance, kube_client.MergeFrom(orig)); err != nil {
+			if kube_apierrs.IsNotFound(err) {
+				return kube_ctrl.Result{}, nil
+			}
+			return kube_ctrl.Result{}, errors.Wrap(err, "unable to patch MeshGatewayInstance status")
 		}
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to patch MeshGatewayInstance status")
 	}
 
 	return kube_ctrl.Result{}, nil
@@ -286,9 +291,24 @@ func updateStatus(gatewayInstance *mesh_k8s.MeshGatewayInstance, svc *kube_core.
 	}
 
 	readiness := kube_meta.Condition{
-		Type: mesh_k8s.GatewayInstanceReady, Status: status, Reason: reason, Message: message, LastTransitionTime: kube_meta.Now(), ObservedGeneration: gatewayInstance.GetGeneration(),
+		Type:    mesh_k8s.GatewayInstanceReady,
+		Status:  status,
+		Reason:  reason,
+		Message: message,
 	}
 
+	if len(gatewayInstance.Status.Conditions) > 0 {
+		oldReadiness := gatewayInstance.Status.Conditions[0]
+		oldReadiness.LastTransitionTime = kube_meta.Time{}
+		oldReadiness.ObservedGeneration = 0
+
+		if equality.Semantic.DeepEqual(readiness, oldReadiness) {
+			return
+		}
+	}
+
+	readiness.LastTransitionTime = kube_meta.Now()
+	readiness.ObservedGeneration = gatewayInstance.GetGeneration()
 	gatewayInstance.Status.Conditions = []kube_meta.Condition{
 		readiness,
 	}
