@@ -6,12 +6,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"math/big"
 	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spiffe/go-spiffe/spiffe"
-	"github.com/spiffe/spire/pkg/common/x509util"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -75,7 +75,7 @@ func newWorkloadTemplate(trustDomain string, tags mesh_proto.MultiValueTagSet, p
 	}
 
 	now := time.Now()
-	serialNumber, err := x509util.NewSerialNumber()
+	serialNumber, err := newSerialNumber()
 	if err != nil {
 		return nil, err
 	}
@@ -101,6 +101,25 @@ func newWorkloadTemplate(trustDomain string, tags mesh_proto.MultiValueTagSet, p
 		opt(template)
 	}
 	return template, nil
+}
+
+var maxUint128, one *big.Int
+
+func init() {
+	one = big.NewInt(1)
+	m := new(big.Int)
+	m.Lsh(one, 128)
+	maxUint128 = m.Sub(m, one)
+}
+
+func newSerialNumber() (*big.Int, error) {
+	res, err := rand.Int(rand.Reader, maxUint128)
+	if err != nil {
+		return nil, fmt.Errorf("failed generation of serial number: %w", err)
+	}
+	// Because we generate in the range [0, maxUint128) and 0 is an invalid serial and maxUint128 is valid we add 1
+	// to have a number in range [1, maxUint128] See: https://cabforum.org/2016/03/31/ballot-164/
+	return res.Add(res, one), nil
 }
 
 func loadKeyPair(pair util_tls.KeyPair) (crypto.PrivateKey, *x509.Certificate, error) {
