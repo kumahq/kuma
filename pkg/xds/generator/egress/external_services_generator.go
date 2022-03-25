@@ -141,7 +141,7 @@ func (*ExternalServicesGenerator) addFilterChains(
 
 		endpoints := endpointMap[serviceName]
 
-		if len(endpoints) == 0 {
+		if len(endpoints) == 0 && !zoneExternalServiceEnabled(meshResources) {
 			log.Info("no endpoints for service", "serviceName", serviceName)
 			// There is no need to generate filter chain if there is no
 			// endpoints for the service
