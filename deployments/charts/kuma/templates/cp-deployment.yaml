@@ -80,6 +80,9 @@ spec:
             - --log-level={{ .Values.controlPlane.logLevel }}
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
+            - containerPort: 5680
+              name: metrics
+              protocol: TCP
             - containerPort: 5681
             - containerPort: 5682
             - containerPort: 5443

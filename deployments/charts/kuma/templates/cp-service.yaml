@@ -14,6 +14,8 @@ metadata:
 spec:
   type: {{ .Values.controlPlane.service.type }}
   ports:
+    - port: 5680
+      name: metrics
     - port: 5681
       name: http-api-server
     - port: 5682
