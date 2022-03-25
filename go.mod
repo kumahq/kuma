@@ -43,7 +43,6 @@ require (
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.10.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
-	github.com/spiffe/spire v1.2.0
 	github.com/testcontainers/testcontainers-go v0.12.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
