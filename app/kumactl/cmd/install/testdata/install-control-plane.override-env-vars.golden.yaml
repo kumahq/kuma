@@ -1222,6 +1222,7 @@ rules:
       - pods
       - configmaps
       - nodes
+  
     verbs:
       - get
       - list
