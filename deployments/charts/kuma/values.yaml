@@ -93,9 +93,12 @@ controlPlane:
   # -- Optionally override the resource spec
   # @default -- the resources will be chosen based on the mode
   resources:
-  #  requests:
+    requests:
   #    cpu: 100m
   #    memory: 256Mi
+    limits:
+  #    cpu: 250m
+  #    memory: 512Mi
 
   # TLS for various servers
   tls:
