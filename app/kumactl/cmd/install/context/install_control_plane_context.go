@@ -56,6 +56,7 @@ type InstallControlPlaneArgs struct {
 	Hooks_nodeSelector                           map[string]string `helm:"hooks.nodeSelector"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
 	ExperimentalMeshGateway                      bool              `helm:"experimental.meshGateway"`
+	ExperimentalGatewayAPI                       bool              `helm:"experimental.gatewayAPI"`
 }
 
 type ImageEnvSecret struct {
