@@ -6,10 +6,12 @@ import (
 	"strings"
 
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/policy"
 )
@@ -18,10 +20,8 @@ type ListenerConditions map[gatewayapi.SectionName][]kube_meta.Condition
 
 func validProtocol(protocol gatewayapi.ProtocolType) bool {
 	switch protocol {
-	case gatewayapi.HTTPProtocolType:
+	case gatewayapi.HTTPProtocolType, gatewayapi.HTTPSProtocolType:
 		return true
-	case gatewayapi.HTTPSProtocolType:
-		// TODO HTTPS https://github.com/kumahq/kuma/issues/3679
 	default:
 	}
 
@@ -157,7 +157,9 @@ func ValidateListeners(listeners []gatewayapi.Listener) ([]gatewayapi.Listener, 
 // gapiToKumaGateway returns a converted gateway (if possible) and any
 // conditions to set on the gatewayapi listeners
 func (r *GatewayReconciler) gapiToKumaGateway(
-	ctx context.Context, gateway *gatewayapi.Gateway,
+	ctx context.Context,
+	gateway *gatewayapi.Gateway,
+	mesh string,
 ) (*mesh_proto.MeshGateway, ListenerConditions, error) {
 	validListeners, listenerConditions := ValidateListeners(gateway.Spec.Listeners)
 
@@ -208,24 +210,48 @@ func (r *GatewayReconciler) gapiToKumaGateway(
 			listener.Hostname = string(*l.Hostname)
 		}
 
-		var certificateRefs []*gatewayapi.SecretObjectReference
-		if l.TLS != nil {
-			certificateRefs = l.TLS.CertificateRefs
-		}
-
 		var unresolvableRefs []string
+		if l.TLS != nil {
+			for _, certRef := range l.TLS.CertificateRefs {
+				policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), *certRef)
 
-		for _, certRef := range certificateRefs {
-			policyRef := policy.PolicyReferenceSecret(policy.FromGatewayIn(gateway.Namespace), *certRef)
+				permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef)
+				if err != nil {
+					return nil, nil, err
+				}
 
-			permitted, err := policy.IsReferencePermitted(ctx, r.Client, policyRef)
-			if err != nil {
-				return nil, nil, err
+				if !permitted {
+					message := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
+					unresolvableRefs = append(unresolvableRefs, message)
+				}
 			}
 
-			if !permitted {
-				message := fmt.Sprintf("%q %q", policyRef.GroupKindReferredTo().String(), policyRef.NamespacedNameReferredTo().String())
-				unresolvableRefs = append(unresolvableRefs, message)
+			if len(unresolvableRefs) == 0 {
+				if l.TLS.Mode != nil && *l.TLS.Mode == gatewayapi.TLSModePassthrough {
+					continue // todo admission webhook should prevent this
+				}
+				listener.Tls = &mesh_proto.MeshGateway_TLS_Conf{
+					Mode: mesh_proto.MeshGateway_TLS_TERMINATE,
+				}
+				for _, certRef := range l.TLS.CertificateRefs {
+					// We only support canonical Secret of TLS type. Ignore other types
+					namespacedName := types.NamespacedName{
+						Name:      string(certRef.Name),
+						Namespace: gateway.Namespace, // if not specified, namespace is inherited from Gateway
+					}
+					if certRef.Namespace != nil {
+						namespacedName.Namespace = string(*certRef.Namespace)
+					}
+					secretKey, err := r.createSecretIfMissing(ctx, namespacedName, mesh)
+					if err != nil {
+						return nil, nil, err
+					}
+					listener.Tls.Certificates = append(listener.Tls.Certificates, &system_proto.DataSource{
+						Type: &system_proto.DataSource_Secret{
+							Secret: secretKey.Name,
+						},
+					})
+				}
 			}
 		}
 
