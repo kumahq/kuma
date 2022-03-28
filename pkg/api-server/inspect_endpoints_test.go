@@ -464,6 +464,118 @@ var _ = Describe("Inspect WS", func() {
 				},
 			},
 		}),
+		Entry("inspect missing gateway", testCase{
+			path:       "/meshes/default/meshgateways/gateway/policies",
+			goldenFile: "inspect_gateway_notfound.json",
+			resources: []core_model.Resource{
+				newMesh("default"),
+			},
+		}),
+		Entry("inspect gateway", testCase{
+			path:       "/meshes/default/meshgateways/gateway/policies",
+			goldenFile: "inspect_gateway.json",
+			resources: []core_model.Resource{
+				newMesh("default"),
+				&core_mesh.TrafficLogResource{
+					Meta: &test_model.ResourceMeta{Name: "tl-1", Mesh: "default"},
+					Spec: &mesh_proto.TrafficLog{
+						Sources:      anyService(),
+						Destinations: anyService(),
+					},
+				},
+				&core_mesh.TrafficPermissionResource{
+					Meta: &test_model.ResourceMeta{Name: "tp-1", Mesh: "default"},
+					Spec: &mesh_proto.TrafficPermission{
+						Sources:      anyService(),
+						Destinations: anyService(),
+					},
+				},
+				&core_mesh.MeshGatewayResource{
+					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
+					Spec: &mesh_proto.MeshGateway{
+						Selectors: selectors{
+							serviceSelector("gateway", ""),
+						},
+						Conf: &mesh_proto.MeshGateway_Conf{
+							Listeners: []*mesh_proto.MeshGateway_Listener{
+								{
+									Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+									Port:     80,
+								},
+							},
+						},
+					},
+				},
+				&core_mesh.MeshGatewayRouteResource{
+					Meta: &test_model.ResourceMeta{Name: "route-1", Mesh: "default"},
+					Spec: &mesh_proto.MeshGatewayRoute{
+						Selectors: selectors{
+							serviceSelector("gateway", ""),
+						},
+						Conf: &mesh_proto.MeshGatewayRoute_Conf{
+							Route: &mesh_proto.MeshGatewayRoute_Conf_Http{
+								Http: &mesh_proto.MeshGatewayRoute_HttpRoute{
+									Rules: []*mesh_proto.MeshGatewayRoute_HttpRoute_Rule{
+										{
+											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
+												{
+													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
+														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
+														Value: "/redis",
+													},
+												},
+											},
+											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
+												{
+													Destination: serviceSelector("redis", "").Match,
+												},
+											},
+										},
+										{
+											Matches: []*mesh_proto.MeshGatewayRoute_HttpRoute_Match{
+												{
+													Path: &mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path{
+														Match: mesh_proto.MeshGatewayRoute_HttpRoute_Match_Path_EXACT,
+														Value: "/backend",
+													},
+												},
+											},
+											Backends: []*mesh_proto.MeshGatewayRoute_Backend{
+												{
+													Destination: serviceSelector("backend", "").Match,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				&core_mesh.TimeoutResource{
+					Meta: &test_model.ResourceMeta{Name: "t-1", Mesh: "default"},
+					Spec: &mesh_proto.Timeout{
+						Sources: anyService(),
+						Destinations: selectors{
+							serviceSelector("redis", ""),
+						},
+						Conf: samples.Timeout.Conf,
+					},
+				},
+				&core_mesh.HealthCheckResource{
+					Meta: &test_model.ResourceMeta{Name: "hc-1", Mesh: "default"},
+					Spec: &mesh_proto.HealthCheck{
+						Sources: selectors{
+							serviceSelector("gateway", ""),
+						},
+						Destinations: selectors{
+							serviceSelector("backend", ""),
+						},
+						Conf: samples.HealthCheck.Conf,
+					},
+				},
+			},
+		}),
 		Entry("inspect traffic permission", testCase{
 			path:       "/meshes/default/traffic-permissions/tp-1/dataplanes",
 			goldenFile: "inspect_traffic-permission.json",
