@@ -49,6 +49,7 @@ type GatewayInstanceReconciler struct {
 // Reconcile handles ensuring both a Service and a Deployment exist for an
 // instance as well as setting the status.
 func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
+	r.Log.V(1).Info("reconcile", "req", req)
 	gatewayInstance := &mesh_k8s.MeshGatewayInstance{}
 	if err := r.Get(ctx, req.NamespacedName, gatewayInstance); err != nil {
 		if kube_apierrs.IsNotFound(err) {
