@@ -1815,7 +1815,7 @@ spec:
   type: ClusterIP
   ports:
     - port: 5680
-      name: metrics
+      name: diagnostics
     - port: 5681
       name: http-api-server
     - port: 5682
@@ -1951,7 +1951,7 @@ spec:
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5680
-              name: metrics
+              name: diagnostics
               protocol: TCP
             - containerPort: 5681
             - containerPort: 5682
