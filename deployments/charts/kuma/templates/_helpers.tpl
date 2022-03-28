@@ -171,6 +171,10 @@ env:
 - name: KUMA_EXPERIMENTAL_MESHGATEWAY
   value: "true"
 {{- end }}
+{{- if .Values.experimental.gatewayAPI }}
+- name: KUMA_EXPERIMENTAL_GATEWAY_API
+  value: "true"
+{{- end }}
 {{- end }}
 
 {{/*

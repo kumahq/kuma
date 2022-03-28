@@ -280,3 +280,5 @@ hooks:
 experimental:
   # -- If true, it installs experimental built-in Gateway support
   meshGateway: false
+  # -- If true, it installs experimental Gateway API support
+  gatewayAPI: false

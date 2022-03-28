@@ -26,6 +26,9 @@ rules:
       - pods
       - configmaps
       - nodes
+  {{- if .Values.experimental.gatewayAPI }}
+      - secrets
+  {{- end }}
     verbs:
       - get
       - list
