@@ -44,7 +44,7 @@ var _ = Describe("ValidateListeners", func() {
 			},
 			{
 				Name:     gatewayapi.SectionName("prod-2"),
-				Protocol: gatewayapi.HTTPSProtocolType,
+				Protocol: gatewayapi.UDPProtocolType,
 				Port:     gatewayapi.PortNumber(80),
 				AllowedRoutes: &gatewayapi.AllowedRoutes{
 					Namespaces: &gatewayapi.RouteNamespaces{
