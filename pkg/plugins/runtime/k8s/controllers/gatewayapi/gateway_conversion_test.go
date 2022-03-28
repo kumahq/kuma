@@ -44,7 +44,7 @@ var _ = Describe("ValidateListeners", func() {
 			},
 			{
 				Name:     gatewayapi.SectionName("prod-2"),
-				Protocol: gatewayapi.UDPProtocolType,
+				Protocol: gatewayapi.HTTPSProtocolType,
 				Port:     gatewayapi.PortNumber(80),
 				AllowedRoutes: &gatewayapi.AllowedRoutes{
 					Namespaces: &gatewayapi.RouteNamespaces{
@@ -54,10 +54,13 @@ var _ = Describe("ValidateListeners", func() {
 			},
 		}
 		valids, conditions := k8s_gatewayapi.ValidateListeners(listeners)
-		Expect(valids).To(ConsistOf(
-			HaveField("Name", gatewayapi.SectionName("prod-1")),
-		))
-		Expect(conditions).To(HaveKey(gatewayapi.SectionName("prod-2")))
+		Expect(valids).To(BeEmpty())
+		Expect(conditions).To(
+			And(
+				HaveKey(gatewayapi.SectionName("prod-1")),
+				HaveKey(gatewayapi.SectionName("prod-2")),
+			),
+		)
 	})
 	It("works with differing hostnames", func() {
 		same := gatewayapi.NamespacesFromSame
