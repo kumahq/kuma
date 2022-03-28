@@ -1,15 +1,18 @@
 package v3
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -20,22 +23,75 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
+
+type staticClusterAddHook struct {
+	name string
+}
+
+func (s *staticClusterAddHook) Modify(resourceSet *model.ResourceSet, ctx xds_context.Context, proxy *model.Proxy) error {
+	resourceSet.Add(&model.Resource{
+		Name: s.name,
+		Resource: &envoy_cluster.Cluster{
+			Name: s.name,
+		},
+	})
+	return nil
+}
+
+var _ xds_hooks.ResourceSetHook = &staticClusterAddHook{}
 
 var _ = Describe("Reconcile", func() {
 	Describe("templateSnapshotGenerator", func() {
 
+		store := memory.NewStore()
 		gen := templateSnapshotGenerator{
 			ProxyTemplateResolver: template.SequentialResolver(
 				&template.SimpleProxyTemplateResolver{
-					ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
+					ReadOnlyResourceManager: manager.NewResourceManager(store),
 				},
 				generator.DefaultTemplateResolver,
 			),
 		}
 
 		It("Generate Snapshot per Envoy Node", func() {
+			// setup
+			proxyTemplate := core_mesh.NewProxyTemplateResource()
+			proxyTemplate.Spec = &mesh_proto.ProxyTemplate{
+				Selectors: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							mesh_proto.ServiceTag: mesh_proto.MatchAllTag,
+						},
+					},
+				},
+				Conf: &mesh_proto.ProxyTemplate_Conf{
+					Imports: []string{core_mesh.ProfileDefaultProxy},
+					Modifications: []*mesh_proto.ProxyTemplate_Modifications{
+						{
+							Type: &mesh_proto.ProxyTemplate_Modifications_Cluster_{
+								Cluster: &mesh_proto.ProxyTemplate_Modifications_Cluster{
+									Operation: mesh_proto.OpRemove,
+									Match: &mesh_proto.ProxyTemplate_Modifications_Cluster_Match{
+										Name: "to-be-removed",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			err := store.Create(context.Background(), proxyTemplate, core_store.CreateByKey("pt", "demo"))
+			Expect(err).ToNot(HaveOccurred())
+
+			gen.ResourceSetHooks = []xds_hooks.ResourceSetHook{
+				&staticClusterAddHook{
+					name: "to-be-removed",
+				},
+			}
+
 			// given
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
@@ -120,15 +176,10 @@ var _ = Describe("Reconcile", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			// when
 			resp, err := util_cache_v3.ToDeltaDiscoveryResponse(s)
-			// then
 			Expect(err).ToNot(HaveOccurred())
-			// when
 			actual, err := util_proto.ToYAML(resp)
-			// then
 			Expect(err).ToNot(HaveOccurred())
-
 			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "envoy-config.golden.yaml")))
 		})
 	})
