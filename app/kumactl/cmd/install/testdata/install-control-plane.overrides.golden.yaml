@@ -1561,6 +1561,7 @@ rules:
       - pods
       - configmaps
       - nodes
+      - secrets
     verbs:
       - get
       - list
@@ -1901,6 +1902,8 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
+            - name: KUMA_EXPERIMENTAL_GATEWAY_API
+              value: "true"
             - name: KUMA_EXPERIMENTAL_MESHGATEWAY
               value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE

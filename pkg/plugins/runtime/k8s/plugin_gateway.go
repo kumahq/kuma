@@ -132,6 +132,16 @@ func addGatewayAPIReconcillers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, p
 	if err := gatewayAPIHTTPRouteReconciler.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup Gateway API HTTPRoute reconciler")
 	}
+
+	secretController := &gatewayapi_controllers.SecretController{
+		Log:             core.Log.WithName("controllers").WithName("secret"),
+		Client:          mgr.GetClient(),
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+	}
+	if err := secretController.SetupWithManager(mgr); err != nil {
+		return errors.Wrap(err, "could not setup Secret reconciler")
+	}
+
 	return nil
 }
 
