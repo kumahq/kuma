@@ -6,9 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/api/equality"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,7 +19,6 @@ import (
 
 func (r *GatewayReconciler) updateStatus(
 	ctx context.Context,
-	log logr.Logger,
 	gateway *gatewayapi.Gateway,
 	gatewayInstance *mesh_k8s.MeshGatewayInstance,
 	listenerConditions ListenerConditions,
@@ -35,11 +32,6 @@ func (r *GatewayReconciler) updateStatus(
 
 	mergeGatewayStatus(updated, gatewayInstance, listenerConditions, attachedListeners)
 
-	if equality.Semantic.DeepEqual(gateway.Status, updated.Status) {
-		return nil
-	}
-
-	log.Info("updating Gateway status")
 	if err := r.Client.Status().Patch(ctx, updated, kube_client.MergeFrom(gateway)); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			return nil
