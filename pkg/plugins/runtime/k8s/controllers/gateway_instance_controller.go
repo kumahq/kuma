@@ -12,6 +12,7 @@ import (
 	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -290,12 +291,17 @@ func updateStatus(gatewayInstance *mesh_k8s.MeshGatewayInstance, svc *kube_core.
 	}
 
 	readiness := kube_meta.Condition{
-		Type: mesh_k8s.GatewayInstanceReady, Status: status, Reason: reason, Message: message, LastTransitionTime: kube_meta.Now(), ObservedGeneration: gatewayInstance.GetGeneration(),
+		Type:               mesh_k8s.GatewayInstanceReady,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		ObservedGeneration: gatewayInstance.GetGeneration(),
 	}
 
-	gatewayInstance.Status.Conditions = []kube_meta.Condition{
+	kube_apimeta.SetStatusCondition(
+		&gatewayInstance.Status.Conditions,
 		readiness,
-	}
+	)
 }
 
 const serviceKey string = ".metadata.service"
