@@ -31,18 +31,23 @@ type DataplaneProxyBuilder struct {
 	APIVersion envoy.APIVersion
 }
 
-func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, meshContext xds_context.MeshContext) (*xds.Proxy, error) {
-	dp, found := meshContext.DataplanesByName[key.Name]
+func (p *DataplaneProxyBuilder) Build(name string, meshContext xds_context.MeshContext) (*xds.Proxy, error) {
+	dataplane, found := meshContext.DataplanesByName[name]
 	if !found {
-		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
+		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, name, meshContext.Resource.GetMeta().GetName())
 	}
 
-	routing, destinations, err := p.resolveRouting(meshContext, dp)
+	key := core_model.ResourceKey{
+		Mesh: meshContext.Resource.GetMeta().GetName(),
+		Name: dataplane.Meta.GetName(),
+	}
+
+	routing, destinations, err := p.resolveRouting(meshContext, dataplane)
 	if err != nil {
 		return nil, err
 	}
 
-	matchedPolicies, err := p.matchPolicies(meshContext, dp, destinations)
+	matchedPolicies, err := p.matchPolicies(meshContext, dataplane, destinations)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +57,7 @@ func (p *DataplaneProxyBuilder) Build(key core_model.ResourceKey, meshContext xd
 	proxy := &xds.Proxy{
 		Id:         xds.FromResourceKey(key),
 		APIVersion: p.APIVersion,
-		Dataplane:  dp,
+		Dataplane:  dataplane,
 		Metadata:   p.MetadataTracker.Metadata(key),
 		Routing:    *routing,
 		Policies:   *matchedPolicies,

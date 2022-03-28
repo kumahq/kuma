@@ -75,3 +75,12 @@ func NewPolicyInspectGatewayEntry(key ResourceKeyEntry, gateway ResourceKeyEntry
 		Gateway:      gateway,
 	}
 }
+
+type GatewayInspectEntry struct {
+	Listeners []GatewayListenerInspectEntry `json:"listeners"`
+	Policies  PolicyMap                     `json:"policies,omitempty"`
+}
+
+type GatewayInspectResult struct {
+	Selectors []GatewayInspectEntry `json:"selectors"`
+}

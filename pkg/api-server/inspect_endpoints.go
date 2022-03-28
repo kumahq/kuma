@@ -7,10 +7,13 @@ import (
 	"sort"
 
 	"github.com/emicklei/go-restful"
+	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -37,7 +40,7 @@ var CustomizeProxy func(meshContext xds_context.MeshContext, proxy *core_xds.Pro
 // getMatchedPolicies returns information about either sidecar dataplanes or
 // builtin gateway dataplanes as well as the proxy and a potential error.
 func getMatchedPolicies(
-	cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
+	cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneName string,
 ) (
 	*core_xds.MatchedPolicies, []gateway.GatewayListenerInfo, core_xds.Proxy, error,
 ) {
@@ -45,7 +48,7 @@ func getMatchedPolicies(
 		*cfg,
 		callbacks.NewDataplaneMetadataTracker(),
 		envoy.APIV3)
-	if proxy, err := proxyBuilder.Build(dataplaneKey, meshContext); err != nil {
+	if proxy, err := proxyBuilder.Build(dataplaneName, meshContext); err != nil {
 		return nil, nil, core_xds.Proxy{}, err
 	} else {
 		if CustomizeProxy != nil {
@@ -67,6 +70,80 @@ func getMatchedPolicies(
 	}
 }
 
+type gatewayMatchedPolicies struct {
+	listeners []gateway.GatewayListenerInfo
+	proxy     core_xds.Proxy
+}
+
+// getMatchedPoliciesForGateway returns inspection results for each selector of
+// a MeshGateway
+func getMatchedPoliciesForGateway(
+	cfg *kuma_cp.Config, meshContext xds_context.MeshContext, meshGateway *core_mesh.MeshGatewayResource,
+) ([]gatewayMatchedPolicies, error) {
+	proxyBuilder := sync.DefaultDataplaneProxyBuilder(
+		*cfg,
+		callbacks.NewDataplaneMetadataTracker(),
+		envoy.APIV3,
+	)
+
+	// Create a dummy dataplane that serves this MeshGateway
+	dataplaneKey := core_model.ResourceKey{
+		Name: core.NewUUID(),
+		Mesh: meshContext.Resource.Meta.GetName(),
+	}
+
+	var results []gatewayMatchedPolicies
+
+	// There's not really a way of coming up with a canonical fake Dataplane
+	// here, because different selectors could match on different services
+	// so we return multiple results for multiple selectors
+	for _, selector := range meshGateway.Spec.Selectors {
+		dataplane := core_mesh.NewDataplaneResource()
+		dataplane.SetMeta(&rest.ResourceMeta{
+			Type: string(core_mesh.DataplaneType),
+			Name: dataplaneKey.Name,
+			Mesh: dataplaneKey.Mesh,
+		})
+
+		if err := dataplane.SetSpec(&mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+					Tags: selector.Match,
+					Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
+				},
+			},
+		}); err != nil {
+			return nil, errors.Wrap(err, "could not build Dataplane")
+		}
+
+		meshContext.DataplanesByName[dataplane.GetMeta().GetName()] = dataplane
+
+		proxy, err := proxyBuilder.Build(dataplane.GetMeta().GetName(), meshContext)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not build proxy")
+		}
+		if CustomizeProxy != nil {
+			if err := CustomizeProxy(meshContext, proxy); err != nil {
+				return nil, errors.Wrap(err, "could not execute CustomizeProxy")
+			}
+		}
+
+		listeners, err := gateway.GatewayListenerInfoFromProxy(
+			meshContext, proxy, proxyBuilder.Zone,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get gateway info")
+		}
+
+		results = append(results, gatewayMatchedPolicies{
+			listeners: listeners,
+			proxy:     *proxy,
+		})
+	}
+
+	return results, nil
+}
+
 func addInspectEndpoints(
 	ws *restful.WebService,
 	cfg *kuma_cp.Config,
@@ -80,6 +157,13 @@ func addInspectEndpoints(
 			Doc("inspect dataplane matched policies").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
+			Returns(200, "OK", nil),
+	)
+	ws.Route(
+		ws.GET("/meshes/{mesh}/meshgateways/{gateway}/policies").To(inspectGateway(cfg, builder, rm)).
+			Doc("inspect policies applied to a MeshGateway").
+			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
+			Param(ws.PathParameter("gateway", "MeshGateway name").DataType("string")).
 			Returns(200, "OK", nil),
 	)
 
@@ -142,7 +226,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			return
 		}
 
-		matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName})
+		matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(cfg, meshContext, dataplaneName)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get MatchedPolicies")
 			return
@@ -188,7 +272,7 @@ func inspectPolicies(
 				Mesh: dpKey.Mesh,
 				Name: dpKey.Name,
 			}
-			matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(cfg, meshContext, dpKey)
+			matchedPolicies, gatewayEntries, proxy, err := getMatchedPolicies(cfg, meshContext, dpKey.Name)
 			if err != nil {
 				rest_errors.HandleError(response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
@@ -333,6 +417,45 @@ func inspectZoneEgressXDS(
 		}
 
 		if _, err := response.Write(configDump); err != nil {
+			rest_errors.HandleError(response, err, "Could not write response")
+			return
+		}
+	}
+}
+
+func inspectGateway(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder, rm manager.ReadOnlyResourceManager) restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		meshName := request.PathParameter("mesh")
+		gatewayName := request.PathParameter("gateway")
+
+		meshContext, err := builder.Build(context.Background(), meshName)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not build MeshContext")
+			return
+		}
+
+		meshGateway := core_mesh.NewMeshGatewayResource()
+		if err := rm.Get(context.Background(), meshGateway, store.GetByKey(gatewayName, meshName)); err != nil {
+			rest_errors.HandleError(response, err, "Could not find MeshGateway")
+			return
+		}
+
+		entries, err := getMatchedPoliciesForGateway(cfg, meshContext, meshGateway)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not get matched policies for Gateway")
+			return
+		}
+
+		var result api_server_types.GatewayInspectResult
+		for _, entry := range entries {
+			inner := newGatewayDataplaneInspectResponse(entry.proxy, entry.listeners)
+			result.Selectors = append(result.Selectors, api_server_types.GatewayInspectEntry{
+				Listeners: inner.Listeners,
+				Policies:  inner.Policies,
+			})
+		}
+
+		if err := response.WriteAsJson(result); err != nil {
 			rest_errors.HandleError(response, err, "Could not write response")
 			return
 		}
