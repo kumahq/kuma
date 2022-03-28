@@ -1561,9 +1561,7 @@ rules:
       - pods
       - configmaps
       - nodes
-  
       - secrets
-  
     verbs:
       - get
       - list

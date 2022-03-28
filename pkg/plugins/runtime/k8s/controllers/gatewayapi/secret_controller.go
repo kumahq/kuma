@@ -80,16 +80,18 @@ func (r *SecretController) updateCopiedSecret(ctx context.Context, key types.Nam
 
 func (r *SecretController) deleteCopiedSecret(ctx context.Context, key types.NamespacedName) error {
 	copiedSecret := &kube_core.Secret{}
-	if err := r.Client.Get(ctx, key, copiedSecret); err != nil {
+	copiedSecret.Name = key.Name
+	copiedSecret.Namespace = key.Namespace
+	r.Log.V(1).Info("deleting copied secret", "key", key.String())
+	if err := r.Client.Delete(ctx, copiedSecret); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			r.Log.V(1).Info("secret was not copied, nothing to delete", "key", key.String())
 			return nil
 		}
 		return err
 	}
-
-	r.Log.Info("deleting copied secret", "key", key.String())
-	return r.Client.Delete(ctx, copiedSecret)
+	r.Log.Info("copied secret deleted", "key", key.String())
+	return nil
 }
 
 func (r *SecretController) SetupWithManager(mgr kube_ctrl.Manager) error {
