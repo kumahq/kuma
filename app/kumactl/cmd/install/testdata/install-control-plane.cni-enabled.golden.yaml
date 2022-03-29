@@ -1576,7 +1576,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: "docker.io/lobkovilya/install-cni:0.0.9"
+          image: "docker.io/kumahq/install-cni:0.0.9"
           imagePullPolicy: Always
           command: ["/install-cni.sh"]
           env:
