@@ -110,12 +110,14 @@ var _ = Describe("Secrets", func() {
 		err := builtinCaManager.EnsureBackends(context.Background(), "default", newMesh().Spec.Mtls.Backends)
 		Expect(err).ToNot(HaveOccurred())
 
-		caProvider := NewCaProvider(caManagers)
-		identityProvider := NewIdentityProvider(caManagers)
-
 		m, err := core_metrics.NewMetrics("local")
 		Expect(err).ToNot(HaveOccurred())
 		metrics = m
+
+		caProvider, err := NewCaProvider(caManagers, metrics)
+		Expect(err).ToNot(HaveOccurred())
+		identityProvider, err := NewIdentityProvider(caManagers, metrics)
+		Expect(err).ToNot(HaveOccurred())
 
 		secrets, err = NewSecrets(caProvider, identityProvider, metrics)
 		Expect(err).ToNot(HaveOccurred())

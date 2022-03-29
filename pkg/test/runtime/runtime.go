@@ -94,7 +94,11 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
-	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
+	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)
+	if err != nil {
+		return nil, err
+	}
+	builder.WithCAProvider(caProvider)
 	builder.WithAPIServerAuthenticator(certs.ClientCertAuthenticator)
 	builder.WithAccess(core_runtime.Access{
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
