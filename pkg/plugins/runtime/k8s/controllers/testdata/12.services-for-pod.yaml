@@ -9,7 +9,7 @@ spec:
       port: 80
       appProtocol: http
       targetPort: 8080
-    - kuma.io/protocol: TCP
+    - protocol: TCP
       port: 443
       targetPort: 8443
 ---
@@ -21,9 +21,9 @@ metadata:
 spec:
   clusterIP: 192.168.0.1
   ports:
-    - kuma.io/protocol: TCP
+    - protocol: TCP
       port: 7071
       targetPort: 7070
-    - kuma.io/protocol: TCP
+    - protocol: TCP
       port: 6061
       targetPort: metrics
