@@ -29,7 +29,7 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/miekg/dns v1.1.47
 	github.com/onsi/ginkgo/v2 v2.1.3
-	github.com/onsi/gomega v1.18.1
+	github.com/onsi/gomega v1.19.0
 	github.com/operator-framework/operator-lib v0.10.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -46,7 +46,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.12.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
-	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20220204135822-1c1b9b1eba6a
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
