@@ -1429,6 +1429,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
+    - port: 5680
+      name: diagnostics
     - port: 5681
       name: http-api-server
     - port: 5682
@@ -1465,7 +1467,7 @@ spec:
     metadata:
       annotations:
         checksum/config: f509d41973f6ed84a86f16e996b13068bffb3a90d10d7886a37e1c5fc225f760
-        checksum/tls-secrets: 78e5236addc11d7549493c1756f9ace9c6dc65d04880293bfd22b97f8173476b
+        checksum/tls-secrets: 1962ebe5f21decca98ad3ce41df62b9e3adbcb22c20273f2904dc4b0c6bf39a7
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -1538,6 +1540,9 @@ spec:
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
+            - containerPort: 5680
+              name: diagnostics
+              protocol: TCP
             - containerPort: 5681
             - containerPort: 5682
             - containerPort: 5443
@@ -1798,4 +1803,23 @@ webhooks:
           - DELETE
         resources:
           - secrets
+    sideEffects: None
+  - name: gateway.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1alpha2-gateway
+    rules:
+      - apiGroups:
+          - "gateway.networking.k8s.io"
+        apiVersions:
+          - v1alpha2
+        operations:
+          - CREATE
+        resources:
+          - gatewayclasses
     sideEffects: None
