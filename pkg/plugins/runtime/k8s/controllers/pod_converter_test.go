@@ -245,6 +245,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			otherServices:   "17.other-services.yaml",
 			dataplane:       "17.dataplane.yaml",
 		}),
+		Entry("18. Gateway with non tcp appProtocol", testCase{
+			pod:            "18.pod.yaml",
+			servicesForPod: "18.services-for-pod.yaml",
+			dataplane:      "18.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
