@@ -24,7 +24,7 @@ var dataplaneInspectTemplate = `{{ with IsSidecar . }}{{ range $num, $item := .I
 {{ end }}
 {{ range .Listeners }}LISTENER ({{ .Protocol }}:{{ .Port }}):
 {{ range .Hosts }}  {{ .HostName }}:
-{{ range .Routes }}    {{ .Route }}:
+{{ range .Routes }}    ROUTE {{ .Route }}:
 {{ range .Destinations }}      {{ FormatTags .Tags }}:
 {{ range $typ, $policy := .Policies }}        {{ $typ }}
           {{ .Meta.Name }}
