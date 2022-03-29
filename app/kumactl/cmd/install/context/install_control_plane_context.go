@@ -94,7 +94,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			Cni_net_dir:                             "/etc/cni/multus/net.d",
 			Cni_bin_dir:                             "/var/lib/cni/bin",
 			Cni_conf_name:                           "kuma-cni.conf",
-			Cni_image_registry:                      "docker.io/lobkovilya",
+			Cni_image_registry:                      "docker.io/kumahq",
 			Cni_image_repository:                    "install-cni",
 			Cni_image_tag:                           "0.0.9",
 			ControlPlane_mode:                       core.Standalone,
