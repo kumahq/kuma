@@ -1,16 +1,17 @@
 package deploy
 
 import (
+	"strings"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"strings"
+
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 func KubernetesDeployment() {
-
 	var k8sCluster Cluster
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)

@@ -1,11 +1,11 @@
 package mesh
 
 import (
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
