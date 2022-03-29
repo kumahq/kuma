@@ -1,5 +1,5 @@
 {
- "kind": "GatewayDataplane",
+ "kind": "MeshGatewayDataplane",
  "gateway": {
   "mesh": "default",
   "name": "gateway"
