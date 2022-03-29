@@ -8,7 +8,7 @@ spec:
   ports:
     - name: http
       port: 80
-      kuma.io/protocol: TCP
+      protocol: TCP
       targetPort: 80
   selector:
     app: test-app
