@@ -9,11 +9,11 @@ spec:
   ports:
     - name: http
       port: 80
-      kuma.io/protocol: TCP
+      protocol: TCP
       targetPort: 80
     - name: https
       port: 443
-      kuma.io/protocol: TCP
+      protocol: TCP
       targetPort: 80
   selector:
     app: test-app
