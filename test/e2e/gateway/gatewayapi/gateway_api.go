@@ -215,7 +215,7 @@ spec:
 		})
 	})
 
-	Context("HTTPS Gateway", func() {
+	PContext("HTTPS Gateway", func() {
 		secret := `
 apiVersion: v1
 kind: Secret
