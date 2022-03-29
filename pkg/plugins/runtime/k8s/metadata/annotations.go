@@ -75,6 +75,9 @@ const (
 
 	KumaTrafficExcludeInboundPorts  = "traffic.kuma.io/exclude-inbound-ports"
 	KumaTrafficExcludeOutboundPorts = "traffic.kuma.io/exclude-outbound-ports"
+
+	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
+	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
 )
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
