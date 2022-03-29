@@ -1,0 +1,17 @@
+{
+  "total": 2,
+  "items": [
+    {
+      "dataplane": {
+        "mesh": "default",
+        "name": "gateway-1"
+      }
+    },
+    {
+      "dataplane": {
+        "mesh": "default",
+        "name": "gateway-2"
+      }
+    }
+  ]
+}
