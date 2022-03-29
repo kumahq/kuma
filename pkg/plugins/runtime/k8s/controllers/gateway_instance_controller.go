@@ -17,6 +17,7 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
@@ -146,6 +147,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 				servicePort.Name = strconv.Itoa(int(listener.Port))
 				servicePort.Protocol = kube_core.ProtocolTCP
 				servicePort.Port = int32(listener.Port)
+				servicePort.TargetPort = intstr.FromInt(int(servicePort.Port))
 				if gatewayInstance.Spec.ServiceType == kube_core.ServiceTypeNodePort {
 					servicePort.NodePort = int32(listener.Port)
 				}
