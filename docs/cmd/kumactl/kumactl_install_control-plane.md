@@ -19,7 +19,7 @@ kumactl install control-plane [flags]
       --cni-conf-name string                        set the CNI configuration name (default "kuma-cni.conf")
       --cni-enabled                                 install Kuma with CNI instead of proxy init container
       --cni-net-dir string                          set the CNI install directory (default "/etc/cni/multus/net.d")
-      --cni-registry string                         registry for the image of the Kuma CNI component (default "docker.io/lobkovilya")
+      --cni-registry string                         registry for the image of the Kuma CNI component (default "docker.io/kumahq")
       --cni-repository string                       repository for the image of the Kuma CNI component (default "install-cni")
       --cni-version string                          version of the image of the Kuma CNI component (default "0.0.9")
       --control-plane-registry string               registry for the image of the Kuma Control Plane component (default "docker.io/kumahq")
