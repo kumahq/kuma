@@ -188,7 +188,7 @@ cni:
     # -- CNI image registry
     registry: "docker.io"
     # -- CNI image repository
-    repository: "lobkovilya/install-cni"
+    repository: "kumahq/install-cni"
     # -- CNI image tag
     tag: "0.0.9"
 

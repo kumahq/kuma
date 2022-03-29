@@ -63,7 +63,7 @@ A Helm chart for the Kuma Control Plane
 | cni.logLevel | string | `"info"` | CNI log level: one of off,info,debug |
 | cni.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
 | cni.image.registry | string | `"docker.io"` | CNI image registry |
-| cni.image.repository | string | `"lobkovilya/install-cni"` | CNI image repository |
+| cni.image.repository | string | `"kumahq/install-cni"` | CNI image repository |
 | cni.image.tag | string | `"0.0.9"` | CNI image tag |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
