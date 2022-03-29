@@ -1,4 +1,4 @@
-GATEWAY:
+MESHGATEWAY:
   TrafficLog
     all-traffic
   TrafficTrace
