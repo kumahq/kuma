@@ -6,7 +6,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	kube_batch "k8s.io/api/batch/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -83,7 +82,6 @@ func (r *PodStatusReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Pod{}, builder.WithPredicates(
 			onlyUpdates,
-			hasJobOwner,
 			onlySidecarContainerRunning,
 		)).
 		Complete(r)
@@ -104,21 +102,9 @@ var onlyUpdates = predicate.Funcs{
 	},
 }
 
-var hasJobOwner = predicate.NewPredicateFuncs(
-	func(obj kube_client.Object) bool {
-		for _, o := range obj.GetOwnerReferences() {
-			if o.Kind == "Job" && o.APIVersion == kube_batch.SchemeGroupVersion.String() {
-				return true
-			}
-		}
-		return false
-	},
-)
-
 var onlySidecarContainerRunning = predicate.NewPredicateFuncs(
 	func(obj kube_client.Object) bool {
 		pod := obj.(*kube_core.Pod)
-
 		sidecarContainerRunning := false
 
 		for _, cs := range pod.Status.ContainerStatuses {
@@ -127,11 +113,22 @@ var onlySidecarContainerRunning = predicate.NewPredicateFuncs(
 					return false
 				}
 				sidecarContainerRunning = true
-			} else if cs.State.Terminated == nil || cs.State.Terminated.ExitCode != 0 {
-				// at least one non-sidecar container not terminated
-				// or did not completed successfully
-				// no need to tell envoy to quit yet
-				return false
+			} else {
+				switch pod.Spec.RestartPolicy {
+				case kube_core.RestartPolicyNever:
+					if cs.State.Terminated == nil {
+						// at least one non-sidecar container not terminated
+						// no need to tell envoy to quit yet
+						return false
+					}
+				default:
+					if cs.State.Terminated == nil || cs.State.Terminated.ExitCode != 0 {
+						// at least one non-sidecar container not terminated
+						// or did not completed successfully
+						// no need to tell envoy to quit yet
+						return false
+					}
+				}
 			}
 		}
 
