@@ -130,6 +130,7 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 }
 
 func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort) map[string]string {
+	logger := converterLog.WithValues("pod", pod.Name, "namespace", pod.Namespace)
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	for key, value := range tags {
 		if key == metadata.KumaSidecarInjectionAnnotation || value == "" {
@@ -137,7 +138,7 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 		} else if strings.Contains(key, "kuma.io/") {
 			// we don't want to convert labels like
 			// kuma.io/sidecar-injection, kuma.io/service, k8s.kuma.io/namespace etc.
-			converterLog.Info("ignoring label when converting labels to tags, because it uses reserved Kuma prefix", "label", key, "pod", pod.Name)
+			logger.Info("ignoring label when converting labels to tags, because it uses reserved Kuma prefix", "label", key)
 			delete(tags, key)
 		}
 	}
@@ -151,7 +152,13 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 	if zone != "" {
 		tags[mesh_proto.ZoneTag] = zone
 	}
-	tags[mesh_proto.ProtocolTag] = ProtocolTagFor(svc, svcPort)
+	// For provided gateway we should ignore the protocol tag
+	protocol := ProtocolTagFor(svc, svcPort)
+	if enabled, _, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation); enabled && protocol != core_mesh.ProtocolTCP {
+		logger.Info("ignoring non TCP appProtocol or annotation as provided gateway only supports 'tcp'", "appProtocol", protocol)
+	} else {
+		tags[mesh_proto.ProtocolTag] = protocol
+	}
 	if isHeadlessService(svc) {
 		tags[mesh_proto.InstanceTag] = pod.Name
 	}
@@ -172,7 +179,7 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 	if protocolValue == "" {
 		// if `appProtocol` or `<port>.service.kuma.io/protocol` is missing or has an empty value
 		// we want Dataplane to have a `protocol: tcp` tag in order to get user's attention
-		return core_mesh.ProtocolTCP
+		protocolValue = core_mesh.ProtocolTCP
 	}
 	// if `appProtocol` or `<port>.service.kuma.io/protocol` field is present but has an invalid value
 	// we still want Dataplane to have a `protocol: <value as is>` tag in order to make it clear

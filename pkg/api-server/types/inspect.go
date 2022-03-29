@@ -68,7 +68,7 @@ type PolicyInspectSidecarEntry struct {
 }
 
 const SidecarDataplane = "SidecarDataplane"
-const GatewayDataplane = "GatewayDataplane"
+const GatewayDataplane = "MeshGatewayDataplane"
 
 type KindTag struct {
 	Kind string `json:"kind"`
