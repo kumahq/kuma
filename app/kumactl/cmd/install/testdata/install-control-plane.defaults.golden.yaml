@@ -1551,10 +1551,6 @@ spec:
             requests:
               cpu: 100m
               memory: 256Mi
-            # limits:
-            #   cpu: 250m
-            #   memory: 512Mi
-            #
           volumeMounts:
             - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt

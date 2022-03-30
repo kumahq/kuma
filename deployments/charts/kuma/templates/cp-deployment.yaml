@@ -101,7 +101,8 @@ spec:
               port: 5680
           resources:
             {{- if .Values.controlPlane.resources.requests }}
-            {{ .Values.controlPlane.resources.requests | toYaml | nindent 12 }}
+            requests:
+            {{ .Values.controlPlane.resources.requests | toYaml | nindent 14 }}
             {{- else if eq .Values.controlPlane.mode "global" }}
             requests:
               cpu: 500m
@@ -112,7 +113,8 @@ spec:
               memory: 256Mi
             {{- end }}
             {{- if .Values.controlPlane.resources.limits }}
-            {{ .Values.controlPlane.resources.limits | toYaml | nindent 12 }}
+            limits:
+            {{ .Values.controlPlane.resources.limits | toYaml | nindent 14 }}
             {{- end }}
           volumeMounts:
             - name: general-tls-cert
