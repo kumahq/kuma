@@ -20,7 +20,7 @@ type CaProvider interface {
 
 func NewCaProvider(caManagers core_ca.Managers, metrics core_metrics.Metrics) (CaProvider, error) {
 	latencyMetrics := map[string]prometheus.Summary{}
-	for backendType, _ := range caManagers {
+	for backendType := range caManagers {
 		latencyMetrics[backendType] = prometheus.NewSummary(prometheus.SummaryOpts{
 			Name:       "ca_manager_get_root_cert_" + backendType,
 			Help:       "Summary of CA manager get CA root certificate latencies",
@@ -58,7 +58,7 @@ func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) 
 	func() {
 		start := time.Now()
 		defer func() {
-			s.latencyMetrics[backend.Type].Observe(float64(time.Now().Sub(start).Milliseconds()))
+			s.latencyMetrics[backend.Type].Observe(float64(time.Since(start).Milliseconds()))
 		}()
 		certs, err = caManager.GetRootCert(ctx, mesh.GetMeta().GetName(), backend)
 	}()

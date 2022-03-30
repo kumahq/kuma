@@ -27,7 +27,7 @@ type IdentityProvider interface {
 
 func NewIdentityProvider(caManagers core_ca.Managers, metrics core_metrics.Metrics) (IdentityProvider, error) {
 	latencyMetrics := map[string]prometheus.Summary{}
-	for backendType, _ := range caManagers {
+	for backendType := range caManagers {
 		latencyMetrics[backendType] = prometheus.NewSummary(prometheus.SummaryOpts{
 			Name:       "ca_manager_get_cert_" + backendType,
 			Help:       "Summary of CA manager get certificate latencies",
@@ -66,7 +66,7 @@ func (s *identityCertProvider) Get(ctx context.Context, requestor Identity, mesh
 	func() {
 		start := time.Now()
 		defer func() {
-			s.latencyMetrics[backend.Type].Observe(float64(time.Now().Sub(start).Milliseconds()))
+			s.latencyMetrics[backend.Type].Observe(float64(time.Since(start).Milliseconds()))
 		}()
 		pair, err = caManager.GenerateDataplaneCert(ctx, mesh.GetMeta().GetName(), backend, requestor.Services)
 	}()
