@@ -29,11 +29,6 @@ const (
 	// External service tag
 	ExternalServiceTag = "kuma.io/external-service-name"
 
-	// Zone external service tag
-	// If present means that ingress expose external service that
-	// is reachable from this zone
-	ZoneExternalServiceTag = "kuma.io/zone-external-service"
-
 	// Listener tag is used to select Gateway listeners
 	ListenerTag = "gateways.kuma.io/listener-name"
 

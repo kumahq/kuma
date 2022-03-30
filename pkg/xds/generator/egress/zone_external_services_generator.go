@@ -37,7 +37,6 @@ func (g *ZoneExternalServicesGenerator) Generate(
 	g.addFilterChains(
 		apiVersion,
 		destinations,
-		endpointMap,
 		proxy,
 		listenerBuilder,
 		meshResources,
@@ -145,7 +144,6 @@ func (*ZoneExternalServicesGenerator) buildServices(
 func (*ZoneExternalServicesGenerator) addFilterChains(
 	apiVersion envoy_common.APIVersion,
 	destinationsPerService map[string][]envoy_common.Tags,
-	endpointMap core_xds.EndpointMap,
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,

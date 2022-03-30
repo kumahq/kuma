@@ -106,5 +106,10 @@ func GetExternalAvailableServices(others []*core_mesh.ExternalServiceResource) [
 	for _, es := range others {
 		tagSets.addInstanceOfTags(es.GetMeta().GetMesh(), es.Spec.Tags)
 	}
-	return tagSets.toAvailableServices()
+
+	availableServices := tagSets.toAvailableServices()
+	for _, as := range availableServices {
+		as.ExternalService = true
+	}
+	return availableServices
 }

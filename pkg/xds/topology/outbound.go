@@ -211,12 +211,6 @@ func fillIngressOutbounds(
 				continue
 			}
 			serviceTags := service.GetTags()
-
-			//WHY!
-			// if mesh.Spec.GetRouting().LocalityAwareLoadBalancing && serviceTags[mesh_proto.ZoneExternalServiceTag] == "true" {
-			// 	continue
-			// }
-
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
 			locality := localityFromTags(mesh, priorityRemote, serviceTags)
@@ -241,6 +235,11 @@ func fillIngressOutbounds(
 						Weight:   1,
 						Locality: locality,
 					}
+					// this is necessary for correct spiffe generation for dp when
+					// traffic is router: egress -> ingress -> egress
+					if mesh.LocalityAwareExternalServicesEnabled() && service.ExternalService {
+						endpoint.ExternalService = &core_xds.ExternalService{}
+					}
 
 					outbound[serviceName] = append(outbound[serviceName], endpoint)
 				}
@@ -252,7 +251,7 @@ func fillIngressOutbounds(
 					Weight:   serviceInstances,
 					Locality: locality,
 				}
-				if mesh.LocalityAwareExternalServicesEnabled() && serviceTags[mesh_proto.ZoneExternalServiceTag] == "true" {
+				if mesh.LocalityAwareExternalServicesEnabled() && service.ExternalService {
 					endpoint.ExternalService = &core_xds.ExternalService{}
 				}
 

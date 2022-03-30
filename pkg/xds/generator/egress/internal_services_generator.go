@@ -29,7 +29,7 @@ func (g *InternalServicesGenerator) Generate(
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
 	destinations := buildDestinations(meshResources.TrafficRoutes)
-	services := g.buildServices(endpointMap, meshResources)
+	services := g.buildServices(endpointMap)
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	g.addFilterChains(
@@ -126,7 +126,6 @@ func (*InternalServicesGenerator) generateCDS(
 
 func (*InternalServicesGenerator) buildServices(
 	endpointMap core_xds.EndpointMap,
-	meshResources *core_xds.MeshResources,
 ) []string {
 	var services []string
 

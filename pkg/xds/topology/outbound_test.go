@@ -968,7 +968,24 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("external service based on ingress informations with tls context for external available service", testCase{
+			Entry("external services available from other zone should have non empty external service object for dp", testCase{
+				dataplanes: []*core_mesh.DataplaneResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: &mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
+								},
+							},
+						},
+					},
+				},
 				zoneIngresses: []*core_mesh.ZoneIngressResource{
 					{
 						Spec: &mesh_proto.ZoneIngress{
@@ -981,14 +998,10 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
 								{
-									Instances: 2,
-									Mesh:      defaultMeshName,
-									Tags:      map[string]string{mesh_proto.ServiceTag: "service-zone2", mesh_proto.ZoneTag: "zone-2", mesh_proto.ZoneExternalServiceTag: "true"},
-								},
-								{
-									Instances: 3,
-									Mesh:      defaultMeshName,
-									Tags:      map[string]string{mesh_proto.ServiceTag: "test", mesh_proto.ZoneTag: "zone-2"},
+									Instances:       2,
+									Mesh:            defaultMeshName,
+									Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2"},
+									ExternalService: true,
 								},
 							},
 						},
@@ -1008,34 +1021,6 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				dataplanes: []*core_mesh.DataplaneResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.Dataplane{
-							Networking: &mesh_proto.Dataplane_Networking{
-								Address: "192.168.0.1",
-								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-									{
-										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-										Port:        6379,
-										ServicePort: 16379,
-									},
-								},
-							},
-						},
-					},
-				},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: &mesh_proto.ExternalService{
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "example.com:443",
-							},
-							Tags: map[string]string{mesh_proto.ServiceTag: "example"},
-						},
-					},
-				},
 				mesh: defaultMeshWithMTLSAndZoneEgressAndLB,
 				expected: core_xds.EndpointMap{
 					"redis": []core_xds.Endpoint{
@@ -1046,32 +1031,14 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
 						},
 					},
-					"test": []core_xds.Endpoint{
-						{
-							Target:   "1.1.1.1",
-							Port:     10002,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "test", mesh_proto.ZoneTag: "zone-2"},
-							Weight:   1, // local weight is bumped to 2 to factor two instances of Ingresses
-							Locality: &core_xds.Locality{Zone: "zone-2", Priority: 1},
-						},
-					},
-					"example": []core_xds.Endpoint{
+					"service-in-zone2": []core_xds.Endpoint{
 						{
 							Target:          "1.1.1.1",
 							Port:            10002,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "example"},
+							Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2"},
 							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
-							ExternalService: &core_xds.ExternalService{},
-						},
-					},
-					"service-zone2": []core_xds.Endpoint{
-						{
-							Target:          "1.1.1.1",
-							Port:            10002,
-							Tags:            map[string]string{mesh_proto.ServiceTag: "service-zone2", mesh_proto.ZoneTag: "zone-2", mesh_proto.ZoneExternalServiceTag: "true"},
-							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
-							ExternalService: &core_xds.ExternalService{},
 							Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 1},
+							ExternalService: &core_xds.ExternalService{},
 						},
 					},
 				},
@@ -1105,9 +1072,10 @@ var _ = Describe("TrafficRoute", func() {
 								},
 								AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
 									{
-										Instances: 2,
-										Mesh:      defaultMeshName,
-										Tags:      map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2", mesh_proto.ZoneExternalServiceTag: "true"},
+										Instances:       2,
+										Mesh:            defaultMeshName,
+										Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2"},
+										ExternalService: true,
 									},
 									{
 										Instances: 3,
@@ -1133,11 +1101,12 @@ var _ = Describe("TrafficRoute", func() {
 					expected: core_xds.EndpointMap{
 						"service-in-zone2": []core_xds.Endpoint{
 							{
-								Target:   "192.168.0.100",
-								Port:     12345,
-								Tags:     map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2", mesh_proto.ZoneExternalServiceTag: "true", "mesh": "default"},
-								Weight:   2, // local weight is bumped to 2 to factor two instances of Ingresses
-								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 1},
+								Target:          "192.168.0.100",
+								Port:            12345,
+								Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2", "mesh": "default"},
+								Weight:          2, // local weight is bumped to 2 to factor two instances of Ingresses
+								Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 1},
+								ExternalService: &core_xds.ExternalService{},
 							},
 						},
 						"test": []core_xds.Endpoint{

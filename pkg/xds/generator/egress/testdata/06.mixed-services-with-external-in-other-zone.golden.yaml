@@ -186,6 +186,20 @@ resources:
           statPrefix: mesh-1_service-2-zone-2
     - filterChainMatch:
         serverNames:
+        - externalservice-2{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: mesh-1:externalservice-2
+          metadataMatch:
+            filterMetadata:
+              envoy.lb:
+                mesh: mesh-1
+          statPrefix: mesh-1_externalservice-2
+    - filterChainMatch:
+        serverNames:
         - externalservice-1{mesh=mesh-1}
         transportProtocol: tls
       filters:
@@ -239,20 +253,6 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
-    - filterChainMatch:
-        serverNames:
-        - externalservice-2{mesh=mesh-1}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: mesh-1:externalservice-2
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                mesh: mesh-1
-          statPrefix: mesh-1_externalservice-2
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

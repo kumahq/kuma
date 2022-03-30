@@ -192,14 +192,8 @@ var _ = Describe("Ingress Dataplane", func() {
 							"version":          "v1",
 							mesh_proto.ZoneTag: "zone-1",
 						},
-						Mesh: "mesh1",
-					},
-					{
-						Instances: 1,
-						Tags: map[string]string{
-							"service": "example",
-						},
-						Mesh: "mesh1",
+						Mesh:            "mesh1",
+						ExternalService: true,
 					},
 				},
 			},
@@ -218,20 +212,6 @@ var _ = Describe("Ingress Dataplane", func() {
 						"service":          "httpbin",
 						"version":          "v1",
 						mesh_proto.ZoneTag: "zone-1",
-					},
-				},
-			},
-			{
-				Meta: &model2.ResourceMeta{
-					Mesh: "mesh1",
-					Name: "es-2",
-				},
-				Spec: &mesh_proto.ExternalService{
-					Networking: &mesh_proto.ExternalService_Networking{
-						Address: "127.0.0.1",
-					},
-					Tags: map[string]string{
-						"service": "example",
 					},
 				},
 			},

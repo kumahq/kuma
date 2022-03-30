@@ -43,8 +43,8 @@ func (p *IngressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, err
 		return nil, err
 	}
 
-	var zoneEgressesList core_mesh.ZoneEgressResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &zoneEgressesList); err != nil {
+	zoneEgressesList := &core_mesh.ZoneEgressResourceList{}
+	if err := p.ReadOnlyResManager.List(ctx, zoneEgressesList); err != nil {
 		return nil, err
 	}
 
@@ -171,7 +171,6 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 		// look for external services that are only available in my zone and expose them
 		for _, es := range meshExternalServices {
 			if es.Spec.Tags[mesh_proto.ZoneTag] == p.zone {
-				es.Spec.Tags[mesh_proto.ZoneExternalServiceTag] = "true"
 				externalServices = append(externalServices, es)
 			}
 		}

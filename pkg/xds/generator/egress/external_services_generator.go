@@ -35,7 +35,6 @@ func (g *ExternalServicesGenerator) Generate(
 		endpointMap,
 		meshResources,
 		listenerBuilder,
-		zone,
 		services,
 	)
 
@@ -130,7 +129,6 @@ func (*ExternalServicesGenerator) addFilterChains(
 	endpointMap core_xds.EndpointMap,
 	meshResources *core_xds.MeshResources,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
-	zone string,
 	services map[string]bool,
 ) {
 	meshName := meshResources.Mesh.GetMeta().GetName()
