@@ -11,6 +11,7 @@ import (
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -129,6 +130,14 @@ func addInspectEndpoints(
 				Returns(200, "OK", nil),
 		)
 	}
+
+	ws.Route(
+		ws.GET("/meshes/{mesh}/meshgateways/{name}/dataplanes").To(inspectGatewayDataplanes(builder, rm)).
+			Doc("inspect MeshGateway").
+			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
+			Param(ws.PathParameter("name", "resource name").DataType("string")).
+			Returns(200, "OK", nil),
+	)
 }
 
 func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
@@ -158,6 +167,50 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 			inner := newGatewayDataplaneInspectResponse(proxy, gatewayEntries)
 			result = api_server_types.NewDataplaneInspectResponse(&inner)
 		}
+		if err := response.WriteAsJson(result); err != nil {
+			rest_errors.HandleError(response, err, "Could not write response")
+			return
+		}
+	}
+}
+
+func inspectGatewayDataplanes(
+	builder xds_context.MeshContextBuilder,
+	rm manager.ReadOnlyResourceManager,
+) restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		meshName := request.PathParameter("mesh")
+		gatewayName := request.PathParameter("name")
+
+		meshContext, err := builder.Build(context.Background(), meshName)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not build mesh context")
+			return
+		}
+
+		meshGateway := core_mesh.NewMeshGatewayResource()
+		if err := rm.Get(context.Background(), meshGateway, store.GetByKey(gatewayName, meshName)); err != nil {
+			rest_errors.HandleError(response, err, "Could not find MeshGateway")
+			return
+		}
+
+		result := api_server_types.NewGatewayDataplanesInspectResult()
+		for _, dp := range meshContext.Resources.Dataplanes().Items {
+			if !dp.Spec.IsBuiltinGateway() {
+				continue
+			}
+			if p := policy.SelectDataplanePolicyWithMatcher(dp.Spec.Matches, []policy.DataplanePolicy{meshGateway}); p != nil {
+				result.Items = append(
+					result.Items,
+					api_server_types.GatewayDataplanesInspectEntry{
+						DataplaneKey: api_server_types.ResourceKeyEntryFromModelKey(core_model.MetaToResourceKey(dp.GetMeta())),
+					},
+				)
+			}
+		}
+
+		result.Total = uint32(len(result.Items))
+
 		if err := response.WriteAsJson(result); err != nil {
 			rest_errors.HandleError(response, err, "Could not write response")
 			return
