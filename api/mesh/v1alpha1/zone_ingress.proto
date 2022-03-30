@@ -56,6 +56,8 @@ message ZoneIngress {
     uint32 instances = 2;
     // mesh of the instances available for given tags
     string mesh = 3;
+    // instance of external service available from the zone
+    bool externalService = 4;
   }
 
   // AvailableService contains tags that represent unique subset of
