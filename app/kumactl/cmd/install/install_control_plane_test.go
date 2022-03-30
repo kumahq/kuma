@@ -41,6 +41,7 @@ var _ = Describe("kumactl install control-plane", func() {
 	})
 
 	type testCase struct {
+		stdin      string
 		extraArgs  []string
 		goldenFile string
 	}
@@ -65,6 +66,11 @@ var _ = Describe("kumactl install control-plane", func() {
 				},
 				given.extraArgs...,
 			))
+			if given.stdin != "" {
+				stdin := &bytes.Buffer{}
+				stdin.WriteString(given.stdin)
+				rootCmd.SetIn(stdin)
+			}
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
 
@@ -146,6 +152,9 @@ var _ = Describe("kumactl install control-plane", func() {
 			extraArgs: []string{
 				"--ingress-enabled",
 				"--ingress-drain-time", "60s",
+				"--mode", "zone",
+				"--zone", "zone-1",
+				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--ingress-use-node-port",
 				"--without-kubernetes-connection",
 			},
@@ -158,6 +167,32 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.with-egress.golden.yaml",
+		}),
+		Entry("should work with --set", testCase{
+			extraArgs: []string{
+				"--set",
+				"egress.enabled=true,ingress.enabled=true",
+				"--set",
+				"controlPlane.mode=zone,controlPlane.zone=zone-1,controlPlane.kdsGlobalAddress=grpcs://foo.com",
+			},
+			goldenFile: "install-control-plane.with-helm-set.yaml",
+		}),
+		Entry("should work with --values", testCase{
+			extraArgs: []string{
+				"--values",
+				"-",
+			},
+			goldenFile: "install-control-plane.with-helm-values.yaml",
+			stdin: `
+controlPlane:
+  replicas: 2
+`,
+		}),
+		Entry("should dump config with --dump-values", testCase{
+			extraArgs: []string{
+				"--dump-values",
+			},
+			goldenFile: "install-control-plane.dump-values.yaml",
 		}),
 	)
 
@@ -178,31 +213,31 @@ var _ = Describe("kumactl install control-plane", func() {
 
 			// then
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal(given.errorMsg))
+			Expect(err.Error()).To(ContainSubstring(given.errorMsg))
 		},
 		Entry("--mode is unknown", errTestCase{
 			extraArgs: []string{"--mode", "test"},
-			errorMsg:  "invalid mode. Available modes: standalone, zone, global",
+			errorMsg:  "controlPlane.mode invalid got:'test'",
 		}),
 		Entry("--kds-global-address is missing when installing zone", errTestCase{
 			extraArgs: []string{"--mode", "zone", "--zone", "zone-1"},
-			errorMsg:  "--kds-global-address is mandatory with `zone` mode",
+			errorMsg:  "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone'",
 		}),
 		Entry("--kds-global-address is not valid URL", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},
-			errorMsg:  "--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port",
+			errorMsg:  "unable to parse url: parse \"192.168.0.1:1234\"",
 		}),
 		Entry("--kds-global-address has no grpcs scheme", errTestCase{
 			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},
-			errorMsg:  "--kds-global-address should start with grpcs://",
+			errorMsg:  "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// got:'http://192.168.0.1:1234'",
 		}),
 		Entry("--kds-global-address is used with standalone", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},
-			errorMsg:  "--kds-global-address can only be used when --mode=zone",
+			errorMsg:  "Can't specify a controlPlane.kdsGlobalAddress when controlPlane.mode!='zone'",
 		}),
 		Entry("--tls-general-secret without --tls-general-ca-bundle", errTestCase{
 			extraArgs: []string{"--tls-general-secret", "sec"},
-			errorMsg:  "--tls-general-secret and --tls-general-ca-bundle must be provided at the same time",
+			errorMsg:  "You need to send both or neither of controlPlane.tls.general.caBundle and controlPlane.tls.general.secretName",
 		}),
 	)
 })
