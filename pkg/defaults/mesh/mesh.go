@@ -30,7 +30,7 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 
 	log.Info("ensuring default resources for Mesh exist", "mesh", meshName)
 
-	defaultResources := map[string]model.Resource{
+	defaultResourceBuilders := map[string]func() model.Resource{
 		"allow-all":           defaultTrafficPermissionResource,
 		"route-all":           defaultTrafficRouteResource,
 		"timeout-all":         defaultTimeoutResource,
@@ -38,12 +38,12 @@ func EnsureDefaultMeshResources(ctx context.Context, resManager manager.Resource
 		"retry-all":           defaultRetryResource,
 	}
 
-	for prefix, resource := range defaultResources {
+	for prefix, resourceBuilder := range defaultResourceBuilders {
 		key := model.ResourceKey{
 			Mesh: meshName,
 			Name: fmt.Sprintf("%s-%s", prefix, meshName),
 		}
-
+		resource := resourceBuilder()
 		err, created := ensureDefaultResource(ctx, resManager, resource, key)
 		if err != nil {
 			return errors.Wrapf(err, "could not create default %s %q", resource.Descriptor().Name, key.Name)
