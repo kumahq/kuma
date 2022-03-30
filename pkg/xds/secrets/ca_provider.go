@@ -48,6 +48,13 @@ func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) 
 		return nil, nil, errors.New("CA backend is nil")
 	}
 
+	var cancel context.CancelFunc
+	timeout := backend.GetRootCert().GetRequestTimeout()
+	if timeout != nil {
+		ctx, cancel = context.WithTimeout(ctx, timeout.AsDuration())
+		defer cancel()
+	}
+
 	caManager, exist := s.caManagers[backend.Type]
 	if !exist {
 		return nil, nil, errors.Errorf("CA manager of type %s not exist", backend.Type)

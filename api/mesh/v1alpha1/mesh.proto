@@ -6,6 +6,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/options.proto";
 import "mesh/v1alpha1/metrics.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/struct.proto";
 
@@ -109,6 +110,9 @@ message CertificateAuthorityBackend {
     }
     // Rotation settings
     Rotation rotation = 1;
+
+    // Timeout on request to CA for DP certificate generation and retrieval
+    google.protobuf.Duration requestTimeout = 2;
   }
 
   // Dataplane certificate settings
@@ -131,6 +135,14 @@ message CertificateAuthorityBackend {
   // Mode defines the behaviour of inbound listeners with regard to traffic
   // encryption
   Mode mode = 5;
+
+  // RootCert defines settings related to CA root certificate chain.
+  message RootCert {
+    // Timeout on request for to CA for root certificate chain.
+    google.protobuf.Duration requestTimeout = 1;
+  }
+
+  RootCert rootCert = 6;
 }
 
 // Networking defines the networking configuration of the mesh
