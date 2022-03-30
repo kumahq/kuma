@@ -106,6 +106,9 @@ var onlySidecarContainerRunning = predicate.NewPredicateFuncs(
 	func(obj kube_client.Object) bool {
 		pod := obj.(*kube_core.Pod)
 		sidecarContainerRunning := false
+		if pod.Spec.RestartPolicy == kube_core.RestartPolicyAlways {
+			return false
+		}
 
 		for _, cs := range pod.Status.ContainerStatuses {
 			if cs.Name == util_k8s.KumaSidecarContainerName {
