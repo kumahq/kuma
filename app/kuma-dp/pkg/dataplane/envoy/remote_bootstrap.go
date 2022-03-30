@@ -128,7 +128,6 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		AdminPort:         cfg.Dataplane.AdminPort.Lowest(),
 		DataplaneToken:    token,
 		DataplaneResource: dataplaneResource,
-		BootstrapVersion:  types.BootstrapV3, // set BootstrapVersion to be compatible with old Kuma CPs
 		CaCert:            cfg.ControlPlane.CaCert,
 		Version: types.Version{
 			KumaDp: types.KumaDpVersion{

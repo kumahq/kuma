@@ -154,7 +154,7 @@ func SelectInboundConnectionPolicies(dataplane *core_mesh.DataplaneResource, inb
 	return policiesMap
 }
 
-// SelectInboundConnectionAllPolicies picks all matching policies for each inbound interface of a given Dataplane.
+// SelectInboundConnectionMatchingPolicies picks all matching policies for each inbound interface of a given Dataplane.
 func SelectInboundConnectionMatchingPolicies(dataplane *core_mesh.DataplaneResource, inbounds []*mesh_proto.Dataplane_Networking_Inbound, policies []ConnectionPolicy) InboundConnectionPoliciesMap {
 	sort.Stable(ConnectionPolicyByName(policies)) // sort to avoid flakiness
 	policiesMap := make(InboundConnectionPoliciesMap)

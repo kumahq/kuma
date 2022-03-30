@@ -10,6 +10,8 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
@@ -121,7 +123,7 @@ func (*ExternalServicesGenerator) buildServices(
 	return services
 }
 
-func (*ExternalServicesGenerator) addFilterChains(
+func (g *ExternalServicesGenerator) addFilterChains(
 	apiVersion envoy_common.APIVersion,
 	destinationsPerService map[string][]envoy_common.Tags,
 	endpointMap core_xds.EndpointMap,
@@ -188,11 +190,28 @@ func (*ExternalServicesGenerator) addFilterChains(
 
 			switch protocol {
 			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
-				route := envoy_common.NewRouteFromCluster(cluster)
+				routes := envoy_common.Routes{}
+
+				for _, rl := range meshResources.ExternalServiceRateLimits[serviceName] {
+					if rl.Spec.GetConf().GetHttp() == nil {
+						continue
+					}
+
+					routes = append(routes, envoy_common.NewRoute(
+						envoy_common.WithCluster(cluster),
+						envoy_common.WithMatchHeaderRegex(envoy_routes.TagsHeaderName, tags.MatchSourceRegex(rl)),
+						envoy_common.WithRateLimit(rl.Spec),
+					))
+				}
+
+				// Add the default fall-back route
+				routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
 
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
-					Configure(envoy_listeners.HttpOutboundRoute(serviceName, envoy_common.Routes{route}, nil))
+					Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[serviceName]...)).
+					Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[serviceName])).
+					Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, nil))
 			default:
 				filterChainBuilder.Configure(
 					envoy_listeners.TcpProxyWithMetadata(serviceName, cluster),

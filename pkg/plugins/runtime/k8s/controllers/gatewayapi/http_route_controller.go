@@ -47,6 +47,7 @@ const (
 // Reconcile handles transforming a gateway-api HTTPRoute into a Kuma
 // GatewayRoute and managing the status of the gateway-api objects.
 func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
+	r.Log.V(1).Info("reconcile", "req", req)
 	httpRoute := &gatewayapi.HTTPRoute{}
 	if err := r.Get(ctx, req.NamespacedName, httpRoute); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -159,7 +160,8 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 
 	var kumaRoute *mesh_proto.MeshGatewayRoute
 
-	if routeConf != nil {
+	if routeConf != nil && len(selectors) > 0 {
+		// We can only build MeshGatewayRoute if any attachment has matched, and we've got selectors
 		kumaRoute = &mesh_proto.MeshGatewayRoute{
 			Conf:      routeConf,
 			Selectors: selectors,

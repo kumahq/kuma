@@ -29,6 +29,8 @@ spec:
   networking:
     outbound:
       passthrough: %s
+  routing:
+    zoneEgress: true
 `
 
 	externalService := `
@@ -75,10 +77,9 @@ spec:
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Global
 		cluster = clusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Standalone, WithEgress(true))).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(externalservice.Install(externalservice.HttpServer, []string{})).

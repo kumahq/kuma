@@ -2,7 +2,7 @@
  "total": 4,
  "items": [
   {
-   "kind": "GatewayDataplane",
+   "kind": "MeshGatewayDataplane",
    "dataplane": {
     "mesh": "mesh-1",
     "name": "meshgateway-1"

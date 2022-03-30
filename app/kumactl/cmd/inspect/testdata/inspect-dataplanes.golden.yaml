@@ -18,7 +18,11 @@ items:
     mTLS:
       certificateExpirationTime: "2020-05-08T08:28:22Z"
       certificateRegenerations: 10
+      issuedBackend: ca-1
       lastCertificateRegeneration: "2019-07-16T19:48:08Z"
+      supportedBackends:
+      - ca-1
+      - ca-2
     subscriptions:
     - connectTime: "2018-07-17T16:05:36.995Z"
       controlPlaneInstanceId: node-001
@@ -143,7 +147,11 @@ items:
     mTLS:
       certificateExpirationTime: "2020-05-08T08:28:22Z"
       certificateRegenerations: 10
+      issuedBackend: ca-1
       lastCertificateRegeneration: "2019-07-16T19:48:08Z"
+      supportedBackends:
+      - ca-1
+      - ca-2
     subscriptions:
     - connectTime: "2018-07-17T16:05:36.995Z"
       controlPlaneInstanceId: node-001

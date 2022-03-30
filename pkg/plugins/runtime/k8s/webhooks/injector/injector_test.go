@@ -549,5 +549,21 @@ var _ = Describe("Injector", func() {
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.high-resources.config.yaml",
 		}),
+		Entry("28. sidecar with specified service account token volume", testCase{
+			num: "28",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
 	)
 })

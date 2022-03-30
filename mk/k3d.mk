@@ -82,23 +82,17 @@ k3d/stop/all:
 
 .PHONY: k3d/load/images
 k3d/load/images:
-	@k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose
+	# https://github.com/k3d-io/k3d/issues/900 can cause failures that simple retry will fix
+	@k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose || k3d image import $(KUMA_IMAGES) --cluster=$(KIND_CLUSTER_NAME) --verbose
 
 .PHONY: k3d/load
 k3d/load: images k3d/load/images
 
 .PHONY: k3d/deploy/kuma
 k3d/deploy/kuma: build/kumactl k3d/load
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) --experimental-meshgateway | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
-	@KUBECONFIG=$(KIND_KUBECONFIG) kumactl install dns | kubectl apply -f -
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
-	@until \
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
-    do \
-    	echo "Waiting for the cluster to come up" && sleep 1; \
-    done
 
 .PHONY: k3d/deploy/helm
 k3d/deploy/helm: k3d/load
@@ -116,9 +110,14 @@ k3d/deploy/helm: k3d/load
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 
-.PHONY: k3d/deploy/example-app
-k3d/deploy/example-app:
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl annotate namespace $(EXAMPLE_NAMESPACE) kuma.io/sidecar-injection=enabled --overwrite
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
+.PHONY: k3d/deploy/demo
+k3d/deploy/demo: build/kumactl
+	@$(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install demo | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-demo --all pods
+
+.PHONY: k3d/restart
+k3d/restart:
+	$(MAKE) k3d/stop
+	$(MAKE) k3d/start
+	$(MAKE) k3d/deploy/kuma
+	$(MAKE) k3d/deploy/demo

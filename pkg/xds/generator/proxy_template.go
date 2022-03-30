@@ -3,15 +3,12 @@ package generator
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	util_envoy "github.com/kumahq/kuma/pkg/util/envoy"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
-	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
@@ -34,9 +31,6 @@ func (g *ProxyTemplateGenerator) Generate(ctx xds_context.Context, proxy *model.
 		return nil, fmt.Errorf("resources: %s", err)
 	} else {
 		resources.AddSet(rs)
-	}
-	if err := modifications.Apply(resources, g.ProxyTemplate.GetConf().GetModifications(), proxy.APIVersion); err != nil {
-		return nil, errors.Wrap(err, "could not apply modifications")
 	}
 	return resources, nil
 }

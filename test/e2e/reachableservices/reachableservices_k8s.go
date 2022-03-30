@@ -20,7 +20,7 @@ func ReachableServicesOnK8s() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 		err := NewClusterSetup().
-			Install(Kuma(config_core.Standalone)).
+			Install(Kuma(config_core.Standalone, WithEnv("KUMA_EXPERIMENTAL_KUBE_OUTBOUNDS_AS_VIPS", "true"))).
 			Install(YamlK8s(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh

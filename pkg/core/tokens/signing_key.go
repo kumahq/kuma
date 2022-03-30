@@ -27,7 +27,7 @@ func NewSigningKey() ([]byte, error) {
 
 func SigningKeyResourceKey(signingKeyPrefix string, serialNumber int, mesh string) model.ResourceKey {
 	name := fmt.Sprintf("%s-%d", signingKeyPrefix, serialNumber)
-	if serialNumber == 0 { // backwards compatibility with 1.3.x signing keys
+	if serialNumber == 0 { // backwards compatibility with 1.3.x signing keys https://github.com/kumahq/kuma/issues/4006
 		name = signingKeyPrefix
 	}
 	return model.ResourceKey{

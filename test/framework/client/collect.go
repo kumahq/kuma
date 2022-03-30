@@ -1,12 +1,19 @@
 package client
 
 import (
+	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/pkg/errors"
@@ -211,6 +218,67 @@ func CollectResponse(
 	}
 
 	return *response, nil
+}
+
+// CollectResponseDirectly collects responses using http client that calls the server from outside the cluster
+func CollectResponseDirectly(
+	destination string,
+	fn ...CollectResponsesOptsFn,
+) (types.EchoResponse, error) {
+	opts := collectOptions(destination, fn...)
+
+	req, err := http.NewRequest(opts.Method, opts.URL, nil)
+	if err != nil {
+		return types.EchoResponse{}, err
+	}
+
+	for k, v := range opts.Headers {
+		req.Header.Set(k, v)
+	}
+	if host, ok := opts.Headers["host"]; ok {
+		req.Host = host
+	}
+
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+	if strings.HasPrefix(destination, "https") {
+		// When HTTPS is used, we want to send a proper SNI equal to Host header.
+		// There is no one property to do this, we need to override DNS resolving and change req.URL
+		// https://github.com/golang/go/issues/22704
+		u, err := url.Parse(destination)
+		if err != nil {
+			return types.EchoResponse{}, err
+		}
+		dialer := &net.Dialer{}
+		client.Transport = &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return dialer.Dial(network, u.Host)
+			},
+			TLSClientConfig: &tls.Config{
+				ServerName:         req.Host,
+				InsecureSkipVerify: true,
+				NextProtos:         []string{"http/1.1"}, // ALPN is required by Envoy
+			},
+		}
+		req.URL.Host = net.JoinHostPort(req.Host, req.URL.Port())
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return types.EchoResponse{}, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return types.EchoResponse{}, err
+	}
+
+	response := types.EchoResponse{}
+	if err := json.Unmarshal(body, &response); err != nil {
+		return types.EchoResponse{}, errors.Wrapf(err, "failed to unmarshal response: %q", string(body))
+	}
+	return response, nil
 }
 
 // FailureResponse is the JSON output for a Curl command. Note that the available

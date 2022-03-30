@@ -12,10 +12,12 @@ import (
 	kube_apps "k8s.io/api/apps/v1"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
@@ -48,6 +50,7 @@ type GatewayInstanceReconciler struct {
 // Reconcile handles ensuring both a Service and a Deployment exist for an
 // instance as well as setting the status.
 func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
+	r.Log.V(1).Info("reconcile", "req", req)
 	gatewayInstance := &mesh_k8s.MeshGatewayInstance{}
 	if err := r.Get(ctx, req.NamespacedName, gatewayInstance); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -127,7 +130,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			var ports []kube_core.ServicePort
 			seenPorts := map[uint32]struct{}{}
 
-			for _, listener := range gateway.Spec.GetConf().GetListeners() {
+			for i, listener := range gateway.Spec.GetConf().GetListeners() {
 				if _, sawPort := seenPorts[listener.Port]; sawPort {
 					// There can be multiple listeners with the same port
 					// if they have different hostnames
@@ -135,11 +138,16 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 				}
 				seenPorts[listener.Port] = struct{}{}
 
-				servicePort := kube_core.ServicePort{
-					Name:     strconv.Itoa(int(listener.Port)),
-					Protocol: kube_core.ProtocolTCP,
-					Port:     int32(listener.Port),
+				servicePort := kube_core.ServicePort{}
+				if len(service.Spec.Ports) > i {
+					// Reuse existing port to avoid mutating the object.
+					servicePort = service.Spec.Ports[i]
 				}
+
+				servicePort.Name = strconv.Itoa(int(listener.Port))
+				servicePort.Protocol = kube_core.ProtocolTCP
+				servicePort.Port = int32(listener.Port)
+				servicePort.TargetPort = intstr.FromInt(int(servicePort.Port))
 				if gatewayInstance.Spec.ServiceType == kube_core.ServiceTypeNodePort {
 					servicePort.NodePort = int32(listener.Port)
 				}
@@ -286,12 +294,17 @@ func updateStatus(gatewayInstance *mesh_k8s.MeshGatewayInstance, svc *kube_core.
 	}
 
 	readiness := kube_meta.Condition{
-		Type: mesh_k8s.GatewayInstanceReady, Status: status, Reason: reason, Message: message, LastTransitionTime: kube_meta.Now(), ObservedGeneration: gatewayInstance.GetGeneration(),
+		Type:               mesh_k8s.GatewayInstanceReady,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		ObservedGeneration: gatewayInstance.GetGeneration(),
 	}
 
-	gatewayInstance.Status.Conditions = []kube_meta.Condition{
+	kube_apimeta.SetStatusCondition(
+		&gatewayInstance.Status.Conditions,
 		readiness,
-	}
+	)
 }
 
 const serviceKey string = ".metadata.service"
