@@ -162,7 +162,7 @@ controlPlane:
       additionalRules: ""
 
   # -- Specifies if the deployment should be started in hostNetwork mode.
-  hostNetworking: false
+  hostNetwork: false
 
 
 
