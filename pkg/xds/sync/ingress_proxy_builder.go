@@ -43,8 +43,8 @@ func (p *IngressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, err
 		return nil, err
 	}
 
-	zoneEgress, err := p.getLocalZoneEgress(ctx)
-	if err != nil {
+	var zoneEgressesList core_mesh.ZoneEgressResourceList
+	if err := p.ReadOnlyResManager.List(ctx, &zoneEgressesList); err != nil {
 		return nil, err
 	}
 
@@ -58,7 +58,7 @@ func (p *IngressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, err
 	if err != nil {
 		return nil, err
 	}
-	routing := p.resolveRouting(zoneIngress, zoneEgress, allMeshDataplanes, availableExternalServices)
+	routing := p.resolveRouting(zoneIngress, zoneEgressesList, allMeshDataplanes, availableExternalServices)
 
 	zoneIngressProxy, err := p.buildZoneIngressProxy(ctx)
 	if err != nil {
@@ -111,12 +111,12 @@ func (p *IngressProxyBuilder) getZoneIngress(ctx context.Context, key core_model
 
 func (p *IngressProxyBuilder) resolveRouting(
 	zoneIngress *core_mesh.ZoneIngressResource,
-	zoneEgress *core_mesh.ZoneEgressResource,
+	zoneEgresses *core_mesh.ZoneEgressResourceList,
 	dataplanes *core_mesh.DataplaneResourceList,
 	externalServices *core_mesh.ExternalServiceResourceList,
 ) *xds.Routing {
 	destinations := ingress.BuildDestinationMap(zoneIngress)
-	endpoints := ingress.BuildEndpointMap(destinations, dataplanes.Items, externalServices.Items, zoneEgress)
+	endpoints := ingress.BuildEndpointMap(destinations, dataplanes.Items, externalServices.Items, zoneEgresses.Items)
 
 	routing := &xds.Routing{
 		OutboundTargets: endpoints,
@@ -151,7 +151,7 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 	var meshes []*core_mesh.MeshResource
 
 	for _, mesh := range meshList.Items {
-		if mesh.ZoneEgressEnabled() && mesh.LocalityAwareLbEnabled() {
+		if mesh.LocalityAwareExternalServicesEnabled() {
 			meshes = append(meshes, mesh)
 		}
 	}
@@ -184,22 +184,4 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 
 	allMeshExternalServices.Items = externalServices
 	return allMeshExternalServices, nil
-}
-
-func (p *IngressProxyBuilder) getLocalZoneEgress(ctx context.Context) (*core_mesh.ZoneEgressResource, error) {
-	// resource manager has in database only local zone egress so we don't have to compare
-	// zone name. The problem is for Universal where field is empty
-	var zoneEgressesList core_mesh.ZoneEgressResourceList
-	if err := p.ReadOnlyResManager.List(ctx, &zoneEgressesList); err != nil {
-		return nil, err
-	}
-
-	// we take first instance
-	var zoneEgress *core_mesh.ZoneEgressResource
-	for _, ze := range zoneEgressesList.Items {
-		zoneEgress = ze
-		break
-	}
-
-	return zoneEgress, nil
 }

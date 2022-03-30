@@ -260,7 +260,6 @@ func (b *bootstrapGenerator) zoneEgressFor(ctx context.Context, request types.Bo
 		if !ok {
 			return nil, errors.Errorf("invalid resource")
 		}
-
 		if err := zoneEgress.Validate(); err != nil {
 			return nil, err
 		}

@@ -88,7 +88,8 @@ networking:
 		zone1 = k8sClusters.GetCluster(Kuma1)
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone,
-				WithEgress(true),
+				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).

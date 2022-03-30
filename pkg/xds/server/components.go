@@ -86,7 +86,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	envoyCpCtx, err := xds_context.BuildControlPlaneContext(claCache, secrets)
+	envoyCpCtx, err := xds_context.BuildControlPlaneContext(claCache, secrets, rt.Config().Multizone.Zone.Name)
 	if err != nil {
 		return err
 	}

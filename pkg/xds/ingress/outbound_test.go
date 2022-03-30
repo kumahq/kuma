@@ -17,7 +17,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 			destinations     core_xds.DestinationMap
 			dataplanes       []*core_mesh.DataplaneResource
 			externalServices []*core_mesh.ExternalServiceResource
-			zoneEgress       *core_mesh.ZoneEgressResource
+			zoneEgress       []*core_mesh.ZoneEgressResource
 			expected         core_xds.EndpointMap
 		}
 		DescribeTable("should generate ingress outbounds matching given selectors",
@@ -74,15 +74,29 @@ var _ = Describe("IngressTrafficRoute", func() {
 						},
 					},
 				},
-				zoneEgress: &core_mesh.ZoneEgressResource{
-					Meta: &test_model.ResourceMeta{
-						Mesh: "default",
-						Name: "ze-1",
+				zoneEgress: []*core_mesh.ZoneEgressResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "ze-1",
+						},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{
+								Address: "192.168.0.1",
+								Port:    10002,
+							},
+						},
 					},
-					Spec: &mesh_proto.ZoneEgress{
-						Networking: &mesh_proto.ZoneEgress_Networking{
-							Address: "192.168.0.1",
-							Port:    10002,
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "ze-2",
+						},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{
+								Address: "192.168.0.2",
+								Port:    10002,
+							},
 						},
 					},
 				},
@@ -98,6 +112,13 @@ var _ = Describe("IngressTrafficRoute", func() {
 					"httpbin": []core_xds.Endpoint{
 						{
 							Target:          "192.168.0.1",
+							Port:            10002,
+							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", "mesh": "default", mesh_proto.ZoneTag: "zone-2"},
+							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
+							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
+						},
+						{
+							Target:          "192.168.0.2",
 							Port:            10002,
 							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin", "mesh": "default", mesh_proto.ZoneTag: "zone-2"},
 							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses

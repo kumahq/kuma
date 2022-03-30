@@ -258,17 +258,27 @@ func WithEnvs(entries map[string]string) KumaDeploymentOption {
 	})
 }
 
-func WithIngress(createEnvoyAdminTunnel bool) KumaDeploymentOption {
+func WithIngressEnvoyAdminTunnel() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.zoneIngress = true
-		o.zoneIngressEnvoyAdminTunnel = createEnvoyAdminTunnel
+		o.zoneIngressEnvoyAdminTunnel = true
 	})
 }
 
-func WithEgress(createEnvoyAdminTunnel bool) KumaDeploymentOption {
+func WithIngress() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.zoneIngress = true
+	})
+}
+
+func WithEgressEnvoyAdminTunnel() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.zoneEgressEnvoyAdminTunnel = true
+	})
+}
+
+func WithEgress() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.zoneEgress = true
-		o.zoneEgressEnvoyAdminTunnel = createEnvoyAdminTunnel
 	})
 }
 

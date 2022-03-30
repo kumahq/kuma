@@ -1,11 +1,10 @@
 package egress
 
 import (
-	"sort"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -18,11 +17,12 @@ type ExternalServicesGenerator struct {
 
 // Generate will generate envoy resources for one mesh (when mTLS enabled)
 func (g *ExternalServicesGenerator) Generate(
+	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
-	zone := proxy.ZoneEgressProxy.ZoneEgressResource.Spec.GetZone()
+	zone := ctx.ControlPlane.Zone
 	resources := core_xds.NewResourceSet()
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
@@ -36,6 +36,7 @@ func (g *ExternalServicesGenerator) Generate(
 		meshResources,
 		listenerBuilder,
 		zone,
+		services,
 	)
 
 	cds, err := g.generateCDS(
@@ -56,13 +57,13 @@ func (g *ExternalServicesGenerator) Generate(
 func (*ExternalServicesGenerator) generateCDS(
 	meshName string,
 	apiVersion envoy_common.APIVersion,
-	services []string,
+	services map[string]bool,
 	endpointMap core_xds.EndpointMap,
 	isIPV6 bool,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
-	for _, serviceName := range services {
+	for serviceName := range services {
 		endpoints := endpointMap[serviceName]
 
 		if len(endpoints) == 0 {
@@ -108,19 +109,18 @@ func (*ExternalServicesGenerator) generateCDS(
 
 func (*ExternalServicesGenerator) buildServices(
 	endpointMap core_xds.EndpointMap,
-	zone string,
+	localZone string,
 	meshResources *core_xds.MeshResources,
-) []string {
-	var services []string
+) map[string]bool {
+	services := map[string]bool{}
 
 	for serviceName, endpoints := range endpointMap {
 		if len(endpoints) > 0 && endpoints[0].IsExternalService() &&
-			(!zoneExternalServiceEnabled(meshResources) || isSpecificZoneOrAllZonesExternalService(&endpoints[0], zone)) {
-			services = append(services, serviceName)
+			(!meshResources.Mesh.LocalityAwareExternalServicesEnabled() || isReachableFromZone(&endpoints[0], localZone)) {
+			services[serviceName] = true
 		}
 	}
 
-	sort.Strings(services)
 	return services
 }
 
@@ -131,32 +131,18 @@ func (*ExternalServicesGenerator) addFilterChains(
 	meshResources *core_xds.MeshResources,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	zone string,
+	services map[string]bool,
 ) {
 	meshName := meshResources.Mesh.GetMeta().GetName()
-
 	sniUsed := map[string]bool{}
 
 	for _, es := range meshResources.ExternalServices {
 		serviceName := es.Spec.GetService()
+		if !services[serviceName] {
+			continue
+		}
 
 		endpoints := endpointMap[serviceName]
-
-		if len(endpoints) == 0 {
-			if !zoneExternalServiceEnabled(meshResources) {
-				log.Info("no endpoints for service", "serviceName", serviceName)
-			}
-			// There is no need to generate filter chain if there is no
-			// endpoints for the service
-			continue
-		}
-
-		if zoneExternalServiceEnabled(meshResources) &&
-			isNotSpecificZoneExternalService(&endpoints[0], zone) {
-			// we dont generate zone external service here because
-			// it should be accessed through zone ingress of zone were it belongs
-			continue
-		}
-
 		destinations := destinationsPerService[serviceName]
 		destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
 

@@ -55,8 +55,8 @@ func BuildRemoteEndpointMap(
 
 	fillIngressOutbounds(outbound, zoneIngresses, nil, zone, mesh)
 
-	if mesh.LocalityAwareLbEnabled() && mesh.ZoneEgressEnabled() {
-		fillZoneExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
+	if mesh.LocalityAwareExternalServicesEnabled() {
+		fillExternalServicesReachableFromZone(outbound, externalServices, mesh, loader, zone)
 	} else {
 		fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
 	}
@@ -210,8 +210,13 @@ func fillIngressOutbounds(
 			if service.Mesh != mesh.GetMeta().GetName() {
 				continue
 			}
-
 			serviceTags := service.GetTags()
+
+			//WHY!
+			// if mesh.Spec.GetRouting().LocalityAwareLoadBalancing && serviceTags[mesh_proto.ZoneExternalServiceTag] == "true" {
+			// 	continue
+			// }
+
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
 			locality := localityFromTags(mesh, priorityRemote, serviceTags)
@@ -237,10 +242,6 @@ func fillIngressOutbounds(
 						Locality: locality,
 					}
 
-					if mesh.Spec.GetRouting().LocalityAwareLoadBalancing && serviceTags[mesh_proto.ZoneExternalServiceTag] == "true" {
-						endpoint.ExternalService = &core_xds.ExternalService{}
-					}
-
 					outbound[serviceName] = append(outbound[serviceName], endpoint)
 				}
 			} else {
@@ -251,6 +252,9 @@ func fillIngressOutbounds(
 					Weight:   serviceInstances,
 					Locality: locality,
 				}
+				if mesh.LocalityAwareExternalServicesEnabled() && serviceTags[mesh_proto.ZoneExternalServiceTag] == "true" {
+					endpoint.ExternalService = &core_xds.ExternalService{}
+				}
 
 				outbound[serviceName] = append(outbound[serviceName], endpoint)
 			}
@@ -260,7 +264,7 @@ func fillIngressOutbounds(
 	return uint32(len(ziInstances))
 }
 
-func fillZoneExternalServicesOutbounds(
+func fillExternalServicesReachableFromZone(
 	outbound core_xds.EndpointMap,
 	externalServices []*core_mesh.ExternalServiceResource,
 	mesh *core_mesh.MeshResource,
@@ -268,7 +272,7 @@ func fillZoneExternalServicesOutbounds(
 	zone string,
 ) {
 	for _, externalService := range externalServices {
-		if isZoneExternalService(externalService, zone) {
+		if externalService.IsReachableFromZone(zone) {
 			createExternalServiceEndpoint(outbound, externalService, mesh, loader, zone)
 		}
 	}
@@ -413,11 +417,4 @@ func localityFromTags(mesh *core_mesh.MeshResource, priority uint32, tags map[st
 		Zone:     zone,
 		Priority: priority,
 	}
-}
-
-func isZoneExternalService(
-	externalService *core_mesh.ExternalServiceResource,
-	zone string,
-) bool {
-	return externalService.Spec.Tags[mesh_proto.ZoneTag] == "" || externalService.Spec.Tags[mesh_proto.ZoneTag] == zone
 }

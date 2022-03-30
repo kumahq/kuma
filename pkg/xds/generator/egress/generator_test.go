@@ -146,9 +146,14 @@ var _ = Describe("EgressGenerator", func() {
 					MeshResourcesList:  meshResourcesList,
 				},
 			}
+			ctx := xds_context.Context{
+				ControlPlane: &xds_context.ControlPlaneContext{
+					Zone: zoneName,
+				},
+			}
 
 			// when
-			rs, err := gen.Generate(xds_context.Context{}, proxy)
+			rs, err := gen.Generate(ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

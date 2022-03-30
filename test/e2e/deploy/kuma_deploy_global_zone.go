@@ -67,7 +67,7 @@ spec:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
-				WithIngress(false),
+				WithIngress(),
 				WithGlobalAddress(global.GetKDSServerAddress()),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).

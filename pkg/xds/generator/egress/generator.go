@@ -28,7 +28,7 @@ var (
 // ZoneEgressGenerator is responsible for generating xDS resources for
 // a single ZoneEgress.
 type ZoneEgressGenerator interface {
-	Generate(proxy *core_xds.Proxy, listenerBuilder *envoy_listeners.ListenerBuilder, meshResources *core_xds.MeshResources) (*core_xds.ResourceSet, error)
+	Generate(ctx xds_context.Context, proxy *core_xds.Proxy, listenerBuilder *envoy_listeners.ListenerBuilder, meshResources *core_xds.MeshResources) (*core_xds.ResourceSet, error)
 }
 
 // Generator generates xDS resources for an entire ZoneEgress.
@@ -57,7 +57,7 @@ func makeListenerBuilder(
 }
 
 func (g Generator) Generate(
-	_ xds_context.Context,
+	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
@@ -69,7 +69,7 @@ func (g Generator) Generate(
 
 	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
 		for _, generator := range g.Generators {
-			rs, err := generator.Generate(proxy, listenerBuilder, meshResources)
+			rs, err := generator.Generate(ctx, proxy, listenerBuilder, meshResources)
 			if err != nil {
 				err := errors.Wrapf(
 					err,
@@ -124,22 +124,10 @@ func buildDestinations(
 	return destinations
 }
 
-func zoneExternalServiceEnabled(mesh *core_xds.MeshResources) bool {
-	return mesh.Mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() && mesh.Mesh.Spec.GetRouting().GetZoneEgress()
+func isReachableFromZone(endpoint *core_xds.Endpoint, zone string) bool {
+	return endpoint.Tags[mesh_proto.ZoneTag] == "" || endpoint.Tags[mesh_proto.ZoneTag] == zone
 }
 
-func isSpecificZoneExternalService(endpoint *core_xds.Endpoint, zone string) bool {
-	return endpoint.Tags[mesh_proto.ZoneTag] == zone
-}
-
-func isSpecificZoneOrAllZonesExternalService(endpoint *core_xds.Endpoint, zone string) bool {
-	return endpoint.Tags[mesh_proto.ZoneTag] == "" || isSpecificZoneExternalService(endpoint, zone)
-}
-
-func isNotSpecificZoneExternalService(endpoint *core_xds.Endpoint, zone string) bool {
-	return endpoint.Tags[mesh_proto.ZoneTag] != "" && endpoint.Tags[mesh_proto.ZoneTag] != zone
-}
-
-func isZoneExternalService(endpoint *core_xds.Endpoint) bool {
-	return endpoint.IsExternalService() || endpoint.Tags[mesh_proto.ZoneExternalServiceTag] == "true"
+func isOnlyReachableFromOtherZones(endpoint *core_xds.Endpoint, localZone string) bool {
+	return endpoint.Tags[mesh_proto.ZoneTag] != "" && endpoint.Tags[mesh_proto.ZoneTag] != localZone
 }

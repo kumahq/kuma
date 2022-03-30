@@ -45,13 +45,6 @@ func (r *ZoneEgressResource) AdminAddress(defaultAdminPort uint32) string {
 	return net.JoinHostPort(ip, strconv.FormatUint(uint64(adminPort), 10))
 }
 
-func (r *ZoneEgressResource) IsLocalEgress(localZone string) bool {
-	if r.Spec.GetZone() != "" && r.Spec.GetZone() == localZone {
-		return true
-	}
-	return false
-}
-
 func NewZoneEgressOverviews(zoneEgresses ZoneEgressResourceList, insights ZoneEgressInsightResourceList) ZoneEgressOverviewResourceList {
 	insightsByKey := map[model.ResourceKey]*ZoneEgressInsightResource{}
 	for _, insight := range insights.Items {

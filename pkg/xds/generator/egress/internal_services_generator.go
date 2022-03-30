@@ -5,6 +5,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
@@ -18,6 +19,7 @@ type InternalServicesGenerator struct {
 
 // Generate will generate envoy resources for one mesh (when mTLS enabled)
 func (g *InternalServicesGenerator) Generate(
+	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,
@@ -129,9 +131,7 @@ func (*InternalServicesGenerator) buildServices(
 	var services []string
 
 	for serviceName, endpoints := range endpointMap {
-		if len(endpoints) > 0 &&
-			!endpoints[0].IsExternalService() &&
-			(!zoneExternalServiceEnabled(meshResources) || !isZoneExternalService(&endpoints[0])) {
+		if len(endpoints) > 0 && !endpoints[0].IsExternalService() {
 			services = append(services, serviceName)
 		}
 	}
@@ -168,8 +168,7 @@ func (*InternalServicesGenerator) addFilterChains(
 				continue
 			}
 
-			if zoneExternalServiceEnabled(meshResources) &&
-				isZoneExternalService(&endpoints[0]) {
+			if endpoints[0].IsExternalService() {
 				// This generator is for internal services only
 				continue
 			}

@@ -11,7 +11,7 @@ func BuildEndpointMap(
 	destinations core_xds.DestinationMap,
 	dataplanes []*core_mesh.DataplaneResource,
 	externalServices []*core_mesh.ExternalServiceResource,
-	zoneEgress *core_mesh.ZoneEgressResource,
+	zoneEgresses []*core_mesh.ZoneEgressResource,
 ) core_xds.EndpointMap {
 	if len(destinations) == 0 {
 		return nil
@@ -38,6 +38,7 @@ func BuildEndpointMap(
 			})
 		}
 	}
+
 	for _, es := range externalServices {
 		service := es.Spec.Tags[mesh_proto.ServiceTag]
 		selectors, ok := destinations[service]
@@ -48,7 +49,8 @@ func BuildEndpointMap(
 		if !selectors.Matches(withMesh) {
 			continue
 		}
-		if zoneEgress != nil {
+
+		for _, zoneEgress := range zoneEgresses {
 			iface := zoneEgress.Spec.GetNetworking()
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
 				Target:          iface.Address,
