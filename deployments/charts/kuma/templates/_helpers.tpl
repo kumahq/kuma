@@ -96,6 +96,14 @@ returns: formatted image string
 {{- $root := .root }}
 {{- $registry := ($img.registry | default $root.Values.global.image.registry) -}}
 {{- $repo := ($img.repository | required "Must specify image repository") -}}
+{{- if
+  and
+    $root.Values.global.image.tag
+    (ne $root.Values.global.image.tag $root.Chart.AppVersion)
+    (eq $root.Values.global.image.registry "docker.io/kumahq")
+-}}
+{{- fail (printf "This chart only supports Kuma version %q but global.image.tag is set to %q. Set global.image.tag to %q or skip this check by setting *.image.tag for each individual component." $root.Chart.AppVersion $root.Values.global.image.tag $root.Chart.AppVersion) -}}
+{{- end -}}
 {{- $defaultTag := ($root.Values.global.image.tag | default $root.Chart.AppVersion) -}}
 {{- $tag := ($img.tag | default $defaultTag) -}}
 {{- printf "%s/%s:%s" $registry $repo $tag -}}
