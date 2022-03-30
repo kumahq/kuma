@@ -331,4 +331,24 @@ data:
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
+
+	Context("Upstream validation", func() {
+		It("should validate Gateway", func() {
+			gateway := `
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: Gateway
+metadata:
+  name: kuma
+  namespace: kuma-test
+spec:
+  gatewayClassName: kuma
+  listeners:
+  - name: proxy
+    port: 8080
+    protocol: TCP
+    hostname: xyz.io`
+			err := k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), gateway)
+			Expect(err).To(HaveOccurred())
+		})
+	})
 }

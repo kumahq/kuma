@@ -1860,7 +1860,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 8c443d9f48d469a050e9e994d3d839c09b7f22f3c16bbe096c5a7d30f4207d99
-        checksum/tls-secrets: 4cdc5ea0136d2fc1d500b2140e93abc2f3f4356a8d80324439bb9dd985f9d582
+        checksum/tls-secrets: dd1eaf570ec3013fc8590bfd60f252c6807912c5232e14a69a2b585e87a533fd
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -2268,4 +2268,27 @@ webhooks:
           - CREATE
         resources:
           - gatewayclasses
+    sideEffects: None
+  - name: validate.gateway.networking.k8s.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    matchPolicy: Equivalent
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma
+        name: kuma-ctrl-plane
+        path: /validate-v1alpha2-gateway-upstream
+    rules:
+      - apiGroups:
+          - "gateway.networking.k8s.io"
+        apiVersions:
+          - v1alpha2
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - gateways
+          - gatewayclasses
+          - httproutes
     sideEffects: None
