@@ -136,13 +136,13 @@ message CertificateAuthorityBackend {
   // encryption
   Mode mode = 5;
 
-  // RootCert defines settings related to CA root certificate chain.
-  message RootCert {
+  // RootChain defines settings related to CA root certificate chain.
+  message RootChain {
     // Timeout on request for to CA for root certificate chain.
     google.protobuf.Duration requestTimeout = 1;
   }
 
-  RootCert rootCert = 6;
+  RootChain rootChain = 6;
 }
 
 // Networking defines the networking configuration of the mesh
