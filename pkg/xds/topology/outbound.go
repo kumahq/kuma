@@ -236,7 +236,7 @@ func fillIngressOutbounds(
 						Locality: locality,
 					}
 					// this is necessary for correct spiffe generation for dp when
-					// traffic is router: egress -> ingress -> egress
+					// traffic is routed: egress -> ingress -> egress
 					if mesh.LocalityAwareExternalServicesEnabled() && service.ExternalService {
 						endpoint.ExternalService = &core_xds.ExternalService{}
 					}

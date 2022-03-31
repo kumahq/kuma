@@ -115,7 +115,7 @@ func (*ExternalServicesGenerator) buildServices(
 
 	for serviceName, endpoints := range endpointMap {
 		if len(endpoints) > 0 && endpoints[0].IsExternalService() &&
-			(!meshResources.Mesh.LocalityAwareExternalServicesEnabled() || isReachableFromZone(&endpoints[0], localZone)) {
+			(!meshResources.Mesh.LocalityAwareExternalServicesEnabled() || endpoints[0].IsReachableFromZone(localZone)) {
 			services[serviceName] = true
 		}
 	}

@@ -128,7 +128,6 @@ var _ = Describe("EgressGenerator", func() {
 				Generators: []egress.ZoneEgressGenerator{
 					&egress.InternalServicesGenerator{},
 					&egress.ExternalServicesGenerator{},
-					&egress.ZoneExternalServicesGenerator{},
 				},
 			}
 

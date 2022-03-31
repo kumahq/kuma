@@ -123,11 +123,3 @@ func buildDestinations(
 
 	return destinations
 }
-
-func isReachableFromZone(endpoint *core_xds.Endpoint, zone string) bool {
-	return endpoint.Tags[mesh_proto.ZoneTag] == "" || endpoint.Tags[mesh_proto.ZoneTag] == zone
-}
-
-func isOnlyReachableFromOtherZones(endpoint *core_xds.Endpoint, localZone string) bool {
-	return endpoint.Tags[mesh_proto.ZoneTag] != "" && endpoint.Tags[mesh_proto.ZoneTag] != localZone
-}

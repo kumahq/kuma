@@ -36,7 +36,6 @@ func (p *IngressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, err
 	if err != nil {
 		return nil, err
 	}
-	zoneIngress.Spec.Zone = p.zone
 
 	zoneIngress, err = xds_topology.ResolveZoneIngressPublicAddress(p.LookupIP, zoneIngress)
 	if err != nil {

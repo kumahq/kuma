@@ -1,8 +1,6 @@
 package egress
 
 import (
-	"sort"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -25,20 +23,20 @@ func (g *InternalServicesGenerator) Generate(
 	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
-
+	zone := ctx.ControlPlane.Zone
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
 	destinations := buildDestinations(meshResources.TrafficRoutes)
-	services := g.buildServices(endpointMap)
+	services := g.buildServices(endpointMap, meshResources.Mesh.LocalityAwareExternalServicesEnabled(), zone)
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	g.addFilterChains(
 		apiVersion,
 		destinations,
-		endpointMap,
 		proxy,
 		listenerBuilder,
 		meshResources,
+		services,
 	)
 
 	cds, err := g.generateCDS(meshName, apiVersion, services, destinations)
@@ -59,12 +57,12 @@ func (g *InternalServicesGenerator) Generate(
 func (*InternalServicesGenerator) generateEDS(
 	meshName string,
 	apiVersion envoy_common.APIVersion,
-	services []string,
+	services map[string]bool,
 	endpointMap core_xds.EndpointMap,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
-	for _, serviceName := range services {
+	for serviceName := range services {
 		endpoints := endpointMap[serviceName]
 		// There is a case where multiple meshes contain services with
 		// the same names, so we cannot use just "serviceName" as a cluster
@@ -89,12 +87,12 @@ func (*InternalServicesGenerator) generateEDS(
 func (*InternalServicesGenerator) generateCDS(
 	meshName string,
 	apiVersion envoy_common.APIVersion,
-	services []string,
+	services map[string]bool,
 	destinationsPerService map[string][]envoy_common.Tags,
 ) ([]*core_xds.Resource, error) {
 	var resources []*core_xds.Resource
 
-	for _, serviceName := range services {
+	for serviceName := range services {
 		tagSlice := envoy_common.TagsSlice(append(destinationsPerService[serviceName], destinationsPerService[mesh_proto.MatchAllTag]...))
 
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(envoy_common.Without(mesh_proto.ServiceTag), envoy_common.With("mesh"))
@@ -126,16 +124,21 @@ func (*InternalServicesGenerator) generateCDS(
 
 func (*InternalServicesGenerator) buildServices(
 	endpointMap core_xds.EndpointMap,
-) []string {
-	var services []string
+	localityAwareExternalServicesEnabled bool,
+	localZone string,
+) map[string]bool {
+	services := map[string]bool{}
 
 	for serviceName, endpoints := range endpointMap {
-		if len(endpoints) > 0 && !endpoints[0].IsExternalService() {
-			services = append(services, serviceName)
+		if len(endpoints) == 0 {
+			continue
+		}
+		internalService := !endpoints[0].IsExternalService()
+		zoneExternalService := localityAwareExternalServicesEnabled && endpoints[0].IsExternalService() && !endpoints[0].IsReachableFromZone(localZone)
+		if internalService || zoneExternalService {
+			services[serviceName] = true
 		}
 	}
-
-	sort.Strings(services)
 
 	return services
 }
@@ -143,10 +146,10 @@ func (*InternalServicesGenerator) buildServices(
 func (*InternalServicesGenerator) addFilterChains(
 	apiVersion envoy_common.APIVersion,
 	destinationsPerService map[string][]envoy_common.Tags,
-	endpointMap core_xds.EndpointMap,
 	proxy *core_xds.Proxy,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,
+	services map[string]bool,
 ) {
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
@@ -155,20 +158,7 @@ func (*InternalServicesGenerator) addFilterChains(
 	for _, zoneIngress := range proxy.ZoneEgressProxy.ZoneIngresses {
 		for _, service := range zoneIngress.Spec.GetAvailableServices() {
 			serviceName := service.Tags[mesh_proto.ServiceTag]
-			if service.Mesh != meshName {
-				continue
-			}
-
-			endpoints := endpointMap[serviceName]
-
-			if len(endpoints) == 0 {
-				// There is no need to generate filter chain if there is no
-				// endpoints for the service
-				continue
-			}
-
-			if endpoints[0].IsExternalService() {
-				// This generator is for internal services only
+			if service.Mesh != meshName || !services[serviceName] {
 				continue
 			}
 

@@ -234,6 +234,11 @@ func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
 	return endpoints
 }
 
+// if false endpoint should be accessed through zoneIngress of other zone
+func (e Endpoint) IsReachableFromZone(localZone string) bool {
+	return e.Locality == nil || e.Locality.Zone == "" || e.Locality.Zone == localZone
+}
+
 func BuildProxyId(mesh, name string) *ProxyId {
 	return &ProxyId{
 		name: name,
