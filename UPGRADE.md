@@ -27,6 +27,12 @@ routing:
 The new approach changes the flow of requests to external services. Previously when there was no instance of `ZoneEgress` traffic was routed
 directly to the destination, now it won't reach the destination.
 
+### Gateway (experimental)
+
+Previously, a `MeshGatewayInstance` generated a `Deployment` and `Service` whose
+names ended with a unique suffix. With this release, those objects will have the
+same name as the `MeshGatewayInstance`.
+
 ## Upgrade to `1.5.0`
 
 ### Any type
