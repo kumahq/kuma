@@ -469,9 +469,7 @@ type Cluster interface {
 	WithTimeout(timeout time.Duration) Cluster
 	WithRetries(retries int) Cluster
 	GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel
-	GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error)
 	GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel
-	GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, error)
 	Verbose() bool
 
 	// K8s

@@ -102,39 +102,19 @@ func (c *K8sCluster) addIngressEnvoyTunnel() error {
 }
 
 func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	t, err := c.GetZoneEgressEnvoyTunnelE()
-	if err != nil {
-		c.t.Fatal(err)
+	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
+	if !ok {
+		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp))
 	}
-
 	return t
 }
 
 func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
-	t, err := c.GetZoneIngressEnvoyTunnelE()
-	if err != nil {
-		c.t.Fatal(err)
-	}
-
-	return t
-}
-
-func (c *K8sCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
-	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
-	if !ok {
-		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
-	}
-
-	return t, nil
-}
-
-func (c *K8sCluster) GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
 	t, ok := c.envoyTunnels[Config.ZoneIngressApp]
 	if !ok {
-		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp)
+		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp))
 	}
-
-	return t, nil
+	return t
 }
 
 func (c *K8sCluster) Verbose() bool {

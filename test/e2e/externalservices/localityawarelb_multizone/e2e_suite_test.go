@@ -3,10 +3,10 @@ package localityawarelb_multizone_test
 import (
 	"testing"
 
-	"github.com/kumahq/kuma/test/e2e/externalservices/localityawarelb_multizone"
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/test/e2e/externalservices/localityawarelb_multizone"
 )
 
 func TestE2E(t *testing.T) {
