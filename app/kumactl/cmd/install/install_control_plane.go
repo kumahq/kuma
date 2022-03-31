@@ -69,15 +69,6 @@ This command requires that the KUBECONFIG environment is set`,
 				return err
 			}
 
-			var kubeClientConfig *rest.Config
-			if !args.WithoutKubernetesConnection {
-				var err error
-				kubeClientConfig, err = k8s.DefaultClientConfig("", "")
-				if err != nil {
-					return errors.Wrap(err, "could not detect Kubernetes configuration")
-				}
-			}
-
 			// Inline parameters
 			vals := generateOverrideValues(args, ctx.HELMValuesPrefix)
 
@@ -124,6 +115,14 @@ This command requires that the KUBECONFIG environment is set`,
 				}
 			}
 
+			var kubeClientConfig *rest.Config
+			if !args.WithoutKubernetesConnection {
+				var err error
+				kubeClientConfig, err = k8s.DefaultClientConfig("", "")
+				if err != nil {
+					return errors.Wrap(err, "could not detect Kubernetes configuration")
+				}
+			}
 			renderedFiles, err := renderHelmFiles(templateFiles, args.Namespace, vals, kubeClientConfig)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render helm template files")

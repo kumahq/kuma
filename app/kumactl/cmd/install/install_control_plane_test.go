@@ -204,7 +204,7 @@ controlPlane:
 		func(given errTestCase) {
 			// given
 			rootCmd := test.DefaultTestingRootCmd()
-			rootCmd.SetArgs(append([]string{"install", "control-plane"}, given.extraArgs...))
+			rootCmd.SetArgs(append([]string{"install", "control-plane", "--without-kubernetes-connection"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
 
