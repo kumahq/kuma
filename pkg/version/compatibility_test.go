@@ -8,7 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/version"
 )
 
-var _ = Describe("Compatibility", func() {
+var _ = PDescribe("Compatibility", func() {
 	type testCase struct {
 		dpVersion               string
 		expectedEnvoyConstraint string
