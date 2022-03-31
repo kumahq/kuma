@@ -13,8 +13,13 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/envoy"
-	"github.com/kumahq/kuma/pkg/xds/generator"
 )
+
+var AvailableProfiles map[string]struct{}
+
+func init() {
+	AvailableProfiles = map[string]struct{}{}
+}
 
 func (t *ProxyTemplateResource) Validate() error {
 	var verr validators.ValidationError
@@ -192,9 +197,9 @@ func validateImports(imports []string) validators.ValidationError {
 			verr.AddViolationAt(validators.RootedAt("imports").Index(i), "cannot be empty")
 			continue
 		}
-		if _, ok := generator.AvailableProfiles[imp]; !ok {
+		if _, ok := AvailableProfiles[imp]; !ok {
 			var profiles []string
-			for profile := range generator.AvailableProfiles {
+			for profile := range AvailableProfiles {
 				profiles = append(profiles, profile)
 			}
 			sort.StringSlice(profiles).Sort()
