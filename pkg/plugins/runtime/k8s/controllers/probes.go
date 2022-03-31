@@ -35,14 +35,21 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 			continue
 		}
 		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
-			if endpoint, err := ProbeFor(c.LivenessProbe, port); err != nil {
+			if endpoint, err := probeFor(c.LivenessProbe, port); err != nil {
 				return nil, err
 			} else {
 				dpProbes.Endpoints = append(dpProbes.Endpoints, endpoint)
 			}
 		}
 		if c.ReadinessProbe != nil && c.ReadinessProbe.HTTPGet != nil {
-			if endpoint, err := ProbeFor(c.ReadinessProbe, port); err != nil {
+			if endpoint, err := probeFor(c.ReadinessProbe, port); err != nil {
+				return nil, err
+			} else {
+				dpProbes.Endpoints = append(dpProbes.Endpoints, endpoint)
+			}
+		}
+		if c.StartupProbe != nil && c.StartupProbe.HTTPGet != nil {
+			if endpoint, err := probeFor(c.StartupProbe, port); err != nil {
 				return nil, err
 			} else {
 				dpProbes.Endpoints = append(dpProbes.Endpoints, endpoint)
@@ -52,7 +59,7 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 	return dpProbes, nil
 }
 
-func ProbeFor(podProbe *kube_core.Probe, port uint32) (*mesh_proto.Dataplane_Probes_Endpoint, error) {
+func probeFor(podProbe *kube_core.Probe, port uint32) (*mesh_proto.Dataplane_Probes_Endpoint, error) {
 	inbound, err := probes.KumaProbe(*podProbe).ToReal(port)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to convert virtual probe to real")

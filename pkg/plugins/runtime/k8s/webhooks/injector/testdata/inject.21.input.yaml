@@ -25,6 +25,12 @@ spec:
           port: 8080
         initialDelaySeconds: 3
         periodSeconds: 3
+      startupProbe:
+        httpGet:
+          path: /ready
+          port: 8080
+        initialDelaySeconds: 3
+        periodSeconds: 3
       volumeMounts:
         - name: default-token-w7dxf
           readOnly: true
