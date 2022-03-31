@@ -26,13 +26,13 @@ type IdentityProvider interface {
 }
 
 func NewIdentityProvider(caManagers core_ca.Managers, metrics core_metrics.Metrics) (IdentityProvider, error) {
-	latencyMetrics := map[string]prometheus.Summary{}
+	latencyMetrics := map[string]*prometheus.SummaryVec{}
 	for backendType := range caManagers {
-		latencyMetrics[backendType] = prometheus.NewSummary(prometheus.SummaryOpts{
-			Name:       "ca_manager_get_cert_" + backendType,
+		latencyMetrics[backendType] = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+			Name:       "ca_manager_get_cert",
 			Help:       "Summary of CA manager get certificate latencies",
 			Objectives: core_metrics.DefaultObjectives,
-		})
+		}, []string{"backend_name"})
 		if err := metrics.Register(latencyMetrics[backendType]); err != nil {
 			return nil, err
 		}
@@ -47,7 +47,7 @@ func NewIdentityProvider(caManagers core_ca.Managers, metrics core_metrics.Metri
 type identityCertProvider struct {
 	caManagers core_ca.Managers
 	// latencyMetrics maps backend type to backend cert retrieval summary metrics
-	latencyMetrics map[string]prometheus.Summary
+	latencyMetrics map[string]*prometheus.SummaryVec
 }
 
 func (s *identityCertProvider) Get(ctx context.Context, requestor Identity, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, string, error) {
@@ -73,7 +73,7 @@ func (s *identityCertProvider) Get(ctx context.Context, requestor Identity, mesh
 	func() {
 		start := time.Now()
 		defer func() {
-			s.latencyMetrics[backend.Type].Observe(float64(time.Since(start).Milliseconds()))
+			s.latencyMetrics[backend.Type].WithLabelValues(backend.GetName()).Observe(float64(time.Since(start).Milliseconds()))
 		}()
 		pair, err = caManager.GenerateDataplaneCert(ctx, mesh.GetMeta().GetName(), backend, requestor.Services)
 	}()
