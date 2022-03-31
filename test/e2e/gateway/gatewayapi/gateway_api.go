@@ -92,7 +92,7 @@ func GatewayAPI() {
 		return ip
 	}
 
-	Context("HTTP Gateway", func() {
+	Context("HTTP Gateway", Ordered, func() {
 		gateway := `
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: Gateway
@@ -108,9 +108,10 @@ spec:
 
 		var address string
 
-		BeforeEach(func() {
-			err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "gateway", "--all")
-			Expect(err).ToNot(HaveOccurred())
+		BeforeAll(func() {
+			E2EDeferCleanup(func() error {
+				return k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(TestNamespace), "delete", "gateway", "kuma")
+			})
 			Expect(YamlK8s(gateway)(cluster)).To(Succeed())
 			address = net.JoinHostPort(GatewayIP(), "8080")
 		})
@@ -215,7 +216,7 @@ spec:
 		})
 	})
 
-	PContext("HTTPS Gateway", func() {
+	Context("HTTPS Gateway", Ordered, func() {
 		secret := `
 apiVersion: v1
 kind: Secret
@@ -246,9 +247,10 @@ spec:
 
 		var address string
 
-		BeforeEach(func() {
-			err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "gateway", "--all")
-			Expect(err).ToNot(HaveOccurred())
+		BeforeAll(func() {
+			E2EDeferCleanup(func() error {
+				return k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(TestNamespace), "delete", "gateway", "kuma")
+			})
 			Expect(YamlK8s(secret)(cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(cluster)).To(Succeed())
 			address = net.JoinHostPort(GatewayIP(), "8090")
