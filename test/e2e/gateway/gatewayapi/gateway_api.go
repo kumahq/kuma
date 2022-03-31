@@ -243,9 +243,15 @@ spec:
     protocol: HTTPS
     tls:
       certificateRefs:
+      - name: secret-tls
+  - name: proxy-wildcard
+    port: 8091
+    protocol: HTTPS
+    tls:
+      certificateRefs:
       - name: secret-tls`
 
-		var address string
+		var ip string
 
 		BeforeAll(func() {
 			E2EDeferCleanup(func() error {
@@ -253,7 +259,7 @@ spec:
 			})
 			Expect(YamlK8s(secret)(cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(cluster)).To(Succeed())
-			address = net.JoinHostPort(GatewayIP(), "8090")
+			ip = GatewayIP()
 		})
 
 		It("should route the traffic using TLS", func() {
@@ -283,7 +289,13 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				resp, err := client.CollectResponseDirectly("https://"+address, client.WithHeader("host", "test-server-1.com"))
+				resp, err := client.CollectResponseDirectly("https://"+net.JoinHostPort(ip, "8090"), client.WithHeader("host", "test-server-1.com"))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("test-server-1"))
+			}, "30s", "1s").Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectResponseDirectly("https://" + net.JoinHostPort(ip, "8091"))
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(resp.Instance).To(Equal("test-server-1"))
 			}, "30s", "1s").Should(Succeed())
