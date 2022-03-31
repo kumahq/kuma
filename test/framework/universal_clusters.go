@@ -225,3 +225,11 @@ func (cs *UniversalClusters) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
 func (cs *UniversalClusters) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
 	panic("not supported")
 }
+
+func (cs *UniversalClusters) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
+	panic("not supported")
+}
+
+func (cs *UniversalClusters) GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+	panic("not supported")
+}

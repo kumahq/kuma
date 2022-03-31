@@ -38,6 +38,14 @@ func (m *MeshResource) ZoneEgressEnabled() bool {
 	return m != nil && m.Spec.GetRouting().GetZoneEgress()
 }
 
+func (m *MeshResource) LocalityAwareLbEnabled() bool {
+	return m != nil && m.Spec.GetRouting().GetLocalityAwareLoadBalancing()
+}
+
+func (m *MeshResource) LocalityAwareExternalServicesEnabled() bool {
+	return m.ZoneEgressEnabled() && m.LocalityAwareLbEnabled()
+}
+
 func (m *MeshResource) GetLoggingBackend(name string) *mesh_proto.LoggingBackend {
 	backends := map[string]*mesh_proto.LoggingBackend{}
 	for _, backend := range m.Spec.GetLogging().GetBackends() {
