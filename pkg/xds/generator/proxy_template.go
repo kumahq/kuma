@@ -112,7 +112,7 @@ var DefaultTemplateResolver template.ProxyTemplateResolver = &template.StaticPro
 
 var predefinedProfiles = make(map[string]ResourceGenerator)
 
-var AvailableProfiles []string
+var AvailableProfiles map[string]struct{}
 
 func init() {
 	RegisterProfile(core_mesh.ProfileDefaultProxy, NewDefaultProxyProfile())
@@ -122,5 +122,5 @@ func init() {
 
 func RegisterProfile(profileName string, generator ResourceGenerator) {
 	predefinedProfiles[profileName] = generator
-	AvailableProfiles = append(AvailableProfiles, profileName)
+	AvailableProfiles[profileName] = struct{}{}
 }
