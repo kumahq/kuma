@@ -6,7 +6,6 @@ mtls:
   - name: ca-1
     type: builtin
 routing:
-  localityAwareLoadBalancing: true
   zoneEgress: true
 ---
 type: ZoneEgress
@@ -64,10 +63,10 @@ availableServices:
     kuma.io/service: externalservice-2
     kuma.io/protocol: http2
     kuma.io/zone: zone-2
-    kuma.io/zone-external-service: "true"
     mesh: mesh-1
   instances: 30
   mesh: mesh-1
+  externalService: true
 ---
 type: ExternalService
 name: externalservice-1

@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
 
-func meshMTLSOn(mesh string, localityLb string, zoneEgress string) string {
+func meshMTLSOn(mesh string, zoneEgress string) string {
 	return fmt.Sprintf(`
 type: Mesh
 name: %s
@@ -26,9 +26,8 @@ networking:
   outbound:
     passthrough: false
 routing:
-  localityAwareLoadBalancing: %s
   zoneEgress: %s
-`, mesh, localityLb, zoneEgress)
+`, mesh, zoneEgress)
 }
 
 func externalService(mesh string, ip string) string {
@@ -89,7 +88,7 @@ var _ = E2EBeforeSuite(func() {
 
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Global)).
-		Install(YamlUniversal(meshMTLSOn(defaultMesh, "true", "true"))).
+		Install(YamlUniversal(meshMTLSOn(defaultMesh, "true"))).
 		Setup(global)).To(Succeed())
 
 	E2EDeferCleanup(global.DismissCluster)
@@ -154,7 +153,7 @@ var _ = E2EBeforeSuite(func() {
 func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 	BeforeEach(func() {
 		Expect(global.GetKumactlOptions().
-			KumactlApplyFromString(meshMTLSOn(defaultMesh, "true", "true")),
+			KumactlApplyFromString(meshMTLSOn(defaultMesh, "true")),
 		).To(Succeed())
 
 		k8sCluster := zone1.(*K8sCluster)
@@ -256,11 +255,11 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		Eventually(EgressStats(zone4, filterEgress), "15s", "1s").Should(stats.BeGreaterThanZero())
 	})
 
-	It("requests should be routed through local zone egress when locality aware load balancing is disabled", func() {
+	It("requests should be routed directly through local sidecar when zone egress disabled", func() {
 		// given mesh with locality aware load balancing disabled
 		mesh := "demo"
 		err := NewClusterSetup().
-			Install(YamlUniversal(meshMTLSOn(mesh, "false", "true"))).
+			Install(YamlUniversal(meshMTLSOn(mesh, "false"))).
 			Install(YamlUniversal(zoneExternalService(mesh, zone4.GetApp("external-service-in-zone1").GetIP(), "demo-es-in-zone1", "kuma-1-zone"))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
@@ -281,10 +280,8 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		)
 		filterIngress := "cluster.demo-es-in-zone1.upstream_rq_total"
 
-		// and no request on path through ingress
-		Eventually(EgressStats(zone4, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
-		Eventually(EgressStats(zone1, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
-		Eventually(func(g Gomega) { // there is no stat because external service is not exposed through ingress
+		// and there is no stat because external service is not exposed through ingress
+		Eventually(func(g Gomega) {
 			s, err := zone1.GetZoneIngressEnvoyTunnel().GetStats(filterIngress)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s.Stats).To(BeEmpty())
@@ -296,10 +293,17 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		// then should route:
-		// app -> zone egress (zone4) -> external service
-		Eventually(EgressStats(zone4, filterEgress), "15s", "1s").Should(stats.BeGreaterThanZero())
-		Eventually(EgressStats(zone1, filterEgress), "15s", "1s").Should(stats.BeEqualZero())
+		// then there is no stat because external service is not exposed through egress
+		Eventually(func(g Gomega) {
+			s, err := zone1.GetZoneIngressEnvoyTunnel().GetStats(filterEgress)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(s.Stats).To(BeEmpty())
+		}, "15s", "1s").Should(Succeed())
+		Eventually(func(g Gomega) {
+			s, err := zone4.GetZoneIngressEnvoyTunnel().GetStats(filterEgress)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(s.Stats).To(BeEmpty())
+		}, "15s", "1s").Should(Succeed())
 	})
 
 	It("should fail request when ingress is down", func() {

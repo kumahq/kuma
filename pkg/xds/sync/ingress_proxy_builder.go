@@ -150,7 +150,7 @@ func (p *IngressProxyBuilder) getIngressExternalServices(ctx context.Context) (*
 	var meshes []*core_mesh.MeshResource
 
 	for _, mesh := range meshList.Items {
-		if mesh.LocalityAwareExternalServicesEnabled() {
+		if mesh.ZoneEgressEnabled() {
 			meshes = append(meshes, mesh)
 		}
 	}
