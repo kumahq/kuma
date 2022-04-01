@@ -8,6 +8,10 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+### Helm
+
+controlPlane.resources is now on object instead of a string. Any existing value should be adapted accordingly.
+
 ### Zone egress
 
 Previously, when mTLS was configured and `ZoneEgress` deployed, requests were routed automatically through `ZoneEgress`. Now it's required to

@@ -38,7 +38,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.globalZoneSyncService.annotations | object | `{}` | Additional annotations to put on the Global Zone Sync Service |
 | controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
-| controlPlane.resources | string | the resources will be chosen based on the mode | Optionally override the resource spec |
+| controlPlane.resources | object | the resources will be chosen based on the mode | Optionally override the resource spec |
 | controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, tls.key [and ca.crt when no controlPlane.tls.general.caSecretName specified] for protecting Kuma in-cluster communication |
 | controlPlane.tls.general.caSecretName | string | `""` | Secret that contains ca.crt that was used to sign cert for protecting Kuma in-cluster communication (ca.crt present in this secret have precedence over the one provided in the controlPlane.tls.general.secretName) |
 | controlPlane.tls.general.caBundle | string | `""` | Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt) |
