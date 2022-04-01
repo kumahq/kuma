@@ -4,13 +4,18 @@ kind: Ingress
 metadata:
   name: {{ include "kuma.name" . }}-control-plane
   namespace: {{ .Release.Namespace }}
+  {{- with .Values.controlPlane.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
-  ingressClassName: {{ include "kuma.name" . }}-control-plane
+  ingressClassName: {{ .Values.controlPlane.ingress.ingressClassName }}
   rules:
-  - http:
+  - host: {{ .Values.controlPlane.ingress.hostname }}
+    http:
       paths:
-      - path: /
-        pathType: Prefix
+      - path: {{ .Values.controlPlane.ingress.path }}
+        pathType: {{ .Values.controlPlane.ingress.pathType }}
         backend:
           service:
             name: {{ include "kuma.name" . }}-control-plane

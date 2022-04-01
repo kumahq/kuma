@@ -75,9 +75,21 @@ controlPlane:
     # -- Additional annotations to put on the Kuma Control Plane
     annotations: { }
 
+  # Kuma admin ingress settings. Useful if you want to expose the
+  # API and GUI of Kuma outside the k8s cluster.
   ingress:
-    # -- Install Kuma Control Plane with K8s Ingress resource
+    # -- Install K8s Ingress resource that exposes GUI and API
     enabled: false
+    # -- IngressClass defines which controller will implement the resource
+    ingressClassName:
+    # -- Ingress hostname
+    hostname:
+    # -- Map of ingress annotations.
+    annotations: {}
+    # -- Ingress path.
+    path: /
+    # -- Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix)
+    pathType: ImplementationSpecific
 
   # -- URL of Global Kuma CP
   globalZoneSyncService:

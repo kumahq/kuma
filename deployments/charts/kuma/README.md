@@ -32,7 +32,12 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.service.name | string | `nil` | Optionally override of the Kuma Control Plane Service's name |
 | controlPlane.service.type | string | `"ClusterIP"` | Service type of the Kuma Control Plane |
 | controlPlane.service.annotations | object | `{}` | Additional annotations to put on the Kuma Control Plane |
-| controlPlane.ingress.enabled | bool | `false` | Install Kuma Control Plane with K8s Ingress resource |
+| controlPlane.ingress.enabled | bool | `false` | Install K8s Ingress resource that exposes GUI and API |
+| controlPlane.ingress.ingressClassName | string | `nil` | IngressClass defines which controller will implement the resource |
+| controlPlane.ingress.hostname | string | `nil` | Ingress hostname |
+| controlPlane.ingress.annotations | object | `{}` | Map of ingress annotations. |
+| controlPlane.ingress.path | string | `"/"` | Ingress path. |
+| controlPlane.ingress.pathType | string | `"ImplementationSpecific"` | Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix) |
 | controlPlane.globalZoneSyncService | object | `{"annotations":{},"loadBalancerIP":null,"port":5685,"type":"LoadBalancer"}` | URL of Global Kuma CP |
 | controlPlane.globalZoneSyncService.type | string | `"LoadBalancer"` | Service type of the Global-zone sync |
 | controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
