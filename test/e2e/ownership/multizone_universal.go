@@ -101,12 +101,12 @@ func MultizoneUniversal() {
 	It("should delete ZoneEgressInsights when ZoneEgress is deleted", func() {
 		installZoneEgress()
 
-		Eventually(has("zoneegresses"), "30s", "1s").Should(BeTrue())
+		Eventually(has("zone-egresses"), "30s", "1s").Should(BeTrue())
 		Eventually(has("zoneegressinsights"), "30s", "1s").Should(BeTrue())
 
 		killKumaDP(AppEgress)
 
-		Eventually(has("zoneegresses"), "30s", "1s").Should(BeFalse())
+		Eventually(has("zone-egresses"), "30s", "1s").Should(BeFalse())
 		Eventually(has("zoneegressinsights"), "30s", "1s").Should(BeFalse())
 	})
 
