@@ -231,6 +231,6 @@ func (cs *K8sClusters) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
 	panic("not supported")
 }
 
-func (cs *K8sClusters) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+func (cs *K8sClusters) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
 	panic("not supported")
 }

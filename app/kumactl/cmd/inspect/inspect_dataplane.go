@@ -18,13 +18,13 @@ var dataplaneInspectTemplate = `{{ with IsSidecar . }}{{ range $num, $item := .I
 {{ range $typ, $policies := .MatchedPolicies }}  {{ $typ }}
     {{ range $policies }}{{ .Meta.Name }}
 {{ end }}{{ end }}
-{{ end }}{{ end }}{{ with IsGateway . }}GATEWAY:
+{{ end }}{{ end }}{{ with IsGateway . }}MESHGATEWAY:
 {{ range $typ, $policy := .Policies }}  {{ $typ }}
     {{ .Meta.Name }}
 {{ end }}
 {{ range .Listeners }}LISTENER ({{ .Protocol }}:{{ .Port }}):
 {{ range .Hosts }}  {{ .HostName }}:
-{{ range .Routes }}    {{ .Route }}:
+{{ range .Routes }}    ROUTE {{ .Route }}:
 {{ range .Destinations }}      {{ FormatTags .Tags }}:
 {{ range $typ, $policy := .Policies }}        {{ $typ }}
           {{ .Meta.Name }}

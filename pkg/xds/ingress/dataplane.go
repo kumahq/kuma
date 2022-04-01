@@ -58,8 +58,17 @@ func (s tagSets) toAvailableServices() []*mesh_proto.ZoneIngress_AvailableServic
 	return result
 }
 
-func UpdateAvailableServices(ctx context.Context, rm manager.ResourceManager, ingress *core_mesh.ZoneIngressResource, others []*core_mesh.DataplaneResource) error {
+func UpdateAvailableServices(
+	ctx context.Context,
+	rm manager.ResourceManager,
+	ingress *core_mesh.ZoneIngressResource,
+	others []*core_mesh.DataplaneResource,
+	externalServices []*core_mesh.ExternalServiceResource,
+) error {
 	availableServices := GetIngressAvailableServices(others)
+	availableExternalServices := GetExternalAvailableServices(externalServices)
+	availableServices = append(availableServices, availableExternalServices...)
+
 	if availableServicesEqual(availableServices, ingress.Spec.GetAvailableServices()) {
 		return nil
 	}
@@ -90,4 +99,17 @@ func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_
 		}
 	}
 	return tagSets.toAvailableServices()
+}
+
+func GetExternalAvailableServices(others []*core_mesh.ExternalServiceResource) []*mesh_proto.ZoneIngress_AvailableService {
+	tagSets := tagSets{}
+	for _, es := range others {
+		tagSets.addInstanceOfTags(es.GetMeta().GetMesh(), es.Spec.Tags)
+	}
+
+	availableServices := tagSets.toAvailableServices()
+	for _, as := range availableServices {
+		as.ExternalService = true
+	}
+	return availableServices
 }

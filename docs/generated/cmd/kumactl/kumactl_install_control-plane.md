@@ -20,7 +20,7 @@ kumactl install control-plane [flags]
       --cni-enabled                                  install Kuma with CNI instead of proxy init container
       --cni-net-dir string                           set the CNI install directory (default "/etc/cni/multus/net.d")
       --cni-node-selector stringToString             node selector for CNI deployment (default [])
-      --cni-registry string                          registry for the image of the Kuma CNI component (default "docker.io/lobkovilya")
+      --cni-registry string                          registry for the image of the Kuma CNI component (default "docker.io/kumahq")
       --cni-repository string                        repository for the image of the Kuma CNI component (default "install-cni")
       --cni-version string                           version of the image of the Kuma CNI component (default "0.0.9")
       --control-plane-node-selector stringToString   node selector for Kuma Control Plane (default [])
@@ -39,6 +39,7 @@ kumactl install control-plane [flags]
       --egress-node-selector stringToString          node selector for Zone Egress (default [])
       --egress-service-type string                   the type for the Egress Service (ie. ClusterIP, NodePort, LoadBalancer) (default "ClusterIP")
       --env-var stringToString                       environment variables that will be passed to the control plane (default [])
+      --experimental-gatewayapi                      install experimental Gatewa API support
       --experimental-meshgateway                     install experimental built-in MeshGateway support
   -h, --help                                         help for control-plane
       --hooks-node-selector stringToString           node selector for Helm hooks (default [])

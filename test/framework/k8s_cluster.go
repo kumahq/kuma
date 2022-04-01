@@ -84,22 +84,37 @@ func (c *K8sCluster) addEgressEnvoyTunnel() error {
 	return nil
 }
 
-func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	t, err := c.GetZoneEgressEnvoyTunnelE()
+func (c *K8sCluster) addIngressEnvoyTunnel() error {
+	t, err := tunnel.NewK8sEnvoyAdminTunnel(
+		c.t,
+		c.GetKubectlOptions(Config.KumaNamespace),
+		k8s.ResourceTypeService,
+		Config.ZoneIngressApp,
+	)
+
 	if err != nil {
-		c.t.Fatal(err)
+		return err
 	}
 
+	c.envoyTunnels[Config.ZoneIngressApp] = t
+
+	return nil
+}
+
+func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
+	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
+	if !ok {
+		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp))
+	}
 	return t
 }
 
-func (c *K8sCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
-	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
+func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
+	t, ok := c.envoyTunnels[Config.ZoneIngressApp]
 	if !ok {
-		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
+		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp))
 	}
-
-	return t, nil
+	return t
 }
 
 func (c *K8sCluster) Verbose() bool {
@@ -480,6 +495,16 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 	}
 
+	if c.opts.zoneIngressEnvoyAdminTunnel {
+		if !c.opts.zoneIngress {
+			return errors.New("cannot create tunnel to zone ingress' envoy admin without ingress")
+		}
+
+		if err := c.addIngressEnvoyTunnel(); err != nil {
+			return err
+		}
+	}
+
 	if !c.opts.skipDefaultMesh {
 		// wait for the mesh
 		_, err = retry.DoWithRetryE(c.t,
@@ -585,6 +610,58 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 		return err
 	}
 
+	return nil
+}
+
+// StartZoneIngress scales the replicas of a zone ingress to 1 and wait for it to complete.
+func (c *K8sCluster) StartZoneIngress() error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
+		return err
+	}
+	if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
+		return err
+	}
+	if err := c.addIngressEnvoyTunnel(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// StopZoneIngress scales the replicas of a zone ingress to 0 and wait for it to complete. Useful for testing behavior when traffic goes through ingress but there is no instance.
+func (c *K8sCluster) StopZoneIngress() error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
+		return err
+	}
+	_, err := retry.DoWithRetryE(c.t,
+		"wait for zone ingress to be down",
+		c.defaultRetries,
+		c.defaultTimeout,
+		func() (string, error) {
+			pods := c.getPods(Config.KumaNamespace, Config.ZoneIngressApp)
+			if len(pods) == 0 {
+				return "Done", nil
+			}
+			names := []string{}
+			for _, p := range pods {
+				names = append(names, p.Name)
+			}
+			return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
+		},
+	)
+	return err
+}
+
+// StartZoneEngress scales the replicas of a zone engress to 1 and wait for it to complete.
+func (c *K8sCluster) StartZoneEgress() error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
+		return err
+	}
+	if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
+		return err
+	}
+	if err := c.addEgressEnvoyTunnel(); err != nil {
+		return err
+	}
 	return nil
 }
 

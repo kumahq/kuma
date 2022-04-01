@@ -3,6 +3,8 @@ package gatewayapi_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	k8s_gatewayapi "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi"
@@ -54,12 +56,28 @@ var _ = Describe("ValidateListeners", func() {
 			},
 		}
 		valids, conditions := k8s_gatewayapi.ValidateListeners(listeners)
-		Expect(valids).To(ConsistOf(
-			HaveField("Name", gatewayapi.SectionName("prod-1")),
-		))
-		Expect(conditions).To(HaveKey(gatewayapi.SectionName("prod-2")))
+
+		Expect(valids).To(BeEmpty())
+
+		protocolConflicted := ContainElements(
+			MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(string(gatewayapi.ListenerConditionConflicted)),
+				"Status": Equal(kube_meta.ConditionTrue),
+				"Reason": Equal(string(gatewayapi.ListenerReasonProtocolConflict)),
+			}),
+			MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(string(gatewayapi.ListenerConditionReady)),
+				"Status": Equal(kube_meta.ConditionFalse),
+			}),
+		)
+		Expect(conditions).To(
+			MatchAllKeys(Keys{
+				gatewayapi.SectionName("prod-1"): protocolConflicted,
+				gatewayapi.SectionName("prod-2"): protocolConflicted,
+			}),
+		)
 	})
-	It("works with differing hostnames", func() {
+	It("works with non-conflicting differing hostnames", func() {
 		same := gatewayapi.NamespacesFromSame
 		foo := gatewayapi.Hostname("foo.com")
 		bar := gatewayapi.Hostname("bar.com")
@@ -94,7 +112,7 @@ var _ = Describe("ValidateListeners", func() {
 		))
 		Expect(conditions).To(BeEmpty())
 	})
-	It("works with multiple listeners for same hostname:port", func() {
+	It("works with multiple listeners for same hostname:port conflict", func() {
 		same := gatewayapi.NamespacesFromSame
 		foo := gatewayapi.Hostname("foo.com")
 		listeners := []gatewayapi.Listener{
@@ -122,8 +140,25 @@ var _ = Describe("ValidateListeners", func() {
 			},
 		}
 		valids, conditions := k8s_gatewayapi.ValidateListeners(listeners)
+
 		Expect(valids).To(BeEmpty())
-		Expect(conditions).To(HaveKey(gatewayapi.SectionName("prod-1")))
-		Expect(conditions).To(HaveKey(gatewayapi.SectionName("prod-2")))
+
+		hostnameConflicted := ContainElements(
+			MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(string(gatewayapi.ListenerConditionConflicted)),
+				"Status": Equal(kube_meta.ConditionTrue),
+				"Reason": Equal(string(gatewayapi.ListenerReasonHostnameConflict)),
+			}),
+			MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(string(gatewayapi.ListenerConditionReady)),
+				"Status": Equal(kube_meta.ConditionFalse),
+			}),
+		)
+		Expect(conditions).To(
+			MatchAllKeys(Keys{
+				gatewayapi.SectionName("prod-1"): hostnameConflicted,
+				gatewayapi.SectionName("prod-2"): hostnameConflicted,
+			}),
+		)
 	})
 })

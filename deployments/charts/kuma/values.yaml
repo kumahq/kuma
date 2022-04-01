@@ -93,9 +93,12 @@ controlPlane:
   # -- Optionally override the resource spec
   # @default -- the resources will be chosen based on the mode
   resources:
-  #  requests:
+    requests:
   #    cpu: 100m
   #    memory: 256Mi
+    limits:
+  #    cpu: 250m
+  #    memory: 512Mi
 
   # TLS for various servers
   tls:
@@ -127,7 +130,8 @@ controlPlane:
     pullPolicy: IfNotPresent
     # -- Kuma CP image repository
     repository: "kuma-cp"
-
+    # -- Kuma CP Image tag. When not specified, the value is copied from global.tag
+    tag:
   # -- (list of { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
   # where `Env` is the name of the env variable,
   # `Secret` is the name of the Secret,
@@ -182,7 +186,7 @@ cni:
     # -- CNI image registry
     registry: "docker.io"
     # -- CNI image repository
-    repository: "lobkovilya/install-cni"
+    repository: "kumahq/install-cni"
     # -- CNI image tag
     tag: "0.0.9"
 
@@ -192,10 +196,14 @@ dataPlane:
     repository: "kuma-dp"
     # -- Kuma DP ImagePullPolicy
     pullPolicy: IfNotPresent
+    # -- Kuma DP Image Tag. When not specified, the value is copied from global.tag
+    tag:
 
   initImage:
     # -- The Kuma DP init image repository
     repository: "kuma-init"
+    # -- Kuma DP init image tag When not specified, the value is copied from global.tag
+    tag:
 
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
@@ -257,6 +265,8 @@ kumactl:
   image:
     # -- The kumactl image repository
     repository: kumactl
+    # -- The kumactl image tag. When not specified, the value is copied from global.tag
+    tag:
 
 kubectl:
   # bitnami maintains an image for all k8s versions */ } }
@@ -277,3 +287,5 @@ hooks:
 experimental:
   # -- If true, it installs experimental built-in Gateway support
   meshGateway: false
+  # -- If true, it installs experimental Gateway API support
+  gatewayAPI: false

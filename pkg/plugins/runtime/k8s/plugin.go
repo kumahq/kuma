@@ -2,12 +2,14 @@ package k8s
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
+	gapi_admission "sigs.k8s.io/gateway-api/pkg/admission"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
@@ -267,12 +269,8 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		composite.AddValidator(validator)
 	}
 
-	path := "/validate-kuma-io-v1alpha1"
-	mgr.GetWebhookServer().Register(path, composite.WebHook())
-	log.Info("Registering a validation composite webhook", "path", path)
-
+	mgr.GetWebhookServer().Register("/validate-kuma-io-v1alpha1", composite.WebHook())
 	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
-	log.Info("Registering a validation webhook for v1/Service", "path", "/validate-v1-service")
 
 	client, ok := k8s_extensions.FromSecretClientContext(rt.Extensions())
 	if !ok {
@@ -283,9 +281,21 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		Validator: manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
-	log.Info("Registering a validation webhook for v1/Secret", "path", "/validate-v1-secret")
+
+	if gatewayAPICRDsPresent(mgr) {
+		gatewayValidator := k8s_webhooks.NewGatewayAPIMultizoneValidator(rt.Config().Mode)
+		mgr.GetWebhookServer().Register("/validate-v1alpha2-gateway", gatewayValidator)
+		mgr.GetWebhookServer().Register("/validate-v1alpha2-gateway-upstream", &upstreamValidatorHandler{})
+	}
 
 	return nil
+}
+
+type upstreamValidatorHandler struct {
+}
+
+func (g *upstreamValidatorHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	gapi_admission.ServeHTTP(writer, request)
 }
 
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {

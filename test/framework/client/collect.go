@@ -1,13 +1,17 @@
 package client
 
 import (
+	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -237,6 +241,27 @@ func CollectResponseDirectly(
 
 	client := &http.Client{
 		Timeout: 5 * time.Second,
+	}
+	if strings.HasPrefix(destination, "https") {
+		// When HTTPS is used, we want to send a proper SNI equal to Host header.
+		// There is no one property to do this, we need to override DNS resolving and change req.URL
+		// https://github.com/golang/go/issues/22704
+		u, err := url.Parse(destination)
+		if err != nil {
+			return types.EchoResponse{}, err
+		}
+		dialer := &net.Dialer{}
+		client.Transport = &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return dialer.Dial(network, u.Host)
+			},
+			TLSClientConfig: &tls.Config{
+				ServerName:         req.Host,
+				InsecureSkipVerify: true,
+				NextProtos:         []string{"http/1.1"}, // ALPN is required by Envoy
+			},
+		}
+		req.URL.Host = net.JoinHostPort(req.Host, req.URL.Port())
 	}
 	resp, err := client.Do(req)
 	if err != nil {

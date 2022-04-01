@@ -56,6 +56,7 @@ type InstallControlPlaneArgs struct {
 	Hooks_nodeSelector                           map[string]string `helm:"hooks.nodeSelector"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
 	ExperimentalMeshGateway                      bool              `helm:"experimental.meshGateway"`
+	ExperimentalGatewayAPI                       bool              `helm:"experimental.gatewayAPI"`
 }
 
 type ImageEnvSecret struct {
@@ -93,7 +94,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			Cni_net_dir:                             "/etc/cni/multus/net.d",
 			Cni_bin_dir:                             "/var/lib/cni/bin",
 			Cni_conf_name:                           "kuma-cni.conf",
-			Cni_image_registry:                      "docker.io/lobkovilya",
+			Cni_image_registry:                      "docker.io/kumahq",
 			Cni_image_repository:                    "install-cni",
 			Cni_image_tag:                           "0.0.9",
 			ControlPlane_mode:                       core.Standalone,

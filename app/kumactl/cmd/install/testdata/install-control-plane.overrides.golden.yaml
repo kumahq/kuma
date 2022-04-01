@@ -1561,6 +1561,7 @@ rules:
       - pods
       - configmaps
       - nodes
+      - secrets
     verbs:
       - get
       - list
@@ -1814,6 +1815,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
+    - port: 5680
+      name: diagnostics
     - port: 5681
       name: http-api-server
     - port: 5682
@@ -1856,8 +1859,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 8c443d9f48d469a050e9e994d3d839c09b7f22f3c16bbe096c5a7d30f4207d99
-        checksum/tls-secrets: e478434cf09212624ee5588731cf8bb726cc008ddd0170817bebc681fa3a88d7
+        checksum/config: 652c0fee8359addb5b565f00943a4c64a5511bb208b041d6cdcca177d2772e61
+        checksum/tls-secrets: b8deca59ac509c99819cfab78ff0fe69ca375602f1eae5273153cff35ef8c2bc
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -1901,6 +1904,8 @@ spec:
               value: "false"
             - name: KUMA_ENVIRONMENT
               value: "kubernetes"
+            - name: KUMA_EXPERIMENTAL_GATEWAY_API
+              value: "true"
             - name: KUMA_EXPERIMENTAL_MESHGATEWAY
               value: "true"
             - name: KUMA_GENERAL_TLS_CERT_FILE
@@ -1948,6 +1953,9 @@ spec:
             - --log-level=info
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
+            - containerPort: 5680
+              name: diagnostics
+              protocol: TCP
             - containerPort: 5681
             - containerPort: 5682
             - containerPort: 5443
@@ -2238,4 +2246,46 @@ webhooks:
           - DELETE
         resources:
           - secrets
+    sideEffects: None
+  - name: gateway.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma
+        name: kuma-ctrl-plane
+        path: /validate-v1alpha2-gateway
+    rules:
+      - apiGroups:
+          - "gateway.networking.k8s.io"
+        apiVersions:
+          - v1alpha2
+        operations:
+          - CREATE
+        resources:
+          - gatewayclasses
+    sideEffects: None
+  - name: validate.gateway.networking.k8s.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    matchPolicy: Equivalent
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma
+        name: kuma-ctrl-plane
+        path: /validate-v1alpha2-gateway-upstream
+    rules:
+      - apiGroups:
+          - "gateway.networking.k8s.io"
+        apiVersions:
+          - v1alpha2
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - gateways
+          - gatewayclasses
+          - httproutes
     sideEffects: None

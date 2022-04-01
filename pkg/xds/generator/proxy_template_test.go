@@ -17,6 +17,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	modifications "github.com/kumahq/kuma/pkg/xds/generator/modifications/v3"
 )
 
 var _ = Describe("ProxyTemplateGenerator", func() {
@@ -161,17 +162,14 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 
 				// when
 				rs, err := gen.Generate(ctx, proxy)
-
-				// then
+				Expect(err).ToNot(HaveOccurred())
+				err = modifications.Apply(rs, proxyTemplate.GetConf().GetModifications())
 				Expect(err).ToNot(HaveOccurred())
 
-				// when
+				// then
 				resp, err := rs.List().ToDeltaDiscoveryResponse()
-				// then
 				Expect(err).ToNot(HaveOccurred())
-				// when
 				actual, err := util_proto.ToYAML(resp)
-				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// and output matches golden files

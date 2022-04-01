@@ -68,7 +68,7 @@ type PolicyInspectSidecarEntry struct {
 }
 
 const SidecarDataplane = "SidecarDataplane"
-const GatewayDataplane = "GatewayDataplane"
+const GatewayDataplane = "MeshGatewayDataplane"
 
 type KindTag struct {
 	Kind string `json:"kind"`
@@ -102,6 +102,22 @@ func (*PolicyInspectSidecarEntry) policyInspectEntry() {
 func NewPolicyInspectSidecarEntry(key ResourceKeyEntry) PolicyInspectSidecarEntry {
 	return PolicyInspectSidecarEntry{
 		DataplaneKey: key,
+	}
+}
+
+type GatewayDataplanesInspectEntry struct {
+	DataplaneKey ResourceKeyEntry `json:"dataplane"`
+}
+
+type GatewayDataplanesInspectEntryList struct {
+	Total uint32                          `json:"total"`
+	Items []GatewayDataplanesInspectEntry `json:"items"`
+}
+
+func NewGatewayDataplanesInspectResult() *GatewayDataplanesInspectEntryList {
+	return &GatewayDataplanesInspectEntryList{
+		Total: 0,
+		Items: []GatewayDataplanesInspectEntry{},
 	}
 }
 

@@ -1,4 +1,4 @@
-GATEWAY:
+MESHGATEWAY:
   TrafficLog
     all-traffic
   TrafficTrace
@@ -6,7 +6,7 @@ GATEWAY:
 
 LISTENER (HTTP:80):
   *:
-    route-1:
+    ROUTE route-1:
       SERVICE backend:
         HealthCheck
           hc-1

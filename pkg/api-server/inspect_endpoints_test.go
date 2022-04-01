@@ -464,6 +464,43 @@ var _ = Describe("Inspect WS", func() {
 				},
 			},
 		}),
+		Entry("inspect meshgateway dataplanes", testCase{
+			path:       "/meshes/default/meshgateways/gateway/dataplanes",
+			goldenFile: "inspect_gateway_dataplanes.json",
+			resources: []core_model.Resource{
+				newMesh("default"),
+				newDataplane().
+					meta("gateway-1", "default").
+					builtin("gateway").
+					build(),
+				newDataplane().
+					meta("othergateway-1", "default").
+					builtin("othergateway").
+					build(),
+				newDataplane().
+					meta("redis-1", "default").
+					inbound80to81("redis", "192.168.0.1").
+					outbound8080("backend", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					build(),
+				&core_mesh.MeshGatewayResource{
+					Meta: &test_model.ResourceMeta{Name: "gateway", Mesh: "default"},
+					Spec: &mesh_proto.MeshGateway{
+						Selectors: selectors{
+							serviceSelector("gateway", ""),
+						},
+						Conf: &mesh_proto.MeshGateway_Conf{
+							Listeners: []*mesh_proto.MeshGateway_Listener{
+								{
+									Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+									Port:     80,
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
 		Entry("inspect traffic permission", testCase{
 			path:       "/meshes/default/traffic-permissions/tp-1/dataplanes",
 			goldenFile: "inspect_traffic-permission.json",

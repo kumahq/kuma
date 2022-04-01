@@ -43,4 +43,7 @@ spec:
     - inboundPath: /metrics
       inboundPort: 3001
       path: /3001/metrics
+    - inboundPath: /metrics
+      inboundPort: 8081
+      path: /8081/metrics
     port: 19000

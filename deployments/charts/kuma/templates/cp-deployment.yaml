@@ -80,6 +80,9 @@ spec:
             - --log-level={{ .Values.controlPlane.logLevel }}
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
+            - containerPort: 5680
+              name: diagnostics
+              protocol: TCP
             - containerPort: 5681
             - containerPort: 5682
             - containerPort: 5443
@@ -97,8 +100,9 @@ spec:
               path: /ready
               port: 5680
           resources:
-            {{- if .Values.controlPlane.resources }}
-            {{ .Values.controlPlane.resources | toYaml | nindent 12 }}
+            {{- if .Values.controlPlane.resources.requests }}
+            requests:
+            {{ .Values.controlPlane.resources.requests | toYaml | nindent 14 }}
             {{- else if eq .Values.controlPlane.mode "global" }}
             requests:
               cpu: 500m
@@ -107,7 +111,11 @@ spec:
             requests:
               cpu: 100m
               memory: 256Mi
-          {{- end }}
+            {{- end }}
+            {{- if .Values.controlPlane.resources.limits }}
+            limits:
+            {{ .Values.controlPlane.resources.limits | toYaml | nindent 14 }}
+            {{- end }}
           volumeMounts:
             - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt

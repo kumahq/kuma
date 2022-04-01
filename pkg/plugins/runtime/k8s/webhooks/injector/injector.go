@@ -238,18 +238,37 @@ func (i *KumaInjector) NewSidecarContainer(
 	// ServiceAccount admission plugin is called only once, prior to any mutating web hook.
 	// That's why it is a responsibility of every mutating web hook to copy
 	// ServiceAccount volume mount into containers it creates.
-	container.VolumeMounts = i.NewVolumeMounts(pod)
+	container.VolumeMounts, err = i.NewVolumeMounts(pod)
+	if err != nil {
+		return container, err
+	}
 
 	container.Name = k8s_util.KumaSidecarContainerName
 
 	return container, nil
 }
-
-func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) []kube_core.VolumeMount {
-	if tokenVolumeMount := i.FindServiceAccountToken(&pod.Spec); tokenVolumeMount != nil {
-		return []kube_core.VolumeMount{*tokenVolumeMount}
+func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) ([]kube_core.VolumeMount, error) {
+	// If the user specifies a volume containing a service account token, we will mount and use that.
+	if volumeName, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarTokenVolumeAnnotation); exists {
+		// Ensure the volume specified exists on the pod spec, otherwise error.
+		for _, v := range pod.Spec.Volumes {
+			if v.Name == volumeName {
+				return []kube_core.VolumeMount{{
+					Name:      volumeName,
+					ReadOnly:  true,
+					MountPath: serviceAccountTokenMountPath,
+				}}, nil
+			}
+		}
+		return nil, errors.Errorf("volume (%s) specified for %s but volume does not exist in pod spec", volumeName, metadata.KumaSidecarTokenVolumeAnnotation)
 	}
-	return nil
+
+	// If not specified with the above annotation, instead query each container in the pod to find a
+	// service account token to mount.
+	if tokenVolumeMount := i.FindServiceAccountToken(&pod.Spec); tokenVolumeMount != nil {
+		return []kube_core.VolumeMount{*tokenVolumeMount}, nil
+	}
+	return nil, nil
 }
 
 func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube_core.VolumeMount {

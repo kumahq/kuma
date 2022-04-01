@@ -31,8 +31,12 @@ func MatchServerNames(names ...string) FilterChainBuilderOpt {
 				chain.FilterChainMatch = &envoy_listener.FilterChainMatch{}
 			}
 
-			chain.FilterChainMatch.ServerNames =
-				append(chain.FilterChainMatch.ServerNames, names...)
+			for _, name := range names {
+				// "" or "*" means match all, but Envoy supports only supports *.domain or more specific
+				if name != "" && name != "*" {
+					chain.FilterChainMatch.ServerNames = append(chain.FilterChainMatch.ServerNames, name)
+				}
+			}
 		}),
 	)
 }

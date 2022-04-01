@@ -48,6 +48,13 @@ func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
 				return err
 			}
 		}
+		if c.StartupProbe != nil && c.StartupProbe.HTTPGet != nil {
+			log.V(1).Info("overriding startup probe", "container", c.Name)
+			resolveNamedPort(c, c.StartupProbe)
+			if err := overrideHTTPProbe(c.StartupProbe, port); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

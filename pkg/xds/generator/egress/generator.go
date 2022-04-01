@@ -28,7 +28,7 @@ var (
 // ZoneEgressGenerator is responsible for generating xDS resources for
 // a single ZoneEgress.
 type ZoneEgressGenerator interface {
-	Generate(proxy *core_xds.Proxy, listenerBuilder *envoy_listeners.ListenerBuilder, meshResources *core_xds.MeshResources) (*core_xds.ResourceSet, error)
+	Generate(ctx xds_context.Context, proxy *core_xds.Proxy, listenerBuilder *envoy_listeners.ListenerBuilder, meshResources *core_xds.MeshResources) (*core_xds.ResourceSet, error)
 }
 
 // Generator generates xDS resources for an entire ZoneEgress.
@@ -57,7 +57,7 @@ func makeListenerBuilder(
 }
 
 func (g Generator) Generate(
-	_ xds_context.Context,
+	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
@@ -69,7 +69,7 @@ func (g Generator) Generate(
 
 	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
 		for _, generator := range g.Generators {
-			rs, err := generator.Generate(proxy, listenerBuilder, meshResources)
+			rs, err := generator.Generate(ctx, proxy, listenerBuilder, meshResources)
 			if err != nil {
 				err := errors.Wrapf(
 					err,

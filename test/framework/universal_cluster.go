@@ -255,6 +255,11 @@ func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
 	app.CreateDP(token, cpAddress, name, "", ip, dpyaml, builtindns, "ingress", 0)
+
+	if err := c.addIngressEnvoyTunnel(); err != nil {
+		return err
+	}
+
 	return app.dpApp.Start()
 }
 
@@ -463,8 +468,30 @@ func (c *UniversalCluster) addEgressEnvoyTunnel() error {
 	return nil
 }
 
+func (c *UniversalCluster) addIngressEnvoyTunnel() error {
+	app := c.apps[AppIngress]
+
+	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, app.GetPublicPort(sshPort), c.verbose)
+	if err != nil {
+		return err
+	}
+
+	c.envoyTunnels[Config.ZoneIngressApp] = t
+
+	return nil
+}
+
 func (c *UniversalCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
 	t, err := c.GetZoneEgressEnvoyTunnelE()
+	if err != nil {
+		c.t.Fatal(err)
+	}
+
+	return t
+}
+
+func (c *UniversalCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
+	t, err := c.GetZoneIngressEnvoyTunnelE()
 	if err != nil {
 		c.t.Fatal(err)
 	}
@@ -476,6 +503,15 @@ func (c *UniversalCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, erro
 	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
 	if !ok {
 		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
+	}
+
+	return t, nil
+}
+
+func (c *UniversalCluster) GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+	t, ok := c.envoyTunnels[Config.ZoneIngressApp]
+	if !ok {
+		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp)
 	}
 
 	return t, nil

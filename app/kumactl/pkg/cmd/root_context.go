@@ -41,6 +41,7 @@ type RootRuntime struct {
 	NewResourceStore             func(util_http.Client) core_store.ResourceStore
 	NewDataplaneOverviewClient   func(util_http.Client) kumactl_resources.DataplaneOverviewClient
 	NewDataplaneInspectClient    func(util_http.Client) kumactl_resources.DataplaneInspectClient
+	NewMeshGatewayInspectClient  func(util_http.Client) kumactl_resources.MeshGatewayInspectClient
 	NewInspectEnvoyProxyClient   func(core_model.ResourceTypeDescriptor, util_http.Client) kumactl_resources.InspectEnvoyProxyClient
 	NewPolicyInspectClient       func(util_http.Client) kumactl_resources.PolicyInspectClient
 	NewZoneIngressOverviewClient func(util_http.Client) kumactl_resources.ZoneIngressOverviewClient
@@ -92,6 +93,7 @@ func DefaultRootContext() *RootContext {
 			},
 			NewDataplaneOverviewClient:   kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneInspectClient:    kumactl_resources.NewDataplaneInspectClient,
+			NewMeshGatewayInspectClient:  kumactl_resources.NewMeshGatewayInspectClient,
 			NewInspectEnvoyProxyClient:   kumactl_resources.NewInspectEnvoyProxyClient,
 			NewPolicyInspectClient:       kumactl_resources.NewPolicyInspectClient,
 			NewZoneIngressOverviewClient: kumactl_resources.NewZoneIngressOverviewClient,
@@ -207,6 +209,14 @@ func (rc *RootContext) CurrentDataplaneInspectClient() (kumactl_resources.Datapl
 		return nil, err
 	}
 	return rc.Runtime.NewDataplaneInspectClient(client), nil
+}
+
+func (rc *RootContext) CurrentMeshGatewayInspectClient() (kumactl_resources.MeshGatewayInspectClient, error) {
+	client, err := rc.BaseAPIServerClient()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewMeshGatewayInspectClient(client), nil
 }
 
 func (rc *RootContext) CurrentInspectEnvoyProxyClient(resDesc core_model.ResourceTypeDescriptor) (kumactl_resources.InspectEnvoyProxyClient, error) {

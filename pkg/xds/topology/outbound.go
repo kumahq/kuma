@@ -54,7 +54,12 @@ func BuildRemoteEndpointMap(
 	outbound := core_xds.EndpointMap{}
 
 	fillIngressOutbounds(outbound, zoneIngresses, nil, zone, mesh)
-	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
+
+	if mesh.LocalityAwareExternalServicesEnabled() {
+		fillExternalServicesReachableFromZone(outbound, externalServices, mesh, loader, zone)
+	} else {
+		fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
+	}
 
 	for serviceName, endpoints := range outbound {
 		var newEndpoints []core_xds.Endpoint
@@ -205,7 +210,6 @@ func fillIngressOutbounds(
 			if service.Mesh != mesh.GetMeta().GetName() {
 				continue
 			}
-
 			serviceTags := service.GetTags()
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()
@@ -231,6 +235,11 @@ func fillIngressOutbounds(
 						Weight:   1,
 						Locality: locality,
 					}
+					// this is necessary for correct spiffe generation for dp when
+					// traffic is routed: egress -> ingress -> egress
+					if mesh.LocalityAwareExternalServicesEnabled() && service.ExternalService {
+						endpoint.ExternalService = &core_xds.ExternalService{}
+					}
 
 					outbound[serviceName] = append(outbound[serviceName], endpoint)
 				}
@@ -242,6 +251,9 @@ func fillIngressOutbounds(
 					Weight:   serviceInstances,
 					Locality: locality,
 				}
+				if mesh.LocalityAwareExternalServicesEnabled() && service.ExternalService {
+					endpoint.ExternalService = &core_xds.ExternalService{}
+				}
 
 				outbound[serviceName] = append(outbound[serviceName], endpoint)
 			}
@@ -251,17 +263,46 @@ func fillIngressOutbounds(
 	return uint32(len(ziInstances))
 }
 
-func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServices []*core_mesh.ExternalServiceResource, mesh *core_mesh.MeshResource, loader datasource.Loader, zone string) {
+func fillExternalServicesReachableFromZone(
+	outbound core_xds.EndpointMap,
+	externalServices []*core_mesh.ExternalServiceResource,
+	mesh *core_mesh.MeshResource,
+	loader datasource.Loader,
+	zone string,
+) {
 	for _, externalService := range externalServices {
-		service := externalService.Spec.GetService()
-
-		externalServiceEndpoint, err := NewExternalServiceEndpoint(externalService, mesh, loader, zone)
-		if err != nil {
-			core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
-			continue
+		if externalService.IsReachableFromZone(zone) {
+			createExternalServiceEndpoint(outbound, externalService, mesh, loader, zone)
 		}
-		outbound[service] = append(outbound[service], *externalServiceEndpoint)
 	}
+}
+
+func fillExternalServicesOutbounds(
+	outbound core_xds.EndpointMap,
+	externalServices []*core_mesh.ExternalServiceResource,
+	mesh *core_mesh.MeshResource,
+	loader datasource.Loader,
+	zone string,
+) {
+	for _, externalService := range externalServices {
+		createExternalServiceEndpoint(outbound, externalService, mesh, loader, zone)
+	}
+}
+
+func createExternalServiceEndpoint(
+	outbound core_xds.EndpointMap,
+	externalService *core_mesh.ExternalServiceResource,
+	mesh *core_mesh.MeshResource,
+	loader datasource.Loader,
+	zone string,
+) {
+	service := externalService.Spec.GetService()
+	externalServiceEndpoint, err := NewExternalServiceEndpoint(externalService, mesh, loader, zone)
+	if err != nil {
+		core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
+		return
+	}
+	outbound[service] = append(outbound[service], *externalServiceEndpoint)
 }
 
 func fillExternalServicesOutboundsThroughEgress(
