@@ -1,5 +1,6 @@
 ---
 name: sample1
+# --- Checking a random separation doesn't break everything
 mesh: default
 type: Dataplane
 networking:
