@@ -62,9 +62,7 @@ networking:
 			Install(YamlUniversal(meshDefaulMtlsOn)).
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
-			Install(EgressUniversal(func(zone string) (string, error) {
-				return cluster.GetKuma().GenerateZoneEgressToken("")
-			})).
+			Install(EgressUniversal(cluster.GetKuma().GenerateZoneEgressToken)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

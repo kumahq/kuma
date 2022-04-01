@@ -194,7 +194,11 @@ func zoneRelatedResource(
 		publicAddress := app.ip
 		dpYAML := resourceManifestFunc(publicAddress, kdsPort, kdsPort)
 
-		token, err := tokenProvider(uniCluster.name)
+		zone := uniCluster.name
+		if uniCluster.controlplane.mode == core.Standalone {
+			zone = ""
+		}
+		token, err := tokenProvider(zone)
 		if err != nil {
 			return err
 		}
