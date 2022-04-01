@@ -274,6 +274,35 @@ data: %s
 		})
 	})
 
+	Context("applying ProxyTemplate", func() {
+		BeforeEach(func() {
+			DeployCluster()
+		})
+
+		It("shouldn't error with gateway-proxy import", func() {
+			Expect(
+				cluster.GetKumactlOptions().KumactlApplyFromString(`
+type: ProxyTemplate
+mesh: default
+name: edge-gateway
+selectors:
+  - match:
+      kuma.io/service: edge-gateway
+conf:
+  imports:
+    - gateway-proxy
+  modifications:
+    - cluster:
+        operation: add
+        value: |
+          name: test-cluster
+          connectTimeout: 5s
+          type: STATIC
+`),
+			).To(Succeed())
+		})
+	})
+
 	Context("when a rate limit is configured", func() {
 		BeforeEach(func() {
 			DeployCluster()

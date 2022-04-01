@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -14,17 +15,10 @@ import (
 	"github.com/kumahq/kuma/pkg/util/envoy"
 )
 
-var availableProfiles map[string]bool
-var availableProfilesMsg string
+var AvailableProfiles map[string]struct{}
 
 func init() {
-	profiles := []string{}
-	availableProfiles = map[string]bool{}
-	for _, profile := range AvailableProfiles {
-		availableProfiles[profile] = true
-		profiles = append(profiles, profile)
-	}
-	availableProfilesMsg = strings.Join(profiles, ",")
+	AvailableProfiles = map[string]struct{}{}
 }
 
 func (t *ProxyTemplateResource) Validate() error {
@@ -203,7 +197,13 @@ func validateImports(imports []string) validators.ValidationError {
 			verr.AddViolationAt(validators.RootedAt("imports").Index(i), "cannot be empty")
 			continue
 		}
-		if !availableProfiles[imp] {
+		if _, ok := AvailableProfiles[imp]; !ok {
+			var profiles []string
+			for profile := range AvailableProfiles {
+				profiles = append(profiles, profile)
+			}
+			sort.StringSlice(profiles).Sort()
+			availableProfilesMsg := strings.Join(profiles, ",")
 			verr.AddViolationAt(validators.RootedAt("imports").Index(i), fmt.Sprintf("profile not found. Available profiles: %s", availableProfilesMsg))
 		}
 	}
