@@ -13,7 +13,6 @@ Management tool for Kuma.
       --config-file string     path to the configuration file to use
   -h, --help                   help for kumactl
       --log-level string       log level: one of off|info|debug (default "off")
-  -m, --mesh string            mesh to use (default "default")
       --no-config              if set no config file and config directory will be created
 ```
 

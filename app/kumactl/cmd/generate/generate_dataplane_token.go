@@ -52,7 +52,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 				tags[k] = strings.Split(v, ",")
 			}
 			name := ctx.args.name
-			token, err := client.Generate(name, pctx.Args.Mesh, tags, ctx.args.proxyType, ctx.args.validFor)
+			token, err := client.Generate(name, pctx.CurrentMesh(), tags, ctx.args.proxyType, ctx.args.validFor)
 			if err != nil {
 				return errors.Wrap(err, "failed to generate a dataplane token")
 			}
@@ -61,6 +61,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 		},
 	}
 	cmd.Flags().StringVar(&ctx.args.name, "name", "", "name of the Dataplane")
+	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.Flags().StringVar(&ctx.args.proxyType, "type", "", `type of the Dataplane ("dataplane", "ingress")`)
 	_ = cmd.Flags().MarkDeprecated("type", "please use --proxy-type instead")
 	cmd.Flags().StringVar(&ctx.args.proxyType, "proxy-type", "", `type of the Dataplane ("dataplane", "ingress")`)
