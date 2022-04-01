@@ -32,6 +32,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.service.name | string | `nil` | Optionally override of the Kuma Control Plane Service's name |
 | controlPlane.service.type | string | `"ClusterIP"` | Service type of the Kuma Control Plane |
 | controlPlane.service.annotations | object | `{}` | Additional annotations to put on the Kuma Control Plane |
+| controlPlane.ingress.enabled | bool | `false` | Install Kuma Control Plane with K8s Ingress resource |
 | controlPlane.globalZoneSyncService | object | `{"annotations":{},"loadBalancerIP":null,"port":5685,"type":"LoadBalancer"}` | URL of Global Kuma CP |
 | controlPlane.globalZoneSyncService.type | string | `"LoadBalancer"` | Service type of the Global-zone sync |
 | controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |

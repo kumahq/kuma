@@ -75,6 +75,10 @@ controlPlane:
     # -- Additional annotations to put on the Kuma Control Plane
     annotations: { }
 
+  ingress:
+    # -- Install Kuma Control Plane with K8s Ingress resource
+    enabled: false
+
   # -- URL of Global Kuma CP
   globalZoneSyncService:
     # -- Service type of the Global-zone sync
