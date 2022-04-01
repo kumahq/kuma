@@ -64,9 +64,9 @@ Show Kuma resources.
 * [kumactl get virtual-outbound](kumactl_get_virtual-outbound.md)	 - Show a single VirtualOutbound resource
 * [kumactl get virtual-outbounds](kumactl_get_virtual-outbounds.md)	 - Show VirtualOutbound
 * [kumactl get zone](kumactl_get_zone.md)	 - Show a single Zone resource
+* [kumactl get zone-egress](kumactl_get_zone-egress.md)	 - Show a single ZoneEgress resource
+* [kumactl get zone-egresses](kumactl_get_zone-egresses.md)	 - Show ZoneEgress
 * [kumactl get zone-ingress](kumactl_get_zone-ingress.md)	 - Show a single ZoneIngress resource
 * [kumactl get zone-ingresses](kumactl_get_zone-ingresses.md)	 - Show ZoneIngress
-* [kumactl get zoneegress](kumactl_get_zoneegress.md)	 - Show a single ZoneEgress resource
-* [kumactl get zoneegresses](kumactl_get_zoneegresses.md)	 - Show ZoneEgress
 * [kumactl get zones](kumactl_get_zones.md)	 - Show Zone
 

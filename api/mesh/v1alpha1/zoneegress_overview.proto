@@ -5,8 +5,8 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/options.proto";
-import "mesh/v1alpha1/zoneegress.proto";
-import "mesh/v1alpha1/zoneegressinsight.proto";
+import "mesh/v1alpha1/zone_egress.proto";
+import "mesh/v1alpha1/zone_egress_insight.proto";
 
 // ZoneEgressOverview defines the projected state of a ZoneEgress.
 message ZoneEgressOverview {

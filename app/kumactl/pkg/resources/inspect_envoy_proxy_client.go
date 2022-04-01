@@ -56,9 +56,12 @@ func (h *httpInspectEnvoyProxyClient) buildURL(rk core_model.ResourceKey) (*url.
 		prefix = fmt.Sprintf("/meshes/%s", rk.Mesh)
 	}
 	plural := h.resDesc.WsPath
-	// todo(lobkovilya): rename mesh.ZoneIngressResourceTypeDescriptor.WsPath to "zoneingresses" and use it here
+	// todo(lukidzi): decide on specific path format and adjust all urls
 	if h.resDesc.Name == mesh.ZoneIngressType {
 		plural = "zoneingresses"
+	}
+	if h.resDesc.Name == mesh.ZoneEgressType {
+		plural = "zoneegresses"
 	}
 	return url.Parse(fmt.Sprintf("%s/%s/%s/xds", prefix, plural, rk.Name))
 }

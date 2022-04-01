@@ -83,7 +83,7 @@ var _ = Describe("kumactl get zoneegresses", func() {
 			func(given testCase) {
 				// when
 				Expect(
-					ExecuteRootCommand(rootCmd, "zoneegresses", given.outputFormat, given.pagination),
+					ExecuteRootCommand(rootCmd, "zone-egresses", given.outputFormat, given.pagination),
 				).To(Succeed())
 
 				// then
@@ -91,28 +91,28 @@ var _ = Describe("kumactl get zoneegresses", func() {
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
-				goldenFile:   "get-zoneegresses.golden.txt",
+				goldenFile:   "get-zone-egresses.golden.txt",
 				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
-				goldenFile:   "get-zoneegresses.golden.txt",
+				goldenFile:   "get-zone-egresses.golden.txt",
 				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support pagination", testCase{
 				outputFormat: "-otable",
-				goldenFile:   "get-zoneegresses.pagination.golden.txt",
+				goldenFile:   "get-zone-egresses.pagination.golden.txt",
 				pagination:   "--size=1",
 				matcher:      matchers.MatchGoldenEqual,
 			}),
 			Entry("should support JSON output", testCase{
 				outputFormat: "-ojson",
-				goldenFile:   "get-zoneegresses.golden.json",
+				goldenFile:   "get-zone-egresses.golden.json",
 				matcher:      matchers.MatchGoldenJSON,
 			}),
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
-				goldenFile:   "get-zoneegresses.golden.yaml",
+				goldenFile:   "get-zone-egresses.golden.yaml",
 				matcher:      matchers.MatchGoldenYAML,
 			}),
 		)
