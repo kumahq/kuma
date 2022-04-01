@@ -1,7 +1,6 @@
 package api_server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"sort"
@@ -142,10 +141,11 @@ func addInspectEndpoints(
 
 func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
+		ctx := request.Request.Context()
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
 
-		meshContext, err := builder.Build(context.Background(), meshName)
+		meshContext, err := builder.Build(ctx, meshName)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not build MeshContext")
 			return
@@ -179,17 +179,18 @@ func inspectGatewayDataplanes(
 	rm manager.ReadOnlyResourceManager,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
+		ctx := request.Request.Context()
 		meshName := request.PathParameter("mesh")
 		gatewayName := request.PathParameter("name")
 
-		meshContext, err := builder.Build(context.Background(), meshName)
+		meshContext, err := builder.Build(ctx, meshName)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not build mesh context")
 			return
 		}
 
 		meshGateway := core_mesh.NewMeshGatewayResource()
-		if err := rm.Get(context.Background(), meshGateway, store.GetByKey(gatewayName, meshName)); err != nil {
+		if err := rm.Get(ctx, meshGateway, store.GetByKey(gatewayName, meshName)); err != nil {
 			rest_errors.HandleError(response, err, "Could not find MeshGateway")
 			return
 		}
@@ -224,10 +225,11 @@ func inspectPolicies(
 	cfg *kuma_cp.Config,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
+		ctx := request.Request.Context()
 		meshName := request.PathParameter("mesh")
 		policyName := request.PathParameter("name")
 
-		meshContext, err := builder.Build(context.Background(), meshName)
+		meshContext, err := builder.Build(ctx, meshName)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not list Dataplanes")
 			return
@@ -287,10 +289,9 @@ func inspectDataplaneXDS(
 	defaultAdminPort uint32,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
+		ctx := request.Request.Context()
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
-
-		ctx := request.Request.Context()
 
 		if err := access.ValidateViewConfigDump(user.FromCtx(ctx)); err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
@@ -298,7 +299,7 @@ func inspectDataplaneXDS(
 		}
 
 		dp := core_mesh.NewDataplaneResource()
-		if err := rm.Get(context.Background(), dp, store.GetByKey(dataplaneName, meshName)); err != nil {
+		if err := rm.Get(ctx, dp, store.GetByKey(dataplaneName, meshName)); err != nil {
 			rest_errors.HandleError(response, err, "Could not get dataplane resource")
 			return
 		}
@@ -324,9 +325,8 @@ func inspectZoneIngressXDS(
 	defaultAdminPort uint32,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
-		zoneIngressName := request.PathParameter("zoneingress")
-
 		ctx := request.Request.Context()
+		zoneIngressName := request.PathParameter("zoneingress")
 
 		if err := access.ValidateViewConfigDump(user.FromCtx(ctx)); err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
@@ -334,7 +334,7 @@ func inspectZoneIngressXDS(
 		}
 
 		zi := core_mesh.NewZoneIngressResource()
-		if err := rm.Get(context.Background(), zi, store.GetByKey(zoneIngressName, core_model.NoMesh)); err != nil {
+		if err := rm.Get(ctx, zi, store.GetByKey(zoneIngressName, core_model.NoMesh)); err != nil {
 			rest_errors.HandleError(response, err, "Could not get zone ingress resource")
 			return
 		}
@@ -365,8 +365,8 @@ func inspectZoneEgressXDS(
 	defaultAdminPort uint32,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
-		name := request.PathParameter("zoneegress")
 		ctx := request.Request.Context()
+		name := request.PathParameter("zoneegress")
 
 		if err := access.ValidateViewConfigDump(user.FromCtx(ctx)); err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
@@ -374,7 +374,7 @@ func inspectZoneEgressXDS(
 		}
 
 		ze := core_mesh.NewZoneEgressResource()
-		if err := rm.Get(context.Background(), ze, store.GetByKey(name, core_model.NoMesh)); err != nil {
+		if err := rm.Get(ctx, ze, store.GetByKey(name, core_model.NoMesh)); err != nil {
 			rest_errors.HandleError(response, err, "Could not get zone egress resource")
 			return
 		}
