@@ -92,7 +92,7 @@ func GatewayAPI() {
 		return ip
 	}
 
-	Context("HTTP Gateway", func() {
+	Context("HTTP Gateway", Ordered, func() {
 		gateway := `
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: Gateway
@@ -108,9 +108,10 @@ spec:
 
 		var address string
 
-		BeforeEach(func() {
-			err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "gateway", "--all")
-			Expect(err).ToNot(HaveOccurred())
+		BeforeAll(func() {
+			E2EDeferCleanup(func() error {
+				return k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(TestNamespace), "delete", "gateway", "kuma")
+			})
 			Expect(YamlK8s(gateway)(cluster)).To(Succeed())
 			address = net.JoinHostPort(GatewayIP(), "8080")
 		})
@@ -215,7 +216,7 @@ spec:
 		})
 	})
 
-	PContext("HTTPS Gateway", func() {
+	Context("HTTPS Gateway", Ordered, func() {
 		secret := `
 apiVersion: v1
 kind: Secret
@@ -242,16 +243,23 @@ spec:
     protocol: HTTPS
     tls:
       certificateRefs:
+      - name: secret-tls
+  - name: proxy-wildcard
+    port: 8091
+    protocol: HTTPS
+    tls:
+      certificateRefs:
       - name: secret-tls`
 
-		var address string
+		var ip string
 
-		BeforeEach(func() {
-			err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "gateway", "--all")
-			Expect(err).ToNot(HaveOccurred())
+		BeforeAll(func() {
+			E2EDeferCleanup(func() error {
+				return k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(TestNamespace), "delete", "gateway", "kuma")
+			})
 			Expect(YamlK8s(secret)(cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(cluster)).To(Succeed())
-			address = net.JoinHostPort(GatewayIP(), "8090")
+			ip = GatewayIP()
 		})
 
 		It("should route the traffic using TLS", func() {
@@ -281,7 +289,13 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				resp, err := client.CollectResponseDirectly("https://"+address, client.WithHeader("host", "test-server-1.com"))
+				resp, err := client.CollectResponseDirectly("https://"+net.JoinHostPort(ip, "8090"), client.WithHeader("host", "test-server-1.com"))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("test-server-1"))
+			}, "30s", "1s").Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectResponseDirectly("https://" + net.JoinHostPort(ip, "8091"))
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(resp.Instance).To(Equal("test-server-1"))
 			}, "30s", "1s").Should(Succeed())

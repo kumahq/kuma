@@ -105,6 +105,22 @@ func NewPolicyInspectSidecarEntry(key ResourceKeyEntry) PolicyInspectSidecarEntr
 	}
 }
 
+type GatewayDataplanesInspectEntry struct {
+	DataplaneKey ResourceKeyEntry `json:"dataplane"`
+}
+
+type GatewayDataplanesInspectEntryList struct {
+	Total uint32                          `json:"total"`
+	Items []GatewayDataplanesInspectEntry `json:"items"`
+}
+
+func NewGatewayDataplanesInspectResult() *GatewayDataplanesInspectEntryList {
+	return &GatewayDataplanesInspectEntryList{
+		Total: 0,
+		Items: []GatewayDataplanesInspectEntry{},
+	}
+}
+
 type PolicyInspectEntryList struct {
 	Total uint32               `json:"total"`
 	Items []PolicyInspectEntry `json:"items"`

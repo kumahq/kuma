@@ -31,6 +31,8 @@ spec:
       name: readiness-port
     - containerPort: 8080
       name: liveness-port
+    - containerPort: 8081
+      name: startup-port
     readinessProbe:
       httpGet:
         path: /3001/metrics
@@ -38,6 +40,12 @@ spec:
       initialDelaySeconds: 3
       periodSeconds: 3
     resources: {}
+    startupProbe:
+      httpGet:
+        path: /8081/startup
+        port: 9000
+      initialDelaySeconds: 3
+      periodSeconds: 3
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf

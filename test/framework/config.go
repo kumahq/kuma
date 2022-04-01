@@ -46,6 +46,7 @@ type E2eConfig struct {
 	DefaultClusterStartupTimeout  time.Duration     `yaml:"defaultClusterStartupTimeout,omitempty" envconfig:"KUMA_DEFAULT_TIMEOUT"`
 	KumactlBin                    string            `yaml:"kumactlBin,omitempty" envconfig:"KUMACTLBIN"`
 	ZoneEgressApp                 string            `yaml:"zoneEgressApp,omitempty" envconfig:"KUMA_ZONE_EGRESS_APP"`
+	ZoneIngressApp                string            `yaml:"zoneIngressApp,omitempty" envconfig:"KUMA_ZONE_INGRESS_APP"`
 	Arch                          string            `yaml:"arch,omitempty" envconfig:"ARCH"`
 
 	SuiteConfig SuiteConfig `yaml:"suites,omitempty"`
@@ -177,7 +178,8 @@ var defaultConf = E2eConfig{
 	DefaultClusterStartupRetries: 30,
 	DefaultClusterStartupTimeout: time.Second * 3,
 
-	ZoneEgressApp: "kuma-egress",
+	ZoneEgressApp:  "kuma-egress",
+	ZoneIngressApp: "kuma-ingress",
 }
 
 func init() {

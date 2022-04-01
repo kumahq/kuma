@@ -26,6 +26,7 @@ type ControlPlaneContext struct {
 	AdminProxyKeyPair *tls.KeyPair
 	CLACache          xds.CLACache
 	Secrets           secrets.Secrets
+	Zone              string
 }
 
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
@@ -74,7 +75,11 @@ func (mc *MeshContext) GetLoggingBackend(tl *core_mesh.TrafficLogResource) *mesh
 	}
 }
 
-func BuildControlPlaneContext(claCache xds.CLACache, secrets secrets.Secrets) (*ControlPlaneContext, error) {
+func BuildControlPlaneContext(
+	claCache xds.CLACache,
+	secrets secrets.Secrets,
+	zone string,
+) (*ControlPlaneContext, error) {
 	adminKeyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, tls.DefaultKeyType, "localhost")
 	if err != nil {
 		return nil, err
@@ -84,5 +89,6 @@ func BuildControlPlaneContext(claCache xds.CLACache, secrets secrets.Secrets) (*
 		AdminProxyKeyPair: &adminKeyPair,
 		CLACache:          claCache,
 		Secrets:           secrets,
+		Zone:              zone,
 	}, nil
 }

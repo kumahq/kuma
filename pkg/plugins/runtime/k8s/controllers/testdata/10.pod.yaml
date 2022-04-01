@@ -21,6 +21,12 @@ spec:
           port: 19000
         initialDelaySeconds: 3
         periodSeconds: 3
+      startupProbe:
+        httpGet:
+          path: /8081/metrics
+          port: 19000
+        initialDelaySeconds: 3
+        periodSeconds: 3
 
 status:
   podIP: 192.168.0.1

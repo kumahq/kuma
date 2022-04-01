@@ -33,6 +33,12 @@ spec:
       initialDelaySeconds: 3
       periodSeconds: 3
     resources: {}
+    startupProbe:
+      httpGet:
+        path: /ready
+        port: 8080
+      initialDelaySeconds: 3
+      periodSeconds: 3
     volumeMounts:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf

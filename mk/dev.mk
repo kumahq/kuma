@@ -10,6 +10,7 @@ GOOGLEAPIS_LATEST_VERSION := master
 KUMADOC_VERSION := v0.1.7
 DATAPLANE_API_LATEST_VERSION := main
 SHELLCHECK_VERSION := v0.8.0
+YQ_VERSION := v4.24.2
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_KUBECTL_VERSION ?= v1.18.14
@@ -78,7 +79,8 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/helm3 \
 	dev/install/helm-docs \
 	dev/install/data-plane-api \
-	dev/install/shellcheck
+	dev/install/shellcheck \
+	dev/install/yq
 
 .PHONY: dev/install/protoc-gen-kumadoc
 dev/install/protoc-gen-kumadoc:
@@ -229,6 +231,10 @@ dev/install/shellcheck:
 		&& rmdir shellcheck-$(SHELLCHECK_VERSION) \
 		&& set +x \
 		&& echo "Shellcheck $(SHELLCHECK_VERSION) has been installed at $(SHELLCHECK_PATH)" ; fi
+
+.PHONY: dev/install/yq
+dev/install/yq:
+	go install github.com/mikefarah/yq/v4@$(YQ_VERSION)
 
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3

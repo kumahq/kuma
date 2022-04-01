@@ -32,6 +32,7 @@ Inspect Kuma resources.
 * [kumactl inspect fault-injection](kumactl_inspect_fault-injection.md)	 - Inspect FaultInjection
 * [kumactl inspect healthcheck](kumactl_inspect_healthcheck.md)	 - Inspect HealthCheck
 * [kumactl inspect meshes](kumactl_inspect_meshes.md)	 - Inspect Meshes
+* [kumactl inspect meshgateway](kumactl_inspect_meshgateway.md)	 - Inspect MeshGateway
 * [kumactl inspect proxytemplate](kumactl_inspect_proxytemplate.md)	 - Inspect ProxyTemplate
 * [kumactl inspect rate-limit](kumactl_inspect_rate-limit.md)	 - Inspect RateLimit
 * [kumactl inspect retry](kumactl_inspect_retry.md)	 - Inspect Retry

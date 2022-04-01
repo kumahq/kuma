@@ -229,6 +229,12 @@ conf:
       - secret: example-kuma-io-certificate
     tags:
       hostname: example.kuma.io
+  - port: 8081
+    protocol: HTTPS
+    tls:
+      mode: TERMINATE
+      certificates:
+      - secret: example-kuma-io-certificate
 `),
 			).To(Succeed())
 
@@ -253,9 +259,18 @@ data: %s
 		})
 
 		It("should proxy simple HTTPS requests", func() {
-			ProxySecureRequests(cluster, "universal",
+			ProxySecureRequests(
+				cluster,
+				"universal",
 				net.JoinHostPort("example.kuma.io", GatewayPort),
-				client.Resolve("example.kuma.io", 8080, GatewayAddress("gateway-proxy")))
+				client.Resolve("example.kuma.io", 8080, GatewayAddress("gateway-proxy")),
+			)
+
+			ProxySecureRequests(
+				cluster,
+				"universal",
+				net.JoinHostPort(GatewayAddress("gateway-proxy"), "8081"),
+			)
 		})
 	})
 

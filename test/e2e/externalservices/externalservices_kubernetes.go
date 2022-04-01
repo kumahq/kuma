@@ -79,7 +79,10 @@ spec:
 
 		cluster = clusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, WithEgress(true))).
+			Install(Kuma(core.Standalone,
+				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
+			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(externalservice.Install(externalservice.HttpServer, []string{})).

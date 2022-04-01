@@ -31,23 +31,24 @@ type kumaDeploymentOptions struct {
 	verbose *bool
 
 	// cp specific
-	ctlOpts                    map[string]string
-	globalAddress              string
-	installationMode           InstallationMode
-	skipDefaultMesh            bool
-	helmReleaseName            string
-	helmChartPath              *string
-	helmChartVersion           string
-	helmOpts                   map[string]string
-	noHelmOpts                 []string
-	env                        map[string]string
-	zoneIngress                bool
-	zoneEgress                 bool
-	zoneEgressEnvoyAdminTunnel bool
-	cni                        bool
-	cpReplicas                 int
-	hdsDisabled                bool
-	runPostgresMigration       bool
+	ctlOpts                     map[string]string
+	globalAddress               string
+	installationMode            InstallationMode
+	skipDefaultMesh             bool
+	helmReleaseName             string
+	helmChartPath               *string
+	helmChartVersion            string
+	helmOpts                    map[string]string
+	noHelmOpts                  []string
+	env                         map[string]string
+	zoneIngress                 bool
+	zoneIngressEnvoyAdminTunnel bool
+	zoneEgress                  bool
+	zoneEgressEnvoyAdminTunnel  bool
+	cni                         bool
+	cpReplicas                  int
+	hdsDisabled                 bool
+	runPostgresMigration        bool
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -257,16 +258,27 @@ func WithEnvs(entries map[string]string) KumaDeploymentOption {
 	})
 }
 
+func WithIngressEnvoyAdminTunnel() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.zoneIngressEnvoyAdminTunnel = true
+	})
+}
+
 func WithIngress() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.zoneIngress = true
 	})
 }
 
-func WithEgress(createEnvoyAdminTunnel bool) KumaDeploymentOption {
+func WithEgressEnvoyAdminTunnel() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.zoneEgressEnvoyAdminTunnel = true
+	})
+}
+
+func WithEgress() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.zoneEgress = true
-		o.zoneEgressEnvoyAdminTunnel = createEnvoyAdminTunnel
 	})
 }
 
@@ -457,7 +469,7 @@ type Cluster interface {
 	WithTimeout(timeout time.Duration) Cluster
 	WithRetries(retries int) Cluster
 	GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel
-	GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error)
+	GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel
 	Verbose() bool
 
 	// K8s
