@@ -138,6 +138,13 @@ func addInspectEndpoints(
 			Param(ws.PathParameter("name", "resource name").DataType("string")).
 			Returns(200, "OK", nil),
 	)
+	ws.Route(
+		ws.GET("/meshes/{mesh}/meshgatewayroutes/{name}/dataplanes").To(inspectGatewayRouteDataplanes(cfg, builder, rm)).
+			Doc("inspect MeshGatewayRoute").
+			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
+			Param(ws.PathParameter("name", "resource name").DataType("string")).
+			Returns(200, "OK", nil),
+	)
 }
 
 func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
@@ -207,6 +214,71 @@ func inspectGatewayDataplanes(
 					},
 				)
 			}
+		}
+
+		result.Total = uint32(len(result.Items))
+
+		if err := response.WriteAsJson(result); err != nil {
+			rest_errors.HandleError(response, err, "Could not write response")
+			return
+		}
+	}
+}
+
+func inspectGatewayRouteDataplanes(
+	cfg *kuma_cp.Config,
+	builder xds_context.MeshContextBuilder,
+	rm manager.ReadOnlyResourceManager,
+) restful.RouteFunction {
+	return func(request *restful.Request, response *restful.Response) {
+		ctx := request.Request.Context()
+		meshName := request.PathParameter("mesh")
+		gatewayRouteName := request.PathParameter("name")
+
+		meshContext, err := builder.Build(ctx, meshName)
+		if err != nil {
+			rest_errors.HandleError(response, err, "Could not build mesh context")
+			return
+		}
+
+		gatewayRoute := core_mesh.NewMeshGatewayRouteResource()
+		if err := rm.Get(ctx, gatewayRoute, store.GetByKey(gatewayRouteName, meshName)); err != nil {
+			rest_errors.HandleError(response, err, "Could not find MeshGatewayRoute")
+			return
+		}
+
+		dataplanes := map[core_model.ResourceKey]struct{}{}
+
+		for _, dp := range meshContext.Resources.Dataplanes().Items {
+			if !dp.Spec.IsBuiltinGateway() {
+				continue
+			}
+			key := core_model.MetaToResourceKey(dp.GetMeta())
+			_, listeners, _, err := getMatchedPolicies(cfg, meshContext, key)
+			if err != nil {
+				rest_errors.HandleError(response, err, "Could not generate listener info")
+				return
+			}
+			for _, listener := range listeners {
+				for _, host := range listener.HostInfos {
+					for _, entry := range host.Entries {
+						if entry.Route != gatewayRoute.GetMeta().GetName() {
+							continue
+						}
+						dataplanes[key] = struct{}{}
+					}
+				}
+			}
+		}
+
+		result := api_server_types.NewGatewayDataplanesInspectResult()
+		for key := range dataplanes {
+			result.Items = append(
+				result.Items,
+				api_server_types.GatewayDataplanesInspectEntry{
+					DataplaneKey: api_server_types.ResourceKeyEntryFromModelKey(key),
+				},
+			)
 		}
 
 		result.Total = uint32(len(result.Items))
