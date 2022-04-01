@@ -53,26 +53,13 @@ conf:
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone)).
 			Install(YamlUniversal(faultInjection)).
+			Install(TestServerUniversal("test-server", "default", WithArgs([]string{"echo", "--instance", "universal-1"}))).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
 			Setup(universalCluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		echoServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = TestServerUniversal("test-server", "default", echoServerToken, WithArgs([]string{"echo", "--instance", "universal-1"}))(universalCluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		Expect(universalCluster.DeleteKuma()).To(Succeed())
+	E2EAfterEach(func() {
 		Expect(universalCluster.DismissCluster()).To(Succeed())
 	})
 

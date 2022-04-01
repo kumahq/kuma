@@ -57,15 +57,10 @@ networking:
 			Setup(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
 		for i := 1; i <= 6; i++ {
 			dpName := fmt.Sprintf("dp-echo-%d", i)
 			response := fmt.Sprintf("universal-%d", i)
-			err = TestServerUniversal(dpName, "default", testServerToken, WithArgs([]string{"echo", "--instance", response}))(universalCluster)
+			err = TestServerUniversal(dpName, "default", WithArgs([]string{"echo", "--instance", response}))(universalCluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		for i := 7; i <= 10; i++ {
@@ -73,15 +68,11 @@ networking:
 			Expect(err).ToNot(HaveOccurred())
 		}
 
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)
+		err = DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))(universalCluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		Expect(universalCluster.DeleteKuma()).To(Succeed())
+	E2EAfterEach(func() {
 		Expect(universalCluster.DismissCluster()).To(Succeed())
 	})
 

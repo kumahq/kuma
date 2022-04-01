@@ -41,31 +41,16 @@ var _ = E2EBeforeSuite(func() {
 		Silent)
 	Expect(err).ToNot(HaveOccurred())
 
-	// Global
 	cluster = clusters.GetCluster(kumaClusterId)
 
 	Expect(NewClusterSetup().
 		Install(Kuma(core.Standalone)).
-		Setup(cluster)).To(Succeed())
-
-	demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
-	Expect(err).ToNot(HaveOccurred())
-
-	testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
-	Expect(err).ToNot(HaveOccurred())
-
-	webToken, err := cluster.GetKuma().GenerateDpToken("default", "web")
-	Expect(err).ToNot(HaveOccurred())
-
-	Expect(YamlUniversal(rateLimitPolicy)(cluster)).To(Succeed())
-
-	Expect(NewClusterSetup().
-		Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "universal-1"}))).
-		Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
-		Install(DemoClientUniversal("web", "default", webToken, WithTransparentProxy(true))).
+		Install(YamlUniversal(rateLimitPolicy)).
+		Install(TestServerUniversal("test-server", "default", WithArgs([]string{"echo", "--instance", "universal-1"}))).
+		Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
+		Install(DemoClientUniversal("web", "default", WithTransparentProxy(true))).
 		Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer81)).
 		Setup(cluster)).To(Succeed())
-
 	E2EDeferCleanup(cluster.DismissCluster)
 })
 

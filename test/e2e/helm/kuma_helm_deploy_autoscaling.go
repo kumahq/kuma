@@ -40,13 +40,8 @@ func ControlPlaneAutoscalingWithHelmChart() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		// tear down Kuma
+	E2EAfterEach(func() {
 		Expect(cluster.DeleteKuma()).To(Succeed())
-		// tear down cluster
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 

@@ -25,37 +25,27 @@ var _ = E2EBeforeSuite(func() {
 
 	Expect(NewClusterSetup().
 		Install(Kuma(core.Standalone)).
-		Setup(universal)).To(Succeed())
-
-	testServerToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "test-server")
-	Expect(err).ToNot(HaveOccurred())
-	anotherTestServerToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "another-test-server")
-	Expect(err).ToNot(HaveOccurred())
-	demoClientToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "demo-client")
-	Expect(err).ToNot(HaveOccurred())
-
-	Expect(NewClusterSetup().
-		Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
+		Install(TestServerUniversal("dp-echo-1", defaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v1"}),
 			WithServiceVersion("v1"),
 		)).
-		Install(TestServerUniversal("dp-echo-2", defaultMesh, testServerToken,
+		Install(TestServerUniversal("dp-echo-2", defaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v2"}),
 			WithServiceVersion("v2"),
 		)).
-		Install(TestServerUniversal("dp-echo-3", defaultMesh, testServerToken,
+		Install(TestServerUniversal("dp-echo-3", defaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v3"}),
 			WithServiceVersion("v3"),
 		)).
-		Install(TestServerUniversal("dp-echo-4", defaultMesh, testServerToken,
+		Install(TestServerUniversal("dp-echo-4", defaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v4"}),
 			WithServiceVersion("v4"),
 		)).
-		Install(TestServerUniversal("dp-another-test", defaultMesh, anotherTestServerToken,
+		Install(TestServerUniversal("dp-another-test", defaultMesh,
 			WithArgs([]string{"echo", "--instance", "another-test-server"}),
 			WithServiceName("another-test-server"),
 		)).
-		Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
+		Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, WithTransparentProxy(true))).
 		Setup(universal)).To(Succeed())
 
 	E2EDeferCleanup(universal.DismissCluster)

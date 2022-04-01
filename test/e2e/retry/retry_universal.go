@@ -22,7 +22,6 @@ func RetryOnUniversal() {
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Global
 		cluster = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
@@ -30,31 +29,18 @@ func RetryOnUniversal() {
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-
 		err = cluster.GetKumactlOptions().RunKumactl("delete", "retry", "retry-all-default")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
-			Install(TestServerUniversal("test-server", "default", echoServerToken, WithArgs([]string{"echo", "--instance", "universal"}))).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", "default", WithArgs([]string{"echo", "--instance", "universal"}))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		err := cluster.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = cluster.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+	E2EAfterEach(func() {
+		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should retry on TCP connection failure", func() {

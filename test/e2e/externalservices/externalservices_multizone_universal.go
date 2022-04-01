@@ -81,9 +81,6 @@ networking:
 
 		globalCP := global.GetKuma()
 
-		demoClientToken, err := globalCP.GenerateDpToken(defaultMesh, "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
 		// Cluster 1
 		zone1 = clusters.GetCluster(Kuma4)
 
@@ -92,7 +89,7 @@ networking:
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 				WithHDS(false),
 			)).
-			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, WithTransparentProxy(true))).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -104,21 +101,15 @@ networking:
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 				WithHDS(false),
 			)).
-			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, WithTransparentProxy(true))).
 			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
 		Expect(external.DismissCluster()).To(Succeed())
-
-		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())
-
-		Expect(zone2.DeleteKuma()).To(Succeed())
 		Expect(zone2.DismissCluster()).To(Succeed())
-
-		Expect(global.DeleteKuma()).To(Succeed())
 		Expect(global.DismissCluster()).To(Succeed())
 	})
 

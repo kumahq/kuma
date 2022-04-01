@@ -37,9 +37,7 @@ networking:
 		Expect(YamlUniversal(dp)(cluster)).To(Succeed())
 
 		// when trying to spin up dataplane with same name but token bound to a different service
-		dpToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		err = TestServerUniversal("dp-01", "default", dpToken, WithServiceName("test-server"))(cluster)
+		err := TestServerUniversal("dp-01", "default", WithServiceName("test-server"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -64,9 +62,7 @@ networking:
 		Expect(YamlUniversal(dp)(cluster)).To(Succeed())
 
 		// when
-		dpToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		err = TestServerUniversal("dp-02", "default", dpToken, WithServiceName("test-server"))(cluster)
+		err := TestServerUniversal("dp-02", "default", WithServiceName("test-server"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

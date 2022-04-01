@@ -56,11 +56,6 @@ var _ = E2EBeforeSuite(func() {
 
 	globalCP := global.GetKuma()
 
-	echoServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "test-server")
-	Expect(err).ToNot(HaveOccurred())
-	demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
-	Expect(err).ToNot(HaveOccurred())
-
 	// K8s Cluster 1
 	zone1 = k8sClusters.GetCluster(Kuma1)
 	Expect(NewClusterSetup().
@@ -104,30 +99,24 @@ var _ = E2EBeforeSuite(func() {
 
 	// Universal Cluster 3
 	zone3 = universalClusters.GetCluster(Kuma3)
-	ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
-	Expect(err).ToNot(HaveOccurred())
-
 	Expect(NewClusterSetup().
 		Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-		Install(TestServerUniversal("dp-echo", nonDefaultMesh, echoServerToken,
+		Install(TestServerUniversal("dp-echo", nonDefaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v1"}),
 			WithServiceName("test-server"),
 		)).
-		Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(false))).
-		Install(IngressUniversal(ingressTokenKuma3)).
+		Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, WithTransparentProxy(true), WithBuiltinDNS(false))).
+		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 		Setup(zone3)).To(Succeed())
 
 	E2EDeferCleanup(zone3.DismissCluster)
 
 	// Universal Cluster 4
 	zone4 = universalClusters.GetCluster(Kuma4)
-	ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
-	Expect(err).ToNot(HaveOccurred())
-
 	Expect(NewClusterSetup().
 		Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-		Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-		Install(IngressUniversal(ingressTokenKuma4)).
+		Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, WithTransparentProxy(true))).
+		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 		Setup(zone4)).To(Succeed())
 
 	E2EDeferCleanup(zone4.DismissCluster)
