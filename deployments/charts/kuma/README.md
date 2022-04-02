@@ -55,6 +55,19 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.extraSecrets | list | `[]` | Additional secrets to mount into the control plane |
 | controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.webhooks.ownerReference.additionalRules | string | `""` | Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma. |
+| controlPlane.podSecurityContext | object | `{"fsGroup":2000,"runAsGroup":3000,"runAsNonRoot":true,"runAsUser":1000}` | Security context at the pod level for control plane. The values below are sensible defaults. More values can be added as needed, since the field resolves as free form. |
+| controlPlane.podSecurityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. |
+| controlPlane.podSecurityContext.runAsUser | int | `1000` | The UID to run the entrypoint of the container process. |
+| controlPlane.podSecurityContext.runAsGroup | int | `3000` | The GID to run the entrypoint of the container process.  |
+| controlPlane.podSecurityContext.fsGroup | int | `2000` | A special supplemental group that applies to all containers in a pod |
+| controlPlane.containerSecurityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["all"]},"privileged":false,"readOnlyRootFilesystem":true,"runAsGroup":3000,"runAsNonRoot":true,"runAsUser":1000}` | Security context at the container level for control plane. The values below are sensible defaults. More values can be added as needed, since the field resolves as free form. |
+| controlPlane.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Controls whether a process can gain more privileges than its parent process.  |
+| controlPlane.containerSecurityContext.capabilities | object | `{"drop":["all"]}` | The capabilities to add/drop when running containers |
+| controlPlane.containerSecurityContext.readOnlyRootFilesystem | bool | `true` | Whether this container has a read-only root filesystem.    |
+| controlPlane.containerSecurityContext.privileged | bool | `false` | Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. |
+| controlPlane.containerSecurityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. |
+| controlPlane.containerSecurityContext.runAsUser | int | `1000` | The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext. |
+| controlPlane.containerSecurityContext.runAsGroup | int | `3000` | The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext. |
 | cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |
 | cni.chained | bool | `false` | Install CNI in chained mode |
 | cni.netDir | string | `"/etc/cni/multus/net.d"` | Set the CNI install directory |
@@ -65,6 +78,19 @@ A Helm chart for the Kuma Control Plane
 | cni.image.registry | string | `"docker.io"` | CNI image registry |
 | cni.image.repository | string | `"kumahq/install-cni"` | CNI image repository |
 | cni.image.tag | string | `"0.0.9"` | CNI image tag |
+| cni.podSecurityContext | object | `{"fsGroup":2000,"runAsGroup":3000,"runAsNonRoot":true,"runAsUser":1000}` | Security context at the pod level for control plane. The values below are sensible defaults. More values can be added as needed, since the field resolves as free form. |
+| cni.podSecurityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. |
+| cni.podSecurityContext.runAsUser | int | `1000` | The UID to run the entrypoint of the container process. |
+| cni.podSecurityContext.runAsGroup | int | `3000` | The GID to run the entrypoint of the container process.  |
+| cni.podSecurityContext.fsGroup | int | `2000` | A special supplemental group that applies to all containers in a pod |
+| cni.containerSecurityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["all"]},"privileged":false,"readOnlyRootFilesystem":true,"runAsGroup":3000,"runAsNonRoot":true,"runAsUser":1000}` | Security context at the container level for control plane. The values below are sensible defaults. More values can be added as needed, since the field resolves as free form. |
+| cni.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Controls whether a process can gain more privileges than its parent process.  |
+| cni.containerSecurityContext.capabilities | object | `{"drop":["all"]}` | The capabilities to add/drop when running containers |
+| cni.containerSecurityContext.readOnlyRootFilesystem | bool | `true` | Whether this container has a read-only root filesystem.    |
+| cni.containerSecurityContext.privileged | bool | `false` | Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. |
+| cni.containerSecurityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. |
+| cni.containerSecurityContext.runAsUser | int | `1000` | The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext. |
+| cni.containerSecurityContext.runAsGroup | int | `3000` | The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext. |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
@@ -81,6 +107,19 @@ A Helm chart for the Kuma Control Plane
 | ingress.annotations | object | `{}` | Additional deployment annotation |
 | ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
 | ingress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
+| ingress.podSecurityContext | object | `{"fsGroup":2000,"runAsGroup":3000,"runAsNonRoot":true,"runAsUser":1000}` | Security context at the pod level for control plane. The values below are sensible defaults. More values can be added as needed, since the field resolves as free form. |
+| ingress.podSecurityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. |
+| ingress.podSecurityContext.runAsUser | int | `1000` | The UID to run the entrypoint of the container process. |
+| ingress.podSecurityContext.runAsGroup | int | `3000` | The GID to run the entrypoint of the container process.  |
+| ingress.podSecurityContext.fsGroup | int | `2000` | A special supplemental group that applies to all containers in a pod |
+| ingress.containerSecurityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["all"]},"privileged":false,"readOnlyRootFilesystem":true,"runAsGroup":3000,"runAsNonRoot":true,"runAsUser":1000}` | Security context at the container level for control plane. The values below are sensible defaults. More values can be added as needed, since the field resolves as free form. |
+| ingress.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Controls whether a process can gain more privileges than its parent process.  |
+| ingress.containerSecurityContext.capabilities | object | `{"drop":["all"]}` | The capabilities to add/drop when running containers |
+| ingress.containerSecurityContext.readOnlyRootFilesystem | bool | `true` | Whether this container has a read-only root filesystem.    |
+| ingress.containerSecurityContext.privileged | bool | `false` | Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. |
+| ingress.containerSecurityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. |
+| ingress.containerSecurityContext.runAsUser | int | `1000` | The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext. |
+| ingress.containerSecurityContext.runAsGroup | int | `3000` | The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext. |
 | egress.enabled | bool | `false` | If true, it deploys Egress for cross cluster communication |
 | egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | egress.replicas | int | `1` | Number of replicas of the Egress |
@@ -92,12 +131,38 @@ A Helm chart for the Kuma Control Plane
 | egress.annotations | object | `{}` | Additional deployment annotation |
 | egress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
 | egress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
+| egress.podSecurityContext | object | `{"fsGroup":2000,"runAsGroup":3000,"runAsNonRoot":true,"runAsUser":1000}` | Security context at the pod level for control plane. The values below are sensible defaults. More values can be added as needed, since the field resolves as free form. |
+| egress.podSecurityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. |
+| egress.podSecurityContext.runAsUser | int | `1000` | The UID to run the entrypoint of the container process. |
+| egress.podSecurityContext.runAsGroup | int | `3000` | The GID to run the entrypoint of the container process.  |
+| egress.podSecurityContext.fsGroup | int | `2000` | A special supplemental group that applies to all containers in a pod |
+| egress.containerSecurityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["all"]},"privileged":false,"readOnlyRootFilesystem":true,"runAsGroup":3000,"runAsNonRoot":true,"runAsUser":1000}` | Security context at the container level for control plane. The values below are sensible defaults. More values can be added as needed, since the field resolves as free form. |
+| egress.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Controls whether a process can gain more privileges than its parent process.  |
+| egress.containerSecurityContext.capabilities | object | `{"drop":["all"]}` | The capabilities to add/drop when running containers |
+| egress.containerSecurityContext.readOnlyRootFilesystem | bool | `true` | Whether this container has a read-only root filesystem.    |
+| egress.containerSecurityContext.privileged | bool | `false` | Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. |
+| egress.containerSecurityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. |
+| egress.containerSecurityContext.runAsUser | int | `1000` | The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext. |
+| egress.containerSecurityContext.runAsGroup | int | `3000` | The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext. |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"bitnami"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
 | kubectl.image.tag | string | `"1.20"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
+| hooks.podSecurityContext | object | `{"fsGroup":2000,"runAsGroup":3000,"runAsNonRoot":true,"runAsUser":1000}` | Security context at the pod level for control plane. The values below are sensible defaults. More values can be added as needed, since the field resolves as free form. |
+| hooks.podSecurityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. |
+| hooks.podSecurityContext.runAsUser | int | `1000` | The UID to run the entrypoint of the container process. |
+| hooks.podSecurityContext.runAsGroup | int | `3000` | The GID to run the entrypoint of the container process.  |
+| hooks.podSecurityContext.fsGroup | int | `2000` | A special supplemental group that applies to all containers in a pod |
+| hooks.containerSecurityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["all"]},"privileged":false,"readOnlyRootFilesystem":true,"runAsGroup":3000,"runAsNonRoot":true,"runAsUser":1000}` | Security context at the container level for control plane. The values below are sensible defaults. More values can be added as needed, since the field resolves as free form. |
+| hooks.containerSecurityContext.allowPrivilegeEscalation | bool | `false` | Controls whether a process can gain more privileges than its parent process.  |
+| hooks.containerSecurityContext.capabilities | object | `{"drop":["all"]}` | The capabilities to add/drop when running containers |
+| hooks.containerSecurityContext.readOnlyRootFilesystem | bool | `true` | Whether this container has a read-only root filesystem.    |
+| hooks.containerSecurityContext.privileged | bool | `false` | Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. |
+| hooks.containerSecurityContext.runAsNonRoot | bool | `true` | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. |
+| hooks.containerSecurityContext.runAsUser | int | `1000` | The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext. |
+| hooks.containerSecurityContext.runAsGroup | int | `3000` | The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext. |
 | experimental.meshGateway | bool | `false` | If true, it installs experimental built-in Gateway support |
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 

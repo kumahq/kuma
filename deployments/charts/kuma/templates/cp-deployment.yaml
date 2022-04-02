@@ -42,6 +42,10 @@ spec:
                   - {{ include "kuma.name" . }}-control-plane
               topologyKey: kubernetes.io/hostname
       {{- end }}
+      {{ if .Values.controlPlane.podSecurityContext }}
+      securityContext:
+      {{ toYaml .Values.controlPlane.podSecurityContext | trim | nindent 8 }}
+      {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
       {{- with .Values.controlPlane.nodeSelector }}
       nodeSelector:
@@ -51,6 +55,10 @@ spec:
         - name: control-plane
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          {{ if .Values.controlPlane.containerSecurityContext }}
+          securityContext:
+          {{ toYaml .Values.controlPlane.containerSecurityContext | trim | nindent 12 }}
+          {{- end }}
           env:
           {{-  $defaultEnv := include "kuma.defaultEnv" . | fromYaml | pluck "env" | first }}
           {{- $defaultEnvDict := dict }}

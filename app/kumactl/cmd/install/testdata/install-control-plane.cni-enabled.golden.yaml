@@ -1574,11 +1574,30 @@ spec:
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
       terminationGracePeriodSeconds: 5
+      
+      securityContext:
+      
+        fsGroup: 2000
+        runAsGroup: 3000
+        runAsNonRoot: true
+        runAsUser: 1000      
       containers:
         - name: install-cni
           image: "docker.io/kumahq/install-cni:0.0.9"
           imagePullPolicy: Always
           command: ["/install-cni.sh"]
+          
+          securityContext:
+          
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - all
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 3000
+            runAsNonRoot: true
+            runAsUser: 1000
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
@@ -1650,6 +1669,13 @@ spec:
                   values:
                   - kuma-control-plane
               topologyKey: kubernetes.io/hostname
+      
+      securityContext:
+      
+        fsGroup: 2000
+        runAsGroup: 3000
+        runAsNonRoot: true
+        runAsUser: 1000
       serviceAccountName: kuma-control-plane
       nodeSelector:
         
@@ -1659,6 +1685,18 @@ spec:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
+          
+          securityContext:
+          
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - all
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 3000
+            runAsNonRoot: true
+            runAsUser: 1000
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"

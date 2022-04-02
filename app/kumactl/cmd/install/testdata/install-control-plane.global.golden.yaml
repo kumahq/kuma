@@ -1485,6 +1485,13 @@ spec:
                   values:
                   - kuma-control-plane
               topologyKey: kubernetes.io/hostname
+      
+      securityContext:
+      
+        fsGroup: 2000
+        runAsGroup: 3000
+        runAsNonRoot: true
+        runAsUser: 1000
       serviceAccountName: kuma-control-plane
       nodeSelector:
         
@@ -1494,6 +1501,18 @@ spec:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
+          
+          securityContext:
+          
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - all
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 3000
+            runAsNonRoot: true
+            runAsUser: 1000
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"

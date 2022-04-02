@@ -47,6 +47,10 @@ spec:
                   - kuma-ingress
               topologyKey: kubernetes.io/hostname
       {{- end }}
+      {{ if .Values.ingress.podSecurityContext }}
+      securityContext:
+      {{ toYaml .Values.ingress.podSecurityContext | trim | nindent 8 }}
+      {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-ingress
       {{- with .Values.ingress.nodeSelector }}
       nodeSelector:
@@ -56,6 +60,10 @@ spec:
         - name: ingress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.dataPlane.image.pullPolicy }}
+          {{ if .Values.ingress.containerSecurityContext }}
+          securityContext:
+          {{ toYaml .Values.ingress.containerSecurityContext | trim | nindent 12 }}
+          {{- end }}
           env:
             - name: POD_NAME
               valueFrom:
