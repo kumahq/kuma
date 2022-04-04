@@ -19,14 +19,13 @@ type CaProvider interface {
 }
 
 func NewCaProvider(caManagers core_ca.Managers, metrics core_metrics.Metrics) (CaProvider, error) {
-	latencyMetrics := map[string]*prometheus.SummaryVec{}
-	for backendType := range caManagers {
-		latencyMetrics[backendType] = prometheus.NewSummaryVec(prometheus.SummaryOpts{
-			Name:       "ca_manager_get_root_cert_chain",
-			Help:       "Summary of CA manager get CA root certificate chain latencies",
-			Objectives: core_metrics.DefaultObjectives,
-		}, []string{"backend_name"})
-		if err := metrics.Register(latencyMetrics[backendType]); err != nil {
+	latencyMetrics := prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Name:       "ca_manager_get_root_cert_chain",
+		Help:       "Summary of CA manager get CA root certificate chain latencies",
+		Objectives: core_metrics.DefaultObjectives,
+	}, []string{"backend_name"})
+	if err := metrics.Register(latencyMetrics); err != nil {
+		if _, already := err.(prometheus.AlreadyRegisteredError); !already {
 			return nil, err
 		}
 	}
@@ -37,9 +36,8 @@ func NewCaProvider(caManagers core_ca.Managers, metrics core_metrics.Metrics) (C
 }
 
 type meshCaProvider struct {
-	caManagers core_ca.Managers
-	// latencyMetrics maps backend type to backend cert retrieval summary metrics
-	latencyMetrics map[string]*prometheus.SummaryVec
+	caManagers     core_ca.Managers
+	latencyMetrics *prometheus.SummaryVec
 }
 
 func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) (*core_xds.CaSecret, []string, error) {
@@ -65,7 +63,7 @@ func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) 
 	func() {
 		start := time.Now()
 		defer func() {
-			s.latencyMetrics[backend.Type].WithLabelValues(backend.GetName()).Observe(float64(time.Since(start).Milliseconds()))
+			s.latencyMetrics.WithLabelValues(backend.GetName()).Observe(float64(time.Since(start).Milliseconds()))
 		}()
 		certs, err = caManager.GetRootCert(ctx, mesh.GetMeta().GetName(), backend)
 	}()
