@@ -75,11 +75,11 @@ controlPlane:
     # -- Additional annotations to put on the Kuma Control Plane
     annotations: { }
 
-  # Kuma admin ingress settings. Useful if you want to expose the
+  # Kuma API and GUI ingress settings. Useful if you want to expose the
   # API and GUI of Kuma outside the k8s cluster.
   ingress:
     # -- Install K8s Ingress resource that exposes GUI and API
-    enabled: false
+    enabled: true
     # -- IngressClass defines which controller will implement the resource
     ingressClassName:
     # -- Ingress hostname
