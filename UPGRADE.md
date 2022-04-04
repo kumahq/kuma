@@ -12,6 +12,11 @@ does not have any particular instructions.
 
 controlPlane.resources is now on object instead of a string. Any existing value should be adapted accordingly.
 
+### Zone egress and ExternalService
+
+When an `ExternalService` has the tag `kuma.io/zone` and `ZoneEgress` is enabled then the request flow will be different after upgrading Kuma to the newest version.
+Previously, the request to the `ExternalService` goes through the `ZoneEgress` in the current zone. The newest version flow is different, and when `ExternalService` is defined in a different zone then the request will go through local `ZoneEgress` to `ZoneIngress` in zone where `ExternalService` is defined and leave the cluster through `ZoneEgress` in this cluster. To keep previous behavior, remove the `kuma.io/zone` tag from the `ExternalService` definition.
+
 ### Zone egress
 
 Previously, when mTLS was configured and `ZoneEgress` deployed, requests were routed automatically through `ZoneEgress`. Now it's required to

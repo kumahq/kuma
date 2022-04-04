@@ -27,7 +27,7 @@ func (g *InternalServicesGenerator) Generate(
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
 	destinations := buildDestinations(meshResources.TrafficRoutes)
-	services := g.buildServices(endpointMap, meshResources.Mesh.LocalityAwareExternalServicesEnabled(), zone)
+	services := g.buildServices(endpointMap, meshResources.Mesh.ZoneEgressEnabled(), zone)
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	g.addFilterChains(
@@ -124,7 +124,7 @@ func (*InternalServicesGenerator) generateCDS(
 
 func (*InternalServicesGenerator) buildServices(
 	endpointMap core_xds.EndpointMap,
-	localityAwareExternalServicesEnabled bool,
+	zoneEgressEnabled bool,
 	localZone string,
 ) map[string]bool {
 	services := map[string]bool{}
@@ -134,7 +134,7 @@ func (*InternalServicesGenerator) buildServices(
 			continue
 		}
 		internalService := !endpoints[0].IsExternalService()
-		zoneExternalService := localityAwareExternalServicesEnabled && endpoints[0].IsExternalService() && !endpoints[0].IsReachableFromZone(localZone)
+		zoneExternalService := zoneEgressEnabled && endpoints[0].IsExternalService() && !endpoints[0].IsReachableFromZone(localZone)
 		if internalService || zoneExternalService {
 			services[serviceName] = true
 		}
