@@ -474,13 +474,13 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	}
 
 	if c.opts.zoneIngress {
-		if err := c.WaitApp("kuma-ingress", Config.KumaNamespace, 1); err != nil {
+		if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
 			return err
 		}
 	}
 
 	if c.opts.zoneEgress {
-		if err := c.WaitApp("kuma-egress", Config.KumaNamespace, 1); err != nil {
+		if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
 			return err
 		}
 	}
