@@ -79,7 +79,7 @@ controlPlane:
   # API and GUI of Kuma outside the k8s cluster.
   ingress:
     # -- Install K8s Ingress resource that exposes GUI and API
-    enabled: true
+    enabled: false
     # -- IngressClass defines which controller will implement the resource
     ingressClassName:
     # -- Ingress hostname
