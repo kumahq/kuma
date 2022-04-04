@@ -46,9 +46,9 @@ func (s *meshCaProvider) Get(ctx context.Context, mesh *core_mesh.MeshResource) 
 		return nil, nil, errors.New("CA backend is nil")
 	}
 
-	var cancel context.CancelFunc
 	timeout := backend.GetRootChain().GetRequestTimeout()
 	if timeout != nil {
+		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, timeout.AsDuration())
 		defer cancel()
 	}

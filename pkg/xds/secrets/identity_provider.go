@@ -54,9 +54,9 @@ func (s *identityCertProvider) Get(ctx context.Context, requestor Identity, mesh
 		return nil, "", errors.Errorf("CA default backend in mesh %q has to be defined", mesh.GetMeta().GetName())
 	}
 
-	var cancel context.CancelFunc
 	timeout := backend.GetDpCert().GetRequestTimeout()
 	if timeout != nil {
+		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, timeout.AsDuration())
 		defer cancel()
 	}
