@@ -112,7 +112,7 @@ var _ = E2EBeforeSuite(func() {
 			WithTransparentProxy(true),
 		)).
 		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
-		Install(EgressUniversal(globalCP.GenerateZoneIngressToken)).
+		Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
 		Setup(zone3)).To(Succeed())
 
 	E2EDeferCleanup(zone3.DismissCluster)
