@@ -7,6 +7,20 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
+This is the Kuma version the chart is intended to be used with.
+*/}}
+{{- define "kuma.appVersion" -}}
+{{- .Chart.AppVersion -}}
+{{- end }}
+
+{{/*
+This is only used in the `kuma.formatImage` function below.
+*/}}
+{{- define "kuma.defaultRegistry" -}}
+docker.io/kumahq
+{{- end }}
+
+{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
@@ -57,8 +71,8 @@ Common labels
 {{- define "kuma.labels" -}}
 helm.sh/chart: {{ include "kuma.chart" . }}
 {{ include "kuma.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- if (include "kuma.appVersion" .) }}
+app.kubernetes.io/version: {{ (include "kuma.appVersion" .) | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
@@ -99,12 +113,12 @@ returns: formatted image string
 {{- if
   and
     $root.Values.global.image.tag
-    (ne $root.Values.global.image.tag $root.Chart.AppVersion)
-    (eq $root.Values.global.image.registry "docker.io/kumahq")
+    (ne $root.Values.global.image.tag (include "kuma.appVersion" $root))
+    (eq $root.Values.global.image.registry (include "kuma.defaultRegistry" .))
 -}}
-{{- fail (printf "This chart only supports Kuma version %q but global.image.tag is set to %q. Set global.image.tag to %q or skip this check by setting *.image.tag for each individual component." $root.Chart.AppVersion $root.Values.global.image.tag $root.Chart.AppVersion) -}}
+{{- fail (printf "This chart only supports Kuma version %q but global.image.tag is set to %q. Set global.image.tag to %q or skip this check by setting *.image.tag for each individual component." (include "kuma.appVersion" $root) $root.Values.global.image.tag (include "kuma.appVersion" $root)) -}}
 {{- end -}}
-{{- $defaultTag := ($root.Values.global.image.tag | default $root.Chart.AppVersion) -}}
+{{- $defaultTag := ($root.Values.global.image.tag | default (include "kuma.appVersion" $root)) -}}
 {{- $tag := ($img.tag | default $defaultTag) -}}
 {{- printf "%s/%s:%s" $registry $repo $tag -}}
 {{- end -}}
