@@ -117,7 +117,11 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithEnvoyAdminClient(envoyAdminClient)
 	builder.WithAPIManager(customization.NewAPIList())
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
-	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
+	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), builder.Metrics())
+	if err != nil {
+		return nil, err
+	}
+	builder.WithCAProvider(caProvider)
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 
