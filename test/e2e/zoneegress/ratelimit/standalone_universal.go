@@ -82,7 +82,9 @@ var _ = E2EBeforeSuite(func() {
 		Install(Kuma(config_core.Standalone)).
 		Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 		Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
-		Install(EgressUniversal(cluster.GetKuma().GenerateZoneEgressToken)).
+		Install(EgressUniversal(func(zone string) (string, error) {
+			return cluster.GetKuma().GenerateZoneEgressToken("")
+		})).
 		Install(YamlUniversal(meshMTLSOn("default"))).
 		Install(ExternalServerUniversal("es-test-server-v1")).
 		Install(ExternalServerUniversal("es-test-server-v2")).
