@@ -25,9 +25,7 @@ func NewCaProvider(caManagers core_ca.Managers, metrics core_metrics.Metrics) (C
 		Objectives: core_metrics.DefaultObjectives,
 	}, []string{"backend_name"})
 	if err := metrics.Register(latencyMetrics); err != nil {
-		if _, already := err.(prometheus.AlreadyRegisteredError); !already {
-			return nil, err
-		}
+		return nil, err
 	}
 	return &meshCaProvider{
 		caManagers:     caManagers,

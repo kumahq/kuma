@@ -32,11 +32,8 @@ func NewIdentityProvider(caManagers core_ca.Managers, metrics core_metrics.Metri
 		Objectives: core_metrics.DefaultObjectives,
 	}, []string{"backend_name"})
 	if err := metrics.Register(latencyMetrics); err != nil {
-		if _, already := err.(prometheus.AlreadyRegisteredError); !already {
-			return nil, err
-		}
+		return nil, err
 	}
-
 	return &identityCertProvider{
 		caManagers:     caManagers,
 		latencyMetrics: latencyMetrics,
