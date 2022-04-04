@@ -50,28 +50,18 @@ conf:
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone)).
 			Install(YamlUniversal(healthCheck("foo", "bar"))).
+			Install(DemoClientUniversal("dp-demo-client", "default",
+				WithTransparentProxy(true)),
+			).
+			Install(TestServerUniversal("test-server", "default",
+				WithArgs([]string{"health-check", "tcp"}),
+				WithProtocol("tcp")),
+			).
 			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "dp-demo-client")
-		Expect(err).ToNot(HaveOccurred())
-		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken,
-			WithTransparentProxy(true))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-		err = TestServerUniversal("test-server", "default", testServerToken,
-			WithArgs([]string{"health-check", "tcp"}),
-			WithProtocol("tcp"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		Expect(cluster.DeleteKuma()).To(Succeed())
+	E2EAfterEach(func() {
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 

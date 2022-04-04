@@ -16,28 +16,17 @@ func ServiceProbes() {
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone)).
+			Install(TestServerUniversal("test-server", "default",
+				WithArgs([]string{"echo", "--instance", "universal-1"}),
+				ProxyOnly(),
+				ServiceProbe()),
+			).
+			Install(DemoClientUniversal("dp-demo-client", "default", ServiceProbe())).
 			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "dp-demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = TestServerUniversal("test-server", "default", echoServerToken,
-			WithArgs([]string{"echo", "--instance", "universal-1"}),
-			ProxyOnly(),
-			ServiceProbe())(cluster)
-		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken, ServiceProbe())(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		Expect(cluster.DeleteKuma()).To(Succeed())
+	E2EAfterEach(func() {
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 

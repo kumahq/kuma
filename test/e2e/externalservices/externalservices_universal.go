@@ -46,43 +46,20 @@ networking:
 	var cluster Cluster
 
 	BeforeEach(func() {
-		clusters, err := NewUniversalClusters(
-			[]string{Kuma3},
-			Silent)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Global
-		cluster = clusters.GetCluster(Kuma3)
-
-		err = NewClusterSetup().
+		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
+		err := NewClusterSetup().
 			Install(Kuma(core.Standalone)).
-			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
 			Install(externalservice.Install("http-server-80-81", externalservice.UniversalAppEchoServer, externalservice.UniversalAppEchoServer81)).
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
+			Install(YamlUniversal(meshDefaulMtlsOn)).
 			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlUniversal(meshDefaulMtlsOn)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		err := cluster.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = cluster.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+	E2EAfterEach(func() {
+		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should route to external-service", func() {

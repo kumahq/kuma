@@ -89,11 +89,7 @@ spec:
 		Expect(logs2).To(ContainSubstring("\"mode\":\"zone\""))
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-
+	E2EAfterEach(func() {
 		defer func() {
 			// restore the original namespace
 			Config.KumaNamespace = originalKumaNamespace

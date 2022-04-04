@@ -161,7 +161,7 @@ func WaitUntilJobSucceed(namespace, app string) InstallFunc {
 }
 
 func zoneRelatedResource(
-	token string,
+	tokenProvider func(zone string) (string, error),
 	appType AppMode,
 	resourceManifestFunc func(address string, port, advertisedPort int) string,
 ) func(cluster Cluster) error {
@@ -194,6 +194,15 @@ func zoneRelatedResource(
 		publicAddress := app.ip
 		dpYAML := resourceManifestFunc(publicAddress, kdsPort, kdsPort)
 
+		zone := uniCluster.name
+		if uniCluster.controlplane.mode == core.Standalone {
+			zone = ""
+		}
+		token, err := tokenProvider(zone)
+		if err != nil {
+			return err
+		}
+
 		switch appType {
 		case AppIngress:
 			return uniCluster.CreateZoneIngress(app, dpName, publicAddress, dpYAML, token, false)
@@ -205,20 +214,20 @@ func zoneRelatedResource(
 	}
 }
 
-func IngressUniversal(token string) InstallFunc {
+func IngressUniversal(tokenProvider func(zone string) (string, error)) InstallFunc {
 	manifestFunc := func(address string, port, advertisedPort int) string {
 		return fmt.Sprintf(ZoneIngress, address, port, advertisedPort)
 	}
 
-	return zoneRelatedResource(token, AppIngress, manifestFunc)
+	return zoneRelatedResource(tokenProvider, AppIngress, manifestFunc)
 }
 
-func EgressUniversal(token string) InstallFunc {
+func EgressUniversal(tokenProvider func(zone string) (string, error)) InstallFunc {
 	manifestFunc := func(_ string, port, _ int) string {
 		return fmt.Sprintf(ZoneEgress, port)
 	}
 
-	return zoneRelatedResource(token, AppEgress, manifestFunc)
+	return zoneRelatedResource(tokenProvider, AppEgress, manifestFunc)
 }
 
 func DemoClientK8s(mesh string) InstallFunc {
@@ -334,7 +343,7 @@ func DemoClientJobK8s(namespace, mesh, destination string) InstallFunc {
 	)
 }
 
-func DemoClientUniversal(name, mesh, token string, opt ...AppDeploymentOption) InstallFunc {
+func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
 		var opts appDeploymentOptions
 		opts.apply(opt...)
@@ -350,6 +359,15 @@ func DemoClientUniversal(name, mesh, token string, opt ...AppDeploymentOption) I
 			}
 		}
 
+		token := opts.token
+		var err error
+		if token == "" {
+			token, err = cluster.GetKuma().GenerateDpToken(mesh, name)
+			if err != nil {
+				return err
+			}
+		}
+
 		opt = append(opt,
 			WithName(name),
 			WithMesh(mesh),
@@ -362,7 +380,7 @@ func DemoClientUniversal(name, mesh, token string, opt ...AppDeploymentOption) I
 	}
 }
 
-func TestServerUniversal(name, mesh, token string, opt ...AppDeploymentOption) InstallFunc {
+func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
 		var opts appDeploymentOptions
 		opts.apply(opt...)
@@ -381,6 +399,14 @@ func TestServerUniversal(name, mesh, token string, opt ...AppDeploymentOption) I
 		}
 		if opts.serviceInstance == "" {
 			opts.serviceInstance = "1"
+		}
+		token := opts.token
+		var err error
+		if token == "" {
+			token, err = cluster.GetKuma().GenerateDpToken(mesh, opts.serviceName)
+			if err != nil {
+				return err
+			}
 		}
 
 		serviceProbe := ""

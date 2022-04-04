@@ -106,11 +106,7 @@ spec:
 		clientPod = &pods[0]
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-
+	E2EAfterEach(func() {
 		err := cluster.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 

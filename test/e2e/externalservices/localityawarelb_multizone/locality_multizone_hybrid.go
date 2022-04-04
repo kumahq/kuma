@@ -118,23 +118,16 @@ var _ = E2EBeforeSuite(func() {
 	// Universal Cluster 4
 	zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
 	Expect(err).ToNot(HaveOccurred())
-	egressTokenZone4, err := globalCP.GenerateZoneEgressToken(Kuma4)
-	Expect(err).ToNot(HaveOccurred())
-	ingressTokenZone4, err := globalCP.GenerateZoneIngressToken(Kuma4)
-	Expect(err).ToNot(HaveOccurred())
-	demoClientTokenZone4, err := globalCP.GenerateDpToken(defaultMesh, "zone4-demo-client")
-	Expect(err).ToNot(HaveOccurred())
 
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 		Install(DemoClientUniversal(
 			"zone4-demo-client",
 			defaultMesh,
-			demoClientTokenZone4,
 			WithTransparentProxy(true),
 		)).
-		Install(IngressUniversal(ingressTokenZone4)).
-		Install(EgressUniversal(egressTokenZone4)).
+		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
+		Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
 		Install(InstallExternalService("external-service-in-zone4")).
 		Install(InstallExternalService("external-service-in-zone1")).
 		Install(InstallExternalService("external-service-in-both-zones")).
@@ -264,12 +257,9 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 
-		demoClientTokenZone4, err := zone4.GetKuma().GenerateDpToken(mesh, "zone4-demo-client-2")
-		Expect(err).ToNot(HaveOccurred())
 		Expect(DemoClientUniversal(
 			"zone4-demo-client-2",
 			mesh,
-			demoClientTokenZone4,
 			WithTransparentProxy(true),
 		)(zone4)).To(Succeed())
 

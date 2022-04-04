@@ -58,66 +58,41 @@ name: %s
 
 		globalCP := global.GetKuma()
 
-		testServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
 		// TODO: right now these tests are deliberately run WithHDS(false)
 		// even if HDS is enabled without any ServiceProbes it still affects
 		// first 2-3 load balancer requests, it's fine but tests should be rewritten
 
 		// Cluster 1
 		zone1 = clusters.GetCluster(Kuma3)
-		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
-		Expect(err).ToNot(HaveOccurred())
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 				WithHDS(false),
 			)).
-			Install(TestServerUniversal("test-server", nonDefaultMesh, testServerToken, WithArgs([]string{"echo", "--instance", "universal1"}))).
-			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(ingressTokenKuma3)).
+			Install(TestServerUniversal("test-server", nonDefaultMesh, WithArgs([]string{"echo", "--instance", "universal1"}))).
+			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, WithTransparentProxy(true))).
+			Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 2
 		zone2 = clusters.GetCluster(Kuma4)
-		ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
-		Expect(err).ToNot(HaveOccurred())
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 				WithHDS(false),
 			)).
-			Install(TestServerUniversal("test-server", nonDefaultMesh, testServerToken, WithArgs([]string{"echo", "--instance", "universal2"}))).
-			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(ingressTokenKuma4)).
+			Install(TestServerUniversal("test-server", nonDefaultMesh, WithArgs([]string{"echo", "--instance", "universal2"}))).
+			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, WithTransparentProxy(true))).
+			Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		err := zone1.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-		err = zone1.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = zone2.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-		err = zone2.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = global.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-		err = global.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+	E2EAfterEach(func() {
+		Expect(zone1.DismissCluster()).To(Succeed())
+		Expect(zone2.DismissCluster()).To(Succeed())
+		Expect(global.DismissCluster()).To(Succeed())
 	})
 
 	It("should access service locally and remotely", func() {

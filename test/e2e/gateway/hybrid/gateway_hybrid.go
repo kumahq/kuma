@@ -62,9 +62,6 @@ var _ = E2EBeforeSuite(func() {
 
 	E2EDeferCleanup(zone1.DismissCluster)
 
-	zoneIngressToken, err := global.GetKuma().GenerateZoneIngressToken(Kuma3)
-	Expect(err).ToNot(HaveOccurred())
-
 	zone2 = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 
 	Expect(NewClusterSetup().
@@ -73,7 +70,7 @@ var _ = E2EBeforeSuite(func() {
 			WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
 		)).
 		Install(gateway.EchoServerApp("echo-server", serviceName, Kuma3)).
-		Install(IngressUniversal(zoneIngressToken)).
+		Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
 		Setup(zone2)).To(Succeed())
 	E2EDeferCleanup(zone2.DismissCluster)
 })

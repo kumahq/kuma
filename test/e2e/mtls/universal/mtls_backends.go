@@ -15,16 +15,9 @@ var _ = E2EBeforeSuite(func() {
 
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Standalone)).
+		Install(TestServerUniversal("test-server", "default", WithArgs([]string{"echo", "--instance", "echo-v1"}))).
+		Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
 		Setup(universalCluster)).To(Succeed())
-
-	testServerToken, err := universalCluster.GetKuma().GenerateDpToken("default", "test-server")
-	Expect(err).ToNot(HaveOccurred())
-	demoClientToken, err := universalCluster.GetKuma().GenerateDpToken("default", "demo-client")
-	Expect(err).ToNot(HaveOccurred())
-
-	Expect(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))(universalCluster)).To(Succeed())
-	Expect(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(universalCluster)).To(Succeed())
-
 	E2EDeferCleanup(universalCluster.DismissCluster)
 })
 

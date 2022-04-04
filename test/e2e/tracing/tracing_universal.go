@@ -46,24 +46,13 @@ selectors:
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone)).
 			Install(tracing.Install()).
+			Install(TestServerUniversal("test-server", "default", WithArgs([]string{"echo", "--instance", "universal1"}))).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
 			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "universal1"}))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
+	E2EAfterEach(func() {
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})

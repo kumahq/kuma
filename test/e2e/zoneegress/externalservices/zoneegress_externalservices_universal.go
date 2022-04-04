@@ -58,30 +58,19 @@ networking:
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		egressToken, err := cluster.GetKuma().GenerateZoneEgressToken("")
-		Expect(err).ToNot(HaveOccurred())
-
 		err = NewClusterSetup().
-			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
-			Install(EgressUniversal(egressToken)).
 			Install(YamlUniversal(meshDefaulMtlsOn)).
+			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
+			Install(EgressUniversal(func(zone string) (string, error) {
+				return cluster.GetKuma().GenerateZoneEgressToken("")
+			})).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		err := cluster.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = cluster.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+	E2EAfterEach(func() {
+		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	serviceUnreachable := func() error {

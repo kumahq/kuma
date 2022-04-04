@@ -21,30 +21,16 @@ func Universal() {
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone)).
+			Install(DemoClientUniversal("demo-client-1", "default", WithTransparentProxy(true))).
+			Install(DemoClientUniversal("demo-client-2", "default", WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", "default",
+				WithArgs([]string{"echo", "--instance", "echo-v1"})),
+			).
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
-
-		demoClientToken1, err := universal.GetKuma().GenerateDpToken("default", "demo-client-1")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(
-			DemoClientUniversal("demo-client-1", "default", demoClientToken1, WithTransparentProxy(true))(universal),
-		).To(Succeed())
-		demoClientToken2, err := universal.GetKuma().GenerateDpToken("default", "demo-client-2")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(
-			DemoClientUniversal("demo-client-2", "default", demoClientToken2, WithTransparentProxy(true))(universal),
-		).To(Succeed())
-
-		testServerToken, err := universal.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(
-			TestServerUniversal("test-server", "default", testServerToken,
-				WithArgs([]string{"echo", "--instance", "echo-v1"}))(universal),
-		).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
-		Expect(universal.DeleteKuma()).To(Succeed())
 		Expect(universal.DismissCluster()).To(Succeed())
 	})
 

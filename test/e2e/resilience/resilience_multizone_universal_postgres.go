@@ -134,9 +134,7 @@ func ResilienceMultizoneUniversalPostgres() {
 
 	It("should mark zone ingress as offline after it is killed forcefully when zone control-plane is down", func() {
 		// deploy zone-ingress and wait while it's started
-		ingressToken, err := global.GetKuma().GenerateZoneIngressToken(Kuma2)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(IngressUniversal(ingressToken)(zoneUniversal)).To(Succeed())
+		Expect(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)(zoneUniversal)).To(Succeed())
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zone-ingresses")
 		}, "30s", "1s").Should(ContainSubstring("Online"))
@@ -148,7 +146,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		Expect(kumaCP).ToNot(BeNil())
 
 		// when Zone CP is killed
-		_, _, err = zoneUniversal.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
+		_, _, err := zoneUniversal.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
 		Expect(err).ToNot(HaveOccurred())
 
 		// and zone-ingress is killed while Zone CP is down
