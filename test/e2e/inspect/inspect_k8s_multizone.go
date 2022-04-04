@@ -83,7 +83,7 @@ spec:
 			g.Expect(dataplanes).Should(ContainElement(ContainSubstring("demo-client")))
 		}, "60s", "1s").Should(Succeed())
 
-		zoneIngress = GetPod(Config.KumaNamespace, "kuma-ingress")
+		zoneIngress = GetPod(Config.KumaNamespace, Config.ZoneIngressApp)
 	})
 
 	E2EAfterEach(func() {
