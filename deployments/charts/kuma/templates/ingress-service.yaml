@@ -26,6 +26,6 @@ spec:
       nodePort: {{ .Values.ingress.service.nodePort }}
     {{- end }}
   selector:
-    app: kuma-ingress
+    app: {{ include "kuma.name" . }}-ingress
   {{- include "kuma.selectorLabels" . | nindent 4 }}
 {{- end }}
