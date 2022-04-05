@@ -2,6 +2,7 @@ package localityawarelb_multizone
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -39,8 +40,8 @@ tags:
   kuma.io/service: external-service-in-both-zones
   kuma.io/protocol: http
 networking:
-  address: %s:8080
-`, mesh, ip)
+  address: %s
+`, mesh, net.JoinHostPort(ip, "8080"))
 }
 
 func zoneExternalService(mesh string, ip string, name string, zone string) string {
@@ -53,8 +54,8 @@ tags:
   kuma.io/protocol: http
   kuma.io/zone: %s
 networking:
-  address: %s:8080
-`, mesh, name, name, zone, ip)
+  address: %s
+`, mesh, name, name, zone, net.JoinHostPort(ip, "8080"))
 }
 
 const defaultMesh = "default"
