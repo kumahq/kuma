@@ -10,7 +10,7 @@ Gateway:
 * use MeshGatewayInstance name for generated objects [4097](https://github.com/kumahq/kuma/pull/4097) @michaelbeaumont
 
 Inspect api:
-* add gateways to policy inspect [4104](https://github.com/kumahq/kuma/pull/4104) [4092](https://github.com/kumahq/kuma/pull/4092) [4088](https://github.com/kumahq/kuma/pull/4088) [4077](https://github.com/kumahq/kuma/pull/4077) [4064](https://github.com/kumahq/kuma/pull/4064) [4065](https://github.com/kumahq/kuma/pull/4065) [3973](https://github.com/kumahq/kuma/pull/3973) [3966](https://github.com/kumahq/kuma/pull/3966) [3972](https://github.com/kumahq/kuma/pull/3972) [3916](https://github.com/kumahq/kuma/pull/3916) @michaelbeaumont
+* add gateways to policy inspect [4125](https://github.com/kumahq/kuma/pull/4125) [4104](https://github.com/kumahq/kuma/pull/4104) [4092](https://github.com/kumahq/kuma/pull/4092) [4088](https://github.com/kumahq/kuma/pull/4088) [4077](https://github.com/kumahq/kuma/pull/4077) [4064](https://github.com/kumahq/kuma/pull/4064) [4065](https://github.com/kumahq/kuma/pull/4065) [3973](https://github.com/kumahq/kuma/pull/3973) [3966](https://github.com/kumahq/kuma/pull/3966) @michaelbeaumont
 
 ZoneEgress:
 * Make zoneegress available in standalone mode [4100](https://github.com/kumahq/kuma/pull/4100) @lahabana
@@ -24,12 +24,16 @@ Helm:
 * add resource limits option for control plane deployment [4049](https://github.com/kumahq/kuma/pull/4049) @gdasson
 * fail if global.image.tag and appVersion incompatible [4085](https://github.com/kumahq/kuma/pull/4085) @michaelbeaumont
 * set version to track appVersion [4083](https://github.com/kumahq/kuma/pull/4083) @michaelbeaumont
+* expose kuma-cp gui through ingress [4101](https://github.com/kumahq/kuma/pull/4101) @lukidzi
 
 Other:
 * feat(k8s): ability to set custom service account token volume [4036](https://github.com/kumahq/kuma/pull/4036) @johnharris85
 * feat(k8s): shutdown kuma-dp container for any owner kind [4079](https://github.com/kumahq/kuma/pull/4079) @lukidzi
 * feat(k8s): support startupProbes [4090](https://github.com/kumahq/kuma/pull/4090) @lahabana
 * feat(kuma-cp): add uptime, policies, gateway dps to reports [3933](https://github.com/kumahq/kuma/pull/3933) @parkanzky
+* feat(kuma-cp): add metrics and timeouts to CA interface [4089](https://github.com/kumahq/kuma/pull/4089) @parkanzky
+* feat(kumactl): add --values and --set to kumactl install control-plane [4086](https://github.com/kumahq/kuma/pull/4086) @lahabana
+* feat(transparent-proxy): add experimental tproxy iptables generation [4114](https://github.com/kumahq/kuma/pull/4114) @bartsmykla
 
 ### Dependency upgrades:
 
@@ -60,6 +64,8 @@ Other:
 * fix(gateway): ignore non TCP protocol for provided gateway [4067](https://github.com/kumahq/kuma/pull/4067) @lahabana
 * fix(gateway): mesh gateway instance service target port [4071](https://github.com/kumahq/kuma/pull/4071) @jakubdyszkiewicz
 * fix(gateway): skip creating MeshGateways without proper attachment [4011](https://github.com/kumahq/kuma/pull/4011) @jakubdyszkiewicz
+* fix(helm): add prefix to `app` label in ingress/egress deployment [4123](https://github.com/kumahq/kuma/pull/4123) @lahabana
+* fix(helm): fix other template prefix in ingress/egress [4124](https://github.com/kumahq/kuma/pull/4124) @lahabana
 * fix(k8s): reconcile serviceMaps when using mesh namespace annotation [3815](https://github.com/kumahq/kuma/pull/3815) @lahabana
 * fix(kuma-cp): avoid generating excessive envoy clusters [3984](https://github.com/kumahq/kuma/pull/3984) @lobkovilya
 * fix(kuma-cp): default policy creation [4073](https://github.com/kumahq/kuma/pull/4073) @lobkovilya
