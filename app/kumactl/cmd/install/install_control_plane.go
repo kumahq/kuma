@@ -1,6 +1,7 @@
 package install
 
 import (
+	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -104,13 +105,21 @@ This command requires that the KUBECONFIG environment is set`,
 			}
 
 			if args.UseNodePort && args.ControlPlane_mode == core.Global {
-				if err := strvals.ParseInto("controlPlane.globalZoneSyncService.type=NodePort", vals); err != nil {
+				v := "controlPlane.globalZoneSyncService.type=NodePort"
+				if ctx.HELMValuesPrefix != "" {
+					v = fmt.Sprintf("%s.%s", ctx.HELMValuesPrefix, v)
+				}
+				if err := strvals.ParseInto(v, vals); err != nil {
 					return errors.Wrap(err, "Failed using NodePort")
 				}
 			}
 
 			if args.IngressUseNodePort {
-				if err := strvals.ParseInto("ingress.service.type=NodePort", vals); err != nil {
+				v := "ingress.service.type=NodePort"
+				if ctx.HELMValuesPrefix != "" {
+					v = fmt.Sprintf("%s.%s", ctx.HELMValuesPrefix, v)
+				}
+				if err := strvals.ParseInto(v, vals); err != nil {
 					return errors.Wrap(err, "Failed using NodePort for ingress")
 				}
 			}
