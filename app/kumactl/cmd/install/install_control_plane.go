@@ -1,10 +1,13 @@
 package install
 
 import (
-	"net/url"
+	"io/ioutil"
+	"strings"
 
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"helm.sh/helm/v3/pkg/strvals"
 	"k8s.io/client-go/rest"
 
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
@@ -40,29 +43,76 @@ func (cv *componentVersion) Type() string {
 
 func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Command {
 	args := ctx.Args
-	useNodePort := false
-	ingressUseNodePort := false
 	cmd := &cobra.Command{
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
 		Long: `Install Kuma Control Plane on Kubernetes in its own namespace.
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := validateArgs(args); err != nil {
-				return err
-			}
-
 			if args.ExperimentalMeshGateway {
 				register.RegisterGatewayTypes()
 				mesh_k8s.RegisterK8SGatewayTypes()
 			}
 
-			if useNodePort && args.ControlPlane_mode == core.Global {
-				args.ControlPlane_globalZoneSyncService_type = "NodePort"
+			templateFiles, err := ctx.InstallCpTemplateFiles(&args)
+			if err != nil {
+				return errors.Wrap(err, "Failed to read template files")
+			}
+			if args.DumpValues {
+				fList := templateFiles.Filter(func(file data.File) bool {
+					return file.FullPath == "values.yaml"
+				})
+				if len(fList) != 1 {
+					return errors.New("More than one file 'values.yaml'")
+				}
+				_, err = cmd.OutOrStdout().Write(fList[0].Data)
+				return err
 			}
 
-			if ingressUseNodePort {
-				args.Ingress_service_type = "NodePort"
+			// Inline parameters
+			vals := generateOverrideValues(args, ctx.HELMValuesPrefix)
+
+			// User specified a values files via -f/--values
+			for _, filePath := range args.ValueFiles {
+				currentMap := map[string]interface{}{}
+
+				var bytes []byte
+				if strings.TrimSpace(filePath) == "-" {
+					bytes, err = ioutil.ReadAll(cmd.InOrStdin())
+				} else {
+					bytes, err = ioutil.ReadFile(filePath)
+				}
+				if err != nil {
+					return err
+				}
+
+				if err := yaml.Unmarshal(bytes, &currentMap); err != nil {
+					return errors.Wrapf(err, "failed to parse %s", filePath)
+				}
+				// Merge with the previous map
+				vals = mergeMaps(vals, currentMap)
+			}
+
+			// User specified a value via --set
+			for _, value := range args.Values {
+				if err := strvals.ParseInto(value, vals); err != nil {
+					return errors.Wrap(err, "failed parsing --set data")
+				}
+			}
+			if err != nil {
+				return errors.Wrap(err, "Failed to evaluate helm values")
+			}
+
+			if args.UseNodePort && args.ControlPlane_mode == core.Global {
+				if err := strvals.ParseInto("controlPlane.globalZoneSyncService.type=NodePort", vals); err != nil {
+					return errors.Wrap(err, "Failed using NodePort")
+				}
+			}
+
+			if args.IngressUseNodePort {
+				if err := strvals.ParseInto("ingress.service.type=NodePort", vals); err != nil {
+					return errors.Wrap(err, "Failed using NodePort for ingress")
+				}
 			}
 
 			var kubeClientConfig *rest.Config
@@ -73,13 +123,7 @@ This command requires that the KUBECONFIG environment is set`,
 					return errors.Wrap(err, "could not detect Kubernetes configuration")
 				}
 			}
-
-			templateFiles, err := ctx.InstallCpTemplateFiles(&args)
-			if err != nil {
-				return errors.Wrap(err, "Failed to read template files")
-			}
-
-			renderedFiles, err := renderHelmFiles(templateFiles, args, args.Namespace, ctx.HELMValuesPrefix, kubeClientConfig)
+			renderedFiles, err := renderHelmFiles(templateFiles, args.Namespace, vals, kubeClientConfig)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render helm template files")
 			}
@@ -139,10 +183,10 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringToStringVar(&args.Cni_nodeSelector, "cni-node-selector", args.Cni_nodeSelector, "node selector for CNI deployment")
 	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "zone", "global"))
 	cmd.Flags().StringVar(&args.ControlPlane_zone, "zone", args.ControlPlane_zone, "set the Kuma zone name")
-	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
+	cmd.Flags().BoolVar(&args.UseNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
 	cmd.Flags().BoolVar(&args.Ingress_enabled, "ingress-enabled", args.Ingress_enabled, "install Kuma with an Ingress deployment, using the Data Plane image")
 	cmd.Flags().StringVar(&args.Ingress_drainTime, "ingress-drain-time", args.Ingress_drainTime, "drain time for Envoy proxy")
-	cmd.Flags().BoolVar(&ingressUseNodePort, "ingress-use-node-port", false, "use NodePort instead of LoadBalancer for the Ingress Service")
+	cmd.Flags().BoolVar(&args.IngressUseNodePort, "ingress-use-node-port", false, "use NodePort instead of LoadBalancer for the Ingress Service")
 	cmd.Flags().StringToStringVar(&args.Ingress_nodeSelector, "ingress-node-selector", args.Ingress_nodeSelector, "node selector for Zone Ingress")
 	cmd.Flags().BoolVar(&args.Egress_enabled, "egress-enabled", args.Egress_enabled, "install Kuma with an Egress deployment, using the Data Plane image")
 	cmd.Flags().StringVar(&args.Egress_drainTime, "egress-drain-time", args.Egress_drainTime, "drain time for Envoy proxy")
@@ -151,34 +195,28 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringToStringVar(&args.Hooks_nodeSelector, "hooks-node-selector", args.Hooks_nodeSelector, "node selector for Helm hooks")
 	cmd.Flags().BoolVar(&args.WithoutKubernetesConnection, "without-kubernetes-connection", false, "install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades")
 	cmd.Flags().BoolVar(&args.ExperimentalMeshGateway, "experimental-meshgateway", false, "install experimental built-in MeshGateway support")
-	cmd.Flags().BoolVar(&args.ExperimentalGatewayAPI, "experimental-gatewayapi", false, "install experimental Gatewa API support")
+	cmd.Flags().BoolVar(&args.ExperimentalGatewayAPI, "experimental-gatewayapi", false, "install experimental Gateway API support")
+	cmd.Flags().StringSliceVarP(&args.ValueFiles, "values", "f", []string{}, "specify values in a YAML file or '-' for stdin. This is similar to `helm template <chart> -f ...`")
+	cmd.Flags().StringArrayVar(&args.Values, "set", []string{}, "set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2), This is similar to `helm template <chart> --set ...` to use set-file or set-string just use helm instead")
+	cmd.Flags().BoolVar(&args.DumpValues, "dump-values", false, "output all possible values for the configuration. This is similar to `helm show values <chart>")
 	return cmd
 }
 
-func validateArgs(args install_context.InstallControlPlaneArgs) error {
-	if err := core.ValidateCpMode(args.ControlPlane_mode); err != nil {
-		return err
+func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{})
+	for k, v := range a {
+		out[k] = v
 	}
-	if args.ControlPlane_mode == core.Zone && args.ControlPlane_zone == "" {
-		return errors.New("--zone is mandatory with `zone` mode")
-	}
-	if args.ControlPlane_mode == core.Zone && args.ControlPlane_kdsGlobalAddress == "" {
-		return errors.New("--kds-global-address is mandatory with `zone` mode")
-	}
-	if args.ControlPlane_kdsGlobalAddress != "" {
-		if args.ControlPlane_mode != core.Zone {
-			return errors.New("--kds-global-address can only be used when --mode=zone")
+	for k, v := range b {
+		if v, ok := v.(map[string]interface{}); ok {
+			if bv, ok := out[k]; ok {
+				if bv, ok := bv.(map[string]interface{}); ok {
+					out[k] = mergeMaps(bv, v)
+					continue
+				}
+			}
 		}
-		u, err := url.Parse(args.ControlPlane_kdsGlobalAddress)
-		if err != nil {
-			return errors.New("--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port")
-		}
-		if u.Scheme != "grpcs" {
-			return errors.New("--kds-global-address should start with grpcs://")
-		}
+		out[k] = v
 	}
-	if (args.ControlPlane_tls_general_secret == "") != (args.ControlPlane_tls_general_caBundle == "") {
-		return errors.New("--tls-general-secret and --tls-general-ca-bundle must be provided at the same time")
-	}
-	return nil
+	return out
 }

@@ -1,0 +1,288 @@
+global:
+  image:
+    # -- Default registry for all Kuma Images
+    registry: "docker.io/kumahq"
+    # -- The default tag for all Kuma images, which itself defaults to .Chart.AppVersion
+    tag:
+  # -- Add `imagePullSecrets` to all the service accounts used for Kuma components
+  imagePullSecrets: []
+
+# -- Whether to patch the target namespace with the system label
+patchSystemNamespace: true
+
+installCrdsOnUpgrade:
+  # -- Whether install new CRDs before upgrade (if any were introduced with the new version of Kuma)
+  enabled: true
+  # -- The `imagePullSecrets` to attach to the Service Account running CRD installation.
+  # This field will be deprecated in a future release, please use .global.imagePullSecrets
+  imagePullSecrets: []
+
+controlPlane:
+  # -- Kuma CP log level: one of off,info,debug
+  logLevel: "info"
+
+  # -- Kuma CP modes: one of standalone,zone,global
+  mode: "standalone"
+
+  # -- (string) Kuma CP zone, if running multizone
+  zone:
+
+  # -- Only used in `zone` mode
+  kdsGlobalAddress: ""
+
+  # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
+  replicas: 1
+
+  # Horizontal Pod Autoscaling configuration
+  autoscaling:
+    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
+    enabled: false
+
+    # -- The minimum CP pods to allow
+    minReplicas: 2
+    # -- The max CP pods to scale to
+    maxReplicas: 5
+
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    targetCPUUtilizationPercentage: 80
+    # -- For clusters that do support autoscaling/v2beta, use metrics
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+
+  # -- Node selector for the Kuma Control Plane pods
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+
+  # -- Affinity placement rule for the Kuma Control Plane pods
+  affinity: {}
+
+  # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
+  injectorFailurePolicy: Fail
+
+  service:
+    # -- (string) Optionally override of the Kuma Control Plane Service's name
+    name:
+
+    # -- Service type of the Kuma Control Plane
+    type: ClusterIP
+
+    # -- Additional annotations to put on the Kuma Control Plane
+    annotations: { }
+
+  # -- URL of Global Kuma CP
+  globalZoneSyncService:
+    # -- Service type of the Global-zone sync
+    type: LoadBalancer
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
+    # -- Additional annotations to put on the Global Zone Sync Service
+    annotations: { }
+    # -- Port on which Global Zone Sync Service is exposed
+    port: 5685
+
+  defaults:
+    # -- Whether to skip creating the default Mesh
+    skipMeshCreation: false
+
+  # -- Optionally override the resource spec
+  # @default -- the resources will be chosen based on the mode
+  resources:
+  #  requests:
+  #    cpu: 100m
+  #    memory: 256Mi
+
+  # TLS for various servers
+  tls:
+    general:
+      # -- Secret that contains tls.crt, tls.key [and ca.crt when no
+      # controlPlane.tls.general.caSecretName specified] for protecting
+      # Kuma in-cluster communication
+      secretName: ""
+      # -- Secret that contains ca.crt that was used to sign cert for protecting
+      # Kuma in-cluster communication (ca.crt present in this secret
+      # have precedence over the one provided in the controlPlane.tls.general.secretName)
+      caSecretName: ""
+      # -- Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
+      caBundle: ""
+    apiServer:
+      # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
+      secretName: ""
+      # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
+      clientCertsSecretName: ""
+    kdsGlobalServer:
+      # -- Secret that contains tls.crt, tls.key for protecting cross cluster communication
+      secretName: ""
+    kdsZoneClient:
+      # -- Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
+      secretName: ""
+
+  image:
+    # -- Kuma CP ImagePullPolicy
+    pullPolicy: IfNotPresent
+    # -- Kuma CP image repository
+    repository: "kuma-cp"
+    # -- Kuma CP Image tag. When not specified, the value is copied from global.tag
+    tag:
+  # -- (list of { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
+  # where `Env` is the name of the env variable,
+  # `Secret` is the name of the Secret,
+  # and `Key` is the key of the Secret value to use
+  secrets:
+
+  # -- Additional environment variables that will be passed to the control plane
+  envVars: { }
+
+  # -- Additional config maps to mount into the control plane, with optional inline values
+  extraConfigMaps: [ ]
+#    - name: extra-config
+#      mountPath: /etc/extra-config
+#      readOnly: true
+#      values:
+#        extra-config-key: |
+#          extra-config-value
+
+  # -- Additional secrets to mount into the control plane
+  extraSecrets: [ ]
+#    - name: extra-config
+#      mountPath: /etc/extra-config
+#      readOnly: true
+
+  webhooks:
+    validator:
+      # -- Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma.
+      additionalRules: ""
+    ownerReference:
+      # -- Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma.
+      additionalRules: ""
+
+cni:
+  # -- Install Kuma with CNI instead of proxy init container
+  enabled: false
+  # -- Install CNI in chained mode
+  chained: false
+  # -- Set the CNI install directory
+  netDir: /etc/cni/multus/net.d
+  # -- Set the CNI bin directory
+  binDir: /var/lib/cni/bin
+  # -- Set the CNI configuration name
+  confName: kuma-cni.conf
+  # -- CNI log level: one of off,info,debug
+  logLevel: info
+  # -- Node Selector for the CNI pods
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+
+  image:
+    # -- CNI image registry
+    registry: "docker.io"
+    # -- CNI image repository
+    repository: "kumahq/install-cni"
+    # -- CNI image tag
+    tag: "0.0.9"
+
+dataPlane:
+  image:
+    # -- The Kuma DP image repository
+    repository: "kuma-dp"
+    # -- Kuma DP ImagePullPolicy
+    pullPolicy: IfNotPresent
+    # -- Kuma DP Image Tag. When not specified, the value is copied from global.tag
+    tag:
+
+  initImage:
+    # -- The Kuma DP init image repository
+    repository: "kuma-init"
+    # -- Kuma DP init image tag When not specified, the value is copied from global.tag
+    tag:
+
+ingress:
+  # -- If true, it deploys Ingress for cross cluster communication
+  enabled: false
+  # -- Time for which old listener will still be active as draining
+  drainTime: 30s
+  # -- Number of replicas of the Ingress
+  replicas: 1
+  service:
+    # -- Service type of the Ingress
+    type: LoadBalancer
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
+    # -- Additional annotations to put on the Ingress service
+    annotations: { }
+    # -- Port on which Ingress is exposed
+    port: 10001
+    # -- Port on which service is exposed on Node for service of type NodePort
+    nodePort:
+  # -- Additional deployment annotation
+  annotations: { }
+  # -- Node Selector for the Ingress pods
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+
+  # -- Affinity placement rule for the Kuma Ingress pods
+  affinity: {}
+
+egress:
+  # -- If true, it deploys Egress for cross cluster communication
+  enabled: false
+  # -- Time for which old listener will still be active as draining
+  drainTime: 30s
+  # -- Number of replicas of the Egress
+  replicas: 1
+  service:
+    # -- Service type of the Egress
+    type: ClusterIP
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
+    # -- Additional annotations to put on the Egress service
+    annotations: { }
+    # -- Port on which Egress is exposed
+    port: 10002
+    # -- Port on which service is exposed on Node for service of type NodePort
+    nodePort:
+  # -- Additional deployment annotation
+  annotations: { }
+  # -- Node Selector for the Egress pods
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+
+  # -- Affinity placement rule for the Kuma Ingress pods
+  affinity: {}
+
+kumactl:
+  image:
+    # -- The kumactl image repository
+    repository: kumactl
+    # -- The kumactl image tag. When not specified, the value is copied from global.tag
+    tag:
+
+kubectl:
+  # bitnami maintains an image for all k8s versions */ } }
+  # see: https://hub.docker.com/r/bitnami/kubectl */ } }
+  image:
+    # -- The kubectl image registry
+    registry: bitnami
+    # -- The kubectl image repository
+    repository: kubectl
+    # -- The kubectl image tag
+    tag: "1.20"
+hooks:
+  # -- Node selector for the HELM hooks
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+
+experimental:
+  # -- If true, it installs experimental built-in Gateway support
+  meshGateway: false
+  # -- If true, it installs experimental Gateway API support
+  gatewayAPI: false

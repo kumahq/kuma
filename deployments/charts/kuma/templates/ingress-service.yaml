@@ -1,4 +1,7 @@
 {{- if .Values.ingress.enabled }}
+{{- if or (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone") }}
+{{ fail "You shouldn't run zoneIngress when running the CP in global or standalone" }}
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:

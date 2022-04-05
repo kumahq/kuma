@@ -124,6 +124,31 @@ returns: formatted image string
 {{- end -}}
 
 {{- define "kuma.defaultEnv" -}}
+{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone")) }}
+  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
+  {{ fail $msg }}
+{{ end }}
+{{ if eq .Values.controlPlane.mode "zone" }}
+  {{ if empty .Values.controlPlane.zone }}
+    {{ fail "Can't have controlPlane.zone to be empty when controlPlane.mode=='zone'" }}
+  {{ end }}
+  {{ if empty .Values.controlPlane.kdsGlobalAddress }}
+    {{ fail "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone', needs to be the global control-plane address" }}
+  {{ else }}
+    {{ $url := urlParse .Values.controlPlane.kdsGlobalAddress }}
+    {{ if not (eq $url.scheme "grpcs") }}
+      {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
+      {{ fail $msg }}
+    {{ end }}
+  {{ end }}
+{{ else }}
+  {{ if not (empty .Values.controlPlane.zone) }}
+    {{ fail "Can't specify a controlPlane.zone when controlPlane.mode!='zone'" }}
+  {{ end }}
+  {{ if not (empty .Values.controlPlane.kdsGlobalAddress) }}
+    {{ fail "Can't specify a controlPlane.kdsGlobalAddress when controlPlane.mode!='zone'" }}
+  {{ end }}
+{{ end }}
 env:
 - name: KUMA_ENVIRONMENT
   value: "kubernetes"
