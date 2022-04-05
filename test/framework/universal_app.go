@@ -207,14 +207,16 @@ type UniversalApp struct {
 	container    string
 	ip           string
 	verbose      bool
+	mesh         string
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMode, isipv6, verbose bool, caps []string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps []string) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:            t,
 		ports:        map[string]string{},
 		lastUsedPort: 10204,
 		verbose:      verbose,
+		mesh:         mesh,
 	}
 
 	app.allocatePublicPortsFor("22")

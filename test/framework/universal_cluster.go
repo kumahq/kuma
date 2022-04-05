@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
 	"github.com/kumahq/kuma/pkg/util/template"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
@@ -129,7 +130,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		cmd = append(cmd, "--config-file", "/kuma/kuma-cp.conf")
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, c.opts.isipv6, true, []string{})
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{})
 	if err != nil {
 		return err
 	}
@@ -292,10 +293,6 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		opts.verbose = &c.verbose
 	}
 
-	if opts.mesh == "" {
-		opts.mesh = "default"
-	}
-
 	caps := []string{}
 	if transparent {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
@@ -303,7 +300,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, *opts.verbose, caps)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps)
 	if err != nil {
 		return err
 	}
@@ -349,6 +346,9 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 			dataplaneResource = opts.appYaml
 		}
 
+		if opts.mesh == "" {
+			opts.mesh = "default"
+		}
 		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns, opts.concurrency); err != nil {
 			return err
 		}
@@ -387,12 +387,49 @@ func (c *UniversalCluster) GetApp(appName string) *UniversalApp {
 	return c.apps[appName]
 }
 
-func (c *UniversalCluster) DeleteApp(namespace, appname string) error {
+func (c *UniversalCluster) DeleteApp(appname string) error {
 	app, ok := c.apps[appname]
 	if !ok {
 		return errors.Errorf("App %s not found for deletion", appname)
 	}
-	return app.Stop()
+	if err := app.Stop(); err != nil {
+		return err
+	}
+	delete(c.apps, appname)
+	return nil
+}
+
+func (c *UniversalCluster) DeleteMesh(mesh string) error {
+	return c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
+}
+
+func (c *UniversalCluster) DeleteMeshApps(mesh string) error {
+	for name := range c.apps {
+		if c.GetApp(name).mesh == mesh {
+			if err := c.DeleteApp(name); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *UniversalCluster) DeleteMeshDataplaneProxies(mesh string) error {
+	dpps, err := c.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-m", mesh, "-o", "json")
+	if err != nil {
+		return err
+	}
+	list := &core_mesh.DataplaneResourceList{}
+	if err := remote.UnmarshalList([]byte(dpps), list); err != nil {
+		return err
+	}
+	for _, dp := range list.Items {
+		_, err := c.GetKumactlOptions().RunKumactlAndGetOutput("delete", "dataplane", dp.GetMeta().GetName(), "-m", mesh)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...string) (string, string, error) {
@@ -515,4 +552,8 @@ func (c *UniversalCluster) GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, err
 	}
 
 	return t, nil
+}
+
+func (c *UniversalCluster) Install(fn InstallFunc) error {
+	return fn(c)
 }

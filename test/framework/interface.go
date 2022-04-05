@@ -477,7 +477,6 @@ type Cluster interface {
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
 	DeployApp(fs ...AppDeploymentOption) error
-	DeleteApp(namespace, appname string) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
 	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
 
