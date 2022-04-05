@@ -34,27 +34,27 @@ routing:
 func externalService(mesh string, ip string) string {
 	return fmt.Sprintf(`
 type: ExternalService
-mesh: %s
+mesh: "%s"
 name: external-service-in-both-zones
 tags:
   kuma.io/service: external-service-in-both-zones
   kuma.io/protocol: http
 networking:
-  address: %s
+  address: "%s"
 `, mesh, net.JoinHostPort(ip, "8080"))
 }
 
 func zoneExternalService(mesh string, ip string, name string, zone string) string {
 	return fmt.Sprintf(`
 type: ExternalService
-mesh: %s
-name: %s
+mesh: "%s"
+name: "%s"
 tags:
-  kuma.io/service: %s
+  kuma.io/service: "%s"
   kuma.io/protocol: http
-  kuma.io/zone: %s
+  kuma.io/zone: "%s"
 networking:
-  address: %s
+  address: "%s"
 `, mesh, name, name, zone, net.JoinHostPort(ip, "8080"))
 }
 
