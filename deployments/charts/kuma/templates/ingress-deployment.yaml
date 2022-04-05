@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
-    app: kuma-ingress
+    app: {{ include "kuma.name" . }}-ingress
 spec:
   strategy:
     rollingUpdate:
