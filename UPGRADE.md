@@ -42,6 +42,23 @@ Previously, a `MeshGatewayInstance` generated a `Deployment` and `Service` whose
 names ended with a unique suffix. With this release, those objects will have the
 same name as the `MeshGatewayInstance`.
 
+### Inspect API
+
+In connection with the changes around `MeshGateway` and `MeshGatewayRoute`, the output
+schema of the `<policy-type>/<policy>/dataplanes` has changed. Every policy can
+now affect both normal `Dataplane`s and `Dataplane`s configured as builtin gateways.
+The configuration for the latter type is done via `MeshGateway` resources.
+
+Every item in the `items` array now has a `kind` property of either:
+
+* `SidecarDataplane`: a normal `Dataplane` with outbounds, inbounds,
+  etc.
+* `MeshGatewayDataplane`: a `MeshGateway`-configured `Dataplane` with a new
+  structure representing the `MeshGateway` it serves.
+
+Some examples can be found in the [Inspect API
+docs](https://kuma.io/docs/dev/documentation/http-api/#inspect-api).
+
 ## Upgrade to `1.5.0`
 
 ### Any type
