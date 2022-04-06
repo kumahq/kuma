@@ -1,4 +1,4 @@
-package universal
+package healthcheck
 
 import (
 	"fmt"
@@ -7,17 +7,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/e2e/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
 func HealthCheckPanicThreshold() {
-	var universalCluster Cluster
+	const meshName = "hc-panic"
 
-	healthCheck := `
+	healthCheck := fmt.Sprintf(`
 type: HealthCheck
 name: hc-1
-mesh: default
+mesh: %s
 sources:
 - match:
     kuma.io/service: '*'
@@ -31,12 +31,12 @@ conf:
   healthyThreshold: 1
   healthyPanicThreshold: 61
   failTrafficOnPanic: true
-  tcp: {}`
+  tcp: {}`, meshName)
 
 	dp := func(idx int) string {
 		return fmt.Sprintf(`
 type: Dataplane
-mesh: default
+mesh: %s
 name: dp-echo-%d
 networking:
   address: 192.168.0.%d
@@ -45,40 +45,40 @@ networking:
     servicePort: 80
     tags:
       kuma.io/service: test-server
-      kuma.io/protocol: http`, idx, idx)
+      kuma.io/protocol: http`, meshName, idx, idx)
 	}
 
-	BeforeEach(func() {
-		universalCluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
+	BeforeAll(func() {
+		E2EDeferCleanup(func() {
+			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+			Expect(env.Cluster.DeleteMeshDataplaneProxies(meshName)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		})
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(MeshUniversal(meshName)).
 			Install(YamlUniversal(healthCheck)).
-			Setup(universalCluster)
+			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		for i := 1; i <= 6; i++ {
 			dpName := fmt.Sprintf("dp-echo-%d", i)
 			response := fmt.Sprintf("universal-%d", i)
-			err = TestServerUniversal(dpName, "default", WithArgs([]string{"echo", "--instance", response}))(universalCluster)
+			err = TestServerUniversal(dpName, meshName, WithArgs([]string{"echo", "--instance", response}))(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		for i := 7; i <= 10; i++ {
-			err := NewClusterSetup().Install(YamlUniversal(dp(i))).Setup(universalCluster)
+			err := NewClusterSetup().Install(YamlUniversal(dp(i))).Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
 
-		err = DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))(universalCluster)
+		err = DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-	})
-
-	E2EAfterEach(func() {
-		Expect(universalCluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should switch to panic mode and dismiss all requests", func() {
 		Eventually(func() bool {
-			stdout, _, _ := universalCluster.Exec("", "", "demo-client",
+			stdout, _, _ := env.Cluster.Exec("", "", "demo-client",
 				"curl", "-v", "test-server.mesh")
 			return strings.Contains(stdout, "no healthy upstream")
 		}, "30s", "500ms").Should(BeTrue())
