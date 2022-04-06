@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -22,9 +24,9 @@ func DpAuth() {
 
 	It("should not be able to override someone else Dataplane", func() {
 		// given other dataplane
-		dp := `
+		dp := fmt.Sprintf(`
 type: Dataplane
-mesh: dp-auth
+mesh: %s
 name: dp-01
 networking:
   address: 192.168.0.1
@@ -32,11 +34,11 @@ networking:
   - port: 8080
     tags:
       kuma.io/service: not-test-server
-`
+`, meshName)
 		Expect(env.Cluster.Install(YamlUniversal(dp))).To(Succeed())
 
 		// when trying to spin up dataplane with same name but token bound to a different service
-		err := TestServerUniversal("dp-01", "dp-auth", WithServiceName("test-server"))(env.Cluster)
+		err := TestServerUniversal("dp-01", meshName, WithServiceName("test-server"))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -47,9 +49,9 @@ networking:
 
 	It("should be able to override old Dataplane of same service", func() {
 		// given
-		dp := `
+		dp := fmt.Sprintf(`
 type: Dataplane
-mesh: dp-auth
+mesh: %s
 name: dp-02
 networking:
   address: 192.168.0.2
@@ -57,11 +59,11 @@ networking:
   - port: 8080
     tags:
       kuma.io/service: test-server
-`
+`, meshName)
 		Expect(env.Cluster.Install(YamlUniversal(dp))).To(Succeed())
 
 		// when
-		err := TestServerUniversal("dp-02", "dp-auth", WithServiceName("test-server"))(env.Cluster)
+		err := TestServerUniversal("dp-02", meshName, WithServiceName("test-server"))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

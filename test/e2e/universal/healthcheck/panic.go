@@ -14,10 +14,10 @@ import (
 func HealthCheckPanicThreshold() {
 	const meshName = "hc-panic"
 
-	healthCheck := `
+	healthCheck := fmt.Sprintf(`
 type: HealthCheck
 name: hc-1
-mesh: hc-panic
+mesh: %s
 sources:
 - match:
     kuma.io/service: '*'
@@ -31,12 +31,12 @@ conf:
   healthyThreshold: 1
   healthyPanicThreshold: 61
   failTrafficOnPanic: true
-  tcp: {}`
+  tcp: {}`, meshName)
 
 	dp := func(idx int) string {
 		return fmt.Sprintf(`
 type: Dataplane
-mesh: hc-panic
+mesh: %s
 name: dp-echo-%d
 networking:
   address: 192.168.0.%d
@@ -45,14 +45,14 @@ networking:
     servicePort: 80
     tags:
       kuma.io/service: test-server
-      kuma.io/protocol: http`, idx, idx)
+      kuma.io/protocol: http`, meshName, idx, idx)
 	}
 
 	BeforeAll(func() {
 		E2EDeferCleanup(func() {
-			Expect(env.Cluster.DeleteMeshApps("hc-panic")).To(Succeed())
-			Expect(env.Cluster.DeleteMeshDataplaneProxies("hc-panic")).To(Succeed())
-			Expect(env.Cluster.DeleteMesh("hc-panic")).To(Succeed())
+			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+			Expect(env.Cluster.DeleteMeshDataplaneProxies(meshName)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
 
 		err := NewClusterSetup().
@@ -64,7 +64,7 @@ networking:
 		for i := 1; i <= 6; i++ {
 			dpName := fmt.Sprintf("dp-echo-%d", i)
 			response := fmt.Sprintf("universal-%d", i)
-			err = TestServerUniversal(dpName, "hc-panic", WithArgs([]string{"echo", "--instance", response}))(env.Cluster)
+			err = TestServerUniversal(dpName, meshName, WithArgs([]string{"echo", "--instance", response}))(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		for i := 7; i <= 10; i++ {
@@ -72,7 +72,7 @@ networking:
 			Expect(err).ToNot(HaveOccurred())
 		}
 
-		err = DemoClientUniversal(AppModeDemoClient, "hc-panic", WithTransparentProxy(true))(env.Cluster)
+		err = DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
