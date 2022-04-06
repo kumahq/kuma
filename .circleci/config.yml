@@ -79,7 +79,6 @@ executors:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-    working_directory: /go/src/github.com/kumahq/kuma
 
   vm:
     resource_class: large
