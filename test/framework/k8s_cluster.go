@@ -47,7 +47,7 @@ type K8sCluster struct {
 
 var _ Cluster = &K8sCluster{}
 
-func NewK8sCluster(t *TestingT, clusterName string, verbose bool) *K8sCluster {
+func NewK8sCluster(t testing.TestingT, clusterName string, verbose bool) *K8sCluster {
 	return &K8sCluster{
 		t:                   t,
 		name:                clusterName,
