@@ -79,20 +79,18 @@ message Dataplane {
       // ServiceProbe defines parameters for probing service's port
       message ServiceProbe {
         // Interval between consecutive health checks.
-        google.protobuf.Duration interval = 1 [ (doc.required) = true ];
+        google.protobuf.Duration interval = 1;
 
         // Maximum time to wait for a health check response.
-        google.protobuf.Duration timeout = 2 [ (doc.required) = true ];
+        google.protobuf.Duration timeout = 2;
 
         // Number of consecutive unhealthy checks before considering a host
         // unhealthy.
-        google.protobuf.UInt32Value unhealthy_threshold = 3
-            [ (doc.required) = true ];
+        google.protobuf.UInt32Value unhealthy_threshold = 3;
 
         // Number of consecutive healthy checks before considering a host
         // healthy.
-        google.protobuf.UInt32Value healthy_threshold = 4
-            [ (doc.required) = true ];
+        google.protobuf.UInt32Value healthy_threshold = 4;
 
         message Tcp {}
         // Tcp checker tries to establish tcp connection with destination
@@ -148,20 +146,17 @@ message Dataplane {
     message TransparentProxying {
 
       // Port on which all inbound traffic is being transparently redirected.
-      uint32 redirect_port_inbound = 1
-          [ (validate.rules).uint32 = {lte : 65535}, (doc.required) = true ];
+      uint32 redirect_port_inbound = 1 [ (validate.rules).uint32 = {lte : 65535} ];
 
       // Port on which all outbound traffic is being transparently redirected.
-      uint32 redirect_port_outbound = 2
-          [ (validate.rules).uint32 = {lte : 65535}, (doc.required) = true ];
+      uint32 redirect_port_outbound = 2 [ (validate.rules).uint32 = {lte : 65535} ];
 
       // List of services that will be access directly via IP:PORT
       repeated string direct_access_services = 3;
 
       // Port on which all IPv6 inbound traffic is being transparently
       // redirected.
-      uint32 redirect_port_inbound_v6 = 4
-          [ (validate.rules).uint32 = {lte : 65535} ];
+      uint32 redirect_port_inbound_v6 = 4 [ (validate.rules).uint32 = {lte : 65535} ];
 
       // List of reachable services (represented by the value of
       // kuma.io/service) via transparent proxying. Setting an explicit list can
@@ -174,7 +169,7 @@ message Dataplane {
     Gateway gateway = 3;
 
     // Inbound describes a list of inbound interfaces of the dataplane.
-    repeated Inbound inbound = 1 [ (doc.required) = true ];
+    repeated Inbound inbound = 1;
 
     // Outbound describes a list of outbound interfaces of the dataplane.
     repeated Outbound outbound = 2;
@@ -187,7 +182,7 @@ message Dataplane {
   }
 
   // Networking describes inbound and outbound interfaces of the dataplane.
-  Networking networking = 1 [ (doc.required) = true ];
+  Networking networking = 1;
 
   // Configuration for metrics that should be collected and exposed by the
   // dataplane.

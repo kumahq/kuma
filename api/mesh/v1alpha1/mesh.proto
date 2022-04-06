@@ -113,7 +113,7 @@ message CertificateAuthorityBackend {
     // Rotation defines rotation settings for Dataplane certificate
     message Rotation {
       // Time after which generated certificate for Dataplane will expire
-      string expiration = 1 [ (doc.required) = true ];
+      string expiration = 1;
     }
     // Rotation settings
     Rotation rotation = 1;
@@ -126,7 +126,7 @@ message CertificateAuthorityBackend {
   DpCert dpCert = 3;
 
   // Configuration of the backend
-  google.protobuf.Struct conf = 4 [ (doc.required) = true ];
+  google.protobuf.Struct conf = 4;
 
   enum Mode {
     // A STRICT mode implies that the server validates the connection and
@@ -237,7 +237,7 @@ message LoggingBackend {
 
   // Format of access logs. Placeholders available on
   // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-  string format = 2 [ (doc.required) = true ];
+  string format = 2;
 
   // Type of the backend (Kuma ships with 'tcp' and 'file')
   string type = 3 [ (doc.required) = true ];
