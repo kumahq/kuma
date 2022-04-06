@@ -64,7 +64,8 @@ message Dataplane {
       // Tags associated with an application this dataplane is deployed next to,
       // e.g. kuma.io/service=web, version=1.0.
       // `kuma.io/service` tag is mandatory.
-      map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1, (doc.required) = true ];
+      map<string, string> tags = 2
+          [ (validate.rules).map.min_pairs = 1, (doc.required) = true ];
 
       // Health describes the status of an inbound
       message Health { bool ready = 1; }
@@ -85,11 +86,13 @@ message Dataplane {
 
         // Number of consecutive unhealthy checks before considering a host
         // unhealthy.
-        google.protobuf.UInt32Value unhealthy_threshold = 3 [ (doc.required) = true ];
+        google.protobuf.UInt32Value unhealthy_threshold = 3
+            [ (doc.required) = true ];
 
         // Number of consecutive healthy checks before considering a host
         // healthy.
-        google.protobuf.UInt32Value healthy_threshold = 4 [ (doc.required) = true ];
+        google.protobuf.UInt32Value healthy_threshold = 4
+            [ (doc.required) = true ];
 
         message Tcp {}
         // Tcp checker tries to establish tcp connection with destination
@@ -132,7 +135,8 @@ message Dataplane {
       // Tags associated with a gateway (e.g., Kong, Contour, etc) this
       // dataplane is deployed next to, e.g. service=gateway, env=prod.
       // `service` tag is mandatory.
-      map<string, string> tags = 1 [ (validate.rules).map.min_pairs = 1, (doc.required) = true ];
+      map<string, string> tags = 1
+          [ (validate.rules).map.min_pairs = 1, (doc.required) = true ];
 
       // Type of gateway this dataplane manages. The default is a DELEGATED
       // gateway, which is an external proxy. The BUILTIN gateway type causes
