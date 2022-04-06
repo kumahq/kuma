@@ -59,7 +59,7 @@ message Mesh {
   Metrics metrics = 4;
 
   // Networking settings of the mesh
-  Networking networking = 5 [ (doc.required) = true ];
+  Networking networking = 5;
 
   // Routing settings of the mesh
   Routing routing = 6;
