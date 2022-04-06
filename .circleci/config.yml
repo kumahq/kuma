@@ -178,7 +178,7 @@ jobs:
         command: make dev/tools
     - run:
         name: "Install check tools (clang-format, ...)"
-        command: sudo apt install -y clang-format
+        command: sudo apt update && sudo apt install -y clang-format
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
