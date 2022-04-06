@@ -1,100 +1,58 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/spf13/cobra"
 )
 
 var config struct {
-	gitHubRepo string
 	branch     string
-	startTag   string
-	endTag     string
 	owner      string
 	repo       string
 	since      time.Duration
 	fromTag    string
 	fromCommit string
+	format     string
 }
 
-func gitHubOrgProject() string {
-	u, _ := url.Parse(config.gitHubRepo)
-	return u.Path[:len(u.Path)-4]
-}
+type OutFormat string
+
+const (
+	FormatMarkdown OutFormat = "md"
+	FormatJson     OutFormat = "json"
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "changelog",
 	Short: "Generate the changelog.",
 	Long:  `Generate the changelog.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// Clones the given repository, creating the remote, the local branches
-		// and fetching the objects, everything in memory:
-		Info("Clone %s branch %s", config.gitHubRepo, plumbing.ReferenceName(config.branch))
-		r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-			URL:           config.gitHubRepo,
-			ReferenceName: plumbing.ReferenceName(config.branch),
-			SingleBranch:  false,
-		})
-		CheckIfError(err)
-
-		Info("Retrieve tags")
-		tagMap := map[string]string{}
-		// List all tag references, both lightweight tags and annotated tags
-		tagrefs, err := r.Tags()
-		CheckIfError(err)
-		err = tagrefs.ForEach(func(t *plumbing.Reference) error {
-			tagMap[t.Hash().String()] = t.Name().String()
-			return nil
-		})
-		CheckIfError(err)
-
-		Info("Retrieve commit history")
-		// ... retrieves the commit history
-		refHash := plumbing.Hash{}
-		startRef, err := r.Reference(plumbing.ReferenceName(config.startTag), false)
-		if err != nil {
-			Info("error: %s", err)
-		} else {
-			refHash = startRef.Hash()
-		}
-		cIter, err := r.Log(&git.LogOptions{
-			From:  refHash,
-			Order: git.LogOrderCommitterTime,
-		})
-		CheckIfError(err)
-
-		Info("Filter the commits by tag")
-		generator := NewGenerator(config.startTag, config.endTag)
-		currentTag := config.branch
-		err = cIter.ForEach(func(c *object.Commit) error {
-			if tag, found := tagMap[c.Hash.String()]; found {
-				currentTag = tag
-			}
-			generator.addToLog(currentTag, c)
-			return nil
-		})
-		CheckIfError(err)
-
-		Info("Generate the formatted log")
-		generator.Generate()
-		fmt.Println(generator.Changelog())
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return errors.New("must pass a subcommand")
 	},
 }
 
-var graphqlCmd = &cobra.Command{
-	Use:   "graphql",
-	Short: "Generate the changelog using graphql api",
+var github = &cobra.Command{
+	Use:   "github",
+	Short: "Generate the changelog using the github graphql api",
+	Long: `Generate the changelog using the github graphql api.
+This will get all the commits in the branch after '--from-tag' or '--from-commit' and younger than '--since'
+It will retrieve all the associated PRs to these commits and extract a changelog entry following these rules:
+
+- If there's in the PR description an entry '> Changelog:'
+	- If it's 'skip' --> This PR won't be listed in the changelog
+	- Use this as the value for the changelog
+- If the PR title starts with ci, test, refactor, build... skip the entry (if you still want it add a '> Changelog:' line in the PR description.
+- Else use the PR title in the changelog
+
+It will then output a changelog with all PRs with the same changelog grouped together
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		token := os.Getenv("GITHUB_TOKEN")
 		if token == "" {
@@ -121,58 +79,71 @@ var graphqlCmd = &cobra.Command{
 		}
 
 		// Rollup changes together
-		byChangelog := map[string]*Changelog{}
+		byChangelog := map[string][]*CommitInfo{}
 		for i := range res {
 			if strings.HasPrefix(commitLimit, res[i].Oid) {
 				break
 			}
 			ci := NewCommitInfo(res[i])
-			if ci.ShouldIgnore() {
+			if ci == nil {
 				continue
 			}
-			cl := ci.Changelog
-			if ci.Changelog == "" {
-				cl = ci.PrTitle
-			}
-			c := byChangelog[cl]
-			if c == nil {
-				c = &Changelog{
-					Desc:         cl,
-					PullRequests: []int{},
-				}
-				byChangelog[cl] = c
-			}
-			c.PullRequests = append(c.PullRequests, ci.PrNumber)
-			c.Authors = append(c.Authors, "@"+ci.Author)
+			byChangelog[ci.Changelog] = append(byChangelog[ci.Changelog], ci)
 		}
 		// Create a list to display
-		var out []string
-		for _, l := range byChangelog {
-			out = append(out, l.String())
+		var out []Changelog
+		for changelog, commits := range byChangelog {
+			uniqueAuthors := map[string]interface{}{}
+			var authors []string
+			var prs []int
+			for _, c := range commits {
+				prs = append(prs, c.PrNumber)
+				if _, exists := uniqueAuthors[c.Author]; !exists {
+					authors = append(authors, fmt.Sprintf("@%s", c.Author))
+					uniqueAuthors[c.Author] = nil
+				}
+			}
+			sort.Ints(prs)
+			sort.Strings(authors)
+			out = append(out, Changelog{Desc: changelog, Authors: authors, PullRequests: prs})
 		}
-		sort.Strings(out)
-		fmt.Fprintf(cmd.OutOrStdout(), "%s", strings.Join(out, "\n"))
+		sort.Slice(out, func(i, j int) bool {
+			return out[i].Desc < out[j].Desc
+		})
+		switch OutFormat(config.format) {
+		case FormatMarkdown:
+			for _, v := range out {
+				_, err = fmt.Fprintf(cmd.OutOrStdout(), "* %s\n", v)
+				if err != nil {
+					return err
+				}
+			}
+		case FormatJson:
+			e := json.NewEncoder(cmd.OutOrStdout())
+			e.SetIndent("", "  ")
+			return e.Encode(out)
+		}
 		return nil
 	},
 }
 
 type Changelog struct {
-	Desc         string
-	Authors      []string
-	PullRequests []int
+	Desc         string   `json:"desc"`
+	Authors      []string `json:"authors"`
+	PullRequests []int    `json:"pull_requests"`
 }
 
 func (c Changelog) String() string {
 	var prLinks []string
 	for _, n := range c.PullRequests {
-		prLinks = append(prLinks, fmt.Sprintf("[%d](https://github.com/%s/%s/pull/%d)", n, config.owner, config.repo, n))
+		prLinks = append(prLinks, fmt.Sprintf("[#%d](https://github.com/%s/%s/pull/%d)", n, config.owner, config.repo, n))
 	}
-	seen := map[string]interface{}{}
+	seen := map[string]struct{}{}
 	var authors []string
 	for _, a := range c.Authors {
 		if _, ok := seen[a]; !ok {
 			authors = append(authors, a)
-			seen[a] = nil
+			seen[a] = struct{}{}
 		}
 	}
 	sort.Strings(authors)
@@ -187,19 +158,10 @@ type CommitInfo struct {
 	Changelog string
 }
 
-func (ci CommitInfo) ShouldIgnore() bool {
-	if ci.Changelog != "" {
-		return ci.Changelog == "skip"
+func NewCommitInfo(commit GQLCommit) *CommitInfo {
+	if len(commit.AssociatedPullRequests.Nodes) == 0 {
+		return nil
 	}
-	for _, v := range []string{"ci(", "test(", "refactor(", "fix(ci)", "fix(test)", "tests("} {
-		if strings.HasPrefix(ci.PrTitle, v) {
-			return true
-		}
-	}
-	return false
-}
-
-func NewCommitInfo(commit GQLCommit) CommitInfo {
 	pr := commit.AssociatedPullRequests.Nodes[0]
 	changelog := ""
 	for _, l := range strings.Split(pr.Body, "\n") {
@@ -207,8 +169,19 @@ func NewCommitInfo(commit GQLCommit) CommitInfo {
 			changelog = strings.TrimSpace(strings.TrimPrefix(l, "> Changelog: "))
 		}
 	}
-	// TODO extract changelog string
-	return CommitInfo{
+	if changelog == "skip" {
+		return nil
+	}
+	for _, v := range []string{"ci(", "test(", "refactor(", "fix(ci)", "fix(test)", "tests(", "build("} {
+		if strings.HasPrefix(commit.Message, v) {
+			return nil
+		}
+	}
+	// We do this after so that if we set `> Changelog:` with one of the ignored prefix we still can have this
+	if changelog == "" {
+		changelog = pr.Title
+	}
+	return &CommitInfo{
 		Author:    pr.Author.Login,
 		Sha:       commit.Oid,
 		PrNumber:  pr.Number,
@@ -227,17 +200,12 @@ func Execute() {
 }
 
 func init() {
-	// Older stuff
-	rootCmd.Flags().StringVar(&config.gitHubRepo, "repo", "https://github.com/kumahq/kuma.git", "The GitHub repo to process")
-	rootCmd.Flags().StringVar(&config.branch, "branch", "master", "The branch to process")
-	rootCmd.Flags().StringVar(&config.startTag, "start", "0.7.1", "The start hash or tag")
-	rootCmd.Flags().StringVar(&config.endTag, "end", "", "The end hash or tag")
-
-	graphqlCmd.Flags().StringVar(&config.owner, "owner", "kumahq", "The owner")
-	graphqlCmd.Flags().StringVar(&config.repo, "name", "kuma", "The repo")
-	graphqlCmd.Flags().StringVar(&config.branch, "branch", "master", "The branch to look for the start on")
-	graphqlCmd.Flags().DurationVar(&config.since, "since", time.Hour*24*90, "When to get the data from can either be a timestamp of a tag (90 days ago)")
-	graphqlCmd.Flags().StringVar(&config.fromCommit, "from-commit", "", "If set only show commits after this commit sha")
-	graphqlCmd.Flags().StringVar(&config.fromTag, "from-tag", "", "If set only show commits after this tag (must be on the same branch)")
-	rootCmd.AddCommand(graphqlCmd)
+	github.Flags().StringVar(&config.owner, "owner", "kumahq", "The owner org to query")
+	github.Flags().StringVar(&config.repo, "name", "kuma", "The repository to query")
+	github.Flags().StringVar(&config.branch, "branch", "master", "The branch to look for the start on")
+	github.Flags().DurationVar(&config.since, "since", time.Hour*24*90, "When to get the data from as a go duration (90 days ago)")
+	github.Flags().StringVar(&config.fromCommit, "from-commit", "", "If set only show commits after this commit sha")
+	github.Flags().StringVar(&config.fromTag, "from-tag", "", "If set only show commits after this tag (must be on the same branch)")
+	github.Flags().StringVar(&config.format, "format", string(FormatMarkdown), fmt.Sprintf("The output format (%s, %s)", FormatJson, FormatMarkdown))
+	rootCmd.AddCommand(github)
 }
