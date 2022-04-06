@@ -20,6 +20,13 @@ This is only used in the `kuma.formatImage` function below.
 docker.io/kumahq
 {{- end }}
 
+{{- define "kuma.product" -}}
+Kuma
+{{- end }}
+
+{{- define "kuma.tagPrefix" -}}
+{{- end }}
+
 {{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
@@ -110,13 +117,19 @@ returns: formatted image string
 {{- $root := .root }}
 {{- $registry := ($img.registry | default $root.Values.global.image.registry) -}}
 {{- $repo := ($img.repository | required "Must specify image repository") -}}
+{{- $product := (include "kuma.product" .) }}
+{{- $tagPrefix := (include "kuma.tagPrefix" .) }}
+{{- $expectedVersion := (include "kuma.appVersion" $root) }}
 {{- if
   and
     $root.Values.global.image.tag
     (ne $root.Values.global.image.tag (include "kuma.appVersion" $root))
     (eq $root.Values.global.image.registry (include "kuma.defaultRegistry" .))
 -}}
-{{- fail (printf "This chart only supports Kuma version %q but global.image.tag is set to %q. Set global.image.tag to %q or skip this check by setting *.image.tag for each individual component." (include "kuma.appVersion" $root) $root.Values.global.image.tag (include "kuma.appVersion" $root)) -}}
+{{- fail (
+  printf "This chart only supports %s version %q but %sglobal.image.tag is set to %q. Set %sglobal.image.tag to %q or skip this check by setting %s*.image.tag for each individual component."
+  $product $expectedVersion $tagPrefix $root.Values.global.image.tag $tagPrefix $expectedVersion $tagPrefix
+) -}}
 {{- end -}}
 {{- $defaultTag := ($root.Values.global.image.tag | default (include "kuma.appVersion" $root)) -}}
 {{- $tag := ($img.tag | default $defaultTag) -}}
