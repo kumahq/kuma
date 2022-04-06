@@ -8,24 +8,28 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func NewZoneManager(store core_store.ResourceStore, validator Validator) core_manager.ResourceManager {
+func NewZoneManager(store core_store.ResourceStore, validator Validator, unsafeDelete bool) core_manager.ResourceManager {
 	return &zoneManager{
 		ResourceManager: core_manager.NewResourceManager(store),
 		store:           store,
 		validator:       validator,
+		unsafeDelete:    unsafeDelete,
 	}
 }
 
 type zoneManager struct {
 	core_manager.ResourceManager
-	store     core_store.ResourceStore
-	validator Validator
+	store        core_store.ResourceStore
+	validator    Validator
+	unsafeDelete bool
 }
 
 func (z *zoneManager) Delete(ctx context.Context, r model.Resource, opts ...core_store.DeleteOptionsFunc) error {
 	options := core_store.NewDeleteOptions(opts...)
-	if err := z.validator.ValidateDelete(ctx, options.Name); err != nil {
-		return err
+	if !z.unsafeDelete {
+		if err := z.validator.ValidateDelete(ctx, options.Name); err != nil {
+			return err
+		}
 	}
 	return z.ResourceManager.Delete(ctx, r, opts...)
 }

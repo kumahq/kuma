@@ -31,13 +31,14 @@ import (
 var _ = Describe("Mesh Manager", func() {
 
 	var resManager manager.ResourceManager
+	var unsafeDeleteResManager manager.ResourceManager
 	var secretManager manager.ResourceManager
 	var resStore store.ResourceStore
 	var builtinCaManager core_ca.Manager
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		secretManager = secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil)
+		secretManager = secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil, false)
 		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
 		providedCaManager := provided.NewProvidedCaManager(datasource.NewDataSourceLoader(secretManager))
 		caManagers := core_ca.Managers{
@@ -47,7 +48,8 @@ var _ = Describe("Mesh Manager", func() {
 
 		manager := manager.NewResourceManager(resStore)
 		validator := mesh.NewMeshValidator(caManagers, resStore)
-		resManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
+		resManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, false)
+		unsafeDeleteResManager = mesh.NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator, true)
 	})
 
 	Describe("Create()", func() {
@@ -258,6 +260,35 @@ var _ = Describe("Mesh Manager", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("mesh: unable to delete mesh, there are still some dataplanes attached"))
+		})
+
+		It("should delete Mesh if there are Dataplanes attached when unsafe delete is enalbed", func() {
+			// given mesh and dataplane
+			err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			err = resStore.Create(context.Background(), &core_mesh.DataplaneResource{
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+							Port:        8080,
+							ServicePort: 80,
+							Tags: map[string]string{
+								"service": "mobile",
+								"version": "v1",
+							}},
+						},
+					},
+				},
+			}, store.CreateByKey("dp-1", "mesh-1"))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when mesh-1 is delete
+			err = unsafeDeleteResManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 

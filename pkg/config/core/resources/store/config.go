@@ -32,6 +32,9 @@ type StoreConfig struct {
 	Cache CacheStoreConfig `yaml:"cache"`
 	// Upsert configuration
 	Upsert UpsertConfig `yaml:"upsert"`
+	// UnsafeDelete skips validation of resource delete.
+	// For example you don't have to delete all Dataplane objects before you delete a Mesh
+	UnsafeDelete bool `yaml:"unsafeDelete" envconfig:"kuma_store_unsafe_delete"`
 }
 
 func DefaultStoreConfig() *StoreConfig {

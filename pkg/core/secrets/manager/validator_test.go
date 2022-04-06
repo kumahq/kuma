@@ -38,7 +38,7 @@ var _ = Describe("Secret Validator", func() {
 		caManagers = core_ca.Managers{}
 		secrets_manager.NewSecretValidator(caManagers, memoryStore)
 		validator = secrets_manager.NewSecretValidator(caManagers, memoryStore)
-		secManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(memoryStore), cipher.None(), validator)
+		secManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(memoryStore), cipher.None(), validator, false)
 
 		caManagers["builtin"] = ca_builtin.NewBuiltinCaManager(secManager)
 		caManagers["provided"] = ca_provided.NewProvidedCaManager(core_datasource.NewDataSourceLoader(secManager))

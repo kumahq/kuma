@@ -102,7 +102,7 @@ var _ = Describe("Secrets", func() {
 
 	BeforeEach(func() {
 		resStore := memory.NewStore()
-		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil)
+		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil, false)
 		builtinCaManager := ca_builtin.NewBuiltinCaManager(secretManager)
 		caManagers := core_ca.Managers{
 			"builtin": builtinCaManager,

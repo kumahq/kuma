@@ -14,20 +14,22 @@ import (
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 )
 
-func NewSecretManager(secretStore secret_store.SecretStore, cipher secret_cipher.Cipher, validator SecretValidator) manager.ResourceManager {
+func NewSecretManager(secretStore secret_store.SecretStore, cipher secret_cipher.Cipher, validator SecretValidator, unsafeDelete bool) manager.ResourceManager {
 	return &secretManager{
-		secretStore: secretStore,
-		cipher:      cipher,
-		validator:   validator,
+		secretStore:  secretStore,
+		cipher:       cipher,
+		validator:    validator,
+		unsafeDelete: unsafeDelete,
 	}
 }
 
 var _ manager.ResourceManager = &secretManager{}
 
 type secretManager struct {
-	secretStore secret_store.SecretStore
-	cipher      secret_cipher.Cipher
-	validator   SecretValidator
+	secretStore  secret_store.SecretStore
+	cipher       secret_cipher.Cipher
+	validator    SecretValidator
+	unsafeDelete bool
 }
 
 func (s *secretManager) Get(ctx context.Context, resource model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -91,8 +93,10 @@ func (s *secretManager) Delete(ctx context.Context, resource model.Resource, fs 
 		return newInvalidTypeError()
 	}
 	opts := core_store.NewDeleteOptions(fs...)
-	if err := s.validator.ValidateDelete(ctx, opts.Name, opts.Mesh); err != nil {
-		return err
+	if !s.unsafeDelete {
+		if err := s.validator.ValidateDelete(ctx, opts.Name, opts.Mesh); err != nil {
+			return err
+		}
 	}
 	return s.secretStore.Delete(ctx, secret, fs...)
 }

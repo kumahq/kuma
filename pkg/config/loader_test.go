@@ -90,6 +90,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Environment).To(Equal(config_core.KubernetesEnvironment))
 
 			Expect(cfg.Store.Type).To(Equal(store.PostgresStore))
+			Expect(cfg.Store.UnsafeDelete).To(BeTrue())
 			Expect(cfg.Store.Postgres.Host).To(Equal("postgres.host"))
 			Expect(cfg.Store.Postgres.Port).To(Equal(5432))
 			Expect(cfg.Store.Postgres.User).To(Equal("kuma"))
@@ -259,6 +260,7 @@ var _ = Describe("Config loader", func() {
 environment: kubernetes
 store:
   type: postgres
+  unsafeDelete: true
   postgres:
     host: postgres.host
     port: 5432
@@ -481,6 +483,7 @@ experimental:
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":                                               "1.1.1.1",
 				"KUMA_ENVIRONMENT":                                                                         "kubernetes",
 				"KUMA_STORE_TYPE":                                                                          "postgres",
+				"KUMA_STORE_UNSAFE_DELETE":                                                                 "true",
 				"KUMA_STORE_POSTGRES_HOST":                                                                 "postgres.host",
 				"KUMA_STORE_POSTGRES_PORT":                                                                 "5432",
 				"KUMA_STORE_POSTGRES_USER":                                                                 "kuma",
