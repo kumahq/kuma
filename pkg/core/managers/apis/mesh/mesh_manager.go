@@ -2,10 +2,10 @@ package mesh
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -76,7 +76,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	}
 
 	// persist Mesh
-	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
+	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(core.Now()))...); err != nil {
 		return err
 	}
 	if err := defaults_mesh.EnsureDefaultMeshResources(ctx, m.otherManagers, opts.Name); err != nil {
@@ -141,7 +141,7 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	if err := EnsureCAs(ctx, m.caManagers, mesh, mesh.Meta.GetName()); err != nil {
 		return err
 	}
-	return m.store.Update(ctx, mesh, append(fs, core_store.ModifiedAt(time.Now()))...)
+	return m.store.Update(ctx, mesh, append(fs, core_store.ModifiedAt(core.Now()))...)
 }
 
 func (m *meshManager) mesh(resource core_model.Resource) (*core_mesh.MeshResource, error) {

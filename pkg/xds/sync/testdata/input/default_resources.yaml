@@ -1,0 +1,104 @@
+type: Mesh
+name: default
+mtls:
+  enabledBackend: builtin
+  backends:
+    - name: builtin
+      type: builtin
+routing:
+  zoneEgress: true
+---
+type: Dataplane
+mesh: default
+name: service-1
+networking:
+  address: 192.168.0.1
+  inbound:
+  - port: 8080
+    servicePort: 80
+    tags:
+      kuma.io/service: frontend
+      version: "v1"
+  outbound:
+  - port: 80
+    address: 1.1.1.1
+    tags:
+      kuma.io/service: backend
+---
+type: Dataplane
+mesh: default
+name: service-2
+networking:
+  address: 192.168.0.2
+  inbound:
+  - port: 8080
+    servicePort: 80
+    tags:
+      kuma.io/service: backend
+      version: "v1"
+---
+type: ZoneIngress
+name: zone-ingress-zone-1
+zone: zone-1
+networking:
+  address: 3.3.3.3
+  advertisedAddress: 4.4.4.4
+  port: 30003
+  advertisedPort: 30004
+availableServices:
+- tags:
+    kuma.io/service: service-in-zone-1
+  instances: 1
+  mesh: default
+---
+type: ZoneIngress
+name: zone-ingress-zone-2
+zone: zone-2
+networking:
+  address: 6.6.6.6
+  advertisedAddress: 7.7.7.7
+  port: 20002
+  advertisedPort: 20003
+availableServices:
+- tags:
+    kuma.io/service: service-in-zone-2
+  instances: 1
+  mesh: default
+- tags:
+    kuma.io/service: external-service-in-zone-2
+    kuma.io/zone: "zone-2"
+  instances: 1
+  mesh: default
+  externalService: true
+---
+type: ZoneEgress
+name: zone-egress-1
+zone: zone-1
+networking:
+  address: 1.1.1.1
+  port: 10002
+---
+type: ZoneEgress
+name: zone-egress-2
+zone: zone-1
+networking:
+  address: 1.1.1.2
+  port: 10002
+---
+type: ExternalService
+name: external-service-1
+mesh: default
+tags:
+  kuma.io/service: external-service-1
+  kuma.io/protocol: http
+networking:
+  address: host.com:90
+---
+type: ExternalService
+name: external-service-zone-1
+mesh: default
+tags:
+  kuma.io/service: external-service-zone-1
+  kuma.io/zone: zone-1
+networking:
+  address: example.com:443

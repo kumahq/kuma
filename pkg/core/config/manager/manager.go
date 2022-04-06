@@ -2,8 +2,8 @@ package manager
 
 import (
 	"context"
-	"time"
 
+	"github.com/kumahq/kuma/pkg/core"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -41,11 +41,11 @@ func (s *configManager) List(ctx context.Context, configs *config_model.ConfigRe
 }
 
 func (s *configManager) Create(ctx context.Context, config *config_model.ConfigResource, fs ...core_store.CreateOptionsFunc) error {
-	return s.configStore.Create(ctx, config, append(fs, core_store.CreatedAt(time.Now()))...)
+	return s.configStore.Create(ctx, config, append(fs, core_store.CreatedAt(core.Now()))...)
 }
 
 func (s *configManager) Update(ctx context.Context, config *config_model.ConfigResource, fs ...core_store.UpdateOptionsFunc) error {
-	return s.configStore.Update(ctx, config, append(fs, core_store.ModifiedAt(time.Now()))...)
+	return s.configStore.Update(ctx, config, append(fs, core_store.ModifiedAt(core.Now()))...)
 }
 
 func (s *configManager) Delete(ctx context.Context, config *config_model.ConfigResource, fs ...core_store.DeleteOptionsFunc) error {

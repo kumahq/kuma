@@ -1,0 +1,139 @@
+APIVersion: v3
+Dataplane: null
+Id: {}
+Metadata: null
+Policies:
+  CircuitBreakers: null
+  CustomInboundPolicies: null
+  FaultInjections: null
+  HealthChecks: null
+  ProxyTemplate: null
+  RateLimitsInbound: null
+  RateLimitsOutbound: null
+  Retries: null
+  Timeouts: null
+  TrafficLogs: null
+  TrafficPermissions: null
+  TrafficRoutes: null
+  TrafficTrace: null
+Routing:
+  OutboundTargets:
+    backend:
+    - ExternalService: null
+      Locality: null
+      Port: 8080
+      Tags:
+        kuma.io/service: backend
+        mesh: default
+        version: v1
+      Target: 192.168.0.2
+      UnixDomainPath: ""
+      Weight: 1
+    external-service-zone-1:
+    - ExternalService:
+        AllowRenegotiation: false
+        CaCert: null
+        ClientCert: null
+        ClientKey: null
+        ServerName: ""
+        TLSEnabled: false
+      Locality: null
+      Port: 10002
+      Tags:
+        kuma.io/service: external-service-zone-1
+        kuma.io/zone: zone-1
+        mesh: default
+      Target: 1.1.1.1
+      UnixDomainPath: ""
+      Weight: 1
+    - ExternalService:
+        AllowRenegotiation: false
+        CaCert: null
+        ClientCert: null
+        ClientKey: null
+        ServerName: ""
+        TLSEnabled: false
+      Locality: null
+      Port: 10002
+      Tags:
+        kuma.io/service: external-service-zone-1
+        kuma.io/zone: zone-1
+        mesh: default
+      Target: 1.1.1.2
+      UnixDomainPath: ""
+      Weight: 1
+    frontend:
+    - ExternalService: null
+      Locality: null
+      Port: 8080
+      Tags:
+        kuma.io/service: frontend
+        mesh: default
+        version: v1
+      Target: 192.168.0.1
+      UnixDomainPath: ""
+      Weight: 1
+  TrafficRoutes: null
+ZoneEgressProxy: null
+ZoneIngress:
+  Meta:
+    CreationTime: "2018-07-17T16:05:36.995Z"
+    Mesh: ""
+    ModificationTime: "2018-07-17T16:05:36.995Z"
+    Name: zone-ingress-zone-1
+    Version: 2
+  Spec:
+    availableServices:
+    - instances: 1
+      mesh: default
+      tags:
+        kuma.io/service: backend
+        version: v1
+    - instances: 1
+      mesh: default
+      tags:
+        kuma.io/service: frontend
+        version: v1
+    - externalService: true
+      instances: 1
+      mesh: default
+      tags:
+        kuma.io/service: external-service-zone-1
+        kuma.io/zone: zone-1
+        mesh: default
+    networking:
+      address: 3.3.3.3
+      advertisedAddress: 4.4.4.4
+      advertisedPort: 30004
+      port: 30003
+    zone: zone-1
+ZoneIngressProxy:
+  GatewayRoutes:
+    Items: null
+    Pagination:
+      NextOffset: ""
+      Total: 0
+  TrafficRouteList:
+    Items:
+    - Meta:
+        CreationTime: "2018-07-17T16:05:36.995Z"
+        Mesh: default
+        ModificationTime: "2018-07-17T16:05:36.995Z"
+        Name: route-all-default
+        Version: 1
+      Spec:
+        conf:
+          destination:
+            kuma.io/service: '*'
+          load_balancer:
+            LbType:
+              RoundRobin: {}
+        destinations:
+        - match:
+            kuma.io/service: '*'
+        sources:
+        - match:
+            kuma.io/service: '*'
+    Pagination:
+      NextOffset: ""
+      Total: 1

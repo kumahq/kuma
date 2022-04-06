@@ -2,10 +2,10 @@ package manager
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core"
 	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -65,7 +65,7 @@ func (s *secretManager) Create(ctx context.Context, resource model.Resource, fs 
 	if err := s.encrypt(secret); err != nil {
 		return err
 	}
-	if err := s.secretStore.Create(ctx, secret, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
+	if err := s.secretStore.Create(ctx, secret, append(fs, core_store.CreatedAt(core.Now()))...); err != nil {
 		return err
 	}
 	return s.decrypt(secret)
@@ -79,7 +79,7 @@ func (s *secretManager) Update(ctx context.Context, resource model.Resource, fs 
 	if err := s.encrypt(secret); err != nil {
 		return err
 	}
-	if err := s.secretStore.Update(ctx, secret, append(fs, core_store.ModifiedAt(time.Now()))...); err != nil {
+	if err := s.secretStore.Update(ctx, secret, append(fs, core_store.ModifiedAt(core.Now()))...); err != nil {
 		return err
 	}
 	return s.decrypt(secret)
