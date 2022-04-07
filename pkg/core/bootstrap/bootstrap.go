@@ -348,7 +348,14 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	customizableManager.Customize(
 		mesh.MeshType,
-		mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.ResourceValidators().Mesh),
+		mesh_managers.NewMeshManager(
+			builder.ResourceStore(),
+			customizableManager,
+			builder.CaManagers(),
+			registry.Global(),
+			builder.ResourceValidators().Mesh,
+			cfg.Store.UnsafeDelete,
+		),
 	)
 
 	rateLimitValidator := ratelimit_managers.RateLimitValidator{
@@ -379,7 +386,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	customizableManager.Customize(
 		system.ZoneType,
-		zone.NewZoneManager(builder.ResourceStore(), zone.Validator{Store: builder.ResourceStore()}),
+		zone.NewZoneManager(builder.ResourceStore(), zone.Validator{Store: builder.ResourceStore()}, builder.Config().Store.UnsafeDelete),
 	)
 
 	customizableManager.Customize(
@@ -416,7 +423,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	customizableManager.Customize(
 		system.SecretType,
-		secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator),
+		secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator, cfg.Store.UnsafeDelete),
 	)
 
 	customizableManager.Customize(

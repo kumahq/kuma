@@ -21,8 +21,9 @@ import (
 var _ = Describe("ServiceValidator", func() {
 
 	type testCase struct {
-		request  string
-		expected string
+		request      string
+		unsafeDelete bool
+		expected     string
 	}
 
 	BeforeEach(func() {
@@ -62,9 +63,10 @@ var _ = Describe("ServiceValidator", func() {
 		func(given testCase) {
 			// given
 			validator := &webhooks.SecretValidator{
-				Decoder:   decoder,
-				Client:    k8sClient,
-				Validator: &testSecretValidator{},
+				Decoder:      decoder,
+				Client:       k8sClient,
+				Validator:    &testSecretValidator{},
+				UnsafeDelete: given.unsafeDelete,
 			}
 			admissionReview := admissionv1.AdmissionReview{}
 			err := yaml.Unmarshal([]byte(given.request), &admissionReview)
@@ -454,7 +456,7 @@ var _ = Describe("ServiceValidator", func() {
               status: Failure
             uid: ""`,
 		}),
-		Entry("should not allow deleting secret in use", testCase{
+		Entry("should allow deleting secret in use", testCase{
 			request: `
             apiVersion: admission.k8s.io/v1
             kind: AdmissionReview
@@ -465,6 +467,28 @@ var _ = Describe("ServiceValidator", func() {
                 kind: Secret
                 version: v1
               name: secret-not-in-use
+              namespace: default
+              operation: DELETE
+`,
+			expected: `
+            allowed: true
+            status:
+              code: 200
+              metadata: {}
+            uid: ""`,
+		}),
+		Entry("should allow deleting secret in use with unsafe delete", testCase{
+			unsafeDelete: true,
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Secret
+                version: v1
+              name: secret-in-use
               namespace: default
               operation: DELETE
 `,
