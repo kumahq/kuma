@@ -284,7 +284,7 @@ var _ = Describe("Mesh Manager", func() {
 			}, store.CreateByKey("dp-1", "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 
-			// when mesh-1 is delete
+			// when mesh-1 is deleted
 			err = unsafeDeleteResManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
 
 			// then
