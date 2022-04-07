@@ -254,9 +254,23 @@ jobs:
         description: version of k3s to use
         type: string
         default: v1.21.7-k3s1
-    parallelism: 8
+      parallelism:
+        description: level of parallelisation
+        type: integer
+        default: 8
+      pkgList:
+        description: package list for test execution
+        type: string
+        default: ""
+      ginkgoFlags:
+        description: additional ginkgo flags
+        type: string
+        default: ""
+    parallelism: << parameters.parallelism >>
     environment:
       GOPATH: /home/circleci/.go-kuma-go
+      E2E_PKG_LIST: << parameters.pkgList >>
+      GINKGO_E2E_FLAGS: << parameters.ginkgoFlags >>
     steps:
       - install_build_tools
       - checkout
@@ -302,7 +316,7 @@ jobs:
             - run:
                 name: "Run IPv6 E2E tests"
                 command: |
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
                   export API_VERSION=<< parameters.api >>
                   export IPV6=true
                   export KUMA_DEFAULT_RETRIES=60
@@ -317,8 +331,10 @@ jobs:
             - run:
                 name: "Run IPv4 E2E tests"
                 command: |
+                  echo "DEBUGING VAR $E2E_PKG_LIST"
+                  echo "DEBUGING VAR GINKGO_E2E_FLAGS"
                   export CI_K3S_VERSION=<< parameters.k3sVersion >>
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
                   export K3D=true
@@ -405,6 +421,14 @@ workflows:
           requires:
             - build
             - check
+      - e2e:
+          name: test/e2e-kubernetes-standalone-ipv4
+          requires:
+            - build
+            - check
+          parallelism: 1
+          ginkgoFlags: "-p"
+          pkgList: "./test/env_e2e/kubernetes/..."
       - e2e:
           # Avoids running expensive workflow on PRs
           <<: *work_branch_workflow_filter
