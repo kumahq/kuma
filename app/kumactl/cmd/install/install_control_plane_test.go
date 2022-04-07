@@ -239,5 +239,9 @@ controlPlane:
 			extraArgs: []string{"--tls-general-secret", "sec"},
 			errorMsg:  "You need to send both or neither of controlPlane.tls.general.caBundle and controlPlane.tls.general.secretName",
 		}),
+		Entry("with unexpected image tag", errTestCase{
+			extraArgs: []string{"--set", "global.image.tag=1.5.0"},
+			errorMsg:  "only supports",
+		}),
 	)
 })

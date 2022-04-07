@@ -85,6 +85,14 @@ func YamlK8s(yaml string) InstallFunc {
 	}
 }
 
+func MeshUniversal(name string) InstallFunc {
+	mesh := fmt.Sprintf(`
+type: Mesh
+name: %s
+`, name)
+	return YamlUniversal(mesh)
+}
+
 func YamlUniversal(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
@@ -174,6 +182,7 @@ func zoneRelatedResource(
 			cluster.GetTesting(),
 			uniCluster.name,
 			dpName,
+			"",
 			appType,
 			Config.IPV6,
 			false,
