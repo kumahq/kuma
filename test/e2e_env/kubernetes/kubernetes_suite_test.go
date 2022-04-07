@@ -9,9 +9,9 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/test/env_e2e/kubernetes/env"
-	healthcheck "github.com/kumahq/kuma/test/env_e2e/kubernetes/healthcheck"
-	"github.com/kumahq/kuma/test/env_e2e/kubernetes/jobs"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
+	healthcheck "github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
