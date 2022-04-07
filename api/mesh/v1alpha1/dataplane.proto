@@ -146,17 +146,20 @@ message Dataplane {
     message TransparentProxying {
 
       // Port on which all inbound traffic is being transparently redirected.
-      uint32 redirect_port_inbound = 1 [ (validate.rules).uint32 = {lte : 65535} ];
+      uint32 redirect_port_inbound = 1
+          [ (validate.rules).uint32 = {lte : 65535} ];
 
       // Port on which all outbound traffic is being transparently redirected.
-      uint32 redirect_port_outbound = 2 [ (validate.rules).uint32 = {lte : 65535} ];
+      uint32 redirect_port_outbound = 2
+          [ (validate.rules).uint32 = {lte : 65535} ];
 
       // List of services that will be access directly via IP:PORT
       repeated string direct_access_services = 3;
 
       // Port on which all IPv6 inbound traffic is being transparently
       // redirected.
-      uint32 redirect_port_inbound_v6 = 4 [ (validate.rules).uint32 = {lte : 65535} ];
+      uint32 redirect_port_inbound_v6 = 4
+          [ (validate.rules).uint32 = {lte : 65535} ];
 
       // List of reachable services (represented by the value of
       // kuma.io/service) via transparent proxying. Setting an explicit list can

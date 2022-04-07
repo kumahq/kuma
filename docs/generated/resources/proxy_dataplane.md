@@ -1,6 +1,6 @@
 ## Dataplane
 
-- `networking` (required)
+- `networking` (optional)
 
     Networking describes inbound and outbound interfaces of the dataplane.
 
@@ -42,7 +42,7 @@
         
             - `BUILTIN`    
     
-    - `inbound` (required, repeated)
+    - `inbound` (optional, repeated)
     
         Inbound describes a list of inbound interfaces of the dataplane.    
     
@@ -56,11 +56,11 @@
     
         Child properties:    
         
-        - `redirectPortInbound` (required)
+        - `redirectPortInbound` (optional)
         
             Port on which all inbound traffic is being transparently redirected.    
         
-        - `redirectPortOutbound` (required)
+        - `redirectPortOutbound` (optional)
         
             Port on which all outbound traffic is being transparently redirected.    
         

@@ -64,7 +64,7 @@
     
         List of available Metrics backends
 
-- `networking` (required)
+- `networking` (optional)
 
     Networking settings of the mesh
 
@@ -144,7 +144,7 @@
     
         Child properties:    
         
-        - `expiration` (required)
+        - `expiration` (optional)
         
             Time after which generated certificate for Dataplane will expire    
     
@@ -152,7 +152,7 @@
     
         Timeout on request to CA for DP certificate generation and retrieval
 
-- `conf` (required)
+- `conf` (optional)
 
     Configuration of the backend
 
@@ -259,7 +259,7 @@
     Name of the backend, can be then used in Mesh.logging.defaultBackend or in
     TrafficLogging
 
-- `format` (required)
+- `format` (optional)
 
     Format of access logs. Placeholders available on
     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
