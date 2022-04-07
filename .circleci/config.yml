@@ -428,7 +428,7 @@ workflows:
             - check
           parallelism: 1
           ginkgoFlags: "-p"
-          pkgList: "./test/env_e2e/kubernetes/..."
+          pkgList: "./test/e2e_env/kubernetes/..."
       - e2e:
           # Avoids running expensive workflow on PRs
           <<: *work_branch_workflow_filter
