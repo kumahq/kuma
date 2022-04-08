@@ -23,9 +23,10 @@ const (
 )
 
 type SecretValidator struct {
-	Decoder   *admission.Decoder
-	Client    kube_client.Reader
-	Validator secret_manager.SecretValidator
+	Decoder      *admission.Decoder
+	Client       kube_client.Reader
+	Validator    secret_manager.SecretValidator
+	UnsafeDelete bool
 }
 
 func (v *SecretValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
@@ -67,6 +68,9 @@ func (v *SecretValidator) handleUpdate(ctx context.Context, req admission.Reques
 }
 
 func (v *SecretValidator) handleDelete(ctx context.Context, req admission.Request) admission.Response {
+	if v.UnsafeDelete {
+		return admission.Allowed("")
+	}
 	secret := &kube_core.Secret{}
 	if err := v.Client.Get(ctx, kube_types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, secret); err != nil {
 		if kube_apierrs.IsNotFound(err) { // let K8S handle case when resource is not found

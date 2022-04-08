@@ -9,6 +9,13 @@ import "mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/struct.proto";
+import "config.proto";
+
+option (doc.config) = {
+  type : Other,
+  name : "Mesh",
+  file_name : "mesh"
+};
 
 // Mesh defines configuration of a single mesh.
 message Mesh {
@@ -25,10 +32,10 @@ message Mesh {
   message Mtls {
 
     // Name of the enabled backend
-    string enabledBackend = 1;
+    string enabledBackend = 1 [ (doc.required) = true ];
 
     // List of available Certificate Authority backends
-    repeated CertificateAuthorityBackend backends = 2;
+    repeated CertificateAuthorityBackend backends = 2 [ (doc.required) = true ];
   }
 
   // mTLS settings.
@@ -62,7 +69,7 @@ message Mesh {
 
     // DataplaneProxyMembership defines a set of requirements for data plane
     // proxies to be a member of the mesh.
-    DataplaneProxyConstraints dataplaneProxy = 1;
+    DataplaneProxyConstraints dataplaneProxy = 1 [ (doc.required) = true ];
   }
 
   // Constraints that applies to the mesh and its entities
@@ -75,7 +82,7 @@ message Mesh {
     message Rules {
       // Tags defines set of required tags. You can specify '*' in value to
       // require non empty value of tag
-      map<string, string> tags = 1;
+      map<string, string> tags = 1 [ (doc.required) = true ];
     }
 
     // Requirements defines a set of requirements that data plane proxies must
@@ -95,11 +102,11 @@ message Mesh {
 message CertificateAuthorityBackend {
 
   // Name of the backend
-  string name = 1;
+  string name = 1 [ (doc.required) = true ];
 
   // Type of the backend. Has to be one of the loaded plugins (Kuma ships with
   // builtin and provided)
-  string type = 2;
+  string type = 2 [ (doc.required) = true ];
 
   // DpCert defines settings for certificates generated for Dataplanes
   message DpCert {
@@ -162,10 +169,10 @@ message Networking {
 message Tracing {
 
   // Name of the default backend
-  string defaultBackend = 1;
+  string defaultBackend = 1 [ (doc.required) = true ];
 
   // List of available tracing backends
-  repeated TracingBackend backends = 2;
+  repeated TracingBackend backends = 2 [ (doc.required) = true ];
 }
 
 // TracingBackend defines tracing backend available to mesh. Backends can be
@@ -173,30 +180,30 @@ message Tracing {
 message TracingBackend {
   // Name of the backend, can be then used in Mesh.tracing.defaultBackend or in
   // TrafficTrace
-  string name = 1;
+  string name = 1 [ (doc.required) = true ];
 
   // Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
   // Empty value defaults to 100.0%
   google.protobuf.DoubleValue sampling = 2;
 
   // Type of the backend (Kuma ships with 'zipkin')
-  string type = 3;
+  string type = 3 [ (doc.required) = true ];
 
   // Configuration of the backend
-  google.protobuf.Struct conf = 4;
+  google.protobuf.Struct conf = 4 [ (doc.required) = true ];
 }
 
 message DatadogTracingBackendConfig {
   // Address of datadog collector.
-  string address = 1;
+  string address = 1 [ (doc.required) = true ];
 
   // Port of datadog collector
-  uint32 port = 2;
+  uint32 port = 2 [ (doc.required) = true ];
 }
 
 message ZipkinTracingBackendConfig {
   // Address of Zipkin collector.
-  string url = 1;
+  string url = 1 [ (doc.required) = true ];
 
   // Generate 128bit traces. Default: false
   bool traceId128bit = 2;
@@ -204,7 +211,7 @@ message ZipkinTracingBackendConfig {
   // Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
   // httpJson see
   // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
-  string apiVersion = 3;
+  string apiVersion = 3 [ (doc.required) = true ];
 
   // Determines whether client and server spans will share the same span
   // context. Default: true.
@@ -215,10 +222,10 @@ message ZipkinTracingBackendConfig {
 message Logging {
 
   // Name of the default backend
-  string defaultBackend = 1;
+  string defaultBackend = 1 [ (doc.required) = true ];
 
   // List of available logging backends
-  repeated LoggingBackend backends = 2;
+  repeated LoggingBackend backends = 2 [ (doc.required) = true ];
 }
 
 // LoggingBackend defines logging backend available to mesh. Backends can be
@@ -226,29 +233,29 @@ message Logging {
 message LoggingBackend {
   // Name of the backend, can be then used in Mesh.logging.defaultBackend or in
   // TrafficLogging
-  string name = 1;
+  string name = 1 [ (doc.required) = true ];
 
-  // Format of access logs. Placehodlers available on
+  // Format of access logs. Placeholders available on
   // https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
   string format = 2;
 
   // Type of the backend (Kuma ships with 'tcp' and 'file')
-  string type = 3;
+  string type = 3 [ (doc.required) = true ];
 
   // Configuration of the backend
-  google.protobuf.Struct conf = 4;
+  google.protobuf.Struct conf = 4 [ (doc.required) = true ];
 }
 
 // FileLoggingBackendConfig defines configuration for file based access logs
 message FileLoggingBackendConfig {
   // Path to a file that logs will be written to
-  string path = 1;
+  string path = 1 [ (doc.required) = true ];
 }
 
 // TcpLoggingBackendConfig defines configuration for TCP based access logs
 message TcpLoggingBackendConfig {
   // Address to TCP service that will receive logs
-  string address = 1;
+  string address = 1 [ (doc.required) = true ];
 }
 
 // Routing defines configuration for the routing in the mesh

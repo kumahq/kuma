@@ -3,10 +3,10 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-    - &go_version "1.17.3"
+    - &go_version "1.18"
 
   docker_images:
-    - &golang_image "circleci/golang:1.17.3"
+    - &golang_image "cimg/go:1.18.0"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
@@ -79,7 +79,6 @@ executors:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-    working_directory: /go/src/github.com/kumahq/kuma
 
   vm:
     resource_class: large
@@ -179,7 +178,7 @@ jobs:
         command: make dev/tools
     - run:
         name: "Install check tools (clang-format, ...)"
-        command: sudo apt install -y clang-format
+        command: sudo apt update && sudo apt install -y clang-format
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check

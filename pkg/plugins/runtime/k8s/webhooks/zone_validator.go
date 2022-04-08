@@ -12,14 +12,16 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-func NewZoneValidatorWebhook(validator zone.Validator) k8s_common.AdmissionValidator {
+func NewZoneValidatorWebhook(validator zone.Validator, unsafeDelete bool) k8s_common.AdmissionValidator {
 	return &ZoneValidator{
-		validator: validator,
+		validator:    validator,
+		unsafeDelete: unsafeDelete,
 	}
 }
 
 type ZoneValidator struct {
-	validator zone.Validator
+	validator    zone.Validator
+	unsafeDelete bool
 }
 
 func (z *ZoneValidator) InjectDecoder(_ *admission.Decoder) error {
@@ -35,8 +37,10 @@ func (z *ZoneValidator) Handle(ctx context.Context, req admission.Request) admis
 }
 
 func (z *ZoneValidator) ValidateDelete(ctx context.Context, req admission.Request) admission.Response {
-	if err := z.validator.ValidateDelete(ctx, req.Name); err != nil {
-		return admission.Errored(http.StatusBadRequest, err)
+	if !z.unsafeDelete {
+		if err := z.validator.ValidateDelete(ctx, req.Name); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
 	}
 	return admission.Allowed("")
 }

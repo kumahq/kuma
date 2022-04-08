@@ -35,7 +35,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		core.Now = func() time.Time {
 			return now
 		}
-		secretManager = secret_manager.NewSecretManager(store.NewSecretStore(memory.NewStore()), cipher.None(), nil)
+		secretManager = secret_manager.NewSecretManager(store.NewSecretStore(memory.NewStore()), cipher.None(), nil, false)
 		caManager = builtin.NewBuiltinCaManager(secretManager)
 	})
 
