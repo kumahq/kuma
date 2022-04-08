@@ -81,6 +81,10 @@ spec:
       {{ toYaml . | nindent 8 }}
       {{- end }}
       restartPolicy: OnFailure
+      {{ if .Values.hooks.podSecurityContext }}
+      securityContext:
+      {{ toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
+      {{- end }}   
       containers:
         - name: pre-delete-job
           image: {{ include "kubectl.formatImage" (dict "image" .Values.kubectl.image "root" $) | quote }}
@@ -89,3 +93,7 @@ spec:
             - 'delete'
             - 'ValidatingWebhookConfiguration'
             - {{ include "kuma.name" . }}-validating-webhook-configuration
+          {{ if .Values.hooks.containerSecurityContext }}
+          securityContext:
+          {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
+          {{- end }}

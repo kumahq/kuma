@@ -1522,6 +1522,7 @@ spec:
                   values:
                   - kuma-control-plane
               topologyKey: kubernetes.io/hostname
+      
       serviceAccountName: kuma-control-plane
       nodeSelector:
         
@@ -1531,6 +1532,7 @@ spec:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
+          
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
@@ -1663,6 +1665,7 @@ spec:
                   values:
                   - kuma-egress
               topologyKey: kubernetes.io/hostname
+      
       serviceAccountName: kuma-egress
       nodeSelector:
       
@@ -1672,6 +1675,7 @@ spec:
         - name: egress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
           imagePullPolicy: IfNotPresent
+          
           env:
             - name: POD_NAME
               valueFrom:

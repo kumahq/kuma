@@ -1896,6 +1896,7 @@ spec:
                   values:
                   - kuma-control-plane
               topologyKey: kubernetes.io/hostname
+      
       serviceAccountName: kuma-control-plane
       nodeSelector:
         
@@ -1905,6 +1906,7 @@ spec:
         - name: control-plane
           image: "kuma-ci/kuma-cp:greatest"
           imagePullPolicy: Never
+          
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"

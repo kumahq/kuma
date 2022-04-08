@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+
 	// force plugins to get initialized and registered
 	_ "github.com/kumahq/kuma/pkg/plugins/authn/api-server/certs"
 	_ "github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens"
