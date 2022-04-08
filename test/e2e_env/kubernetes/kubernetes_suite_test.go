@@ -22,12 +22,14 @@ func TestE2E(t *testing.T) {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		env.Cluster = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
-		E2EDeferCleanup(env.Cluster.DeleteKuma)
 		Expect(env.Cluster.Install(Kuma(core.Standalone, WithEnv("KUMA_STORE_UNSAFE_DELETE", "true")))).To(Succeed())
 		portFwd := env.Cluster.GetKuma().(*K8sControlPlane).PortFwd()
 
 		bytes, err := json.Marshal(portFwd)
 		Expect(err).ToNot(HaveOccurred())
+		// Deliberately do not delete Kuma to save execution time (30s).
+		// If everything is fine, K8S cluster will be deleted anyways
+		// If something went wrong, we want to investigate it.
 		return bytes
 	},
 	func(bytes []byte) {

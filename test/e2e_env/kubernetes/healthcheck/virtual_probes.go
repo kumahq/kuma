@@ -26,7 +26,7 @@ func VirtualProbes() {
 		})
 
 		err := NewClusterSetup().
-			Install(MeshKubernetes(mesh)).
+			Install(MTLSMeshKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
