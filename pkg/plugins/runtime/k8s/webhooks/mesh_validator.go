@@ -14,17 +14,23 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s_common.Converter) k8s_common.AdmissionValidator {
+func NewMeshValidatorWebhook(
+	validator managers_mesh.MeshValidator,
+	converter k8s_common.Converter,
+	unsafeDelete bool,
+) k8s_common.AdmissionValidator {
 	return &MeshValidator{
-		validator: validator,
-		converter: converter,
+		validator:    validator,
+		converter:    converter,
+		unsafeDelete: unsafeDelete,
 	}
 }
 
 type MeshValidator struct {
-	validator managers_mesh.MeshValidator
-	converter k8s_common.Converter
-	decoder   *admission.Decoder
+	validator    managers_mesh.MeshValidator
+	converter    k8s_common.Converter
+	decoder      *admission.Decoder
+	unsafeDelete bool
 }
 
 func (h *MeshValidator) InjectDecoder(d *admission.Decoder) error {
@@ -45,8 +51,10 @@ func (h *MeshValidator) Handle(ctx context.Context, req admission.Request) admis
 }
 
 func (h *MeshValidator) ValidateDelete(ctx context.Context, req admission.Request) admission.Response {
-	if err := h.validator.ValidateDelete(ctx, req.Name); err != nil {
-		return admission.Errored(http.StatusBadRequest, err)
+	if !h.unsafeDelete {
+		if err := h.validator.ValidateDelete(ctx, req.Name); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
 	}
 	return admission.Allowed("")
 }

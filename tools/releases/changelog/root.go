@@ -1,9 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
+	"sort"
+	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -17,6 +21,11 @@ var config struct {
 	branch     string
 	startTag   string
 	endTag     string
+	owner      string
+	repo       string
+	since      time.Duration
+	fromTag    string
+	fromCommit string
 }
 
 func gitHubOrgProject() string {
@@ -83,6 +92,131 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+var graphqlCmd = &cobra.Command{
+	Use:   "graphql",
+	Short: "Generate the changelog using graphql api",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		token := os.Getenv("GITHUB_TOKEN")
+		if token == "" {
+			token = os.Getenv("GITHUB_API_TOKEN")
+			if token == "" {
+				return errors.New("need to set at least env GITHUB_TOKEN or GITHUB_API_TOKEN")
+			}
+		}
+		since := time.Now().Add(-config.since)
+		gqlClient := GQLClient{Token: token}
+
+		// Retrieve data from github
+		commitLimit := config.fromCommit
+		if config.fromTag != "" {
+			res, err := gqlClient.commitByRef(config.owner, config.repo, config.fromTag)
+			if err != nil {
+				return err
+			}
+			commitLimit = res.Oid
+		}
+		res, err := gqlClient.historyGraphQl(config.owner, config.repo, config.branch, since)
+		if err != nil {
+			return err
+		}
+
+		// Rollup changes together
+		byChangelog := map[string]*Changelog{}
+		for i := range res {
+			if strings.HasPrefix(commitLimit, res[i].Oid) {
+				break
+			}
+			ci := NewCommitInfo(res[i])
+			if ci.ShouldIgnore() {
+				continue
+			}
+			cl := ci.Changelog
+			if ci.Changelog == "" {
+				cl = ci.PrTitle
+			}
+			c := byChangelog[cl]
+			if c == nil {
+				c = &Changelog{
+					Desc:         cl,
+					PullRequests: []int{},
+				}
+				byChangelog[cl] = c
+			}
+			c.PullRequests = append(c.PullRequests, ci.PrNumber)
+			c.Authors = append(c.Authors, "@"+ci.Author)
+		}
+		// Create a list to display
+		var out []string
+		for _, l := range byChangelog {
+			out = append(out, l.String())
+		}
+		sort.Strings(out)
+		fmt.Fprintf(cmd.OutOrStdout(), "%s", strings.Join(out, "\n"))
+		return nil
+	},
+}
+
+type Changelog struct {
+	Desc         string
+	Authors      []string
+	PullRequests []int
+}
+
+func (c Changelog) String() string {
+	var prLinks []string
+	for _, n := range c.PullRequests {
+		prLinks = append(prLinks, fmt.Sprintf("[%d](https://github.com/%s/%s/pull/%d)", n, config.owner, config.repo, n))
+	}
+	seen := map[string]interface{}{}
+	var authors []string
+	for _, a := range c.Authors {
+		if _, ok := seen[a]; !ok {
+			authors = append(authors, a)
+			seen[a] = nil
+		}
+	}
+	sort.Strings(authors)
+	return fmt.Sprintf("%s %s %s", c.Desc, strings.Join(prLinks, " "), strings.Join(authors, ","))
+}
+
+type CommitInfo struct {
+	Sha       string
+	Author    string
+	PrNumber  int
+	PrTitle   string
+	Changelog string
+}
+
+func (ci CommitInfo) ShouldIgnore() bool {
+	if ci.Changelog != "" {
+		return ci.Changelog == "skip"
+	}
+	for _, v := range []string{"ci(", "test(", "refactor(", "fix(ci)", "fix(test)", "tests("} {
+		if strings.HasPrefix(ci.PrTitle, v) {
+			return true
+		}
+	}
+	return false
+}
+
+func NewCommitInfo(commit GQLCommit) CommitInfo {
+	pr := commit.AssociatedPullRequests.Nodes[0]
+	changelog := ""
+	for _, l := range strings.Split(pr.Body, "\n") {
+		if strings.HasPrefix(l, "> Changelog: ") {
+			changelog = strings.TrimSpace(strings.TrimPrefix(l, "> Changelog: "))
+		}
+	}
+	// TODO extract changelog string
+	return CommitInfo{
+		Author:    pr.Author.Login,
+		Sha:       commit.Oid,
+		PrNumber:  pr.Number,
+		PrTitle:   pr.Title,
+		Changelog: changelog,
+	}
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -93,8 +227,17 @@ func Execute() {
 }
 
 func init() {
+	// Older stuff
 	rootCmd.Flags().StringVar(&config.gitHubRepo, "repo", "https://github.com/kumahq/kuma.git", "The GitHub repo to process")
 	rootCmd.Flags().StringVar(&config.branch, "branch", "master", "The branch to process")
 	rootCmd.Flags().StringVar(&config.startTag, "start", "0.7.1", "The start hash or tag")
 	rootCmd.Flags().StringVar(&config.endTag, "end", "", "The end hash or tag")
+
+	graphqlCmd.Flags().StringVar(&config.owner, "owner", "kumahq", "The owner")
+	graphqlCmd.Flags().StringVar(&config.repo, "name", "kuma", "The repo")
+	graphqlCmd.Flags().StringVar(&config.branch, "branch", "master", "The branch to look for the start on")
+	graphqlCmd.Flags().DurationVar(&config.since, "since", time.Hour*24*90, "When to get the data from can either be a timestamp of a tag (90 days ago)")
+	graphqlCmd.Flags().StringVar(&config.fromCommit, "from-commit", "", "If set only show commits after this commit sha")
+	graphqlCmd.Flags().StringVar(&config.fromTag, "from-tag", "", "If set only show commits after this tag (must be on the same branch)")
+	rootCmd.AddCommand(graphqlCmd)
 }

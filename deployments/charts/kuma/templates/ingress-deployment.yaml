@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
-    app: kuma-ingress
+    app: {{ include "kuma.name" . }}-ingress
 spec:
   strategy:
     rollingUpdate:
@@ -16,7 +16,7 @@ spec:
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}
-      app: kuma-ingress
+      app: {{ include "kuma.name" . }}-ingress
   template:
     metadata:
       annotations:
@@ -28,7 +28,7 @@ spec:
         {{- end }}
       labels:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
-        app: kuma-ingress
+        app: {{ include "kuma.name" . }}-ingress
     spec:
       {{- with .Values.ingress.affinity }}
       affinity:
@@ -44,7 +44,7 @@ spec:
                 - key: app
                   operator: In
                   values:
-                  - kuma-ingress
+                  - {{ include "kuma.name" . }}-ingress
               topologyKey: kubernetes.io/hostname
       {{- end }}
       {{ if .Values.ingress.podSecurityContext }}

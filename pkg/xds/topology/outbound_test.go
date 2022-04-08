@@ -41,20 +41,6 @@ var _ = Describe("TrafficRoute", func() {
 			},
 		},
 	}
-	defaultMeshWithMTLSAndZoneEgressAndLB := &core_mesh.MeshResource{
-		Meta: &test_model.ResourceMeta{
-			Name: defaultMeshName,
-		},
-		Spec: &mesh_proto.Mesh{
-			Mtls: &mesh_proto.Mesh_Mtls{
-				EnabledBackend: "ca-1",
-			},
-			Routing: &mesh_proto.Routing{
-				LocalityAwareLoadBalancing: true,
-				ZoneEgress:                 true,
-			},
-		},
-	}
 	defaultMeshWithMTLSAndZoneEgressDisabled := &core_mesh.MeshResource{
 		Meta: &test_model.ResourceMeta{
 			Name: defaultMeshName,
@@ -93,7 +79,7 @@ var _ = Describe("TrafficRoute", func() {
 	var dataSourceLoader datasource.Loader
 
 	BeforeEach(func() {
-		secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil)
+		secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil, false)
 		dataSourceLoader = datasource.NewDataSourceLoader(secretManager)
 	})
 	Describe("GetOutboundTargets()", func() {
@@ -1021,7 +1007,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				mesh: defaultMeshWithMTLSAndZoneEgressAndLB,
+				mesh: defaultMeshWithMTLSAndZoneEgress,
 				expected: core_xds.EndpointMap{
 					"redis": []core_xds.Endpoint{
 						{
@@ -1037,7 +1023,7 @@ var _ = Describe("TrafficRoute", func() {
 							Port:            10002,
 							Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2"},
 							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
-							Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 1},
+							Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 0},
 							ExternalService: &core_xds.ExternalService{},
 						},
 					},
@@ -1097,7 +1083,7 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
-					mesh: defaultMeshWithMTLSAndZoneEgressAndLB,
+					mesh: defaultMeshWithMTLSAndZoneEgress,
 					expected: core_xds.EndpointMap{
 						"service-in-zone2": []core_xds.Endpoint{
 							{
@@ -1105,7 +1091,7 @@ var _ = Describe("TrafficRoute", func() {
 								Port:            12345,
 								Tags:            map[string]string{mesh_proto.ServiceTag: "service-in-zone2", mesh_proto.ZoneTag: "zone-2", "mesh": "default"},
 								Weight:          2, // local weight is bumped to 2 to factor two instances of Ingresses
-								Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 1},
+								Locality:        &core_xds.Locality{Zone: "zone-2", Priority: 0},
 								ExternalService: &core_xds.ExternalService{},
 							},
 						},
@@ -1115,7 +1101,7 @@ var _ = Describe("TrafficRoute", func() {
 								Port:     12345,
 								Tags:     map[string]string{mesh_proto.ServiceTag: "test", mesh_proto.ZoneTag: "zone-2", "mesh": "default"},
 								Weight:   3, // local weight is bumped to 2 to factor two instances of Ingresses
-								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 1},
+								Locality: &core_xds.Locality{Zone: "zone-2", Priority: 0},
 							},
 						},
 						"httpbin": []core_xds.Endpoint{

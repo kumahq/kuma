@@ -43,22 +43,17 @@ mtls:
 	}
 
 	runDemoClient := func(mesh string) {
-		demoClientToken, err := universal.GetKuma().GenerateDpToken(mesh, "demo-client")
-		Expect(err).ToNot(HaveOccurred())
 		Expect(
-			DemoClientUniversal(AppModeDemoClient, mesh, demoClientToken, WithTransparentProxy(true))(universal),
+			DemoClientUniversal(AppModeDemoClient, mesh, WithTransparentProxy(true))(universal),
 		).To(Succeed())
 	}
 
 	runTestServer := func(mesh string, tls bool) {
-		echoServerToken, err := universal.GetKuma().GenerateDpToken(mesh, "test-server")
-		Expect(err).ToNot(HaveOccurred())
-
 		args := []string{"echo", "--instance", "universal-1"}
 		if tls {
 			args = append(args, "--tls", "--crt=/kuma/server.crt", "--key=/kuma/server.key")
 		}
-		Expect(TestServerUniversal("test-server", mesh, echoServerToken, WithArgs(args), WithProtocol("tcp"))(universal)).To(Succeed())
+		Expect(TestServerUniversal("test-server", mesh, WithArgs(args), WithProtocol("tcp"))(universal)).To(Succeed())
 	}
 
 	curlAddr := func(addr string, opts ...string) func() error {

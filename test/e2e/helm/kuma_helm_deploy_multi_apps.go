@@ -56,15 +56,9 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		// tear down apps
+	E2EAfterEach(func() {
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
-		// tear down Kuma
 		Expect(cluster.DeleteKuma()).To(Succeed())
-		// tear down cluster
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 

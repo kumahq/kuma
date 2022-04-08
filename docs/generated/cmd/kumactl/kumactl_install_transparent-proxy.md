@@ -67,6 +67,7 @@ kumactl install transparent-proxy [flags]
       --dry-run                                                                         dry run
       --exclude-inbound-ports string                                                    a comma separated list of inbound ports to exclude from redirect to Envoy
       --exclude-outbound-ports string                                                   a comma separated list of outbound ports to exclude from redirect to Envoy
+      --experimental-transparent-proxy-engine                                           use experimental transparent proxy engine
   -h, --help                                                                            help for transparent-proxy
       --kuma-cp-ip ip                                                                   the IP address of the Kuma CP which exposes the DNS service on port 53. (default 0.0.0.0)
       --kuma-dp-uid string                                                              the UID of the user that will run kuma-dp

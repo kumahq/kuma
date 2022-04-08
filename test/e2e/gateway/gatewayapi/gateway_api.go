@@ -44,6 +44,21 @@ var _ = E2EBeforeSuite(func() {
 
 	cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
+	externalService := `
+apiVersion: kuma.io/v1alpha1
+kind: ExternalService
+mesh: default
+metadata:
+  name: external-service
+spec:
+  tags:
+    kuma.io/service: external-service
+    kuma.io/protocol: http
+  networking:
+    address: external-service.external-services.svc.cluster.local:80
+`
+
+	ExternalServicesNamespace := "external-services"
 	err := NewClusterSetup().
 		Install(GatewayAPICRDs).
 		Install(Kuma(config_core.Standalone,
@@ -61,12 +76,20 @@ var _ = E2EBeforeSuite(func() {
 			testserver.WithNamespace(TestNamespace),
 			testserver.WithArgs("echo", "--instance", "test-server-2"),
 		)).
+		Install(Namespace(ExternalServicesNamespace)).
+		Install(testserver.Install(
+			testserver.WithName("external-service"),
+			testserver.WithNamespace(ExternalServicesNamespace),
+			testserver.WithArgs("echo", "--instance", "external-service"),
+		)).
+		Install(YamlK8s(externalService)).
 		Install(YamlK8s(gatewayClass)).
 		Setup(cluster)
 	Expect(err).ToNot(HaveOccurred())
 
 	E2EDeferCleanup(func() {
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
+		Expect(cluster.DeleteNamespace(ExternalServicesNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
@@ -212,6 +235,39 @@ spec:
 				resp, err := client.CollectResponseDirectly("http://"+address, client.WithHeader("host", "test-server-2.com"))
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(resp.Instance).To(Equal("test-server-2"))
+			}, "30s", "1s").Should(Succeed())
+		})
+
+		It("should route to external service", func() {
+			// given
+			routes := `
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: HTTPRoute
+metadata:
+  name: external-service
+  namespace: kuma-test
+spec:
+  parentRefs:
+  - name: kuma
+  hostnames:
+  - "external-service.com"
+  rules:
+  - backendRefs:
+    - group: kuma.io
+      kind: ExternalService
+      name: external-service
+`
+
+			// when
+			err := YamlK8s(routes)(cluster)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectResponseDirectly("http://"+address, client.WithHeader("host", "external-service.com"))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("external-service"))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})

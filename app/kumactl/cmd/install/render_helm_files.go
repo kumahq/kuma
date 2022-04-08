@@ -40,17 +40,14 @@ metadata:
 
 func renderHelmFiles(
 	templates []data.File,
-	args interface{},
 	namespace string,
-	helmValuesPrefix string,
+	overrideValues chartutil.Values,
 	kubeClientConfig *rest.Config,
 ) ([]data.File, error) {
 	kumaChart, err := loadCharts(templates)
 	if err != nil {
 		return nil, errors.Errorf("Failed to load charts: %s", err)
 	}
-
-	overrideValues := generateOverrideValues(args, helmValuesPrefix)
 
 	if err := chartutil.ProcessDependencies(kumaChart, overrideValues); err != nil {
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)

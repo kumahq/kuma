@@ -31,20 +31,12 @@ networking:
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone)).
 			Install(YamlUniversal(externalService)).
+			Install(DemoClientUniversal("dp-demo-client", "default", WithTransparentProxy(true))).
 			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "dp-demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
+	E2EAfterEach(func() {
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})

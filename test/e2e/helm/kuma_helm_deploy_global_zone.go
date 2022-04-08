@@ -79,16 +79,10 @@ func ZoneAndGlobalWithHelmChart() {
 		Expect(logs2).To(ContainSubstring("\"mode\":\"zone\""))
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		// tear down apps
+	E2EAfterEach(func() {
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
-		// tear down Kuma
 		Expect(c1.DeleteKuma()).To(Succeed())
 		Expect(c2.DeleteKuma()).To(Succeed())
-		// tear down clusters
 		Expect(clusters.DismissCluster()).To(Succeed())
 	})
 

@@ -4,33 +4,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/e2e/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func AuthUniversal() {
-	var cluster Cluster
-
-	BeforeEach(func() {
-		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-
-		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
-			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		Expect(cluster.DeleteKuma()).To(Succeed())
-		Expect(cluster.DismissCluster()).To(Succeed())
-	})
-
+func UserAuth() {
 	It("should generate user for group admin and log in", func() {
 		// given
-		token, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
+		token, err := env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
 			"--name", "new-admin",
 			"--group", "mesh-system:admin",
 			"--valid-for", "24h",
@@ -38,22 +19,22 @@ func AuthUniversal() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
-		err = cluster.GetKumactlOptions().KumactlConfigControlPlanesAdd(
+		err = env.Cluster.GetKumactlOptions().KumactlConfigControlPlanesAdd(
 			"test-admin",
-			cluster.GetKuma().GetAPIServerAddress(),
+			env.Cluster.GetKuma().GetAPIServerAddress(),
 			token,
 		)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then the new admin can access secrets
-		kumactl, err := NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), false)
+		kumactl, err := NewKumactlOptions(env.Cluster.GetTesting(), env.Cluster.GetKuma().GetName(), false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(kumactl.RunKumactl("get", "secrets")).To(Succeed())
 	})
 
 	It("should generate user for group member and log in", func() {
 		// given
-		token, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
+		token, err := env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("generate", "user-token",
 			"--name", "team-a-member",
 			"--group", "team-a",
 			"--valid-for", "24h",
@@ -61,15 +42,15 @@ func AuthUniversal() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when kumactl is configured with new token
-		err = cluster.GetKumactlOptions().KumactlConfigControlPlanesAdd(
+		err = env.Cluster.GetKumactlOptions().KumactlConfigControlPlanesAdd(
 			"test-user",
-			cluster.GetKuma().GetAPIServerAddress(),
+			env.Cluster.GetKuma().GetAPIServerAddress(),
 			token,
 		)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then the new member can access dataplanes but not secrets because they are not admin
-		kumactl, err := NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), false)
+		kumactl, err := NewKumactlOptions(env.Cluster.GetTesting(), env.Cluster.GetKuma().GetName(), false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(kumactl.RunKumactl("get", "dataplanes")).To(Succeed())
 		Expect(kumactl.RunKumactl("get", "secrets")).ToNot(Succeed())

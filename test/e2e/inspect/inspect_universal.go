@@ -14,13 +14,10 @@ func Universal() {
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 
-		Expect(Kuma(config_core.Standalone, WithVerbose())(cluster)).To(Succeed())
-		Expect(cluster.VerifyKuma()).To(Succeed())
-
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)(cluster)
+		err := NewClusterSetup().
+			Install(Kuma(config_core.Standalone, WithVerbose())).
+			Install(DemoClientUniversal(AppModeDemoClient, "default")).
+			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

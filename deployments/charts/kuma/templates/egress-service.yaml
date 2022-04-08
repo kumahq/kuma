@@ -1,4 +1,7 @@
 {{- if .Values.egress.enabled }}
+{{- if eq .Values.controlPlane.mode "global" }}
+{{ fail "You shouldn't run zoneEgress when running the CP in global" }}
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -23,6 +26,6 @@ spec:
       nodePort: {{ .Values.egress.service.nodePort }}
     {{- end }}
   selector:
-    app: kuma-egress
+    app: {{ include "kuma.name" . }}-egress
   {{- include "kuma.selectorLabels" . | nindent 4 }}
 {{- end }}

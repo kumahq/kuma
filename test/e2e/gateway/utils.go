@@ -160,15 +160,9 @@ networking:
 
 func EchoServerApp(name string, service string, instance string) framework.InstallFunc {
 	return func(cluster framework.Cluster) error {
-		token, err := cluster.GetKuma().GenerateDpToken("default", service)
-		if err != nil {
-			return err
-		}
-
 		return framework.TestServerUniversal(
 			name,
 			"default",
-			token,
 			framework.WithArgs([]string{"echo", "--instance", instance}),
 			framework.WithServiceName(service),
 		)(cluster)

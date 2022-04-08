@@ -36,21 +36,15 @@ func MultizoneUniversal() {
 	})
 
 	installZoneIngress := func() {
-		ingressToken, err := global.GetKuma().GenerateZoneIngressToken(Kuma2)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(IngressUniversal(ingressToken)(zoneUniversal)).To(Succeed())
+		Expect(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)(zoneUniversal)).To(Succeed())
 	}
 
 	installZoneEgress := func() {
-		egressToken, err := global.GetKuma().GenerateZoneEgressToken(Kuma2)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(EgressUniversal(egressToken)(zoneUniversal)).To(Succeed())
+		Expect(EgressUniversal(global.GetKuma().GenerateZoneEgressToken)(zoneUniversal)).To(Succeed())
 	}
 
 	installDataplane := func() {
-		token, err := global.GetKuma().GenerateDpToken("default", AppModeDemoClient)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(DemoClientUniversal(AppModeDemoClient, "default", token)(zoneUniversal)).To(Succeed())
+		Expect(DemoClientUniversal(AppModeDemoClient, "default")(zoneUniversal)).To(Succeed())
 	}
 
 	has := func(resourceURI string) func() bool {

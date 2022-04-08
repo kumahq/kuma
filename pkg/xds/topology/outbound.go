@@ -55,7 +55,7 @@ func BuildRemoteEndpointMap(
 
 	fillIngressOutbounds(outbound, zoneIngresses, nil, zone, mesh)
 
-	if mesh.LocalityAwareExternalServicesEnabled() {
+	if mesh.ZoneEgressEnabled() {
 		fillExternalServicesReachableFromZone(outbound, externalServices, mesh, loader, zone)
 	} else {
 		fillExternalServicesOutbounds(outbound, externalServices, mesh, loader, zone)
@@ -237,7 +237,7 @@ func fillIngressOutbounds(
 					}
 					// this is necessary for correct spiffe generation for dp when
 					// traffic is routed: egress -> ingress -> egress
-					if mesh.LocalityAwareExternalServicesEnabled() && service.ExternalService {
+					if mesh.ZoneEgressEnabled() && service.ExternalService {
 						endpoint.ExternalService = &core_xds.ExternalService{}
 					}
 
@@ -251,7 +251,7 @@ func fillIngressOutbounds(
 					Weight:   serviceInstances,
 					Locality: locality,
 				}
-				if mesh.LocalityAwareExternalServicesEnabled() && service.ExternalService {
+				if mesh.ZoneEgressEnabled() && service.ExternalService {
 					endpoint.ExternalService = &core_xds.ExternalService{}
 				}
 

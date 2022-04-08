@@ -18,25 +18,16 @@ func ResilienceStandaloneUniversal() {
 
 		universal = clusters.GetCluster(Kuma1)
 
-		err = NewClusterSetup().
-			Install(postgres.Install(Kuma1)).
-			Setup(universal)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(postgres.Install(Kuma1)(universal)).To(Succeed())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone,
 				WithPostgres(postgres.From(universal, Kuma1).GetEnvVars()),
 				WithEnv("KUMA_METRICS_DATAPLANE_IDLE_TIMEOUT", "10s"),
 			)).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", WithKumactlFlow())).
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
-
-		demoClientToken, err := universal.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(
-			DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithKumactlFlow())(universal),
-		).To(Succeed())
 	})
 
 	E2EAfterEach(func() {

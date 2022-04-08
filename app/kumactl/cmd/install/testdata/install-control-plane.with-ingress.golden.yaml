@@ -1317,24 +1317,46 @@ rules:
       - get
       - list
       - watch
+      - create
+      - update
+      - patch
+      - delete
   - apiGroups:
       - ""
     resources:
       - pods/finalizers
     verbs:
-      - "*"
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
   - apiGroups:
       - kuma.io
     resources:
       - meshes/finalizers
     verbs:
-      - "*"
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
   - apiGroups:
       - kuma.io
     resources:
       - dataplanes/finalizers
     verbs:
-      - "*"
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -1550,7 +1572,11 @@ spec:
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_MODE
-              value: "standalone"
+              value: "zone"
+            - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
+              value: "grpcs://192.168.0.1:5685"
+            - name: KUMA_MULTIZONE_ZONE_NAME
+              value: "zone-1"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT

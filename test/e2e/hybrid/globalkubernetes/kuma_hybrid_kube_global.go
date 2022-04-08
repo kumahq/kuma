@@ -31,29 +31,18 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 		Expect(err).ToNot(HaveOccurred())
 		globalCP := globalCluster.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := globalCP.GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
 		// Zone
 		zoneCluster = universalClusters.GetCluster(Kuma3)
-		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
-		Expect(err).ToNot(HaveOccurred())
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(TestServerUniversal("test-server", "default", echoServerToken, WithArgs([]string{"echo", "--instance", "universal-1"}))).
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(ingressTokenKuma3)).
+			Install(TestServerUniversal("test-server", "default", WithArgs([]string{"echo", "--instance", "universal-1"}))).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
+			Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
+	E2EAfterEach(func() {
 		err := globalCluster.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
 		err = globalCluster.DismissCluster()

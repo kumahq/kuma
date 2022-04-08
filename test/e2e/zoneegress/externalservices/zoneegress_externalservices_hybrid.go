@@ -110,20 +110,15 @@ networking:
 		// Universal Cluster 4
 		zone4 = universalClusters.GetCluster(Kuma4).(*UniversalCluster)
 		Expect(err).ToNot(HaveOccurred())
-		egressTokenZone4, err := globalCP.GenerateZoneEgressToken(Kuma4)
-		Expect(err).ToNot(HaveOccurred())
-		demoClientTokenZone4, err := globalCP.GenerateDpToken(nonDefaultMesh, "zone4-demo-client")
-		Expect(err).ToNot(HaveOccurred())
 
 		Expect(NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal(
 				"zone4-demo-client",
 				nonDefaultMesh,
-				demoClientTokenZone4,
 				WithTransparentProxy(true),
 			)).
-			Install(EgressUniversal(egressTokenZone4)).
+			Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
 			Install(
 				func(cluster Cluster) error {
 					return cluster.DeployApp(

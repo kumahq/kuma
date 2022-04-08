@@ -102,7 +102,7 @@ var _ = Describe("Secrets", func() {
 
 	BeforeEach(func() {
 		resStore := memory.NewStore()
-		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil)
+		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil, false)
 		builtinCaManager := ca_builtin.NewBuiltinCaManager(secretManager)
 		caManagers := core_ca.Managers{
 			"builtin": builtinCaManager,
@@ -110,12 +110,14 @@ var _ = Describe("Secrets", func() {
 		err := builtinCaManager.EnsureBackends(context.Background(), "default", newMesh().Spec.Mtls.Backends)
 		Expect(err).ToNot(HaveOccurred())
 
-		caProvider := NewCaProvider(caManagers)
-		identityProvider := NewIdentityProvider(caManagers)
-
 		m, err := core_metrics.NewMetrics("local")
 		Expect(err).ToNot(HaveOccurred())
 		metrics = m
+
+		caProvider, err := NewCaProvider(caManagers, metrics)
+		Expect(err).ToNot(HaveOccurred())
+		identityProvider, err := NewIdentityProvider(caManagers, metrics)
+		Expect(err).ToNot(HaveOccurred())
 
 		secrets, err = NewSecrets(caProvider, identityProvider, metrics)
 		Expect(err).ToNot(HaveOccurred())
@@ -150,6 +152,7 @@ var _ = Describe("Secrets", func() {
 
 			// and metric is published
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
+			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		})
 
 		It("should not regenerate certs if nothing has changed", func() {
@@ -165,6 +168,7 @@ var _ = Describe("Secrets", func() {
 			Expect(identity).To(Equal(newIdentity))
 			Expect(ca).To(Equal(newCa))
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
+			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		})
 
 		Context("should regenerate certificate", func() {
@@ -184,6 +188,7 @@ var _ = Describe("Secrets", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-2").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 			})
 
 			It("when dp tags has changed", func() {
@@ -197,6 +202,7 @@ var _ = Describe("Secrets", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(2)))
 			})
 
 			It("when cert is expiring", func() {
@@ -209,6 +215,7 @@ var _ = Describe("Secrets", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(2)))
 			})
 
 			It("when cert was cleaned up", func() {
@@ -221,6 +228,7 @@ var _ = Describe("Secrets", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(2)))
 			})
 		})
 
@@ -261,6 +269,7 @@ var _ = Describe("Secrets", func() {
 
 			// and metric is published
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
+			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		})
 
 		It("should not regenerate certs if nothing has changed", func() {
@@ -276,6 +285,7 @@ var _ = Describe("Secrets", func() {
 			Expect(identity).To(Equal(newIdentity))
 			Expect(ca).To(Equal(newCa))
 			Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
+			Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 		})
 
 		Context("should regenerate certificate", func() {
@@ -295,6 +305,7 @@ var _ = Describe("Secrets", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-2").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
 			})
 
 			It("when cert is expiring", func() {
@@ -307,6 +318,7 @@ var _ = Describe("Secrets", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(2)))
 			})
 
 			It("when cert was cleaned up", func() {
@@ -319,6 +331,7 @@ var _ = Describe("Secrets", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(2.0))
+				Expect(test_metrics.FindMetric(metrics, "ca_manager_get_cert", "backend_name", "ca-1").GetSummary().GetSampleCount()).To(Equal(uint64(2)))
 			})
 		})
 

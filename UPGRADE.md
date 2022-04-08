@@ -8,9 +8,16 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+## Upgrade to `1.6.x`
+
 ### Helm
 
 controlPlane.resources is now on object instead of a string. Any existing value should be adapted accordingly.
+
+### Zone egress and ExternalService
+
+When an `ExternalService` has the tag `kuma.io/zone` and `ZoneEgress` is enabled then the request flow will be different after upgrading Kuma to the newest version.
+Previously, the request to the `ExternalService` goes through the `ZoneEgress` in the current zone. The newest version flow is different, and when `ExternalService` is defined in a different zone then the request will go through local `ZoneEgress` to `ZoneIngress` in zone where `ExternalService` is defined and leave the cluster through `ZoneEgress` in this cluster. To keep previous behavior, remove the `kuma.io/zone` tag from the `ExternalService` definition.
 
 ### Zone egress
 
@@ -37,7 +44,24 @@ Previously, a `MeshGatewayInstance` generated a `Deployment` and `Service` whose
 names ended with a unique suffix. With this release, those objects will have the
 same name as the `MeshGatewayInstance`.
 
-## Upgrade to `1.5.0`
+### Inspect API
+
+In connection with the changes around `MeshGateway` and `MeshGatewayRoute`, the output
+schema of the `<policy-type>/<policy>/dataplanes` has changed. Every policy can
+now affect both normal `Dataplane`s and `Dataplane`s configured as builtin gateways.
+The configuration for the latter type is done via `MeshGateway` resources.
+
+Every item in the `items` array now has a `kind` property of either:
+
+* `SidecarDataplane`: a normal `Dataplane` with outbounds, inbounds,
+  etc.
+* `MeshGatewayDataplane`: a `MeshGateway`-configured `Dataplane` with a new
+  structure representing the `MeshGateway` it serves.
+
+Some examples can be found in the [Inspect API
+docs](https://kuma.io/docs/1.6.x/documentation/http-api/#inspect-api).
+
+## Upgrade to `1.5.x`
 
 ### Any type
 

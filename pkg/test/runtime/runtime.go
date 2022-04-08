@@ -94,7 +94,11 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
-	builder.WithCAProvider(secrets.NewCaProvider(builder.CaManagers()))
+	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)
+	if err != nil {
+		return nil, err
+	}
+	builder.WithCAProvider(caProvider)
 	builder.WithAPIServerAuthenticator(certs.ClientCertAuthenticator)
 	builder.WithAccess(core_runtime.Access{
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
@@ -120,10 +124,17 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.ResourceValidators().Mesh)
+	meshManager := mesh_managers.NewMeshManager(
+		builder.ResourceStore(),
+		customizableManager,
+		builder.CaManagers(),
+		registry.Global(),
+		builder.ResourceValidators().Mesh,
+		builder.Config().Store.UnsafeDelete,
+	)
 	customManagers[core_mesh.MeshType] = meshManager
 
-	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil)
+	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil, builder.Config().Store.UnsafeDelete)
 	customManagers[system.SecretType] = secretManager
 	return customizableManager
 }

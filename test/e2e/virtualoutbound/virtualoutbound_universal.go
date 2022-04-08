@@ -19,7 +19,6 @@ func VirtualOutboundOnUniversal() {
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Global
 		cluster = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
@@ -30,29 +29,16 @@ func VirtualOutboundOnUniversal() {
 		_ = cluster.GetKumactlOptions().RunKumactl("delete", "virtual-outbound", "instances")
 		_ = cluster.GetKumactlOptions().RunKumactl("delete", "virtual-outbound", "all")
 
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-
 		err = NewClusterSetup().
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
-			Install(TestServerUniversal("test-server1", "default", echoServerToken, WithArgs([]string{"echo", "--instance", "srv-1"}), WithServiceInstance("1"))).
-			Install(TestServerUniversal("test-server2", "default", echoServerToken, WithArgs([]string{"echo", "--instance", "srv-2"}), WithServiceInstance("2"))).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server1", "default", WithArgs([]string{"echo", "--instance", "srv-1"}), WithServiceInstance("1"))).
+			Install(TestServerUniversal("test-server2", "default", WithArgs([]string{"echo", "--instance", "srv-2"}), WithServiceInstance("2"))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		err := cluster.DeleteKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = cluster.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
+	E2EAfterEach(func() {
+		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should add hostnames for individual instances", func() {
