@@ -407,7 +407,6 @@ hooks:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
 
-  #The below context is used in 3 places:Jobs (crd/webhook/ns)
   # -- Security context at the pod level for crd/webhook/ns
   podSecurityContext:
     #The values below are examples. More values can be added as needed, since the field resolves as free form.
