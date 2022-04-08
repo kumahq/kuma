@@ -2,10 +2,10 @@ package manager
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
 	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -14,20 +14,22 @@ import (
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 )
 
-func NewSecretManager(secretStore secret_store.SecretStore, cipher secret_cipher.Cipher, validator SecretValidator) manager.ResourceManager {
+func NewSecretManager(secretStore secret_store.SecretStore, cipher secret_cipher.Cipher, validator SecretValidator, unsafeDelete bool) manager.ResourceManager {
 	return &secretManager{
-		secretStore: secretStore,
-		cipher:      cipher,
-		validator:   validator,
+		secretStore:  secretStore,
+		cipher:       cipher,
+		validator:    validator,
+		unsafeDelete: unsafeDelete,
 	}
 }
 
 var _ manager.ResourceManager = &secretManager{}
 
 type secretManager struct {
-	secretStore secret_store.SecretStore
-	cipher      secret_cipher.Cipher
-	validator   SecretValidator
+	secretStore  secret_store.SecretStore
+	cipher       secret_cipher.Cipher
+	validator    SecretValidator
+	unsafeDelete bool
 }
 
 func (s *secretManager) Get(ctx context.Context, resource model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -65,7 +67,7 @@ func (s *secretManager) Create(ctx context.Context, resource model.Resource, fs 
 	if err := s.encrypt(secret); err != nil {
 		return err
 	}
-	if err := s.secretStore.Create(ctx, secret, append(fs, core_store.CreatedAt(core.Now()))...); err != nil {
+	if err := s.secretStore.Create(ctx, secret, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
 	return s.decrypt(secret)
@@ -79,7 +81,7 @@ func (s *secretManager) Update(ctx context.Context, resource model.Resource, fs 
 	if err := s.encrypt(secret); err != nil {
 		return err
 	}
-	if err := s.secretStore.Update(ctx, secret, append(fs, core_store.ModifiedAt(core.Now()))...); err != nil {
+	if err := s.secretStore.Update(ctx, secret, append(fs, core_store.ModifiedAt(time.Now()))...); err != nil {
 		return err
 	}
 	return s.decrypt(secret)
@@ -91,8 +93,10 @@ func (s *secretManager) Delete(ctx context.Context, resource model.Resource, fs 
 		return newInvalidTypeError()
 	}
 	opts := core_store.NewDeleteOptions(fs...)
-	if err := s.validator.ValidateDelete(ctx, opts.Name, opts.Mesh); err != nil {
-		return err
+	if !s.unsafeDelete {
+		if err := s.validator.ValidateDelete(ctx, opts.Name, opts.Mesh); err != nil {
+			return err
+		}
 	}
 	return s.secretStore.Delete(ctx, secret, fs...)
 }

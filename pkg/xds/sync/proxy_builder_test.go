@@ -5,14 +5,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -34,14 +32,6 @@ type mockMetadataTracker struct{}
 
 func (m mockMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.DataplaneMetadata {
 	return nil
-}
-
-func ToYAML(proxy *core_xds.Proxy) ([]byte, error) {
-	out, err := yaml.Marshal(proxy)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func initializeStore(ctx context.Context, resourceManager core_manager.ResourceManager, fileWithResourcesName string) {
@@ -80,10 +70,6 @@ func initializeStore(ctx context.Context, resourceManager core_manager.ResourceM
 }
 
 var _ = Describe("Proxy Builder", func() {
-	core.Now = func() time.Time {
-		now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
-		return now
-	}
 	tracker := mockMetadataTracker{}
 	localZone := "zone-1"
 
@@ -125,11 +111,46 @@ var _ = Describe("Proxy Builder", func() {
 			// when
 			proxy, err := egressProxyBuilder.Build(rk)
 			Expect(err).ToNot(HaveOccurred())
-			proxyYaml, err := ToYAML(proxy)
-			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			Expect(proxyYaml).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "01.zone-egress-proxy.golden.yaml")))
+			Expect(proxy.ZoneEgressProxy.ZoneEgressResource.Spec).To(
+				matchers.MatchProto(&mesh_proto.ZoneEgress{
+					Zone: "zone-1",
+					Networking: &mesh_proto.ZoneEgress_Networking{
+						Address: "1.1.1.1",
+						Port:    10002,
+					},
+				}))
+			Expect(proxy.ZoneEgressProxy.ZoneIngresses[0].Spec).To(
+				matchers.MatchProto(&mesh_proto.ZoneIngress{
+					AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+						{
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "service-in-zone-2",
+								"mesh":                "default",
+							},
+							Instances: 1,
+							Mesh:      "default",
+						},
+						{
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "external-service-in-zone-2",
+								mesh_proto.ZoneTag:    "zone-2",
+								"mesh":                "default",
+							},
+							Instances:       1,
+							Mesh:            "default",
+							ExternalService: true,
+						},
+					},
+					Zone: "zone-2",
+					Networking: &mesh_proto.ZoneIngress_Networking{
+						Address:           "6.6.6.6",
+						AdvertisedAddress: "7.7.7.7",
+						AdvertisedPort:    20003,
+						Port:              20002,
+					},
+				}))
 		})
 	})
 
@@ -148,11 +169,67 @@ var _ = Describe("Proxy Builder", func() {
 			// when
 			proxy, err := ingressProxyBuilder.Build(rk)
 			Expect(err).ToNot(HaveOccurred())
-			proxyYaml, err := ToYAML(proxy)
-			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			Expect(proxyYaml).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "02.zone-ingress-proxy.golden.yaml")))
+			Expect(proxy.ZoneIngressProxy.TrafficRouteList.GetItems()[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.TrafficRoute{
+				Sources: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							mesh_proto.ServiceTag: "*",
+						},
+					},
+				},
+				Destinations: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							mesh_proto.ServiceTag: "*",
+						},
+					},
+				},
+				Conf: &mesh_proto.TrafficRoute_Conf{
+					Destination: mesh_proto.MatchAnyService(),
+					LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+						LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+					},
+				},
+			}))
+			Expect(proxy.ZoneIngress.Spec).To(matchers.MatchProto(&mesh_proto.ZoneIngress{
+				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+					{
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "backend",
+							"version":             "v1",
+						},
+						Instances: 1,
+						Mesh:      "default",
+					},
+					{
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "frontend",
+							"version":             "v1",
+						},
+						Instances: 1,
+						Mesh:      "default",
+					},
+					{
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "external-service-zone-1",
+							mesh_proto.ZoneTag:    "zone-1",
+							"mesh":                "default",
+						},
+						Instances:       1,
+						Mesh:            "default",
+						ExternalService: true,
+					},
+				},
+				Zone: "zone-1",
+				Networking: &mesh_proto.ZoneIngress_Networking{
+					Address:           "3.3.3.3",
+					AdvertisedAddress: "4.4.4.4",
+					AdvertisedPort:    30004,
+					Port:              30003,
+				},
+			}))
 		})
 	})
 })

@@ -94,7 +94,7 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 	if err := resource.Validate(); err != nil {
 		return err
 	}
-	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(core.Now()))...)
+	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(time.Now()))...)
 }
 
 type ConflictRetry struct {

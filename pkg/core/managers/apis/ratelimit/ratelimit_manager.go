@@ -2,10 +2,10 @@ package ratelimit
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -56,7 +56,7 @@ func (m *rateLimitManager) Create(ctx context.Context, resource core_model.Resou
 		return err
 	}
 
-	if err := m.store.Create(ctx, rateLimit, append(fs, core_store.CreatedAt(core.Now()))...); err != nil {
+	if err := m.store.Create(ctx, rateLimit, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
 	return nil
@@ -102,7 +102,7 @@ func (m *rateLimitManager) Update(ctx context.Context, resource core_model.Resou
 		return err
 	}
 
-	return m.store.Update(ctx, rateLimit, append(fs, core_store.ModifiedAt(core.Now()))...)
+	return m.store.Update(ctx, rateLimit, append(fs, core_store.ModifiedAt(time.Now()))...)
 }
 
 func (m *rateLimitManager) rateLimit(resource core_model.Resource) (*core_mesh.RateLimitResource, error) {

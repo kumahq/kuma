@@ -2,10 +2,10 @@ package mesh
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -22,6 +22,7 @@ func NewMeshManager(
 	caManagers core_ca.Managers,
 	registry core_registry.TypeRegistry,
 	validator MeshValidator,
+	unsafeDelete bool,
 ) core_manager.ResourceManager {
 	return &meshManager{
 		store:         store,
@@ -29,6 +30,7 @@ func NewMeshManager(
 		caManagers:    caManagers,
 		registry:      registry,
 		meshValidator: validator,
+		unsafeDelete:  unsafeDelete,
 	}
 }
 
@@ -38,6 +40,7 @@ type meshManager struct {
 	caManagers    core_ca.Managers
 	registry      core_registry.TypeRegistry
 	meshValidator MeshValidator
+	unsafeDelete  bool
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -76,7 +79,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	}
 
 	// persist Mesh
-	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(core.Now()))...); err != nil {
+	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
 	if err := defaults_mesh.EnsureDefaultMeshResources(ctx, m.otherManagers, opts.Name); err != nil {
@@ -92,8 +95,10 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	}
 	opts := core_store.NewDeleteOptions(fs...)
 
-	if err := m.meshValidator.ValidateDelete(ctx, opts.Name); err != nil {
-		return err
+	if !m.unsafeDelete {
+		if err := m.meshValidator.ValidateDelete(ctx, opts.Name); err != nil {
+			return err
+		}
 	}
 	// delete Mesh first to avoid a state where a Mesh could exist without secrets.
 	// even if removal of secrets fails later on, delete operation can be safely tried again.
@@ -141,7 +146,7 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 	if err := EnsureCAs(ctx, m.caManagers, mesh, mesh.Meta.GetName()); err != nil {
 		return err
 	}
-	return m.store.Update(ctx, mesh, append(fs, core_store.ModifiedAt(core.Now()))...)
+	return m.store.Update(ctx, mesh, append(fs, core_store.ModifiedAt(time.Now()))...)
 }
 
 func (m *meshManager) mesh(resource core_model.Resource) (*core_mesh.MeshResource, error) {
