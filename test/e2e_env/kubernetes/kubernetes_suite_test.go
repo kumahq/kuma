@@ -33,6 +33,9 @@ var _ = SynchronizedBeforeSuite(
 		return bytes
 	},
 	func(bytes []byte) {
+		if env.Cluster != nil {
+			return // cluster was already initiated with first function
+		}
 		// Only one process should manage Kuma deployment
 		// Other parallel processes should just replicate CP with its port forwards
 		portFwd := PortFwd{}
