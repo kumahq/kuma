@@ -45,6 +45,10 @@ spec:
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
       terminationGracePeriodSeconds: 5
+      {{- if .Values.cni.podSecurityContext }}
+      securityContext:
+      {{ toYaml .Values.cni.podSecurityContext | trim | nindent 8 }}
+      {{- end }}
       containers:
         - name: install-cni
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
