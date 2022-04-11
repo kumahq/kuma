@@ -3,15 +3,15 @@ FROM gcr.io/distroless/base-debian11:debug-nonroot
 ARG ENVOY_VERSION
 ARG ARCH
 
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-alpine /usr/bin/envoy
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
+ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
+ADD /build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-alpine /usr/bin/envoy
+ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
 
-COPY $KUMA_ROOT/tools/releases/templates/LICENSE \
-    $KUMA_ROOT/tools/releases/templates/README \
+COPY /tools/releases/templates/LICENSE \
+    /tools/releases/templates/README \
     /kuma/
 
-COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma/
+COPY /tools/releases/templates/NOTICE /kuma/
 
 USER nobody:nobody
 

@@ -33,14 +33,14 @@ RUN ssh-keygen -A \
 ARG ARCH
 ARG ENVOY_VERSION
 
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-alpine /usr/bin/envoy
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/test-server/test-server /usr/bin
-ADD $KUMA_ROOT/test/server/certs/server.crt /kuma
-ADD $KUMA_ROOT/test/server/certs/server.key /kuma
+ADD /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
+ADD /build/artifacts-linux-$ARCH/kuma-dp/kuma-dp /usr/bin
+ADD /build/artifacts-linux-$ARCH/envoy/envoy-$ENVOY_VERSION-alpine /usr/bin/envoy
+ADD /build/artifacts-linux-$ARCH/coredns/coredns /usr/bin
+ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
+ADD /build/artifacts-linux-$ARCH/test-server/test-server /usr/bin
+ADD /test/server/certs/server.crt /kuma
+ADD /test/server/certs/server.key /kuma
 
 # do not detach (-D), log to stderr (-e)
 CMD ["/usr/sbin/sshd", "-D", "-e"]

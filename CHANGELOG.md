@@ -1,7 +1,6 @@
 # CHANGELOG
 
 ## [1.6.0]
-> Unreleased
 
 ### New features:
 
@@ -25,6 +24,7 @@ Helm:
 * fail if global.image.tag and appVersion incompatible [4085](https://github.com/kumahq/kuma/pull/4085) @michaelbeaumont
 * set version to track appVersion [4083](https://github.com/kumahq/kuma/pull/4083) @michaelbeaumont
 * expose kuma-cp gui through ingress [4101](https://github.com/kumahq/kuma/pull/4101) @lukidzi
+* allow specifying security context [4153](https://github.com/kumahq/kuma/pull/4153) @gdasson @bartsmykla
 
 Other:
 * feat(k8s): ability to set custom service account token volume [4036](https://github.com/kumahq/kuma/pull/4036) @johnharris85
@@ -66,6 +66,7 @@ Other:
 * fix(gateway): skip creating MeshGateways without proper attachment [4011](https://github.com/kumahq/kuma/pull/4011) @jakubdyszkiewicz
 * fix(helm): add prefix to `app` label in ingress/egress deployment [4123](https://github.com/kumahq/kuma/pull/4123) @lahabana
 * fix(helm): fix other template prefix in ingress/egress [4124](https://github.com/kumahq/kuma/pull/4124) @lahabana
+* fix(helm): remove wildcard rbac version [4148](https://github.com/kumahq/kuma/pull/4148) @johnharris85
 * fix(k8s): reconcile serviceMaps when using mesh namespace annotation [3815](https://github.com/kumahq/kuma/pull/3815) @lahabana
 * fix(kuma-cp): avoid generating excessive envoy clusters [3984](https://github.com/kumahq/kuma/pull/3984) @lobkovilya
 * fix(kuma-cp): default policy creation [4073](https://github.com/kumahq/kuma/pull/4073) @lobkovilya
@@ -79,7 +80,6 @@ Other:
 * perf(k8s): move outbounds from Dataplane to Config [3986](https://github.com/kumahq/kuma/pull/3986) @jakubdyszkiewicz
 
 ## [1.5.1]
-> Unreleased
 
 * chore(k8s): replace cni registry (backport #4070) [4076](https://github.com/kumahq/kuma/pull/4076)
 * fix(kuma-cp): default policy creation (backport #4073) [4080](https://github.com/kumahq/kuma/pull/4080)

@@ -6,13 +6,13 @@ RUN apt-get update && \
     apt-get -y install iptables iproute2 && \
     rm -rf /var/lib/apt/lists/*
 
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
+ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
 
-COPY $KUMA_ROOT/tools/releases/templates/LICENSE \
-    $KUMA_ROOT/tools/releases/templates/README \
+COPY /tools/releases/templates/LICENSE \
+    /tools/releases/templates/README \
     /kuma/
 
-COPY $KUMA_ROOT/tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
+COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
 
 RUN adduser --system --disabled-password --group kumactl --uid 5678
 
