@@ -47,6 +47,10 @@ spec:
                   - {{ include "kuma.name" . }}-egress
               topologyKey: kubernetes.io/hostname
       {{- end }}
+      {{- if .Values.egress.podSecurityContext }}
+      securityContext:
+      {{ toYaml .Values.egress.podSecurityContext | trim | nindent 8 }}
+      {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-egress
       {{- with .Values.egress.nodeSelector }}
       nodeSelector:
@@ -56,6 +60,10 @@ spec:
         - name: egress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.dataPlane.image.pullPolicy }}
+          {{- if .Values.egress.containerSecurityContext }}
+          securityContext:
+          {{ toYaml .Values.egress.containerSecurityContext | trim | nindent 12 }}
+          {{- end }}
           env:
             - name: POD_NAME
               valueFrom:
