@@ -258,19 +258,13 @@ jobs:
         description: level of parallelisation
         type: integer
         default: 8
-      pkgList:
-        description: package list for test execution
+      target:
+        description: makefile target
         type: string
-        default: ""
-      ginkgoFlags:
-        description: additional ginkgo flags
-        type: string
-        default: ""
+        default: "test/e2e"
     parallelism: << parameters.parallelism >>
     environment:
       GOPATH: /home/circleci/.go-kuma-go
-      E2E_PKG_LIST: << parameters.pkgList >>
-      GINKGO_E2E_FLAGS: << parameters.ginkgoFlags >>
     steps:
       - install_build_tools
       - checkout
@@ -322,7 +316,7 @@ jobs:
                   export KUMA_DEFAULT_RETRIES=60
                   export KUMA_DEFAULT_TIMEOUT="6s"
                   export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
-                  make -j2 test/e2e
+                  make -j2 << parameters.target >>
             - store_test_results:
                 path: /tmp/ginkgo-test-results
       - unless:
@@ -338,7 +332,7 @@ jobs:
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
                   export K3D=true
-                  make -j2 test/e2e
+                  make -j2 << parameters.target >>
             - store_test_results:
                 path: /tmp/ginkgo-test-results
 
@@ -422,13 +416,16 @@ workflows:
             - build
             - check
       - e2e:
-          name: test/e2e-kubernetes-standalone-ipv4
+          name: e2e-env
+          matrix:
+            parameters:
+              k3sVersion: [v1.19.16-k3s1, v1.21.7-k3s1]
+              ipv6: [true, false]
+              target: [test/e2e-kubernetes]
           requires:
             - build
             - check
           parallelism: 1
-          ginkgoFlags: "-p"
-          pkgList: "./test/e2e_env/kubernetes/..."
       - e2e:
           # Avoids running expensive workflow on PRs
           <<: *work_branch_workflow_filter
