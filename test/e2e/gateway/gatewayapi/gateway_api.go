@@ -2,7 +2,6 @@ package gatewayapi
 
 import (
 	"net"
-	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -155,14 +154,23 @@ spec:
 				return k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(TestNamespace), "delete", "gateway", "kuma")
 			})
 			Expect(YamlK8s(haConfig)(cluster)).To(Succeed())
-			// TODO this shouldn't be necessary, need to reconcile on MeshGatewayConfig
-			time.Sleep(10 * time.Second)
 			Expect(YamlK8s(haGatewayClass)(cluster)).To(Succeed())
 			Expect(YamlK8s(haGateway)(cluster)).To(Succeed())
 		})
 
 		It("should create the right number of pods", func() {
 			Expect(cluster.WaitApp("kuma", "kuma-test", 3)).To(Succeed())
+
+			newHaConfig := `
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayConfig
+metadata:
+  name: ha-config
+spec:
+  replicas: 4`
+			Expect(YamlK8s(newHaConfig)(cluster)).To(Succeed())
+
+			Expect(cluster.WaitApp("kuma", "kuma-test", 4)).To(Succeed())
 		})
 	})
 

@@ -184,7 +184,7 @@ func gatewaysForClass(l logr.Logger, client kube_client.Client) kube_handler.Map
 
 		gateways := &gatewayapi.GatewayList{}
 		if err := client.List(
-			context.Background(), gateways, kube_client.MatchingFields{gatewayClassKey: class.Name},
+			context.Background(), gateways, kube_client.MatchingFields{gatewayClassField: class.Name},
 		); err != nil {
 			l.Error(err, "unexpected error listing Gateways")
 			return nil
@@ -195,6 +195,47 @@ func gatewaysForClass(l logr.Logger, client kube_client.Client) kube_handler.Map
 			requests = append(requests, kube_reconcile.Request{
 				NamespacedName: kube_client.ObjectKeyFromObject(&gateway),
 			})
+		}
+
+		return requests
+	}
+}
+
+// gatewaysForConfig returns a function that calculates which Gateways might
+// be affected by changes in a MeshGatewayConfig.
+func gatewaysForConfig(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("gatewaysForConfig")
+
+	return func(obj kube_client.Object) []kube_reconcile.Request {
+		config, ok := obj.(*mesh_k8s.MeshGatewayConfig)
+		if !ok {
+			l.Error(nil, "unexpected error converting to be mapped %T object to MeshGatewayConfig", obj)
+			return nil
+		}
+
+		classes := &gatewayapi.GatewayClassList{}
+		if err := client.List(
+			context.Background(), classes, kube_client.MatchingFields{parametersRefField: config.Name},
+		); err != nil {
+			l.Error(err, "unexpected error listing GatewayClasses")
+			return nil
+		}
+
+		var requests []kube_reconcile.Request
+
+		for _, class := range classes.Items {
+			gateways := &gatewayapi.GatewayList{}
+			if err := client.List(
+				context.Background(), gateways, kube_client.MatchingFields{gatewayClassField: class.Name},
+			); err != nil {
+				l.Error(err, "unexpected error listing Gateways")
+				return nil
+			}
+			for _, gateway := range gateways.Items {
+				requests = append(requests, kube_reconcile.Request{
+					NamespacedName: kube_client.ObjectKeyFromObject(&gateway),
+				})
+			}
 		}
 
 		return requests
@@ -237,6 +278,10 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&kube_source.Kind{Type: &gatewayapi.GatewayClass{}},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForClass(r.Log, r.Client)),
+		).
+		Watches(
+			&kube_source.Kind{Type: &mesh_k8s.MeshGatewayConfig{}},
+			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForConfig(r.Log, r.Client)),
 		).
 		Complete(r)
 }
