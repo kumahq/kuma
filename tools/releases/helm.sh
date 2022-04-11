@@ -18,6 +18,11 @@ GH_PAGES_BRANCH="gh-pages"
 #  version:
 #    with the git commit suffix, if the kuma version has a git commit suffix
 #    otherwise it leaves version alone, assuming it's been chosen intentionally
+#  dependencies:
+#    for any dependency $chart where charts/$chart exists, it deletes $chart from
+#    .dependencies so that the embedded $chart is used and not the one fetched
+#    from the repository. `cr` fetches explicit dependencies and they take
+#    precedence over embedded files.
 function dev_version {
   for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "${dir}" ]; then
@@ -31,6 +36,13 @@ function dev_version {
     yq -i ".appVersion = \"${kuma_version}\"" "${dir}/Chart.yaml"
 
     IFS=- read -r _version_core version_extra <<< "${kuma_version}"
+
+    for chart in $(yq e '.dependencies[].name' "${dir}/Chart.yaml"); do
+        if [ ! -d "${dir}/charts/${chart}" ]; then
+            continue
+        fi
+        yq -i e "del(.dependencies[] | select(.name == \"${chart}\"))" "${dir}/Chart.yaml"
+    done
 
     chart_version=$(yq '.version' "${dir}/Chart.yaml")
 

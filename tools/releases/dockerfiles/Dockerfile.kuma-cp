@@ -2,16 +2,16 @@ FROM alpine:3.15.3
 
 ARG ARCH
 
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
+ADD /build/artifacts-linux-$ARCH/kuma-cp/kuma-cp /usr/bin
 
 RUN mkdir -p /etc/kuma
-ADD $KUMA_ROOT/pkg/config/app/kuma-cp/kuma-cp.defaults.yaml /etc/kuma
+ADD /pkg/config/app/kuma-cp/kuma-cp.defaults.yaml /etc/kuma
 
-COPY $KUMA_ROOT/tools/releases/templates/LICENSE \
-    $KUMA_ROOT/tools/releases/templates/README \
+COPY /tools/releases/templates/LICENSE \
+    /tools/releases/templates/README \
     /kuma/
 
-COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma/
+COPY /tools/releases/templates/NOTICE /kuma/
 
 RUN addgroup -S -g 6789 kuma-cp \
  && adduser -S -D -G kuma-cp -u 6789 kuma-cp
