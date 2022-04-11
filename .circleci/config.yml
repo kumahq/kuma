@@ -416,6 +416,15 @@ workflows:
             - build
             - check
       - e2e:
+          name: e2e-kubernetes
+          target: test/e2e-kubernetes
+          requires:
+            - build
+            - check
+          parallelism: 1
+      - e2e:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
           name: e2e-env
           matrix:
             parameters:
