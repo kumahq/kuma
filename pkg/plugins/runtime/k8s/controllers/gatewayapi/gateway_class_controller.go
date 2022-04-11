@@ -17,6 +17,7 @@ import (
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 )
 
@@ -63,6 +64,8 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	// Prepare modified object for patching status
 	updated := class.DeepCopy()
 
+	// TODO invalid parameters and check ready in gateway!
+
 	kube_apimeta.SetStatusCondition(
 		&updated.Status.Conditions,
 		kube_meta.Condition{
@@ -81,6 +84,34 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	}
 
 	return kube_ctrl.Result{}, nil
+}
+
+func getParametersRef(ctx context.Context, client kube_client.Client, class *gatewayapi.GatewayClass) (*mesh_k8s.MeshGatewayConfig, error) {
+	if class.Spec.ParametersRef == nil {
+		return nil, nil
+	}
+
+	if class.Spec.ParametersRef.Group != gatewayapi.Group(mesh_k8s.GroupVersion.Group) || class.Spec.ParametersRef.Kind != "MeshGatewayConfig" {
+		return nil, nil
+	}
+
+	namespace := class.Namespace
+	if ns := class.Spec.ParametersRef.Namespace; ns != nil {
+		namespace = string(*ns)
+	}
+
+	namespacedName := kube_types.NamespacedName{Name: class.Spec.ParametersRef.Name, Namespace: namespace}
+
+	config := &mesh_k8s.MeshGatewayConfig{}
+	if err := client.Get(ctx, namespacedName, class); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return nil, nil
+		}
+
+		return nil, errors.Wrapf(err, "unable to get MeshGatewayConfig %s", namespacedName.String())
+	}
+
+	return config, nil
 }
 
 // gatewayToClassMapper maps a Gateway object event to a list of GatewayClasses.
