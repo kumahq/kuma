@@ -165,6 +165,7 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		return []string{string(gateway.Spec.GatewayClassName)}
 	}
 
+	// this index is also needed by GatewayReconciler!
 	if err := mgr.GetFieldIndexer().IndexField(
 		context.Background(), &gatewayapi.Gateway{}, gatewayClassKey, gatewayClassNameIndexer,
 	); err != nil {

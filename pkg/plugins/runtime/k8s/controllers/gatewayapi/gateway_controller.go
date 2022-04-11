@@ -170,6 +170,37 @@ func gatewaysForRoute(l logr.Logger) kube_handler.MapFunc {
 	}
 }
 
+// gatewaysForClass returns a function that calculates which Gateways might
+// be affected by changes in a GatewayClass so they can be reconciled.
+func gatewaysForClass(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("gatewaysForClass")
+
+	return func(obj kube_client.Object) []kube_reconcile.Request {
+		class, ok := obj.(*gatewayapi.GatewayClass)
+		if !ok {
+			l.Error(nil, "unexpected error converting to be mapped %T object to GatewayClass", obj)
+			return nil
+		}
+
+		gateways := &gatewayapi.GatewayList{}
+		if err := client.List(
+			context.Background(), gateways, kube_client.MatchingFields{gatewayClassKey: class.Name},
+		); err != nil {
+			l.Error(err, "unexpected error listing Gateways")
+			return nil
+		}
+
+		var requests []kube_reconcile.Request
+		for _, gateway := range gateways.Items {
+			requests = append(requests, kube_reconcile.Request{
+				NamespacedName: kube_client.ObjectKeyFromObject(&gateway),
+			})
+		}
+
+		return requests
+	}
+}
+
 func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	// This index helps us list routes that point to a MeshGateway in
 	// attachedListenersForMeshGateway.
@@ -202,6 +233,10 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&kube_source.Kind{Type: &gatewayapi.HTTPRoute{}},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForRoute(r.Log)),
+		).
+		Watches(
+			&kube_source.Kind{Type: &gatewayapi.GatewayClass{}},
+			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForClass(r.Log, r.Client)),
 		).
 		Complete(r)
 }
