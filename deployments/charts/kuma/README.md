@@ -61,6 +61,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.extraSecrets | list | `[]` | Additional secrets to mount into the control plane |
 | controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.webhooks.ownerReference.additionalRules | string | `""` | Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma. |
+| controlPlane.podSecurityContext | object | `{}` | Security context at the pod level for control plane. |
+| controlPlane.containerSecurityContext | object | `{}` | Security context at the container level for control plane. |
 | cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |
 | cni.chained | bool | `false` | Install CNI in chained mode |
 | cni.netDir | string | `"/etc/cni/multus/net.d"` | Set the CNI install directory |
@@ -71,6 +73,8 @@ A Helm chart for the Kuma Control Plane
 | cni.image.registry | string | `"docker.io"` | CNI image registry |
 | cni.image.repository | string | `"kumahq/install-cni"` | CNI image repository |
 | cni.image.tag | string | `"0.0.9"` | CNI image tag |
+| cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
+| cni.containerSecurityContext | object | `{}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
@@ -87,6 +91,8 @@ A Helm chart for the Kuma Control Plane
 | ingress.annotations | object | `{}` | Additional deployment annotation |
 | ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
 | ingress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
+| ingress.podSecurityContext | object | `{}` | Security context at the pod level for ingress |
+| ingress.containerSecurityContext | object | `{}` | Security context at the container level for ingress |
 | egress.enabled | bool | `false` | If true, it deploys Egress for cross cluster communication |
 | egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | egress.replicas | int | `1` | Number of replicas of the Egress |
@@ -98,12 +104,16 @@ A Helm chart for the Kuma Control Plane
 | egress.annotations | object | `{}` | Additional deployment annotation |
 | egress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
 | egress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
+| egress.podSecurityContext | object | `{}` | Security context at the pod level for egress |
+| egress.containerSecurityContext | object | `{}` | Security context at the container level for egress |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"bitnami"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
 | kubectl.image.tag | string | `"1.20"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
+| hooks.podSecurityContext | object | `{}` | Security context at the pod level for crd/webhook/ns |
+| hooks.containerSecurityContext | object | `{}` | Security context at the container level for crd/webhook/ns |
 | experimental.meshGateway | bool | `false` | If true, it installs experimental built-in Gateway support |
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 

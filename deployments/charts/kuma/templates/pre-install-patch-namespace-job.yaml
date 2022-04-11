@@ -82,9 +82,17 @@ spec:
       {{ toYaml . | nindent 8 }}
       {{- end }}
       restartPolicy: OnFailure
+      {{- if .Values.hooks.podSecurityContext }}
+      securityContext:
+      {{ toYaml .Values.hooks.podSecurityContext | trim | nindent 8 }}
+      {{- end }}
       containers:
         - name: pre-install-job
           image: {{ include "kubectl.formatImage" (dict "image" .Values.kubectl.image "root" $) | quote }}
+          {{- if .Values.hooks.containerSecurityContext }}
+          securityContext:
+          {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
+          {{- end }}
           command:
             - 'kubectl'
             - 'patch'
