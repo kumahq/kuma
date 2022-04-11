@@ -2,6 +2,7 @@ package gatewayapi
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -64,16 +65,24 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	// Prepare modified object for patching status
 	updated := class.DeepCopy()
 
-	// TODO invalid parameters and check ready in gateway!
+	_, condition, err := getParametersRef(ctx, r.Client, class.Spec.ParametersRef)
+	if err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get parametersRef")
+	}
+
+	if condition == nil {
+		condition = &kube_meta.Condition{
+			Type:   string(gatewayapi.GatewayClassConditionStatusAccepted),
+			Status: kube_meta.ConditionTrue,
+			Reason: string(gatewayapi.GatewayClassReasonAccepted),
+		}
+	}
+
+	condition.ObservedGeneration = class.GetGeneration()
 
 	kube_apimeta.SetStatusCondition(
 		&updated.Status.Conditions,
-		kube_meta.Condition{
-			Type:               string(gatewayapi.GatewayClassConditionStatusAccepted),
-			Status:             kube_meta.ConditionTrue,
-			Reason:             string(gatewayapi.GatewayClassReasonAccepted),
-			ObservedGeneration: class.GetGeneration(),
-		},
+		*condition,
 	)
 
 	if err := r.Client.Status().Patch(ctx, updated, kube_client.MergeFrom(class)); err != nil {
@@ -86,32 +95,44 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	return kube_ctrl.Result{}, nil
 }
 
-func getParametersRef(ctx context.Context, client kube_client.Client, class *gatewayapi.GatewayClass) (*mesh_k8s.MeshGatewayConfig, error) {
-	if class.Spec.ParametersRef == nil {
-		return nil, nil
+func getParametersRef(
+	ctx context.Context,
+	client kube_client.Client,
+	parametersRef *gatewayapi.ParametersReference,
+) (*mesh_k8s.MeshGatewayConfig, *kube_meta.Condition, error) {
+	if parametersRef == nil {
+		return nil, nil, nil
 	}
 
-	if class.Spec.ParametersRef.Group != gatewayapi.Group(mesh_k8s.GroupVersion.Group) || class.Spec.ParametersRef.Kind != "MeshGatewayConfig" {
-		return nil, nil
+	condition := kube_meta.Condition{
+		Type:   string(gatewayapi.GatewayClassConditionStatusAccepted),
+		Status: kube_meta.ConditionFalse,
+		Reason: string(gatewayapi.GatewayClassReasonInvalidParameters),
 	}
 
-	namespace := class.Namespace
-	if ns := class.Spec.ParametersRef.Namespace; ns != nil {
-		namespace = string(*ns)
+	if parametersRef.Group != gatewayapi.Group(mesh_k8s.GroupVersion.Group) || parametersRef.Kind != "MeshGatewayConfig" {
+		condition.Message = fmt.Sprintf("parametersRef must point to a MeshGatewayConfig.%s", mesh_k8s.GroupVersion.Group)
+		return nil, &condition, nil
 	}
 
-	namespacedName := kube_types.NamespacedName{Name: class.Spec.ParametersRef.Name, Namespace: namespace}
+	if parametersRef.Namespace != nil && *parametersRef.Namespace != "" {
+		condition.Message = "parametersRef must not refer to a namespace"
+		return nil, &condition, nil
+	}
+
+	namespacedName := kube_types.NamespacedName{Name: parametersRef.Name}
 
 	config := &mesh_k8s.MeshGatewayConfig{}
-	if err := client.Get(ctx, namespacedName, class); err != nil {
+	if err := client.Get(ctx, namespacedName, config); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			return nil, nil
+			condition.Message = "parametersRef could not be found"
+			return nil, &condition, nil
 		}
 
-		return nil, errors.Wrapf(err, "unable to get MeshGatewayConfig %s", namespacedName.String())
+		return nil, nil, errors.Wrapf(err, "unable to get MeshGatewayConfig %s", namespacedName.String())
 	}
 
-	return config, nil
+	return config, nil, nil
 }
 
 // gatewayToClassMapper maps a Gateway object event to a list of GatewayClasses.

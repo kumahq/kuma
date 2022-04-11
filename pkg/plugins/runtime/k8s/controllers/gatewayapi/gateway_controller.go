@@ -109,7 +109,7 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client k
 		ServiceType: kube_core.ServiceTypeLoadBalancer,
 	}
 
-	ref, err := getParametersRef(ctx, client, class)
+	ref, _, err := getParametersRef(ctx, client, class.Spec.ParametersRef)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to fetch parameters for GatewayClass")
 	}
