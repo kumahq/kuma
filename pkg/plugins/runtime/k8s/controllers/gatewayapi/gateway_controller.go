@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -62,6 +63,10 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	}
 
 	if class.Spec.ControllerName != common.ControllerName {
+		return kube_ctrl.Result{}, nil
+	}
+
+	if !kube_apimeta.IsStatusConditionTrue(class.Status.Conditions, string(gatewayapi.GatewayClassConditionStatusAccepted)) {
 		return kube_ctrl.Result{}, nil
 	}
 
