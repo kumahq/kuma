@@ -74,7 +74,7 @@ spec:
 
 		// then the client is not allowed to do it
 		Eventually(func() (string, error) {
-			return cluster.GetKuma().GetKumaCPLogs()
+			return cluster.GetKumaCPLogs()
 		}, "30s", "1s").Should(ContainSubstring("dataplane cannot be a member of mesh"))
 		out, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "--mesh", "demo")
 		Expect(err).ToNot(HaveOccurred())

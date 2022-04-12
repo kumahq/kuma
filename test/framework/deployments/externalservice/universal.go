@@ -11,9 +11,9 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	util_net "github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/ssh"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 type universalDeployment struct {
@@ -128,12 +128,12 @@ func getName(t testing.TestingT, container string) (string, error) {
 }
 
 func (j *universalDeployment) allocatePublicPortsFor(ports ...string) error {
-	for i, port := range ports {
-		pubPortUInt32, err := util_net.PickTCPPort("", uint32(33204+i), uint32(34204+i))
+	for _, port := range ports {
+		pubPort, err := utils.GetFreePort()
 		if err != nil {
 			return err
 		}
-		j.ports[port] = strconv.Itoa(int(pubPortUInt32))
+		j.ports[port] = strconv.Itoa(pubPort)
 	}
 	return nil
 }

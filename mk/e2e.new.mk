@@ -144,3 +144,7 @@ test/e2e-kubernetes: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/load/images/kuma-1
 	$(MAKE) GINKGO_E2E_FLAGS=-p E2E_PKG_LIST=$(KUBE_E2E_PKG_LIST) test/e2e/test || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
+
+.PHONY: test/e2e-universal
+test/e2e-universal: build/kumactl images/test
+	$(MAKE) GINKGO_E2E_FLAGS=-p E2E_PKG_LIST=./test/e2e_env/universal test/e2e/test

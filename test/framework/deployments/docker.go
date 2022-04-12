@@ -11,7 +11,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	util_net "github.com/kumahq/kuma/pkg/util/net"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 type DockerContainer struct {
@@ -192,13 +192,13 @@ func (d *DockerContainer) GetName() (string, error) {
 
 func AllocatePublicPortsFor(ports ...uint32) DockerContainerOptFn {
 	return func(d *DockerContainer) error {
-		for i, port := range ports {
-			pubPortUInt32, err := util_net.PickTCPPort("", uint32(33204+i), uint32(34204+i))
+		for _, port := range ports {
+			pubPort, err := utils.GetFreePort()
 			if err != nil {
 				return err
 			}
 
-			d.ports[port] = pubPortUInt32
+			d.ports[port] = uint32(pubPort)
 		}
 
 		return nil

@@ -11,8 +11,9 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	util_net "github.com/kumahq/kuma/pkg/util/net"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/test/framework/ssh"
+	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 type AppMode string
@@ -197,26 +198,24 @@ var defaultDockerOptions = docker.RunOptions{
 }
 
 type UniversalApp struct {
-	t            testing.TestingT
-	mainApp      *ssh.App
-	mainAppEnv   map[string]string
-	mainAppArgs  []string
-	dpApp        *ssh.App
-	ports        map[string]string
-	lastUsedPort uint32
-	container    string
-	ip           string
-	verbose      bool
-	mesh         string
+	t           testing.TestingT
+	mainApp     *ssh.App
+	mainAppEnv  map[string]string
+	mainAppArgs []string
+	dpApp       *ssh.App
+	ports       map[string]string
+	container   string
+	ip          string
+	verbose     bool
+	mesh        string
 }
 
 func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps []string) (*UniversalApp, error) {
 	app := &UniversalApp{
-		t:            t,
-		ports:        map[string]string{},
-		lastUsedPort: 10204,
-		verbose:      verbose,
-		mesh:         mesh,
+		t:       t,
+		ports:   map[string]string{},
+		verbose: verbose,
+		mesh:    mesh,
 	}
 
 	app.allocatePublicPortsFor("22")
@@ -230,7 +229,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 	}
 
 	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName)
+	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName+"_"+strings.Split(core.NewUUID(), "-")[0])
 	for _, cap := range caps {
 		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
 	}
@@ -265,12 +264,11 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 
 func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
 	for _, port := range ports {
-		pubPortUInt32, err := util_net.PickTCPPort("", s.lastUsedPort+1, 11204)
+		pubPort, err := utils.GetFreePort()
 		if err != nil {
 			panic(err)
 		}
-		s.ports[port] = strconv.Itoa(int(pubPortUInt32))
-		s.lastUsedPort = pubPortUInt32
+		s.ports[port] = strconv.Itoa(pubPort)
 	}
 }
 

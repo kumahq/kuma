@@ -459,6 +459,7 @@ type Cluster interface {
 	// Generic
 	DeployKuma(mode core.CpMode, opts ...KumaDeploymentOption) error
 	GetKuma() ControlPlane
+	GetKumaCPLogs() (string, error)
 	VerifyKuma() error
 	DeleteKuma() error
 	InjectDNS(namespace ...string) error
@@ -486,7 +487,6 @@ type Cluster interface {
 
 type ControlPlane interface {
 	GetName() string
-	GetKumaCPLogs() (string, error)
 	GetMetrics() (string, error)
 	GetKDSServerAddress() string
 	GetGlobalStatusAPI() string
