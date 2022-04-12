@@ -27,15 +27,16 @@ import (
 )
 
 type PodRedirect struct {
-	BuiltinDNSEnabled     bool
-	BuiltinDNSPort        uint32
-	ExcludeOutboundPorts  string
-	RedirectPortOutbound  uint32
-	RedirectInbound       bool
-	ExcludeInboundPorts   string
-	RedirectPortInbound   uint32
-	RedirectPortInboundV6 uint32
-	UID                   string
+	BuiltinDNSEnabled         bool
+	BuiltinDNSPort            uint32
+	ExcludeOutboundPorts      string
+	RedirectPortOutbound      uint32
+	RedirectInbound           bool
+	ExcludeInboundPorts       string
+	RedirectPortInbound       uint32
+	RedirectPortInboundV6     uint32
+	UID                       string
+	SkipDNSConntrackZoneSplit bool
 }
 
 func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
@@ -82,25 +83,34 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
+	enabled, exist, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitSkipDNSConntrackZoneSplit)
+	if err != nil {
+		return nil, err
+	}
+	if exist && enabled {
+		podRedirect.SkipDNSConntrackZoneSplit = true
+	}
+
 	return podRedirect, nil
 }
 
 func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig {
 	return &config.TransparentProxyConfig{
-		DryRun:                 false,
-		Verbose:                true,
-		RedirectPortOutBound:   fmt.Sprintf("%d", pr.RedirectPortOutbound),
-		RedirectInBound:        pr.RedirectInbound,
-		RedirectPortInBound:    fmt.Sprintf("%d", pr.RedirectPortInbound),
-		RedirectPortInBoundV6:  fmt.Sprintf("%d", pr.RedirectPortInboundV6),
-		ExcludeInboundPorts:    pr.ExcludeInboundPorts,
-		ExcludeOutboundPorts:   pr.ExcludeOutboundPorts,
-		UID:                    pr.UID,
-		GID:                    pr.UID, // TODO: shall we have a separate annotation here?
-		RedirectDNS:            pr.BuiltinDNSEnabled,
-		RedirectAllDNSTraffic:  false,
-		AgentDNSListenerPort:   fmt.Sprintf("%d", pr.BuiltinDNSPort),
-		DNSUpstreamTargetChain: "",
+		DryRun:                    false,
+		Verbose:                   true,
+		RedirectPortOutBound:      fmt.Sprintf("%d", pr.RedirectPortOutbound),
+		RedirectInBound:           pr.RedirectInbound,
+		RedirectPortInBound:       fmt.Sprintf("%d", pr.RedirectPortInbound),
+		RedirectPortInBoundV6:     fmt.Sprintf("%d", pr.RedirectPortInboundV6),
+		ExcludeInboundPorts:       pr.ExcludeInboundPorts,
+		ExcludeOutboundPorts:      pr.ExcludeOutboundPorts,
+		UID:                       pr.UID,
+		GID:                       pr.UID, // TODO: shall we have a separate annotation here?
+		RedirectDNS:               pr.BuiltinDNSEnabled,
+		RedirectAllDNSTraffic:     false,
+		AgentDNSListenerPort:      fmt.Sprintf("%d", pr.BuiltinDNSPort),
+		DNSUpstreamTargetChain:    "",
+		SkipDNSConntrackZoneSplit: pr.SkipDNSConntrackZoneSplit,
 	}
 }
 
@@ -127,6 +137,12 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		result = append(result,
 			"--redirect-all-dns-traffic",
 			"--redirect-dns-port", strconv.FormatInt(int64(pr.BuiltinDNSPort), 10),
+		)
+	}
+
+	if pr.SkipDNSConntrackZoneSplit {
+		result = append(result,
+			"--skip-dns-conntrack-zone-split",
 		)
 	}
 

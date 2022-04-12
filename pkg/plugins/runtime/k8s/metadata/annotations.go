@@ -78,6 +78,9 @@ const (
 
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
+
+	// KumaInitSkipDNSConntrackZoneSplit whether to skip using conntrack zone splitting in iptables
+	KumaInitSkipDNSConntrackZoneSplit = "kuma.io/init-skip-dns-conntrack-zone-split"
 )
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
