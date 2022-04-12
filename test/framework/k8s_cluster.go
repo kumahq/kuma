@@ -827,9 +827,7 @@ func (c *K8sCluster) deleteKumaViaKumactl() error {
 }
 
 func (c *K8sCluster) DeleteKuma() error {
-	if c.controlplane.portFwd.localAPITunnel != nil {
-		c.controlplane.portFwd.localAPITunnel.Close()
-	}
+	c.controlplane.ClosePortForwards()
 	var err error
 	switch c.opts.installationMode {
 	case HelmInstallationMode:
@@ -877,6 +875,14 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 	c.WaitNamespaceDelete(namespace)
 
 	return nil
+}
+
+func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
+	return k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
+}
+
+func (c *K8sCluster) DeleteMesh(mesh string) error {
+	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
 }
 
 func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {
@@ -1003,4 +1009,12 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 			c.defaultTimeout)
 	}
 	return nil
+}
+
+func (c *K8sCluster) Install(fn InstallFunc) error {
+	return fn(c)
+}
+
+func (c *K8sCluster) SetCP(cp *K8sControlPlane) {
+	c.controlplane = cp
 }

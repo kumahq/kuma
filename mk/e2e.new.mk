@@ -27,6 +27,7 @@ E2E_ENV_VARS += KUMA_UNIVERSAL_IMAGE=$(KUMA_UNIVERSAL_IMAGE)
 TEST_NAMES = $(shell ls -1 ./test/e2e)
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)
+KUBE_E2E_PKG_LIST ?= ./test/e2e_env/kubernetes
 GINKGO_E2E_FLAGS ?=
 
 ifdef GINKGO_TEST_RESULTS_DIR
@@ -135,3 +136,11 @@ test/e2e: $(E2E_DEPS_TARGETS)
 	$(MAKE) test/e2e/k8s/start
 	$(MAKE) test/e2e/test || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
+
+.PHONY: test/e2e-kubernetes
+test/e2e-kubernetes: $(E2E_DEPS_TARGETS)
+	$(MAKE) test/e2e/k8s/start/cluster/kuma-1
+	$(MAKE) test/e2e/k8s/wait/kuma-1
+	$(MAKE) test/e2e/k8s/load/images/kuma-1
+	$(MAKE) GINKGO_E2E_FLAGS=-p E2E_PKG_LIST=$(KUBE_E2E_PKG_LIST) test/e2e/test || (ret=$$?; $(MAKE) test/e2e/k8s/stop/cluster/kuma-1 && exit $$ret)
+	$(MAKE) test/e2e/k8s/stop/cluster/kuma-1
