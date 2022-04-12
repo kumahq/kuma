@@ -128,7 +128,7 @@ func (d *DataplaneWatchdog) syncIngress() error {
 		ControlPlane: d.envoyCpCtx,
 		Mesh:         xds_context.MeshContext{}, // ZoneIngress does not need MeshContext
 	}
-	proxy, err := d.ingressProxyBuilder.build(d.key)
+	proxy, err := d.ingressProxyBuilder.Build(d.key)
 	if err != nil {
 		return err
 	}
