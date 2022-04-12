@@ -163,6 +163,10 @@ func (c *K8sControlPlane) PortFwd() PortFwd {
 	return c.portFwd
 }
 
+func (c *K8sControlPlane) PortFwd() PortFwd {
+	return c.portFwd
+}
+
 func (c *K8sControlPlane) FinalizeAdd() error {
 	c.PortForwardKumaCP()
 	return c.FinalizeAddWithPortFwd(c.portFwd)
