@@ -12,7 +12,8 @@ does not have any particular instructions.
 
 ### Helm
 
-controlPlane.resources is now on object instead of a string. Any existing value should be adapted accordingly.
+* the Helm chart for this release requires at least Helm version `3.8.0`.
+* `controlPlane.resources` is now on object instead of a string. Any existing value should be adapted accordingly.
 
 ### Zone egress and ExternalService
 
