@@ -138,7 +138,7 @@ function archive_path() {
   if [[ -n $distro ]]; then
     echo "$(artifact_dir "$arch" "$system")/$RELEASE_NAME-$KUMA_VERSION-$distro-$arch.tar.gz"
   else
-    echo "$(artifact_dir "$arch" "$system")/$RELEASE_NAME-$KUMA_VERSION-$arch.tar.gz"
+    echo "$(artifact_dir "$arch" "$system")/$RELEASE_NAME-$KUMA_VERSION-$system-$arch.tar.gz"
   fi
 }
 
