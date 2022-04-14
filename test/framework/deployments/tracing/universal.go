@@ -13,13 +13,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 type universalDeployment struct {
 	container string
 	ip        string
-	ports     map[string]string
+	ports     map[uint32]uint32
 }
 
 var _ Deployment = &universalDeployment{}
@@ -29,9 +28,7 @@ func (u *universalDeployment) Name() string {
 }
 
 func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
-	if err := u.allocatePublicPortsFor("16686"); err != nil {
-		return err
-	}
+	u.allocatePublicPortsFor(16686)
 
 	opts := docker.RunOptions{
 		Detach:               true,
@@ -51,6 +48,9 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 
 	u.ip = ip
 	u.container = container
+	if err := u.updatePublishedPorts(cluster.GetTesting()); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -63,22 +63,30 @@ func getIP(t testing.TestingT, container string) (string, error) {
 	return shell.RunCommandAndGetStdOutE(t, cmd)
 }
 
-func (j *universalDeployment) allocatePublicPortsFor(ports ...string) error {
+func (j *universalDeployment) allocatePublicPortsFor(ports ...uint32) {
 	for _, port := range ports {
-		pubPort, err := utils.GetFreePort()
-		if err != nil {
-			return err
-		}
-		j.ports[port] = strconv.Itoa(pubPort)
+		j.ports[port] = 0
 	}
-	return nil
 }
 
 func (j *universalDeployment) publishPortsForDocker() (args []string) {
-	for port, pubPort := range j.ports {
-		args = append(args, "--publish="+pubPort+":"+port)
+	for port := range j.ports {
+		args = append(args, "--publish="+strconv.Itoa(int(port)))
 	}
 	return
+}
+
+func (j *universalDeployment) updatePublishedPorts(t testing.TestingT) error {
+	var ports []uint32
+	for port := range j.ports {
+		ports = append(ports, port)
+	}
+	publishedPorts, err := framework.GetPublishedDockerPorts(t, j.container, ports)
+	if err != nil {
+		return err
+	}
+	j.ports = publishedPorts
+	return nil
 }
 
 func (u *universalDeployment) Delete(cluster framework.Cluster) error {
@@ -98,5 +106,5 @@ func (u *universalDeployment) ZipkinCollectorURL() string {
 }
 
 func (u *universalDeployment) TracedServices() ([]string, error) {
-	return tracedServices(fmt.Sprintf("http://localhost:%s", u.ports["16686"]))
+	return tracedServices(fmt.Sprintf("http://localhost:%d", u.ports[16686]))
 }

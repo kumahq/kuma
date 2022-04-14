@@ -13,13 +13,12 @@ import (
 
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/ssh"
-	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 type universalDeployment struct {
 	container string
 	ip        string
-	ports     map[string]string
+	ports     map[uint32]uint32
 	name      string
 	cert      string
 	commands  []Command
@@ -46,7 +45,7 @@ func (u *universalDeployment) Name() string {
 }
 
 func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
-	if err := u.allocatePublicPortsFor("22"); err != nil {
+	if err := u.allocatePublicPortsFor(22); err != nil {
 		return err
 	}
 
@@ -74,7 +73,11 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 	u.ip = ip
 	u.container = container
 
-	port := u.ports["22"]
+	if err := u.updatePublishedPorts(cluster.GetTesting()); err != nil {
+		return err
+	}
+
+	port := strconv.Itoa(int(u.ports[22]))
 
 	// certificates
 	cert, key, err := framework.CreateCertsFor("localhost", ip, name)
@@ -127,22 +130,31 @@ func getName(t testing.TestingT, container string) (string, error) {
 	return out[1:], nil
 }
 
-func (j *universalDeployment) allocatePublicPortsFor(ports ...string) error {
+func (j *universalDeployment) allocatePublicPortsFor(ports ...uint32) error {
 	for _, port := range ports {
-		pubPort, err := utils.GetFreePort()
-		if err != nil {
-			return err
-		}
-		j.ports[port] = strconv.Itoa(pubPort)
+		j.ports[port] = 0
 	}
 	return nil
 }
 
 func (j *universalDeployment) publishPortsForDocker() (args []string) {
-	for port, pubPort := range j.ports {
-		args = append(args, "--publish="+pubPort+":"+port)
+	for port := range j.ports {
+		args = append(args, "--publish="+strconv.Itoa(int(port)))
 	}
 	return
+}
+
+func (j *universalDeployment) updatePublishedPorts(t testing.TestingT) error {
+	var ports []uint32
+	for port := range j.ports {
+		ports = append(ports, port)
+	}
+	publishedPorts, err := framework.GetPublishedDockerPorts(t, j.container, ports)
+	if err != nil {
+		return err
+	}
+	j.ports = publishedPorts
+	return nil
 }
 
 func (u *universalDeployment) Delete(cluster framework.Cluster) error {
