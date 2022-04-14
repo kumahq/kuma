@@ -28,7 +28,7 @@ func DefaultDataplaneProxyBuilder(
 	}
 }
 
-func defaultIngressProxyBuilder(
+func DefaultIngressProxyBuilder(
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
 	apiVersion envoy.APIVersion,
@@ -45,7 +45,7 @@ func defaultIngressProxyBuilder(
 	}
 }
 
-func defaultEgressProxyBuilder(
+func DefaultEgressProxyBuilder(
 	ctx context.Context,
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
@@ -84,14 +84,14 @@ func DefaultDataplaneWatchdogFactory(
 		apiVersion,
 	)
 
-	ingressProxyBuilder := defaultIngressProxyBuilder(
+	ingressProxyBuilder := DefaultIngressProxyBuilder(
 		rt,
 		metadataTracker,
 		apiVersion,
 		meshSnapshotCache,
 	)
 
-	egressProxyBuilder := defaultEgressProxyBuilder(
+	egressProxyBuilder := DefaultEgressProxyBuilder(
 		ctx,
 		rt,
 		metadataTracker,
