@@ -9,7 +9,8 @@ import (
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster
 
-// MeshGatewayConfig represents the config of a MeshGateway.
+// MeshGatewayConfig holds the configuration of a MeshGateway. A
+// GatewayClass can refer to a MeshGatewayConfig via parametersRef.
 type MeshGatewayConfig struct {
 	kube_meta.TypeMeta   `json:",inline"`
 	kube_meta.ObjectMeta `json:"metadata,omitempty"`
@@ -52,13 +53,14 @@ type MeshGatewayCommonConfig struct {
 
 // +k8s:deepcopy-gen=true
 
-// MeshGatewayConfigSpec specifies the options available for a builtin gateway Dataplane.
+// MeshGatewayConfigSpec specifies the options available for a Kuma MeshGateway.
 type MeshGatewayConfigSpec struct {
 	MeshGatewayCommonConfig `json:",inline"`
 
-	// Tags specifies the Kuma tags that are propagated to the managed
-	// dataplane proxies. These tags should include a maximum of one
-	// `kuma.io/service` tag.
+	// Tags specifies a set of Kuma tags that are included in the
+	// MeshGatewayInstance and thus propagated to every Dataplane generated to
+	// serve the MeshGateway.
+	// These tags should include a maximum of one `kuma.io/service` tag.
 	//
 	// +optional
 	Tags map[string]string `json:"tags,omitempty"`

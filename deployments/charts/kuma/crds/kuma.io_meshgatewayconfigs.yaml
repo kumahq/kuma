@@ -18,7 +18,8 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: MeshGatewayConfig represents the config of a MeshGateway.
+        description: MeshGatewayConfig holds the configuration of a MeshGateway. A
+          GatewayClass can refer to a MeshGatewayConfig via parametersRef.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,7 +35,7 @@ spec:
             type: object
           spec:
             description: MeshGatewayConfigSpec specifies the options available for
-              a builtin gateway Dataplane.
+              a Kuma MeshGateway.
             properties:
               replicas:
                 default: 1
@@ -86,8 +87,9 @@ spec:
               tags:
                 additionalProperties:
                   type: string
-                description: Tags specifies the Kuma tags that are propagated to the
-                  managed dataplane proxies. These tags should include a maximum of
+                description: Tags specifies a set of Kuma tags that are included in
+                  the MeshGatewayInstance and thus propagated to every Dataplane generated
+                  to serve the MeshGateway. These tags should include a maximum of
                   one `kuma.io/service` tag.
                 type: object
             type: object
