@@ -97,3 +97,10 @@ spec:
           securityContext:
           {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "250m"
+              memory: "512Mi"
