@@ -147,6 +147,9 @@ rules:
       - meshgateways
       - meshgatewayroutes
       - meshgatewayinstances
+  {{- if .Values.experimental.gatewayAPI }}
+      - meshgatewayconfigs
+  {{- end }}
     verbs:
       - get
       - list

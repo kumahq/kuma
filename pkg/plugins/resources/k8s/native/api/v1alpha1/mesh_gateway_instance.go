@@ -22,6 +22,8 @@ type MeshGatewayInstance struct {
 
 // MeshGatewayInstanceSpec specifies the options available for a GatewayDataplane.
 type MeshGatewayInstanceSpec struct {
+	MeshGatewayCommonConfig `json:",inline"`
+
 	// Tags specifies the Kuma tags that are propagated to the managed
 	// dataplane proxies. These tags should include exactly one
 	// `kuma.io/service` tag, and should match exactly one Gateway
@@ -30,32 +32,6 @@ type MeshGatewayInstanceSpec struct {
 	// +required
 	// +kubebuilder:validation:MinLen=1
 	Tags map[string]string `json:"tags,omitempty"`
-
-	// Replicas is the number of dataplane proxy replicas to create. For
-	// now this is a fixed number, but in the future it could be
-	// automatically scaled based on metrics.
-	//
-	// +optional
-	// +kubebuilder:default=1
-	// +kubebuilder:validation:Minimum=1
-	Replicas int32 `json:"replicas,omitempty"`
-
-	// ServiceType specifies the type of managed Service that will be
-	// created to expose the dataplane proxies to traffic from outside
-	// the cluster. The ports to expose will be taken from the matching Gateway
-	// resource. If there is no matching Gateway, the managed Service will
-	// be deleted.
-	//
-	// +optional
-	// +kubebuilder:default=LoadBalancer
-	// +kubebuilder:validation:Enum=LoadBalancer;ClusterIP;NodePort
-	ServiceType kube_core.ServiceType `json:"serviceType,omitempty"`
-
-	// Resources specifies the compute resources for the proxy container.
-	// The default can be set in the control plane config.
-	//
-	// +optional
-	Resources *kube_core.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
