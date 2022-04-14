@@ -50,7 +50,7 @@ Resources:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: edge-gateway:HTTP:8080
     perConnectionBufferLimitBytes: 32768
-    reusePort: true
+    enableReusePort: true
     trafficDirection: INBOUND
   edge-gateway:HTTP:9090:
     address:
@@ -103,5 +103,5 @@ Resources:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: edge-gateway:HTTP:9090
     perConnectionBufferLimitBytes: 32768
-    reusePort: true
+    enableReusePort: true
     trafficDirection: INBOUND

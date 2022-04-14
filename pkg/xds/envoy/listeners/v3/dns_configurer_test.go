@@ -90,7 +90,7 @@ var _ = Describe("DNSConfigurer", func() {
                       name: something.mesh
                 statPrefix: kuma_dns
             name: kuma:dns
-            reusePort: true
+            enableReusePort: true
             trafficDirection: INBOUND
 `,
 		}),

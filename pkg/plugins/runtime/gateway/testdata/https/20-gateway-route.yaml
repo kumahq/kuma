@@ -331,7 +331,7 @@ Listeners:
           '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
       name: gateway-multihost:HTTPS:9443
       perConnectionBufferLimitBytes: 32768
-      reusePort: true
+      enableReusePort: true
       trafficDirection: INBOUND
 Routes:
   Resources:

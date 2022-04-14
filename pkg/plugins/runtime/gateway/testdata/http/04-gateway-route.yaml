@@ -127,7 +127,7 @@ Listeners:
           '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
       name: edge-gateway:HTTP:8080
       perConnectionBufferLimitBytes: 32768
-      reusePort: true
+      enableReusePort: true
       trafficDirection: INBOUND
 Routes:
   Resources:
