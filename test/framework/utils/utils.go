@@ -14,7 +14,7 @@ func ShellEscape(arg string) string {
 func GetFreePort() (int, error) {
 	for {
 		port := rand.Int()%50000 + 10000
-		address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", port))
+		address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf(":%d", port))
 		if err != nil {
 			return 0, err
 		}
