@@ -36,5 +36,7 @@ func RegisterK8SGatewayTypes() {
 			Kind:       "MeshGatewayRouteList",
 		},
 	})
+
 	SchemeBuilder.Register(&MeshGatewayInstance{}, &MeshGatewayInstanceList{})
+	SchemeBuilder.Register(&MeshGatewayConfig{}, &MeshGatewayConfigList{})
 }
