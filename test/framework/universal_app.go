@@ -12,7 +12,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
