@@ -29,6 +29,8 @@ Show Kuma resources.
 * [kumactl get circuit-breakers](kumactl_get_circuit-breakers.md)	 - Show CircuitBreaker
 * [kumactl get dataplane](kumactl_get_dataplane.md)	 - Show a single Dataplane resource
 * [kumactl get dataplanes](kumactl_get_dataplanes.md)	 - Show Dataplane
+* [kumactl get donothingpolicies](kumactl_get_donothingpolicies.md)	 - Show DoNothingPolicy
+* [kumactl get donothingpolicy](kumactl_get_donothingpolicy.md)	 - Show a single DoNothingPolicy resource
 * [kumactl get external-service](kumactl_get_external-service.md)	 - Show a single ExternalService resource
 * [kumactl get external-services](kumactl_get_external-services.md)	 - Show ExternalService
 * [kumactl get fault-injection](kumactl_get_fault-injection.md)	 - Show a single FaultInjection resource

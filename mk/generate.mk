@@ -1,6 +1,8 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
 PROTO_DIRS := ./pkg/config ./api
 
+CONTROLLER_GEN := go run -mod=mod sigs.k8s.io/controller-tools/cmd/controller-gen@master
+
 .PHONY: clean/proto
 clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.go' -delete
@@ -27,6 +29,39 @@ protoc/pkg/test/apis/sample/v1alpha1:
 protoc/plugins:
 	$(PROTOC_GO) --proto_path=./api pkg/plugins/ca/provided/config/*.proto
 	$(PROTOC_GO) --proto_path=./api pkg/plugins/ca/builtin/config/*.proto
+
+generate/dirs/%:
+	pushd pkg/plugins/policies/$* && \
+	mkdir -p api/v1alpha1 && \
+	mkdir -p k8s/v1alpha1 && \
+	mkdir -p k8s/crd && \
+	popd
+
+generate/kumapolicy-gen/%: generate/dirs/%
+	pushd tools/policy-gen/protoc-gen-kumapolicy && go build && popd
+	$(PROTOC) \
+		--proto_path=./api \
+		--kumapolicy_opt=endpoints-template=tools/policy-gen/templates/endpoints.yaml \
+		--kumapolicy_out=pkg/plugins/policies/$* \
+		--go_opt=paths=source_relative \
+		--go_out=plugins=grpc,$(go_mapping):. \
+		--plugin=protoc-gen-kumapolicy=tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy \
+		pkg/plugins/policies/$*/api/v1alpha1/*.proto
+	@rm tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy
+
+generate/controller-gen/%: generate/kumapolicy-gen/%
+	$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./pkg/plugins/policies/$*/k8s/..." output:crd:artifacts:config=pkg/plugins/policies/$*/k8s/crd
+	$(CONTROLLER_GEN) object paths=pkg/plugins/policies/$*/k8s/v1alpha1/zz_generated.types.go
+
+generate/schema/%: generate/controller-gen/%
+	tools/policy-gen/crd-extract-openapi.sh $*
+
+generate/policy/%: generate/schema/%
+	@echo "Policy $* successfully generated"
+
+generate/helm/%:
+	tools/policy-gen/crd-helm-copy.sh $* && \
+
 
 KUMA_GUI_GIT_URL=https://github.com/kumahq/kuma-gui.git
 KUMA_GUI_VERSION=master

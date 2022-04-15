@@ -21,6 +21,7 @@ import (
 	kumactl_errors "github.com/kumahq/kuma/app/kumactl/pkg/errors"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core"
+	_ "github.com/kumahq/kuma/pkg/core/bootstrap"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	// Register gateway resources.
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
