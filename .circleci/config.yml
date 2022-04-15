@@ -257,7 +257,7 @@ jobs:
       parallelism:
         description: level of parallelisation
         type: integer
-        default: 1
+        default: 8
       target:
         description: makefile target
         type: string
@@ -310,7 +310,7 @@ jobs:
             - run:
                 name: "Run IPv6 E2E tests"
                 command: |
-                  export E2E_PKG_LIST=./test/e2e/zoneegress/internalservices/...
+                  export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
                   export API_VERSION=<< parameters.api >>
                   export IPV6=true
                   export KUMA_DEFAULT_RETRIES=60
@@ -328,7 +328,7 @@ jobs:
                   echo "DEBUGING VAR $E2E_PKG_LIST"
                   echo "DEBUGING VAR GINKGO_E2E_FLAGS"
                   export CI_K3S_VERSION=<< parameters.k3sVersion >>
-                  export E2E_PKG_LIST=./test/e2e/zoneegress/internalservices/...
+                  export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
                   export K3D=true
