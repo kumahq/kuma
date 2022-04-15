@@ -73,7 +73,7 @@ type syncInfo struct {
 }
 
 // NewResyncer creates a new Component that periodically updates insights
-// for various policies (right now only for Mesh).
+// for various policies (right now only for Mesh and services).
 //
 // It operates with 2 timeouts: MinResyncTimeout and MaxResyncTimeout. Component
 // guarantees resync won't happen more often than MinResyncTimeout. It also guarantees

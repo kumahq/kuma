@@ -24,6 +24,9 @@ import (
 var log = core.Log.WithName("defaults")
 
 func Setup(runtime runtime.Runtime) error {
+	if runtime.Config().Mode == config_core.Zone { // Don't run defaults in Zone (it's done in Global)
+		return nil
+	}
 	defaultsComponent := NewDefaultsComponent(runtime.Config().Defaults, runtime.Config().Mode, runtime.Config().Environment, runtime.ResourceManager(), runtime.ResourceStore())
 
 	zoneIngressSigningKeyManager := tokens.NewSigningKeyManager(runtime.ResourceManager(), zoneingress.ZoneIngressSigningKeyPrefix)

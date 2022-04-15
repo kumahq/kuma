@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -185,6 +186,9 @@ func (s *muxServer) NeedLeaderElection() bool {
 }
 
 func SetupServer(rt core_runtime.Runtime) error {
+	if rt.Config().Mode == config_core.Global {
+		return nil
+	}
 	config := rt.Config().MonitoringAssignmentServer
 
 	rm := rt.ReadOnlyResourceManager()

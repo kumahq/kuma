@@ -1,10 +1,14 @@
 package dns
 
 import (
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 )
 
 func Setup(rt runtime.Runtime) error {
+	if rt.Config().Mode == config_core.Global {
+		return nil
+	}
 	vipsSync := NewVIPsSynchronizer(
 		rt.DNSResolver(),
 		rt.ReadOnlyResourceManager(),
