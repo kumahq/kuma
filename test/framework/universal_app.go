@@ -7,6 +7,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gruntwork-io/terratest/modules/docker"
+	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
@@ -228,7 +229,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 	}
 
 	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName+"_"+strings.Split(core.NewUUID(), "-")[0])
+	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName+"_"+random.UniqueId())
 	for _, cap := range caps {
 		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
 	}

@@ -55,7 +55,7 @@ func NewK8sControlPlane(
 	return &K8sControlPlane{
 		t:          t,
 		mode:       mode,
-		name:       clusterName + "-" + mode,
+		name:       name,
 		kubeconfig: kubeconfig,
 		kumactl:    NewKumactlOptions(t, name, verbose),
 		cluster:    cluster,
