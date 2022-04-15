@@ -423,6 +423,22 @@ workflows:
             - check
           parallelism: 1
       - e2e:
+          name: e2e-universal
+          target: test/e2e-universal
+          requires:
+            - build
+            - check
+          parallelism: 1
+      - e2e:
+          <<: *work_branch_workflow_filter
+          name: e2e-universal-ipv6
+          target: test/e2e-universal
+          ipv6: true
+          requires:
+            - build
+            - check
+          parallelism: 1
+      - e2e:
           # Avoids running expensive workflow on PRs
           <<: *work_branch_workflow_filter
           name: e2e-env

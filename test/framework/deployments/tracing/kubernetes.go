@@ -29,7 +29,7 @@ func (t *k8SDeployment) Name() string {
 }
 
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
-	kumactl, _ := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
+	kumactl := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
 	yaml, err := kumactl.KumactlInstallTracing()
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 }
 
 func (t *k8SDeployment) Delete(cluster framework.Cluster) error {
-	kumactl, _ := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
+	kumactl := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
 	yaml, err := kumactl.KumactlInstallTracing()
 	if err != nil {
 		return err

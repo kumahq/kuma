@@ -44,7 +44,7 @@ func Install(name string, commands ...Command) framework.InstallFunc {
 			deployment = &universalDeployment{
 				name:     name,
 				commands: commands,
-				ports:    map[string]string{},
+				ports:    map[uint32]uint32{},
 				verbose:  cluster.Verbose(),
 			}
 		default:
