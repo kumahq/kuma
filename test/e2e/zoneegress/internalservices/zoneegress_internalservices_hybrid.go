@@ -2,6 +2,7 @@ package internalservices
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -167,6 +168,8 @@ func HybridUniversalGlobal() {
 				g.Expect(zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
 
+			time.Sleep(1 * time.Hour)
+
 			_, stderr, err := zone1.ExecWithRetries(TestNamespace, zone1ClientPod.GetName(), "demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "test-server_kuma-test_svc_80.mesh")
 			Expect(err).ToNot(HaveOccurred())
@@ -189,6 +192,8 @@ func HybridUniversalGlobal() {
 				g.Expect(zone1.GetZoneEgressEnvoyTunnel().GetStats(filter)).
 					To(stats.BeEqualZero())
 			}, "30s", "1s").Should(Succeed())
+
+			time.Sleep(1 * time.Hour)
 
 			_, stderr, err := zone1.ExecWithRetries(TestNamespace, zone1ClientPod.GetName(), "demo-client",
 				"curl", "--verbose", "--max-time", "3", "--fail", "zone3-test-server.mesh")
