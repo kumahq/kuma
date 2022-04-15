@@ -11,7 +11,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	util_net "github.com/kumahq/kuma/pkg/util/net"
+	"github.com/kumahq/kuma/test/framework"
 )
 
 type DockerContainer struct {
@@ -91,11 +91,9 @@ func buildArgsForDocker(args map[string][]string, ports map[uint32]uint32) []str
 		}
 	}
 
-	for port, pubPort := range ports {
+	for port := range ports {
 		port := strconv.Itoa(int(port))
-		pubPort := strconv.Itoa(int(pubPort))
-
-		opts = append(opts, "--publish="+pubPort+":"+port)
+		opts = append(opts, "--publish="+port)
 	}
 
 	return opts
@@ -192,13 +190,8 @@ func (d *DockerContainer) GetName() (string, error) {
 
 func AllocatePublicPortsFor(ports ...uint32) DockerContainerOptFn {
 	return func(d *DockerContainer) error {
-		for i, port := range ports {
-			pubPortUInt32, err := util_net.PickTCPPort("", uint32(33204+i), uint32(34204+i))
-			if err != nil {
-				return err
-			}
-
-			d.ports[port] = pubPortUInt32
+		for _, port := range ports {
+			d.ports[port] = uint32(0)
 		}
 
 		return nil
@@ -212,7 +205,23 @@ func (d *DockerContainer) Run() error {
 	}
 
 	d.addID(container)
+	if err := d.updatePorts(); err != nil {
+		return err
+	}
 
+	return nil
+}
+
+func (d *DockerContainer) updatePorts() error {
+	var ports []uint32
+	for port := range d.ports {
+		ports = append(ports, port)
+	}
+	publishedPorts, err := framework.GetPublishedDockerPorts(d.t, d.id, ports)
+	if err != nil {
+		return err
+	}
+	d.ports = publishedPorts
 	return nil
 }
 

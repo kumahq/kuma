@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e/universal/env"
+	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -17,7 +17,6 @@ func DpAuth() {
 		Expect(env.Cluster.Install(MeshUniversal(meshName))).To(Succeed())
 		E2EDeferCleanup(func() {
 			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-			Expect(env.Cluster.DeleteMeshDataplaneProxies(meshName)).To(Succeed())
 			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
 	})
@@ -42,9 +41,10 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		Eventually(func() (string, error) {
-			return env.Cluster.GetKuma().GetKumaCPLogs()
-		}, "30s", "1s").Should(ContainSubstring("you are trying to override existing dataplane to which you don't have an access"))
+		// todo(jakubdyszkiewicz) uncomment once we can handle CP logs across all parallel executions
+		// Eventually(func() (string, error) {
+		//	return env.Cluster.GetKumaCPLogs()
+		// }, "30s", "1s").Should(ContainSubstring("you are trying to override existing dataplane to which you don't have an access"))
 	})
 
 	It("should be able to override old Dataplane of same service", func() {

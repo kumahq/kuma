@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net"
 
@@ -13,41 +15,57 @@ import (
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
-type UniversalControlPlane struct {
-	t       testing.TestingT
-	mode    core.CpMode
-	name    string
-	kumactl *KumactlOptions
-	cluster *UniversalCluster
-	verbose bool
+type UniversalCPNetworking struct {
+	IP            string `json:"ip"` // IP inside a docker network
+	ApiServerPort string `json:"apiServerPort"`
+	SshPort       string `json:"sshPort"`
 }
 
-func NewUniversalControlPlane(t testing.TestingT, mode core.CpMode, clusterName string, cluster *UniversalCluster, verbose bool) *UniversalControlPlane {
+func (u UniversalCPNetworking) BootstrapAddress() string {
+	return "https://" + net.JoinHostPort(u.IP, "5678")
+}
+
+type UniversalControlPlane struct {
+	t            testing.TestingT
+	mode         core.CpMode
+	name         string
+	kumactl      *KumactlOptions
+	verbose      bool
+	cpNetworking UniversalCPNetworking
+}
+
+func NewUniversalControlPlane(t testing.TestingT, mode core.CpMode, clusterName string, verbose bool, networking UniversalCPNetworking) (*UniversalControlPlane, error) {
 	name := clusterName + "-" + mode
-	kumactl, err := NewKumactlOptions(t, name, verbose)
+	kumactl := NewKumactlOptions(t, name, verbose)
+	ucp := &UniversalControlPlane{
+		t:            t,
+		mode:         mode,
+		name:         name,
+		kumactl:      kumactl,
+		verbose:      verbose,
+		cpNetworking: networking,
+	}
+	token, err := ucp.retrieveAdminToken()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return &UniversalControlPlane{
-		t:       t,
-		mode:    mode,
-		name:    name,
-		kumactl: kumactl,
-		cluster: cluster,
-		verbose: verbose,
+
+	if err := kumactl.KumactlConfigControlPlanesAdd(clusterName, ucp.GetAPIServerAddress(), token); err != nil {
+		return nil, err
 	}
+	return ucp, nil
+}
+
+func (c *UniversalControlPlane) Networking() UniversalCPNetworking {
+	return c.cpNetworking
 }
 
 func (c *UniversalControlPlane) GetName() string {
 	return c.name
 }
 
-func (c *UniversalControlPlane) GetKumaCPLogs() (string, error) {
-	return c.cluster.apps[AppModeCP].mainApp.Out(), nil
-}
-
 func (c *UniversalControlPlane) GetKDSServerAddress() string {
-	return "grpcs://" + net.JoinHostPort(c.cluster.apps[AppModeCP].ip, "5685")
+	return "grpcs://" + net.JoinHostPort(c.cpNetworking.IP, "5685")
 }
 
 func (c *UniversalControlPlane) GetGlobalStatusAPI() string {
@@ -55,12 +73,12 @@ func (c *UniversalControlPlane) GetGlobalStatusAPI() string {
 }
 
 func (c *UniversalControlPlane) GetAPIServerAddress() string {
-	return "http://localhost:" + c.cluster.apps[AppModeCP].ports["5681"]
+	return "http://localhost:" + c.cpNetworking.ApiServerPort
 }
 
 func (c *UniversalControlPlane) GetMetrics() (string, error) {
 	return retry.DoWithRetryE(c.t, "fetching CP metrics", DefaultRetries, DefaultTimeout, func() (string, error) {
-		sshApp := ssh.NewApp(c.verbose, c.cluster.apps[AppModeCP].ports["22"], nil, []string{"curl",
+		sshApp := ssh.NewApp(c.verbose, c.cpNetworking.SshPort, nil, []string{"curl",
 			"--fail", "--show-error",
 			"http://localhost:5680/metrics"})
 		if err := sshApp.Run(); err != nil {
@@ -87,7 +105,7 @@ func (c *UniversalControlPlane) generateToken(
 		func() (string, error) {
 			sshApp := ssh.NewApp(
 				c.verbose,
-				c.cluster.apps[AppModeCP].ports["22"],
+				c.cpNetworking.SshPort,
 				nil,
 				[]string{"curl",
 					"--fail", "--show-error",
@@ -105,6 +123,38 @@ func (c *UniversalControlPlane) generateToken(
 			}
 
 			return sshApp.Out(), nil
+		},
+	)
+}
+
+func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
+	return retry.DoWithRetryE(
+		c.t, "fetching user admin token",
+		DefaultRetries,
+		DefaultTimeout,
+		func() (string, error) {
+			sshApp := ssh.NewApp(
+				c.verbose, c.cpNetworking.SshPort, nil, []string{
+					"curl", "--fail", "--show-error",
+					"http://localhost:5681/global-secrets/admin-user-token",
+				},
+			)
+			if err := sshApp.Run(); err != nil {
+				return "", err
+			}
+			if sshApp.Err() != "" {
+				return "", errors.New(sshApp.Err())
+			}
+			var secret map[string]string
+			if err := json.Unmarshal([]byte(sshApp.Out()), &secret); err != nil {
+				return "", err
+			}
+			data := secret["data"]
+			token, err := base64.StdEncoding.DecodeString(data)
+			if err != nil {
+				return "", err
+			}
+			return string(token), nil
 		},
 	)
 }
