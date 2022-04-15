@@ -96,7 +96,7 @@ func MapInsightResourcesZeroGeneration(r model.Resource) (model.Resource, error)
 		newR := reflect.New(resType).Interface().(model.Resource)
 		newR.SetMeta(meta)
 		if err := newR.SetSpec(spec.(model.ResourceSpec)); err != nil {
-			panic(errors.Wrap(err, "error setting spec on resource"))
+			panic(any(errors.Wrap(err, "error setting spec on resource")))
 		}
 
 		return newR, nil
