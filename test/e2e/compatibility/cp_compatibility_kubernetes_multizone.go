@@ -65,6 +65,7 @@ func CpCompatibilityMultizoneKubernetes() {
 		)
 
 		E2EDeferCleanup(func() {
+			Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 			Expect(zoneCluster.DeleteKuma()).To(Succeed())
 			Expect(zoneCluster.DismissCluster()).To(Succeed())
 		})
