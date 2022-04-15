@@ -51,7 +51,7 @@ constraints:
 
 		// then it's not allowed
 		Eventually(func() (string, error) {
-			return cluster.GetKuma().GetKumaCPLogs()
+			return cluster.GetKumaCPLogs()
 		}, "30s", "1s").Should(ContainSubstring("dataplane cannot be a member of mesh"))
 		dataplanes, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
 		Expect(err).ToNot(HaveOccurred())

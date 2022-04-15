@@ -60,6 +60,10 @@ func (cs *UniversalClusters) WithRetries(retries int) Cluster {
 	return cs
 }
 
+func (cs *UniversalClusters) GetKumaCPLogs() (string, error) {
+	panic("not implemented")
+}
+
 func (cs *UniversalClusters) Name() string {
 	panic("not supported")
 }

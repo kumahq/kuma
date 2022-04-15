@@ -79,12 +79,12 @@ spec:
 		Expect(zone).ToNot(BeNil())
 
 		// then
-		logs1, err := global.GetKumaCPLogs()
+		logs1, err := c1.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs1).To(ContainSubstring("\"mode\":\"global\""))
 
 		// and
-		logs2, err := zone.GetKumaCPLogs()
+		logs2, err := c2.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(logs2).To(ContainSubstring("\"mode\":\"zone\""))
 	})

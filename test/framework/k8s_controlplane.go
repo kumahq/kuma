@@ -52,13 +52,12 @@ func NewK8sControlPlane(
 	replicas int,
 ) *K8sControlPlane {
 	name := clusterName + "-" + mode
-	kumactl, _ := NewKumactlOptions(t, name, verbose)
 	return &K8sControlPlane{
 		t:          t,
 		mode:       mode,
 		name:       name,
 		kubeconfig: kubeconfig,
-		kumactl:    kumactl,
+		kumactl:    NewKumactlOptions(t, name, verbose),
 		cluster:    cluster,
 		verbose:    verbose,
 		replicas:   replicas,
@@ -158,26 +157,6 @@ func (c *K8sControlPlane) VerifyKumaGUI() error {
 			return statusCode == http.StatusOK
 		},
 	)
-}
-
-func (c *K8sControlPlane) GetKumaCPLogs() (string, error) {
-	logs := ""
-
-	pods := c.GetKumaCPPods()
-	if len(pods) < 1 {
-		return "", errors.Errorf("no kuma-cp pods found for logs")
-	}
-
-	for _, p := range pods {
-		log, err := c.cluster.GetPodLogs(p)
-		if err != nil {
-			return "", err
-		}
-
-		logs = logs + "\n >>> " + p.Name + "\n" + log
-	}
-
-	return logs, nil
 }
 
 func (c *K8sControlPlane) PortFwd() PortFwd {
