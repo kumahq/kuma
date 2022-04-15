@@ -53,7 +53,7 @@ func BuildRemoteEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	fillIngressOutbounds(outbound, zoneIngresses, nil, zone, mesh)
+	fillIngressOutbounds(outbound, zoneIngresses, nil, zone, mesh, true)
 
 	if mesh.ZoneEgressEnabled() {
 		fillExternalServicesReachableFromZone(outbound, externalServices, mesh, loader, zone)
@@ -90,6 +90,7 @@ func BuildEdsEndpointMap(
 		zoneEgresses,
 		zone,
 		mesh,
+		false,
 	)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
@@ -167,6 +168,7 @@ func fillIngressOutbounds(
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	zone string,
 	mesh *core_mesh.MeshResource,
+	isZoneEgress bool,
 ) uint32 {
 	ziInstances := map[string]struct{}{}
 
@@ -222,7 +224,7 @@ func fillIngressOutbounds(
 			//  ignore
 			// If zone egresses present, we want to pass the traffic:
 			// dp -> zone egress -> zone ingress -> dp
-			if len(zoneEgresses) > 0 {
+			if mesh.ZoneEgressEnabled() && !isZoneEgress {
 				for _, ze := range zoneEgresses {
 					zeNetworking := ze.Spec.GetNetworking()
 					zeAddress := zeNetworking.GetAddress()
