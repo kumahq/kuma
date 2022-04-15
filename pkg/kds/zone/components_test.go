@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
@@ -30,21 +29,12 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
-type testRuntimeContext struct {
-	core_runtime.Runtime
-	kds *kds_context.Context
-}
-
-func (t *testRuntimeContext) KDSContext() *kds_context.Context {
-	return t.kds
-}
-
 var _ = Describe("Zone Sync", func() {
 
 	zoneName := "zone-1"
 
-	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) kds_client.KDSSink {
-		return kds_client.NewKDSSink(core.Log.WithName("kds-sink"), registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(cs, zoneName, ""), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
+	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, configs map[string]bool) kds_client.KDSSink {
+		return kds_client.NewKDSSink(core.Log.WithName("kds-sink"), registry.Global().ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(cs, zoneName, ""), zone.Callbacks(configs, resourceSyncer, false, zoneName, nil))
 	}
 	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {
 		return &mesh_proto.ZoneIngress{
@@ -86,7 +76,7 @@ var _ = Describe("Zone Sync", func() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_ = newPolicySink(zoneName, zoneSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}).Receive()
+			_ = newPolicySink(zoneName, zoneSyncer, clientStream, kdsCtx.Configs).Receive()
 		}()
 		closeFunc = func() {
 			Expect(clientStream.CloseSend()).To(Succeed())
