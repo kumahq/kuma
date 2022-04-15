@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -38,6 +39,7 @@ type ConfigMapReconciler struct {
 	VIPsAllocator       *dns.VIPsAllocator
 	SystemNamespace     string
 	KubeOutboundsAsVIPs bool
+	sync.Mutex
 }
 
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -70,6 +72,8 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		}
 	}
 
+	r.Lock()
+	defer r.Unlock()
 	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh, viewModificator); err != nil {
 		if store.IsResourceConflict(err) {
 			r.Log.V(1).Info("VIPs were updated in the other place. Retrying")
