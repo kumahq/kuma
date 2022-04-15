@@ -462,7 +462,6 @@ type Cluster interface {
 	GetKumaCPLogs() (string, error)
 	VerifyKuma() error
 	DeleteKuma() error
-	InjectDNS(namespace ...string) error
 	GetKumactlOptions() *KumactlOptions
 	Deployment(name string) Deployment
 	Deploy(deployment Deployment) error

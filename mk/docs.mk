@@ -1,7 +1,7 @@
 .PHONY: docs
 docs: DESTDIR ?= docs/generated
 docs: ## Dev: Generate local documentation
-	@rm -rf $DESTDIR
+	rm -rf $(DESTDIR)
 	@$(MAKE) docs/install/markdown DESTDIR=$(DESTDIR)/cmd
 	@$(MAKE) docs/install/resources DESTDIR=$(DESTDIR)/resources
 

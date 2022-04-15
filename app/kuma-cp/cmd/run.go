@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
-	"github.com/kumahq/kuma/pkg/dns"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	"github.com/kumahq/kuma/pkg/gc"
 	"github.com/kumahq/kuma/pkg/hds"
@@ -86,10 +85,6 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 
 			if err := mads_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up Monitoring Assignment server")
-				return err
-			}
-			if err := dns.Setup(rt); err != nil {
-				runLog.Error(err, "unable to set up DNS")
 				return err
 			}
 			if err := xds.Setup(rt); err != nil {

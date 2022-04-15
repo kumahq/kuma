@@ -151,14 +151,6 @@ func (k *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 		cmd...)
 }
 
-func (k *KumactlOptions) KumactlInstallDNS(args ...string) (string, error) {
-	args = append([]string{"install", "dns"}, args...)
-
-	return k.RunKumactlAndGetOutputV(
-		false, // silence the log output of Install
-		args...)
-}
-
 func (k *KumactlOptions) KumactlInstallMetrics() (string, error) {
 	return k.RunKumactlAndGetOutput("install", "metrics")
 }
