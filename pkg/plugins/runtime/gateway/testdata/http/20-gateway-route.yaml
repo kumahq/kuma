@@ -138,6 +138,7 @@ Listeners:
         socketAddress:
           address: 192.168.1.1
           portValue: 9080
+      enableReusePort: true
       filterChains:
       - filters:
         - name: envoy.filters.network.http_connection_manager
@@ -184,7 +185,6 @@ Listeners:
           '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
       name: gateway-multihost:HTTP:9080
       perConnectionBufferLimitBytes: 32768
-      enableReusePort: true
       trafficDirection: INBOUND
 Routes:
   Resources:

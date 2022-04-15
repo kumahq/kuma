@@ -4,6 +4,7 @@ Resources:
       socketAddress:
         address: 192.168.1.1
         portValue: 443
+    enableReusePort: true
     filterChains:
     - filterChainMatch:
         applicationProtocols:
@@ -257,5 +258,4 @@ Resources:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
     name: default-gateway:HTTPS:443
     perConnectionBufferLimitBytes: 32768
-    enableReusePort: true
     trafficDirection: INBOUND

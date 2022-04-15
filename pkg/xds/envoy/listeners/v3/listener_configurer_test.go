@@ -52,7 +52,7 @@ var _ = Describe("Miscellaneous Listener configurers", func() {
 		}),
 		Entry("enable reuse port disabled", testCase{
 			opt:      EnableReusePort(false),
-			expected: "{}",
+			expected: "enableReusePort: false",
 		}),
 		Entry("enable freebind", testCase{
 			opt:      EnableFreebind(true),

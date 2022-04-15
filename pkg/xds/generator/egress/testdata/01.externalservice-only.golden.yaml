@@ -37,6 +37,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 10002
+    enableReusePort: false
     filterChains:
     - filterChainMatch:
         serverNames:
