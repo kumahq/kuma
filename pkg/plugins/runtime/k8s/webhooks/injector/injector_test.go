@@ -566,4 +566,111 @@ var _ = Describe("Injector", func() {
 			cfgFile: "inject.config.yaml",
 		}),
 	)
+
+	DescribeTable("should not inject Kuma into a Pod because of invalid labels/annotations",
+		func(given testCase) {
+			// setup
+			inputFile := filepath.Join("testdata", fmt.Sprintf("inject.%s.input.yaml", given.num))
+
+			var cfg conf.Injector
+			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
+			cfg.CaCertFile = filepath.Join("..", "..", "..", "..", "..", "..", "test", "certs", "server-cert.pem")
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901)
+			Expect(err).ToNot(HaveOccurred())
+
+			// and create mesh
+			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
+			obj, _, errMesh := decoder.Decode([]byte(given.mesh), nil, nil)
+			Expect(errMesh).ToNot(HaveOccurred())
+			errCreate := k8sClient.Create(context.Background(), obj.(kube_client.Object))
+			Expect(errCreate).ToNot(HaveOccurred())
+			ns, _, errNs := decoder.Decode([]byte(given.namespace), nil, nil)
+			Expect(errNs).ToNot(HaveOccurred())
+			errUpd := k8sClient.Update(context.Background(), ns.(kube_client.Object))
+			Expect(errUpd).ToNot(HaveOccurred())
+
+			// given
+			pod := &kube_core.Pod{}
+
+			By("loading input Pod")
+			// when
+			input, err := os.ReadFile(inputFile)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// when
+			err = yaml.Unmarshal(input, pod)
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			By("injecting Kuma")
+			// when
+			err = injector.InjectKuma(pod)
+			// then
+			Expect(err).To(HaveOccurred())
+		},
+		Entry("29. Pod with an invalid kuma annotation", testCase{
+			num: "29",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+		Entry("30. Pod with multiple kuma annotations where one of them is invalid", testCase{
+			num: "30",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+		Entry("31. Pod with an invalid kuma label", testCase{
+			num: "31",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+		Entry("32. Pod with multiple kuma labels where one of them is invalid", testCase{
+			num: "32",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: demo`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+	)
 })
