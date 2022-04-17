@@ -79,7 +79,7 @@ func ConnectionBufferLimit(bytes uint32) ListenerBuilderOpt {
 func EnableReusePort(enable bool) ListenerBuilderOpt {
 	return AddListenerConfigurer(
 		v3.ListenerMustConfigureFunc(func(l *envoy_listener.Listener) {
-			l.EnableReusePort = wrapperspb.Bool(enable)
+			l.EnableReusePort = &wrapperspb.BoolValue{Value: enable}
 		}))
 }
 
