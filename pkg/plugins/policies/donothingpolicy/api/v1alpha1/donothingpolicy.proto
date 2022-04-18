@@ -36,5 +36,4 @@ message DoNothingPolicy {
   }
 
   Conf conf = 3;
-
 }

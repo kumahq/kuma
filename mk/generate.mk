@@ -60,7 +60,7 @@ generate/policy/%: generate/schema/%
 	@echo "Policy $* successfully generated"
 
 generate/helm/%:
-	tools/policy-gen/crd-helm-copy.sh $* && \
+	tools/policy-gen/crd-helm-copy.sh $*
 
 
 KUMA_GUI_GIT_URL=https://github.com/kumahq/kuma-gui.git
