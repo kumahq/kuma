@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
-	"github.com/kumahq/kuma/tools/resource-gen/genutils"
-	"github.com/pkg/errors"
 	"go/format"
-	"google.golang.org/protobuf/compiler/protogen"
 	"html/template"
+
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/compiler/protogen"
+
+	"github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
 // ResourceTemplate for creating a Kuma resource.

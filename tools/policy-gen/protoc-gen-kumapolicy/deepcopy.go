@@ -4,11 +4,7 @@ import (
 	"path/filepath"
 
 	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/types/pluginpb"
 )
-
-// SupportedFeatures reports the set of supported protobuf language features.
-const SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 
 // list of _deepcopy.pb.go files package dependencies.
 const (

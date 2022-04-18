@@ -4,9 +4,10 @@ import (
 	"flag"
 
 	"github.com/hoisie/mustache"
-	"github.com/kumahq/kuma/tools/resource-gen/genutils"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/compiler/protogen"
+
+	"github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
 func main() {
