@@ -128,4 +128,35 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Items).To(BeEmpty())
 	})
+
+	It("should delete a parent after children is deleted", func() {
+		// given
+		meshRes := core_mesh.NewMeshResource()
+		err := s.Create(context.Background(), meshRes, store.CreateByKey(mesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		name := "resource-1"
+		trRes := &sample_model.TrafficRouteResource{
+			Spec: &sample_proto.TrafficRoute{
+				Path: "demo",
+			},
+		}
+		err = s.Create(context.Background(), trRes,
+			store.CreateByKey(name, mesh),
+			store.CreatedAt(time.Now()),
+			store.CreateWithOwner(meshRes))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when children is deleted
+		err = s.Delete(context.Background(), sample_model.NewTrafficRouteResource(), store.DeleteByKey(name, mesh))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when parent is deleted
+		err = s.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey(mesh, model.NoMesh))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
 }
