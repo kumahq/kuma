@@ -56,6 +56,7 @@ else
 endif
 
 ETCD_ARCH := $(GOARCH)
+KUBEBUILDER_ARCH=$(GOARCH)
 SHELLCHECK_ARCH := $(UNAME_ARCH)
 HELM_DOCS_ARCH := $(shell uname -m)
 ifeq ($(UNAME_ARCH), aarch64)
@@ -64,13 +65,19 @@ ifeq ($(UNAME_ARCH), aarch64)
 else ifeq ($(UNAME_ARCH), arm64)
 	PROTOC_ARCH=aarch_64
 	HELM_DOCS_ARCH=arm64
+# Binary of etcd that comes with etcd on ARM doesn't work that why we need to install 
+# AMD newer version which works.
 	ETCD_ARCH=amd64
 	SHELLCHECK_ARCH=x86_64
+# kubebuilder for darwin AMD comes with kube-apiserver, kubebuilder, kumactl and etcd.
+# The only binary that doesn't work on ARM is etcd that's why we need to install it.
+# There is no available darwin binary in version v1.16.4 at https://dl.k8s.io/ so we are using AMD binary.
+# We might need to upgrade binary of kuba-apiserver. 
+	KUBEBUILDER_ARCH=amd64
 endif
 
 CURL_PATH ?= curl
 CURL_DOWNLOAD := $(CURL_PATH) --location --fail --progress-bar
-CURL_STATUS := $(CURL_PATH) --write-out '%{http_code}' --silent --output /dev/null
 
 .PHONY: dev/tools
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
@@ -158,10 +165,10 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder, not all arch builds 
 	@if [ ! -e $(KUBEBUILDER_PATH) ]; then \
 		echo "Installing Kubebuilder $(CI_KUBEBUILDER_VERSION) ..." \
 		&& set -x \
-		&& $(CURL_DOWNLOAD) https://github.com/kubernetes-sigs/kubebuilder/releases/download/v$(CI_KUBEBUILDER_VERSION)/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH).tar.gz | tar -xz -C /tmp/ \
+		&& $(CURL_DOWNLOAD) https://github.com/kubernetes-sigs/kubebuilder/releases/download/v$(CI_KUBEBUILDER_VERSION)/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(KUBEBUILDER_ARCH).tar.gz | tar -xz -C /tmp/ \
 		&& mkdir -p $(KUBEBUILDER_DIR) \
-		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH)/* $(KUBEBUILDER_DIR) \
-		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH) \
+		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(KUBEBUILDER_ARCH)/* $(KUBEBUILDER_DIR) \
+		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(KUBEBUILDER_ARCH) \
 		&& for tool in $$( ls $(KUBEBUILDER_DIR)/bin ) ; do if [ ! -e $(CI_TOOLS_DIR)/$${tool} ]; then ln -s $(KUBEBUILDER_DIR)/bin/$${tool} $(CI_TOOLS_DIR)/$${tool} ; echo "Installed $(CI_TOOLS_DIR)/$${tool}" ; else echo "$(CI_TOOLS_DIR)/$${tool} already exists" ; fi; done \
 		&& set +x \
 		&& echo "Kubebuilder $(CI_KUBEBUILDER_VERSION) has been installed at $(KUBEBUILDER_PATH)" ; fi
