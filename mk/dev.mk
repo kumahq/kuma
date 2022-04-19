@@ -15,6 +15,8 @@ ETCD_VERSION := v3.5.3
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_KUBECTL_VERSION ?= v1.23.5
+# That's the version that comes from kubebuilder.
+CI_KUBE_APISERVER_VERSION ?= v1.16.4
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -41,8 +43,6 @@ SHELLCHECK_PATH := $(CI_TOOLS_DIR)/shellcheck
 TOOLS_DIR ?= $(shell pwd)/tools
 
 PROTOC_OS=unknown
-PROTOC_ARCH=$(shell uname -m)
-
 UNAME_S := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
 ifeq ($(UNAME_S), Linux)
@@ -55,25 +55,27 @@ else
 	endif
 endif
 
+
 ETCD_ARCH := $(GOARCH)
-KUBEBUILDER_ARCH=$(GOARCH)
-SHELLCHECK_ARCH := $(UNAME_ARCH)
 HELM_DOCS_ARCH := $(shell uname -m)
+KUBEBUILDER_ARCH=$(GOARCH)
+PROTOC_ARCH=$(shell uname -m)
+SHELLCHECK_ARCH := $(UNAME_ARCH)
 ifeq ($(UNAME_ARCH), aarch64)
 	PROTOC_ARCH=aarch_64
 	HELM_DOCS_ARCH=arm64
 else ifeq ($(UNAME_ARCH), arm64)
-	PROTOC_ARCH=aarch_64
-	HELM_DOCS_ARCH=arm64
 # Binary of etcd that comes with etcd on ARM doesn't work that why we need to install 
 # AMD newer version which works.
 	ETCD_ARCH=amd64
-	SHELLCHECK_ARCH=x86_64
+	HELM_DOCS_ARCH=arm64
 # kubebuilder for darwin AMD comes with kube-apiserver, kubebuilder, kumactl and etcd.
 # The only binary that doesn't work on ARM is etcd that's why we need to install it.
 # There is no available darwin binary in version v1.16.4 at https://dl.k8s.io/ so we are using AMD binary.
 # We might need to upgrade binary of kuba-apiserver. 
 	KUBEBUILDER_ARCH=amd64
+	PROTOC_ARCH=aarch_64
+	SHELLCHECK_ARCH=x86_64
 endif
 
 CURL_PATH ?= curl
@@ -90,6 +92,7 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/kubectl \
 	dev/install/kubebuilder \
 	dev/install/etcd \
+	dev/install/kube-apiserver \
 	dev/install/kustomize \
 	dev/install/kind \
 	dev/install/k3d \
@@ -220,6 +223,19 @@ dev/install/kubectl: ## Bootstrap: Install kubectl
 		&& mv kubectl $(KUBECTL_PATH) \
 		&& set +x \
 		&& echo "Kubectl $(CI_KUBECTL_VERSION) has been installed at $(KUBECTL_PATH)" ; fi
+
+.PHONY: dev/install/kube-apiserver
+dev/install/kube-apiserver: # Install kube-apiserver, not all os/arch kubebuilder's package have it included, for linux we might need to download
+	# see https://dl.k8s.io/
+	@if [ -e $(KUBE_APISERVER_PATH) ]; then echo "Kuba-apiserver $$( $(KUBE_APISERVER_PATH) --version ) is already installed at $(KUBE_APISERVER_PATH)" ; fi
+	@if [ ! -e $(KUBE_APISERVER_PATH) ]; then \
+		echo "Installing kuba-apiserver $(CI_KUBE_APISERVER_VERSION) ..." \
+		&& set -x \
+		&& mkdir -p $(CI_TOOLS_DIR)/bin \
+		&& $(CURL_DOWNLOAD) -o $(KUBE_APISERVER_PATH)  https://dl.k8s.io/$(CI_KUBE_APISERVER_VERSION)/bin/$(GOOS)/$(GOARCH)/kube-apiserver\
+		&& chmod +x $(KUBE_APISERVER_PATH) \
+		&& set +x \
+		&& echo "kube-apiserver $(CI_KUBE_APISERVER_VERSION) has been installed at $(KUBE_APISERVER_PATH)" ; fi
 
 .PHONY: dev/install/kind
 dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
