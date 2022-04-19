@@ -57,6 +57,9 @@ HELM_DOCS_ARCH := $(shell uname -m)
 ifeq ($(UNAME_ARCH), aarch64)
 	PROTOC_ARCH=aarch_64
 	HELM_DOCS_ARCH=arm64
+else ifeq ($(UNAME_ARCH), arm64)
+	PROTOC_ARCH=aarch_64
+	HELM_DOCS_ARCH=arm64
 endif
 
 CURL_PATH ?= curl
