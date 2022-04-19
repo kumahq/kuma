@@ -28,7 +28,8 @@ message DoNothingPolicy {
   // List of selectors to match dataplanes that are sources of traffic.
   repeated kuma.mesh.v1alpha1.Selector sources = 1 [ (doc.required) = true ];
   // List of selectors to match services that are destinations of traffic.
-  repeated kuma.mesh.v1alpha1.Selector destinations = 2 [ (doc.required) = true ];
+  repeated kuma.mesh.v1alpha1.Selector destinations = 2
+      [ (doc.required) = true ];
 
   message Conf {
     // Set true in case of doing nothing
