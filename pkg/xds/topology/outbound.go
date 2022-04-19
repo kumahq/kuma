@@ -222,7 +222,7 @@ func fillIngressOutbounds(
 			//  ignore
 			// If zone egresses present, we want to pass the traffic:
 			// dp -> zone egress -> zone ingress -> dp
-			if len(zoneEgresses) > 0 {
+			if mesh.ZoneEgressEnabled() && len(zoneEgresses) > 0 {
 				for _, ze := range zoneEgresses {
 					zeNetworking := ze.Spec.GetNetworking()
 					zeAddress := zeNetworking.GetAddress()
