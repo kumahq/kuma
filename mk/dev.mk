@@ -54,6 +54,7 @@ else
 	endif
 endif
 
+ETCD_ARCH := $(shell uname -m)
 HELM_DOCS_ARCH := $(shell uname -m)
 ifeq ($(UNAME_ARCH), aarch64)
 	PROTOC_ARCH=aarch_64
@@ -61,6 +62,7 @@ ifeq ($(UNAME_ARCH), aarch64)
 else ifeq ($(UNAME_ARCH), arm64)
 	PROTOC_ARCH=aarch_64
 	HELM_DOCS_ARCH=arm64
+	ETCD_ARCH=amd64
 endif
 
 CURL_PATH ?= curl
@@ -166,18 +168,18 @@ dev/install/etcd: # Kubebuilder's package doesn't have etcd for all the distribu
 	# see https://etcd.io/docs/v3.5/install/
 	@if [ -e $(ETCD_PATH) ]; then echo "etcd $$( $(ETCD_PATH) -version ) is already installed at $(ETCD_PATH)" ; fi
 	echo "Installing etcd $(ETCD_VERSION) ...";
-	@if [ $(GOOS) = "darwin" ] && [[ $(GOARCH) = "arm64" ]] && [[ $$($(CURL_STATUS) https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).zip) = '404' ]]; then \
-		$(CURL_DOWNLOAD) -o /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).zip https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-amd64.zip \
-		&& mkdir -p etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH) \
-		&& unzip -j /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).zip etcd-$(ETCD_VERSION)-$(GOOS)-amd64/etcd -d etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH)/ \
-		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).zip; \
-	else $(CURL_DOWNLOAD) -o /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).tar.gz https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).tar.gz \
-		&& tar -xf /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).tar.gz etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH)/etcd \
-		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).tar.gz; fi
+	@if [ $(GOOS) = "darwin" ]; then \
+		$(CURL_DOWNLOAD) -o /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).zip https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).zip \
+		&& mkdir -p etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH) \
+		&& unzip -j /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).zip etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd -d etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/ \
+		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).zip; \
+	else $(CURL_DOWNLOAD) -o /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz \
+		&& tar -xf /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd \
+		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz; fi
 	mkdir -p $(CI_TOOLS_DIR) \
-	&& chmod +x etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH)/etcd \
-	&& cp etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH)/etcd $(ETCD_PATH) \
-	&& rm -rf etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH)/ \
+	&& chmod +x etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd \
+	&& cp etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd $(ETCD_PATH) \
+	&& rm -rf etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/ \
 	&& set +x \
 	&& echo "etcd $(ETCD_VERSION) has been installed at $(ETCD_PATH)"
 
