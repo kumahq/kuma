@@ -214,7 +214,7 @@ func (c *memoryStore) delete(r model.Resource, fs ...store.DeleteOptionsFunc) er
 	for _, child := range record.Children {
 		_, childRecord := c.findRecord(child.ResourceType, child.Name, child.Mesh)
 		if childRecord == nil {
-			return store.ErrorResourceNotFound(model.ResourceType(child.ResourceType), child.Name, child.Mesh)
+			continue // resource was already deleted
 		}
 		obj, err := registry.Global().NewObject(model.ResourceType(child.ResourceType))
 		if err != nil {
