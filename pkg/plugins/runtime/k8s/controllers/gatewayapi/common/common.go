@@ -39,7 +39,7 @@ func GetGatewayClass(ctx context.Context, client kube_client.Client, name gatewa
 }
 
 // ParentRefMatchesGateway checks whether a ref points to the given Gateway.
-func ParentRefMatchesGateway(routeNamespace string, parentRef gatewayapi.ParentRef, gateway *gatewayapi.Gateway) bool {
+func ParentRefMatchesGateway(routeNamespace string, parentRef gatewayapi.ParentReference, gateway *gatewayapi.Gateway) bool {
 	referencedNamespace := routeNamespace
 	if parentRef.Namespace != nil {
 		referencedNamespace = string(*parentRef.Namespace)
