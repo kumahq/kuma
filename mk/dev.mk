@@ -55,7 +55,6 @@ else
 	endif
 endif
 
-
 ETCD_ARCH := $(GOARCH)
 HELM_DOCS_ARCH := $(shell uname -m)
 KUBEBUILDER_ARCH=$(GOARCH)
