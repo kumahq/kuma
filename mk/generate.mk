@@ -54,7 +54,7 @@ generate/controller-gen/%: generate/kumapolicy-gen/%
 	$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/k8s/v1alpha1/zz_generated.types.go
 
 generate/kumapolicy-gen/%: generate/dirs/%
-	pushd tools/policy-gen/protoc-gen-kumapolicy && go build && popd
+	@cd tools/policy-gen/protoc-gen-kumapolicy && go build && cd -
 	$(PROTOC) \
 		--proto_path=./api \
 		--kumapolicy_opt=endpoints-template=tools/policy-gen/templates/endpoints.yaml \
@@ -66,11 +66,11 @@ generate/kumapolicy-gen/%: generate/dirs/%
 	@rm tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy
 
 generate/dirs/%:
-	pushd $(POLICIES_DIR)/$* && \
+	@cd $(POLICIES_DIR)/$* && \
 	mkdir -p api/v1alpha1 && \
 	mkdir -p k8s/v1alpha1 && \
 	mkdir -p k8s/crd && \
-	popd
+	cd -
 
 generate/helm/%:
 	tools/policy-gen/crd-helm-copy.sh $*
