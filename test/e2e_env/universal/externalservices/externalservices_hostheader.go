@@ -6,16 +6,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
 func ExternalServiceHostHeader() {
-	var cluster Cluster
+	const meshName = "es-header"
 
 	externalService := `
 type: ExternalService
-mesh: default
+mesh: es-header
 name: httpbin
 tags:
   kuma.io/service: httpbin
@@ -25,25 +25,24 @@ networking:
   tls:
     enabled: false
 `
-	BeforeEach(func() {
-		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
+
+	BeforeAll(func() {
+		E2EDeferCleanup(func() {
+			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		})
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(MeshUniversal(meshName)).
+			Install(DemoClientUniversal("dp-demo-client", meshName, WithTransparentProxy(true))).
 			Install(YamlUniversal(externalService)).
-			Install(DemoClientUniversal("dp-demo-client", "default", WithTransparentProxy(true))).
-			Setup(cluster)
+			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-	})
-
-	E2EAfterEach(func() {
-		Expect(cluster.DeleteKuma()).To(Succeed())
-		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should auto rewrite host header", func() {
 		Eventually(func() bool {
-			stdout, _, _ := cluster.Exec("", "", "dp-demo-client",
+			stdout, _, _ := env.Cluster.Exec("", "", "dp-demo-client",
 				"curl", "httpbin.mesh/get")
 			return strings.Contains(stdout, `"Host": "httpbin.org"`)
 		}, "30s", "500ms").Should(BeTrue())
