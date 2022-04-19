@@ -38,7 +38,7 @@ var _ = Describe("AllowedRoutes support", func() {
 
 	})
 	Context("default AllowedRoutes", func() {
-		var simpleRef gatewayapi.ParentRef
+		var simpleRef gatewayapi.ParentReference
 		BeforeEach(func() {
 			simpleRef = *gatewayRef.DeepCopy()
 			simpleRef.Name = gatewayapi.ObjectName(gateway.Name)
@@ -96,7 +96,7 @@ var _ = Describe("AllowedRoutes support", func() {
 		})
 	})
 	Context("FromAll", func() {
-		var parentRef gatewayapi.ParentRef
+		var parentRef gatewayapi.ParentReference
 		BeforeEach(func() {
 			parentRef = *gatewayRef.DeepCopy()
 			parentRef.Name = gatewayapi.ObjectName(gatewayMultipleListeners.Name)
@@ -209,7 +209,7 @@ var (
 			},
 		},
 	}
-	gatewayRef = gatewayapi.ParentRef{
+	gatewayRef = gatewayapi.ParentReference{
 		Group: &gatewayGroup,
 		Kind:  &gatewayKind,
 	}
