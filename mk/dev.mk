@@ -11,6 +11,7 @@ KUMADOC_VERSION := v0.2.0
 DATAPLANE_API_LATEST_VERSION := main
 SHELLCHECK_VERSION := v0.8.0
 YQ_VERSION := v4.24.2
+ETCD_VERSION := v3.5.3
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_KUBECTL_VERSION ?= v1.23.5
@@ -61,6 +62,7 @@ endif
 
 CURL_PATH ?= curl
 CURL_DOWNLOAD := $(CURL_PATH) --location --fail --progress-bar
+CURL_STATUS := $(CURL_PATH) --write-out '%{http_code}' --silent --output /dev/null
 
 .PHONY: dev/tools
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
@@ -72,6 +74,7 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/ginkgo \
 	dev/install/kubectl \
 	dev/install/kubebuilder \
+	dev/install/etcd \
 	dev/install/kustomize \
 	dev/install/kind \
 	dev/install/k3d \
@@ -140,7 +143,7 @@ dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	echo "Ginkgo has been installed at $(GOPATH_BIN_DIR)/ginkgo"
 
 .PHONY: dev/install/kubebuilder
-dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and kube-apiserver)
+dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder, not all arch builds includes etcd/kube-apiserver
 	# see https://book.kubebuilder.io/quick-start.html#installation
 	@if [ -e $(KUBEBUILDER_PATH) ]; then echo "Kubebuilder $$( $(KUBEBUILDER_PATH) version ) is already installed at $(KUBEBUILDER_PATH)" ; fi
 	@if [ ! -e $(KUBEBUILDER_PATH) -a -d $(KUBEBUILDER_DIR) ]; then echo "Can not install Kubebuilder since directory $(KUBEBUILDER_DIR) already exists. Please remove/rename it and try again" ; false ; fi
@@ -154,6 +157,26 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and k
 		&& for tool in $$( ls $(KUBEBUILDER_DIR)/bin ) ; do if [ ! -e $(CI_TOOLS_DIR)/$${tool} ]; then ln -s $(KUBEBUILDER_DIR)/bin/$${tool} $(CI_TOOLS_DIR)/$${tool} ; echo "Installed $(CI_TOOLS_DIR)/$${tool}" ; else echo "$(CI_TOOLS_DIR)/$${tool} already exists" ; fi; done \
 		&& set +x \
 		&& echo "Kubebuilder $(CI_KUBEBUILDER_VERSION) has been installed at $(KUBEBUILDER_PATH)" ; fi
+
+.PHONY: dev/install/etcd
+dev/install/etcd: # Kubebuilder's package doesn't have etcd for all the distributions, we will override it with defined version
+	# see https://etcd.io/docs/v3.5/install/
+	@if [ -e $(ETCD_PATH) ]; then echo "etcd $$( $(ETCD_PATH) -version ) is already installed at $(ETCD_PATH)" ; fi
+	echo "Installing etcd $(ETCD_VERSION) ...";
+	@if [ $(GOOS) = "darwin" ] && [[ $(GOARCH) = "arm64" ]] && [[ $$($(CURL_STATUS) https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).zip) = '404' ]]; then \
+		$(CURL_DOWNLOAD) -o /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).zip https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-amd64.zip \
+		&& mkdir -p etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH) \
+		&& unzip -j /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).zip etcd-$(ETCD_VERSION)-$(GOOS)-amd64/etcd -d etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH)/ \
+		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).zip; \
+	else $(CURL_DOWNLOAD) -o /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).tar.gz https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).tar.gz \
+		&& tar -xf /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).tar.gz etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH)/etcd \
+		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH).tar.gz; fi
+	mkdir -p $(CI_TOOLS_DIR) \
+	&& chmod +x etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH)/etcd \
+	&& cp etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH)/etcd $(ETCD_PATH) \
+	&& rm -rf etcd-$(ETCD_VERSION)-$(GOOS)-$(GOARCH)/ \
+	&& set +x \
+	&& echo "etcd $(ETCD_VERSION) has been installed at $(ETCD_PATH)"
 
 .PHONY: dev/install/kustomize
 dev/install/kustomize: ## Bootstrap: Install Kustomize
