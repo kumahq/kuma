@@ -28,7 +28,6 @@ Inspect Kuma resources.
 * [kumactl inspect circuit-breaker](kumactl_inspect_circuit-breaker.md)	 - Inspect CircuitBreaker
 * [kumactl inspect dataplane](kumactl_inspect_dataplane.md)	 - Inspect Dataplane
 * [kumactl inspect dataplanes](kumactl_inspect_dataplanes.md)	 - Inspect Dataplanes
-* [kumactl inspect donothingpolicy](kumactl_inspect_donothingpolicy.md)	 - Inspect DoNothingPolicy
 * [kumactl inspect fault-injection](kumactl_inspect_fault-injection.md)	 - Inspect FaultInjection
 * [kumactl inspect healthcheck](kumactl_inspect_healthcheck.md)	 - Inspect HealthCheck
 * [kumactl inspect meshes](kumactl_inspect_meshes.md)	 - Inspect Meshes
