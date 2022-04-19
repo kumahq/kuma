@@ -10,7 +10,7 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 
 .PHONY: generate
 generate:  ## Dev: Run code generators
-generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/kubernetes
+generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/kubernetes generate/policies
 
 .PHONY: resources/type
 resources/type:
@@ -30,34 +30,47 @@ protoc/plugins:
 	$(PROTOC_GO) --proto_path=./api pkg/plugins/ca/provided/config/*.proto
 	$(PROTOC_GO) --proto_path=./api pkg/plugins/ca/builtin/config/*.proto
 
-generate/dirs/%:
-	pushd pkg/plugins/policies/$* && \
-	mkdir -p api/v1alpha1 && \
-	mkdir -p k8s/v1alpha1 && \
-	mkdir -p k8s/crd && \
-	popd
+POLICIES_DIR := pkg/plugins/policies
+
+policies = $(foreach dir,$(wildcard $(POLICIES_DIR)/*),$(notdir $(dir)))
+generate_policy_targets = $(addprefix generate/policy/,$(policies))
+cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
+
+generate/policies: $(cleanup_policy_targets) $(generate_policy_targets)
+
+cleanup/policy/%:
+	$(shell find pkg/plugins/policies/$* -not -name '*.proto' -type f -delete)
+
+generate/policy/%: generate/schema/%
+	@echo "Updating helm chart for $*"
+	$(MAKE) generate/helm/$*
+	@echo "Policy $* successfully generated"
+
+generate/schema/%: generate/controller-gen/%
+	tools/policy-gen/crd-extract-openapi.sh $*
+
+generate/controller-gen/%: generate/kumapolicy-gen/%
+	$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./$(POLICIES_DIR)/$*/k8s/..." output:crd:artifacts:config=$(POLICIES_DIR)/$*/k8s/crd
+	$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/k8s/v1alpha1/zz_generated.types.go
 
 generate/kumapolicy-gen/%: generate/dirs/%
 	pushd tools/policy-gen/protoc-gen-kumapolicy && go build && popd
 	$(PROTOC) \
 		--proto_path=./api \
 		--kumapolicy_opt=endpoints-template=tools/policy-gen/templates/endpoints.yaml \
-		--kumapolicy_out=pkg/plugins/policies/$* \
+		--kumapolicy_out=$(POLICIES_DIR)/$* \
 		--go_opt=paths=source_relative \
 		--go_out=plugins=grpc,$(go_mapping):. \
 		--plugin=protoc-gen-kumapolicy=tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy \
-		pkg/plugins/policies/$*/api/v1alpha1/*.proto
+		$(POLICIES_DIR)/$*/api/v1alpha1/*.proto
 	@rm tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy
 
-generate/controller-gen/%: generate/kumapolicy-gen/%
-	$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./pkg/plugins/policies/$*/k8s/..." output:crd:artifacts:config=pkg/plugins/policies/$*/k8s/crd
-	$(CONTROLLER_GEN) object paths=pkg/plugins/policies/$*/k8s/v1alpha1/zz_generated.types.go
-
-generate/schema/%: generate/controller-gen/%
-	tools/policy-gen/crd-extract-openapi.sh $*
-
-generate/policy/%: generate/schema/%
-	@echo "Policy $* successfully generated"
+generate/dirs/%:
+	pushd $(POLICIES_DIR)/$* && \
+	mkdir -p api/v1alpha1 && \
+	mkdir -p k8s/v1alpha1 && \
+	mkdir -p k8s/crd && \
+	popd
 
 generate/helm/%:
 	tools/policy-gen/crd-helm-copy.sh $*

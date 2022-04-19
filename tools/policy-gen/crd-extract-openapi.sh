@@ -24,7 +24,7 @@ trap cleanupOnError ERR
 cp "${SCHEMA_TEMPLATE}" "${POLICIES_API_DIR}"/schema.yaml
 
 if [ "$(find "${POLICIES_CRD_DIR}" -type f | wc -l | xargs echo)" != 1 ]; then
-  echo "More than 1 file in crd directory"
+  echo "Exactly 1 file is expected in ${POLICIES_CRD_DIR}"
   exit 1
 fi
 
