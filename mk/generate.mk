@@ -10,7 +10,7 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 
 .PHONY: generate
 generate:  ## Dev: Run code generators
-generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/kubernetes generate/policies
+generate: clean/proto generate/api protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/type generate/kubernetes
 
 .PHONY: resources/type
 resources/type:
@@ -42,9 +42,8 @@ cleanup/policy/%:
 	$(shell find pkg/plugins/policies/$* -not -name '*.proto' -type f -delete)
 
 generate/policy/%: generate/schema/%
-	@echo "Updating helm chart for $*"
-	$(MAKE) generate/helm/$*
 	@echo "Policy $* successfully generated"
+	@echo "Don't forget to update Helm chart with 'make generate/helm/$*'"
 
 generate/schema/%: generate/controller-gen/%
 	tools/policy-gen/crd-extract-openapi.sh $*

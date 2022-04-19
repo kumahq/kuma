@@ -59,7 +59,11 @@ donothingpolicy.proto:
    _ "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy"
    ```
 
-5. Update `cp-rbac.yaml` by adding `donothingpolicy` to the policy list (automation is yet to come).
+5. Update Helm chart with a new CRD:
+   ```shell
+   make generate/helm/donothingpolicy
+   ```
+   Also, today it's required to update `cp-rbac.yaml` manually, automation is yet to come.
 
 Now you can check swagger-ui for this policy:
 
