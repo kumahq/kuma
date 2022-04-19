@@ -20,6 +20,7 @@ CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
 export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
+GOARCH := $(shell go env GOARCH)
 
 # The e2e tests depend on Kind kubeconfigs being in this directory,
 # so this is location should not be changed by developers.
@@ -54,7 +55,7 @@ else
 	endif
 endif
 
-ETCD_ARCH := $(shell uname -m)
+ETCD_ARCH := $(GOARCH)
 HELM_DOCS_ARCH := $(shell uname -m)
 ifeq ($(UNAME_ARCH), aarch64)
 	PROTOC_ARCH=aarch_64
