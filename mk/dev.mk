@@ -56,6 +56,7 @@ else
 endif
 
 ETCD_ARCH := $(GOARCH)
+SHELLCHECK_ARCH := $(UNAME_ARCH)
 HELM_DOCS_ARCH := $(shell uname -m)
 ifeq ($(UNAME_ARCH), aarch64)
 	PROTOC_ARCH=aarch_64
@@ -64,6 +65,7 @@ else ifeq ($(UNAME_ARCH), arm64)
 	PROTOC_ARCH=aarch_64
 	HELM_DOCS_ARCH=arm64
 	ETCD_ARCH=amd64
+	SHELLCHECK_ARCH=x86_64
 endif
 
 CURL_PATH ?= curl
@@ -243,7 +245,7 @@ dev/install/k3d: ## Bootstrap: Install K3D (K3s in Docker)
 dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
 
-SHELLCHECK_ARCHIVE := "shellcheck-$(SHELLCHECK_VERSION).$(SHELLCHECK_OS).$(UNAME_ARCH).tar.xz"
+SHELLCHECK_ARCHIVE := "shellcheck-$(SHELLCHECK_VERSION).$(SHELLCHECK_OS).$(SHELLCHECK_ARCH).tar.xz"
 
 .PHONY: dev/install/shellcheck
 dev/install/shellcheck:
