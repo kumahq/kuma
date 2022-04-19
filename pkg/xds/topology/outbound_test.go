@@ -1029,7 +1029,7 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
-			Entry("service in zone2 available through ingres when zoneEgress disabled but zoneEgress instances available", testCase{
+			Entry("service in zone2 available through ingress when zoneEgress disabled but zoneEgress instances available", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
@@ -1100,7 +1100,7 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.1",
 							Port:   6379,
 							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
+							Weight: 1,
 						},
 					},
 					"service-in-zone2": []core_xds.Endpoint{
@@ -1117,7 +1117,7 @@ var _ = Describe("TrafficRoute", func() {
 							Target:          "httpbin.org",
 							Port:            80,
 							Tags:            map[string]string{mesh_proto.ServiceTag: "httpbin"},
-							Weight:          1, // local weight is bumped to 2 to factor two instances of Ingresses
+							Weight:          1,
 							ExternalService: &core_xds.ExternalService{},
 						},
 					},
