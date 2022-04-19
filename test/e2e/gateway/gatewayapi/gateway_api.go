@@ -26,7 +26,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	return k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), out)
 }
 
-const gatewayClass = `
+const GatewayClass = `
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: GatewayClass
 metadata:
@@ -83,7 +83,7 @@ spec:
 			testserver.WithArgs("echo", "--instance", "external-service"),
 		)).
 		Install(YamlK8s(externalService)).
-		Install(YamlK8s(gatewayClass)).
+		Install(YamlK8s(GatewayClass)).
 		Setup(cluster)
 	Expect(err).ToNot(HaveOccurred())
 
