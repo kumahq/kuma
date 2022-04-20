@@ -85,7 +85,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	return kube_ctrl.Result{}, nil
 }
 
-type ParentConditions map[gatewayapi.ParentRef][]kube_meta.Condition
+type ParentConditions map[gatewayapi.ParentReference][]kube_meta.Condition
 
 // gapiToKumaRoutes returns some number of GatewayRoutes that should be created
 // for this HTTPRoute along with any statuses to be set on the HTTPRoute.
@@ -171,7 +171,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	return kumaRoute, conditions, nil
 }
 
-func tagsForRef(referrer kube_client.Object, ref gatewayapi.ParentRef) map[string]string {
+func tagsForRef(referrer kube_client.Object, ref gatewayapi.ParentReference) map[string]string {
 	refNamespace := referrer.GetNamespace()
 	if ns := ref.Namespace; ns != nil {
 		refNamespace = string(*ns)
