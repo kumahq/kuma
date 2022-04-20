@@ -41,6 +41,7 @@ var _ = SynchronizedBeforeSuite(
 
 		env.KubeZone1 = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
 		go func() {
+			defer GinkgoRecover()
 			Expect(env.KubeZone1.Install(Kuma(core.Zone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithIngress(),
@@ -52,10 +53,11 @@ var _ = SynchronizedBeforeSuite(
 
 		env.KubeZone2 = NewK8sCluster(NewTestingT(), Kuma2, Verbose)
 		go func() {
+			defer GinkgoRecover()
 			Expect(env.KubeZone2.Install(Kuma(core.Zone,
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithIngress(),
-				// WithEgress(),
+				WithEgress(),
 				WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 			))).To(Succeed())
 			wg.Done()
@@ -64,13 +66,14 @@ var _ = SynchronizedBeforeSuite(
 		env.UniZone1 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 		E2EDeferCleanup(env.UniZone1.DismissCluster) // clean up any containers if needed
 		go func() {
+			defer GinkgoRecover()
 			err := NewClusterSetup().
 				Install(Kuma(core.Zone,
 					WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				)).
 				Install(IngressUniversal(env.Global.GetKuma().GenerateZoneIngressToken)).
-				// Install(EgressUniversal(env.Global.GetKuma().GenerateZoneEgressToken)).
+				Install(EgressUniversal(env.Global.GetKuma().GenerateZoneEgressToken)).
 				Setup(env.UniZone1)
 			Expect(err).ToNot(HaveOccurred())
 			wg.Done()
@@ -79,13 +82,14 @@ var _ = SynchronizedBeforeSuite(
 		env.UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 		E2EDeferCleanup(env.UniZone2.DismissCluster) // clean up any containers if needed
 		go func() {
+			defer GinkgoRecover()
 			err := NewClusterSetup().
 				Install(Kuma(core.Zone,
 					WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 					WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				)).
 				Install(IngressUniversal(env.Global.GetKuma().GenerateZoneIngressToken)).
-				// Install(EgressUniversal(env.Global.GetKuma().GenerateZoneEgressToken)).
+				Install(EgressUniversal(env.Global.GetKuma().GenerateZoneEgressToken)).
 				Setup(env.UniZone2)
 			Expect(err).ToNot(HaveOccurred())
 			wg.Done()
