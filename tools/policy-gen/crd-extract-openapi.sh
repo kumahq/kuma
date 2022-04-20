@@ -13,6 +13,18 @@ POLICIES_CRD_DIR="${POLICIES_DIR}/${POLICY}/k8s/crd"
 
 SCHEMA_TEMPLATE=tools/policy-gen/templates/schema.yaml
 
+# 1. Copy file ${SCHEMA_TEMPLATE} to ${POLICIES_API_DIR}/schema.yaml. It contains
+#    information about fields that are equal for all resources 'type', 'mesh' and 'name'.
+#
+# 2. Using yq extract item from the list '.spec.version[]' that has ${VERSION} and
+#    take '.schema.openAPIV3Schema.properties.spec'.
+#
+# 3. Delete 'type' and 'description' for the extracted item, because these are 'type'
+#    and 'description' for the 'spec' field.
+#
+# 4. Using yq eval-all with ireduce merge the file from Step 1 and output from Step 3,
+#    placing the result into the file from Step 1
+
 echo "Generating schema for ${POLICY}/${VERSION} based on CRD"
 
 function cleanupOnError() {

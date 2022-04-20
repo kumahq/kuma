@@ -53,13 +53,24 @@ donothingpolicy.proto:
    ```shell
    make generate/policy/donothingpolicy
    ```
+
+4. **Optional.** Add validation. Create file `validator.go`, file with such name won't be cleaned up
+by `make cleanup/policy/donothingpolicy`. Implement method `validate() error`:
+   ```go
+   package v1alpha1
+
+   func (t *DoNothingPolicyResource) validate() error { 
+       // validate resource here
+       return nil
+   }
+   ```
    
-4. Add import to `pkg/core/bootstrap/plugins.go`:
+6. Add import to `pkg/core/bootstrap/plugins.go`:
    ```go
    _ "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy"
    ```
 
-5. Update Helm chart with a new CRD:
+7. Update Helm chart with a new CRD:
    ```shell
    make generate/helm/donothingpolicy
    ```
