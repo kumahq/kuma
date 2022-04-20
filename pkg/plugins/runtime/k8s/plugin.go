@@ -243,7 +243,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().Runtime.Kubernetes.ServiceAccountName)
 	composite.AddValidator(handler)
 
-	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.ResourceValidators().Mesh, converter)
+	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(rt.ResourceValidators().Mesh, converter, rt.Config().Store.UnsafeDelete)
 	composite.AddValidator(k8sMeshValidator)
 
 	k8sDataplaneValidator := k8s_webhooks.NewDataplaneValidatorWebhook(rt.ResourceValidators().Dataplane, converter, rt.ResourceManager())
@@ -262,7 +262,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	composite.AddValidator(k8sExternalServiceValidator)
 
 	coreZoneValidator := zone.Validator{Store: rt.ResourceStore()}
-	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator)
+	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator, rt.Config().Store.UnsafeDelete)
 	composite.AddValidator(k8sZoneValidator)
 
 	for _, validator := range gatewayValidators(rt, converter) {
@@ -277,8 +277,9 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		return errors.Errorf("secret client hasn't been configured")
 	}
 	secretValidator := &k8s_webhooks.SecretValidator{
-		Client:    client,
-		Validator: manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
+		Client:       client,
+		Validator:    manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
+		UnsafeDelete: rt.Config().Store.UnsafeDelete,
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
 

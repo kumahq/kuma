@@ -22,6 +22,7 @@ func NewMeshManager(
 	caManagers core_ca.Managers,
 	registry core_registry.TypeRegistry,
 	validator MeshValidator,
+	unsafeDelete bool,
 ) core_manager.ResourceManager {
 	return &meshManager{
 		store:         store,
@@ -29,6 +30,7 @@ func NewMeshManager(
 		caManagers:    caManagers,
 		registry:      registry,
 		meshValidator: validator,
+		unsafeDelete:  unsafeDelete,
 	}
 }
 
@@ -38,6 +40,7 @@ type meshManager struct {
 	caManagers    core_ca.Managers
 	registry      core_registry.TypeRegistry
 	meshValidator MeshValidator
+	unsafeDelete  bool
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -92,8 +95,10 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	}
 	opts := core_store.NewDeleteOptions(fs...)
 
-	if err := m.meshValidator.ValidateDelete(ctx, opts.Name); err != nil {
-		return err
+	if !m.unsafeDelete {
+		if err := m.meshValidator.ValidateDelete(ctx, opts.Name); err != nil {
+			return err
+		}
 	}
 	// delete Mesh first to avoid a state where a Mesh could exist without secrets.
 	// even if removal of secrets fails later on, delete operation can be safely tried again.

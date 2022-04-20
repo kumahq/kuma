@@ -26,7 +26,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	return k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), out)
 }
 
-const gatewayClass = `
+const GatewayClass = `
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: GatewayClass
 metadata:
@@ -83,7 +83,7 @@ spec:
 			testserver.WithArgs("echo", "--instance", "external-service"),
 		)).
 		Install(YamlK8s(externalService)).
-		Install(YamlK8s(gatewayClass)).
+		Install(YamlK8s(GatewayClass)).
 		Setup(cluster)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -114,6 +114,65 @@ func GatewayAPI() {
 		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
 		return ip
 	}
+
+	Describe("GatewayClass parametersRef", Ordered, func() {
+		haGatewayClass := `
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: GatewayClass
+metadata:
+  name: kuma
+spec:
+  controllerName: gateways.kuma.io/controller
+  parametersRef:
+    kind: MeshGatewayConfig
+    group: kuma.io
+    name: ha-config`
+
+		haConfig := `
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayConfig
+metadata:
+  name: ha-config
+spec:
+  replicas: 3`
+
+		haGateway := `
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: Gateway
+metadata:
+  name: kuma
+  namespace: kuma-test
+spec:
+  gatewayClassName: kuma
+  listeners:
+  - name: proxy
+    port: 8080
+    protocol: HTTP`
+
+		BeforeAll(func() {
+			E2EDeferCleanup(func() error {
+				return k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(TestNamespace), "delete", "gateway", "kuma")
+			})
+			Expect(YamlK8s(haConfig)(cluster)).To(Succeed())
+			Expect(YamlK8s(haGatewayClass)(cluster)).To(Succeed())
+			Expect(YamlK8s(haGateway)(cluster)).To(Succeed())
+		})
+
+		It("should create the right number of pods", func() {
+			Expect(cluster.WaitApp("kuma", "kuma-test", 3)).To(Succeed())
+
+			newHaConfig := `
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayConfig
+metadata:
+  name: ha-config
+spec:
+  replicas: 4`
+			Expect(YamlK8s(newHaConfig)(cluster)).To(Succeed())
+
+			Expect(cluster.WaitApp("kuma", "kuma-test", 4)).To(Succeed())
+		})
+	})
 
 	Context("HTTP Gateway", Ordered, func() {
 		gateway := `

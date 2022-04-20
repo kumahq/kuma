@@ -106,7 +106,7 @@ func getParentRefGateway(
 	ctx context.Context,
 	client kube_client.Client,
 	fromNamespace string,
-	ref gatewayapi.ParentRef,
+	ref gatewayapi.ParentReference,
 ) (*gatewayapi.Gateway, error) {
 	name := string(ref.Name)
 	// Group and Kind both have default values
@@ -150,7 +150,7 @@ func EvaluateParentRefAttachment(
 	ctx context.Context,
 	client kube_client.Client,
 	routeNs *kube_core.Namespace,
-	ref gatewayapi.ParentRef,
+	ref gatewayapi.ParentReference,
 ) (Attachment, error) {
 	gateway, err := getParentRefGateway(ctx, client, routeNs.GetName(), ref)
 	if err != nil {

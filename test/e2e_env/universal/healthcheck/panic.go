@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/e2e/universal/env"
+	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -51,7 +51,6 @@ networking:
 	BeforeAll(func() {
 		E2EDeferCleanup(func() {
 			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-			Expect(env.Cluster.DeleteMeshDataplaneProxies(meshName)).To(Succeed())
 			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
 		})
 

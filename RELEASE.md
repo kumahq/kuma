@@ -76,7 +76,7 @@ The code for this tool is in `tools/releases/changelog`.
 And you can run it in 2 different ways from a tag that already exists in the branch (useful for patch versions):
 
 ```shell
-go run ./tools/releases/changelog/... graphql  --branch release-1.5 --from-tag 1.5.0
+go run ./tools/releases/changelog/... github  --branch release-1.5 --from-tag 1.5.0
 chore(k8s): replace cni registry (backport #4070) [4076](https://github.com/kumahq/kuma/pull/4076) @mergify
 fix(kuma-cp): default policy creation (backport #4073) [4080](https://github.com/kumahq/kuma/pull/4080) @mergify
 fix(kuma-cp): guard the nil version in metadata (backport #3969) [3970](https://github.com/kumahq/kuma/pull/3970) @mergify
@@ -85,7 +85,7 @@ fix(kuma-cp): guard the nil version in metadata (backport #3969) [3970](https://
 From a specific commit (useful when cutting a new minor):
 
 ```shell
-go run ./tools/releases/changelog/... graphql  --branch master --from-commit ee321e2 # this is the first commit not in release-1.5
+go run ./tools/releases/changelog/... github  --branch master --from-commit ee321e2 # this is the first commit not in release-1.5
 chore(deps): bump alpine from 3.15.0 to 3.15.2 in /tools/releases/dockerfiles [4060](https://github.com/kumahq/kuma/pull/4060) [4023](https://github.com/kumahq/kuma/pull/4023) @dependabot
 chore(deps): bump github.com/envoyproxy/protoc-gen-validate from 0.6.3 to 0.6.7 [3978](https://github.com/kumahq/kuma/pull/3978) [3976](https://github.com/kumahq/kuma/pull/3976) @dependabot
 chore(deps): bump github.com/go-logr/logr from 1.2.2 to 1.2.3 [4040](https://github.com/kumahq/kuma/pull/4040) @dependabot

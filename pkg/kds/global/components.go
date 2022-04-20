@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -32,6 +33,10 @@ var (
 )
 
 func Setup(rt runtime.Runtime) (err error) {
+	if rt.Config().Mode != config_core.Global {
+		// Only run on global
+		return nil
+	}
 	reg := registry.Global()
 	kdsServer, err := kds_server.New(kdsGlobalLog, rt, reg.ObjectTypes(model.HasKDSFlag(model.ProvidedByGlobal)),
 		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,

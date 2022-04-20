@@ -29,7 +29,7 @@ type IngressProxyBuilder struct {
 	zone       string
 }
 
-func (p *IngressProxyBuilder) build(key core_model.ResourceKey) (*xds.Proxy, error) {
+func (p *IngressProxyBuilder) Build(key core_model.ResourceKey) (*xds.Proxy, error) {
 	ctx := context.Background()
 
 	zoneIngress, err := p.getZoneIngress(ctx, key)

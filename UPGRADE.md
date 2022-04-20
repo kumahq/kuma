@@ -8,9 +8,12 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+## Upgrade to `1.6.x`
+
 ### Helm
 
-controlPlane.resources is now on object instead of a string. Any existing value should be adapted accordingly.
+* the Helm chart for this release requires at least Helm version `3.8.0`.
+* `controlPlane.resources` is now on object instead of a string. Any existing value should be adapted accordingly.
 
 ### Zone egress and ExternalService
 
@@ -57,9 +60,9 @@ Every item in the `items` array now has a `kind` property of either:
   structure representing the `MeshGateway` it serves.
 
 Some examples can be found in the [Inspect API
-docs](https://kuma.io/docs/dev/documentation/http-api/#inspect-api).
+docs](https://kuma.io/docs/1.6.x/documentation/http-api/#inspect-api).
 
-## Upgrade to `1.5.0`
+## Upgrade to `1.5.x`
 
 ### Any type
 

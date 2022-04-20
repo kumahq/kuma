@@ -124,10 +124,17 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
-	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), builder.ResourceValidators().Mesh)
+	meshManager := mesh_managers.NewMeshManager(
+		builder.ResourceStore(),
+		customizableManager,
+		builder.CaManagers(),
+		registry.Global(),
+		builder.ResourceValidators().Mesh,
+		builder.Config().Store.UnsafeDelete,
+	)
 	customManagers[core_mesh.MeshType] = meshManager
 
-	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil)
+	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil, builder.Config().Store.UnsafeDelete)
 	customManagers[system.SecretType] = secretManager
 	return customizableManager
 }

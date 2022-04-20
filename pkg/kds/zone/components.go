@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -28,6 +29,10 @@ var (
 )
 
 func Setup(rt core_runtime.Runtime) error {
+	if rt.Config().Mode != config_core.Zone {
+		// Only run on zone
+		return nil
+	}
 	zone := rt.Config().Multizone.Zone.Name
 	reg := registry.Global()
 	kdsCtx := rt.KDSContext()
@@ -57,7 +62,7 @@ func Setup(rt core_runtime.Runtime) error {
 			}
 		}()
 		sink := kds_client.NewKDSSink(log, reg.ObjectTypes(model.HasKDSFlag(model.ConsumedByZone)), kds_client.NewKDSStream(session.ClientStream(), zone, string(cfgJson)),
-			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
+			Callbacks(rt.KDSContext().Configs, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
 		)
 		go func() {
 			if err := sink.Receive(); err != nil {
@@ -77,7 +82,7 @@ func Setup(rt core_runtime.Runtime) error {
 	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("kds-mux-client"), muxClient))
 }
 
-func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory) *kds_client.Callbacks {
+func Callbacks(configToSync map[string]bool, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
 		OnResourcesReceived: func(clusterID string, rs model.ResourceList) error {
 			if k8sStore && rs.GetItemType() != system.ConfigType && rs.GetItemType() != system.SecretType && rs.GetItemType() != system.GlobalSecretType {
@@ -99,7 +104,7 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 			}
 			if rs.GetItemType() == system.ConfigType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					return rt.KDSContext().Configs[r.GetMeta().GetName()]
+					return configToSync[r.GetMeta().GetName()]
 				}))
 			}
 			if rs.GetItemType() == system.GlobalSecretType {
