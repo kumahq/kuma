@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/env"
 	"github.com/kumahq/kuma/test/e2e_env/universal/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -54,3 +55,4 @@ var _ = Describe("User Auth", auth.UserAuth)
 var _ = Describe("DP Auth", auth.DpAuth, Ordered)
 var _ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
 var _ = Describe("External Services", externalservices.ExternalServiceHostHeader, Ordered)
+var _ = Describe("Inspect", inspect.Inspect, Ordered)

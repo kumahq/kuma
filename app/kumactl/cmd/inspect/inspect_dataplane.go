@@ -84,5 +84,6 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().BoolVar(&configDump, "config-dump", false, "if set then the command returns envoy config dump for provided dataplane")
+	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	return cmd
 }
