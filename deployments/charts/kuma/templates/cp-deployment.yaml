@@ -51,6 +51,7 @@ spec:
         - name: control-plane
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          hostNetwork: {{ .Values.controlPlane.hostNetwork }}
           env:
           {{-  $defaultEnv := include "kuma.defaultEnv" . | fromYaml | pluck "env" | first }}
           {{- $defaultEnvDict := dict }}
