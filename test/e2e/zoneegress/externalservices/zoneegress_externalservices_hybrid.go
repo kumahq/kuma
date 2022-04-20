@@ -93,7 +93,7 @@ networking:
 				WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s(nonDefaultMesh)).
+			Install(DemoClientK8s(nonDefaultMesh, TestNamespace)).
 			Install(testserver.Install(
 				testserver.WithName("es-test-server"),
 				testserver.WithNamespace("default"),

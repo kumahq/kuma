@@ -50,7 +50,7 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default")).
+			Install(DemoClientK8s("default", TestNamespace)).
 			Install(testserver.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())

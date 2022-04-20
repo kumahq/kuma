@@ -24,7 +24,7 @@ func VirtualOutboundOnK8s() {
 				WithEnv("KUMA_DNS_SERVER_SERVICE_VIP_ENABLED", "false"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default")).
+			Install(DemoClientK8s("default", TestNamespace)).
 			Install(testserver.Install(testserver.WithStatefulSet(true), testserver.WithReplicas(2))).
 			Setup(k8sCluster)
 		Expect(err).ToNot(HaveOccurred())

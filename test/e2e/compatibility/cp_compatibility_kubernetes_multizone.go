@@ -110,7 +110,7 @@ metadata:
 		}, "30s", "1s").Should(ContainSubstring("demo"))
 
 		// when new resources is created on Zone
-		err = DemoClientK8s("default")(zoneCluster)
+		err = DemoClientK8s("default", TestNamespace)(zoneCluster)
 
 		// then resource is synchronized to Global
 		Expect(err).ToNot(HaveOccurred())
