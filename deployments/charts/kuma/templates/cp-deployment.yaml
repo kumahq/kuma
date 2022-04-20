@@ -42,6 +42,10 @@ spec:
                   - {{ include "kuma.name" . }}-control-plane
               topologyKey: kubernetes.io/hostname
       {{- end }}
+      {{- if .Values.controlPlane.podSecurityContext }}
+      securityContext:
+      {{ toYaml .Values.controlPlane.podSecurityContext | trim | nindent 8 }}
+      {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
       {{- with .Values.controlPlane.nodeSelector }}
       nodeSelector:
@@ -52,6 +56,10 @@ spec:
         - name: control-plane
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          {{- if .Values.controlPlane.containerSecurityContext }}
+          securityContext:
+          {{ toYaml .Values.controlPlane.containerSecurityContext | trim | nindent 12 }}
+          {{- end }}
           env:
           {{-  $defaultEnv := include "kuma.defaultEnv" . | fromYaml | pluck "env" | first }}
           {{- $defaultEnvDict := dict }}
@@ -101,8 +109,9 @@ spec:
               path: /ready
               port: 5680
           resources:
-            {{- if .Values.controlPlane.resources }}
-            {{ .Values.controlPlane.resources | toYaml | nindent 12 }}
+            {{- if .Values.controlPlane.resources.requests }}
+            requests:
+            {{ .Values.controlPlane.resources.requests | toYaml | nindent 14 }}
             {{- else if eq .Values.controlPlane.mode "global" }}
             requests:
               cpu: 500m
@@ -111,7 +120,11 @@ spec:
             requests:
               cpu: 100m
               memory: 256Mi
-          {{- end }}
+            {{- end }}
+            {{- if .Values.controlPlane.resources.limits }}
+            limits:
+            {{ .Values.controlPlane.resources.limits | toYaml | nindent 14 }}
+            {{- end }}
           volumeMounts:
             - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt

@@ -64,7 +64,8 @@ var _ = E2EBeforeSuite(func() {
 	zone1 = k8sClusters.GetCluster(Kuma1)
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Zone,
-			WithEgress(true),
+			WithEgress(),
+			WithEgressEnvoyAdminTunnel(),
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 		)).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).
@@ -99,47 +100,32 @@ var _ = E2EBeforeSuite(func() {
 
 	// Universal Cluster 3
 	zone3 = universalClusters.GetCluster(Kuma3)
-	ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
-	Expect(err).ToNot(HaveOccurred())
-	egressTokenKuma3, err := globalCP.GenerateZoneEgressToken(Kuma3)
-	Expect(err).ToNot(HaveOccurred())
-	zone3TestServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "zone3-test-server")
-	Expect(err).ToNot(HaveOccurred())
-	demoClientTokenZone3, err := globalCP.GenerateDpToken(nonDefaultMesh, "zone3-demo-client")
-	Expect(err).ToNot(HaveOccurred())
-
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()), WithVerbose())).
-		Install(TestServerUniversal("zone3-dp-echo", nonDefaultMesh, zone3TestServerToken,
+		Install(TestServerUniversal("zone3-dp-echo", nonDefaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v1"}),
 			WithServiceName("zone3-test-server"),
 		)).
 		Install(DemoClientUniversal(
 			"zone3-demo-client",
 			nonDefaultMesh,
-			demoClientTokenZone3,
 			WithTransparentProxy(true),
 		)).
-		Install(IngressUniversal(ingressTokenKuma3)).
-		Install(EgressUniversal(egressTokenKuma3)).
+		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
+		Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
 		Setup(zone3)).To(Succeed())
 
 	E2EDeferCleanup(zone3.DismissCluster)
 
 	// Universal Cluster 4
 	zone4 = universalClusters.GetCluster(Kuma4)
-	ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
-	Expect(err).ToNot(HaveOccurred())
-	zone4TestServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "zone4-test-server")
-	Expect(err).ToNot(HaveOccurred())
-
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()), WithVerbose())).
-		Install(TestServerUniversal("zone4-dp-echo", nonDefaultMesh, zone4TestServerToken,
+		Install(TestServerUniversal("zone4-dp-echo", nonDefaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v1"}),
 			WithServiceName("zone4-test-server"),
 		)).
-		Install(IngressUniversal(ingressTokenKuma4)).
+		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 		Setup(zone4)).To(Succeed())
 
 	E2EDeferCleanup(zone4.DismissCluster)

@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strconv"
 
@@ -116,8 +115,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 
 			service := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:    gatewayInstance.Namespace,
-					GenerateName: fmt.Sprintf("%s-", gatewayInstance.Name),
+					Namespace: gatewayInstance.Namespace,
+					Name:      gatewayInstance.Name,
 					Annotations: map[string]string{
 						metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
 					},
@@ -188,8 +187,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 		func(obj kube_client.Object) (kube_client.Object, error) {
 			deployment := &kube_apps.Deployment{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:    gatewayInstance.Namespace,
-					GenerateName: fmt.Sprintf("%s-", gatewayInstance.Name),
+					Namespace: gatewayInstance.Namespace,
+					Name:      gatewayInstance.Name,
 				},
 			}
 			if obj != nil {

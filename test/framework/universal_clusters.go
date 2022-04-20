@@ -60,6 +60,10 @@ func (cs *UniversalClusters) WithRetries(retries int) Cluster {
 	return cs
 }
 
+func (cs *UniversalClusters) GetKumaCPLogs() (string, error) {
+	panic("not implemented")
+}
+
 func (cs *UniversalClusters) Name() string {
 	panic("not supported")
 }
@@ -164,10 +168,10 @@ func (cs *UniversalClusters) DeployApp(opt ...AppDeploymentOption) error {
 	return nil
 }
 
-func (cs *UniversalClusters) DeleteApp(namespace, appname string) error {
+func (cs *UniversalClusters) DeleteApp(appname string) error {
 	for name, c := range cs.clusters {
-		if err := c.DeleteApp(namespace, appname); err != nil {
-			return errors.Wrapf(err, "Labeling Namespace %s on %s failed: %v", namespace, name, err)
+		if err := c.DeleteApp(appname); err != nil {
+			return errors.Wrapf(err, "delete app %s failed", name)
 		}
 	}
 
@@ -223,5 +227,13 @@ func (cs *UniversalClusters) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
 }
 
 func (cs *UniversalClusters) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+	panic("not supported")
+}
+
+func (cs *UniversalClusters) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
+	panic("not supported")
+}
+
+func (cs *UniversalClusters) GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
 	panic("not supported")
 }

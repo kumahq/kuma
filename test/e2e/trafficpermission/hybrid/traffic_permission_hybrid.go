@@ -56,20 +56,14 @@ var _ = E2EBeforeSuite(func() {
 
 	globalCP := globalCluster.GetKuma()
 
-	testServerToken, err := globalCP.GenerateDpToken("default", "test-server")
-	Expect(err).ToNot(HaveOccurred())
-
 	// Zone universal
 	zoneUniversal = universalClusters.GetCluster(Kuma3)
-	ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
-	Expect(err).ToNot(HaveOccurred())
-
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Zone,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 		)).
-		Install(TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))).
-		Install(IngressUniversal(ingressTokenKuma3)).
+		Install(TestServerUniversal("test-server", "default", WithArgs([]string{"echo", "--instance", "echo-v1"}))).
+		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 		Setup(zoneUniversal)).To(Succeed())
 
 	E2EDeferCleanup(zoneUniversal.DismissCluster)

@@ -307,7 +307,8 @@ var _ = Describe("Config WS", func() {
               "conflictRetryBaseBackoff": "100ms",
               "conflictRetryMaxTimes": 5
             },
-            "type": "memory"
+            "type": "memory",
+            "unsafeDelete": false
           },
           "xdsServer": {
             "dataplaneConfigurationRefreshInterval": "1s",

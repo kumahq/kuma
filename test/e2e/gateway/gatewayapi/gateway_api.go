@@ -26,7 +26,7 @@ func GatewayAPICRDs(cluster Cluster) error {
 	return k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), out)
 }
 
-const gatewayClass = `
+const GatewayClass = `
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: GatewayClass
 metadata:
@@ -44,6 +44,21 @@ var _ = E2EBeforeSuite(func() {
 
 	cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
+	externalService := `
+apiVersion: kuma.io/v1alpha1
+kind: ExternalService
+mesh: default
+metadata:
+  name: external-service
+spec:
+  tags:
+    kuma.io/service: external-service
+    kuma.io/protocol: http
+  networking:
+    address: external-service.external-services.svc.cluster.local:80
+`
+
+	ExternalServicesNamespace := "external-services"
 	err := NewClusterSetup().
 		Install(GatewayAPICRDs).
 		Install(Kuma(config_core.Standalone,
@@ -61,12 +76,20 @@ var _ = E2EBeforeSuite(func() {
 			testserver.WithNamespace(TestNamespace),
 			testserver.WithArgs("echo", "--instance", "test-server-2"),
 		)).
-		Install(YamlK8s(gatewayClass)).
+		Install(Namespace(ExternalServicesNamespace)).
+		Install(testserver.Install(
+			testserver.WithName("external-service"),
+			testserver.WithNamespace(ExternalServicesNamespace),
+			testserver.WithArgs("echo", "--instance", "external-service"),
+		)).
+		Install(YamlK8s(externalService)).
+		Install(YamlK8s(GatewayClass)).
 		Setup(cluster)
 	Expect(err).ToNot(HaveOccurred())
 
 	E2EDeferCleanup(func() {
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
+		Expect(cluster.DeleteNamespace(ExternalServicesNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
@@ -92,7 +115,66 @@ func GatewayAPI() {
 		return ip
 	}
 
-	Context("HTTP Gateway", func() {
+	Describe("GatewayClass parametersRef", Ordered, func() {
+		haGatewayClass := `
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: GatewayClass
+metadata:
+  name: kuma
+spec:
+  controllerName: gateways.kuma.io/controller
+  parametersRef:
+    kind: MeshGatewayConfig
+    group: kuma.io
+    name: ha-config`
+
+		haConfig := `
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayConfig
+metadata:
+  name: ha-config
+spec:
+  replicas: 3`
+
+		haGateway := `
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: Gateway
+metadata:
+  name: kuma
+  namespace: kuma-test
+spec:
+  gatewayClassName: kuma
+  listeners:
+  - name: proxy
+    port: 8080
+    protocol: HTTP`
+
+		BeforeAll(func() {
+			E2EDeferCleanup(func() error {
+				return k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(TestNamespace), "delete", "gateway", "kuma")
+			})
+			Expect(YamlK8s(haConfig)(cluster)).To(Succeed())
+			Expect(YamlK8s(haGatewayClass)(cluster)).To(Succeed())
+			Expect(YamlK8s(haGateway)(cluster)).To(Succeed())
+		})
+
+		It("should create the right number of pods", func() {
+			Expect(cluster.WaitApp("kuma", "kuma-test", 3)).To(Succeed())
+
+			newHaConfig := `
+apiVersion: kuma.io/v1alpha1
+kind: MeshGatewayConfig
+metadata:
+  name: ha-config
+spec:
+  replicas: 4`
+			Expect(YamlK8s(newHaConfig)(cluster)).To(Succeed())
+
+			Expect(cluster.WaitApp("kuma", "kuma-test", 4)).To(Succeed())
+		})
+	})
+
+	Context("HTTP Gateway", Ordered, func() {
 		gateway := `
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: Gateway
@@ -108,9 +190,10 @@ spec:
 
 		var address string
 
-		BeforeEach(func() {
-			err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "gateway", "--all")
-			Expect(err).ToNot(HaveOccurred())
+		BeforeAll(func() {
+			E2EDeferCleanup(func() error {
+				return k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(TestNamespace), "delete", "gateway", "kuma")
+			})
 			Expect(YamlK8s(gateway)(cluster)).To(Succeed())
 			address = net.JoinHostPort(GatewayIP(), "8080")
 		})
@@ -213,9 +296,42 @@ spec:
 				g.Expect(resp.Instance).To(Equal("test-server-2"))
 			}, "30s", "1s").Should(Succeed())
 		})
+
+		It("should route to external service", func() {
+			// given
+			routes := `
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: HTTPRoute
+metadata:
+  name: external-service
+  namespace: kuma-test
+spec:
+  parentRefs:
+  - name: kuma
+  hostnames:
+  - "external-service.com"
+  rules:
+  - backendRefs:
+    - group: kuma.io
+      kind: ExternalService
+      name: external-service
+`
+
+			// when
+			err := YamlK8s(routes)(cluster)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectResponseDirectly("http://"+address, client.WithHeader("host", "external-service.com"))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("external-service"))
+			}, "30s", "1s").Should(Succeed())
+		})
 	})
 
-	PContext("HTTPS Gateway", func() {
+	Context("HTTPS Gateway", Ordered, func() {
 		secret := `
 apiVersion: v1
 kind: Secret
@@ -242,16 +358,23 @@ spec:
     protocol: HTTPS
     tls:
       certificateRefs:
+      - name: secret-tls
+  - name: proxy-wildcard
+    port: 8091
+    protocol: HTTPS
+    tls:
+      certificateRefs:
       - name: secret-tls`
 
-		var address string
+		var ip string
 
-		BeforeEach(func() {
-			err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "gateway", "--all")
-			Expect(err).ToNot(HaveOccurred())
+		BeforeAll(func() {
+			E2EDeferCleanup(func() error {
+				return k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(TestNamespace), "delete", "gateway", "kuma")
+			})
 			Expect(YamlK8s(secret)(cluster)).To(Succeed())
 			Expect(YamlK8s(gateway)(cluster)).To(Succeed())
-			address = net.JoinHostPort(GatewayIP(), "8090")
+			ip = GatewayIP()
 		})
 
 		It("should route the traffic using TLS", func() {
@@ -281,7 +404,13 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) {
-				resp, err := client.CollectResponseDirectly("https://"+address, client.WithHeader("host", "test-server-1.com"))
+				resp, err := client.CollectResponseDirectly("https://"+net.JoinHostPort(ip, "8090"), client.WithHeader("host", "test-server-1.com"))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("test-server-1"))
+			}, "30s", "1s").Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectResponseDirectly("https://" + net.JoinHostPort(ip, "8091"))
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(resp.Instance).To(Equal("test-server-1"))
 			}, "30s", "1s").Should(Succeed())

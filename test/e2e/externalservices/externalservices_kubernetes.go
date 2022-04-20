@@ -79,7 +79,10 @@ spec:
 
 		cluster = clusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone, WithEgress(true))).
+			Install(Kuma(core.Standalone,
+				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
+			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(DemoClientK8s("default")).
 			Install(externalservice.Install(externalservice.HttpServer, []string{})).
@@ -103,11 +106,7 @@ spec:
 		clientPod = &pods[0]
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-
+	E2EAfterEach(func() {
 		err := cluster.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 

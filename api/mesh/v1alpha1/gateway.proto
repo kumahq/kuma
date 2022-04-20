@@ -4,10 +4,17 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "config.proto"; // kumadoc options
 import "mesh/options.proto";
 import "mesh/v1alpha1/selector.proto";
 import "system/v1alpha1/datasource.proto";
 import "validate/validate.proto";
+
+option (doc.config) = {
+  type : Policy,
+  name : "MeshGateway",
+  file_name : "meshgateway"
+};
 
 // MeshGateway is a virtual proxy.
 //

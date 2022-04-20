@@ -1,18 +1,19 @@
 GINKGO_VERSION := v2.1.3
-GOLANGCI_LINT_VERSION := v1.43.0
+GOLANGCI_LINT_VERSION := v1.45.2
 GOLANG_PROTOBUF_VERSION := v1.5.2
 HELM_DOCS_VERSION := 1.7.0
 KUSTOMIZE_VERSION := v4.4.1
 PROTOC_PGV_VERSION := v0.4.1
-PROTOC_VERSION := 3.14.0
+PROTOC_VERSION := 3.20.0
 UDPA_LATEST_VERSION := main
 GOOGLEAPIS_LATEST_VERSION := master
-KUMADOC_VERSION := v0.1.7
+KUMADOC_VERSION := v0.2.0
 DATAPLANE_API_LATEST_VERSION := main
 SHELLCHECK_VERSION := v0.8.0
+YQ_VERSION := v4.24.2
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
-CI_KUBECTL_VERSION ?= v1.18.14
+CI_KUBECTL_VERSION ?= v1.23.5
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -78,7 +79,8 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/helm3 \
 	dev/install/helm-docs \
 	dev/install/data-plane-api \
-	dev/install/shellcheck
+	dev/install/shellcheck \
+	dev/install/yq
 
 .PHONY: dev/install/protoc-gen-kumadoc
 dev/install/protoc-gen-kumadoc:
@@ -230,6 +232,10 @@ dev/install/shellcheck:
 		&& set +x \
 		&& echo "Shellcheck $(SHELLCHECK_VERSION) has been installed at $(SHELLCHECK_PATH)" ; fi
 
+.PHONY: dev/install/yq
+dev/install/yq:
+	go install github.com/mikefarah/yq/v4@$(YQ_VERSION)
+
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
 	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | \
@@ -249,19 +255,6 @@ dev/install/helm-docs: ## Bootstrap: Install helm-docs
 		&& mv helm-docs $(HELM_DOCS_PATH) \
 		&& set +x \
 		&& echo "helm-docs $(HELM_DOCS_VERSION) has been installed at $(HELM_DOCS_PATH)" ; fi
-
-GEN_CHANGELOG_START_TAG ?= 0.7.1
-GEN_CHANGELOG_BRANCH ?= $(shell git branch --show-current)
-GEN_CHANGELOG_MD ?= $(TOP)/changelog.generated.md
-GEN_CHANGELOG_REPO ?= https://github.com/kumahq/kuma.git
-.PHONY: changelog
-changelog:
-	@cd $(TOOLS_DIR)/releases/changelog/ && \
-		go run ./... \
-		--repo $(GEN_CHANGELOG_REPO) \
-		--start refs/heads/$(GEN_CHANGELOG_START_TAG) \
-		--branch refs/heads/$(GEN_CHANGELOG_BRANCH) > $(GEN_CHANGELOG_MD)
-	@echo "The generated changelog is in $(GEN_CHANGELOG_MD)"
 
 $(KUBECONFIG_DIR):
 	@mkdir -p $(KUBECONFIG_DIR)

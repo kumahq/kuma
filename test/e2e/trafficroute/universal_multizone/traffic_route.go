@@ -47,25 +47,15 @@ var _ = E2EBeforeSuite(func() {
 
 	globalCP := global.GetKuma()
 
-	testServerToken, err := globalCP.GenerateDpToken(defaultMesh, "test-server")
-	Expect(err).ToNot(HaveOccurred())
-	anotherTestServerToken, err := globalCP.GenerateDpToken(defaultMesh, "another-test-server")
-	Expect(err).ToNot(HaveOccurred())
-	demoClientToken, err := globalCP.GenerateDpToken(defaultMesh, "demo-client")
-	Expect(err).ToNot(HaveOccurred())
-
 	// Cluster 1
 	zone1 = clusters.GetCluster(Kuma3)
-	ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
-	Expect(err).ToNot(HaveOccurred())
-
 	Expect(NewClusterSetup().
 		Install(Kuma(core.Zone,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 		)).
-		Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true), WithConcurrency(8))).
-		Install(IngressUniversal(ingressTokenKuma3)).
-		Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
+		Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, WithTransparentProxy(true), WithConcurrency(8))).
+		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
+		Install(TestServerUniversal("dp-echo-1", defaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v1"}),
 			WithServiceVersion("v1"),
 		)).
@@ -75,30 +65,27 @@ var _ = E2EBeforeSuite(func() {
 
 	// Cluster 2
 	zone2 = clusters.GetCluster(Kuma4)
-	ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
-	Expect(err).ToNot(HaveOccurred())
-
 	Expect(NewClusterSetup().
 		Install(Kuma(core.Zone,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 		)).
-		Install(TestServerUniversal("dp-echo-2", defaultMesh, testServerToken,
+		Install(TestServerUniversal("dp-echo-2", defaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v2"}),
 			WithServiceVersion("v2"),
 		)).
-		Install(TestServerUniversal("dp-echo-3", defaultMesh, testServerToken,
+		Install(TestServerUniversal("dp-echo-3", defaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v3"}),
 			WithServiceVersion("v3"),
 		)).
-		Install(TestServerUniversal("dp-echo-4", defaultMesh, testServerToken,
+		Install(TestServerUniversal("dp-echo-4", defaultMesh,
 			WithArgs([]string{"echo", "--instance", "echo-v4"}),
 			WithServiceVersion("v4"),
 		)).
-		Install(TestServerUniversal("dp-another-test", defaultMesh, anotherTestServerToken,
+		Install(TestServerUniversal("dp-another-test", defaultMesh,
 			WithArgs([]string{"echo", "--instance", "another-test-server"}),
 			WithServiceName("another-test-server"),
 		)).
-		Install(IngressUniversal(ingressTokenKuma4)).
+		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 		Setup(zone2)).To(Succeed())
 
 	E2EDeferCleanup(zone2.DismissCluster)

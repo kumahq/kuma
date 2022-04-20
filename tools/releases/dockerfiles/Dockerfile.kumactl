@@ -1,16 +1,16 @@
-FROM alpine:3.15.2
+FROM alpine:3.15.4
 
 ARG ARCH
 
 RUN apk add --no-cache curl
 
-ADD $KUMA_ROOT/build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
+ADD /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
 
-COPY $KUMA_ROOT/tools/releases/templates/LICENSE \
-    $KUMA_ROOT/tools/releases/templates/README \
+COPY /tools/releases/templates/LICENSE \
+    /tools/releases/templates/README \
     /kuma/
 
-COPY $KUMA_ROOT/tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
+COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
 
 RUN addgroup -S -g 6789 kumactl \
  && adduser -S -D -G kumactl -u 6789 kumactl

@@ -1,5 +1,90 @@
 # CHANGELOG
 
+## [1.6.0]
+
+### New features:
+
+Gateway:
+* release K8s GatewayAPI as preview [4072](https://github.com/kumahq/kuma/pull/4072) [4022](https://github.com/kumahq/kuma/pull/4022) [4045](https://github.com/kumahq/kuma/pull/4045) [4014](https://github.com/kumahq/kuma/pull/4014) [3956](https://github.com/kumahq/kuma/pull/3956) @jakubdyszkiewicz,@michaelbeaumont
+* use MeshGatewayInstance name for generated objects [4097](https://github.com/kumahq/kuma/pull/4097) @michaelbeaumont
+
+Inspect api:
+* add gateways to policy inspect [4125](https://github.com/kumahq/kuma/pull/4125) [4104](https://github.com/kumahq/kuma/pull/4104) [4092](https://github.com/kumahq/kuma/pull/4092) [4088](https://github.com/kumahq/kuma/pull/4088) [4077](https://github.com/kumahq/kuma/pull/4077) [4064](https://github.com/kumahq/kuma/pull/4064) [4065](https://github.com/kumahq/kuma/pull/4065) [3973](https://github.com/kumahq/kuma/pull/3973) [3966](https://github.com/kumahq/kuma/pull/3966) @michaelbeaumont
+
+ZoneEgress:
+* Make zoneegress available in standalone mode [4100](https://github.com/kumahq/kuma/pull/4100) @lahabana
+* added locality aware lb for external service [4048](https://github.com/kumahq/kuma/pull/4048) @lukidzi
+* make zoneegress routing opt-in [4109](https://github.com/kumahq/kuma/pull/4109) [4013](https://github.com/kumahq/kuma/pull/4013) @lukidzi
+* support RateLimit and FaultInjections [4000](https://github.com/kumahq/kuma/pull/4000) @lobkovilya
+
+Helm:
+* Allow customization of image tags in Helm chart [4068](https://github.com/kumahq/kuma/pull/4068) @gdasson
+* Expose kuma-cp's metric port so it can be scraped by self-deployed prometheus. [4047](https://github.com/kumahq/kuma/pull/4047) @jbehrends
+* add resource limits option for control plane deployment [4049](https://github.com/kumahq/kuma/pull/4049) @gdasson
+* fail if global.image.tag and appVersion incompatible [4085](https://github.com/kumahq/kuma/pull/4085) @michaelbeaumont
+* set version to track appVersion [4083](https://github.com/kumahq/kuma/pull/4083) @michaelbeaumont
+* expose kuma-cp gui through ingress [4101](https://github.com/kumahq/kuma/pull/4101) @lukidzi
+* allow specifying security context [4153](https://github.com/kumahq/kuma/pull/4153) @gdasson @bartsmykla
+
+Other:
+* feat(k8s): ability to set custom service account token volume [4036](https://github.com/kumahq/kuma/pull/4036) @johnharris85
+* feat(k8s): shutdown kuma-dp container for any owner kind [4079](https://github.com/kumahq/kuma/pull/4079) @lukidzi
+* feat(k8s): support startupProbes [4090](https://github.com/kumahq/kuma/pull/4090) @lahabana
+* feat(kuma-cp): add uptime, policies, gateway dps to reports [3933](https://github.com/kumahq/kuma/pull/3933) @parkanzky
+* feat(kuma-cp): add metrics and timeouts to CA interface [4089](https://github.com/kumahq/kuma/pull/4089) @parkanzky
+* feat(kumactl): add --values and --set to kumactl install control-plane [4086](https://github.com/kumahq/kuma/pull/4086) @lahabana
+* feat(transparent-proxy): add experimental tproxy iptables generation [4114](https://github.com/kumahq/kuma/pull/4114) @bartsmykla
+
+### Dependency upgrades:
+
+* bump alpine from 3.15.0 to 3.15.2 in /tools/releases/dockerfiles [4060](https://github.com/kumahq/kuma/pull/4060) [4023](https://github.com/kumahq/kuma/pull/4023) @dependabot
+* bump github.com/envoyproxy/protoc-gen-validate from 0.6.3 to 0.6.7 [3978](https://github.com/kumahq/kuma/pull/3978) [3976](https://github.com/kumahq/kuma/pull/3976) @dependabot
+* bump github.com/go-logr/logr from 1.2.2 to 1.2.3 [4040](https://github.com/kumahq/kuma/pull/4040) @dependabot
+* bump github.com/golang-jwt/jwt/v4 from 4.3.0 to 4.4.1 [4061](https://github.com/kumahq/kuma/pull/4061) [4025](https://github.com/kumahq/kuma/pull/4025) @dependabot
+* bump github.com/k8s/* from 0.23.4 to 0.23.5 [4043](https://github.com/kumahq/kuma/pull/4043) @lahabana
+* bump github.com/miekg/dns from 1.1.46 to 1.1.47 [3998](https://github.com/kumahq/kuma/pull/3998) @dependabot
+* bump github.com/onsi/gomega from 1.18.1 to 1.19.0 [4062](https://github.com/kumahq/kuma/pull/4062) @dependabot
+* bump github.com/spf13/cobra from 1.3.0 to 1.4.0 [3995](https://github.com/kumahq/kuma/pull/3995) @dependabot
+* bump go.uber.org/multierr from 1.7.0 to 1.8.0 [3974](https://github.com/kumahq/kuma/pull/3974) @dependabot
+* bump google.golang.org/grpc from 1.44.0 to 1.45.0 [3993](https://github.com/kumahq/kuma/pull/3993) @dependabot
+* bump google.golang.org/protobuf from 1.27.1 to 1.28.0 [4046](https://github.com/kumahq/kuma/pull/4046) @dependabot
+* bump helm.sh/helm/v3 from 3.8.0 to 3.8.1 [3994](https://github.com/kumahq/kuma/pull/3994) @dependabot
+* bump sigs.k8s.io/gateway-api from 0.4.1 to 0.4.2 [3997](https://github.com/kumahq/kuma/pull/3997) @dependabot
+* remove dependency on spire [4044](https://github.com/kumahq/kuma/pull/4044) @lahabana
+
+### Other notable changes:
+
+* chore(k8s): replace cni registry [4070](https://github.com/kumahq/kuma/pull/4070) @lobkovilya
+* chore(k8s): use appProtocol from service by default [4015](https://github.com/kumahq/kuma/pull/4015) @jakubdyszkiewicz
+* chore(kuma-dp): cleanup bootstrap version field [3670](https://github.com/kumahq/kuma/pull/3670) @tharun208
+* fix(gateway): fix status updating in MeshGatewayInstance reconciliation [4051](https://github.com/kumahq/kuma/pull/4051) @michaelbeaumont
+* fix(gateway): gateway instance service reconciliation loops forever [4035](https://github.com/kumahq/kuma/pull/4035) @jakubdyszkiewicz
+* fix(gateway): gateway reconciliation loops forever [4034](https://github.com/kumahq/kuma/pull/4034) @jakubdyszkiewicz
+* fix(gateway): gateway tls listeners without hostnames [4093](https://github.com/kumahq/kuma/pull/4093) @jakubdyszkiewicz
+* fix(gateway): ignore non TCP protocol for provided gateway [4067](https://github.com/kumahq/kuma/pull/4067) @lahabana
+* fix(gateway): mesh gateway instance service target port [4071](https://github.com/kumahq/kuma/pull/4071) @jakubdyszkiewicz
+* fix(gateway): skip creating MeshGateways without proper attachment [4011](https://github.com/kumahq/kuma/pull/4011) @jakubdyszkiewicz
+* fix(helm): add prefix to `app` label in ingress/egress deployment [4123](https://github.com/kumahq/kuma/pull/4123) @lahabana
+* fix(helm): fix other template prefix in ingress/egress [4124](https://github.com/kumahq/kuma/pull/4124) @lahabana
+* fix(helm): remove wildcard rbac version [4148](https://github.com/kumahq/kuma/pull/4148) @johnharris85
+* fix(k8s): reconcile serviceMaps when using mesh namespace annotation [3815](https://github.com/kumahq/kuma/pull/3815) @lahabana
+* fix(kuma-cp): avoid generating excessive envoy clusters [3984](https://github.com/kumahq/kuma/pull/3984) @lobkovilya
+* fix(kuma-cp): default policy creation [4073](https://github.com/kumahq/kuma/pull/4073) @lobkovilya
+* fix(kuma-cp): guard the nil version in metadata [3969](https://github.com/kumahq/kuma/pull/3969) @jakubdyszkiewicz
+* fix(kuma-cp): provide better message when running with an in-memory database [3982](https://github.com/kumahq/kuma/pull/3982) @lukidzi
+* fix(kuma-dp): better error message when the token is invalid [3961](https://github.com/kumahq/kuma/pull/3961) @lahabana
+* fix(kumactl): add mesh flag to only commands that uses it [3788](https://github.com/kumahq/kuma/pull/3788) @tharun208
+* fix(kumactl): split yaml correctly in `kumactl apply` [4107](https://github.com/kumahq/kuma/pull/4107) @lahabana
+* fix(proxytemplate): avoid validation error [3937](https://github.com/kumahq/kuma/pull/3937) @marcoferrer
+* fix(proxytemplate): execute hooks before proxy template modifications [4055](https://github.com/kumahq/kuma/pull/4055) @jakubdyszkiewicz
+* perf(k8s): move outbounds from Dataplane to Config [3986](https://github.com/kumahq/kuma/pull/3986) @jakubdyszkiewicz
+
+## [1.5.1]
+
+* chore(k8s): replace cni registry (backport #4070) [4076](https://github.com/kumahq/kuma/pull/4076)
+* fix(kuma-cp): default policy creation (backport #4073) [4080](https://github.com/kumahq/kuma/pull/4080)
+* fix(kuma-cp): guard the nil version in metadata (backport #3969) [3970](https://github.com/kumahq/kuma/pull/3970)
+
 ## [1.5.0]
 > Released on 2022/02/21
 

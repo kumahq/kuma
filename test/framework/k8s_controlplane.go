@@ -26,7 +26,8 @@ import (
 )
 
 type PortFwd struct {
-	localAPITunnel *k8s.Tunnel
+	apiServerTunnel   *k8s.Tunnel
+	ApiServerEndpoint string `json:"apiServerEndpoint"`
 }
 
 type K8sControlPlane struct {
@@ -51,13 +52,12 @@ func NewK8sControlPlane(
 	replicas int,
 ) *K8sControlPlane {
 	name := clusterName + "-" + mode
-	kumactl, _ := NewKumactlOptions(t, name, verbose)
 	return &K8sControlPlane{
 		t:          t,
 		mode:       mode,
 		name:       name,
 		kubeconfig: kubeconfig,
-		kumactl:    kumactl,
+		kumactl:    NewKumactlOptions(t, name, verbose),
 		cluster:    cluster,
 		verbose:    verbose,
 		replicas:   replicas,
@@ -85,12 +85,19 @@ func (c *K8sControlPlane) PortForwardKumaCP() {
 	// There could be multiple pods still starting so pick one that's available already
 	for i := range kumaCpPods {
 		if k8s.IsPodAvailable(&kumaCpPods[i]) {
-			c.portFwd.localAPITunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, 5681)
-			c.portFwd.localAPITunnel.ForwardPort(c.t)
+			c.portFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, 5681)
+			c.portFwd.apiServerTunnel.ForwardPort(c.t)
+			c.portFwd.ApiServerEndpoint = c.portFwd.apiServerTunnel.Endpoint()
 			return
 		}
 	}
 	c.t.Fatalf("Failed finding an available pod, allPods: %v", kumaCpPods)
+}
+
+func (c *K8sControlPlane) ClosePortForwards() {
+	if c.portFwd.apiServerTunnel != nil {
+		c.portFwd.apiServerTunnel.Close()
+	}
 }
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
@@ -112,7 +119,7 @@ func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
 }
 
 func (c *K8sControlPlane) VerifyKumaCtl() error {
-	if c.portFwd.localAPITunnel == nil {
+	if c.portFwd.ApiServerEndpoint == "" {
 		return errors.Errorf("API port not forwarded")
 	}
 
@@ -152,28 +159,17 @@ func (c *K8sControlPlane) VerifyKumaGUI() error {
 	)
 }
 
-func (c *K8sControlPlane) GetKumaCPLogs() (string, error) {
-	logs := ""
-
-	pods := c.GetKumaCPPods()
-	if len(pods) < 1 {
-		return "", errors.Errorf("no kuma-cp pods found for logs")
-	}
-
-	for _, p := range pods {
-		log, err := c.cluster.GetPodLogs(p)
-		if err != nil {
-			return "", err
-		}
-
-		logs = logs + "\n >>> " + p.Name + "\n" + log
-	}
-
-	return logs, nil
+func (c *K8sControlPlane) PortFwd() PortFwd {
+	return c.portFwd
 }
 
 func (c *K8sControlPlane) FinalizeAdd() error {
 	c.PortForwardKumaCP()
+	return c.FinalizeAddWithPortFwd(c.portFwd)
+}
+
+func (c *K8sControlPlane) FinalizeAddWithPortFwd(portFwd PortFwd) error {
+	c.portFwd = portFwd
 	var token string
 	t, err := c.retrieveAdminToken()
 	if err != nil {
@@ -244,10 +240,10 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 }
 
 func (c *K8sControlPlane) GetAPIServerAddress() string {
-	if c.portFwd.localAPITunnel == nil {
+	if c.portFwd.ApiServerEndpoint == "" {
 		panic("Port forward wasn't setup!")
 	}
-	return "http://" + c.portFwd.localAPITunnel.Endpoint()
+	return "http://" + c.portFwd.ApiServerEndpoint
 }
 
 func (c *K8sControlPlane) GetMetrics() (string, error) {

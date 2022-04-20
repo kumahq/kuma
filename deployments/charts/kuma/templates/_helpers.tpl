@@ -7,6 +7,27 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
+This is the Kuma version the chart is intended to be used with.
+*/}}
+{{- define "kuma.appVersion" -}}
+{{- .Chart.AppVersion -}}
+{{- end }}
+
+{{/*
+This is only used in the `kuma.formatImage` function below.
+*/}}
+{{- define "kuma.defaultRegistry" -}}
+docker.io/kumahq
+{{- end }}
+
+{{- define "kuma.product" -}}
+Kuma
+{{- end }}
+
+{{- define "kuma.tagPrefix" -}}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
@@ -57,8 +78,8 @@ Common labels
 {{- define "kuma.labels" -}}
 helm.sh/chart: {{ include "kuma.chart" . }}
 {{ include "kuma.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- if (include "kuma.appVersion" .) }}
+app.kubernetes.io/version: {{ (include "kuma.appVersion" .) | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
@@ -96,12 +117,51 @@ returns: formatted image string
 {{- $root := .root }}
 {{- $registry := ($img.registry | default $root.Values.global.image.registry) -}}
 {{- $repo := ($img.repository | required "Must specify image repository") -}}
-{{- $defaultTag := ($root.Values.global.image.tag | default $root.Chart.AppVersion) -}}
+{{- $product := (include "kuma.product" .) }}
+{{- $tagPrefix := (include "kuma.tagPrefix" .) }}
+{{- $expectedVersion := (include "kuma.appVersion" $root) }}
+{{- if
+  and
+    $root.Values.global.image.tag
+    (ne $root.Values.global.image.tag (include "kuma.appVersion" $root))
+    (eq $root.Values.global.image.registry (include "kuma.defaultRegistry" .))
+-}}
+{{- fail (
+  printf "This chart only supports %s version %q but %sglobal.image.tag is set to %q. Set %sglobal.image.tag to %q or skip this check by setting %s*.image.tag for each individual component."
+  $product $expectedVersion $tagPrefix $root.Values.global.image.tag $tagPrefix $expectedVersion $tagPrefix
+) -}}
+{{- end -}}
+{{- $defaultTag := ($root.Values.global.image.tag | default (include "kuma.appVersion" $root)) -}}
 {{- $tag := ($img.tag | default $defaultTag) -}}
 {{- printf "%s/%s:%s" $registry $repo $tag -}}
 {{- end -}}
 
 {{- define "kuma.defaultEnv" -}}
+{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone")) }}
+  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: global,zone,standalone" .Values.controlPlane.mode }}
+  {{ fail $msg }}
+{{ end }}
+{{ if eq .Values.controlPlane.mode "zone" }}
+  {{ if empty .Values.controlPlane.zone }}
+    {{ fail "Can't have controlPlane.zone to be empty when controlPlane.mode=='zone'" }}
+  {{ end }}
+  {{ if empty .Values.controlPlane.kdsGlobalAddress }}
+    {{ fail "controlPlane.kdsGlobalAddress can't be empty when controlPlane.mode=='zone', needs to be the global control-plane address" }}
+  {{ else }}
+    {{ $url := urlParse .Values.controlPlane.kdsGlobalAddress }}
+    {{ if not (eq $url.scheme "grpcs") }}
+      {{ $msg := printf "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// got:'%s'" .Values.controlPlane.kdsGlobalAddress }}
+      {{ fail $msg }}
+    {{ end }}
+  {{ end }}
+{{ else }}
+  {{ if not (empty .Values.controlPlane.zone) }}
+    {{ fail "Can't specify a controlPlane.zone when controlPlane.mode!='zone'" }}
+  {{ end }}
+  {{ if not (empty .Values.controlPlane.kdsGlobalAddress) }}
+    {{ fail "Can't specify a controlPlane.kdsGlobalAddress when controlPlane.mode!='zone'" }}
+  {{ end }}
+{{ end }}
 env:
 - name: KUMA_ENVIRONMENT
   value: "kubernetes"

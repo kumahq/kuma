@@ -351,7 +351,7 @@ var _ = Describe("ProxyTemplate", func() {
 				expected: `
                 violations:
                 - field: conf.imports[0]
-                  message: 'profile not found. Available profiles: default-proxy'`,
+                  message: 'profile not found. Available profiles: default-proxy,egress-proxy,ingress-proxy'`,
 			}),
 			Entry("resources empty fields", testCase{
 				proxyTemplate: `

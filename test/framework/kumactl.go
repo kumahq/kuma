@@ -26,7 +26,7 @@ type KumactlOptions struct {
 	Env        map[string]string
 }
 
-func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*KumactlOptions, error) {
+func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) *KumactlOptions {
 	configPath := os.ExpandEnv(fmt.Sprintf(defaultKumactlConfig, cpname))
 	return &KumactlOptions{
 		t:          t,
@@ -35,7 +35,7 @@ func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*Kumact
 		ConfigPath: configPath,
 		Verbose:    verbose,
 		Env:        map[string]string{},
-	}, nil
+	}
 }
 
 func (k *KumactlOptions) RunKumactl(args ...string) error {

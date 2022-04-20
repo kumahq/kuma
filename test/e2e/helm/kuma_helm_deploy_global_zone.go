@@ -67,28 +67,12 @@ func ZoneAndGlobalWithHelmChart() {
 
 		zone = c2.GetKuma()
 		Expect(zone).ToNot(BeNil())
-
-		// then
-		logs1, err := global.GetKumaCPLogs()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(logs1).To(ContainSubstring("\"mode\":\"global\""))
-
-		// and
-		logs2, err := zone.GetKumaCPLogs()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(logs2).To(ContainSubstring("\"mode\":\"zone\""))
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-		// tear down apps
+	E2EAfterEach(func() {
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
-		// tear down Kuma
 		Expect(c1.DeleteKuma()).To(Succeed())
 		Expect(c2.DeleteKuma()).To(Succeed())
-		// tear down clusters
 		Expect(clusters.DismissCluster()).To(Succeed())
 	})
 

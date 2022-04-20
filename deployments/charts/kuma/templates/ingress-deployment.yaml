@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
-    app: kuma-ingress
+    app: {{ include "kuma.name" . }}-ingress
 spec:
   strategy:
     rollingUpdate:
@@ -16,7 +16,7 @@ spec:
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}
-      app: kuma-ingress
+      app: {{ include "kuma.name" . }}-ingress
   template:
     metadata:
       annotations:
@@ -28,7 +28,7 @@ spec:
         {{- end }}
       labels:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
-        app: kuma-ingress
+        app: {{ include "kuma.name" . }}-ingress
     spec:
       {{- with .Values.ingress.affinity }}
       affinity:
@@ -44,8 +44,12 @@ spec:
                 - key: app
                   operator: In
                   values:
-                  - kuma-ingress
+                  - {{ include "kuma.name" . }}-ingress
               topologyKey: kubernetes.io/hostname
+      {{- end }}
+      {{- if .Values.ingress.podSecurityContext }}
+      securityContext:
+      {{ toYaml .Values.ingress.podSecurityContext | trim | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-ingress
       {{- with .Values.ingress.nodeSelector }}
@@ -56,6 +60,10 @@ spec:
         - name: ingress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.dataPlane.image.pullPolicy }}
+          {{- if .Values.ingress.containerSecurityContext }}
+          securityContext:
+          {{ toYaml .Values.ingress.containerSecurityContext | trim | nindent 12 }}
+          {{- end }}
           env:
             - name: POD_NAME
               valueFrom:

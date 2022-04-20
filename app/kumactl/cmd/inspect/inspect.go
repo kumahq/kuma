@@ -30,6 +30,7 @@ func NewInspectCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	// sub-commands
 	inspectCmd.AddCommand(newInspectDataplanesCmd(pctx))
 	inspectCmd.AddCommand(newInspectDataplaneCmd(pctx))
+	inspectCmd.AddCommand(newInspectMeshGatewayCmd(pctx))
 	inspectCmd.AddCommand(newInspectZoneIngressesCmd(pctx))
 	inspectCmd.AddCommand(newInspectZoneIngressCmd(pctx))
 	inspectCmd.AddCommand(newInspectZoneEgressesCmd(pctx))

@@ -1,8 +1,6 @@
 package framework
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -99,8 +97,6 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, c.opts.installationMode)
 	}
 
-	c.controlplane = NewUniversalControlPlane(c.t, mode, c.name, c, c.verbose)
-
 	env := map[string]string{"KUMA_MODE": mode, "KUMA_DNS_SERVER_PORT": "53"}
 
 	for k, v := range c.opts.env {
@@ -129,7 +125,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		cmd = append(cmd, "--config-file", "/kuma/kuma-cp.conf")
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, c.opts.isipv6, true, []string{})
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{})
 	if err != nil {
 		return err
 	}
@@ -148,13 +144,13 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	c.apps[AppModeCP] = app
 
-	token, err := c.retrieveAdminToken()
-	if err != nil {
-		return err
+	pf := UniversalCPNetworking{
+		IP:            app.ip,
+		ApiServerPort: app.ports["5681"],
+		SshPort:       app.ports["22"],
 	}
-
-	if err = c.controlplane.kumactl.KumactlConfigControlPlanesAdd(
-		c.name, c.GetKuma().GetAPIServerAddress(), token); err != nil {
+	c.controlplane, err = NewUniversalControlPlane(c.t, mode, c.name, c.verbose, pf)
+	if err != nil {
 		return err
 	}
 
@@ -176,40 +172,12 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	return c.VerifyKuma()
 }
 
-func (c *UniversalCluster) retrieveAdminToken() (string, error) {
-	return retry.DoWithRetryE(
-		c.t, "fetching user admin token",
-		DefaultRetries,
-		DefaultTimeout,
-		func() (string, error) {
-			sshApp := ssh.NewApp(
-				c.verbose, c.apps[AppModeCP].ports["22"], nil, []string{
-					"curl", "--fail", "--show-error",
-					"http://localhost:5681/global-secrets/admin-user-token",
-				},
-			)
-			if err := sshApp.Run(); err != nil {
-				return "", err
-			}
-			if sshApp.Err() != "" {
-				return "", errors.New(sshApp.Err())
-			}
-			var secret map[string]string
-			if err := json.Unmarshal([]byte(sshApp.Out()), &secret); err != nil {
-				return "", err
-			}
-			data := secret["data"]
-			token, err := base64.StdEncoding.DecodeString(data)
-			if err != nil {
-				return "", err
-			}
-			return string(token), nil
-		},
-	)
-}
-
 func (c *UniversalCluster) GetKuma() ControlPlane {
 	return c.controlplane
+}
+
+func (c *UniversalCluster) GetKumaCPLogs() (string, error) {
+	return c.apps[AppModeCP].mainApp.Out(), nil
 }
 
 func (c *UniversalCluster) VerifyKuma() error {
@@ -245,16 +213,19 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, token string, builtindns bool, concurrency int) error {
-	cpIp := c.apps[AppModeCP].ip
+	cpIp := c.controlplane.Networking().IP
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
 	app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency)
 	return app.dpApp.Start()
 }
 
 func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
-	cpIp := c.apps[AppModeCP].ip
-	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, name, "", ip, dpyaml, builtindns, "ingress", 0)
+	app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0)
+
+	if err := c.addIngressEnvoyTunnel(); err != nil {
+		return err
+	}
+
 	return app.dpApp.Start()
 }
 
@@ -263,10 +234,7 @@ func (c *UniversalCluster) CreateZoneEgress(
 	name, ip, dpYAML, token string,
 	builtinDNS bool,
 ) error {
-	cpIp := c.apps[AppModeCP].ip
-	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-
-	app.CreateDP(token, cpAddress, name, "", ip, dpYAML, builtinDNS, "egress", 0)
+	app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpYAML, builtinDNS, "egress", 0)
 
 	if err := c.addEgressEnvoyTunnel(); err != nil {
 		return err
@@ -287,10 +255,6 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		opts.verbose = &c.verbose
 	}
 
-	if opts.mesh == "" {
-		opts.mesh = "default"
-	}
-
 	caps := []string{}
 	if transparent {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
@@ -298,7 +262,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, *opts.verbose, caps)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps)
 	if err != nil {
 		return err
 	}
@@ -332,7 +296,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 		builtindns := opts.builtindns == nil || *opts.builtindns
 		if transparent {
-			app.setupTransparent(c.apps[AppModeCP].ip, builtindns)
+			app.setupTransparent(c.controlplane.Networking().IP, builtindns)
 		}
 
 		ip := app.ip
@@ -344,6 +308,9 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 			dataplaneResource = opts.appYaml
 		}
 
+		if opts.mesh == "" {
+			opts.mesh = "default"
+		}
 		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns, opts.concurrency); err != nil {
 			return err
 		}
@@ -382,12 +349,31 @@ func (c *UniversalCluster) GetApp(appName string) *UniversalApp {
 	return c.apps[appName]
 }
 
-func (c *UniversalCluster) DeleteApp(namespace, appname string) error {
+func (c *UniversalCluster) DeleteApp(appname string) error {
 	app, ok := c.apps[appname]
 	if !ok {
 		return errors.Errorf("App %s not found for deletion", appname)
 	}
-	return app.Stop()
+	if err := app.Stop(); err != nil {
+		return err
+	}
+	delete(c.apps, appname)
+	return nil
+}
+
+func (c *UniversalCluster) DeleteMesh(mesh string) error {
+	return c.GetKumactlOptions().KumactlDelete("mesh", mesh, "")
+}
+
+func (c *UniversalCluster) DeleteMeshApps(mesh string) error {
+	for name := range c.apps {
+		if c.GetApp(name).mesh == mesh {
+			if err := c.DeleteApp(name); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...string) (string, string, error) {
@@ -463,8 +449,30 @@ func (c *UniversalCluster) addEgressEnvoyTunnel() error {
 	return nil
 }
 
+func (c *UniversalCluster) addIngressEnvoyTunnel() error {
+	app := c.apps[AppIngress]
+
+	t, err := tunnel.NewUniversalEnvoyAdminTunnel(c.t, app.GetPublicPort(sshPort), c.verbose)
+	if err != nil {
+		return err
+	}
+
+	c.envoyTunnels[Config.ZoneIngressApp] = t
+
+	return nil
+}
+
 func (c *UniversalCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
 	t, err := c.GetZoneEgressEnvoyTunnelE()
+	if err != nil {
+		c.t.Fatal(err)
+	}
+
+	return t
+}
+
+func (c *UniversalCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
+	t, err := c.GetZoneIngressEnvoyTunnelE()
 	if err != nil {
 		c.t.Fatal(err)
 	}
@@ -479,4 +487,21 @@ func (c *UniversalCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, erro
 	}
 
 	return t, nil
+}
+
+func (c *UniversalCluster) GetZoneIngressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+	t, ok := c.envoyTunnels[Config.ZoneIngressApp]
+	if !ok {
+		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp)
+	}
+
+	return t, nil
+}
+
+func (c *UniversalCluster) Install(fn InstallFunc) error {
+	return fn(c)
+}
+
+func (c *UniversalCluster) SetCp(cp *UniversalControlPlane) {
+	c.controlplane = cp
 }

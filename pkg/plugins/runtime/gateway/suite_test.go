@@ -109,14 +109,17 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 	cache, err := cla.NewCache(rt.Config().Store.Cache.ExpirationTime, rt.Metrics())
 	Expect(err).To(Succeed())
 
+	idProvider, err := secrets.NewIdentityProvider(rt.CaManagers(), rt.Metrics())
+	Expect(err).To(Succeed())
+
 	secrets, err := secrets.NewSecrets(
-		secrets.NewCaProvider(rt.CaManagers()),
-		secrets.NewIdentityProvider(rt.CaManagers()),
+		rt.CAProvider(),
+		idProvider,
 		rt.Metrics(),
 	)
 	Expect(err).To(Succeed())
 
-	control, err := xds_context.BuildControlPlaneContext(cache, secrets)
+	control, err := xds_context.BuildControlPlaneContext(cache, secrets, rt.Config().Multizone.Zone.Name)
 	Expect(err).To(Succeed())
 
 	meshCtxBuilder := xds_context.NewMeshContextBuilder(

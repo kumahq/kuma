@@ -2,6 +2,7 @@ package gatewayapi
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -17,6 +18,7 @@ import (
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 )
 
@@ -26,7 +28,13 @@ type GatewayClassReconciler struct {
 	Log logr.Logger
 }
 
-const gatewayClassKey = ".metadata.gatewayClass"
+// gatewayClassField is needed for both GatewayClassReconciler and
+// GatewayReconciler.
+const gatewayClassField = ".metadata.gatewayClass"
+
+// parametersRefField is important for both GatewayReconciler and
+// GatewayClassReconciler.
+const parametersRefField = ".metadata.parametersRef"
 
 // Reconcile handles maintaining the GatewayClass finalizer.
 func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -45,7 +53,7 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 
 	gateways := &gatewayapi.GatewayList{}
 	if err := r.Client.List(
-		ctx, gateways, kube_client.MatchingFields{gatewayClassKey: class.Name},
+		ctx, gateways, kube_client.MatchingFields{gatewayClassField: class.Name},
 	); err != nil {
 		return kube_ctrl.Result{}, err
 	}
@@ -63,14 +71,24 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	// Prepare modified object for patching status
 	updated := class.DeepCopy()
 
+	_, condition, err := getParametersRef(ctx, r.Client, class.Spec.ParametersRef)
+	if err != nil {
+		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get parametersRef")
+	}
+
+	if condition == nil {
+		condition = &kube_meta.Condition{
+			Type:   string(gatewayapi.GatewayClassConditionStatusAccepted),
+			Status: kube_meta.ConditionTrue,
+			Reason: string(gatewayapi.GatewayClassReasonAccepted),
+		}
+	}
+
+	condition.ObservedGeneration = class.GetGeneration()
+
 	kube_apimeta.SetStatusCondition(
 		&updated.Status.Conditions,
-		kube_meta.Condition{
-			Type:               string(gatewayapi.GatewayClassConditionStatusAccepted),
-			Status:             kube_meta.ConditionTrue,
-			Reason:             string(gatewayapi.GatewayClassReasonAccepted),
-			ObservedGeneration: class.GetGeneration(),
-		},
+		*condition,
 	)
 
 	if err := r.Client.Status().Patch(ctx, updated, kube_client.MergeFrom(class)); err != nil {
@@ -81,6 +99,46 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	}
 
 	return kube_ctrl.Result{}, nil
+}
+
+func getParametersRef(
+	ctx context.Context,
+	client kube_client.Client,
+	parametersRef *gatewayapi.ParametersReference,
+) (*mesh_k8s.MeshGatewayConfig, *kube_meta.Condition, error) {
+	if parametersRef == nil {
+		return nil, nil, nil
+	}
+
+	condition := kube_meta.Condition{
+		Type:   string(gatewayapi.GatewayClassConditionStatusAccepted),
+		Status: kube_meta.ConditionFalse,
+		Reason: string(gatewayapi.GatewayClassReasonInvalidParameters),
+	}
+
+	if parametersRef.Group != gatewayapi.Group(mesh_k8s.GroupVersion.Group) || parametersRef.Kind != "MeshGatewayConfig" {
+		condition.Message = fmt.Sprintf("parametersRef must point to a MeshGatewayConfig.%s", mesh_k8s.GroupVersion.Group)
+		return nil, &condition, nil
+	}
+
+	if parametersRef.Namespace != nil && *parametersRef.Namespace != "" {
+		condition.Message = "parametersRef must not refer to a namespace"
+		return nil, &condition, nil
+	}
+
+	namespacedName := kube_types.NamespacedName{Name: parametersRef.Name}
+
+	config := &mesh_k8s.MeshGatewayConfig{}
+	if err := client.Get(ctx, namespacedName, config); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			condition.Message = "parametersRef could not be found"
+			return nil, &condition, nil
+		}
+
+		return nil, nil, errors.Wrapf(err, "unable to get MeshGatewayConfig %s", namespacedName.String())
+	}
+
+	return config, nil, nil
 }
 
 // gatewayToClassMapper maps a Gateway object event to a list of GatewayClasses.
@@ -120,6 +178,38 @@ func gatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler
 	}
 }
 
+// gatewayClassesForConfig returns a function that calculates which
+// GatewayClasses might be affected by changes in a MeshGatewayConfig.
+func gatewayClassesForConfig(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+	l = l.WithName("gatewaysForConfig")
+
+	return func(obj kube_client.Object) []kube_reconcile.Request {
+		config, ok := obj.(*mesh_k8s.MeshGatewayConfig)
+		if !ok {
+			l.Error(nil, "unexpected error converting to be mapped %T object to MeshGatewayConfig", obj)
+			return nil
+		}
+
+		classes := &gatewayapi.GatewayClassList{}
+		if err := client.List(
+			context.Background(), classes, kube_client.MatchingFields{parametersRefField: config.Name},
+		); err != nil {
+			l.Error(err, "unexpected error listing GatewayClasses")
+			return nil
+		}
+
+		var requests []kube_reconcile.Request
+
+		for _, class := range classes.Items {
+			requests = append(requests, kube_reconcile.Request{
+				NamespacedName: kube_client.ObjectKeyFromObject(&class),
+			})
+		}
+
+		return requests
+	}
+}
+
 func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	// Add an index to Gateways for use in Reconcile
 	indexLog := r.Log.WithName("gatewayClassNameIndexer")
@@ -134,9 +224,24 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		return []string{string(gateway.Spec.GatewayClassName)}
 	}
 
+	// this index is also needed by GatewayReconciler!
 	if err := mgr.GetFieldIndexer().IndexField(
-		context.Background(), &gatewayapi.Gateway{}, gatewayClassKey, gatewayClassNameIndexer,
+		context.Background(), &gatewayapi.Gateway{}, gatewayClassField, gatewayClassNameIndexer,
 	); err != nil {
+		return err
+	}
+
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &gatewayapi.GatewayClass{}, parametersRefField, func(obj kube_client.Object) []string {
+		class := obj.(*gatewayapi.GatewayClass)
+
+		ref := class.Spec.ParametersRef
+
+		if class.Spec.ControllerName != common.ControllerName || ref == nil || ref.Kind != "MeshGatewayConfig" || ref.Group != gatewayapi.Group(mesh_k8s.GroupVersion.Group) {
+			return nil
+		}
+
+		return []string{ref.Name}
+	}); err != nil {
 		return err
 	}
 
@@ -144,6 +249,13 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		For(&gatewayapi.GatewayClass{}).
 		// When something changes with Gateways, we want to reconcile
 		// GatewayClasses
-		Watches(&kube_source.Kind{Type: &gatewayapi.Gateway{}}, kube_handler.EnqueueRequestsFromMapFunc(gatewayToClassMapper(r.Log, r.Client))).
+		Watches(&kube_source.Kind{
+			Type: &gatewayapi.Gateway{}},
+			kube_handler.EnqueueRequestsFromMapFunc(gatewayToClassMapper(r.Log, r.Client)),
+		).
+		Watches(
+			&kube_source.Kind{Type: &mesh_k8s.MeshGatewayConfig{}},
+			kube_handler.EnqueueRequestsFromMapFunc(gatewayClassesForConfig(r.Log, r.Client)),
+		).
 		Complete(r)
 }

@@ -120,4 +120,5 @@ func init() {
 
 func RegisterProfile(profileName string, generator ResourceGenerator) {
 	predefinedProfiles[profileName] = generator
+	core_mesh.AvailableProfiles[profileName] = struct{}{}
 }

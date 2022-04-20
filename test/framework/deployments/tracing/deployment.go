@@ -30,7 +30,7 @@ func Install() framework.InstallFunc {
 			deployment = &k8SDeployment{}
 		case *framework.UniversalCluster:
 			deployment = &universalDeployment{
-				ports: map[string]string{},
+				ports: map[uint32]uint32{},
 			}
 		default:
 			return errors.New("invalid cluster")

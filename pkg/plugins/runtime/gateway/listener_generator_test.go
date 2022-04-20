@@ -192,6 +192,14 @@ conf:
       - secret: server-certificate
     tags:
       name: foo.example.com
+  - port: 443
+    protocol: HTTPS
+    tls:
+      mode: TERMINATE
+      certificates:
+      - secret: server-certificate
+    tags:
+      name: any-hostname
 `),
 	)
 

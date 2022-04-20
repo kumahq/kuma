@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	"github.com/kumahq/kuma/pkg/util/template"
+	"github.com/kumahq/kuma/pkg/util/yaml"
 )
 
 const (
@@ -107,7 +108,7 @@ $ kumactl apply -f https://example.com/resource.yaml
 				return fmt.Errorf("no resource(s) passed to apply")
 			}
 			var resources []model.Resource
-			rawResources := strings.Split(string(b), "---")
+			rawResources := yaml.SplitYAML(string(b))
 			for _, rawResource := range rawResources {
 				if len(rawResource) == 0 {
 					continue

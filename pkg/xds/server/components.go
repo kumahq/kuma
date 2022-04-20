@@ -77,16 +77,21 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		return err
 	}
 
+	idProvider, err := secrets.NewIdentityProvider(rt.CaManagers(), rt.Metrics())
+	if err != nil {
+		return err
+	}
+
 	secrets, err := secrets.NewSecrets(
 		rt.CAProvider(),
-		secrets.NewIdentityProvider(rt.CaManagers()),
+		idProvider,
 		rt.Metrics(),
 	)
 	if err != nil {
 		return err
 	}
 
-	envoyCpCtx, err := xds_context.BuildControlPlaneContext(claCache, secrets)
+	envoyCpCtx, err := xds_context.BuildControlPlaneContext(claCache, secrets, rt.Config().Multizone.Zone.Name)
 	if err != nil {
 		return err
 	}

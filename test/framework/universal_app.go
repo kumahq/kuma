@@ -7,11 +7,11 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gruntwork-io/terratest/modules/docker"
+	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
-	util_net "github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/test/framework/ssh"
 )
 
@@ -197,24 +197,24 @@ var defaultDockerOptions = docker.RunOptions{
 }
 
 type UniversalApp struct {
-	t            testing.TestingT
-	mainApp      *ssh.App
-	mainAppEnv   map[string]string
-	mainAppArgs  []string
-	dpApp        *ssh.App
-	ports        map[string]string
-	lastUsedPort uint32
-	container    string
-	ip           string
-	verbose      bool
+	t           testing.TestingT
+	mainApp     *ssh.App
+	mainAppEnv  map[string]string
+	mainAppArgs []string
+	dpApp       *ssh.App
+	ports       map[string]string
+	container   string
+	ip          string
+	verbose     bool
+	mesh        string
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMode, isipv6, verbose bool, caps []string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps []string) (*UniversalApp, error) {
 	app := &UniversalApp{
-		t:            t,
-		ports:        map[string]string{},
-		lastUsedPort: 10204,
-		verbose:      verbose,
+		t:       t,
+		ports:   map[string]string{},
+		verbose: verbose,
+		mesh:    mesh,
 	}
 
 	app.allocatePublicPortsFor("22")
@@ -228,7 +228,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 	}
 
 	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName)
+	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName+"_"+random.UniqueId())
 	for _, cap := range caps {
 		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
 	}
@@ -247,6 +247,10 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 
 	app.container = container
 
+	if err := app.updatePublishedPorts(); err != nil {
+		return nil, err
+	}
+
 	retry.DoWithRetry(app.t, "get IP "+app.container, DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			app.ip, err = app.getIP(Config.IPV6)
@@ -261,14 +265,31 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 	return app, nil
 }
 
+func (s *UniversalApp) updatePublishedPorts() error {
+	var ports []uint32
+	for portStr := range s.ports {
+		port, err := strconv.Atoi(portStr)
+		if err != nil {
+			return err
+		}
+		ports = append(ports, uint32(port))
+	}
+
+	publishedPorts, err := GetPublishedDockerPorts(s.t, s.container, ports)
+	if err != nil {
+		return err
+	}
+
+	for _, port := range ports {
+		publishedPort := publishedPorts[port]
+		s.ports[strconv.Itoa(int(port))] = strconv.Itoa(int(publishedPort))
+	}
+	return nil
+}
+
 func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
 	for _, port := range ports {
-		pubPortUInt32, err := util_net.PickTCPPort("", s.lastUsedPort+1, 11204)
-		if err != nil {
-			panic(err)
-		}
-		s.ports[port] = strconv.Itoa(int(pubPortUInt32))
-		s.lastUsedPort = pubPortUInt32
+		s.ports[port] = "0"
 	}
 }
 
@@ -276,12 +297,12 @@ func (s *UniversalApp) publishPortsForDocker(isipv6 bool) (args []string) {
 	// If we aren't using IPv6 in the container then we only want to listen on
 	// IPv4 interfaces to prevent resolving 'localhost' to the IPv6 address of
 	// the container and having the container not respond.
-	ip := "0.0.0.0:"
+	ip := "0.0.0.0::"
 	if isipv6 {
 		ip = ""
 	}
-	for port, pubPort := range s.ports {
-		args = append(args, "--publish="+ip+pubPort+":"+port)
+	for port := range s.ports {
+		args = append(args, "--publish="+ip+port)
 	}
 	return
 }

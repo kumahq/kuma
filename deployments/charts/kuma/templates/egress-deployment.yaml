@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
-    app: kuma-egress
+    app: {{ include "kuma.name" . }}-egress
 spec:
   strategy:
     rollingUpdate:
@@ -16,7 +16,7 @@ spec:
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}
-      app: kuma-egress
+      app: {{ include "kuma.name" . }}-egress
   template:
     metadata:
       annotations:
@@ -28,7 +28,7 @@ spec:
         {{- end }}
       labels:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
-        app: kuma-egress
+        app: {{ include "kuma.name" . }}-egress
     spec:
       {{- with .Values.egress.affinity }}
       affinity:
@@ -44,8 +44,12 @@ spec:
                 - key: app
                   operator: In
                   values:
-                  - kuma-egress
+                  - {{ include "kuma.name" . }}-egress
               topologyKey: kubernetes.io/hostname
+      {{- end }}
+      {{- if .Values.egress.podSecurityContext }}
+      securityContext:
+      {{ toYaml .Values.egress.podSecurityContext | trim | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-egress
       {{- with .Values.egress.nodeSelector }}
@@ -56,6 +60,10 @@ spec:
         - name: egress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.dataPlane.image.pullPolicy }}
+          {{- if .Values.egress.containerSecurityContext }}
+          securityContext:
+          {{ toYaml .Values.egress.containerSecurityContext | trim | nindent 12 }}
+          {{- end }}
           env:
             - name: POD_NAME
               valueFrom:

@@ -75,6 +75,22 @@ controlPlane:
     # -- Additional annotations to put on the Kuma Control Plane
     annotations: { }
 
+  # Kuma API and GUI ingress settings. Useful if you want to expose the
+  # API and GUI of Kuma outside the k8s cluster.
+  ingress:
+    # -- Install K8s Ingress resource that exposes GUI and API
+    enabled: false
+    # -- IngressClass defines which controller will implement the resource
+    ingressClassName:
+    # -- Ingress hostname
+    hostname:
+    # -- Map of ingress annotations.
+    annotations: {}
+    # -- Ingress path.
+    path: /
+    # -- Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix)
+    pathType: ImplementationSpecific
+
   # -- URL of Global Kuma CP
   globalZoneSyncService:
     # -- Service type of the Global-zone sync
@@ -93,9 +109,12 @@ controlPlane:
   # -- Optionally override the resource spec
   # @default -- the resources will be chosen based on the mode
   resources:
-  #  requests:
+    requests:
   #    cpu: 100m
   #    memory: 256Mi
+    limits:
+  #    cpu: 250m
+  #    memory: 512Mi
 
   # TLS for various servers
   tls:
@@ -161,11 +180,6 @@ controlPlane:
       # -- Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma.
       additionalRules: ""
 
-  # -- Specifies if the deployment should be started in hostNetwork mode.
-  hostNetwork: false
-
-
-
 cni:
   # -- Install Kuma with CNI instead of proxy init container
   enabled: false
@@ -191,6 +205,30 @@ cni:
     repository: "kumahq/install-cni"
     # -- CNI image tag
     tag: "0.0.9"
+
+  # -- Security context at the pod level for cni
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+
+  # -- Security context at the container level for cni
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 dataPlane:
   image:
@@ -235,6 +273,30 @@ ingress:
   # -- Affinity placement rule for the Kuma Ingress pods
   affinity: {}
 
+  # -- Security context at the pod level for ingress
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+
+  # -- Security context at the container level for ingress
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+
 egress:
   # -- If true, it deploys Egress for cross cluster communication
   enabled: false
@@ -263,6 +325,30 @@ egress:
   # -- Affinity placement rule for the Kuma Ingress pods
   affinity: {}
 
+  # -- Security context at the pod level for egress
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+
+  # -- Security context at the container level for egress
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
+
 kumactl:
   image:
     # -- The kumactl image repository
@@ -285,6 +371,30 @@ hooks:
   nodeSelector:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
+
+  # -- Security context at the pod level for crd/webhook/ns
+  podSecurityContext: {}
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    fsGroup: 2000
+#    fsGroupChangePolicy:
+#    # to support additional pod level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#podsecuritycontext-v1-core
+
+  # -- Security context at the container level for crd/webhook/ns
+  containerSecurityContext: {} # for overlapping securityContext between pod and container, the container's value take precedence
+#    # The values below are examples. More values can be added as needed, since the field resolves as free form.
+#    allowPrivilegeEscalation: false
+#    capabilities:
+#      drop:
+#        - all
+#    readOnlyRootFilesystem: true
+#    privileged: false
+#    runAsNonRoot: true
+#    runAsUser: 1000
+#    runAsGroup: 3000
+#    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 experimental:
   # -- If true, it installs experimental built-in Gateway support

@@ -47,7 +47,7 @@ type K8sCluster struct {
 
 var _ Cluster = &K8sCluster{}
 
-func NewK8sCluster(t *TestingT, clusterName string, verbose bool) *K8sCluster {
+func NewK8sCluster(t testing.TestingT, clusterName string, verbose bool) *K8sCluster {
 	return &K8sCluster{
 		t:                   t,
 		name:                clusterName,
@@ -84,22 +84,37 @@ func (c *K8sCluster) addEgressEnvoyTunnel() error {
 	return nil
 }
 
-func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
-	t, err := c.GetZoneEgressEnvoyTunnelE()
+func (c *K8sCluster) addIngressEnvoyTunnel() error {
+	t, err := tunnel.NewK8sEnvoyAdminTunnel(
+		c.t,
+		c.GetKubectlOptions(Config.KumaNamespace),
+		k8s.ResourceTypeService,
+		Config.ZoneIngressApp,
+	)
+
 	if err != nil {
-		c.t.Fatal(err)
+		return err
 	}
 
+	c.envoyTunnels[Config.ZoneIngressApp] = t
+
+	return nil
+}
+
+func (c *K8sCluster) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
+	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
+	if !ok {
+		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp))
+	}
 	return t
 }
 
-func (c *K8sCluster) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
-	t, ok := c.envoyTunnels[Config.ZoneEgressApp]
+func (c *K8sCluster) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
+	t, ok := c.envoyTunnels[Config.ZoneIngressApp]
 	if !ok {
-		return nil, errors.Errorf("no tunnel with name %+q", Config.ZoneEgressApp)
+		c.t.Fatal(errors.Errorf("no tunnel with name %+q", Config.ZoneIngressApp))
 	}
-
-	return t, nil
+	return t
 }
 
 func (c *K8sCluster) Verbose() bool {
@@ -459,13 +474,13 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	}
 
 	if c.opts.zoneIngress {
-		if err := c.WaitApp("kuma-ingress", Config.KumaNamespace, 1); err != nil {
+		if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
 			return err
 		}
 	}
 
 	if c.opts.zoneEgress {
-		if err := c.WaitApp("kuma-egress", Config.KumaNamespace, 1); err != nil {
+		if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
 			return err
 		}
 	}
@@ -476,6 +491,16 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		}
 
 		if err := c.addEgressEnvoyTunnel(); err != nil {
+			return err
+		}
+	}
+
+	if c.opts.zoneIngressEnvoyAdminTunnel {
+		if !c.opts.zoneIngress {
+			return errors.New("cannot create tunnel to zone ingress' envoy admin without ingress")
+		}
+
+		if err := c.addIngressEnvoyTunnel(); err != nil {
 			return err
 		}
 	}
@@ -588,6 +613,58 @@ func (c *K8sCluster) UpgradeKuma(mode string, opt ...KumaDeploymentOption) error
 	return nil
 }
 
+// StartZoneIngress scales the replicas of a zone ingress to 1 and wait for it to complete.
+func (c *K8sCluster) StartZoneIngress() error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
+		return err
+	}
+	if err := c.WaitApp(Config.ZoneIngressApp, Config.KumaNamespace, 1); err != nil {
+		return err
+	}
+	if err := c.addIngressEnvoyTunnel(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// StopZoneIngress scales the replicas of a zone ingress to 0 and wait for it to complete. Useful for testing behavior when traffic goes through ingress but there is no instance.
+func (c *K8sCluster) StopZoneIngress() error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneIngressApp)); err != nil {
+		return err
+	}
+	_, err := retry.DoWithRetryE(c.t,
+		"wait for zone ingress to be down",
+		c.defaultRetries,
+		c.defaultTimeout,
+		func() (string, error) {
+			pods := c.getPods(Config.KumaNamespace, Config.ZoneIngressApp)
+			if len(pods) == 0 {
+				return "Done", nil
+			}
+			names := []string{}
+			for _, p := range pods {
+				names = append(names, p.Name)
+			}
+			return "", fmt.Errorf("some pods are still present count: '%s'", strings.Join(names, ","))
+		},
+	)
+	return err
+}
+
+// StartZoneEngress scales the replicas of a zone engress to 1 and wait for it to complete.
+func (c *K8sCluster) StartZoneEgress() error {
+	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=1", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
+		return err
+	}
+	if err := c.WaitApp(Config.ZoneEgressApp, Config.KumaNamespace, 1); err != nil {
+		return err
+	}
+	if err := c.addEgressEnvoyTunnel(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // StopZoneEgress scales the replicas of a zone egress to 0 and wait for it to complete. Useful for testing behavior when traffic goes through egress but there is no instance.
 func (c *K8sCluster) StopZoneEgress() error {
 	if err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(Config.KumaNamespace), "scale", "--replicas=0", fmt.Sprintf("deployment/%s", Config.ZoneEgressApp)); err != nil {
@@ -657,6 +734,26 @@ func (c *K8sCluster) RestartControlPlane() error {
 
 func (c *K8sCluster) GetKuma() ControlPlane {
 	return c.controlplane
+}
+
+func (c *K8sCluster) GetKumaCPLogs() (string, error) {
+	logs := ""
+
+	pods := c.GetKuma().(*K8sControlPlane).GetKumaCPPods()
+	if len(pods) < 1 {
+		return "", errors.Errorf("no kuma-cp pods found for logs")
+	}
+
+	for _, p := range pods {
+		log, err := c.GetPodLogs(p)
+		if err != nil {
+			return "", err
+		}
+
+		logs = logs + "\n >>> " + p.Name + "\n" + log
+	}
+
+	return logs, nil
 }
 
 func (c *K8sCluster) VerifyKuma() error {
@@ -750,9 +847,7 @@ func (c *K8sCluster) deleteKumaViaKumactl() error {
 }
 
 func (c *K8sCluster) DeleteKuma() error {
-	if c.controlplane.portFwd.localAPITunnel != nil {
-		c.controlplane.portFwd.localAPITunnel.Close()
-	}
+	c.controlplane.ClosePortForwards()
 	var err error
 	switch c.opts.installationMode {
 	case HelmInstallationMode:
@@ -800,6 +895,14 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 	c.WaitNamespaceDelete(namespace)
 
 	return nil
+}
+
+func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
+	return k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace)
+}
+
+func (c *K8sCluster) DeleteMesh(mesh string) error {
+	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(), "delete", "mesh", mesh)
 }
 
 func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {
@@ -926,4 +1029,12 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 			c.defaultTimeout)
 	}
 	return nil
+}
+
+func (c *K8sCluster) Install(fn InstallFunc) error {
+	return fn(c)
+}
+
+func (c *K8sCluster) SetCP(cp *K8sControlPlane) {
+	c.controlplane = cp
 }

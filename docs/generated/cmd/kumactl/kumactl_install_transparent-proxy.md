@@ -67,6 +67,7 @@ kumactl install transparent-proxy [flags]
       --dry-run                                                                         dry run
       --exclude-inbound-ports string                                                    a comma separated list of inbound ports to exclude from redirect to Envoy
       --exclude-outbound-ports string                                                   a comma separated list of outbound ports to exclude from redirect to Envoy
+      --experimental-transparent-proxy-engine                                           use experimental transparent proxy engine
   -h, --help                                                                            help for transparent-proxy
       --kuma-cp-ip ip                                                                   the IP address of the Kuma CP which exposes the DNS service on port 53. (default 0.0.0.0)
       --kuma-dp-uid string                                                              the UID of the user that will run kuma-dp
@@ -91,7 +92,6 @@ kumactl install transparent-proxy [flags]
       --api-timeout duration   the timeout for api calls. It includes connection time, any redirects, and reading the response body. A timeout of zero means no timeout (default 1m0s)
       --config-file string     path to the configuration file to use
       --log-level string       log level: one of off|info|debug (default "off")
-  -m, --mesh string            mesh to use (default "default")
       --no-config              if set no config file and config directory will be created
 ```
 

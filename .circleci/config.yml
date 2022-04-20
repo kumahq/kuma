@@ -3,10 +3,10 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-    - &go_version "1.17.3"
+    - &go_version "1.18"
 
   docker_images:
-    - &golang_image "circleci/golang:1.17.3"
+    - &golang_image "cimg/go:1.18.0"
 
   vm_images:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
@@ -79,7 +79,6 @@ executors:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-    working_directory: /go/src/github.com/kumahq/kuma
 
   vm:
     resource_class: large
@@ -179,7 +178,7 @@ jobs:
         command: make dev/tools
     - run:
         name: "Install check tools (clang-format, ...)"
-        command: sudo apt install -y clang-format
+        command: sudo apt update && sudo apt install -y clang-format
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
@@ -255,7 +254,15 @@ jobs:
         description: version of k3s to use
         type: string
         default: v1.21.7-k3s1
-    parallelism: 8
+      parallelism:
+        description: level of parallelisation
+        type: integer
+        default: 8
+      target:
+        description: makefile target
+        type: string
+        default: "test/e2e"
+    parallelism: << parameters.parallelism >>
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
@@ -303,13 +310,13 @@ jobs:
             - run:
                 name: "Run IPv6 E2E tests"
                 command: |
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
                   export API_VERSION=<< parameters.api >>
                   export IPV6=true
                   export KUMA_DEFAULT_RETRIES=60
                   export KUMA_DEFAULT_TIMEOUT="6s"
                   export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
-                  make -j2 test/e2e
+                  make -j2 << parameters.target >>
             - store_test_results:
                 path: /tmp/ginkgo-test-results
       - unless:
@@ -318,12 +325,14 @@ jobs:
             - run:
                 name: "Run IPv4 E2E tests"
                 command: |
+                  echo "DEBUGING VAR $E2E_PKG_LIST"
+                  echo "DEBUGING VAR GINKGO_E2E_FLAGS"
                   export CI_K3S_VERSION=<< parameters.k3sVersion >>
-                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
                   export K3D=true
-                  make -j2 test/e2e
+                  make -j2 << parameters.target >>
             - store_test_results:
                 path: /tmp/ginkgo-test-results
 
@@ -406,6 +415,42 @@ workflows:
           requires:
             - build
             - check
+      - e2e:
+          name: e2e-kubernetes
+          target: test/e2e-kubernetes
+          requires:
+            - build
+            - check
+          parallelism: 1
+      - e2e:
+          name: e2e-universal
+          target: test/e2e-universal
+          requires:
+            - build
+            - check
+          parallelism: 1
+      - e2e:
+          <<: *work_branch_workflow_filter
+          name: e2e-universal-ipv6
+          target: test/e2e-universal
+          ipv6: true
+          requires:
+            - build
+            - check
+          parallelism: 1
+      - e2e:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
+          name: e2e-env
+          matrix:
+            parameters:
+              k3sVersion: [v1.19.16-k3s1, v1.21.7-k3s1]
+              ipv6: [true, false]
+              target: [test/e2e-kubernetes]
+          requires:
+            - build
+            - check
+          parallelism: 1
       - e2e:
           # Avoids running expensive workflow on PRs
           <<: *work_branch_workflow_filter

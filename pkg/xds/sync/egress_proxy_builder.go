@@ -35,6 +35,7 @@ func (p *EgressProxyBuilder) Build(
 	key core_model.ResourceKey,
 ) (*xds.Proxy, error) {
 	zoneEgress := core_mesh.NewZoneEgressResource()
+
 	if err := p.ReadOnlyResManager.Get(
 		p.ctx,
 		zoneEgress,

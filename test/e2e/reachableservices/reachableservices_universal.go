@@ -16,26 +16,14 @@ func ReachableServicesOnUniversal() {
 
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone)).
-			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		firstTestServerToken, err := cluster.GetKuma().GenerateDpToken("default", "first-test-server")
-		Expect(err).ToNot(HaveOccurred())
-		secondTestServerToken, err := cluster.GetKuma().GenerateDpToken("default", "second-test-server")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(TestServerUniversal("first-test-server", "default", firstTestServerToken, WithArgs([]string{"echo"}), WithServiceName("first-test-server"))).
-			Install(TestServerUniversal("second-test-server", "default", secondTestServerToken, WithArgs([]string{"echo"}), WithServiceName("second-test-server"))).
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true), WithReachableServices("first-test-server"))).
+			Install(TestServerUniversal("first-test-server", "default", WithArgs([]string{"echo"}), WithServiceName("first-test-server"))).
+			Install(TestServerUniversal("second-test-server", "default", WithArgs([]string{"echo"}), WithServiceName("second-test-server"))).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true), WithReachableServices("first-test-server"))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
-		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 

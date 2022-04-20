@@ -20,26 +20,16 @@ func UniversalTransparentProxyDeployment() {
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone)).
+			Install(TestServerUniversal("test-server", "default",
+				WithArgs([]string{"echo", "--instance", "universal"}),
+				WithServiceName("echo-server_kuma-test_svc_8080")),
+			).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", WithTransparentProxy(true))).
 			Setup(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
-		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = TestServerUniversal("test-server", "default", echoServerToken,
-			WithArgs([]string{"echo", "--instance", "universal"}),
-			WithServiceName("echo-server_kuma-test_svc_8080"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
+	E2EAfterEach(func() {
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})

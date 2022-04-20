@@ -28,17 +28,24 @@ func DefaultDataplaneProxyBuilder(
 	}
 }
 
-func defaultIngressProxyBuilder(rt core_runtime.Runtime, metadataTracker DataplaneMetadataTracker, apiVersion envoy.APIVersion) *IngressProxyBuilder {
+func DefaultIngressProxyBuilder(
+	rt core_runtime.Runtime,
+	metadataTracker DataplaneMetadataTracker,
+	apiVersion envoy.APIVersion,
+	meshCache *mesh.Cache,
+) *IngressProxyBuilder {
 	return &IngressProxyBuilder{
 		ResManager:         rt.ResourceManager(),
 		ReadOnlyResManager: rt.ReadOnlyResourceManager(),
 		LookupIP:           rt.LookupIP(),
 		MetadataTracker:    metadataTracker,
 		apiVersion:         apiVersion,
+		meshCache:          meshCache,
+		zone:               rt.Config().Multizone.Zone.Name,
 	}
 }
 
-func defaultEgressProxyBuilder(
+func DefaultEgressProxyBuilder(
 	ctx context.Context,
 	rt core_runtime.Runtime,
 	metadataTracker DataplaneMetadataTracker,
@@ -77,13 +84,14 @@ func DefaultDataplaneWatchdogFactory(
 		apiVersion,
 	)
 
-	ingressProxyBuilder := defaultIngressProxyBuilder(
+	ingressProxyBuilder := DefaultIngressProxyBuilder(
 		rt,
 		metadataTracker,
 		apiVersion,
+		meshSnapshotCache,
 	)
 
-	egressProxyBuilder := defaultEgressProxyBuilder(
+	egressProxyBuilder := DefaultEgressProxyBuilder(
 		ctx,
 		rt,
 		metadataTracker,

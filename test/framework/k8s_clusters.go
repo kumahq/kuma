@@ -64,6 +64,10 @@ func (cs *K8sClusters) Name() string {
 	panic("not implemented")
 }
 
+func (cs *K8sClusters) GetKumaCPLogs() (string, error) {
+	panic("not implemented")
+}
+
 func (cs *K8sClusters) DismissCluster() error {
 	for name, c := range cs.clusters {
 		if err := c.DismissCluster(); err != nil {
@@ -231,6 +235,6 @@ func (cs *K8sClusters) GetZoneEgressEnvoyTunnel() envoy_admin.Tunnel {
 	panic("not supported")
 }
 
-func (cs *K8sClusters) GetZoneEgressEnvoyTunnelE() (envoy_admin.Tunnel, error) {
+func (cs *K8sClusters) GetZoneIngressEnvoyTunnel() envoy_admin.Tunnel {
 	panic("not supported")
 }

@@ -59,38 +59,30 @@ spec:
 			Setup(zoneK8s)
 		Expect(err).ToNot(HaveOccurred())
 
-		testServerToken, err := globalK8s.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-
+		NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 		zoneUniversal = universalClusters.GetCluster(Kuma3)
-		ingressTokenKuma3, err := globalK8s.GetKuma().GenerateZoneIngressToken(Kuma3)
-		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone,
 				WithGlobalAddress(globalK8s.GetKuma().GetKDSServerAddress()),
 			)).
-			Install(TestServerUniversal("test-server-1", "default", testServerToken,
+			Install(TestServerUniversal("test-server-1", "default",
 				WithArgs([]string{"echo", "--instance", "dp-universal-1"}),
 				WithProtocol("tcp"))).
-			Install(TestServerUniversal("test-server-2", "default", testServerToken,
+			Install(TestServerUniversal("test-server-2", "default",
 				WithArgs([]string{"echo", "--instance", "dp-universal-2"}),
 				WithProtocol("tcp"),
 				ProxyOnly(),
 				ServiceProbe())).
-			Install(TestServerUniversal("test-server-3", "default", testServerToken,
+			Install(TestServerUniversal("test-server-3", "default",
 				WithArgs([]string{"echo", "--instance", "dp-universal-3"}),
 				WithProtocol("tcp"))).
-			Install(IngressUniversal(ingressTokenKuma3)).
+			Install(IngressUniversal(globalK8s.GetKuma().GenerateZoneIngressToken)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-
+	E2EAfterEach(func() {
 		Expect(zoneK8s.DeleteNamespace(TestNamespace)).To(Succeed())
 		err := zoneK8s.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())

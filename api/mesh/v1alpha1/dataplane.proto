@@ -10,6 +10,13 @@ import "mesh/v1alpha1/envoy_admin.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
+import "config.proto";
+
+option (doc.config) = {
+  type : Proxy,
+  name : "Dataplane",
+  file_name : "dataplane"
+};
 
 // Dataplane defines configuration of a side-car proxy.
 message Dataplane {
@@ -25,7 +32,7 @@ message Dataplane {
   message Networking {
 
     // Public IP on which the dataplane is accessible in the network.
-    string address = 5;
+    string address = 5 [ (doc.required) = true ];
 
     reserved 6; // Formerly ingress mode message, see #3435
 
@@ -40,7 +47,7 @@ message Dataplane {
     message Inbound {
       // Port of the inbound interface that will forward requests to the
       // service.
-      uint32 port = 3;
+      uint32 port = 3 [ (doc.required) = true ];
 
       // Port of the service that requests will be forwarded to.
       uint32 servicePort = 4;
@@ -57,7 +64,8 @@ message Dataplane {
       // Tags associated with an application this dataplane is deployed next to,
       // e.g. kuma.io/service=web, version=1.0.
       // `kuma.io/service` tag is mandatory.
-      map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
+      map<string, string> tags = 2
+          [ (validate.rules).map.min_pairs = 1, (doc.required) = true ];
 
       // Health describes the status of an inbound
       message Health { bool ready = 1; }
@@ -100,7 +108,7 @@ message Dataplane {
       string address = 3;
 
       // Port on which the service will be available to this dataplane.
-      uint32 port = 4;
+      uint32 port = 4 [ (doc.required) = true ];
 
       // DEPRECATED: use networking.outbound[].tags
       // Service name.
@@ -125,12 +133,13 @@ message Dataplane {
       // Tags associated with a gateway (e.g., Kong, Contour, etc) this
       // dataplane is deployed next to, e.g. service=gateway, env=prod.
       // `service` tag is mandatory.
-      map<string, string> tags = 1 [ (validate.rules).map.min_pairs = 1 ];
+      map<string, string> tags = 1
+          [ (validate.rules).map.min_pairs = 1, (doc.required) = true ];
 
       // Type of gateway this dataplane manages. The default is a DELEGATED
       // gateway, which is an external proxy. The BUILTIN gateway type causes
       // the dataplane proxy itself to be configured as a gateway.
-      GatewayType type = 2;
+      GatewayType type = 2 [ (doc.required) = true ];
     }
 
     // TransparentProxying describes configuration for transparent proxying.
@@ -186,15 +195,15 @@ message Dataplane {
   MetricsBackend metrics = 2;
 
   message Probes {
-    uint32 port = 1;
+    uint32 port = 1 [ (doc.required) = true ];
 
     message Endpoint {
-      uint32 inbound_port = 1;
-      string inbound_path = 2;
-      string path = 3;
+      uint32 inbound_port = 1 [ (doc.required) = true ];
+      string inbound_path = 2 [ (doc.required) = true ];
+      string path = 3 [ (doc.required) = true ];
     }
 
-    repeated Endpoint endpoints = 2;
+    repeated Endpoint endpoints = 2 [ (doc.required) = true ];
   }
 
   // Probes describes list of endpoints which will redirect traffic from

@@ -37,9 +37,7 @@ constraints:
 		Expect(YamlUniversal(mesh)(cluster)).To(Succeed())
 
 		// when demo client is trying to connect
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)(cluster)
+		err := DemoClientUniversal(AppModeDemoClient, "default")(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then it's allowed
@@ -48,14 +46,12 @@ constraints:
 		}, "30s", "1s").ShouldNot(ContainSubstring("demo-client"))
 
 		// when test server is trying to connect
-		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
-		Expect(err).ToNot(HaveOccurred())
-		err = TestServerUniversal("test-server", "default", testServerToken, WithArgs([]string{"echo", "--instance", "echo-v1"}))(cluster)
+		err = TestServerUniversal("test-server", "default", WithArgs([]string{"echo", "--instance", "echo-v1"}))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then it's not allowed
 		Eventually(func() (string, error) {
-			return cluster.GetKuma().GetKumaCPLogs()
+			return cluster.GetKumaCPLogs()
 		}, "30s", "1s").Should(ContainSubstring("dataplane cannot be a member of mesh"))
 		dataplanes, err := cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes")
 		Expect(err).ToNot(HaveOccurred())

@@ -7,6 +7,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/hds/authn"
@@ -24,6 +25,9 @@ var (
 )
 
 func Setup(rt core_runtime.Runtime) error {
+	if rt.Config().Mode == config_core.Global {
+		return nil
+	}
 	if !rt.Config().DpServer.Hds.Enabled {
 		return nil
 	}

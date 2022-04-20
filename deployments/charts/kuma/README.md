@@ -2,7 +2,7 @@
 
 A Helm chart for the Kuma Control Plane
 
-![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.9.0](https://img.shields.io/badge/Version-0.9.0-informational?style=flat-square) ![AppVersion: 1.5.0](https://img.shields.io/badge/AppVersion-1.5.0-informational?style=flat-square)
+![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 1.6.0](https://img.shields.io/badge/Version-1.6.0-informational?style=flat-square) ![AppVersion: 1.6.0](https://img.shields.io/badge/AppVersion-1.6.0-informational?style=flat-square)
 
 **Homepage:** <https://github.com/kumahq/kuma>
 
@@ -32,13 +32,19 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.service.name | string | `nil` | Optionally override of the Kuma Control Plane Service's name |
 | controlPlane.service.type | string | `"ClusterIP"` | Service type of the Kuma Control Plane |
 | controlPlane.service.annotations | object | `{}` | Additional annotations to put on the Kuma Control Plane |
+| controlPlane.ingress.enabled | bool | `false` | Install K8s Ingress resource that exposes GUI and API |
+| controlPlane.ingress.ingressClassName | string | `nil` | IngressClass defines which controller will implement the resource |
+| controlPlane.ingress.hostname | string | `nil` | Ingress hostname |
+| controlPlane.ingress.annotations | object | `{}` | Map of ingress annotations. |
+| controlPlane.ingress.path | string | `"/"` | Ingress path. |
+| controlPlane.ingress.pathType | string | `"ImplementationSpecific"` | Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix) |
 | controlPlane.globalZoneSyncService | object | `{"annotations":{},"loadBalancerIP":null,"port":5685,"type":"LoadBalancer"}` | URL of Global Kuma CP |
 | controlPlane.globalZoneSyncService.type | string | `"LoadBalancer"` | Service type of the Global-zone sync |
 | controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
 | controlPlane.globalZoneSyncService.annotations | object | `{}` | Additional annotations to put on the Global Zone Sync Service |
 | controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
-| controlPlane.resources | string | the resources will be chosen based on the mode | Optionally override the resource spec |
+| controlPlane.resources | object | the resources will be chosen based on the mode | Optionally override the resource spec |
 | controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, tls.key [and ca.crt when no controlPlane.tls.general.caSecretName specified] for protecting Kuma in-cluster communication |
 | controlPlane.tls.general.caSecretName | string | `""` | Secret that contains ca.crt that was used to sign cert for protecting Kuma in-cluster communication (ca.crt present in this secret have precedence over the one provided in the controlPlane.tls.general.secretName) |
 | controlPlane.tls.general.caBundle | string | `""` | Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt) |
@@ -55,6 +61,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.extraSecrets | list | `[]` | Additional secrets to mount into the control plane |
 | controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.webhooks.ownerReference.additionalRules | string | `""` | Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma. |
+| controlPlane.podSecurityContext | object | `{}` | Security context at the pod level for control plane. |
+| controlPlane.containerSecurityContext | object | `{}` | Security context at the container level for control plane. |
 | cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |
 | cni.chained | bool | `false` | Install CNI in chained mode |
 | cni.netDir | string | `"/etc/cni/multus/net.d"` | Set the CNI install directory |
@@ -65,6 +73,8 @@ A Helm chart for the Kuma Control Plane
 | cni.image.registry | string | `"docker.io"` | CNI image registry |
 | cni.image.repository | string | `"kumahq/install-cni"` | CNI image repository |
 | cni.image.tag | string | `"0.0.9"` | CNI image tag |
+| cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
+| cni.containerSecurityContext | object | `{}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
@@ -81,6 +91,8 @@ A Helm chart for the Kuma Control Plane
 | ingress.annotations | object | `{}` | Additional deployment annotation |
 | ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
 | ingress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
+| ingress.podSecurityContext | object | `{}` | Security context at the pod level for ingress |
+| ingress.containerSecurityContext | object | `{}` | Security context at the container level for ingress |
 | egress.enabled | bool | `false` | If true, it deploys Egress for cross cluster communication |
 | egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | egress.replicas | int | `1` | Number of replicas of the Egress |
@@ -92,12 +104,16 @@ A Helm chart for the Kuma Control Plane
 | egress.annotations | object | `{}` | Additional deployment annotation |
 | egress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
 | egress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
+| egress.podSecurityContext | object | `{}` | Security context at the pod level for egress |
+| egress.containerSecurityContext | object | `{}` | Security context at the container level for egress |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"bitnami"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
 | kubectl.image.tag | string | `"1.20"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
+| hooks.podSecurityContext | object | `{}` | Security context at the pod level for crd/webhook/ns |
+| hooks.containerSecurityContext | object | `{}` | Security context at the container level for crd/webhook/ns |
 | experimental.meshGateway | bool | `false` | If true, it installs experimental built-in Gateway support |
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 
