@@ -15,6 +15,7 @@ kumactl inspect dataplane NAME [flags]
 ```
       --config-dump   if set then the command returns envoy config dump for provided dataplane
   -h, --help          help for dataplane
+  -m, --mesh string   mesh to use (default "default")
 ```
 
 ### Options inherited from parent commands
