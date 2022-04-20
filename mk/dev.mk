@@ -186,7 +186,7 @@ dev/install/etcd: # Kubebuilder's package doesn't have etcd for all the distribu
 		&& unzip -j /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).zip etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd -d etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/ \
 		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).zip; \
 	else $(CURL_DOWNLOAD) -o /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz \
-		&& tar -xf /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd \
+		&& tar -xf /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd --no-same-owner \
 		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz; fi
 	mkdir -p $(CI_TOOLS_DIR) \
 	&& chmod +x etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd \
