@@ -11,14 +11,18 @@ KUMADOC_VERSION := v0.2.0
 DATAPLANE_API_LATEST_VERSION := main
 SHELLCHECK_VERSION := v0.8.0
 YQ_VERSION := v4.24.2
+ETCD_VERSION := v3.5.3
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_KUBECTL_VERSION ?= v1.23.5
+# That's the version that comes from kubebuilder.
+CI_KUBE_APISERVER_VERSION ?= v1.16.4
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
 export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
+GOARCH := $(shell go env GOARCH)
 
 # The e2e tests depend on Kind kubeconfigs being in this directory,
 # so this is location should not be changed by developers.
@@ -39,8 +43,6 @@ SHELLCHECK_PATH := $(CI_TOOLS_DIR)/shellcheck
 TOOLS_DIR ?= $(shell pwd)/tools
 
 PROTOC_OS=unknown
-PROTOC_ARCH=$(shell uname -m)
-
 UNAME_S := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
 ifeq ($(UNAME_S), Linux)
@@ -53,10 +55,26 @@ else
 	endif
 endif
 
+ETCD_ARCH := $(GOARCH)
 HELM_DOCS_ARCH := $(shell uname -m)
+KUBEBUILDER_ARCH=$(GOARCH)
+PROTOC_ARCH=$(shell uname -m)
+SHELLCHECK_ARCH := $(UNAME_ARCH)
 ifeq ($(UNAME_ARCH), aarch64)
 	PROTOC_ARCH=aarch_64
 	HELM_DOCS_ARCH=arm64
+else ifeq ($(UNAME_ARCH), arm64)
+# Binary of etcd that comes with etcd on ARM doesn't work that why we need to install 
+# AMD newer version which works.
+	ETCD_ARCH=amd64
+	HELM_DOCS_ARCH=arm64
+# kubebuilder for darwin AMD comes with kube-apiserver, kubebuilder, kumactl and etcd.
+# The only binary that doesn't work on ARM is etcd that's why we need to install it.
+# There is no available darwin binary in version v1.16.4 at https://dl.k8s.io/ so we are using AMD binary.
+# We might need to upgrade binary of kube-apiserver.
+	KUBEBUILDER_ARCH=amd64
+	PROTOC_ARCH=aarch_64
+	SHELLCHECK_ARCH=x86_64
 endif
 
 CURL_PATH ?= curl
@@ -72,6 +90,8 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/ginkgo \
 	dev/install/kubectl \
 	dev/install/kubebuilder \
+	dev/install/etcd \
+	dev/install/kube-apiserver \
 	dev/install/kustomize \
 	dev/install/kind \
 	dev/install/k3d \
@@ -140,20 +160,40 @@ dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	echo "Ginkgo has been installed at $(GOPATH_BIN_DIR)/ginkgo"
 
 .PHONY: dev/install/kubebuilder
-dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and kube-apiserver)
+dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder, not all arch builds includes etcd/kube-apiserver
 	# see https://book.kubebuilder.io/quick-start.html#installation
 	@if [ -e $(KUBEBUILDER_PATH) ]; then echo "Kubebuilder $$( $(KUBEBUILDER_PATH) version ) is already installed at $(KUBEBUILDER_PATH)" ; fi
 	@if [ ! -e $(KUBEBUILDER_PATH) -a -d $(KUBEBUILDER_DIR) ]; then echo "Can not install Kubebuilder since directory $(KUBEBUILDER_DIR) already exists. Please remove/rename it and try again" ; false ; fi
 	@if [ ! -e $(KUBEBUILDER_PATH) ]; then \
 		echo "Installing Kubebuilder $(CI_KUBEBUILDER_VERSION) ..." \
 		&& set -x \
-		&& $(CURL_DOWNLOAD) https://github.com/kubernetes-sigs/kubebuilder/releases/download/v$(CI_KUBEBUILDER_VERSION)/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH).tar.gz | tar -xz -C /tmp/ \
+		&& $(CURL_DOWNLOAD) https://github.com/kubernetes-sigs/kubebuilder/releases/download/v$(CI_KUBEBUILDER_VERSION)/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(KUBEBUILDER_ARCH).tar.gz | tar -xz -C /tmp/ \
 		&& mkdir -p $(KUBEBUILDER_DIR) \
-		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH)/* $(KUBEBUILDER_DIR) \
-		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH) \
+		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(KUBEBUILDER_ARCH)/* $(KUBEBUILDER_DIR) \
+		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(KUBEBUILDER_ARCH) \
 		&& for tool in $$( ls $(KUBEBUILDER_DIR)/bin ) ; do if [ ! -e $(CI_TOOLS_DIR)/$${tool} ]; then ln -s $(KUBEBUILDER_DIR)/bin/$${tool} $(CI_TOOLS_DIR)/$${tool} ; echo "Installed $(CI_TOOLS_DIR)/$${tool}" ; else echo "$(CI_TOOLS_DIR)/$${tool} already exists" ; fi; done \
 		&& set +x \
 		&& echo "Kubebuilder $(CI_KUBEBUILDER_VERSION) has been installed at $(KUBEBUILDER_PATH)" ; fi
+
+.PHONY: dev/install/etcd
+dev/install/etcd: # Kubebuilder's package doesn't have etcd for all the distributions, we will override it with defined version
+	# see https://etcd.io/docs/v3.5/install/
+	@if [ -e $(ETCD_PATH) ]; then echo "etcd $$( $(ETCD_PATH) -version ) is already installed at $(ETCD_PATH)" ; fi
+	echo "Installing etcd $(ETCD_VERSION) ...";
+	@if [ $(GOOS) = "darwin" ]; then \
+		$(CURL_DOWNLOAD) -o /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).zip https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).zip \
+		&& mkdir -p etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH) \
+		&& unzip -j /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).zip etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd -d etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/ \
+		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).zip; \
+	else $(CURL_DOWNLOAD) -o /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz https://github.com/etcd-io/etcd/releases/download/$(ETCD_VERSION)/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz \
+		&& tar -xf /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd \
+		&& rm /tmp/etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH).tar.gz; fi
+	mkdir -p $(CI_TOOLS_DIR) \
+	&& chmod +x etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd \
+	&& cp etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/etcd $(ETCD_PATH) \
+	&& rm -rf etcd-$(ETCD_VERSION)-$(GOOS)-$(ETCD_ARCH)/ \
+	&& set +x \
+	&& echo "etcd $(ETCD_VERSION) has been installed at $(ETCD_PATH)"
 
 .PHONY: dev/install/kustomize
 dev/install/kustomize: ## Bootstrap: Install Kustomize
@@ -182,6 +222,19 @@ dev/install/kubectl: ## Bootstrap: Install kubectl
 		&& mv kubectl $(KUBECTL_PATH) \
 		&& set +x \
 		&& echo "Kubectl $(CI_KUBECTL_VERSION) has been installed at $(KUBECTL_PATH)" ; fi
+
+.PHONY: dev/install/kube-apiserver
+dev/install/kube-apiserver: # Install kube-apiserver, not all os/arch kubebuilder's package have it included, for linux we might need to download
+	# see https://dl.k8s.io/
+	@if [ -e $(KUBE_APISERVER_PATH) ]; then echo "Kuba-apiserver $$( $(KUBE_APISERVER_PATH) --version ) is already installed at $(KUBE_APISERVER_PATH)" ; fi
+	@if [ ! -e $(KUBE_APISERVER_PATH) ]; then \
+		echo "Installing kuba-apiserver $(CI_KUBE_APISERVER_VERSION) ..." \
+		&& set -x \
+		&& mkdir -p $(CI_TOOLS_DIR)/bin \
+		&& $(CURL_DOWNLOAD) -o $(KUBE_APISERVER_PATH)  https://dl.k8s.io/$(CI_KUBE_APISERVER_VERSION)/bin/$(GOOS)/$(GOARCH)/kube-apiserver\
+		&& chmod +x $(KUBE_APISERVER_PATH) \
+		&& set +x \
+		&& echo "kube-apiserver $(CI_KUBE_APISERVER_VERSION) has been installed at $(KUBE_APISERVER_PATH)" ; fi
 
 .PHONY: dev/install/kind
 dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
@@ -214,7 +267,7 @@ dev/install/k3d: ## Bootstrap: Install K3D (K3s in Docker)
 dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
 
-SHELLCHECK_ARCHIVE := "shellcheck-$(SHELLCHECK_VERSION).$(SHELLCHECK_OS).$(UNAME_ARCH).tar.xz"
+SHELLCHECK_ARCHIVE := "shellcheck-$(SHELLCHECK_VERSION).$(SHELLCHECK_OS).$(SHELLCHECK_ARCH).tar.xz"
 
 .PHONY: dev/install/shellcheck
 dev/install/shellcheck:
