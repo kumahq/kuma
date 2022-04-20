@@ -71,7 +71,7 @@ else ifeq ($(UNAME_ARCH), arm64)
 # kubebuilder for darwin AMD comes with kube-apiserver, kubebuilder, kumactl and etcd.
 # The only binary that doesn't work on ARM is etcd that's why we need to install it.
 # There is no available darwin binary in version v1.16.4 at https://dl.k8s.io/ so we are using AMD binary.
-# We might need to upgrade binary of kuba-apiserver. 
+# We might need to upgrade binary of kube-apiserver.
 	KUBEBUILDER_ARCH=amd64
 	PROTOC_ARCH=aarch_64
 	SHELLCHECK_ARCH=x86_64
