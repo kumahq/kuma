@@ -92,7 +92,11 @@ func (t *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {
 }
 
 func (t *{{.ResourceName}}) Validate() error {
-	return nil
+	if v, ok := interface{}(t).(interface{ validate() error }); !ok {
+		return nil
+	} else {
+		return v.validate()
+	}
 }
 
 var _ model.ResourceList = &{{.ResourceName}}List{}

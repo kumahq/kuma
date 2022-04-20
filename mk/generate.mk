@@ -38,8 +38,9 @@ cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
 generate/policies: $(cleanup_policy_targets) $(generate_policy_targets)
 
+# deletes all files in policy directory except *.proto and validator.go
 cleanup/policy/%:
-	$(shell find pkg/plugins/policies/$* -not -name '*.proto' -type f -delete)
+	$(shell find pkg/plugins/policies/$* -not -name '*.proto' -not -name 'validator.go' -type f -delete)
 
 generate/policy/%: generate/schema/%
 	@echo "Policy $* successfully generated"
