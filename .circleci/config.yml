@@ -67,7 +67,7 @@ commands:
         # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
         command: |
           if [[ `uname -s` == "Linux" ]]; then
-            sudo sh -c 'curl -s --fail --location https://github.com/opencontainers/runc/releases/download/v1.0.3/runc.amd64 > /usr/bin/runc'
+            sudo sh -c 'curl -s --fail --location https://github.com/opencontainers/runc/releases/download/v1.1.0/runc.<<parameters.go_arch>> > /usr/bin/runc'
             sudo chown root:root /usr/bin/runc ; sudo chmod o+x /usr/bin/runc
           fi
 
@@ -88,6 +88,13 @@ executors:
       GO_VERSION: *go_version
       GO111MODULE: "on"
 
+  vm-arm64:
+    resource_class: arm.large
+    machine:
+      image: *ubuntu_vm_image
+    environment:
+      GO_VERSION: *go_version
+      GO111MODULE: "on"
   mac:
     resource_class: medium
     macos:
@@ -165,6 +172,25 @@ jobs:
         paths:
         - "/go/pkg/mod"
 
+# there is no support for arm docker yet
+  go_cache_arm64:
+    executor: vm-arm64
+    environment:
+      GOPATH: /home/circleci/.go-kuma-go
+    steps:
+    - install_build_tools:
+        go_arch: arm64
+    - checkout
+    - run:
+        name: "Download Go modules"
+        command: |
+          go mod download
+    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
+    - save_cache:
+        key: go-arm64.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        paths:
+        - "/go/pkg/mod"
+
   check:
     executor: golang
     steps:
@@ -183,29 +209,60 @@ jobs:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
 
+  check_arm64:
+    executor: vm-arm64
+    environment:
+      GOPATH: /home/circleci/.go-kuma-go
+    steps:
+    - install_build_tools:
+        go_arch: arm64
+    - checkout
+    - restore_cache:
+        keys:
+        # prefer the exact match
+        - go-arm64.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+    - run:
+        name: "Install all development tools"
+        command: make dev/tools
+    - run:
+        name: "Install check tools (clang-format, ...)"
+        command: sudo apt update && sudo apt install -y clang-format
+    - run:
+        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
+        command: make check
+
   test:
-    executor: vm
     parameters:
       target:
         description: The test make target.
         type: string
         default: test
+      go_arch:
+        description: The golang arch.
+        type: string
+        default: amd64
+      workflow_executor:
+        type: string
+        default: vm
+    executor:
+      name: << parameters.workflow_executor >>
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
-    - install_build_tools
+    - install_build_tools:
+        go_arch: << parameters.go_arch >>
     - checkout
     - restore_cache:
         keys:
         # prefer the exact match
-        - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        - <<parameters.workflow_executor>>-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
         name: "Download Go modules"
         command: |
           go mod download
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
-        key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        key: <<parameters.workflow_executor>>-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
         paths:
           - "/home/circleci/.go-kuma-go"
     - run:
@@ -240,7 +297,6 @@ jobs:
         path: /tmp/ginkgo-test-results
 
   e2e:
-    executor: vm
     parameters:
       api:
         description: XDS API version
@@ -262,11 +318,27 @@ jobs:
         description: makefile target
         type: string
         default: "test/e2e"
+      go_arch:
+        description: The golang arch
+        type: string
+        default: amd64
+      workflow_executor:
+        type: string
+        default: vm
+      make_parameters:
+        type: string
+        default: -j2
+      ginkgo_flags:
+        type: string
+        default: ""
+    executor:
+      name: << parameters.workflow_executor >>
     parallelism: << parameters.parallelism >>
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
-      - install_build_tools
+      - install_build_tools:
+          go_arch: << parameters.go_arch >>
       - checkout
       - restore_cache:
           keys:
@@ -316,6 +388,7 @@ jobs:
                   export KUMA_DEFAULT_RETRIES=60
                   export KUMA_DEFAULT_TIMEOUT="6s"
                   export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
+                  export GINKGO_E2E_FLAGS=<<parameters.ginkgo_flags>>
                   make -j2 << parameters.target >>
             - store_test_results:
                 path: /tmp/ginkgo-test-results
@@ -331,8 +404,9 @@ jobs:
                   export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
                   export API_VERSION=<< parameters.api >>
                   export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
+                  export GINKGO_E2E_FLAGS=<<parameters.ginkgo_flags>>
                   export K3D=true
-                  make -j2 << parameters.target >>
+                  make <<parameters.make_parameters>> << parameters.target >>
             - store_test_results:
                 path: /tmp/ginkgo-test-results
 
@@ -364,10 +438,49 @@ jobs:
         - docker-images
         - artifacts-linux-amd64
 
-  release:
-    executor: vm
+  build_arm64:
+    executor: vm-arm64
+    environment:
+      GOPATH: /home/circleci/.go-kuma-go
     steps:
-    - install_build_tools
+    - install_build_tools:
+        go_arch: arm64
+    - checkout
+    - restore_cache:
+        keys:
+        # prefer the exact match
+        - go-arm64.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+    - run:
+        name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
+        command: make build
+    - run:
+        name: Build Docker images
+        command: |
+          make images
+    - run:
+        name: Save Docker images into TAR archives
+        command: |
+          make docker/save
+    # Persist the specified paths into the workspace for use in downstream jobs
+    - persist_to_workspace:
+        root: build
+        paths:
+        - docker-images
+        - artifacts-linux-arm64
+
+  release:
+    parameters:
+      workflow_executor:
+        type: string
+        default: golang
+      go_arch:
+        type: string
+        default: amd64
+    executor:
+      name: << parameters.workflow_executor >>
+    steps:
+    - install_build_tools:
+        go_arch: << parameters.go_arch >>
     - checkout
     - run:
         name: "Download Go modules"
@@ -478,3 +591,105 @@ workflows:
             - test/e2e-ipv4
             - test/e2e-ipv6
             - test/e2e-ipv4-oldk8s
+
+  kuma-commit-arm64:
+    jobs:
+      - dev_mac:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
+      - dev_ubuntu:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
+      - go_cache_arm64
+      - check_arm64:
+          requires:
+            - go_cache_arm64
+      - build_arm64:
+          requires:
+            - go_cache_arm64
+      - test:
+          workflow_executor: vm-arm64
+          go_arch: arm64
+          requires:
+            - check_arm64
+      - e2e:
+          name: test/e2e-ipv4
+          workflow_executor: vm-arm64
+          go_arch: arm64
+          make_parameters: "-j1"
+          ginkgo_flags: "--label-filter=\"!arm-not-supported\""
+          requires:
+            - build_arm64
+            - check_arm64
+      - e2e:
+          name: e2e-kubernetes
+          target: test/e2e-kubernetes
+          workflow_executor: vm-arm64
+          go_arch: arm64
+          requires:
+            - build_arm64
+            - check_arm64
+          parallelism: 1
+      - e2e:
+          name: e2e-universal
+          target: test/e2e-universal
+          workflow_executor: vm-arm64
+          go_arch: arm64
+          requires:
+            - build_arm64
+            - check_arm64
+          parallelism: 1
+      - e2e:
+          name: e2e-universal-ipv6
+          target: test/e2e-universal
+          workflow_executor: vm-arm64
+          ginkgo_flags: "--label-filter=\"!arm-not-supported\""
+          go_arch: arm64
+          ipv6: true
+          requires:
+            - build_arm64
+            - check_arm64
+          parallelism: 1
+      - e2e:
+          name: e2e-env
+          workflow_executor: vm-arm64
+          go_arch: arm64
+          ginkgo_flags: "--label-filter=\"!arm-not-supported\""
+          matrix:
+            parameters:
+              k3sVersion: [v1.19.16-k3s1, v1.21.7-k3s1]
+              ipv6: [true, false]
+              target: [test/e2e-kubernetes]
+          requires:
+            - build_arm64
+            - check_arm64
+          parallelism: 1
+      - e2e:
+          name: test/e2e-ipv6
+          workflow_executor: vm-arm64
+          go_arch: arm64
+          ginkgo_flags: "--label-filter=\"!arm-not-supported\""
+          requires:
+            - build_arm64
+            - check_arm64
+          # custom parameters
+          ipv6: true
+      - e2e:
+          name: test/e2e-ipv4-oldk8s
+          workflow_executor: vm-arm64
+          go_arch: arm64
+          ginkgo_flags: "--label-filter=\"!arm-not-supported\""
+          k3sVersion: v1.19.16-k3s1
+          requires:
+            - build_arm64
+            - check_arm64
+      - release:
+          # Don't publish artifacts for PRs
+          <<: *work_branch_workflow_filter
+          workflow_executor: vm-arm64
+          go_arch: arm64
+          requires:
+            - dev_mac
+            - dev_ubuntu
+            - test
+            - test/e2e-ipv4
