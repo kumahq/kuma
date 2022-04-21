@@ -119,6 +119,19 @@ spec:
 	return YamlK8s(mesh)
 }
 
+func MTLSMeshUniversal(name string) InstallFunc {
+	mesh := fmt.Sprintf(`
+type: Mesh
+name: %s
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+`, name)
+	return YamlUniversal(mesh)
+}
+
 func YamlUniversal(yaml string) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install yaml resource", DefaultRetries, DefaultTimeout,
@@ -265,14 +278,14 @@ func EgressUniversal(tokenProvider func(zone string) (string, error)) InstallFun
 	return zoneRelatedResource(tokenProvider, AppEgress, manifestFunc)
 }
 
-func DemoClientK8s(mesh string) InstallFunc {
+func DemoClientK8s(mesh string, namespace string) InstallFunc {
 	const name = "demo-client"
 	deployment := `
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: demo-client
-  namespace: kuma-test
+  namespace: %s
   labels:
     app: demo-client
 spec:
@@ -307,9 +320,9 @@ spec:
               memory: 128Mi
 `
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, mesh, Config.GetUniversalImage())),
-		WaitNumPods(TestNamespace, 1, name),
-		WaitPodsAvailable(TestNamespace, name),
+		YamlK8s(fmt.Sprintf(deployment, namespace, mesh, Config.GetUniversalImage())),
+		WaitNumPods(namespace, 1, name),
+		WaitPodsAvailable(namespace, name),
 	)
 }
 

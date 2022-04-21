@@ -67,7 +67,7 @@ var _ = E2EBeforeSuite(func() {
 		)).
 		Install(KumaDNS()).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).
-		Install(DemoClientK8s(nonDefaultMesh)).
+		Install(DemoClientK8s(nonDefaultMesh, TestNamespace)).
 		Setup(zone1)).To(Succeed())
 
 	E2EDeferCleanup(func() {
@@ -88,7 +88,7 @@ var _ = E2EBeforeSuite(func() {
 		Install(KumaDNS()).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).
 		Install(testserver.Install(testserver.WithMesh(nonDefaultMesh), testserver.WithServiceAccount("sa-test"))).
-		Install(DemoClientK8s(nonDefaultMesh)).
+		Install(DemoClientK8s(nonDefaultMesh, TestNamespace)).
 		Setup(zone2)).To(Succeed())
 
 	E2EDeferCleanup(func() {

@@ -84,7 +84,7 @@ spec:
 				WithEgressEnvoyAdminTunnel(),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default")).
+			Install(DemoClientK8s("default", TestNamespace)).
 			Install(externalservice.Install(externalservice.HttpServer, []string{})).
 			Install(externalservice.Install(externalservice.HttpsServer, []string{})).
 			Setup(cluster)
