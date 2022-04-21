@@ -39,7 +39,7 @@ spec:
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default")).
+			Install(DemoClientK8s("default", TestNamespace)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = cluster.VerifyKuma()

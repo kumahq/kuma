@@ -430,6 +430,13 @@ workflows:
             - check
           parallelism: 1
       - e2e:
+          name: e2e-multizone
+          target: test/e2e-multizone
+          requires:
+            - build
+            - check
+          parallelism: 1
+      - e2e:
           <<: *work_branch_workflow_filter
           name: e2e-universal-ipv6
           target: test/e2e-universal
@@ -446,7 +453,7 @@ workflows:
             parameters:
               k3sVersion: [v1.19.16-k3s1, v1.21.7-k3s1]
               ipv6: [true, false]
-              target: [test/e2e-kubernetes]
+              target: [test/e2e-kubernetes, test/e2e-multizone]
           requires:
             - build
             - check

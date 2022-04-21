@@ -107,7 +107,7 @@ var _ = E2EBeforeSuite(func() {
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 		)).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).
-		Install(DemoClientK8s(defaultMesh)).
+		Install(DemoClientK8s(defaultMesh, TestNamespace)).
 		Setup(zone1)).To(Succeed())
 
 	E2EDeferCleanup(func() {
