@@ -95,6 +95,7 @@ executors:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
+
   mac:
     resource_class: medium
     macos:
@@ -172,25 +173,6 @@ jobs:
         paths:
         - "/go/pkg/mod"
 
-# there is no support for arm docker yet
-  go_cache_arm64:
-    executor: vm-arm64
-    environment:
-      GOPATH: /home/circleci/.go-kuma-go
-    steps:
-    - install_build_tools:
-        go_arch: arm64
-    - checkout
-    - run:
-        name: "Download Go modules"
-        command: |
-          go mod download
-    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
-    - save_cache:
-        key: go-arm64.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        paths:
-        - "/go/pkg/mod"
-
   check:
     executor: golang
     steps:
@@ -199,28 +181,6 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-    - run:
-        name: "Install all development tools"
-        command: make dev/tools
-    - run:
-        name: "Install check tools (clang-format, ...)"
-        command: sudo apt update && sudo apt install -y clang-format
-    - run:
-        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-        command: make check
-
-  check_arm64:
-    executor: vm-arm64
-    environment:
-      GOPATH: /home/circleci/.go-kuma-go
-    steps:
-    - install_build_tools:
-        go_arch: arm64
-    - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - go-arm64.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
         name: "Install all development tools"
         command: make dev/tools
@@ -411,6 +371,11 @@ jobs:
                 path: /tmp/ginkgo-test-results
 
   build:
+    parameters:
+      go_arch:
+        description: The golang arch
+        type: string
+        default: amd64
     executor: golang
     steps:
     - checkout
@@ -426,61 +391,22 @@ jobs:
     - run:
         name: Build Docker images
         command: |
-          make images
+          GOARCH=<<parameters.go_arch>> make images
     - run:
         name: Save Docker images into TAR archives
         command: |
-          make docker/save
+          GOARCH=<<parameters.go_arch>> make docker/save
     # Persist the specified paths into the workspace for use in downstream jobs
     - persist_to_workspace:
         root: build
         paths:
-        - docker-images
-        - artifacts-linux-amd64
-
-  build_arm64:
-    executor: vm-arm64
-    environment:
-      GOPATH: /home/circleci/.go-kuma-go
-    steps:
-    - install_build_tools:
-        go_arch: arm64
-    - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - go-arm64.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-    - run:
-        name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
-        command: make build
-    - run:
-        name: Build Docker images
-        command: |
-          make images
-    - run:
-        name: Save Docker images into TAR archives
-        command: |
-          make docker/save
-    # Persist the specified paths into the workspace for use in downstream jobs
-    - persist_to_workspace:
-        root: build
-        paths:
-        - docker-images
-        - artifacts-linux-arm64
+        - docker-images-<<parameters.go_arch>>
+        - artifacts-linux-<<parameters.go_arch>>
 
   release:
-    parameters:
-      workflow_executor:
-        type: string
-        default: golang
-      go_arch:
-        type: string
-        default: amd64
-    executor:
-      name: << parameters.workflow_executor >>
+    executor: golang
     steps:
-    - install_build_tools:
-        go_arch: << parameters.go_arch >>
+    - install_build_tools
     - checkout
     - run:
         name: "Download Go modules"
@@ -501,6 +427,10 @@ jobs:
         name: Push Docker
         command: |
           ./tools/releases/docker.sh --push
+    - run:
+        name: Create and Push multiarch manifest for Docker images
+        command: |
+          ./tools/releases/docker.sh --manifest
 
 workflows:
   version: 2
@@ -520,176 +450,114 @@ workflows:
       - build:
           requires:
             - go_cache
+      - build:
+          name: build-arm64
+          go_arch: arm64
+          requires:
+            - go_cache
       - test:
           requires:
             - check
-      - e2e:
-          name: test/e2e-ipv4
-          requires:
-            - build
-            - check
-      - e2e:
-          name: e2e-kubernetes
-          target: test/e2e-kubernetes
-          requires:
-            - build
-            - check
-          parallelism: 1
-      - e2e:
-          name: e2e-universal
-          target: test/e2e-universal
-          requires:
-            - build
-            - check
-          parallelism: 1
-      - e2e:
-          <<: *work_branch_workflow_filter
-          name: e2e-universal-ipv6
-          target: test/e2e-universal
-          ipv6: true
-          requires:
-            - build
-            - check
-          parallelism: 1
-      - e2e:
-          # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
-          name: e2e-env
-          matrix:
-            parameters:
-              k3sVersion: [v1.19.16-k3s1, v1.21.7-k3s1]
-              ipv6: [true, false]
-              target: [test/e2e-kubernetes]
-          requires:
-            - build
-            - check
-          parallelism: 1
-      - e2e:
-          # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
-          name: test/e2e-ipv6
-          requires:
-            - build
-            - check
-          # custom parameters
-          ipv6: true
-      - e2e:
-          # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
-          name: test/e2e-ipv4-oldk8s
-          k3sVersion: v1.19.16-k3s1
-          requires:
-            - build
-            - check
-      - release:
-          # Don't publish artifacts for PRs
-          <<: *work_branch_workflow_filter
-          requires:
-            - dev_mac
-            - dev_ubuntu
-            - test
-            - test/e2e-ipv4
-            - test/e2e-ipv6
-            - test/e2e-ipv4-oldk8s
-
-  kuma-commit-arm64:
-    jobs:
-      - dev_mac:
-          # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
-      - dev_ubuntu:
-          # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
-      - go_cache_arm64
-      - check_arm64:
-          requires:
-            - go_cache_arm64
-      - build_arm64:
-          requires:
-            - go_cache_arm64
       - test:
+          name: test-arm64
           workflow_executor: vm-arm64
           go_arch: arm64
           requires:
-            - check_arm64
+            - check
       - e2e:
-          name: test/e2e-ipv4
+          name: test/e2e-ipv4-arm64
           workflow_executor: vm-arm64
           go_arch: arm64
           make_parameters: "-j1"
           ginkgo_flags: "--label-filter=\"!arm-not-supported\""
           requires:
-            - build_arm64
-            - check_arm64
+            - build-arm64
+            - check
       - e2e:
-          name: e2e-kubernetes
+          name: e2e-kubernetes-arm64
           target: test/e2e-kubernetes
           workflow_executor: vm-arm64
           go_arch: arm64
           requires:
-            - build_arm64
-            - check_arm64
+            - build-arm64
+            - check
+          parallelism: 1
+      - e2e:
+          name: e2e-universal-arm64
+          target: test/e2e-universal
+          workflow_executor: vm-arm64
+          go_arch: arm64
+          requires:
+            - build-arm64
+            - check
+          parallelism: 1
+      - e2e:
+          name: test/e2e-ipv4
+          requires:
+            - build
+            - check
+      - e2e:
+          name: e2e-kubernetes
+          target: test/e2e-kubernetes
+          requires:
+            - build
+            - check
           parallelism: 1
       - e2e:
           name: e2e-universal
           target: test/e2e-universal
-          workflow_executor: vm-arm64
-          go_arch: arm64
           requires:
-            - build_arm64
-            - check_arm64
+            - build
+            - check
           parallelism: 1
       - e2e:
+          <<: *work_branch_workflow_filter
           name: e2e-universal-ipv6
           target: test/e2e-universal
-          workflow_executor: vm-arm64
-          ginkgo_flags: "--label-filter=\"!arm-not-supported\""
-          go_arch: arm64
           ipv6: true
           requires:
-            - build_arm64
-            - check_arm64
+            - build
+            - check
           parallelism: 1
       - e2e:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
           name: e2e-env
-          workflow_executor: vm-arm64
-          go_arch: arm64
-          ginkgo_flags: "--label-filter=\"!arm-not-supported\""
           matrix:
             parameters:
               k3sVersion: [v1.19.16-k3s1, v1.21.7-k3s1]
               ipv6: [true, false]
               target: [test/e2e-kubernetes]
           requires:
-            - build_arm64
-            - check_arm64
+            - build
+            - check
           parallelism: 1
       - e2e:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
           name: test/e2e-ipv6
-          workflow_executor: vm-arm64
-          go_arch: arm64
-          ginkgo_flags: "--label-filter=\"!arm-not-supported\""
           requires:
-            - build_arm64
-            - check_arm64
+            - build
+            - check
           # custom parameters
           ipv6: true
       - e2e:
+          # Avoids running expensive workflow on PRs
+          <<: *work_branch_workflow_filter
           name: test/e2e-ipv4-oldk8s
-          workflow_executor: vm-arm64
-          go_arch: arm64
-          ginkgo_flags: "--label-filter=\"!arm-not-supported\""
           k3sVersion: v1.19.16-k3s1
           requires:
-            - build_arm64
-            - check_arm64
+            - build
+            - check
       - release:
           # Don't publish artifacts for PRs
           <<: *work_branch_workflow_filter
-          workflow_executor: vm-arm64
-          go_arch: arm64
           requires:
             - dev_mac
             - dev_ubuntu
             - test
+            - test-arm64
             - test/e2e-ipv4
+            - test/e2e-ipv4-arm64
+            - test/e2e-ipv6
+            - test/e2e-ipv4-oldk8s
