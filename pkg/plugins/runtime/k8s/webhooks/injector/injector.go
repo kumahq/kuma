@@ -75,7 +75,7 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	r := regexp.MustCompile(`.*\.?kuma.io\/`)
 	for a := range pod.Annotations {
 		if r.MatchString(a) {
-			ok := metadata.ValidEndUserAnnotations[a]
+			ok := metadata.ValidKumaAnnotations[a]
 			if !ok {
 				log.V(1).Info("pod has an invalid annotation", "annotation", a)
 				return errors.New("pod has an invalid annotation " + a)
@@ -84,7 +84,7 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	}
 	for l := range pod.Labels {
 		if r.MatchString(l) {
-			ok := metadata.ValidEndUserAnnotations[l]
+			ok := metadata.ValidKumaAnnotations[l]
 			if !ok {
 				log.V(1).Info("pod has an invalid label", "label", l)
 				return errors.New("pod has an invalid label " + l)

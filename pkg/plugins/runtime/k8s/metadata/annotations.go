@@ -80,28 +80,6 @@ const (
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
 )
 
-var ValidEndUserAnnotations = map[string]bool{
-	KumaMeshAnnotation:                 true,
-	KumaSidecarInjectionAnnotation:     true,
-	KumaGatewayAnnotation:              true,
-	KumaIngressAnnotation:              true,
-	KumaEgressAnnotation:               true,
-	KumaTagsAnnotation:                 true,
-	KumaIngressPublicAddressAnnotation: true,
-	KumaIngressPublicPortAnnotation:    true,
-	KumaDirectAccess:                   true,
-	KumaVirtualProbesAnnotation:        true,
-	KumaVirtualProbesPortAnnotation:    true,
-	KumaSidecarEnvVarsAnnotation:       true,
-	KumaSidecarConcurrencyAnnotation:   true,
-	KumaMetricsPrometheusPort:          true,
-	KumaMetricsPrometheusPath:          true,
-	KumaBuiltinDNS:                     true,
-	KumaBuiltinDNSPort:                 true,
-	KumaTrafficExcludeInboundPorts:     true,
-	KumaTrafficExcludeOutboundPorts:    true,
-}
-
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
 	KumaSidecarInjectedAnnotation                      = "kuma.io/sidecar-injected"
@@ -134,6 +112,37 @@ const (
 	AnnotationTrue     = "true"
 	AnnotationFalse    = "false"
 )
+
+var ValidKumaAnnotations = map[string]bool{
+	KumaMeshAnnotation:                                 true,
+	KumaSidecarInjectionAnnotation:                     true,
+	KumaGatewayAnnotation:                              true,
+	KumaIngressAnnotation:                              true,
+	KumaEgressAnnotation:                               true,
+	KumaTagsAnnotation:                                 true,
+	KumaIngressPublicAddressAnnotation:                 true,
+	KumaIngressPublicPortAnnotation:                    true,
+	KumaDirectAccess:                                   true,
+	KumaVirtualProbesAnnotation:                        true,
+	KumaVirtualProbesPortAnnotation:                    true,
+	KumaSidecarEnvVarsAnnotation:                       true,
+	KumaSidecarConcurrencyAnnotation:                   true,
+	KumaMetricsPrometheusPort:                          true,
+	KumaMetricsPrometheusPath:                          true,
+	KumaBuiltinDNS:                                     true,
+	KumaBuiltinDNSPort:                                 true,
+	KumaTrafficExcludeInboundPorts:                     true,
+	KumaTrafficExcludeOutboundPorts:                    true,
+	KumaSidecarInjectedAnnotation:                      true,
+	KumaIgnoreAnnotation:                               true,
+	KumaSidecarUID:                                     true,
+	KumaEnvoyAdminPort:                                 true,
+	KumaTransparentProxyingAnnotation:                  true,
+	KumaTransparentProxyingInboundPortAnnotation:       true,
+	KumaTransparentProxyingInboundPortAnnotationV6:     true,
+	KumaTransparentProxyingOutboundPortAnnotation:      true,
+	KumaTransparentProxyingReachableServicesAnnotation: true,
+}
 
 type Annotations map[string]string
 
