@@ -38,6 +38,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 443
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -83,6 +84,7 @@ resources:
       socketAddress:
         address: 192.168.0.1
         portValue: 80
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -236,6 +238,7 @@ resources:
       socketAddress:
         address: 192.168.0.2
         portValue: 443
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
@@ -281,6 +284,7 @@ resources:
       socketAddress:
         address: 192.168.0.2
         portValue: 80
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
