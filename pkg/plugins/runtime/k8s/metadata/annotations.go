@@ -133,6 +133,7 @@ var ValidKumaAnnotations = map[string]bool{
 	KumaBuiltinDNSPort:                                 true,
 	KumaTrafficExcludeInboundPorts:                     true,
 	KumaTrafficExcludeOutboundPorts:                    true,
+	KumaSidecarTokenVolumeAnnotation:                   true,
 	KumaSidecarInjectedAnnotation:                      true,
 	KumaIgnoreAnnotation:                               true,
 	KumaSidecarUID:                                     true,
