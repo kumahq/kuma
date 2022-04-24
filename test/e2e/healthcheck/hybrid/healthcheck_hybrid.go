@@ -55,7 +55,7 @@ spec:
 				WithGlobalAddress(globalK8s.GetKuma().GetKDSServerAddress()),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default")).
+			Install(DemoClientK8s("default", TestNamespace)).
 			Setup(zoneK8s)
 		Expect(err).ToNot(HaveOccurred())
 

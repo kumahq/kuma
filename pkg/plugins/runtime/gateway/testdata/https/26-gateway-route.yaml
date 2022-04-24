@@ -60,6 +60,7 @@ Listeners:
         socketAddress:
           address: 192.168.1.1
           portValue: 8080
+      enableReusePort: true
       filterChains:
       - filterChainMatch:
           applicationProtocols:
@@ -129,7 +130,6 @@ Listeners:
           '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
       name: edge-gateway:HTTPS:8080
       perConnectionBufferLimitBytes: 32768
-      reusePort: true
       trafficDirection: INBOUND
 Routes:
   Resources:

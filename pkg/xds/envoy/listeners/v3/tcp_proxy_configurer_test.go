@@ -56,6 +56,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
           socketAddress:
             address: 192.168.0.1
             portValue: 8080
+        enableReusePort: false
         filterChains:
         - filters:
           - name: envoy.filters.network.tcp_proxy
@@ -91,6 +92,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
               socketAddress:
                 address: 127.0.0.1
                 portValue: 5432
+            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.tcp_proxy
@@ -152,6 +154,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
           socketAddress:
             address: 192.168.0.1
             portValue: 8080
+        enableReusePort: false
         filterChains:
         - filters:
           - name: envoy.filters.network.tcp_proxy
@@ -180,6 +183,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
               socketAddress:
                 address: 127.0.0.1
                 portValue: 5432
+            enableReusePort: false
             filterChains:
             - filters:
               - name: envoy.filters.network.tcp_proxy

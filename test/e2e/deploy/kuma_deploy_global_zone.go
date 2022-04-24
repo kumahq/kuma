@@ -71,7 +71,7 @@ spec:
 				WithGlobalAddress(global.GetKDSServerAddress()),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default")).
+			Install(DemoClientK8s("default", TestNamespace)).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 

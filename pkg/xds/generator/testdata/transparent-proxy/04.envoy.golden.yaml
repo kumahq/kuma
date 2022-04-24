@@ -46,6 +46,7 @@ resources:
       socketAddress:
         address: 0.0.0.0
         portValue: 15006
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy
@@ -63,6 +64,7 @@ resources:
       socketAddress:
         address: '::'
         portValue: 15010
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy
