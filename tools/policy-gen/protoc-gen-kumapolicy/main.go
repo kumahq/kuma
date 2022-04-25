@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
@@ -17,14 +18,15 @@ func main() {
 	protogen.Options{
 		ParamFunc: flags.Set,
 	}.Run(func(plugin *protogen.Plugin) error {
+		filesToGenerate := []*protogen.File{}
+
 		for _, file := range plugin.Files {
 			if !file.Generate {
 				continue
 			}
 
-			if err := generatePluginFile(plugin, file); err != nil {
-				return err
-			}
+			filesToGenerate = append(filesToGenerate, file)
+
 			if err := generateResource(plugin, file); err != nil {
 				return err
 			}
@@ -38,6 +40,11 @@ func main() {
 				return err
 			}
 		}
+
+		if err := generatePluginFile(plugin, filesToGenerate); err != nil {
+			return err
+		}
+
 		return nil
 	})
 }
@@ -58,9 +65,15 @@ func generateEndpoints(
 
 	info := infos[0]
 
-	rendered := mustache.RenderFile(openAPITemplate, info)
+	rendered := mustache.RenderFile(openAPITemplate, struct {
+		genutils.ResourceInfo
+		PolicyVersion string
+	}{
+		ResourceInfo:  info,
+		PolicyVersion: string(file.GoPackageName),
+	})
 
-	filename := "api/v1alpha1/rest.yaml"
+	filename := fmt.Sprintf("api/%s/rest.yaml", string(file.GoPackageName))
 	g := p.NewGeneratedFile(filename, file.GoImportPath)
 	g.P(rendered)
 

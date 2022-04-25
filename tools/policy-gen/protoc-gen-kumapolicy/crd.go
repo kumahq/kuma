@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"go/format"
 	"html/template"
 
@@ -19,7 +20,7 @@ var CustomResourceTemplate = template.Must(template.New("custom-resource").Parse
 {{ $tk := "` + "`" + `" }}
 
 // nolint:whitespace
-package v1alpha1
+package {{.PolicyVersion}}
 
 import (
 	"fmt"
@@ -28,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/{{.KumactlSingular}}/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/{{.KumactlSingular}}/api/{{.PolicyVersion}}"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -40,6 +41,9 @@ import (
 // +kubebuilder:resource:scope=Namespaced
 {{- else }}
 // +kubebuilder:resource:scope=Cluster
+{{- end}}
+{{- if .StorageVersion }}
+// +kubebuilder:storageversion
 {{- end}}
 type {{.ResourceType}} struct {
 	metav1.TypeMeta   {{ $tk }}json:",inline"{{ $tk }}
@@ -58,7 +62,7 @@ type {{.ResourceType}} struct {
 {{- else}}
 	// Spec is the specification of the Kuma {{ .ProtoType }} resource.
     // +kubebuilder:validation:Optional
-	Spec   *v1alpha1.{{.ProtoType}} {{ $tk }}json:"spec,omitempty"{{ $tk }}
+	Spec   *{{.PolicyVersion}}.{{.ProtoType}} {{ $tk }}json:"spec,omitempty"{{ $tk }}
 {{- end}}
 }
 
@@ -114,14 +118,14 @@ func (cb *{{.ResourceType}}) SetSpec(spec proto.Message) {
 		return
 	}
 
-	if _, ok := spec.(*v1alpha1.{{.ProtoType}}); !ok {
+	if _, ok := spec.(*{{.PolicyVersion}}.{{.ProtoType}}); !ok {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
 {{ if eq .ResourceType "DataplaneInsight" }}
-	cb.Status = spec.(*v1alpha1.{{.ProtoType}})
+	cb.Status = spec.(*{{.PolicyVersion}}.{{.ProtoType}})
 {{ else}}
-	cb.Spec = spec.(*v1alpha1.{{.ProtoType}})
+	cb.Spec = spec.(*{{.PolicyVersion}}.{{.ProtoType}})
 {{- end}}
 }
 
@@ -143,13 +147,13 @@ func (l *{{.ResourceType}}List) GetItems() []model.KubernetesObject {
 
 {{if not .SkipRegistration}}
 func init() {
-	registry.RegisterObjectType(&v1alpha1.{{.ProtoType}}{}, &{{.ResourceType}}{
+	registry.RegisterObjectType(&{{.PolicyVersion}}.{{.ProtoType}}{}, &{{.ResourceType}}{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "{{.ResourceType}}",
 		},
 	})
-	registry.RegisterListType(&v1alpha1.{{.ProtoType}}{}, &{{.ResourceType}}List{
+	registry.RegisterListType(&{{.PolicyVersion}}.{{.ProtoType}}{}, &{{.ResourceType}}List{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: GroupVersion.String(),
 			Kind:       "{{.ResourceType}}List",
@@ -160,23 +164,27 @@ func init() {
 {{- end }} {{/* .SkipKubernetesWrappers */}}
 `))
 
-var GroupVersionInfo = `
-// Package v1alpha1 contains API Schema definitions for the mesh v1alpha1 API group
+var GroupVersionInfoTemplate = template.Must(template.New("groupversion-info").Parse(`
+// Package {{.PolicyVersion}} contains API Schema definitions for the mesh {{.PolicyVersion}} API group
 // +groupName=kuma.io
-package v1alpha1
+package {{.PolicyVersion}}
 
-import mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+import (
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/scheme"
+)
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = mesh_k8s.GroupVersion
+	GroupVersion = schema.GroupVersion{Group: "kuma.io", Version: "{{.PolicyVersion}}"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = mesh_k8s.SchemeBuilder
+	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 
 	// AddToScheme adds the types in this group-version to the given scheme.
-	AddToScheme = mesh_k8s.SchemeBuilder.AddToScheme
-)`
+	AddToScheme = SchemeBuilder.AddToScheme
+)
+`))
 
 func generateCRD(
 	p *protogen.Plugin,
@@ -194,7 +202,13 @@ func generateCRD(
 	info := infos[0]
 
 	outBuf := bytes.Buffer{}
-	if err := CustomResourceTemplate.Execute(&outBuf, info); err != nil {
+	if err := CustomResourceTemplate.Execute(&outBuf, struct {
+		genutils.ResourceInfo
+		PolicyVersion string
+	}{
+		ResourceInfo:  info,
+		PolicyVersion: string(file.GoPackageName),
+	}); err != nil {
 		return err
 	}
 
@@ -203,17 +217,26 @@ func generateCRD(
 		return err
 	}
 
-	typesGenerator := p.NewGeneratedFile("k8s/v1alpha1/zz_generated.types.go", file.GoImportPath)
+	typesGenerator := p.NewGeneratedFile(fmt.Sprintf("k8s/%s/zz_generated.types.go", string(file.GoPackageName)), file.GoImportPath)
 	if _, err := typesGenerator.Write(out); err != nil {
 		return err
 	}
 
-	gvi, err := format.Source([]byte(GroupVersionInfo))
+	gviOutBuf := bytes.Buffer{}
+	if err := GroupVersionInfoTemplate.Execute(&gviOutBuf, struct {
+		PolicyVersion string
+	}{
+		PolicyVersion: string(file.GoPackageName),
+	}); err != nil {
+		return err
+	}
+
+	gvi, err := format.Source(gviOutBuf.Bytes())
 	if err != nil {
 		return err
 	}
 
-	gviGenerator := p.NewGeneratedFile("k8s/v1alpha1/groupversion_info.go", file.GoImportPath)
+	gviGenerator := p.NewGeneratedFile(fmt.Sprintf("k8s/%s/groupversion_info.go", string(file.GoPackageName)), file.GoImportPath)
 	if _, err := gviGenerator.Write(gvi); err != nil {
 		return err
 	}

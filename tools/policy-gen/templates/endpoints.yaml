@@ -1,6 +1,6 @@
 openapi: 3.0.1
 info:
-  version: v1alpha1
+  version: {{ PolicyVersion }}
   title: Kuma API
   description: Kuma API
 

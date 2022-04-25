@@ -56,6 +56,7 @@ type ResourceInfo struct {
 	WsPath                 string
 	KdsDirection           string
 	AllowToInspect         bool
+	StorageVersion         bool
 }
 
 func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
@@ -72,6 +73,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		Global:                 r.Global,
 		ScopeNamespace:         r.ScopeNamespace,
 		AllowToInspect:         r.AllowToInspect,
+		StorageVersion:         r.StorageVersion,
 	}
 	if r.Ws != nil {
 		pluralResourceName := r.Ws.Plural

@@ -64,17 +64,20 @@ by `make cleanup/policy/donothingpolicy`. Implement method `validate() error`:
        return nil
    }
    ```
-   
-6. Add import to `pkg/core/bootstrap/plugins.go`:
+
+5. Add import to `pkg/plugins/policies/imports.go`:
    ```go
    _ "github.com/kumahq/kuma/pkg/plugins/policies/donothingpolicy"
    ```
 
-7. Update Helm chart with a new CRD:
-   ```shell
-   make generate/helm/donothingpolicy
+6. Add `AddToScheme` call to the `pkg/plugins/policies/scheme.go`:
+   ```go
+    if err := donothingpolicy.AddToScheme(s); err != nil {
+        return err
+    }
    ```
-   Also, today it's required to update `cp-rbac.yaml` manually, automation is yet to come.
+
+8. Update `cp-rbac.yaml` manually, automation is yet to come.
 
 Now you can check swagger-ui for this policy:
 

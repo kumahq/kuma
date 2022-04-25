@@ -32,7 +32,7 @@ protoc/plugins:
 
 POLICIES_DIR := pkg/plugins/policies
 
-policies = $(foreach dir,$(wildcard $(POLICIES_DIR)/*),$(notdir $(dir)))
+policies = $(foreach dir,$(shell find pkg/plugins/policies -type d -maxdepth 1 -mindepth 1),$(notdir $(dir)))
 generate_policy_targets = $(addprefix generate/policy/,$(policies))
 cleanup_policy_targets = $(addprefix cleanup/policy/,$(policies))
 
@@ -40,21 +40,28 @@ generate/policies: $(cleanup_policy_targets) $(generate_policy_targets)
 
 # deletes all files in policy directory except *.proto and validator.go
 cleanup/policy/%:
-	$(shell find pkg/plugins/policies/$* -not -name '*.proto' -not -name 'validator.go' -type f -delete)
+	$(shell find $(POLICIES_DIR)/$* -not -name '*.proto' -not -name 'validator.go' -type f -delete)
+	@rm -r $(POLICIES_DIR)/$*/k8s || true
 
 generate/policy/%: generate/schema/%
+	@echo "Copy CRD to helm directory"
+	$(MAKE) generate/helm/$*
 	@echo "Policy $* successfully generated"
-	@echo "Don't forget to update Helm chart with 'make generate/helm/$*'"
+	@echo "Don't forget to update Helm chart's cp-rbac.yaml with $*"
 
 generate/schema/%: generate/controller-gen/%
-	tools/policy-gen/crd-extract-openapi.sh $*
+	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
+		tools/policy-gen/crd-extract-openapi.sh $* $$version ; \
+	done
 
 generate/controller-gen/%: generate/kumapolicy-gen/%
-	$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./$(POLICIES_DIR)/$*/k8s/..." output:crd:artifacts:config=$(POLICIES_DIR)/$*/k8s/crd
-	$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/k8s/v1alpha1/zz_generated.types.go
+	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
+		$(CONTROLLER_GEN) "crd:crdVersions=v1,ignoreUnexportedFields=true" paths="./$(POLICIES_DIR)/$*/k8s/..." output:crd:artifacts:config=$(POLICIES_DIR)/$*/k8s/crd && \
+		$(CONTROLLER_GEN) object paths=$(POLICIES_DIR)/$*/k8s/$$version/zz_generated.types.go ; \
+	done
 
 generate/kumapolicy-gen/%: generate/dirs/%
-	@cd tools/policy-gen/protoc-gen-kumapolicy && go build && cd -
+	cd tools/policy-gen/protoc-gen-kumapolicy && go build && cd - ; \
 	$(PROTOC) \
 		--proto_path=./api \
 		--kumapolicy_opt=endpoints-template=tools/policy-gen/templates/endpoints.yaml \
@@ -62,15 +69,16 @@ generate/kumapolicy-gen/%: generate/dirs/%
 		--go_opt=paths=source_relative \
 		--go_out=plugins=grpc,$(go_mapping):. \
 		--plugin=protoc-gen-kumapolicy=tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy \
-		$(POLICIES_DIR)/$*/api/v1alpha1/*.proto
-	@rm tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy
+		$(POLICIES_DIR)/$*/api/*/*.proto ; \
+	rm tools/policy-gen/protoc-gen-kumapolicy/protoc-gen-kumapolicy ; \
 
 generate/dirs/%:
-	@cd $(POLICIES_DIR)/$* && \
-	mkdir -p api/v1alpha1 && \
-	mkdir -p k8s/v1alpha1 && \
-	mkdir -p k8s/crd && \
-	cd -
+	for version in $(foreach dir,$(wildcard $(POLICIES_DIR)/$*/api/*),$(notdir $(dir))); do \
+		mkdir -p $(POLICIES_DIR)/$*/api/$$version ; \
+		mkdir -p $(POLICIES_DIR)/$*/k8s/$$version ; \
+		mkdir -p $(POLICIES_DIR)/$*/k8s/crd ; \
+	done
+
 
 generate/helm/%:
 	tools/policy-gen/crd-helm-copy.sh $*

@@ -7,6 +7,7 @@ import (
 	kube_client_scheme "k8s.io/client-go/kubernetes/scheme"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kumahq/kuma/pkg/plugins/policies"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8scnicncfio "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
 )
@@ -28,6 +29,9 @@ func NewScheme() (*kube_runtime.Scheme, error) {
 	}
 	if err := gatewayapi.Install(s); err != nil {
 		return nil, errors.Wrapf(err, "could not add %q to scheme", gatewayapi.SchemeGroupVersion)
+	}
+	if err := policies.AddToScheme(s); err != nil {
+		return nil, err
 	}
 	return s, nil
 }
