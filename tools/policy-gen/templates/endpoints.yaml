@@ -8,6 +8,7 @@ paths:
   /meshes/{mesh}/{{ .WsPath }}/{name}:
     get:
       summary: Returns {{ .ResourceType }} entity
+      tags: ["{{ .ResourceType }}"]
       parameters:
         - in: path
           name: mesh
@@ -31,6 +32,7 @@ paths:
 
     put:
       summary: Creates or Updates {{ .ResourceType }} entity
+      tags: ["{{ .ResourceType }}"]
       parameters:
         - in: path
           name: mesh
@@ -59,6 +61,7 @@ paths:
 
     delete:
       summary: Deletes {{ .ResourceType }} entity
+      tags: ["{{ .ResourceType }}"]
       parameters:
         - in: path
           name: mesh
@@ -80,6 +83,7 @@ paths:
   /meshes/{mesh}/{{ .WsPath }}:
     get:
       summary: Returns a list of {{ .ResourceType }} in the mesh.
+      tags: ["{{ .ResourceType }}"]
       parameters:
         - in: path
           name: mesh
@@ -106,7 +110,8 @@ paths:
 
   /{{ .WsPath }}:
     get:
-      description: Returns a list of {{ .ResourceType }} from all meshes
+      summary: Returns a list of {{ .ResourceType }} from all meshes
+      tags: ["{{ .ResourceType }}"]
       responses:
         '200':
           description: Successful response
