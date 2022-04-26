@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-
 	"html/template"
 
 	"github.com/pkg/errors"
