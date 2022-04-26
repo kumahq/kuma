@@ -1,4 +1,4 @@
-# How to generate a new Kuma policy
+## How to generate a new Kuma policy
 
 1. Create a new directory for the policy in `pkg/plugins/policies`. Example:
     ```shell
@@ -79,8 +79,30 @@ by `make cleanup/policy/donothingpolicy`. Implement method `validate() error`:
 
 8. Update `cp-rbac.yaml` manually, automation is yet to come.
 
+## How to use
+
 Now you can check swagger-ui for this policy:
 
 ```shell
 docker run -p 80:8080 -e SWAGGER_JSON=/policy/rest.yaml -v $PWD/pkg/plugins/policies/donothingpolicy/api/v1alpha1:/policy swaggerapi/swagger-ui
 ```
+
+To actually do something with created policy a ResourceSetHook should be registered:
+
+```go
+// plugin.go
+
+type myHook struct {}
+
+func (m *myHook) Modify(resourceSet *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+	// modify resourceSet here
+	return nil
+}
+
+func (p *myPlugin) AfterBootstrap(mctx *core_plugins.MutablePluginContext, _ core_plugins.PluginConfig) error {
+	mctx.XDSHooks().AddResourceSetHook(&myHook{})
+	return nil
+}
+```
+
+where `myPlugin` is a `BootstrapPlugin`.
