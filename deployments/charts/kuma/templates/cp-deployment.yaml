@@ -59,6 +59,7 @@ spec:
           securityContext:
           {{ toYaml .Values.controlPlane.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
+          hostNetwork: {{ .Values.controlPlane.hostNetwork }}
           env:
           {{-  $defaultEnv := include "kuma.defaultEnv" . | fromYaml | pluck "env" | first }}
           {{- $defaultEnvDict := dict }}
