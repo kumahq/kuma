@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 
-	"github.com/hoisie/mustache"
+	"html/template"
+
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/compiler/protogen"
 
@@ -64,18 +66,27 @@ func generateEndpoints(
 	}
 
 	info := infos[0]
+	tmpl, err := template.ParseFiles(openAPITemplate)
+	if err != nil {
+		return err
+	}
 
-	rendered := mustache.RenderFile(openAPITemplate, struct {
+	bf := &bytes.Buffer{}
+	if err := tmpl.Execute(bf, struct {
 		genutils.ResourceInfo
 		PolicyVersion string
 	}{
 		ResourceInfo:  info,
 		PolicyVersion: string(file.GoPackageName),
-	})
+	}); err != nil {
+		return err
+	}
 
 	filename := fmt.Sprintf("api/%s/rest.yaml", string(file.GoPackageName))
 	g := p.NewGeneratedFile(filename, file.GoImportPath)
-	g.P(rendered)
+	if _, err := g.Write(bf.Bytes()); err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -1,13 +1,13 @@
 openapi: 3.0.1
 info:
-  version: {{ PolicyVersion }}
+  version: {{ .PolicyVersion }}
   title: Kuma API
   description: Kuma API
 
 paths:
-  /meshes/{mesh}/{{ WsPath }}/{name}:
+  /meshes/{mesh}/{{ .WsPath }}/{name}:
     get:
-      summary: Returns {{ ResourceType }} entity
+      summary: Returns {{ .ResourceType }} entity
       parameters:
         - in: path
           name: mesh
@@ -20,7 +20,7 @@ paths:
           schema:
             type: string
           required: true
-          description: name of the {{ ResourceType }}
+          description: name of the {{ .ResourceType }}
       responses:
         '200':
           description: Successful response
@@ -30,7 +30,7 @@ paths:
                 $ref: 'schema.yaml'
 
     put:
-      summary: Creates or Updates {{ ResourceType }} entity
+      summary: Creates or Updates {{ .ResourceType }} entity
       parameters:
         - in: path
           name: mesh
@@ -43,9 +43,9 @@ paths:
           schema:
             type: string
           required: true
-          description: name of the {{ ResourceType }}
+          description: name of the {{ .ResourceType }}
       requestBody:
-        description: {{ ResourceType }} entity
+        description: {{ .ResourceType }} entity
         required: true
         content:
           application/json:
@@ -58,7 +58,7 @@ paths:
           description: Created
 
     delete:
-      summary: Deletes {{ ResourceType }} entity
+      summary: Deletes {{ .ResourceType }} entity
       parameters:
         - in: path
           name: mesh
@@ -71,15 +71,15 @@ paths:
           schema:
             type: string
           required: true
-          description: name of the {{ ResourceType }}
+          description: name of the {{ .ResourceType }}
       responses:
         '200':
           description: Successful response
 
 
-  /meshes/{mesh}/{{ WsPath }}:
+  /meshes/{mesh}/{{ .WsPath }}:
     get:
-      summary: Returns a list of {{ ResourceType }} in the mesh.
+      summary: Returns a list of {{ .ResourceType }} in the mesh.
       parameters:
         - in: path
           name: mesh
@@ -104,9 +104,9 @@ paths:
                     description: URL to the next page
 
 
-  /{{ WsPath }}:
+  /{{ .WsPath }}:
     get:
-      description: Returns a list of {{ ResourceType }} from all meshes
+      description: Returns a list of {{ .ResourceType }} from all meshes
       responses:
         '200':
           description: Successful response
