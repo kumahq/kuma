@@ -10,7 +10,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490
 	github.com/emicklei/go-restful v2.15.0+incompatible
-	github.com/envoyproxy/go-control-plane v0.10.1
+	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1
 	github.com/envoyproxy/protoc-gen-validate v0.6.7
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v1.2.3
@@ -50,7 +50,7 @@ require (
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac
-	google.golang.org/grpc v1.45.0
+	google.golang.org/grpc v1.46.0
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
