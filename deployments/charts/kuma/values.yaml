@@ -93,7 +93,6 @@ controlPlane:
           topologyKey: kubernetes.io/hostname
 
   # -- Topology spread constraints rule for the Kuma Control Plane pods
-  # Don't set this and affinity at the same time
   # This is rendered as a template so you can use variables to generate match labels.
   topologySpreadConstraints:
 
@@ -447,7 +446,6 @@ ingress:
           topologyKey: kubernetes.io/hostname
 
   # -- Topology spread constraints rule for the Kuma Mesh Ingress pods
-  # Don't set this and affinity at the same time
   # This is rendered as a template so you can use variables to generate match labels.
   topologySpreadConstraints:
 
@@ -557,7 +555,6 @@ egress:
           topologyKey: kubernetes.io/hostname
 
   # -- Topology spread constraints rule for the Kuma Egress pods
-  # Don't set this and affinity at the same time
   # This is rendered as a template so you can use variables to generate match labels.
   topologySpreadConstraints:
 
