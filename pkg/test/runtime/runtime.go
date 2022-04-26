@@ -6,6 +6,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -87,7 +89,9 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
-	builder.WithLookupIP(net.LookupIP)
+	builder.WithLookupIP(func(s string) ([]net.IP, error) {
+		return nil, errors.New("LookupIP not set, set one in your test to resolve things")
+	})
 	builder.WithEnvoyAdminClient(&DummyEnvoyAdminClient{})
 	builder.WithEventReaderFactory(events.NewEventBus())
 	builder.WithAPIManager(customization.NewAPIList())

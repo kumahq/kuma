@@ -52,7 +52,7 @@ availableServices:
   mesh: default
 ---
 type: ZoneIngress
-name: zone-ingress-zone-2
+name: zone-ingress-1-zone-2
 zone: zone-2
 networking:
   address: 6.6.6.6
@@ -70,6 +70,26 @@ availableServices:
   instances: 1
   mesh: default
   externalService: true
+---
+type: ZoneIngress
+name: zone-ingress-2-zone-2
+zone: zone-2
+networking:
+  address: 6.6.6.7
+  advertisedAddress: one.one.one.one
+  port: 20002
+  advertisedPort: 20003
+availableServices:
+  - tags:
+      kuma.io/service: service-in-zone-2
+    instances: 1
+    mesh: default
+  - tags:
+      kuma.io/service: external-service-in-zone-2
+      kuma.io/zone: "zone-2"
+    instances: 1
+    mesh: default
+    externalService: true
 ---
 type: ZoneEgress
 name: zone-egress-1
