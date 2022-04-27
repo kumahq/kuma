@@ -71,6 +71,9 @@ func (p *EgressProxyBuilder) Build(
 		}
 	}
 
+	// Resolve hostnames to ips in zoneIngresses.
+	zoneIngresses = xds_topology.ResolveZoneIngressAddresses(xdsServerLog, p.LookupIP, zoneIngresses)
+
 	// It's done for achieving stable xds config
 	sort.Slice(zoneIngresses, func(a, b int) bool {
 		return zoneIngresses[a].GetMeta().GetName() < zoneIngresses[b].GetMeta().GetName()
