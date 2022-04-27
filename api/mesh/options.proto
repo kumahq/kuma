@@ -36,6 +36,10 @@ message KumaResourceOptions {
 
   // Whether to generate Inspect API endpoint
   bool allow_to_inspect = 13;
+
+  // If resource has more than one version, then the flag defines which version
+  // is used in the storage. All other versions must be convertible to it.
+  bool storage_version = 14;
 }
 
 message KumaWsOptions {
