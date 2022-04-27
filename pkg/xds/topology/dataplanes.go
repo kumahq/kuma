@@ -45,13 +45,13 @@ func ResolveAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.Datap
 }
 
 func ResolveZoneIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, zoneIngress *core_mesh.ZoneIngressResource) (*core_mesh.ZoneIngressResource, error) {
-	res, err := lookupFirstIp(lookupIPFunc, zoneIngress.Spec.GetNetworking().GetAdvertisedAddress())
+	ip, err := lookupFirstIp(lookupIPFunc, zoneIngress.Spec.GetNetworking().GetAdvertisedAddress())
 	if err != nil {
 		return nil, err
 	}
-	if res != "" { // only if we resolve any address, in most cases this is IP not a hostname
+	if ip != "" { // only if we resolve any address, in most cases this is IP not a hostname
 		ziSpec := proto.Clone(zoneIngress.Spec).(*mesh_proto.ZoneIngress)
-		ziSpec.Networking.AdvertisedAddress = res
+		ziSpec.Networking.AdvertisedAddress = ip
 		return &core_mesh.ZoneIngressResource{
 			Meta: zoneIngress.Meta,
 			Spec: ziSpec,
