@@ -51,6 +51,7 @@ spec:
       nodeSelector:
       {{ toYaml . | nindent 8 }}
       {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.ingress.terminationGracePeriodSeconds }}
       containers:
         - name: ingress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
@@ -104,6 +105,9 @@ spec:
             successThreshold: 1
             timeoutSeconds: 3
           resources: {{ toYaml .Values.ingress.resources | nindent 12 }}
+          {{ with .Values.ingress.lifecycle}}
+          lifecycle: {{ . | toYaml | nindent 12 }}
+          {{ end }}
           volumeMounts:
             - name: {{ include "kuma.name" . }}-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert

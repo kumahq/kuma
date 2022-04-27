@@ -156,6 +156,14 @@ controlPlane:
   #    cpu: 250m
   #    memory: 512Mi
 
+  # -- Pod lifecycle settings (useful for adding a preStop hook, when
+  # using AWS ALB or NLB)
+  lifecycle: {}
+
+  # -- Number of seconds to wait before force killing the pod. Make sure to
+  # update this if you add a preStop hook.
+  terminationGracePeriodSeconds: 30
+
   # TLS for various servers
   tls:
     general:
@@ -372,6 +380,14 @@ ingress:
     limits:
       cpu: 1000m
       memory: 512Mi
+
+  # -- Pod lifecycle settings (useful for adding a preStop hook, when
+  # using AWS ALB or NLB)
+  lifecycle: {}
+
+  # -- Number of seconds to wait before force killing the pod. Make sure to
+  # update this if you add a preStop hook.
+  terminationGracePeriodSeconds: 30
 
   # Horizontal Pod Autoscaling configuration
   autoscaling:

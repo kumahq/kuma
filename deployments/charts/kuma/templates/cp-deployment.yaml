@@ -55,6 +55,7 @@ spec:
         {{ toYaml . | nindent 8 }}
       {{- end }}
       hostNetwork: {{ .Values.controlPlane.hostNetwork }}
+      terminationGracePeriodSeconds: {{ .Values.controlPlane.terminationGracePeriodSeconds }}
       containers:
         - name: control-plane
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
@@ -126,6 +127,9 @@ spec:
             limits:
             {{ .Values.controlPlane.resources.limits | toYaml | nindent 14 }}
             {{- end }}
+          {{ with .Values.controlPlane.lifecycle }}
+          lifecycle: {{ . | toYaml | nindent 14 }}
+          {{ end }}
           volumeMounts:
             - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt
