@@ -180,6 +180,9 @@ controlPlane:
       # -- Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma.
       additionalRules: ""
 
+  # -- Specifies if the deployment should be started in hostNetwork mode.
+  hostNetwork: false
+
   # -- Security context at the pod level for control plane.
   podSecurityContext: {}
 #    # The values below are examples. More values can be added as needed, since the field resolves as free form.
