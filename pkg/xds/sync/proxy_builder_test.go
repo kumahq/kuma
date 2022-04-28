@@ -2,12 +2,14 @@ package sync_test
 
 import (
 	"context"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -78,6 +80,12 @@ var _ = Describe("Proxy Builder", func() {
 	config.Multizone.Zone.Name = localZone
 	builder, err := test_runtime.BuilderFor(ctx, config)
 	Expect(err).ToNot(HaveOccurred())
+	builder.WithLookupIP(func(s string) ([]net.IP, error) {
+		if s == "one.one.one.one" {
+			return []net.IP{net.ParseIP("1.1.1.1")}, nil
+		}
+		return nil, errors.New("No such host to resolve:" + s)
+	})
 	rt, err := builder.Build()
 	Expect(err).ToNot(HaveOccurred())
 
@@ -147,6 +155,36 @@ var _ = Describe("Proxy Builder", func() {
 					Networking: &mesh_proto.ZoneIngress_Networking{
 						Address:           "6.6.6.6",
 						AdvertisedAddress: "7.7.7.7",
+						AdvertisedPort:    20003,
+						Port:              20002,
+					},
+				}))
+			Expect(proxy.ZoneEgressProxy.ZoneIngresses[1].Spec).To(
+				matchers.MatchProto(&mesh_proto.ZoneIngress{
+					AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+						{
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "service-in-zone-2",
+								"mesh":                "default",
+							},
+							Instances: 1,
+							Mesh:      "default",
+						},
+						{
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "external-service-in-zone-2",
+								mesh_proto.ZoneTag:    "zone-2",
+								"mesh":                "default",
+							},
+							Instances:       1,
+							Mesh:            "default",
+							ExternalService: true,
+						},
+					},
+					Zone: "zone-2",
+					Networking: &mesh_proto.ZoneIngress_Networking{
+						Address:           "6.6.6.7",
+						AdvertisedAddress: "1.1.1.1",
 						AdvertisedPort:    20003,
 						Port:              20002,
 					},

@@ -1,0 +1,11 @@
+properties:
+  type:
+    description: ''
+    type: string
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to.
+      It may be omitted for cluster-scoped resources.'
+    type: string
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
