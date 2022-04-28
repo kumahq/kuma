@@ -1637,6 +1637,7 @@ spec:
         
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
+      hostNetwork: false
       containers:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
