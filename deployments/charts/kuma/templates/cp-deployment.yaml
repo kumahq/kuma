@@ -51,6 +51,7 @@ spec:
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
+      hostNetwork: {{ .Values.controlPlane.hostNetwork }}
       containers:
         - name: control-plane
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
@@ -59,7 +60,6 @@ spec:
           securityContext:
           {{ toYaml .Values.controlPlane.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
-          hostNetwork: {{ .Values.controlPlane.hostNetwork }}
           env:
           {{-  $defaultEnv := include "kuma.defaultEnv" . | fromYaml | pluck "env" | first }}
           {{- $defaultEnvDict := dict }}

@@ -2012,11 +2012,11 @@ spec:
         
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
+      hostNetwork: false
       containers:
         - name: control-plane
           image: "kuma-ci/kuma-cp:greatest"
           imagePullPolicy: Never
-          hostNetwork: false
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
