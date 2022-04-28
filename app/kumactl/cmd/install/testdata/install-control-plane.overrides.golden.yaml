@@ -1806,6 +1806,15 @@ rules:
       - get
       - patch
       - update
+  # for the OwnerReferencesPermissionEnforcement plugin
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshgatewayinstances/finalizers
+    verbs:
+      - get
+      - patch
+      - update
   - apiGroups:
       - kuma.io
     resources:
