@@ -25,7 +25,6 @@ import (
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/events"
@@ -110,7 +109,6 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	})
 
 	initializeConfigManager(builder)
-	initializeDNSResolver(builder)
 
 	return builder, nil
 }
@@ -118,10 +116,6 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 func initializeConfigManager(builder *core_runtime.Builder) {
 	configm := config_manager.NewConfigManager(builder.ResourceStore())
 	builder.WithConfigManager(configm)
-}
-
-func initializeDNSResolver(builder *core_runtime.Builder) {
-	builder.WithDNSResolver(resolver.NewDNSResolver("mesh"))
 }
 
 func newResourceManager(builder *core_runtime.Builder) core_manager.CustomizableResourceManager {

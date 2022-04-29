@@ -195,16 +195,6 @@ func (cs *K8sClusters) DeleteApp(namespace, appname string) error {
 	return nil
 }
 
-func (cs *K8sClusters) InjectDNS(namespace ...string) error {
-	for name, c := range cs.clusters {
-		if err := c.InjectDNS(namespace...); err != nil {
-			return errors.Wrapf(err, "Injecting DNS on %s failed: %v", name, err)
-		}
-	}
-
-	return nil
-}
-
 func (cs *K8sClusters) GetTesting() testing.TestingT {
 	return cs.t
 }

@@ -961,15 +961,6 @@ func (c *K8sCluster) DeleteApp(namespace, appname string) error {
 	return nil
 }
 
-func (c *K8sCluster) InjectDNS(namespace ...string) error {
-	args := []string{}
-	if len(namespace) > 0 {
-		args = append(args, "--namespace", namespace[0])
-	}
-
-	return c.controlplane.InjectDNS(args...)
-}
-
 func (c *K8sCluster) GetTesting() testing.TestingT {
 	return c.t
 }

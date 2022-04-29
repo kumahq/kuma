@@ -97,28 +97,28 @@ var _ = Describe("Meshed Persistence", func() {
 				configs: map[string]*system.ConfigResource{
 					"kuma-mesh-1-dns-vips": {
 						Meta: &model.ResourceMeta{Name: "kuma-mesh-1-dns-vips"},
-						Spec: &system_proto.Config{Config: `{"backend":"240.0.0.1","frontend":"240.0.0.3","postgres":"240.0.0.0","redis":"240.0.0.2"}`},
+						Spec: &system_proto.Config{Config: `{"0:backend":{"address":"240.0.0.1","outbounds":[{"TagSet":{"kuma.io/service":"backend_1"}}]},"0:frontend":{"address":"240.0.0.3","outbounds":[{"TagSet":{"kuma.io/service":"frontend_2"}}]},"0:redis":{"address":"240.0.0.2","outbounds":[{"TagSet":{"kuma.io/service":"redis"}}]},"0:postgres":{"address":"240.0.0.0","outbounds":[{"TagSet":{"kuma.io/service":"postgres"}}]}}`},
 					},
 					"kuma-mesh-2-dns-vips": {
 						Meta: &model.ResourceMeta{Name: "kuma-mesh-2-dns-vips"},
-						Spec: &system_proto.Config{Config: `{"backend_2":"240.0.1.1","frontend_2":"240.0.1.3","postgres_2":"240.0.1.0","redis_2":"240.0.1.2"}`},
+						Spec: &system_proto.Config{Config: `{"0:backend_2":{"address":"240.0.1.1","outbounds":[{"TagSet":{"kuma.io/service":"backend_2"}}]},"0:frontend_2":{"address":"240.0.1.3","outbounds":[{"TagSet":{"kuma.io/service":"frontend_2"}}]},"0:postgres_2":{"address":"240.0.1.0","outbounds":[{"TagSet":{"kuma.io/service":"postgres_2"}}]},"0:redis_2":{"address":"240.0.1.2","outbounds":[{"TagSet":{"kuma.io/service":"redis_2"}}]}}`},
 					},
 					"kuma-mesh-3-dns-vips": {
 						Meta: &model.ResourceMeta{Name: "kuma-mesh-3-dns-vips"},
-						Spec: &system_proto.Config{Config: `{"backend_3":"240.0.2.1","frontend_3":"240.0.2.3","postgres_3":"240.0.2.0","redis_3":"240.0.2.2"}`},
+						Spec: &system_proto.Config{Config: `{"0:backend_3":{"address":"240.0.2.1","outbounds":[{"TagSet":{"kuma.io/service":"backend_3"}}]},"0:frontend_3":{"address":"240.0.2.3","outbounds":[{"TagSet":{"kuma.io/service":"frontend_3"}}]},"1:host.com":{"address":"240.0.1.4","outbounds":[{"TagSet":{"kuma.io/service":"external-host"}}]}}`},
 					},
 				},
 			})
 		})
 
 		It("should return vips for mesh", func() {
-			actual, err := meshedPersistence.GetByMesh("mesh-2")
+			actual, err := meshedPersistence.GetByMesh(context.Background(), "mesh-2")
 			Expect(err).ToNot(HaveOccurred())
 			expected, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
-				vips.NewServiceEntry("backend_2"):  {Address: "240.0.1.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend_2"}, Origin: "legacy-service-upgrade"}}},
-				vips.NewServiceEntry("frontend_2"): {Address: "240.0.1.3", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend_2"}, Origin: "legacy-service-upgrade"}}},
-				vips.NewServiceEntry("postgres_2"): {Address: "240.0.1.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "postgres_2"}, Origin: "legacy-service-upgrade"}}},
-				vips.NewServiceEntry("redis_2"):    {Address: "240.0.1.2", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "redis_2"}, Origin: "legacy-service-upgrade"}}},
+				vips.NewServiceEntry("backend_2"):  {Address: "240.0.1.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend_2"}, Origin: ""}}},
+				vips.NewServiceEntry("frontend_2"): {Address: "240.0.1.3", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend_2"}, Origin: ""}}},
+				vips.NewServiceEntry("postgres_2"): {Address: "240.0.1.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "postgres_2"}, Origin: ""}}},
+				vips.NewServiceEntry("redis_2"):    {Address: "240.0.1.2", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "redis_2"}, Origin: ""}}},
 			})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(Equal(expected))
@@ -141,7 +141,7 @@ var _ = Describe("Meshed Persistence", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 
-			err = meshedPersistence.Set("mesh-1", vipsMesh1)
+			err = meshedPersistence.Set(context.Background(), "mesh-1", vipsMesh1)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(countingCm.get).To(Equal(1))
 			Expect(countingCm.create).To(Equal(1))
@@ -151,7 +151,7 @@ var _ = Describe("Meshed Persistence", func() {
 				vips.NewServiceEntry("frontend"): {Address: "240.0.0.2", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}}}},
 			})
 			Expect(err).ToNot(HaveOccurred())
-			err = meshedPersistence.Set("mesh-2", vipsMesh2)
+			err = meshedPersistence.Set(context.Background(), "mesh-2", vipsMesh2)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(countingCm.get).To(Equal(2))
 			Expect(countingCm.create).To(Equal(2))
@@ -159,24 +159,25 @@ var _ = Describe("Meshed Persistence", func() {
 		})
 
 		It("should update existing config", func() {
+			ctx := context.Background()
 			vipsMesh1, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend"): {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}}}},
 			})
 			Expect(err).ToNot(HaveOccurred())
-			err = meshedPersistence.Set("mesh-1", vipsMesh1)
+			err = meshedPersistence.Set(ctx, "mesh-1", vipsMesh1)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(countingCm.get).To(Equal(1))
 			Expect(countingCm.create).To(Equal(1))
 			Expect(countingCm.update).To(Equal(0))
 
 			Expect(vipsMesh1.Add(vips.NewServiceEntry("frontend"), vips.OutboundEntry{})).ToNot(HaveOccurred())
-			err = meshedPersistence.Set("mesh-1", vipsMesh1)
+			err = meshedPersistence.Set(ctx, "mesh-1", vipsMesh1)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(countingCm.get).To(Equal(2))
 			Expect(countingCm.create).To(Equal(1))
 			Expect(countingCm.update).To(Equal(1))
 
-			meshed, err := meshedPersistence.GetByMesh("mesh-1")
+			meshed, err := meshedPersistence.GetByMesh(ctx, "mesh-1")
 			Expect(err).ToNot(HaveOccurred())
 			validateMeshes(meshed, "mesh-1")
 		})
@@ -190,11 +191,22 @@ var _ = Describe("Meshed Persistence", func() {
 				configs: map[string]*system.ConfigResource{
 					"kuma-mesh-1-dns-vips": {
 						Meta: &model.ResourceMeta{Name: "kuma-mesh-1-dns-vips"},
-						Spec: &system_proto.Config{Config: `{"backend":"240.0.0.1","frontend":"240.0.0.3","postgres":"240.0.0.0","redis":"240.0.0.2"}`},
+						Spec: &system_proto.Config{Config: `{
+								"0:backend":{"address":"240.0.0.1","outbounds":[{"TagSet":{"kuma.io/service":"backend_1"}}]},
+								"0:frontend":{"address":"240.0.0.3","outbounds":[{"TagSet":{"kuma.io/service":"frontend_2"}}]},
+								"0:redis":{"address":"240.0.0.2","outbounds":[{"TagSet":{"kuma.io/service":"redis"}}]},
+								"0:postgres":{"address":"240.0.0.0","outbounds":[{"TagSet":{"kuma.io/service":"postgres"}}]}}`},
 					},
 					"kuma-mesh-2-dns-vips": {
 						Meta: &model.ResourceMeta{Name: "kuma-mesh-2-dns-vips"},
-						Spec: &system_proto.Config{Config: `{"0:backend_2":"240.0.1.1","0:frontend_2":"240.0.1.3","1:host.com":"240.0.1.4"}`},
+						Spec: &system_proto.Config{Config: `{
+									"0:backend_2":{"address":"240.0.1.1","outbounds":[{"TagSet":{"kuma.io/service":"backend_2"}}]},
+									"0:frontend_2":{"address":"240.0.1.3","outbounds":[{"TagSet":{"kuma.io/service":"frontend_2"}}]},
+									"1:host.com":{"address":"240.0.1.4","outbounds":[
+										{"Port": 90, "TagSet":{"kuma.io/service":"external-host"}},
+										{"Port": 100, "TagSet":{"kuma.io/service":"external-host2"}}
+									]}
+						}`},
 					},
 					"kuma-mesh-3-dns-vips": {
 						Meta: &model.ResourceMeta{Name: "kuma-mesh-3-dns-vips"},
@@ -202,34 +214,10 @@ var _ = Describe("Meshed Persistence", func() {
 					},
 				},
 			}
-			_ = rm.Create(context.Background(), &core_mesh.ExternalServiceResource{
-				Spec: &mesh_proto.ExternalService{
-					Networking: &mesh_proto.ExternalService_Networking{
-						Address: "host.com:90",
-					},
-					Tags: map[string]string{mesh_proto.ServiceTag: "external-host"},
-				},
-			}, core_store.CreateByKey("my-host", "mesh-2"))
-			_ = rm.Create(context.Background(), &core_mesh.ExternalServiceResource{
-				Spec: &mesh_proto.ExternalService{
-					Networking: &mesh_proto.ExternalService_Networking{
-						Address: "host.com:100",
-					},
-					Tags: map[string]string{mesh_proto.ServiceTag: "external-host2"},
-				},
-			}, core_store.CreateByKey("my-host2", "mesh-2"))
 			meshedPersistence = vips.NewPersistence(rm, countingCm)
 		})
 
 		It("should return meshed vips", func() {
-			// when
-			meshed, err := meshedPersistence.Get()
-			Expect(err).ToNot(HaveOccurred())
-			for mesh, v := range meshed {
-				validateMeshes(v, mesh)
-			}
-
-			// and then
 			expectedMesh1, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend"):  {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}}}},
 				vips.NewServiceEntry("frontend"): {Address: "240.0.0.3", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}}}},
@@ -237,7 +225,11 @@ var _ = Describe("Meshed Persistence", func() {
 				vips.NewServiceEntry("redis"):    {Address: "240.0.0.2", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "redis"}}}},
 			})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(meshed["mesh-1"].HostnameEntries()).To(Equal(expectedMesh1.HostnameEntries()))
+			view, err := meshedPersistence.GetByMesh(context.Background(), "mesh-1")
+			Expect(err).ToNot(HaveOccurred())
+			validateMeshes(view, "mesh-1")
+			Expect(view.HostnameEntries()).To(Equal(expectedMesh1.HostnameEntries()))
+
 			// and then
 			expectedMesh2, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend_2"):  {Address: "240.0.1.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend_2"}}}},
@@ -245,7 +237,11 @@ var _ = Describe("Meshed Persistence", func() {
 				vips.NewHostEntry("host.com"):      {Address: "240.0.1.4", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "external-host"}}}},
 			})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(meshed["mesh-2"].HostnameEntries()).To(Equal(expectedMesh2.HostnameEntries()))
+			view, err = meshedPersistence.GetByMesh(context.Background(), "mesh-2")
+			Expect(err).ToNot(HaveOccurred())
+			validateMeshes(view, "mesh-2")
+			Expect(view.HostnameEntries()).To(Equal(expectedMesh2.HostnameEntries()))
+
 			// and then
 			expectedMesh3, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend_3"):  {Address: "240.0.2.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend_3"}}}},
@@ -253,22 +249,25 @@ var _ = Describe("Meshed Persistence", func() {
 				vips.NewHostEntry("host.com"):      {Address: "240.0.1.4", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "external-host"}}}},
 			})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(meshed["mesh-3"]).To(WithTransform(func(vo *vips.VirtualOutboundMeshView) []vips.HostnameEntry {
+			view, err = meshedPersistence.GetByMesh(context.Background(), "mesh-3")
+			Expect(err).ToNot(HaveOccurred())
+			validateMeshes(view, "mesh-3")
+			Expect(view).To(WithTransform(func(vo *vips.VirtualOutboundMeshView) []vips.HostnameEntry {
 				return vo.HostnameEntries()
 			}, Equal(expectedMesh3.HostnameEntries())))
-			for _, k := range meshed["mesh-3"].HostnameEntries() {
-				Expect(meshed["mesh-3"].Get(k)).To(Equal(expectedMesh3.Get(k)))
+			for _, k := range view.HostnameEntries() {
+				Expect(view.Get(k)).To(Equal(expectedMesh3.Get(k)))
 			}
 		})
 
-		It("should update old version with new one", func() {
+		It("should update", func() {
 			newVIPs, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 				vips.NewServiceEntry("backend"):  {Address: "240.0.0.1", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "backend"}}}},
 				vips.NewServiceEntry("frontend"): {Address: "240.0.0.3", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}}}},
 				vips.NewHostEntry("kuma.io"):     {Address: "240.0.1.4", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "external-host"}}}},
 			})
 			Expect(err).ToNot(HaveOccurred())
-			err = meshedPersistence.Set("mesh-1", newVIPs)
+			err = meshedPersistence.Set(context.Background(), "mesh-1", newVIPs)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(countingCm.updates).To(HaveLen(1))
@@ -276,13 +275,13 @@ var _ = Describe("Meshed Persistence", func() {
 		})
 
 		It("should handle multiple external service with same host", func() {
-			out, err := meshedPersistence.GetByMesh("mesh-2")
+			out, err := meshedPersistence.GetByMesh(context.Background(), "mesh-2")
 			Expect(err).ToNot(HaveOccurred())
 			entry := out.Get(vips.NewHostEntry("host.com"))
 
 			Expect(entry.Outbounds).To(Equal([]vips.OutboundEntry{
-				{Port: 90, TagSet: map[string]string{mesh_proto.ServiceTag: "external-host"}, Origin: "legacy-host-upgrade"},
-				{Port: 100, TagSet: map[string]string{mesh_proto.ServiceTag: "external-host2"}, Origin: "legacy-host-upgrade"},
+				{Port: 90, TagSet: map[string]string{mesh_proto.ServiceTag: "external-host"}, Origin: ""},
+				{Port: 100, TagSet: map[string]string{mesh_proto.ServiceTag: "external-host2"}, Origin: ""},
 			}))
 		})
 	})

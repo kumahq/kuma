@@ -27,7 +27,6 @@ Install various Kuma components.
 * [kumactl install control-plane](kumactl_install_control-plane.md)	 - Install Kuma Control Plane on Kubernetes
 * [kumactl install crds](kumactl_install_crds.md)	 - Install Kuma Custom Resource Definitions on Kubernetes
 * [kumactl install demo](kumactl_install_demo.md)	 - Install Kuma demo on Kubernetes
-* [kumactl install dns](kumactl_install_dns.md)	 - Install DNS to Kubernetes
 * [kumactl install gateway](kumactl_install_gateway.md)	 - Install ingress gateway on Kubernetes
 * [kumactl install logging](kumactl_install_logging.md)	 - Install Logging backend in Kubernetes cluster (Loki)
 * [kumactl install metrics](kumactl_install_metrics.md)	 - Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)

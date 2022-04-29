@@ -160,13 +160,6 @@ func Kuma(mode core.CpMode, opt ...KumaDeploymentOption) InstallFunc {
 	}
 }
 
-func KumaDNS() InstallFunc {
-	return func(cluster Cluster) error {
-		err := cluster.InjectDNS(Config.KumaNamespace)
-		return err
-	}
-}
-
 func WaitService(namespace, service string) InstallFunc {
 	return func(c Cluster) error {
 		k8s.WaitUntilServiceAvailable(c.GetTesting(), c.GetKubectlOptions(namespace), service, 10, 3*time.Second)

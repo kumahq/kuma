@@ -98,7 +98,6 @@ var _ = Describe("Config WS", func() {
 		  "dnsServer": {
 			"CIDR": "240.0.0.0/4",
 			"domain": "mesh",
-			"port": 5653,
 			"serviceVipEnabled": true
 		  },
 		  "dpServer": {
