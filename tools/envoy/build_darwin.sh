@@ -19,7 +19,7 @@ BAZEL_BUILD_OPTIONS=(
     --show_task_finish
     --verbose_failures
     --//contrib/vcl/source:enabled=false
-    "--action_env=PATH=/usr/local/bin:/opt/local/bin:/usr/bin:/bin"
+    "--action_env=PATH=/usr/local/bin:/opt/local/bin:/usr/bin:/bin:/opt/homebrew/bin"
     "--define" "wasm=disabled"
     "${BAZEL_BUILD_EXTRA_OPTIONS[@]+"${BAZEL_BUILD_EXTRA_OPTIONS[@]}"}")
 bazel build "${BAZEL_BUILD_OPTIONS[@]}" -c opt //contrib/exe:envoy-static
