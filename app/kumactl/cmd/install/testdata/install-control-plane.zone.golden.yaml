@@ -1674,8 +1674,6 @@ spec:
             - containerPort: 5682
             - containerPort: 5443
             - containerPort: 5678
-            - containerPort: 5653
-              protocol: UDP
           livenessProbe:
             httpGet:
               path: /healthy

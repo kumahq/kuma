@@ -210,7 +210,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
 
 			Expect(cfg.DNSServer.Domain).To(Equal("test-domain"))
-			Expect(cfg.DNSServer.Port).To(Equal(uint32(15653)))
 			Expect(cfg.DNSServer.CIDR).To(Equal("127.1.0.0/16"))
 			Expect(cfg.DNSServer.ServiceVipEnabled).To(BeFalse())
 
@@ -411,7 +410,6 @@ multizone:
       maxMsgSize: 2
 dnsServer:
   domain: test-domain
-  port: 15653
   CIDR: 127.1.0.0/16
   serviceVipEnabled: false
 defaults:
@@ -568,7 +566,6 @@ experimental:
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                                                     "https://kuma,https://someapi",
 				"KUMA_GUI_SERVER_API_SERVER_URL":                                                           "http://localhost:1234",
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
-				"KUMA_DNS_SERVER_PORT":                                                                     "15653",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",
 				"KUMA_DNS_SERVER_SERVICE_VIP_ENABLED":                                                      "false",
 				"KUMA_MODE":                                                                                "zone",

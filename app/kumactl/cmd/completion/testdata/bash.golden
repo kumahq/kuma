@@ -3679,41 +3679,6 @@ _kumactl_install_demo()
     noun_aliases=()
 }
 
-_kumactl_install_dns()
-{
-    last_command="kumactl_install_dns"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--namespace=")
-    two_word_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace")
-    local_nonpersistent_flags+=("--namespace=")
-    flags+=("--port=")
-    two_word_flags+=("--port")
-    local_nonpersistent_flags+=("--port")
-    local_nonpersistent_flags+=("--port=")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_install_gateway_kong()
 {
     last_command="kumactl_install_gateway_kong"
@@ -4017,7 +3982,6 @@ _kumactl_install()
     commands+=("control-plane")
     commands+=("crds")
     commands+=("demo")
-    commands+=("dns")
     commands+=("gateway")
     commands+=("logging")
     commands+=("metrics")

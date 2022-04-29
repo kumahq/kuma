@@ -199,24 +199,6 @@ func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
 	return c.kumactl.KumactlInstallCP(c.mode, args...)
 }
 
-func (c *K8sControlPlane) InjectDNS(args ...string) error {
-	// store the kumactl environment
-	oldEnv := c.kumactl.Env
-	c.kumactl.Env["KUBECONFIG"] = c.GetKubectlOptions().ConfigPath
-	defer func() {
-		c.kumactl.Env = oldEnv // restore kumactl environment
-	}()
-
-	yaml, err := c.kumactl.KumactlInstallDNS(args...)
-	if err != nil {
-		return err
-	}
-
-	return k8s.KubectlApplyFromStringE(c.t,
-		c.GetKubectlOptions(),
-		yaml)
-}
-
 // A naive implementation to find the URL where Zone CP exposes its API
 func (c *K8sControlPlane) GetKDSServerAddress() string {
 	// As EKS and AWS generally returns dns records of load balancers instead of

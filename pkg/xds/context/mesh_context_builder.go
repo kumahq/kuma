@@ -91,7 +91,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		dataplanesByName[dp.Meta.GetName()] = dp
 	}
 
-	virtualOutboundView, err := m.vipsPersistence.GetByMesh(mesh.GetMeta().GetName())
+	virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, mesh.GetMeta().GetName())
 	if err != nil {
 		return nil, err
 	}

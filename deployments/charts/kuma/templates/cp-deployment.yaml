@@ -97,9 +97,7 @@ spec:
             - containerPort: 5443
             {{- if ne .Values.controlPlane.mode "global" }}
             - containerPort: 5678
-            - containerPort: 5653
-              protocol: UDP
-          {{- end }}
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /healthy

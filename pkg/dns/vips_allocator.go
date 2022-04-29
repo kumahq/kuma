@@ -3,7 +3,6 @@ package dns
 import (
 	"context"
 	"net"
-	"time"
 
 	"go.uber.org/multierr"
 
@@ -14,17 +13,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 )
 
-var vipsAllocatorLog = core.Log.WithName("dns-vips-allocator")
+var Log = core.Log.WithName("dns-vips-allocator")
 
 type VIPsAllocator struct {
 	rm                manager.ReadOnlyResourceManager
 	persistence       *vips.Persistence
-	resolver          resolver.DNSResolver
-	newTicker         func() *time.Ticker
 	cidr              string
 	serviceVipEnabled bool
 }
@@ -33,67 +29,37 @@ type VIPsAllocator struct {
 // call method CreateOrUpdateVIPConfig manually or start VIPsAllocator as a component.
 // In the latter scenario it will call CreateOrUpdateVIPConfig every 'tickInterval'
 // for all meshes in the store.
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, serviceVipEnabled bool, cidr string, resolver resolver.DNSResolver) (*VIPsAllocator, error) {
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, serviceVipEnabled bool, cidr string) (*VIPsAllocator, error) {
 	return &VIPsAllocator{
 		rm:                rm,
 		persistence:       vips.NewPersistence(rm, configManager),
 		serviceVipEnabled: serviceVipEnabled,
 		cidr:              cidr,
-		resolver:          resolver,
-		newTicker: func() *time.Ticker {
-			return time.NewTicker(tickInterval)
-		},
 	}, nil
 }
 
-func (d *VIPsAllocator) NeedLeaderElection() bool {
-	return true
-}
-
-func (d *VIPsAllocator) Start(stop <-chan struct{}) error {
-	ticker := d.newTicker()
-	defer ticker.Stop()
-
-	vipsAllocatorLog.Info("starting the DNS VIPs allocator")
-	for {
-		select {
-		case <-ticker.C:
-			if err := d.CreateOrUpdateVIPConfigs(); err != nil {
-				vipsAllocatorLog.Error(err, "errors during updating VIP configs")
-			}
-		case <-stop:
-			vipsAllocatorLog.Info("stopping")
-			return nil
-		}
-	}
-}
-
-func (d *VIPsAllocator) CreateOrUpdateVIPConfigs() error {
+func (d *VIPsAllocator) CreateOrUpdateVIPConfigs(ctx context.Context) error {
 	meshRes := core_mesh.MeshResourceList{}
-	if err := d.rm.List(context.Background(), &meshRes); err != nil {
+	if err := d.rm.List(ctx, &meshRes); err != nil {
 		return err
 	}
 
-	meshes := []string{}
+	var errs error
 	for _, mesh := range meshRes.Items {
-		meshes = append(meshes, mesh.GetMeta().GetName())
+		if err := d.createOrUpdateVIPConfigs(ctx, mesh.GetMeta().GetName()); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
-
-	return d.createOrUpdateVIPConfigs(meshes...)
+	return errs
 }
 
-func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string, viewModificator func(*vips.VirtualOutboundMeshView) error) error {
-	meshViews, globalView, err := d.fetchViews()
+func (d *VIPsAllocator) CreateOrUpdateVIPConfig(ctx context.Context, mesh string, viewModificator func(*vips.VirtualOutboundMeshView) error) error {
+	oldView, globalView, err := d.fetchView(ctx, mesh)
 	if err != nil {
 		return err
 	}
 
-	oldView, ok := meshViews[mesh]
-	if !ok {
-		oldView = vips.NewEmptyVirtualOutboundView()
-	}
-
-	newView, err := BuildVirtualOutboundMeshView(d.rm, d.serviceVipEnabled, mesh)
+	newView, err := BuildVirtualOutboundMeshView(ctx, d.rm, d.serviceVipEnabled, mesh)
 	if err != nil {
 		return err
 	}
@@ -101,39 +67,27 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string, viewModificator fun
 		return err
 	}
 
-	if err := d.createOrUpdateMeshVIPConfig(mesh, oldView, newView, globalView); err != nil {
+	if err := d.createOrUpdateMeshVIPConfig(ctx, mesh, oldView, newView, globalView); err != nil {
 		return err
 	}
-	d.resolver.SetVIPs(globalView.ToVIPMap())
 	return nil
 }
 
-func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) {
-	meshViews, globalView, err := d.fetchViews()
+func (d *VIPsAllocator) createOrUpdateVIPConfigs(ctx context.Context, mesh string) (err error) {
+	oldView, globalView, err := d.fetchView(ctx, mesh)
 	if err != nil {
 		return err
 	}
 
-	for _, mesh := range meshes {
-		oldView, ok := meshViews[mesh]
-		if !ok {
-			oldView = vips.NewEmptyVirtualOutboundView()
-		}
-		newView, err := BuildVirtualOutboundMeshView(d.rm, d.serviceVipEnabled, mesh)
-		if err != nil {
-			return err
-		}
-		if err := d.createOrUpdateMeshVIPConfig(mesh, oldView, newView, globalView); err != nil {
-			errs = multierr.Append(errs, err)
-		}
+	newView, err := BuildVirtualOutboundMeshView(ctx, d.rm, d.serviceVipEnabled, mesh)
+	if err != nil {
+		return err
 	}
-
-	d.resolver.SetVIPs(globalView.ToVIPMap())
-	return errs
+	return d.createOrUpdateMeshVIPConfig(ctx, mesh, oldView, newView, globalView)
 }
 
-func (d *VIPsAllocator) fetchViews() (map[string]*vips.VirtualOutboundMeshView, *vips.GlobalView, error) {
-	byMesh, err := d.persistence.Get()
+func (d *VIPsAllocator) fetchView(ctx context.Context, mesh string) (*vips.VirtualOutboundMeshView, *vips.GlobalView, error) {
+	meshView, err := d.persistence.GetByMesh(ctx, mesh)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -142,22 +96,20 @@ func (d *VIPsAllocator) fetchViews() (map[string]*vips.VirtualOutboundMeshView, 
 	if err != nil {
 		return nil, nil, err
 	}
-	for _, meshView := range byMesh {
-		for _, hostEntry := range meshView.HostnameEntries() {
-			if hostEntry.Type == vips.Host && net.ParseIP(hostEntry.Name) != nil {
-				continue
-			}
-			vo := meshView.Get(hostEntry)
-			err := gv.Reserve(hostEntry, vo.Address)
-			if err != nil {
-				return nil, nil, err
-			}
+	for _, hostEntry := range meshView.HostnameEntries() {
+		if hostEntry.Type == vips.Host && net.ParseIP(hostEntry.Name) != nil {
+			continue
+		}
+		vo := meshView.Get(hostEntry)
+		if err := gv.Reserve(hostEntry, vo.Address); err != nil {
+			return nil, nil, err
 		}
 	}
-	return byMesh, gv, nil
+	return meshView, gv, nil
 }
 
 func (d *VIPsAllocator) createOrUpdateMeshVIPConfig(
+	ctx context.Context,
 	mesh string,
 	oldView *vips.VirtualOutboundMeshView,
 	newView *vips.VirtualOutboundMeshView,
@@ -166,19 +118,18 @@ func (d *VIPsAllocator) createOrUpdateMeshVIPConfig(
 	if err := AllocateVIPs(globalView, newView); err != nil {
 		// Error might occur only if we run out of VIPs. There is no point to pass it through,
 		// we must notify user in logs and proceed
-		vipsAllocatorLog.Error(err, "failed to allocate new VIPs", "mesh", mesh)
+		Log.Error(err, "failed to allocate new VIPs", "mesh", mesh)
 	}
 	changes, out := oldView.Update(newView)
 	if len(changes) == 0 {
 		return nil
 	}
-	vipsAllocatorLog.Info("mesh vip changes", "mesh", mesh, "changes", changes)
-	return d.persistence.Set(mesh, out)
+	Log.Info("mesh vip changes", "mesh", mesh, "changes", changes)
+	return d.persistence.Set(ctx, mesh, out)
 }
 
-func BuildVirtualOutboundMeshView(rm manager.ReadOnlyResourceManager, serviceVipEnabled bool, mesh string) (*vips.VirtualOutboundMeshView, error) {
+func BuildVirtualOutboundMeshView(ctx context.Context, rm manager.ReadOnlyResourceManager, serviceVipEnabled bool, mesh string) (*vips.VirtualOutboundMeshView, error) {
 	outboundSet := vips.NewEmptyVirtualOutboundView()
-	ctx := context.Background()
 
 	virtualOutbounds := core_mesh.VirtualOutboundResourceList{}
 	if err := rm.List(ctx, &virtualOutbounds, store.ListByMesh(mesh)); err != nil {
@@ -259,7 +210,7 @@ func AllocateVIPs(global *vips.GlobalView, voView *vips.VirtualOutboundMeshView)
 
 func addFromVirtualOutbound(outboundSet *vips.VirtualOutboundMeshView, vob *core_mesh.VirtualOutboundResource, tags map[string]string, resourceType model.ResourceType, resourceName string) {
 	host, err := vob.EvalHost(tags)
-	l := vipsAllocatorLog.WithValues("mesh", vob.Meta.GetMesh(), "virtualOutboundName", vob.Meta.GetName(), "type", resourceType, "name", resourceName, "tags", tags)
+	l := Log.WithValues("mesh", vob.Meta.GetMesh(), "virtualOutboundName", vob.Meta.GetName(), "type", resourceType, "name", resourceName, "tags", tags)
 	if err != nil {
 		l.Info("Failed evaluating host template", "reason", err.Error())
 		return

@@ -67,17 +67,6 @@ func (vo *VirtualOutboundMeshView) HostnameEntries() []HostnameEntry {
 	return keys
 }
 
-func ToVIPMap(voByMesh map[string]*VirtualOutboundMeshView) map[HostnameEntry]string {
-	vipList := map[HostnameEntry]string{}
-	for _, voView := range voByMesh {
-		for _, v := range voView.HostnameEntries() {
-			vo := voView.Get(v)
-			vipList[v] = vo.Address
-		}
-	}
-	return vipList
-}
-
 // Update merges `new` and `vo` in a new `out` and returns a list of changes.
 func (vo *VirtualOutboundMeshView) Update(new *VirtualOutboundMeshView) (changes []Change, out *VirtualOutboundMeshView) {
 	changes = []Change{}
