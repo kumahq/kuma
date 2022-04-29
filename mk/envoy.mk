@@ -9,7 +9,12 @@ ENVOY_VERSION = $(shell ${KUMA_DIR}/tools/envoy/version.sh ${ENVOY_TAG})
 ifeq ($(GOOS),linux)
 	ENVOY_DISTRO ?= alpine
 endif
-ENVOY_DISTRO ?= ${GOOS}
+ENVOY_DISTRO ?= $(GOOS)
+
+ifeq ($(ENVOY_DISTRO),centos)
+	BUILD_ENVOY_SCRIPT = $(KUMA_DIR)/tools/envoy/build_centos.sh
+endif
+BUILD_ENVOY_SCRIPT ?= $(KUMA_DIR)/tools/envoy/build_$(GOOS).sh
 
 SOURCE_DIR ?= ${TMPDIR}envoy-sources
 ifndef TMPDIR
@@ -43,7 +48,7 @@ ifeq ($(BUILD_ENVOY_FROM_SOURCES),true)
 	SOURCE_DIR=${SOURCE_DIR} \
 	KUMA_DIR=${KUMA_DIR} \
 	BAZEL_BUILD_EXTRA_OPTIONS=${BAZEL_BUILD_EXTRA_OPTIONS} \
-	BINARY_PATH=$@ ${KUMA_DIR}/tools/envoy/build_${ENVOY_DISTRO}.sh
+	BINARY_PATH=$@ $(BUILD_ENVOY_SCRIPT)
 else
 	ENVOY_VERSION=${ENVOY_VERSION} \
 	ENVOY_DISTRO=${ENVOY_DISTRO} \
