@@ -77,7 +77,7 @@ There's a large set of integration tests that can be run with:
 make test/e2e
 ```
 
-These tests are big and slow, it is recommended to read [e2e-test-tips](docs/guideds/e2e-test-tips.md) before running them.
+These tests are big and slow, it is recommended to read [e2e-test-tips](docs/guides/e2e-test-tips.md) before running them.
 
 ## Building
 
