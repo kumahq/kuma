@@ -12,7 +12,8 @@ for any tools/libraries that you may be missing.
 ### Command line tool
 
 - [`curl`](https://curl.haxx.se/)  
-- [`git`](https://git-scm.com/) 
+- [`git`](https://git-scm.com/)
+- [`unzip`](http://infozip.sourceforge.net/UnZip.html)
 - [`make`](https://www.gnu.org/software/make/)
 - [`go`](https://golang.org/)
 - [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) # normally included in
