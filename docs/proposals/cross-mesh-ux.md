@@ -6,7 +6,7 @@ This proposal allows the operators of one `Mesh` to expose services to other `Me
 via `MeshGateway`, the same interface for exposing to external traffic.
 
 The proposal addresses UX both for _exposing_ and the _consuming_
-meshes and only HTTP/S services.
+meshes and only HTTP/S services. TCP will be addressed in a later proposal.
 
 ## Design
 
@@ -107,7 +107,7 @@ rules:
   action: allow
   sources:
   - mesh:
-      name: consume
+      name: consume # or '*' for any mesh
       tags:
         kuma.io/service: client
 ```
