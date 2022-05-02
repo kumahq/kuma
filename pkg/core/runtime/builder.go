@@ -20,7 +20,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/events"
@@ -40,7 +39,6 @@ type BuilderContext interface {
 	Config() kuma_cp.Config
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
-	DNSResolver() resolver.DNSResolver
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	Metrics() metrics.Metrics
@@ -69,7 +67,6 @@ type Builder struct {
 	cam            core_ca.Managers
 	dsl            datasource.Loader
 	ext            context.Context
-	dns            resolver.DNSResolver
 	configm        config_manager.ConfigManager
 	leadInfo       component.LeaderInfo
 	lif            lookup.LookupIPFunc
@@ -159,11 +156,6 @@ func (b *Builder) WithExtensions(ext context.Context) *Builder {
 
 func (b *Builder) WithExtension(key interface{}, value interface{}) *Builder {
 	b.ext = context.WithValue(b.ext, key, value)
-	return b
-}
-
-func (b *Builder) WithDNSResolver(dns resolver.DNSResolver) *Builder {
-	b.dns = dns
 	return b
 }
 
@@ -261,9 +253,6 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.ext == nil {
 		return nil, errors.Errorf("Extensions have been misconfigured")
 	}
-	if b.dns == nil {
-		return nil, errors.Errorf("DNS has been misconfigured")
-	}
 	if b.leadInfo == nil {
 		return nil, errors.Errorf("LeaderInfo has not been configured")
 	}
@@ -314,7 +303,6 @@ func (b *Builder) Build() (Runtime, error) {
 			cam:            b.cam,
 			dsl:            b.dsl,
 			ext:            b.ext,
-			dns:            b.dns,
 			configm:        b.configm,
 			leadInfo:       b.leadInfo,
 			lif:            b.lif,
@@ -365,9 +353,6 @@ func (b *Builder) DataSourceLoader() datasource.Loader {
 }
 func (b *Builder) Extensions() context.Context {
 	return b.ext
-}
-func (b *Builder) DNSResolver() resolver.DNSResolver {
-	return b.dns
 }
 func (b *Builder) ConfigManager() config_manager.ConfigManager {
 	return b.configm

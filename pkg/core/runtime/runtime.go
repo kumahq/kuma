@@ -19,7 +19,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
@@ -56,7 +55,6 @@ type RuntimeContext interface {
 	ConfigStore() core_store.ResourceStore
 	CaManagers() ca.Managers
 	Extensions() context.Context
-	DNSResolver() resolver.DNSResolver
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	LookupIP() lookup.LookupIPFunc
@@ -140,7 +138,6 @@ type runtimeContext struct {
 	cam            ca.Managers
 	dsl            datasource.Loader
 	ext            context.Context
-	dns            resolver.DNSResolver
 	configm        config_manager.ConfigManager
 	leadInfo       component.LeaderInfo
 	lif            lookup.LookupIPFunc
@@ -201,10 +198,6 @@ func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourc
 
 func (rc *runtimeContext) Extensions() context.Context {
 	return rc.ext
-}
-
-func (rc *runtimeContext) DNSResolver() resolver.DNSResolver {
-	return rc.dns
 }
 
 func (rc *runtimeContext) ConfigManager() config_manager.ConfigManager {

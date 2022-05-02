@@ -5,6 +5,7 @@ resources:
     address:
       socketAddress:
         portValue: 9000
+    enableReusePort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager

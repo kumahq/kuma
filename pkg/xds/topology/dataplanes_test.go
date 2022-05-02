@@ -33,7 +33,7 @@ var _ = Describe("Resolve Dataplane address", func() {
 		if s == "advertise-2.example.com" {
 			return []net.IP{net.ParseIP("192.0.2.2")}, nil
 		}
-		return nil, errors.New("can't resolve host name")
+		return nil, errors.Errorf("can't resolve hostname: %s", s)
 	}
 
 	Context("ResolveAddress", func() {

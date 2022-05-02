@@ -36,7 +36,6 @@ import (
 	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/envoy/admin/access"
@@ -83,7 +82,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	}))
 
 	initializeConfigManager(builder)
-	initializeDNSResolver(cfg, builder)
 
 	builder.WithResourceValidators(core_runtime.ResourceValidators{
 		Dataplane: dataplane.NewMembershipValidator(),
@@ -443,10 +441,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		builder.WithReadOnlyResourceManager(customizableManager)
 	}
 	return nil
-}
-
-func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) {
-	builder.WithDNSResolver(resolver.NewDNSResolver(cfg.DNSServer.Domain))
 }
 
 func initializeConfigManager(builder *core_runtime.Builder) {

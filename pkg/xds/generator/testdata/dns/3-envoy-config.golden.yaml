@@ -7,6 +7,7 @@ resources:
         address: 127.0.0.1
         portValue: 53001
         protocol: UDP
+    enableReusePort: true
     listenerFilters:
     - name: envoy.filters.udp.dns_filter
       typedConfig:
@@ -45,5 +46,4 @@ resources:
               name: httpbin.mesh
         statPrefix: kuma_dns
     name: kuma:dns
-    reusePort: true
     trafficDirection: INBOUND

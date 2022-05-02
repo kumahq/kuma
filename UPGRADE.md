@@ -8,6 +8,8 @@ does not have any particular instructions.
 
 ## Upcoming release
 
+The `control-plane` no longer hosts a builtin DNS server. You should always rely on the embedded DNS in the dataplane proxy and VIPs can't be used without transparent proxy.
+
 ## Upgrade to `1.6.x`
 
 ### Helm

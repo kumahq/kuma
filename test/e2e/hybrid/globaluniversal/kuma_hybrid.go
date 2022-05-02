@@ -27,7 +27,7 @@ mtls:
 `, mesh)
 }
 
-var global, zone1, zone2, zone3, zone4 Cluster
+var global, zone1, zone2, zone3 Cluster
 
 const nonDefaultMesh = "non-default"
 const defaultMesh = "default"
@@ -63,11 +63,9 @@ var _ = E2EBeforeSuite(func() {
 			WithIngress(),
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithCNI(),
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false"), // check if old resolving still works
 		)).
-		Install(KumaDNS()).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).
-		Install(DemoClientK8s(nonDefaultMesh)).
+		Install(DemoClientK8s(nonDefaultMesh, TestNamespace)).
 		Setup(zone1)).To(Succeed())
 
 	E2EDeferCleanup(func() {
@@ -83,12 +81,10 @@ var _ = E2EBeforeSuite(func() {
 		Install(Kuma(core.Zone,
 			WithIngress(),
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false"),
 		)).
-		Install(KumaDNS()).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).
 		Install(testserver.Install(testserver.WithMesh(nonDefaultMesh), testserver.WithServiceAccount("sa-test"))).
-		Install(DemoClientK8s(nonDefaultMesh)).
+		Install(DemoClientK8s(nonDefaultMesh, TestNamespace)).
 		Setup(zone2)).To(Succeed())
 
 	E2EDeferCleanup(func() {
@@ -105,21 +101,11 @@ var _ = E2EBeforeSuite(func() {
 			WithArgs([]string{"echo", "--instance", "echo-v1"}),
 			WithServiceName("test-server"),
 		)).
-		Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, WithTransparentProxy(true), WithBuiltinDNS(false))).
+		Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, WithTransparentProxy(true))).
 		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
 		Setup(zone3)).To(Succeed())
 
 	E2EDeferCleanup(zone3.DismissCluster)
-
-	// Universal Cluster 4
-	zone4 = universalClusters.GetCluster(Kuma4)
-	Expect(NewClusterSetup().
-		Install(Kuma(core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-		Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, WithTransparentProxy(true))).
-		Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
-		Setup(zone4)).To(Succeed())
-
-	E2EDeferCleanup(zone4.DismissCluster)
 })
 
 func KubernetesUniversalDeployment() {
@@ -131,7 +117,7 @@ func KubernetesUniversalDeployment() {
 			}
 
 			re := regexp.MustCompile(`Online`)
-			if len(re.FindAllString(output, -1)) != 4 {
+			if len(re.FindAllString(output, -1)) != 3 {
 				return errors.New("not all zone-ingresses are online")
 			}
 			return nil
@@ -144,7 +130,7 @@ func KubernetesUniversalDeployment() {
 			}
 
 			re := regexp.MustCompile(`Online`)
-			if len(re.FindAllString(output, -1)) != 6 {
+			if len(re.FindAllString(output, -1)) != 5 {
 				return errors.New("not all dataplanes are online")
 			}
 			return nil
@@ -199,7 +185,7 @@ func KubernetesUniversalDeployment() {
 
 		// Zone 4
 		// universal access remote universal service
-		stdout, _, err = zone4.ExecWithRetries("", "", "demo-client",
+		stdout, _, err = zone3.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "test-server.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))

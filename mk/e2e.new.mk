@@ -29,6 +29,7 @@ ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)
 KUBE_E2E_PKG_LIST ?= ./test/e2e_env/kubernetes
 UNIVERSAL_E2E_PKG_LIST ?= ./test/e2e_env/universal
+MULTIZONE_E2E_PKG_LIST ?= ./test/e2e_env/multizone
 GINKGO_E2E_FLAGS ?=
 
 ifdef GINKGO_TEST_RESULTS_DIR
@@ -149,3 +150,9 @@ test/e2e-kubernetes: $(E2E_DEPS_TARGETS)
 .PHONY: test/e2e-universal
 test/e2e-universal: build/kumactl images/test k3d/network/create
 	$(MAKE) GINKGO_E2E_FLAGS=-p E2E_PKG_LIST=$(UNIVERSAL_E2E_PKG_LIST) test/e2e/test
+
+.PHONY: test/e2e-multizone
+test/e2e-multizone: $(E2E_DEPS_TARGETS)
+	$(MAKE) test/e2e/k8s/start
+	$(MAKE) GINKGO_E2E_FLAGS=-p E2E_PKG_LIST=$(MULTIZONE_E2E_PKG_LIST) test/e2e/test || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
+	$(MAKE) test/e2e/k8s/stop

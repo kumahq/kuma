@@ -191,10 +191,6 @@ func (c *UniversalCluster) DeleteKuma() error {
 	return err
 }
 
-func (c *UniversalCluster) InjectDNS(namespace ...string) error {
-	return nil
-}
-
 func (c *UniversalCluster) GetKumactlOptions() *KumactlOptions {
 	return c.controlplane.kumactl
 }
@@ -392,7 +388,7 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 	_, err := retry.DoWithRetryE(
 		c.t,
 		fmt.Sprintf("Trying %s", strings.Join(cmd, " ")),
-		c.defaultRetries/3,
+		c.defaultRetries,
 		c.defaultTimeout,
 		func() (string, error) {
 			app, ok := c.apps[appname]

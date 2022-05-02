@@ -3,20 +3,17 @@ package main
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	"go/format"
 	"html/template"
 	"log"
 	"os"
 	"sort"
-	"strings"
 
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
-	"github.com/kumahq/kuma/api/mesh"
 	_ "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
 // CustomResourceTemplate for creating a Kubernetes CRD to wrap a Kuma resource.
@@ -319,113 +316,13 @@ func init() {
 {{end}}
 `))
 
-// KumaResourceForMessage fetches the Kuma resource option out of a message.
-func KumaResourceForMessage(m protoreflect.MessageType) *mesh.KumaResourceOptions {
-	ext := proto.GetExtension(m.Descriptor().Options(), mesh.E_Resource)
-	var resOption *mesh.KumaResourceOptions
-	if r, ok := ext.(*mesh.KumaResourceOptions); ok {
-		resOption = r
-	}
-
-	return resOption
-}
-
-// SelectorsForMessage finds all the top-level fields in the message are
-// repeated selectors. We want to generate convenience accessors for these.
-func SelectorsForMessage(m protoreflect.MessageDescriptor) []string {
-	var selectors []string
-	fields := m.Fields()
-
-	for i := 0; i < fields.Len(); i++ {
-		field := fields.Get(i)
-		m := field.Message()
-		if m != nil && m.FullName() == "kuma.mesh.v1alpha1.Selector" {
-			fieldName := string(field.Name())
-			selectors = append(selectors, strings.Title(fieldName))
-		}
-	}
-
-	return selectors
-}
-
-type ResourceInfo struct {
-	ResourceName           string
-	ResourceType           string
-	ProtoType              string
-	Selectors              []string
-	SkipRegistration       bool
-	SkipValidation         bool
-	SkipKubernetesWrappers bool
-	ScopeNamespace         bool
-	Global                 bool
-	KumactlSingular        string
-	KumactlPlural          string
-	WsReadOnly             bool
-	WsAdminOnly            bool
-	WsPath                 string
-	KdsDirection           string
-	AllowToInspect         bool
-}
-
-func ToResourceInfo(m protoreflect.MessageType) ResourceInfo {
-	r := KumaResourceForMessage(m)
-
-	out := ResourceInfo{
-		ResourceType:           r.Type,
-		ResourceName:           r.Name,
-		ProtoType:              string(m.Descriptor().Name()),
-		Selectors:              SelectorsForMessage(m.Descriptor()),
-		SkipRegistration:       r.SkipRegistration,
-		SkipKubernetesWrappers: r.SkipKubernetesWrappers,
-		SkipValidation:         r.SkipValidation,
-		Global:                 r.Global,
-		ScopeNamespace:         r.ScopeNamespace,
-		AllowToInspect:         r.AllowToInspect,
-	}
-	if r.Ws != nil {
-		pluralResourceName := r.Ws.Plural
-		if pluralResourceName == "" {
-			pluralResourceName = r.Ws.Name + "s"
-		}
-		out.WsReadOnly = r.Ws.ReadOnly
-		out.WsAdminOnly = r.Ws.AdminOnly
-		out.WsPath = pluralResourceName
-		if !r.Ws.ReadOnly {
-			out.KumactlSingular = r.Ws.Name
-			out.KumactlPlural = pluralResourceName
-			// Keep the typo to preserve backward compatibility
-			if out.KumactlSingular == "health-check" {
-				out.KumactlSingular = "healthcheck"
-				out.KumactlPlural = "healthchecks"
-			}
-		}
-	}
-	switch {
-	case r.Kds == nil || (!r.Kds.SendToZone && !r.Kds.SendToGlobal):
-		out.KdsDirection = ""
-	case r.Kds.SendToGlobal && r.Kds.SendToZone:
-		out.KdsDirection = "model.FromZoneToGlobal | model.FromGlobalToZone"
-	case r.Kds.SendToGlobal:
-		out.KdsDirection = "model.FromZoneToGlobal"
-	case r.Kds.SendToZone:
-		out.KdsDirection = "model.FromGlobalToZone"
-	}
-
-	if p := m.Descriptor().Parent(); p != nil {
-		if _, ok := p.(protoreflect.MessageDescriptor); ok {
-			out.ProtoType = fmt.Sprintf("%s_%s", p.Name(), m.Descriptor().Name())
-		}
-	}
-	return out
-}
-
 // ProtoMessageFunc ...
 type ProtoMessageFunc func(protoreflect.MessageType) bool
 
 // OnKumaResourceMessage ...
 func OnKumaResourceMessage(pkg string, f ProtoMessageFunc) ProtoMessageFunc {
 	return func(m protoreflect.MessageType) bool {
-		r := KumaResourceForMessage(m)
+		r := KumaResourceForMessage(m.Descriptor())
 		if r == nil {
 			return true
 		}
@@ -467,7 +364,7 @@ func main() {
 
 	var resources []ResourceInfo
 	for _, t := range types {
-		resourceInfo := ToResourceInfo(t)
+		resourceInfo := ToResourceInfo(t.Descriptor())
 		resources = append(resources, resourceInfo)
 	}
 

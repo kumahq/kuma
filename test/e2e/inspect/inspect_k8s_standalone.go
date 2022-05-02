@@ -37,7 +37,7 @@ func KubernetesStandalone() {
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, WithVerbose())).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(DemoClientK8s("default")).
+			Install(DemoClientK8s("default", TestNamespace)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

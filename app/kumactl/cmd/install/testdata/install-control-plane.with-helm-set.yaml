@@ -1670,6 +1670,7 @@ spec:
         
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
+      hostNetwork: false
       containers:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
@@ -1731,8 +1732,6 @@ spec:
             - containerPort: 5682
             - containerPort: 5443
             - containerPort: 5678
-            - containerPort: 5653
-              protocol: UDP
           livenessProbe:
             httpGet:
               path: /healthy

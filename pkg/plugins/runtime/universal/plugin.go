@@ -1,9 +1,13 @@
 package universal
 
 import (
+	"context"
+	"time"
+
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/dns"
 )
 
@@ -33,10 +37,26 @@ func addDNS(rt core_runtime.Runtime) error {
 		rt.ConfigManager(),
 		rt.Config().DNSServer.ServiceVipEnabled,
 		rt.Config().DNSServer.CIDR,
-		rt.DNSResolver(),
 	)
 	if err != nil {
 		return err
 	}
-	return rt.Add(vipsAllocator)
+	return rt.Add(component.LeaderComponentFunc(func(stop <-chan struct{}) error {
+		ticker := time.NewTicker(time.Millisecond * 500)
+		defer ticker.Stop()
+
+		dns.Log.Info("starting the DNS VIPs allocator")
+		ctx := context.Background()
+		for {
+			select {
+			case <-ticker.C:
+				if err := vipsAllocator.CreateOrUpdateVIPConfigs(ctx); err != nil {
+					dns.Log.Error(err, "errors during updating VIP configs")
+				}
+			case <-stop:
+				dns.Log.Info("stopping")
+				return nil
+			}
+		}
+	}))
 }

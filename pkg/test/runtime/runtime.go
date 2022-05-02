@@ -6,6 +6,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -23,7 +25,6 @@ import (
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/events"
@@ -87,7 +88,9 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
-	builder.WithLookupIP(net.LookupIP)
+	builder.WithLookupIP(func(s string) ([]net.IP, error) {
+		return nil, errors.New("LookupIP not set, set one in your test to resolve things")
+	})
 	builder.WithEnvoyAdminClient(&DummyEnvoyAdminClient{})
 	builder.WithEventReaderFactory(events.NewEventBus())
 	builder.WithAPIManager(customization.NewAPIList())
@@ -106,7 +109,6 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	})
 
 	initializeConfigManager(builder)
-	initializeDNSResolver(builder)
 
 	return builder, nil
 }
@@ -114,10 +116,6 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 func initializeConfigManager(builder *core_runtime.Builder) {
 	configm := config_manager.NewConfigManager(builder.ResourceStore())
 	builder.WithConfigManager(configm)
-}
-
-func initializeDNSResolver(builder *core_runtime.Builder) {
-	builder.WithDNSResolver(resolver.NewDNSResolver("mesh"))
 }
 
 func newResourceManager(builder *core_runtime.Builder) core_manager.CustomizableResourceManager {

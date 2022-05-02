@@ -51,6 +51,7 @@ spec:
       nodeSelector:
         {{ toYaml . | nindent 8 }}
       {{- end }}
+      hostNetwork: {{ .Values.controlPlane.hostNetwork }}
       containers:
         - name: control-plane
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
@@ -96,9 +97,7 @@ spec:
             - containerPort: 5443
             {{- if ne .Values.controlPlane.mode "global" }}
             - containerPort: 5678
-            - containerPort: 5653
-              protocol: UDP
-          {{- end }}
+            {{- end }}
           livenessProbe:
             httpGet:
               path: /healthy

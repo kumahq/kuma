@@ -12,7 +12,8 @@ for any tools/libraries that you may be missing.
 ### Command line tool
 
 - [`curl`](https://curl.haxx.se/)  
-- [`git`](https://git-scm.com/) 
+- [`git`](https://git-scm.com/)
+- [`unzip`](http://infozip.sourceforge.net/UnZip.html)
 - [`make`](https://www.gnu.org/software/make/)
 - [`go`](https://golang.org/)
 - [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) # normally included in
@@ -77,7 +78,7 @@ There's a large set of integration tests that can be run with:
 make test/e2e
 ```
 
-These tests are big and slow, it is recommended to read [e2e-test-tips](docs/guideds/e2e-test-tips.md) before running them.
+These tests are big and slow, it is recommended to read [e2e-test-tips](docs/guides/e2e-test-tips.md) before running them.
 
 ## Building
 

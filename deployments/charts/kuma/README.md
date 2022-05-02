@@ -61,6 +61,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.extraSecrets | list | `[]` | Additional secrets to mount into the control plane |
 | controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.webhooks.ownerReference.additionalRules | string | `""` | Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma. |
+| controlPlane.hostNetwork | bool | `false` | Specifies if the deployment should be started in hostNetwork mode. |
 | controlPlane.podSecurityContext | object | `{}` | Security context at the pod level for control plane. |
 | controlPlane.containerSecurityContext | object | `{}` | Security context at the container level for control plane. |
 | cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |

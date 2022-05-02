@@ -178,16 +178,6 @@ func (cs *UniversalClusters) DeleteApp(appname string) error {
 	return nil
 }
 
-func (cs *UniversalClusters) InjectDNS(namespace ...string) error {
-	for name, c := range cs.clusters {
-		if err := c.InjectDNS(namespace...); err != nil {
-			return errors.Wrapf(err, "Injecting DNS on %s failed: %v", name, err)
-		}
-	}
-
-	return nil
-}
-
 func (cs *UniversalClusters) GetTesting() testing.TestingT {
 	return cs.t
 }

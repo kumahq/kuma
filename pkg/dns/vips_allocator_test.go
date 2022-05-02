@@ -15,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
@@ -57,7 +56,6 @@ var _ = Describe("VIP Allocator", func() {
 	var rm manager.ResourceManager
 	var cm config_manager.ConfigManager
 	var allocator *dns.VIPsAllocator
-	var r resolver.DNSResolver
 
 	NoModifications := func(view *vips.VirtualOutboundMeshView) error {
 		return nil
@@ -67,7 +65,6 @@ var _ = Describe("VIP Allocator", func() {
 		s := memory.NewStore()
 		rm = manager.NewResourceManager(s)
 		cm = config_manager.NewConfigManager(s)
-		r = resolver.NewDNSResolver("mesh")
 
 		err := rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -84,36 +81,32 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		allocator, err = dns.NewVIPsAllocator(rm, cm, true, "240.0.0.0/24", r)
+		allocator, err = dns.NewVIPsAllocator(rm, cm, true, "240.0.0.0/24")
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should create VIP config for each mesh", func() {
 		// when
-		err := allocator.CreateOrUpdateVIPConfigs()
+		ctx := context.Background()
+		err := allocator.CreateOrUpdateVIPConfigs(ctx)
 		Expect(err).ToNot(HaveOccurred())
 
 		persistence := vips.NewPersistence(rm, cm)
 
 		// then
-		vipList, err := persistence.GetByMesh("mesh-1")
+		vipList, err := persistence.GetByMesh(ctx, "mesh-1")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(vipList.HostnameEntries()).To(HaveLen(2))
 
-		vipList, err = persistence.GetByMesh("mesh-2")
+		vipList, err = persistence.GetByMesh(ctx, "mesh-2")
 		Expect(err).ToNot(HaveOccurred())
-
-		for _, service := range []string{"backend.mesh", "frontend.mesh", "web.mesh"} {
-			ip, err := r.ForwardLookupFQDN(service)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(ip).To(HavePrefix("240.0.0"))
-		}
 
 		Expect(vipList.HostnameEntries()).To(HaveLen(1))
 	})
 
 	It("should respect already allocated VIPs in case of IPAM restarts", func() {
 		// setup
+		ctx := context.Background()
 		persistence := vips.NewPersistence(rm, cm)
 		vobv, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
 			vips.NewServiceEntry("frontend"): {Address: "240.0.0.0", Outbounds: []vips.OutboundEntry{{TagSet: map[string]string{mesh_proto.ServiceTag: "frontend"}}}},
@@ -122,17 +115,17 @@ var _ = Describe("VIP Allocator", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// we add VIPs directly to the 'persistence' object
 		// that emulates situation when IPAM is fresh and doesn't aware of allocated VIPs
-		err = persistence.Set("mesh-1", vobv)
+		err = persistence.Set(ctx, "mesh-1", vobv)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = allocator.CreateOrUpdateVIPConfig("mesh-1", NoModifications)
+		err = allocator.CreateOrUpdateVIPConfig(ctx, "mesh-1", NoModifications)
 		Expect(err).ToNot(HaveOccurred())
 
-		vipList, err := persistence.GetByMesh("mesh-1")
+		vipList, err := persistence.GetByMesh(ctx, "mesh-1")
 		Expect(err).ToNot(HaveOccurred())
 		// then
 		expected, err := vips.NewVirtualOutboundView(map[vips.HostnameEntry]vips.VirtualOutbound{
@@ -149,26 +142,27 @@ var _ = Describe("VIP Allocator", func() {
 
 	It("should return error if failed to update VIP config", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24", r)
+		ctx := context.Background()
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1", NoModifications)
+		err = errAllocator.CreateOrUpdateVIPConfig(ctx, "mesh-1", NoModifications)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1", NoModifications)
+		err = errAllocator.CreateOrUpdateVIPConfig(ctx, "mesh-1", NoModifications)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("error during update, mesh = mesh-1"))
 	})
 
 	It("should try to update all meshes and return combined error", func() {
 		errConfigManager := &errConfigManager{ConfigManager: cm}
-		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24", r)
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, true, "240.0.0.0/24")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = errAllocator.CreateOrUpdateVIPConfigs()
+		err = errAllocator.CreateOrUpdateVIPConfigs(context.Background())
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
@@ -177,30 +171,31 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("payment")}, store.CreateByKey("dp-4", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = errAllocator.CreateOrUpdateVIPConfigs()
+		err = errAllocator.CreateOrUpdateVIPConfigs(context.Background())
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError("error during update, mesh = mesh-1; error during update, mesh = mesh-2"))
 	})
 
-	It("should not allocate the same VIPs for different services in multiple meshes", func() {
+	It("will allocate the same VIPs for different services in multiple meshes", func() {
+		ctx := context.Background()
 		// given VIPs in mesh-1
-		err := allocator.CreateOrUpdateVIPConfig("mesh-1", NoModifications)
+		err := allocator.CreateOrUpdateVIPConfig(ctx, "mesh-1", NoModifications)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when VIPs from other meshes are created
-		err = allocator.CreateOrUpdateVIPConfig("mesh-2", NoModifications)
+		err = allocator.CreateOrUpdateVIPConfig(ctx, "mesh-2", NoModifications)
 
 		// then the addresses should not overlap
 		Expect(err).ToNot(HaveOccurred())
 
-		mesh1View, err := vips.NewPersistence(rm, cm).GetByMesh("mesh-1")
+		mesh1View, err := vips.NewPersistence(rm, cm).GetByMesh(ctx, "mesh-1")
 		Expect(err).ToNot(HaveOccurred())
-		mesh2View, err := vips.NewPersistence(rm, cm).GetByMesh("mesh-2")
+		mesh2View, err := vips.NewPersistence(rm, cm).GetByMesh(ctx, "mesh-2")
 		Expect(err).ToNot(HaveOccurred())
 
 		mesh1Address := mesh1View.Get(mesh1View.HostnameEntries()[0]).Address
 		mesh2Address := mesh2View.Get(mesh2View.HostnameEntries()[0]).Address
-		Expect(mesh1Address).ToNot(Equal(mesh2Address))
+		Expect(mesh1Address).To(Equal(mesh2Address))
 	})
 })
 
@@ -218,16 +213,17 @@ var _ = DescribeTable("outboundView",
 		rm := manager.NewResourceManager(memory.NewStore())
 		meshes := map[string]bool{}
 
+		ctx := context.Background()
 		for k, res := range tc.givenResources {
 			if exists := meshes[k.Mesh]; !exists {
-				Expect(rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateBy(model.WithoutMesh(k.Mesh)))).ToNot(HaveOccurred())
+				Expect(rm.Create(ctx, mesh.NewMeshResource(), store.CreateBy(model.WithoutMesh(k.Mesh)))).ToNot(HaveOccurred())
 				meshes[k.Mesh] = true
 			}
-			Expect(rm.Create(context.Background(), res, store.CreateBy(k))).ToNot(HaveOccurred())
+			Expect(rm.Create(ctx, res, store.CreateBy(k))).ToNot(HaveOccurred())
 		}
 
 		// When
-		serviceSet, err := dns.BuildVirtualOutboundMeshView(rm, !tc.whenSkipServiceVips, tc.whenMesh)
+		serviceSet, err := dns.BuildVirtualOutboundMeshView(ctx, rm, !tc.whenSkipServiceVips, tc.whenMesh)
 
 		// Then
 		Expect(err).ToNot(HaveOccurred())

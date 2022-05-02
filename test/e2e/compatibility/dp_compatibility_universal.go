@@ -19,9 +19,9 @@ func UniversalCompatibility() {
 			Install(Kuma(core.Standalone)).
 			Install(TestServerUniversal("test-server", "default",
 				WithArgs([]string{"echo", "--instance", "universal1"}),
-				WithDPVersion("1.1.6"))).
+				WithDPVersion("1.5.0"))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default",
-				WithDPVersion("1.1.6"),
+				WithDPVersion("1.5.0"),
 				WithTransparentProxy(true)),
 			).
 			Setup(cluster)

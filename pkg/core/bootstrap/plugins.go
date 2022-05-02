@@ -10,6 +10,7 @@ import (
 	_ "github.com/kumahq/kuma/pkg/plugins/ca/provided"
 	_ "github.com/kumahq/kuma/pkg/plugins/config/k8s"
 	_ "github.com/kumahq/kuma/pkg/plugins/config/universal"
+	_ "github.com/kumahq/kuma/pkg/plugins/policies"
 	_ "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	_ "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	_ "github.com/kumahq/kuma/pkg/plugins/resources/postgres"

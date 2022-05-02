@@ -46,7 +46,8 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		return kube_ctrl.Result{}, nil
 	}
 
-	r.Log.V(1).Info("updating VIPs", "mesh", mesh)
+	l := r.Log.WithValues("mesh", mesh)
+	l.Info("updating VIPs")
 
 	viewModificator := func(view *vips.VirtualOutboundMeshView) error {
 		return nil
@@ -70,15 +71,15 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		}
 	}
 
-	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh, viewModificator); err != nil {
+	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(ctx, mesh, viewModificator); err != nil {
 		if store.IsResourceConflict(err) {
-			r.Log.V(1).Info("VIPs were updated in the other place. Retrying")
+			l.Info("VIPs were updated somewhere else. Retrying")
 			return kube_ctrl.Result{Requeue: true}, nil
 		}
 		return kube_ctrl.Result{}, err
 	}
 
-	r.Log.V(1).Info("VIPs updated", "mesh", mesh)
+	l.Info("VIPs updated")
 
 	return kube_ctrl.Result{}, nil
 }

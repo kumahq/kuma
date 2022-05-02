@@ -33,6 +33,18 @@ func (f ComponentFunc) Start(stop <-chan struct{}) error {
 	return f(stop)
 }
 
+var _ Component = LeaderComponentFunc(nil)
+
+type LeaderComponentFunc func(<-chan struct{}) error
+
+func (f LeaderComponentFunc) NeedLeaderElection() bool {
+	return true
+}
+
+func (f LeaderComponentFunc) Start(stop <-chan struct{}) error {
+	return f(stop)
+}
+
 type Manager interface {
 
 	// Add registers a component, i.e. gRPC Server, HTTP server, reconciliation loop.
