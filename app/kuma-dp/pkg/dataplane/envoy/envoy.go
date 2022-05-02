@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os/exec"
 	"regexp"
 	"runtime"
@@ -40,6 +41,7 @@ type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params Boot
 type Opts struct {
 	Config          kuma_dp.Config
 	BootstrapConfig []byte
+	AdminPort       uint32
 	Dataplane       *rest.Resource
 	Stdout          io.Writer
 	Stderr          io.Writer
@@ -154,6 +156,18 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 
 		return err
 	}
+}
+
+func (e *Envoy) DrainConnections() error {
+	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/healthcheck/fail", e.opts.AdminPort), "", nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return errors.Errorf("expected 200 status code, got %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func GetEnvoyVersion(binaryPath string) (*EnvoyVersion, error) {

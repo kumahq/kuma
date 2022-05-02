@@ -565,5 +565,21 @@ var _ = Describe("Injector", func() {
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
+		Entry("28. sidecar with specified drain time", testCase{
+			num: "29",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
 	)
 })

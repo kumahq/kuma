@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -155,14 +156,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			shouldQuit := make(chan struct{})
-			ctx := opts.SetupSignalHandler()
-			go func() {
-				<-ctx.Done()
-				runLog.Info("Kuma DP caught an exit signal")
-				if shouldQuit != nil {
-					close(shouldQuit)
-				}
-			}()
+			gracefulCtx, ctx := opts.SetupSignalHandler()
 			components := []component.Component{
 				accesslogs.NewAccessLogServer(cfg.Dataplane),
 			}
@@ -228,6 +222,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 
 			opts.BootstrapConfig = bootstrapBytes
+			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 
 			dataplane, err := envoy.New(opts)
 			if err != nil {
@@ -242,6 +237,24 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
+
+			go func() {
+				<-gracefulCtx.Done()
+				runLog.Info("Kuma DP caught an exit signal. Draining Envoy connections")
+				if err := dataplane.DrainConnections(); err != nil {
+					runLog.Error(err, "could not drain connections")
+				} else {
+					runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
+					select {
+					case <-time.After(cfg.Dataplane.DrainTime):
+					case <-ctx.Done():
+					}
+				}
+				runLog.Info("stopping all Kuma DP components")
+				if shouldQuit != nil {
+					close(shouldQuit)
+				}
+			}()
 
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
 			if err := rootCtx.ComponentManager.Start(shouldQuit); err != nil {
@@ -258,6 +271,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	_ = cmd.PersistentFlags().MarkDeprecated("admin-port", kumadp.DeprecateAdminPortMsg)
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.ProxyType, "proxy-type", "dataplane", `type of the Dataplane ("dataplane", "ingress")`)
+	cmd.PersistentFlags().DurationVar(&cfg.Dataplane.DrainTime, "drain-time", cfg.Dataplane.DrainTime, `drain time for Envoy connections on Kuma DP shutdown`)
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane Dataplane Server. Example: https://localhost:5678")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCertFile, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")

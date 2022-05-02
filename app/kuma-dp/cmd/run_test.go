@@ -30,8 +30,8 @@ var _ = Describe("run", func() {
 	var cancel func()
 	var ctx context.Context
 	opts := kuma_cmd.RunCmdOpts{
-		SetupSignalHandler: func() context.Context {
-			return ctx
+		SetupSignalHandler: func() (context.Context, context.Context) {
+			return ctx, ctx
 		},
 	}
 

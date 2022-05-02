@@ -40,8 +40,8 @@ func RunSmokeTest(factory ConfigFactory, workdir string) {
 		var ctx context.Context
 		var cancel func()
 		var opts = kuma_cmd.RunCmdOpts{
-			SetupSignalHandler: func() context.Context {
-				return ctx
+			SetupSignalHandler: func() (context.Context, context.Context) {
+				return ctx, ctx
 			},
 		}
 

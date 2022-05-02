@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
 	healthcheck "github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
 	. "github.com/kumahq/kuma/test/framework"
@@ -57,4 +58,5 @@ var _ = SynchronizedBeforeSuite(
 )
 
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
+var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
