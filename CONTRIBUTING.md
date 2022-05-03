@@ -91,9 +91,15 @@ to verify a few things:
 - Rebase your work on top of the base branch (seek help online on how to use
   `git rebase`; this is important to ensure your commit history is clean and
   linear)
-- The tests are passing: run `make test`, `make test/kuma-cp`,
+- The code formatting and the files are generated is good: `make check` will help.
+- The tests are passing: `make test`, `make test/kuma-cp`,
   `make test/kuma-dp`, or whichever make target under `test/` is appropriate
   for your change
+- If your PR are open and some tests are failing due to outdated golden files
+  or formatted and generated files are incorrect a maintainer can fix it by adding a
+  comment `/format` or `/golden_files`.
+- If you are introducing a change which requires specific attention when
+  upgrading update UPGRADE.md
 - Do not update CHANGELOG.md yourself. Your change will be included there in
   due time if it is accepted, no worries!
 

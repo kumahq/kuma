@@ -30,18 +30,17 @@ golangci-lint: ## Dev: Runs golangci-lint linter
 helm-lint:
 	for c in ./deployments/charts/*; do \
   		if [ -d $$c ]; then \
-			helm lint $$c; \
+			helm lint --strict $$c; \
 		fi \
 	done
-
-.PHONY: helm-docs
-helm-docs: ## Dev: Runs helm-docs generator
-	$(HELM_DOCS_PATH) -s="file" --chart-search-root=./deployments/charts
 
 .PHONY: ginkgo/unfocus
 ginkgo/unfocus:
 	$(GOPATH_BIN_DIR)/ginkgo unfocus
 
+.PHONY: format
+format: fmt generate docs tidy ginkgo/unfocus
+
 .PHONY: check
-check: generate fmt docs helm-lint golangci-lint shellcheck tidy helm-docs ginkgo/unfocus ## Dev: Run code checks (go fmt, go vet, ...)
+check: format helm-lint golangci-lint shellcheck ## Dev: Run code checks (go fmt, go vet, ...)
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
