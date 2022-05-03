@@ -5,7 +5,6 @@ on:
 env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   pr_comments:
@@ -13,15 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
+        env:
+	  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - id: get-branch
         run: echo ::set-output name=branch::$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')
         env:
           REPO: ${{ github.repository }}
           PR_NO: ${{ github.event.issue.number }}
+	  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
           ref: ${{ steps.get-branch.outputs.branch }}
+        env:
+	  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-go@v3
         with:
           go-version: 1.18
@@ -45,6 +49,8 @@ jobs:
         run: |
           make test UPDATE_GOLDEN_FILES=true
       - name: commit and push fixes
+        env:
+	  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if git diff --exit-code --stat; then
             echo "No change detected, skipping git push"
@@ -55,3 +61,5 @@ jobs:
             git push
           fi
       - run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
+        env:
+	  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
