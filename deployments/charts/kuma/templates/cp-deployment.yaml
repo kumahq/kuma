@@ -1,11 +1,19 @@
-{{ $kdsGlobalServerTLSSecretName := .Values.controlPlane.tls.kdsGlobalServer.secretName }}
-{{ if and .Values.controlPlane.kdsGlobalServerTLSSecret.enabled (eq $kdsGlobalServerTLSSecretName "") }}
-{{ $kdsGlobalServerTLSSecretName = print (include "kuma.name" .) "-kds-global-server-tls" }}
+{{ $kdsGlobalServerTLSSecretName := "" }}
+{{ if eq .Values.controlPlane.mode "global" }}
+  {{ $kdsGlobalServerTLSSecretName = .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+  {{ if and .Values.controlPlane.tls.kdsGlobalServer.create (not $kdsGlobalServerTLSSecretName) }}
+    {{ $kdsGlobalServerTLSSecretName = print (include "kuma.name" .) "-kds-global-server-tls" }}
+  {{ end }}
 {{ end }}
-{{ $kdsZoneClientTLSSecretName := .Values.controlPlane.tls.kdsZoneClient.secretName }}
-{{ if and .Values.controlPlane.kdsZoneClientTLSSecret.enabled (eq $kdsZoneClientTLSSecretName "") }}
-{{ $kdsZoneClientTLSSecretName = print (include "kuma.name" .) "-kds-zone-client-tls" }}
+
+{{ $kdsZoneClientTLSSecretName := "" }}
+{{ if eq .Values.controlPlane.mode "zone" }}
+  {{ $kdsZoneClientTLSSecretName = .Values.controlPlane.tls.kdsZoneClient.secretName }}
+  {{ if and .Values.controlPlane.tls.kdsZoneClient.create (not $kdsZoneClientTLSSecretName) }}
+    {{ $kdsZoneClientTLSSecretName = print (include "kuma.name" .) "-kds-zone-client-tls" }}
+  {{ end }}
 {{ end }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:

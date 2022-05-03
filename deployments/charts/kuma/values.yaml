@@ -183,30 +183,32 @@ controlPlane:
       secretName: ""
       # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
       clientCertsSecretName: ""
+    # - if not creating the global control plane, then do nothing
+    # - if secretName is empty and create is false, then do nothing
+    # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
+    # - if secretName is empty and create is true, then create a secret with a default name and use it
+    # - if secretName is non-empty and create is true, then create the secret using the provided name
     kdsGlobalServer:
-      # -- Secret that contains tls.crt, tls.key for protecting cross cluster communication
-      # If kdsGlobalServerTLSSecret is enabled, the generated secret's name
-      # will be used by default, and this would override it.
+      # -- Name of the K8s TLS Secret resource.
       secretName: ""
+      # -- Whether or not to create the TLS secret in helm.
+      create: false
+      # -- The TLS certificate to offer.
+      cert: ""
+      # -- The TLS key to use.
+      key: ""
+    # - if not creating the zonal control plane, then do nothing
+    # - if secretName is empty and create is false, then do nothing
+    # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
+    # - if secretName is empty and create is true, then create a secret with a default name and use it
+    # - if secretName is non-empty and create is true, then create the secret using the provided name
     kdsZoneClient:
-      # -- Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
-      # If kdsZoneClientTLSSecret is enabled, the generated secret's name will
-      # be used by default, and this would override it.
+      # -- Name of the K8s TLS Secret resource.
       secretName: ""
-
-  kdsGlobalServerTLSSecret:
-    # -- Whether or not to create the global server secret. Leave set to false if you created the secret manually.
-    enabled: false
-    # -- The TLS certificate to offer
-    cert: ""
-    # -- The TLS key to use
-    key: ""
-
-  kdsZoneClientTLSSecret:
-    # -- Whether or not to create the zone client secret. Leave set to false if you created the secret manually.
-    enabled: false
-    # -- The TLS certificate to expect
-    cert: ""
+      # -- Whether or not to create the TLS secret in helm.
+      create: false
+      # -- The TLS certificate to expect.
+      cert: ""
 
   image:
     # -- Kuma CP ImagePullPolicy
