@@ -1,4 +1,5 @@
 .PHONY: docs
+docs: DESTDIR ?= docs/generated
 docs: helm-docs ## Dev: Generate local documentation
 	rm -rf $(DESTDIR)
 	@$(MAKE) docs/install/markdown DESTDIR=$(DESTDIR)/cmd
