@@ -12,8 +12,7 @@ reusable:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
 
   snippets:
-    # on tags and branches master or release-*
-    work_branch_or_tags_workflow_filter: &work_branch_workflow_filter
+    work_branch_or_tags_workflow_filter: &work_branch_or_tags_workflow_filter
       filters:
         branches:
           only:
@@ -396,10 +395,10 @@ workflows:
     jobs:
       - dev_mac:
           # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
+          <<: *work_branch_or_tags_workflow_filter
       - dev_ubuntu:
           # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
+          <<: *work_branch_or_tags_workflow_filter
       - go_cache
       - check:
           requires:
@@ -437,7 +436,7 @@ workflows:
             - check
           parallelism: 1
       - e2e:
-          <<: *work_branch_workflow_filter
+          <<: *work_branch_or_tags_workflow_filter
           name: e2e-universal-ipv6
           target: test/e2e-universal
           ipv6: true
@@ -447,7 +446,7 @@ workflows:
           parallelism: 1
       - e2e:
           # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
+          <<: *work_branch_or_tags_workflow_filter
           name: e2e-env
           matrix:
             parameters:
@@ -460,7 +459,7 @@ workflows:
           parallelism: 1
       - e2e:
           # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
+          <<: *work_branch_or_tags_workflow_filter
           name: test/e2e-ipv6
           requires:
             - build
@@ -469,7 +468,7 @@ workflows:
           ipv6: true
       - e2e:
           # Avoids running expensive workflow on PRs
-          <<: *work_branch_workflow_filter
+          <<: *work_branch_or_tags_workflow_filter
           name: test/e2e-ipv4-oldk8s
           k3sVersion: v1.19.16-k3s1
           requires:
@@ -477,7 +476,7 @@ workflows:
             - check
       - release:
           # Don't publish artifacts for PRs
-          <<: *work_branch_workflow_filter
+          <<: *work_branch_or_tags_workflow_filter
           requires:
             - dev_mac
             - dev_ubuntu
