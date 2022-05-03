@@ -101,6 +101,39 @@ app: {{ include "kuma.name" . }}-cni
 {{- end }}
 
 {{/*
+control plane labels
+*/}}
+{{- define "kuma.cpLabels" -}}
+app: {{ include "kuma.name" . }}-control-plane
+{{ range $key, $value := $.Values.controlPlane.extraLabels }}
+{{ $key | quote }}: {{ $value | quote }}
+{{ end }}
+{{- include "kuma.labels" . }}
+{{- end }}
+
+{{/*
+ingress labels
+*/}}
+{{- define "kuma.ingressLabels" -}}
+app: {{ include "kuma.name" . }}-ingress
+{{ range $key, $value := .Values.ingress.extraLabels }}
+{{ $key | quote }}: {{ $value | quote }}
+{{ end }}
+{{- include "kuma.labels" . }}
+{{- end }}
+
+{{/*
+egress labels
+*/}}
+{{- define "kuma.egressLabels" -}}
+app: {{ include "kuma.name" . }}-egress
+{{ range $key, $value := .Values.egress.extraLabels }}
+{{ $key | quote }}: {{ $value | quote }}
+{{ end }}
+{{- include "kuma.labels" . }}
+{{- end }}
+
+{{/*
 CNI selector labels
 */}}
 {{- define "kuma.cniSelectorLabels" -}}

@@ -3,11 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "kuma.name" . }}-control-plane-config
   namespace: {{ .Release.Namespace }}
-  labels:
-  {{- include "kuma.labels" . | nindent 4 }}
-    {{ range $key, $value := .Values.controlPlane.extraLabels }}
-    {{ $key | quote }}: {{ $value | quote }}
-    {{ end }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 data:
   config.yaml: |
     # use this file to override default configuration of `kuma-cp`

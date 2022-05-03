@@ -4,8 +4,7 @@ kind: ServiceAccount
 metadata:
   name: {{ include "kuma.name" . }}-cni
   namespace: kube-system
-  labels:
-  {{ include "kuma.cniLabels" . | nindent 4 }}
+  labels: {{ include "kuma.cniLabels" . | nindent 4 }}
 {{- with .Values.global.imagePullSecrets }}
 imagePullSecrets:
   {{- range . }}

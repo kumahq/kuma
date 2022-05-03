@@ -9,11 +9,7 @@ kind: Service
 metadata:
   name: {{ include "kuma.egress.serviceName" . }}
   namespace: {{ .Release.Namespace }}
-  labels:
-  {{- include "kuma.labels" . | nindent 4 }}
-    {{ range $key, $value := .Values.egress.extraLabels }}
-    {{ $key | quote }}: {{ $value | quote }}
-    {{ end }}
+  labels: {{ include "kuma.egressLabels" . | nindent 4 }}
   annotations:
     {{- range $key, $value := .Values.egress.service.annotations }}
       {{ $key }}: {{ $value | quote }}

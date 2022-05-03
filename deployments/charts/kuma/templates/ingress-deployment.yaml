@@ -4,12 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "kuma.name" . }}-ingress
   namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "kuma.labels" . | nindent 4 }}
-    app: {{ include "kuma.name" . }}-ingress
-    {{ range $key, $value := .Values.ingress.extraLabels }}
-    {{ $key | quote }}: {{ $value | quote }}
-    {{ end }}
+  labels: {{ include "kuma.ingressLabels" . | nindent 4 }}
 spec:
   strategy:
     rollingUpdate:
@@ -29,12 +24,8 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      labels:
+      labels: {{ include "kuma.ingressLabels" . | nindent 8 }}
         {{- include "kuma.selectorLabels" . | nindent 8 }}
-        app: {{ include "kuma.name" . }}-ingress
-        {{ range $key, $value := .Values.ingress.extraLabels }}
-        {{ $key | quote }}: {{ $value | quote }}
-        {{ end }}
     spec:
       {{- with .Values.ingress.affinity }}
       affinity: {{ tpl (toYaml . | nindent 8) $ }}

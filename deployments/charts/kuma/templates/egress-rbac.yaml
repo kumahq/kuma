@@ -4,9 +4,5 @@ kind: ServiceAccount
 metadata:
   name: {{ include "kuma.name" . }}-egress
   namespace: {{ .Release.Namespace }}
-  labels:
-  {{- include "kuma.labels" . | nindent 4 }}
-    {{ range $key, $value := .Values.egress.extraLabels }}
-    {{ $key | quote }}: {{ $value | quote }}
-    {{ end }}
+  labels: {{ include "kuma.egressLabels" . | nindent 4 }}
 {{- end }}
