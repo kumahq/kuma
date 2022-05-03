@@ -1,0 +1,74 @@
+name: pull request comment
+on:
+  issue_comment:
+    types: [created]
+env:
+  GH_USER: "github-actions[bot]"
+  GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
+
+jobs:
+  pr_comments:
+    if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: check-maintainer
+        run:  |
+          # Ensure the commenter is a maintainer
+          USER=`gh api ${{ github.event.comment.url }} --jq .user.login`
+          if [[ `gh api  /repos/kumahq/kuma/collaborators --jq '.[] | select (.permissions.maintain == true) | .login' | grep $USER` ]]; then
+            gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
+          else
+            gh api --method POST -f content='-1' ${{ github.event.comment.url }}/reactions
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - id: get-branch
+        run: echo ::set-output name=branch::$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')
+        env:
+          REPO: ${{ github.repository }}
+          PR_NO: ${{ github.event.issue.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.get-branch.outputs.branch }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - run: |
+          make dev/tools
+          git checkout go.mod go.sum # This is because of some weirdness in `make dev/tools`
+      - name: format
+        if: contains(github.event.comment.body, '/format')   # check the comment if it contains the keywords
+        run: |
+          make format
+      - name: run golden_files
+        if: contains(github.event.comment.body, '/golden_files')  # check the comment if it contains the keywords
+        run: |
+          make test UPDATE_GOLDEN_FILES=true
+      - name: commit and push fixes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --exit-code --stat; then
+            echo "No change detected, skipping git push"
+          else
+            git config user.name "${GH_USER}"
+            git config user.email "${GH_EMAIL}"
+            git commit -s -m "fix(ci): format files" .
+            git push
+          fi
+      - run: gh api --method POST -f content='hooray' ${{ github.event.comment.url }}/reactions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
