@@ -96,7 +96,7 @@ to verify a few things:
   `make test/kuma-dp`, or whichever make target under `test/` is appropriate
   for your change
 - If your PR are open and some tests are failing due to outdated golden files
-  or formatted and generated files are incorrect you can fix it by adding a
+  or formatted and generated files are incorrect a maintainer can fix it by adding a
   comment `/format` or `/golden_files`.
 - If you are introducing a change which requires specific attention when
   upgrading update UPGRADE.md
