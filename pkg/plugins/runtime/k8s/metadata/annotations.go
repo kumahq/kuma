@@ -78,6 +78,9 @@ const (
 
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
+
+	// KumaTransparentProxyingExperimentalEngine enables experimental transparent proxy engine.
+	KumaTransparentProxyingExperimentalEngine = "kuma.io/transparent-proxying-experimental-engine"
 )
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
