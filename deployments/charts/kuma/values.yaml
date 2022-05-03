@@ -131,8 +131,9 @@ controlPlane:
   # -- URL of Global Kuma CP
   globalZoneSyncService:
     # -- Whether or not to create a k8s service for the global zone sync
-    # service. If null, it will be created only if mode is set to global.
-    enabled: null
+    # service. It will only be created when enabled and deploying the global
+    # control plane.
+    enabled: true
     # -- Service type of the Global-zone sync
     type: LoadBalancer
     # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
