@@ -20,6 +20,22 @@ reusable:
            - /^release-.*/
         tags:
           only: /.*/
+    # on branches master or release-*
+    work_branch_workflow_filter: &work_branch_workflow_filter
+      filters:
+        branches:
+          only:
+           - master
+           - /^release-.*/
+        tags:
+          ignore: /.*/
+    # on tags
+    tags_workflow_filter: &tags_workflow_filter
+      filters:
+        branches:
+          ignore: /.*/
+        tags:
+          only: /.*/
 
 # See https://circleci.com/docs/2.0/configuration-reference/#commands-requires-version-21.
 commands:
@@ -475,8 +491,14 @@ workflows:
             - build
             - check
       - release:
-          # Don't publish artifacts for PRs
-          <<: *work_branch_or_tags_workflow_filter
+          # publish artifacts speculatively for normal commits
+          <<: *work_branch_workflow_filter
+          requires:
+            - build
+            - check
+      - release:
+          # only publish tagged artifacts if everything passes
+          <<: *tags_workflow_filter
           requires:
             - dev_mac
             - dev_ubuntu
