@@ -105,6 +105,15 @@ spec:
        ...
 ```
  
+## Use existing prometheus tags
+
+Prometheus on K8s uses annotation `prometheus.io/{path/port/scrapping}`, we might use it to map them for kuma specifc 
+annotations that are going to be used to scrap endpoints. At the begging we might not implement this feature but in future we might get this.
+
+## Labels
+
+We are not going to change any metric's label so stats from applications are going to be unchanged.
+
 ### How to get information about path/port for `kuma-dp` to expose metrics?
  
  * Bootstrap config is going to return information about path/part. This configuration is going to be static and won't be possible to change it during application runtime.
