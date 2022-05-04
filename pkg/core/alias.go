@@ -25,7 +25,7 @@ var (
 	SetupSignalHandler = func() (context.Context, context.Context) {
 		gracefulCtx, gracefulCancel := context.WithCancel(context.Background())
 		ctx, cancel := context.WithCancel(context.Background())
-		c := make(chan os.Signal, 2)
+		c := make(chan os.Signal, 3)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
 			s := <-c
