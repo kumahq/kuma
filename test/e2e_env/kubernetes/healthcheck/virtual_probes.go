@@ -34,16 +34,12 @@ func VirtualProbes() {
 
 	It("should deploy test-server with probes", func() {
 		// Sample pod readiness to ensure they stay ready to at least 10sec.
-		Eventually(func(g Gomega) {
-			pods, err := PodsAvailable(env.Cluster, name, namespace)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(pods).To(Equal(1))
-		}, "30s", "1s").Should(Succeed())
+		Expect(WaitNumPods(namespace, 1, name)(env.Cluster)).To(Succeed())
+		Expect(WaitPodsAvailable(namespace, name)(env.Cluster)).To(Succeed())
 
 		Consistently(func(g Gomega) {
-			pods, err := PodsAvailable(env.Cluster, name, namespace)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(pods).To(Equal(1))
+			g.Expect(WaitNumPods(namespace, 1, name)(env.Cluster)).To(Succeed())
+			g.Expect(WaitPodsAvailable(namespace, name)(env.Cluster)).To(Succeed())
 		}, "10s", "1s").Should(Succeed())
 	})
 }
