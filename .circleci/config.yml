@@ -495,7 +495,6 @@ workflows:
           <<: *work_branch_workflow_filter
           requires:
             - build
-            - check
       - release:
           # only publish tagged artifacts if everything passes
           <<: *tags_workflow_filter
