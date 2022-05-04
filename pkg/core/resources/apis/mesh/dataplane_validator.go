@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 
@@ -224,8 +225,8 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
 		var result validators.ValidationError
 		if protocol, exist := selector[mesh_proto.ProtocolTag]; exist {
-			if protocol != ProtocolTCP {
-				result.AddViolationAt(path.Key(mesh_proto.ProtocolTag), `other values than TCP are not allowed`)
+			if !strings.EqualFold(protocol, ProtocolTCP) {
+				result.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf(`other values than TCP are not allowed, provided value "%s"`, protocol))
 			}
 		}
 		return result

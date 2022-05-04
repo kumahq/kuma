@@ -114,6 +114,21 @@ var _ = Describe("Dataplane", func() {
                 - port: 3333
                   service: redis`,
 		),
+		Entry("dataplane with gateway and case insensitive", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              gateway:
+                tags:
+                  kuma.io/service: backend
+                  kuam.io/protocol: TCP
+                  version: "1"
+              outbound:
+                - port: 3333
+                  service: redis`,
+		),
 		Entry("dataplane with valid tags", `
             type: Dataplane
             name: dp-1
@@ -668,7 +683,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.gateway.tags["kuma.io/protocol"]'
-                  message: other values than TCP are not allowed`,
+                  message: other values than TCP are not allowed, provided value "http"`,
 		}),
 		Entry("networking.outbound: empty service tag", testCase{
 			dataplane: `
