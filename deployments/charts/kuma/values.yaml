@@ -92,7 +92,7 @@ controlPlane:
                   - '{{ include "kuma.name" . }}-control-plane'
           topologyKey: kubernetes.io/hostname
 
-  # -- Topology spread constraints rule for the Kuma Control Plane pods
+  # -- Topology spread constraints rule for the Kuma Control Plane pods.
   # This is rendered as a template so you can use variables to generate match labels.
   topologySpreadConstraints:
 
@@ -189,7 +189,8 @@ controlPlane:
     # - if secretName is empty and create is true, then create a secret with a default name and use it
     # - if secretName is non-empty and create is true, then create the secret using the provided name
     kdsGlobalServer:
-      # -- Name of the K8s TLS Secret resource.
+      # -- Name of the K8s TLS Secret resource. If you set this and don't set
+      # create=true, you have to create the secret manually.
       secretName: ""
       # -- Whether or not to create the TLS secret in helm.
       create: false
@@ -203,7 +204,8 @@ controlPlane:
     # - if secretName is empty and create is true, then create a secret with a default name and use it
     # - if secretName is non-empty and create is true, then create the secret using the provided name
     kdsZoneClient:
-      # -- Name of the K8s TLS Secret resource.
+      # -- Name of the K8s TLS Secret resource. If you set this and don't set
+      # create=true, you have to create the secret manually.
       secretName: ""
       # -- Whether or not to create the TLS secret in helm.
       create: false
@@ -220,7 +222,7 @@ controlPlane:
 
   # -- list of additional secret resources to create; for each specify the name and stringData
   # name is rendered as a template using (tpl $)
-  additionalK8sSecrets:
+  additionalK8sSecrets: []
     # example
     # - name: {{ include "kuma.name" . }}-extra-secret
     #   stringData:
@@ -464,7 +466,7 @@ ingress:
                   - kuma-ingress
           topologyKey: kubernetes.io/hostname
 
-  # -- Topology spread constraints rule for the Kuma Mesh Ingress pods
+  # -- Topology spread constraints rule for the Kuma Mesh Ingress pods.
   # This is rendered as a template so you can use variables to generate match labels.
   topologySpreadConstraints:
 
@@ -573,7 +575,7 @@ egress:
                   - kuma-egress
           topologyKey: kubernetes.io/hostname
 
-  # -- Topology spread constraints rule for the Kuma Egress pods
+  # -- Topology spread constraints rule for the Kuma Egress pods.
   # This is rendered as a template so you can use variables to generate match labels.
   topologySpreadConstraints:
 
