@@ -13,6 +13,5 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E Health Check Universal Suite")
 }
 
-var _ = Describe("Test Service Probes on Universal", universal.ServiceProbes)
 var _ = Describe("Test Health Check TCP policy on Universal", universal.PolicyTCP)
 var _ = Describe("Test Health Check HTTP policy on Universal", universal.PolicyHTTP)

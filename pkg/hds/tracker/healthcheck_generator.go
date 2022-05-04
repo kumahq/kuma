@@ -23,12 +23,18 @@ import (
 type SnapshotGenerator struct {
 	config                  *dp_server.HdsConfig
 	readOnlyResourceManager manager.ReadOnlyResourceManager
+	defaultAdminPort        uint32
 }
 
-func NewSnapshotGenerator(readOnlyResourceManager manager.ReadOnlyResourceManager, config *dp_server.HdsConfig) *SnapshotGenerator {
+func NewSnapshotGenerator(
+	readOnlyResourceManager manager.ReadOnlyResourceManager,
+	config *dp_server.HdsConfig,
+	defaultAdminPort uint32,
+) *SnapshotGenerator {
 	return &SnapshotGenerator{
 		readOnlyResourceManager: readOnlyResourceManager,
 		config:                  config,
+		defaultAdminPort:        defaultAdminPort,
 	}
 }
 
@@ -42,7 +48,10 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 		return nil, err
 	}
 
-	var healthChecks []*envoy_service_health.ClusterHealthCheck
+	healthChecks := []*envoy_service_health.ClusterHealthCheck{
+		g.envoyHealthCheck(dp.AdminPort(g.defaultAdminPort)),
+	}
+
 	for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
 		if inbound.ServiceProbe == nil {
 			continue
@@ -115,4 +124,39 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 	}
 
 	return cache.NewSnapshot("", hcs), nil
+}
+
+// envoyHealthCheck builds a HC for Envoy itself so when Envoy is in draining state HDS can report that DP is offline
+func (g *SnapshotGenerator) envoyHealthCheck(port uint32) *envoy_service_health.ClusterHealthCheck {
+	return &envoy_service_health.ClusterHealthCheck{
+		ClusterName: names.GetEnvoyAdminClusterName(),
+		LocalityEndpoints: []*envoy_service_health.LocalityEndpoints{{
+			Endpoints: []*envoy_endpoint.Endpoint{{
+				Address: &envoy_core.Address{
+					Address: &envoy_core.Address_SocketAddress{
+						SocketAddress: &envoy_core.SocketAddress{
+							Address: "127.0.0.1",
+							PortSpecifier: &envoy_core.SocketAddress_PortValue{
+								PortValue: port,
+							},
+						},
+					},
+				},
+			}},
+		}},
+		HealthChecks: []*envoy_core.HealthCheck{
+			{
+				Timeout:            util_proto.Duration(g.config.CheckDefaults.Timeout),
+				Interval:           util_proto.Duration(g.config.CheckDefaults.Interval),
+				HealthyThreshold:   util_proto.UInt32(g.config.CheckDefaults.HealthyThreshold),
+				UnhealthyThreshold: util_proto.UInt32(g.config.CheckDefaults.UnhealthyThreshold),
+				NoTrafficInterval:  util_proto.Duration(g.config.CheckDefaults.NoTrafficInterval),
+				HealthChecker: &envoy_core.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoy_core.HealthCheck_HttpHealthCheck{
+						Path: "/ready",
+					},
+				},
+			},
+		},
+	}
 }
