@@ -178,7 +178,12 @@ those services a way to contact the `MeshGateway`. A `MeshGateway` doesn't have
 an address or concrete identity beyond the identities of the `kuma-dp` proxies that
 serve the gateway.
 
-#### Virtual outbounds
+#### Options
+
+There are multiple UX options for making the `MeshGateway` addressable from
+other meshes.
+
+##### Virtual outbounds
 
 We can add support for `MeshGateway` listeners to `VirtualOutbounds` to give applications
 a way to address a `MeshGateway` listener from another mesh.
@@ -227,3 +232,10 @@ tags:
 
 along with the hostname `gateway.expose.mesh`, giving access from `consume` to `expose`
 at `http://gateway.expose.mesh:8090/api`.
+
+##### Listener hostname
+
+Another option for giving access to the `MeshGateway` would be to require and
+use the `listeners[].hostname` option to generate an outbound for every 
+dataplane implicitly. In effect, this would be a virtual outbound with the
+`host` template equal to `{{ .gateway.listener.hostname }}`.
