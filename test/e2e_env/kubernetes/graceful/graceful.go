@@ -18,6 +18,9 @@ func Graceful() {
 	if Config.Arch == "arm64" {
 		return // K3D loadbalancer required for this test seems to not work with K3D
 	}
+	if Config.IPV6 {
+		return // K3D cannot handle loadbalancer for IPV6
+	}
 
 	const name = "graceful"
 	const namespace = "graceful"
