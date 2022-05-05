@@ -310,6 +310,7 @@ jobs:
             - run:
                 name: "Run IPv6 E2E tests"
                 command: |
+                  ulimit -n 16384 # Increase file descriptors limit from default 1024
                   export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
                   export API_VERSION=<< parameters.api >>
                   export IPV6=true
@@ -325,6 +326,7 @@ jobs:
             - run:
                 name: "Run IPv4 E2E tests"
                 command: |
+                  ulimit -n 16384 # Increase file descriptors limit from default 1024
                   echo "DEBUGING VAR $E2E_PKG_LIST"
                   echo "DEBUGING VAR GINKGO_E2E_FLAGS"
                   export CI_K3S_VERSION=<< parameters.k3sVersion >>
