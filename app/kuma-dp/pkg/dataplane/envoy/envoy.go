@@ -159,7 +159,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 }
 
 func (e *Envoy) DrainConnections() error {
-	resp, err := http.Post(fmt.Sprintf("http://localhost:%d/healthcheck/fail", e.opts.AdminPort), "", nil)
+	resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/healthcheck/fail", e.opts.AdminPort), "", nil)
 	if err != nil {
 		return err
 	}
