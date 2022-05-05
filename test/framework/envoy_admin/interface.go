@@ -7,4 +7,5 @@ import (
 type Tunnel interface {
 	GetStats(name string) (*stats.Stats, error)
 	ResetCounters() error
+	Close()
 }

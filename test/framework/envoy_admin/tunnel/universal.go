@@ -73,3 +73,6 @@ func (t *UniversalTunnel) ResetCounters() error {
 
 	return nil
 }
+
+func (t *UniversalTunnel) Close() {
+}

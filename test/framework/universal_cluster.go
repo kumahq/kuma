@@ -185,6 +185,9 @@ func (c *UniversalCluster) VerifyKuma() error {
 }
 
 func (c *UniversalCluster) DeleteKuma() error {
+	for _, t := range c.envoyTunnels {
+		t.Close()
+	}
 	err := c.apps[AppModeCP].Stop()
 	delete(c.apps, AppModeCP)
 	c.controlplane = nil

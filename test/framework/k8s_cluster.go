@@ -847,6 +847,9 @@ func (c *K8sCluster) deleteKumaViaKumactl() error {
 }
 
 func (c *K8sCluster) DeleteKuma() error {
+	for _, t := range c.envoyTunnels {
+		t.Close()
+	}
 	c.controlplane.ClosePortForwards()
 	var err error
 	switch c.opts.installationMode {

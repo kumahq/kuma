@@ -91,3 +91,7 @@ func (t *K8sTunnel) ResetCounters() error {
 
 	return nil
 }
+
+func (t *K8sTunnel) Close() {
+	t.Tunnel.Close()
+}
