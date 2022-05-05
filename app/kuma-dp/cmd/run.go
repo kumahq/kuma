@@ -209,7 +209,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			runLog.Info("fetched Envoy version", "version", envoyVersion)
 
 			runLog.Info("generating bootstrap configuration")
-			bootstrap, bootstrapBytes, err := rootCtx.BootstrapGenerator(opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
+			bootstrap, bootstrapBytes, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
 				Dataplane:       opts.Dataplane,
 				DNSPort:         cfg.DNS.EnvoyDNSPort,
 				EmptyDNSPort:    cfg.DNS.CoreDNSEmptyPort,

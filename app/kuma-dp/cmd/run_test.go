@@ -95,7 +95,7 @@ var _ = Describe("run", func() {
 
 			// given
 			rootCtx := DefaultRootContext()
-			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error) {
+			rootCtx.BootstrapGenerator = func(_ context.Context, _ string, cfg kumadp.Config, _ envoy.BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error) {
 				respBytes, err := os.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
 				bootstrap := &envoy_bootstrap_v3.Bootstrap{}
