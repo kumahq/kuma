@@ -2,7 +2,6 @@ package version
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -101,7 +100,10 @@ func DeploymentVersionCompatible(kumaVersionStr string, componentVersionStr stri
 		return true
 	}
 
-	minMinor := math.Max(0, int64(kumaVersion.Minor()) - 2)
+	minMinor := int64(kumaVersion.Minor()) - 2
+	if minMinor < 0 {
+		minMinor = 0
+	}
 
 	maxMinor := kumaVersion.Minor() + 2
 
