@@ -60,8 +60,8 @@ The configuration will make it possible to expose `MeshGatewayRoute`s depending
 on cross-mesh traffic's source `Mesh` and source _tags_.
 
 First of all, we require users to explicitly enable cross-mesh traffic on
-the `MeshGateway` listener as well as mTLS on any meshes doing cross-mesh
-traffic.
+the `MeshGateway` listener by marking it `internal` as well as mTLS on
+any meshes involved in cross-mesh traffic.
 This option will allow us to configure the corresponding Envoy listener
 with all mesh CAs.
 
@@ -76,100 +76,29 @@ conf:
   listeners:
   - port: 8090
     protocol: HTTPS
-    hostname: expose.mesh # optional
+    hostname: expose.mesh # optional in general
+    internal: true
     tags:
       name: mesh-listener
-    tls:
-      mode: TERMINATE
-      options:
-        crossMesh: true # new option
 ```
 
-There are two ways we can enable configuring more specific access rules.
+#### `MeshTrafficPermission`
 
-#### `MeshGatewayTrafficPermission`
-
-The first is to add a _new resource_ that defines which
+We will take advantage of the new `MeshTrafficPermission` to define which
 cross-mesh traffic is allowed for a matching `MeshGateway` listener and
-`routeName`.
-
-```
-type: MeshGatewayTrafficPermission
-mesh: expose
-name: cross-mesh
-selector: # these match a listener
-- tags:
-    kuma.io/service: edge-gateway
-    name: mesh-listener
-default: deny
-rules:
-- routeName: cross-mesh
-  action: allow
-  sources:
-  - mesh:
-      name: consume # or '*' for any mesh
-      tags:
-        kuma.io/service: client
-```
+`routeName`. It's being discussed in https://github.com/kumahq/kuma/issues/4222
 
 This concentrates `MeshGateway` permission management into its own resource.
 This may be a more generally useful abstraction given potential
-other kinds of `sources`. For example, one for filtering based on JWT token:
-
-```
-  - routeName: cross-mesh
-    action: allow
-    sources:
-    - user:
-        email: abc@xyz.com
-```
+other kinds of access control. For example, one for filtering based on JWT token.
 
 #### Inline `MeshGatewayRoute`
 
-Another option is to add cross-mesh access control to the `MeshGatewayRoute`
+We decided against adding cross-mesh access control to the `MeshGatewayRoute`
 resource, as another type of `conf.http.rules.matches` entry or
 potentially at the top level under `conf.http`.
 
-```
-type: MeshGatewayRoute
-mesh: expose
-name: edge-gateway-route
-selectors:
-  - match:
-      kuma.io/service: edge-gateway
-      name: mesh-listener
-conf:
-  http:
-    mesh:                    # new entry type
-      - name: consume
-        tags:
-          kuma.io/service: client
-    rules:
-      - matches:
-          # ALL match types must succeed
-          - path:
-              match: PREFIX
-              value: /api
-          - mesh:                    # and/or a new entry type here
-            - name: consume
-              tags:
-                kuma.io/service: client
-        backends:
-          - destination:
-              kuma.io/service: server
-      - matches:    # ALL matches must succeed
-          - path:
-              match: PREFIX
-              value: /api/v2
-          - mesh:
-            - name: *
-        backends:
-          - destination:
-              kuma.io/service: server
-```
-
-The advantage of this option is probably reduced complexity for less complicated
-cases.
+It reduces our flexibility in the future.
 
 ### `consume` UX
 
@@ -178,64 +107,39 @@ those services a way to contact the `MeshGateway`. A `MeshGateway` doesn't have
 an address or concrete identity beyond the identities of the `kuma-dp` proxies that
 serve the gateway.
 
-#### Options
+#### Virtual outbounds
 
-There are multiple UX options for making the `MeshGateway` addressable from
-other meshes.
+Every `MeshGateway` listener can be given a `hostname`. For cross-mesh, we will
+require one be set and use it to generate a virtual outbound.
 
-##### Virtual outbounds
-
-We can add support for `MeshGateway` listeners to `VirtualOutbounds` to give applications
-a way to address a `MeshGateway` listener from another mesh.
-
-The `VirtualOutbound` selects `Dataplane`s and uses them to generate outbounds.
-These generated outbounds are added to _all_ `Dataplane` resources.
+The listener from above
 
 ```
----
-type: VirtualOutbound
-mesh: consume
-name: test
-selectors: # this VirtualOutbound will be built using the matched data plane proxies and will be added for all data plane proxies
-  - match:
-      kuma.io/service: edge-gateway
-      name: mesh-listener
+type: MeshGateway
+mesh: expose
+name: edge-gateway
+selectors:
+- match:
+    kuma.io/service: edge-gateway
 conf:
-  host: "gateway.{{.gateway.mesh}}.mesh"
-    # or host: "{{.gateway.listener.hostname}}"
-  port: "{{.gateway.listener.port}}"
-  parameters:
-    - name: service
-      tagKey: "kuma.io/service"
-    - name: gateway
-      gatewayListener: {}
+  listeners:
+  - port: 8090
+    protocol: HTTPS
+    hostname: expose.mesh
+    tags:
+      name: mesh-listener
 ```
 
-At the moment, the `selectors` are only run for `Dataplane` resources whereas we
-need support for `crossMesh`-enabled `MeshGateway` listeners (of all `Mesh`es) as well. In the
-implementation, this means keeping track of all `MeshGateway`-serving `Dataplane`s
-of _any mesh_ when generating a `VirtualOutbound` of _any mesh_.
-
-We also need to provide the properties of the `MeshGateway` listener to the `host`
-template in order to generate the hostname.
-
-This should give us a virtual outbound:
+should give us the DNS hostname `expose.mesh` as well as a virtual outbound
+like:
 
 ```
 address: 240.0.0.1
 port: 8090
-mesh: expose           # we need to keep track of the mesh somehow
 tags:
+  kuma.io/mesh: expose # we need to keep track of the mesh somehow
   kuma.io/service: edge-gateway
   name: mesh-listener
 ```
 
-along with the hostname `gateway.expose.mesh`, giving access from `consume` to `expose`
-at `http://gateway.expose.mesh:8090/api`.
-
-##### Listener hostname
-
-Another option for giving access to the `MeshGateway` would be to require and
-use the `listeners[].hostname` option to generate an outbound for every 
-dataplane implicitly. In effect, this would be a virtual outbound with the
-`host` template equal to `{{ .gateway.listener.hostname }}`.
+giving access from `consume` to `expose` at `http://expose.mesh:8090/api`.
