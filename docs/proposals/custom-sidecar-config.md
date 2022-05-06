@@ -51,6 +51,150 @@ We will not validate that it is a sane configuration.
 It is assumed that anyone using this feature has the expertise to create and debug a container configuration
 via interaction with kubernetes directly.
 
-If multiple ContainerConfig policies match the same container,
+If multiple ContainerTemplate policies match the same container,
 the most recently applied policy wins.
 
+## Templates
+Template specification will be the full container specification,
+with variables for Kuma to fill with default values.
+Ideally, the user can modify individual values,
+and upgrades which affect unrelated values will just fill in those variables
+without user intervention.
+Larger changes across versions will require user to integrate their changes into a new template.
+
+### Example - Init Container Default
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerTemplate
+metadata:
+  name: container-template-1
+spec:
+  selectors:
+    - namespace: namespace-1
+  initTemplate: |
+    name: kuma-init
+    command: {{ .Command }}
+    args: {{ .CommandArgs }}
+    image: {{ .Image }}
+    imagePullPolicy: {{ .ImagePullPolicy }}
+    resources:
+      limits:
+        cpu: {{ .Resources.Limits.Cpu }}
+        memory: {{ .Resources.Limits.Memory }}
+      requests:
+        cpu: {{ .Resources.Requests.Cpu }}
+        memory: {{ .Resources.Requests.Memory }}
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - NET_RAW
+      runAsGroup: {{ .SecurityContext.RunAsGroup }}
+      runAsUser: {{ .SecurityContext.RunAsUser }}
+    terminationMessagePath: {{ .TerminationMessagePath }}
+    terminationMessagePolicy: {{ .TerminationMessagePolicy }}
+    volumeMounts: {{ .VolumeMounts }}
+```
+
+### Example - Init Container RunAsNonRoot
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerTemplate
+metadata:
+  name: container-template-1
+spec:
+  selectors:
+    - namespace: namespace-1
+  initTemplate: |
+    name: kuma-init
+    command: {{ .Command }}
+    args: {{ .Args }}
+    image: {{ .Image }}
+    imagePullPolicy: {{ .ImagePullPolicy }}
+    resources:
+      limits:
+        cpu: {{ .Resources.Limits.Cpu }}
+        memory: {{ .Resources.Limits.Memory }}
+      requests:
+        cpu: {{ .Resources.Requests.Cpu }}
+        memory: {{ .Resources.Requests.Memory }}
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - NET_RAW
+      runAsGroup: {{ .SecurityContext.RunAsGroup }}
+      runAsNonRoot: true
+    terminationMessagePath: {{ .TerminationMessagePath }}
+    terminationMessagePolicy: {{ .TerminationMessagePolicy }}
+    volumeMounts: {{ .VolumeMounts }}
+```
+
+### Example - Sidecar Container Default
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerTemplate
+metadata:
+  name: container-template-1
+spec:
+  selectors:
+    - namespace: namespace-1
+  sidecarTemplate: |
+    name: kuma-sidecar
+    args: {{ .Args }}
+    env: {{ .Env }}
+    image: {{ .Image }}
+    imagePullPolicy: {{ .ImagePullPolicy }}
+    livenessProbe: {{ .LivenessProbe }}
+    readinessProbe: {{ .ReadinessProbe }}
+    resources:
+      limits:
+        cpu: {{ .Resources.Limits.Cpu }}
+        memory: {{ .Resources.Limits.Memory }}
+      requests:
+        cpu: {{ .Resources.Requests.Cpu }}
+        memory: {{ .Resources.Requests.Memory }}
+    securityContext:
+      runAsGroup: {{ .SecurityContext.RunAsGroup }}
+      runAsUser: {{ .SecurityContext.RunAsUser }}
+    terminationMessagePath: {{ .TerminationMessagePath }}
+    terminationMessagePolicy: {{ .TerminationMessagePolicy }}
+    volumeMounts: {{ .VolumeMounts }}
+```
+
+### Example - Sidecar Container Privileged Modification
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerTemplate
+metadata:
+  name: container-template-1
+spec:
+  selectors:
+    - namespace: namespace-1
+  sidecarTemplate: |
+    name: kuma-sidecar
+    args: {{ .Args }}
+    env: {{ .Env }}
+    image: {{ .Image }}
+    imagePullPolicy: {{ .ImagePullPolicy }}
+    livenessProbe: {{ .LivenessProbe }}
+    readinessProbe: {{ .ReadinessProbe }}
+    resources:
+      limits:
+        cpu: {{ .Resources.Limits.Cpu }}
+        memory: {{ .Resources.Limits.Memory }}
+      requests:
+        cpu: {{ .Resources.Requests.Cpu }}
+        memory: {{ .Resources.Requests.Memory }}
+    securityContext:
+      runAsGroup: {{ .SecurityContext.RunAsGroup }}
+      runAsUser: {{ .SecurityContext.RunAsUser }}
+      privileged: true
+    terminationMessagePath: {{ .TerminationMessagePath }}
+    terminationMessagePolicy: {{ .TerminationMessagePolicy }}
+    volumeMounts: {{ .VolumeMounts }}
+```
