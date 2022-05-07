@@ -198,3 +198,31 @@ spec:
     terminationMessagePolicy: {{ .TerminationMessagePolicy }}
     volumeMounts: {{ .VolumeMounts }}
 ```
+
+## Template Alternatives
+
+Instead of asking the user to provide the entire container configuration,
+we could allow them to specify individual keys to override.
+This would be similar to the existing ProxyTemplate configuration.
+Each top level key for modification would be specified in an array
+with an operation (add, remove, patch)
+and associated values.
+
+It's possible that we would only need add and remove for container config.
+
+### Example - Sidecar Privileged Modification Alternative
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: ContainerTemplate
+metadata:
+  name: container-template-1
+spec:
+  selectors:
+    - namespace: namespace-1
+  sidecarTemplate:
+    - securityContext:
+        operation: add
+        value: |
+          privileged: true
+```
