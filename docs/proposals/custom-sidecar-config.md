@@ -117,7 +117,7 @@ Other options we considered but have decided against for now.
         value: |
           privileged: true
   ```
-* Applying CRD in lexicographical order; obviated by choice of annotation instad of selector.
+* Applying CRD in lexicographical order; obviated by choice of annotation instead of selector.
 * Something more like Istio's solution
   * https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/#customizing-injection
   * https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/#custom-templates-experimental
