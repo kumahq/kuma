@@ -108,4 +108,7 @@ message KumaCpVersion {
 
   // Build date of Kuma ControlPlane version
   string buildDate = 4;
+
+  // True iff this Zone CP version is compatible with Global CP
+  bool kumaCpGlobalCompatible = 5;
 }

@@ -1,9 +1,13 @@
 .PHONY: docs
 docs: DESTDIR ?= docs/generated
-docs: ## Dev: Generate local documentation
+docs: helm-docs ## Dev: Generate local documentation
 	rm -rf $(DESTDIR)
 	@$(MAKE) docs/install/markdown DESTDIR=$(DESTDIR)/cmd
 	@$(MAKE) docs/install/resources DESTDIR=$(DESTDIR)/resources
+
+.PHONY: helm-docs
+helm-docs: ## Dev: Runs helm-docs generator
+	$(HELM_DOCS_PATH) -s="file" --chart-search-root=./deployments/charts
 
 .PHONY: docs/install/markdown
 docs/install/markdown: DESTDIR ?= docs/markdown

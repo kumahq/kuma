@@ -125,6 +125,13 @@ spec:
           securityContext:
           {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
+          resources:
+             requests:
+               cpu: "100m"
+               memory: "256Mi"
+             limits:
+               cpu: "100m"
+               memory: "256Mi"
           command:
             - '/kuma/scripts/install_missing_crds.sh'
           volumeMounts:
@@ -141,6 +148,13 @@ spec:
           securityContext:
           {{ toYaml .Values.hooks.containerSecurityContext | trim | nindent 12 }}
           {{- end }}
+          resources:
+             requests:
+               cpu: "100m"
+               memory: "256Mi"
+             limits:
+               cpu: "100m"
+               memory: "256Mi"
           volumeMounts:
           - mountPath: /kuma/missing
             name: missing-crds
