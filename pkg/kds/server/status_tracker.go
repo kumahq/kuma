@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/util"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 type StatusTracker interface {
@@ -192,6 +193,7 @@ func readVersion(metadata *structpb.Struct, version *system_proto.Version) error
 		if err != nil {
 			return err
 		}
+		version.KumaCp.KumaCpGlobalCompatible = kuma_version.DeploymentVersionCompatible(kuma_version.Build.Version, version.KumaCp.GetVersion())
 	}
 	return nil
 }
