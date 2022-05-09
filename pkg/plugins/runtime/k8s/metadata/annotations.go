@@ -79,6 +79,9 @@ const (
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
 
+	// KumaTransparentProxyingExperimentalEngine enables experimental transparent proxy engine.
+	KumaTransparentProxyingExperimentalEngine = "kuma.io/transparent-proxying-experimental-engine"
+
 	// KumaSidecarDrainTime allows to specify drain time of Kuma DP sidecar.
 	KumaSidecarDrainTime = "kuma.io/sidecar-drain-time"
 )

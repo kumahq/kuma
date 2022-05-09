@@ -6,9 +6,9 @@
 #    At the same time, if $lastGitTag is not final tag (for example 1.4.0-rc1 or 1.4.0-preview1), the version is "dev-$shortHash"
 # 3) If the branch does not start with "release", then the version is "dev-$shortHash" (for example: dev-450174242)
 
-lastGitTag=$(git describe --abbrev=0 --tags)
-shortHash=$(git rev-parse --short HEAD)
-currentBranch=$(git rev-parse --abbrev-ref HEAD)
+lastGitTag=$(git describe --abbrev=0 --tags 2> /dev/null)
+shortHash=$(git rev-parse --short HEAD 2> /dev/null)
+currentBranch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null)
 
 # Note: this format must be changed carefully, other scripts depend on it
 

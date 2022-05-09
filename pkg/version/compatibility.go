@@ -1,5 +1,16 @@
 package version
 
+import (
+	"fmt"
+	"strings"
+
+	"github.com/Masterminds/semver/v3"
+
+	"github.com/kumahq/kuma/pkg/core"
+)
+
+var log = core.Log.WithName("version").WithName("compatibility")
+
 type DataplaneCompatibility struct {
 	Envoy string `json:"envoy"`
 }
@@ -52,13 +63,58 @@ var CompatibilityMatrix = Compatibility{
 		"~1.5.0": {
 			Envoy: "~1.21.1",
 		},
+		"~1.6.0": {
+			Envoy: "~1.21.1",
+		},
 		// This includes all dev versions branched from the first release
-		// candidate (i.e. both master and release-1.4)
-		// and all 1.4 releases and RCs. See Masterminds/semver#21
-		"~1.5.1-anyprerelease": {
+		// candidate (i.e. both master and release-1.x)
+		// and all 1.x releases and RCs. See Masterminds/semver#21
+		"~1.6.1-anyprerelease": {
 			Envoy: "~1.21.1",
 		},
 	},
 }
 
 var DevVersionPrefix = "dev"
+
+// DeploymentVersionCompatible returns true if the given component version
+// is compatible with the installed version of Kuma CP.
+// For all binaries which share a common version (Kuma DP, CP, Zone CP...), we
+// support backwards compatibility of at most two prior minor versions.
+func DeploymentVersionCompatible(kumaVersionStr string, componentVersionStr string) bool {
+	if strings.Contains(kumaVersionStr, "dev") || strings.Contains(componentVersionStr, "dev") {
+		return true
+	}
+
+	kumaVersion, err := semver.NewVersion(kumaVersionStr)
+	if err != nil {
+		// Assume some kind of dev version
+		log.Info("cannot parse semantic version", "version", kumaVersionStr)
+		return true
+	}
+
+	componentVersion, err := semver.NewVersion(componentVersionStr)
+	if err != nil {
+		// Assume some kind of dev version
+		log.Info("cannot parse semantic version", "version", componentVersionStr)
+		return true
+	}
+
+	minMinor := int64(kumaVersion.Minor()) - 2
+	if minMinor < 0 {
+		minMinor = 0
+	}
+
+	maxMinor := kumaVersion.Minor() + 2
+
+	constraint, err := semver.NewConstraint(
+		fmt.Sprintf(">= %d.%d, <= %d.%d", kumaVersion.Major(), minMinor, kumaVersion.Major(), maxMinor),
+	)
+
+	if err != nil {
+		// Programmer error
+		panic(err)
+	}
+
+	return constraint.Check(componentVersion)
+}

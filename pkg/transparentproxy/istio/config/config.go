@@ -16,4 +16,5 @@ type TransparentProxyConfig struct {
 	AgentDNSListenerPort      string
 	DNSUpstreamTargetChain    string
 	SkipDNSConntrackZoneSplit bool
+	ExperimentalEngine        bool
 }
