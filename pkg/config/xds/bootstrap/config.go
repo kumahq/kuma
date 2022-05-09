@@ -46,6 +46,8 @@ type BootstrapParamsConfig struct {
 	AdminAccessLogPath string `yaml:"adminAccessLogPath" envconfig:"kuma_bootstrap_server_params_admin_access_log_path"`
 	// Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
 	XdsHost string `yaml:"xdsHost" envconfig:"kuma_bootstrap_server_params_xds_host"`
+	// Lookup family for the XdsHost. By default, it is AUTO which means it will try to resolve IPV6 and fallback to IPV4
+	XdsHostDnsLookupFamily string `yaml:"xdsHostDnsLookupFamily" envconfig:"kuma_bootstrap_server_params_xds_host_dns_lookup_family"`
 	// Port of XDS Server. By default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
 	XdsPort uint32 `yaml:"xdsPort" envconfig:"kuma_bootstrap_server_params_xds_port"`
 	// Connection timeout to the XDS Server
@@ -79,11 +81,12 @@ func (b *BootstrapParamsConfig) Validate() error {
 
 func DefaultBootstrapParamsConfig() *BootstrapParamsConfig {
 	return &BootstrapParamsConfig{
-		AdminAddress:       "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
-		AdminPort:          9901,
-		AdminAccessLogPath: os.DevNull,
-		XdsHost:            "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
-		XdsPort:            0,  // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
-		XdsConnectTimeout:  1 * time.Second,
+		AdminAddress:           "127.0.0.1", // by default, Envoy Admin interface should listen on loopback address
+		AdminPort:              9901,
+		AdminAccessLogPath:     os.DevNull,
+		XdsHost:                "", // by default, it is the same host as the one used by kuma-dp to connect to the control plane
+		XdsHostDnsLookupFamily: "AUTO",
+		XdsPort:                0, // by default, it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
+		XdsConnectTimeout:      1 * time.Second,
 	}
 }

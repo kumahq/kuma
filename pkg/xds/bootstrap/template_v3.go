@@ -17,6 +17,43 @@ import (
 )
 
 func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, error) {
+	adsCluster := envoy_cluster_v3.Cluster {
+		Name: "ads_cluster",
+		ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
+			Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
+			LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
+			UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
+			TcpKeepalive: &envoy_core_v3.TcpKeepalive{
+				KeepaliveProbes:   util_proto.UInt32(3),
+				KeepaliveTime:     util_proto.UInt32(10),
+				KeepaliveInterval: util_proto.UInt32(10),
+			},
+		},
+			LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+			ClusterName: "ads_cluster",
+			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+				{
+					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+						{
+							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+								Endpoint: &envoy_config_endpoint_v3.Endpoint{
+									Address: &envoy_core_v3.Address{
+										Address: &envoy_core_v3.Address_SocketAddress{
+											SocketAddress: &envoy_core_v3.SocketAddress{
+												Address:       parameters.XdsHost,
+												PortSpecifier: &envoy_core_v3.SocketAddress_PortValue{PortValue: parameters.XdsPort},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	configureClusterFromHost(parameters.XdsHost, parameters.XdsHostDnsLookupFamily, &adsCluster)
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{
 			Id:      parameters.Id,
@@ -158,43 +195,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 						},
 					},
 				},
-				{
-					Name:                 "ads_cluster",
-					ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
-					Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
-					LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
-					UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
-						TcpKeepalive: &envoy_core_v3.TcpKeepalive{
-							KeepaliveProbes:   util_proto.UInt32(3),
-							KeepaliveTime:     util_proto.UInt32(10),
-							KeepaliveInterval: util_proto.UInt32(10),
-						},
-					},
-					ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: clusterTypeFromHost(parameters.XdsHost)},
-					LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-						ClusterName: "ads_cluster",
-						Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-							{
-								LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
-									{
-										HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-											Endpoint: &envoy_config_endpoint_v3.Endpoint{
-												Address: &envoy_core_v3.Address{
-													Address: &envoy_core_v3.Address_SocketAddress{
-														SocketAddress: &envoy_core_v3.SocketAddress{
-															Address:       parameters.XdsHost,
-															PortSpecifier: &envoy_core_v3.SocketAddress_PortValue{PortValue: parameters.XdsPort},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				&adsCluster,
 			},
 		},
 	}
@@ -295,9 +296,29 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 	return res, nil
 }
 
-func clusterTypeFromHost(host string) envoy_cluster_v3.Cluster_DiscoveryType {
+func configureClusterFromHost(host string, lookUpFamily string, c *envoy_cluster_v3.Cluster) {
+	clusterDiscoveryType := envoy_cluster_v3.Cluster_Type{}
 	if govalidator.IsIP(host) {
-		return envoy_cluster_v3.Cluster_STATIC
+		clusterDiscoveryType.Type = envoy_cluster_v3.Cluster_STATIC
+	} else {
+		clusterDiscoveryType.Type = envoy_cluster_v3.Cluster_STRICT_DNS
+		c.DnsLookupFamily = getDnsLookUpFamily(lookUpFamily)
 	}
-	return envoy_cluster_v3.Cluster_STRICT_DNS
+
+	c.ClusterDiscoveryType = &clusterDiscoveryType
+}
+
+func getDnsLookUpFamily(family string) envoy_cluster_v3.Cluster_DnsLookupFamily {
+	if family == "V4_ONLY" {
+		return envoy_cluster_v3.Cluster_V4_ONLY
+	} else if family == "V6_ONLY" {
+		return envoy_cluster_v3.Cluster_V6_ONLY
+	} else if family == "V4_PREFERRED" {
+		return envoy_cluster_v3.Cluster_V4_PREFERRED
+	} else if family == "AUTO" {
+		return envoy_cluster_v3.Cluster_AUTO
+	} else {
+		log.Info("[WARNING] Unknown DnsLookupFamily: %s - falling back to AUTO. Possible values: V4_ONLY, V4_PREFERRED, V6_ONLY, AUTO", family)
+		return envoy_cluster_v3.Cluster_AUTO
+	}
 }
