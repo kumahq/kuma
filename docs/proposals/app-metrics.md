@@ -12,7 +12,8 @@ to [expose those metrics without mTLS](https://kuma.io/docs/dev/policies/traffic
  
 ## Idea
  
-The idea is to create an aggregator in `kuma-dp`, to be specific Metrics Hijacker, that will be responsible for the aggregation of metrics from applications defined to scrap(within local env: pod/vm). Communication with `kuma-dp` might be configured as secure but it won't be required(and not recommended). It's worth mentioning that this idea can support only Prometheus endpoint scrapping and exposing metrics as Prometheus.
+Instead of exposing application metrics directly, we propose creating a metrics aggregator in `kuma-dp`. The aggregator will be responsible for the scraping of metrics from applications proxied by this instance of `kuma-dp`.
+`kuma-dp` can then expose this port with or without mTLS. It's worth mentioning that this idea can support only Prometheus endpoint scraping and exposing metrics as Prometheus.
  
 ### Universal
 At the mesh level, it will be possible to define the default exposed path and port at which metrics are going to be accessible.
