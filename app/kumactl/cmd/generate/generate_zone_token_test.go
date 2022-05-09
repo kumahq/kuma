@@ -12,9 +12,11 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/cli"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 	"github.com/kumahq/kuma/pkg/util/test"
 )
@@ -48,6 +50,9 @@ var _ = Describe("kumactl generate zone-token", func() {
 		generator = &staticZoneTokenGenerator{}
 		ctx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
+				AuthnPlugins: map[string]plugins.AuthnPlugin{
+					cli.AuthType: &cli.TokenAuthnPlugin{},
+				},
 				Registry: registry.NewTypeRegistry(),
 				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 					return nil, nil

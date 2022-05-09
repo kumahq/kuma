@@ -13,11 +13,13 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/plugins"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/types"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/cli"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
@@ -44,6 +46,9 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 	BeforeEach(func() {
 		rootCtx := &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
+				AuthnPlugins: map[string]plugins.AuthnPlugin{
+					cli.AuthType: &cli.TokenAuthnPlugin{},
+				},
 				Registry: registry.Global(),
 				Now:      func() time.Time { return rootTime },
 				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
