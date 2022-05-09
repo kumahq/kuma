@@ -1,6 +1,8 @@
 package graceful
 
 import (
+	"io"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -117,10 +119,12 @@ spec:
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
 			return errors.Errorf("status code: %d", resp.StatusCode)
 		}
-		return nil
+		_, err = io.Copy(ioutil.Discard, resp.Body)
+		return err
 	}
 
 	It("should not drop a request when scaling up and down", func() {
