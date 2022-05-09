@@ -14,7 +14,7 @@ The new CRD will be named ContainerTemplate.
 It will allow for customer configuration of
 both sidecar and init containers.
 It will be namespace scoped.
-The spec will contain a jsonpatch string which describes the modification to be performed.
+The spec will contain an array of jsonpatch strings which describe the modifications to be performed.
 There is no Universal mode equivalent.
 
 ### Example
@@ -26,13 +26,58 @@ metadata:
   name: container-template-1
 spec:
   sidecarTemplate:
-    op: add
-    path: /securityContext/privileged
-    value: true
+    - op: add
+      path: /securityContext/privileged
+      value: true
   initTemplate:
-    op: add
-    path: /securityContext/runAsNonRoot
-    value: true
+    - op: add
+      path: /securityContext/runAsNonRoot
+      value: true
+    - op: remove
+      path: /securityContext/runAsUser
+
+```
+
+This will change the `securityContext` section of `kuma-sidecar` container from
+
+```yaml
+      securityContext:
+        runAsGroup: 5678
+        runAsUser: 5678
+```
+
+to
+
+
+```yaml
+      securityContext:
+        runAsGroup: 5678
+        runAsUser: 5678
+        priviledged: true
+```
+
+and similarly change the `securityContext` section of the `init` container from
+
+```yaml
+      securityContext:
+        capabilities:
+          add:
+          - NET_ADMIN
+          - NET_RAW
+        runAsGroup: 0
+        runAsUser: 0
+```
+
+to
+
+```yaml
+      securityContext:
+        capabilities:
+          add:
+          - NET_ADMIN
+          - NET_RAW
+        runAsGroup: 0
+        runAsNonRoot: true
 ```
 
 ## Workload Matching
