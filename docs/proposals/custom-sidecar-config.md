@@ -14,6 +14,7 @@ The new CRD will be named ContainerTemplate.
 It will allow for customer configuration of
 both sidecar and init containers.
 It will be namespace scoped.
+The webhook will validate that it can only be applied in a namespace where Kuma CP is running.
 The spec will contain an array of jsonpatch strings which describe the modifications to be performed.
 There is no Universal mode equivalent.
 
