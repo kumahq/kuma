@@ -107,7 +107,7 @@ Other options we considered but have decided against for now.
     terminationMessagePath: {{ .TerminationMessagePath }}
     terminationMessagePolicy: {{ .TerminationMessagePolicy }}
     volumeMounts: {{ .VolumeMounts }}
-```
+  ```
 * Our own style of "patch"; chose jsonPatch.
   eg
   ```yaml
@@ -116,7 +116,7 @@ Other options we considered but have decided against for now.
         operation: add
         value: |
           privileged: true
-```
+  ```
 * Applying CRD in lexicographical order; obviated by choice of annotation instad of selector.
 * Something more like Istio's solution
   * https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/#customizing-injection
