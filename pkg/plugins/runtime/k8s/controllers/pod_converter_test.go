@@ -693,11 +693,11 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 		}),
 		Entry("appProtocol has an unknown value", testCase{
 			appProtocol: utilpointer.StringPtr("not-yet-supported-protocol"),
-			expected:    "not-yet-supported-protocol", // we want Kuma's behavior to be straightforward to a user (just copy appProtocol value "as is")
+			expected:    "not-yet-supported-protocol", // we want Kuma's behavior to be straightforward to a user (just copy appProtocol lowercase value)
 		}),
-		Entry("appProtocol has a non-lowercase value", testCase{
+		Entry("appProtocol has a lowercase value", testCase{
 			appProtocol: utilpointer.StringPtr("HtTp"),
-			expected:    "HtTp", // we want Kuma's behavior to be straightforward to a user (just copy appProtocol value "as is")
+			expected:    "http", // we want Kuma's behavior to be straightforward to a user (copy appProtocol lowercase value)
 		}),
 		Entry("appProtocol has a known value: http", testCase{
 			appProtocol: utilpointer.StringPtr("http"),
