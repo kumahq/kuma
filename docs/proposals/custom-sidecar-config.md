@@ -85,6 +85,9 @@ A `ContainerTemplate` will be matched to a Pod via an annotation on the workload
 Each annotation may be an ordered list of `ContainerTemplate` names,
 which will be applied in the order specified.
 
+We will include a configuration option to Kuma CP
+to specify a default list of `ContainerTemplate` patches to apply.
+
 ### Example
 
 ```yaml
