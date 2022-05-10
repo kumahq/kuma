@@ -82,15 +82,14 @@ conf:
       name: mesh-listener
 ```
 
-#### `MeshTrafficPermission`
+#### Permissions
 
 We will take advantage of the new `MeshTrafficPermission` to define which
 cross-mesh traffic is allowed for a matching `MeshGateway` listener and
 `routeName`. It's being discussed in https://github.com/kumahq/kuma/issues/4222
 
-This concentrates `MeshGateway` permission management into its own resource.
-This may be a more generally useful abstraction given potential
-other kinds of access control. For example, one for filtering based on JWT token.
+For the first iteration, traffic will be permitted from all services in all
+meshes.
 
 #### Inline `MeshGatewayRoute`
 
