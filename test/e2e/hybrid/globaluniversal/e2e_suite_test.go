@@ -13,4 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E Hybrid Global Universal Suite")
 }
 
-var _ = Describe("Test Kubernetes/Universal deployment", globaluniversal.KubernetesUniversalDeployment)
+var _ = Describe("Test Kubernetes/Universal deployment", Label("arm-not-supported"), globaluniversal.KubernetesUniversalDeployment)

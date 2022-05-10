@@ -144,6 +144,13 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 							"memory": resource.MustParse("128Mi"),
 						},
 					},
+					Lifecycle: &corev1.Lifecycle{
+						PreStop: &corev1.LifecycleHandler{
+							Exec: &corev1.ExecAction{ // test-server does not handle graceful shutdown itself
+								Command: []string{"/usr/bin/sleep", "30"},
+							},
+						},
+					},
 				},
 			},
 		},

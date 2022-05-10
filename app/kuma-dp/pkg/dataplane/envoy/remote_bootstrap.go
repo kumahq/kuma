@@ -45,7 +45,7 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error) {
+func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
 		return nil, nil, err
@@ -69,9 +69,9 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params Bootst
 
 	backoff := retry.WithMaxDuration(cfg.ControlPlane.Retry.MaxDuration, retry.NewConstant(cfg.ControlPlane.Retry.Backoff))
 	var respBytes []byte
-	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")
-		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg, params)
+		respBytes, err = b.requestForBootstrap(ctx, bootstrapUrl, cfg, params)
 		if err == nil {
 			return nil
 		}
@@ -98,7 +98,7 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params Bootst
 	return bootstrap, respBytes, nil
 }
 
-func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
+func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
 	url.Path = "/bootstrap"
 	var dataplaneResource string
 	if params.Dataplane != nil {
@@ -150,7 +150,12 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal request to json")
 	}
-	resp, err := b.client.Post(url.String(), "application/json", bytes.NewReader(jsonBytes))
+	req, err := http.NewRequestWithContext(ctx, "POST", url.String(), bytes.NewReader(jsonBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("content-type", "application/json")
+	resp, err := b.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "request to bootstrap server failed")
 	}

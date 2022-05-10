@@ -22,19 +22,23 @@ var (
 	Now                   = time.Now
 	TempDir               = os.TempDir
 
-	SetupSignalHandler = func() context.Context {
+	SetupSignalHandler = func() (context.Context, context.Context) {
+		gracefulCtx, gracefulCancel := context.WithCancel(context.Background())
 		ctx, cancel := context.WithCancel(context.Background())
-		c := make(chan os.Signal, 2)
+		c := make(chan os.Signal, 3)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
 			s := <-c
-			Log.Info("Received signal, stopping instance", "signal", s.String())
+			Log.Info("Received signal, stopping instance gracefully", "signal", s.String())
+			gracefulCancel()
+			s = <-c
+			Log.Info("Received second signal, stopping instance", "signal", s.String())
 			cancel()
 			s = <-c
-			Log.Info("Received second signal, force exit", "signal", s.String())
+			Log.Info("Received third signal, force exit", "signal", s.String())
 			os.Exit(1)
 		}()
-		return ctx
+		return gracefulCtx, ctx
 	}
 )
 

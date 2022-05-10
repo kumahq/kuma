@@ -210,11 +210,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "11.services-for-pod.yaml",
 			dataplane:      "11.dataplane.yaml",
 		}),
-		Entry("11. Pod with several containers", testCase{
-			pod:            "11.pod.yaml",
-			servicesForPod: "11.services-for-pod.yaml",
-			dataplane:      "11.dataplane.yaml",
-		}),
 		Entry("12. Pod with kuma-sidecar is not ready", testCase{
 			pod:            "12.pod.yaml",
 			servicesForPod: "12.services-for-pod.yaml",
@@ -249,6 +244,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "18.pod.yaml",
 			servicesForPod: "18.services-for-pod.yaml",
 			dataplane:      "18.dataplane.yaml",
+		}),
+		Entry("19. Terminating pod is unhealthy", testCase{
+			pod:            "19.pod.yaml",
+			servicesForPod: "19.services-for-pod.yaml",
+			dataplane:      "19.dataplane.yaml",
 		}),
 	)
 

@@ -395,15 +395,15 @@ kumactl:
     tag:
 
 kubectl:
-  # bitnami maintains an image for all k8s versions */ } }
-  # see: https://hub.docker.com/r/bitnami/kubectl */ } }
+  # kuma image that support v1.20.15 image */ } }
+  # see: https://hub.docker.com/r/kumahq/kubectl */ } }
   image:
     # -- The kubectl image registry
-    registry: bitnami
+    registry: kumahq
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: "1.20"
+    tag: "v1.20.15"
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
