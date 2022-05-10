@@ -10,7 +10,7 @@ similar to ProxyTemplate,
 which can modify sidecar config utilizing [jsonpatch](https://jsonpatch.com).
 
 ## Custom Resource Definition
-The new CRD will be named ContainerTemplate.
+The new CRD will be named ContainerPatch.
 It will allow for customer configuration of
 both sidecar and init containers.
 It will be namespace scoped.
@@ -22,15 +22,15 @@ There is no Universal mode equivalent.
 
 ```yaml
 apiVersion: kuma.io/v1alpha1
-kind: ContainerTemplate
+kind: ContainerPatch
 metadata:
-  name: container-template-1
+  name: container-patch-1
 spec:
-  sidecarTemplate:
+  sidecarPatch:
     - op: add
       path: /securityContext/privileged
       value: true
-  initTemplate:
+  initPatch:
     - op: add
       path: /securityContext/runAsNonRoot
       value: true
@@ -82,12 +82,12 @@ to
 ```
 
 ## Workload Matching
-A `ContainerTemplate` will be matched to a Pod via an annotation on the workload.
-Each annotation may be an ordered list of `ContainerTemplate` names,
+A `ContainerPatch` will be matched to a Pod via an annotation on the workload.
+Each annotation may be an ordered list of `ContainerPatch` names,
 which will be applied in the order specified.
 
 We will include a configuration option to Kuma CP
-to specify a default list of `ContainerTemplate` patches to apply.
+to specify a default list of `ContainerPatch` patches to apply.
 
 ### Example
 
@@ -107,9 +107,9 @@ spec:
       labels:
         app: app-depl
       annotations:
-        kuma.io/container-template:
-          - containter-template-1
-          - containter-template-2
+        kuma.io/container-patches:
+          - containter-patch-1
+          - containter-patch-2
     spec: ...
 ```
 
@@ -120,7 +120,7 @@ To patch containers in multizone, the config will need to be pushed to the appro
 
 ## Error Modes and Validation
 
-We will validate that the rendered template meets the kubernetes specification.
+We will validate that the rendered container meets the kubernetes specification.
 We will not validate that it is a sane configuration.
 It is assumed that anyone using this feature has the expertise to create and debug a container configuration
 via interaction with kubernetes directly.
