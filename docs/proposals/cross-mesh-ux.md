@@ -142,8 +142,8 @@ like:
 ```
 address: 240.0.0.1
 port: 8090
+mesh: expose # new, we need to keep track of the mesh somehow
 tags:
-  kuma.io/mesh: expose # we need to keep track of the mesh somehow
   kuma.io/service: edge-gateway
   name: mesh-listener
 ```
