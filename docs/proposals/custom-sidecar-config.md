@@ -177,6 +177,6 @@ Other options we considered but have decided against for now.
   We chose jsonpatch because it is a standard and has supporting libraries and documentation.
 * Applying CRD in lexicographical order; obviated by choice of annotation instead of selector.
 * Something more like Istio's solution
+  These seemed overly complicated compared to simply matching a jsonpatch string to a container.
   * https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/#customizing-injection
   * https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/#custom-templates-experimental
-  These seemed overly complicated compared to simply matching a jsonpatch string to a container.
