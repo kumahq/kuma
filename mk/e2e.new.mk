@@ -62,7 +62,7 @@ test/e2e/k8s/start/cluster/$1:
 
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1:
-	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/load/images
+	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/load
 
 .PHONY: test/e2e/k8s/wait/$1
 test/e2e/k8s/wait/$1:

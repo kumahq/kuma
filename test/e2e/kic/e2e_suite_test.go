@@ -13,4 +13,4 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E KIC Suite")
 }
 
-var _ = Describe("Kong Ingress on Kubernetes", kic.KICKubernetes)
+var _ = Describe("Kong Ingress on Kubernetes", Label("arm-not-supported"), kic.KICKubernetes)
