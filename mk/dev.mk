@@ -12,6 +12,7 @@ DATAPLANE_API_LATEST_VERSION := main
 SHELLCHECK_VERSION := v0.8.0
 YQ_VERSION := v4.24.2
 ETCD_VERSION := v3.5.3
+HELM_VERSION := v3.8.2
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_KUBECTL_VERSION ?= v1.23.5
@@ -292,7 +293,7 @@ dev/install/yq:
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
 	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | \
-		env HELM_INSTALL_DIR=$(CI_TOOLS_DIR) USE_SUDO=false bash
+		env HELM_INSTALL_DIR=$(CI_TOOLS_DIR) DESIRED_VERSION=$(HELM_VERSION) USE_SUDO=false bash
 
 .PHONY: dev/install/helm-docs
 dev/install/helm-docs: ## Bootstrap: Install helm-docs

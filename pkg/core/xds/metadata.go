@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
@@ -167,6 +168,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 		if err := util_proto.ToTyped(value.GetStructValue(), version); err != nil {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldVersion, "value", value)
 		}
+		version.KumaDp.KumaCpCompatible = kuma_version.DeploymentVersionCompatible(kuma_version.Build.Version, version.KumaDp.GetVersion())
 		metadata.Version = version
 	}
 

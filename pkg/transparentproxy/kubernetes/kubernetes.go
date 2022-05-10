@@ -27,15 +27,16 @@ import (
 )
 
 type PodRedirect struct {
-	BuiltinDNSEnabled     bool
-	BuiltinDNSPort        uint32
-	ExcludeOutboundPorts  string
-	RedirectPortOutbound  uint32
-	RedirectInbound       bool
-	ExcludeInboundPorts   string
-	RedirectPortInbound   uint32
-	RedirectPortInboundV6 uint32
-	UID                   string
+	BuiltinDNSEnabled                  bool
+	BuiltinDNSPort                     uint32
+	ExcludeOutboundPorts               string
+	RedirectPortOutbound               uint32
+	RedirectInbound                    bool
+	ExcludeInboundPorts                string
+	RedirectPortInbound                uint32
+	RedirectPortInboundV6              uint32
+	UID                                string
+	ExperimentalTransparentProxyEngine bool
 }
 
 func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
@@ -82,6 +83,11 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 	podRedirect.UID, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaSidecarUID)
 
+	podRedirect.ExperimentalTransparentProxyEngine, _, err = metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaTransparentProxyingExperimentalEngine)
+	if err != nil {
+		return nil, err
+	}
+
 	return podRedirect, nil
 }
 
@@ -101,6 +107,7 @@ func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig
 		RedirectAllDNSTraffic:  false,
 		AgentDNSListenerPort:   fmt.Sprintf("%d", pr.BuiltinDNSPort),
 		DNSUpstreamTargetChain: "",
+		ExperimentalEngine:     pr.ExperimentalTransparentProxyEngine,
 	}
 }
 
@@ -128,6 +135,10 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 			"--redirect-all-dns-traffic",
 			"--redirect-dns-port", strconv.FormatInt(int64(pr.BuiltinDNSPort), 10),
 		)
+	}
+
+	if pr.ExperimentalTransparentProxyEngine {
+		result = append(result, "--experimental-transparent-proxy-engine")
 	}
 
 	return result
