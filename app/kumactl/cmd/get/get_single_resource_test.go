@@ -43,6 +43,9 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 	var _ resources.ApiServerClient = &testApiServerClient{}
 	BeforeEach(func() {
 		rootCtx := &kumactl_cmd.RootContext{
+			Args: kumactl_cmd.RootArgs{
+				ConfigType: kumactl_cmd.InMemory,
+			},
 			Runtime: kumactl_cmd.RootRuntime{
 				Registry: registry.Global(),
 				Now:      func() time.Time { return rootTime },

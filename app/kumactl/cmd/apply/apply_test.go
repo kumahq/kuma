@@ -40,6 +40,9 @@ var _ = Describe("kumactl apply", func() {
 	var store core_store.ResourceStore
 	BeforeEach(func() {
 		rootCtx = &kumactl_cmd.RootContext{
+			Args: kumactl_cmd.RootArgs{
+				ConfigType: kumactl_cmd.InMemory,
+			},
 			Runtime: kumactl_cmd.RootRuntime{
 				Registry: registry.Global(),
 				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {

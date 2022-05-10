@@ -36,6 +36,9 @@ var _ = Describe("kumactl root cmd", func() {
 	It("should create default config at startup", func() {
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
+			Args: kumactl_cmd.RootArgs{
+				ConfigType: kumactl_cmd.InMemory,
+			},
 			Runtime: kumactl_cmd.RootRuntime{
 				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 					return nil, nil
@@ -73,6 +76,9 @@ currentContext: local
 	It("shouldn't create config file when --no-config flag is set", func() {
 		// given
 		rootCtx := &kumactl_cmd.RootContext{
+			Args: kumactl_cmd.RootArgs{
+				ConfigType: kumactl_cmd.InMemory,
+			},
 			Runtime: kumactl_cmd.RootRuntime{
 				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
 					return nil, nil

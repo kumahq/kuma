@@ -20,6 +20,8 @@ func MakeRootContext(now time.Time, resourceStore store.ResourceStore, res ...mo
 		}
 	}
 	return &kumactl_cmd.RootContext{
+		// should I add the in-memory here as well? or should I make other tests use this function?
+		// why aren't other tests using this?
 		Runtime: kumactl_cmd.RootRuntime{
 			Registry: reg,
 			Now:      func() time.Time { return now },
