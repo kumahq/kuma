@@ -169,6 +169,15 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(err).ToNot(HaveOccurred())
 		hash2 := meshCtx2.Hash
 
+		<-time.After(expiration)
+
+		// Computing one meshcontext shouldn't cause us to recompute other
+		// meshcontexts
+		nextMeshCtx0, err := meshCache.GetMeshContext(context.Background(), logr.Discard(), "mesh-0")
+		Expect(err).ToNot(HaveOccurred())
+		// If the meshcontxt hasn't been recomputed, its fields will be identical
+		Expect(nextMeshCtx0.DataSourceLoader).To(BeIdenticalTo(meshCtx0.DataSourceLoader))
+
 		dp := core_mesh.NewDataplaneResource()
 		err = s.Get(context.Background(), dp, core_store.GetByKey("dp-1", "mesh-0"))
 		Expect(err).ToNot(HaveOccurred())
