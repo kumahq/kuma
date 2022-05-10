@@ -17,19 +17,19 @@ import (
 )
 
 func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, error) {
-	adsCluster := envoy_cluster_v3.Cluster {
-		Name: "ads_cluster",
+	adsCluster := envoy_cluster_v3.Cluster{
+		Name:                 "ads_cluster",
 		ConnectTimeout:       util_proto.Duration(parameters.XdsConnectTimeout),
-			Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
-			LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
-			UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
+		Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
+		LbPolicy:             envoy_cluster_v3.Cluster_ROUND_ROBIN,
+		UpstreamConnectionOptions: &envoy_cluster_v3.UpstreamConnectionOptions{
 			TcpKeepalive: &envoy_core_v3.TcpKeepalive{
 				KeepaliveProbes:   util_proto.UInt32(3),
 				KeepaliveTime:     util_proto.UInt32(10),
 				KeepaliveInterval: util_proto.UInt32(10),
 			},
 		},
-			LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: "ads_cluster",
 			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 				{
@@ -309,15 +309,16 @@ func configureClusterFromHost(host string, lookUpFamily string, c *envoy_cluster
 }
 
 func getDnsLookUpFamily(family string) envoy_cluster_v3.Cluster_DnsLookupFamily {
-	if family == "V4_ONLY" {
+	switch family {
+	case "V4_ONLY":
 		return envoy_cluster_v3.Cluster_V4_ONLY
-	} else if family == "V6_ONLY" {
+	case "V6_ONLY":
 		return envoy_cluster_v3.Cluster_V6_ONLY
-	} else if family == "V4_PREFERRED" {
+	case "V4_PREFERRED":
 		return envoy_cluster_v3.Cluster_V4_PREFERRED
-	} else if family == "AUTO" {
+	case "AUTO":
 		return envoy_cluster_v3.Cluster_AUTO
-	} else {
+	default:
 		log.Info("[WARNING] Unknown DnsLookupFamily - falling back to AUTO. Possible values: V4_ONLY, V4_PREFERRED, V6_ONLY, AUTO", "family", family)
 		return envoy_cluster_v3.Cluster_AUTO
 	}
