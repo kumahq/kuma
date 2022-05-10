@@ -8,6 +8,7 @@ api
 app
 build/*
 !build/artifacts-linux-amd64
+!build/artifacts-linux-arm64
 dev
 docs
 examples
