@@ -420,14 +420,13 @@ jobs:
         - artifacts-linux-<<parameters.go_arch>>
 
   release:
-    executor: golang
+    executor: vm
     steps:
+    - install_build_tools
     - checkout
     - run:
         name: "Download Go modules"
         command: go mod download
-    - setup_remote_docker:
-        version: *docker_version
     - run:
         name: Build Packages
         command: |
