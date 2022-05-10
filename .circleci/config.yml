@@ -4,6 +4,7 @@ reusable:
 
   constants:
     - &go_version "1.18"
+    - &docker_version "20.10.7"
 
   docker_images:
     - &golang_image "cimg/go:1.18.0"
@@ -402,7 +403,7 @@ jobs:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
     - setup_remote_docker:
-        version: 20.10.7
+        version: *docker_version
     - run:
         name: Build Docker images
         command: |
@@ -419,7 +420,7 @@ jobs:
         - artifacts-linux-<<parameters.go_arch>>
 
   release:
-    executor: golang
+    executor: vm
     steps:
     - install_build_tools
     - checkout
@@ -443,7 +444,7 @@ jobs:
         command: |
           ./tools/releases/docker.sh --push
     - run:
-        name: Create and Push multiarch manifest for Docker images
+        name: Create and Push multi arch manifest for Docker images
         command: |
           ./tools/releases/docker.sh --manifest
 
