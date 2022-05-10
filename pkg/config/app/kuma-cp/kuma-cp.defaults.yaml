@@ -84,6 +84,10 @@ bootstrapServer:
     adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
     # Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
     xdsHost: "" # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
+    # if the xdsHost is a domain, as opposed to an IP address, this setting sets the behaviour for IPV4 / IPV6 lookup
+    # docs: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-enum-config-cluster-v3-cluster-dnslookupfamily
+    # possible values: V4_ONLY, V4_PREFERRED, V6_ONLY, AUTO
+    xdsHostDnsLookupFamily: "AUTO"
     # Port of XDS Server. By default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server

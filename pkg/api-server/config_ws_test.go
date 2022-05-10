@@ -85,6 +85,7 @@ var _ = Describe("Config WS", func() {
 			  "adminPort": 9901,
 			  "xdsConnectTimeout": "1s",
 			  "xdsHost": "",
+			  "xdsHostDnsLookupFamily": "AUTO",
 			  "xdsPort": 0
 			}
 		  },

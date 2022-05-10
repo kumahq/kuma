@@ -64,6 +64,7 @@ var _ = Describe("Bootstrap Server", func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
 		config := bootstrap_config.DefaultBootstrapServerConfig()
 		config.Params.XdsHost = "localhost"
+		config.Params.XdsHostDnsLookupFamily = "V4_ONLY"
 		config.Params.XdsPort = 5678
 
 		port, err := test.GetFreePort()

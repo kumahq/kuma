@@ -82,6 +82,7 @@ var _ = Describe("Config loader", func() {
 			// then
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
+			Expect(cfg.BootstrapServer.Params.XdsHostDnsLookupFamily).To(Equal("AUTO"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
 			Expect(cfg.BootstrapServer.Params.XdsConnectTimeout).To(Equal(13 * time.Second))
 			Expect(cfg.BootstrapServer.Params.AdminAccessLogPath).To(Equal("/access/log/test"))
@@ -290,6 +291,7 @@ bootstrapServer:
     adminAccessLogPath: /access/log/test
     adminAddress: 1.1.1.1
     xdsHost: kuma-control-plane
+    xdsHostDnsLookupFamily: AUTO
     xdsPort: 4321
     xdsConnectTimeout: 13s
 apiServer:
@@ -475,6 +477,7 @@ experimental:
 			envVars: map[string]string{
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                                                  "1234",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                                                    "kuma-control-plane",
+				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST_DNS_LOOKUP_FAMILY":                                  "AUTO",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                                                    "4321",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT":                                         "13s",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH":                                       "/access/log/test",

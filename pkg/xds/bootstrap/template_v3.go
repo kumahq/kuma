@@ -318,7 +318,7 @@ func getDnsLookUpFamily(family string) envoy_cluster_v3.Cluster_DnsLookupFamily 
 	} else if family == "AUTO" {
 		return envoy_cluster_v3.Cluster_AUTO
 	} else {
-		log.Info("[WARNING] Unknown DnsLookupFamily: %s - falling back to AUTO. Possible values: V4_ONLY, V4_PREFERRED, V6_ONLY, AUTO", family)
+		log.Info("[WARNING] Unknown DnsLookupFamily - falling back to AUTO. Possible values: V4_ONLY, V4_PREFERRED, V6_ONLY, AUTO", "family", family)
 		return envoy_cluster_v3.Cluster_AUTO
 	}
 }
