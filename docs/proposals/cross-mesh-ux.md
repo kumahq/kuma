@@ -148,3 +148,17 @@ tags:
 ```
 
 giving access from `consume` to `expose` at `http://expose.mesh:8090/api`.
+
+## Performance considerations
+
+When using cross-mesh `MeshGateway`, the configuration generation for
+one `Mesh` becomes dependent on changes in another.
+Any change in `expose`'s `MeshGateway` or any
+`MeshGateway` `Dataplane`s will cause a rebuild of the config for every
+`Dataplane` in `consume`. In an environment with a large number of meshes,
+this may mean a significant amount of recomputation.
+
+In the future, we could improve this by including an option
+to require other meshes like `consume`
+to opt-in to using `expose`'s cross-mesh `MeshGateway` or further limiting
+exposure to cross-mesh `MeshGateway`s.
