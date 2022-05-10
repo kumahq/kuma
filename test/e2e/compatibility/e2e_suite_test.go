@@ -13,5 +13,5 @@ func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E Compatibility Suite")
 }
 
-var _ = Describe("Test Kubernetes Multizone Compatibility", compatibility.CpCompatibilityMultizoneKubernetes)
-var _ = Describe("Test Universal Compatibility", compatibility.UniversalCompatibility)
+var _ = Describe("Test Kubernetes Multizone Compatibility", Label("arm-not-supported"), compatibility.CpCompatibilityMultizoneKubernetes)
+var _ = Describe("Test Universal Compatibility", Label("arm-not-supported"), compatibility.UniversalCompatibility)

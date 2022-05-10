@@ -5,7 +5,7 @@ set -e
 SCRIPT_DIR="$(dirname -- "${BASH_SOURCE[0]}")"
 source "${SCRIPT_DIR}/../common.sh"
 
-GOARCH=(amd64)
+GOARCH=(amd64 arm64)
 
 # first component is the system - must map to valid $GOOS values
 # if present, second is the distribution and third is the envoy distribution

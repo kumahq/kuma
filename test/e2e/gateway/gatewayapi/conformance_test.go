@@ -1,6 +1,7 @@
 package gatewayapi_test
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -25,6 +26,9 @@ var maxNodePort = 30089
 func TestConformance(t *testing.T) {
 	if Config.IPV6 {
 		t.Skip("On IPv6 we run on kind which doesn't support load balancers")
+	}
+	if runtime.GOARCH == "arm64" {
+		t.Skip("On ARM64 it's not supported yet")
 	}
 
 	g := NewWithT(t)
