@@ -81,6 +81,9 @@ const (
 
 	// KumaTransparentProxyingExperimentalEngine enables experimental transparent proxy engine.
 	KumaTransparentProxyingExperimentalEngine = "kuma.io/transparent-proxying-experimental-engine"
+
+	// KumaSidecarDrainTime allows to specify drain time of Kuma DP sidecar.
+	KumaSidecarDrainTime = "kuma.io/sidecar-drain-time"
 )
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.

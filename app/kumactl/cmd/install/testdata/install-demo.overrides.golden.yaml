@@ -54,6 +54,9 @@ spec:
             - name: tcp
               containerPort: 6379
           lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sleep", "30"]
             postStart:
               exec:
                 command: ["/usr/local/bin/redis-cli", "set", "zone", "aws"]
