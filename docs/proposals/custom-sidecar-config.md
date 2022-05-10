@@ -120,7 +120,7 @@ To patch containers in multizone, the config will need to be pushed to the appro
 
 ## Error Modes and Validation
 
-We will validate that the rendered container meets the kubernetes specification.
+We will validate that the rendered container spec meets the kubernetes specification.
 We will not validate that it is a sane configuration.
 It is assumed that anyone using this feature has the expertise to create and debug a container configuration
 via interaction with kubernetes directly.
