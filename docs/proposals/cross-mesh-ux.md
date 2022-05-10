@@ -60,10 +60,10 @@ The configuration will make it possible to expose `MeshGatewayRoute`s depending
 on cross-mesh traffic's source `Mesh` and source _tags_.
 
 First of all, we require users to explicitly enable cross-mesh traffic on
-the `MeshGateway` listener by marking it `internal` as well as mTLS on
-any meshes involved in cross-mesh traffic.
-This option will allow us to configure the corresponding Envoy listener
-with all mesh CAs.
+the `MeshGateway` listener by marking it `crossMesh`. We also require
+mTLS on any meshes involved in cross-mesh traffic.
+This option will allow us
+to configure the corresponding Envoy listener appropriately for mTLS.
 
 ```
 type: MeshGateway
@@ -75,12 +75,18 @@ selectors:
 conf:
   listeners:
   - port: 8090
-    protocol: HTTPS
+    protocol: HTTP
     hostname: expose.mesh # optional in general
-    internal: true
+    crossMesh: true
     tags:
       name: mesh-listener
 ```
+
+The initial implementation will require `protocol: HTTP` when using `crossMesh`.
+When using `crossMesh`, communications are already protected with TLS so the use
+case for both `crossMesh` and `HTTPS` is limited.
+In a later iteration we may examine whether and how `HTTPS` can be supported for
+cross-mesh communication.
 
 #### Permissions
 
