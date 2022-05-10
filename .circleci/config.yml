@@ -401,7 +401,7 @@ jobs:
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
-        command: make build
+        command: GOARCH=<<parameters.go_arch>> make build
     - setup_remote_docker:
         version: *docker_version
     - run:
