@@ -444,7 +444,7 @@ jobs:
         command: |
           ./tools/releases/docker.sh --push
     - run:
-        name: Create and Push multiarch manifest for Docker images
+        name: Create and Push multi arch manifest for Docker images
         command: |
           ./tools/releases/docker.sh --manifest
 
