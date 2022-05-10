@@ -115,7 +115,8 @@ serve the gateway.
 #### Virtual outbounds
 
 Every `MeshGateway` listener can be given a `hostname`. For cross-mesh, we will
-require one be set and use it to generate a virtual outbound.
+require one be set and use it to automatically generate a virtual outbound for
+`Dataplane`s in other `Mesh`es.
 
 The listener from above
 
