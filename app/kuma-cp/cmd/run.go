@@ -55,8 +55,8 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 
 			kuma_cp.PrintDeprecations(&cfg, cmd.OutOrStdout())
 
-			ctx := opts.SetupSignalHandler()
-			rt, err := bootstrap.Bootstrap(ctx, cfg)
+			gracefulCtx, ctx := opts.SetupSignalHandler()
+			rt, err := bootstrap.Bootstrap(gracefulCtx, cfg)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
@@ -137,13 +137,16 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 			}
 
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
-			if err := rt.Start(ctx.Done()); err != nil {
+			if err := rt.Start(gracefulCtx.Done()); err != nil {
 				runLog.Error(err, "problem running Control Plane")
 				return err
 			}
 
 			runLog.Info("Stop signal received. Waiting 3 seconds for components to stop gracefully...")
-			time.Sleep(gracefullyShutdownDuration)
+			select {
+			case <-ctx.Done():
+			case <-time.After(gracefullyShutdownDuration):
+			}
 			runLog.Info("Stopping Control Plane")
 			return nil
 		},

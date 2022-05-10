@@ -44,7 +44,7 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				return errors.Wrapf(err, "unable to write to directory %q", outputDir)
 			}
 
-			ctx := opts.SetupSignalHandler()
+			ctx, _ := opts.SetupSignalHandler()
 
 			discoverer, err := xds.NewDiscoverer(
 				common.DiscoveryConfig{

@@ -1,6 +1,7 @@
 package envoy
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -69,7 +70,7 @@ var _ = Describe("Remote Bootstrap", func() {
 			},
 			DynamicMetadata: given.dynamicMetadata,
 		}
-		_, config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, params)
+		_, config, err := generator(context.Background(), fmt.Sprintf("http://localhost:%d", port), given.config, params)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -247,7 +248,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				},
 			},
 		}
-		_, _, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, params)
+		_, _, err = generator(context.Background(), fmt.Sprintf("http://localhost:%d", port), cfg, params)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -282,7 +283,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				},
 			},
 		}
-		_, _, err = generator(fmt.Sprintf("http://localhost:%d", port), config, params)
+		_, _, err = generator(context.Background(), fmt.Sprintf("http://localhost:%d", port), config, params)
 
 		// then
 		Expect(err).To(MatchError("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp or pass it to kuma-dp run --dataplane-file=/file. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))

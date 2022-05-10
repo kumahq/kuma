@@ -58,6 +58,12 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 			}
 		}
 
+		if pod.DeletionTimestamp != nil { // pod is in Termination state
+			health = &mesh_proto.Dataplane_Networking_Inbound_Health{
+				Ready: false,
+			}
+		}
+
 		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 			Port:   uint32(containerPort),
 			Tags:   tags,

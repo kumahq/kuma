@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
 	healthcheck "github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
 	. "github.com/kumahq/kuma/test/framework"
@@ -22,7 +23,10 @@ func TestE2E(t *testing.T) {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		env.Cluster = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
-		Expect(env.Cluster.Install(Kuma(core.Standalone, WithEnv("KUMA_STORE_UNSAFE_DELETE", "true")))).To(Succeed())
+		Expect(env.Cluster.Install(Kuma(core.Standalone,
+			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+			WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
+		))).To(Succeed())
 		portFwd := env.Cluster.GetKuma().(*K8sControlPlane).PortFwd()
 
 		bytes, err := json.Marshal(portFwd)
@@ -57,4 +61,5 @@ var _ = SynchronizedBeforeSuite(
 )
 
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
+var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)

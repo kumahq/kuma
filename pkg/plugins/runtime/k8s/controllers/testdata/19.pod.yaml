@@ -1,0 +1,14 @@
+metadata:
+  namespace: demo
+  name: example
+  deletionTimestamp: "2022-04-22T12:39:20Z"
+  labels:
+    app: example
+    version: "0.1"
+spec:
+  containers:
+    - name: container-1
+      ports:
+        - containerPort: 8080
+status:
+  podIP: 192.168.0.1
