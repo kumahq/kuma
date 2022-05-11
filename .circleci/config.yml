@@ -389,35 +389,41 @@ jobs:
   build:
     parameters:
       go_arch:
-        description: The golang arch
+        description: The golang arch.
         type: string
         default: amd64
-    executor: golang
+      workflow_executor:
+        type: string
+        default: vm
+    executor:
+      name: << parameters.workflow_executor >>
+    environment:
+      GOPATH: /home/circleci/.go-kuma-go
     steps:
-    - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-    - run:
-        name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
-        command: GOARCH=<<parameters.go_arch>> make build
-    - setup_remote_docker:
-        version: *docker_version
-    - run:
-        name: Build Docker images
-        command: |
-          GOARCH=<<parameters.go_arch>> make images
-    - run:
-        name: Save Docker images into TAR archives
-        command: |
-          GOARCH=<<parameters.go_arch>> make docker/save
-    # Persist the specified paths into the workspace for use in downstream jobs
-    - persist_to_workspace:
-        root: build
-        paths:
-        - docker-images-<<parameters.go_arch>>
-        - artifacts-linux-<<parameters.go_arch>>
+      - install_build_tools:
+          go_arch: << parameters.go_arch >>
+      - checkout
+      - restore_cache:
+          keys:
+          # prefer the exact match
+          - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+      - run:
+          name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
+          command: make build
+      - run:
+          name: Build Docker images
+          command: |
+            make images
+      - run:
+          name: Save Docker images into TAR archives
+          command: |
+            make docker/save
+      # Persist the specified paths into the workspace for use in downstream jobs
+      - persist_to_workspace:
+          root: build
+          paths:
+          - docker-images-<<parameters.go_arch>>
+          - artifacts-linux-<<parameters.go_arch>>
 
   release:
     executor: vm
@@ -468,6 +474,7 @@ workflows:
             - go_cache
       - build:
           name: build-arm64
+          workflow_executor: vm-arm64
           go_arch: arm64
           requires:
             - go_cache
