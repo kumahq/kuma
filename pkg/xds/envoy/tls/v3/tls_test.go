@@ -17,10 +17,14 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 
 		It("should return `nil`", func() {
 			// given
-			mesh := core_mesh.NewMeshResource()
+			mesh := &core_mesh.MeshResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "default",
+				},
+			}
 
 			// when
-			snippet, err := v3.CreateDownstreamTlsContext(mesh)
+			snippet, err := v3.CreateDownstreamTlsContext(mesh.GetMeta().GetName(), mesh)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -55,7 +59,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := v3.CreateDownstreamTlsContext(mesh)
+				snippet, err := v3.CreateDownstreamTlsContext(mesh.GetMeta().GetName(), mesh)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when

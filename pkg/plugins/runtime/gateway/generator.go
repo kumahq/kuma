@@ -57,6 +57,10 @@ type GatewayListener struct {
 	Port         uint32
 	Protocol     mesh_proto.MeshGateway_Listener_Protocol
 	ResourceName string
+	Tags         map[string]string
+	// CrossMesh is important because for generation we need to treat such a
+	// listener as if we have HTTPS with the Mesh cert for this Dataplane
+	CrossMesh bool
 }
 
 // GatewayListenerInfo holds everything needed to generate resources for a
@@ -75,7 +79,7 @@ type GatewayListenerInfo struct {
 // a specific protocol.
 // A FilterChainGenerator can be host-specific or shared amongst hosts.
 type FilterChainGenerator interface {
-	Generate(xds_context.MeshContext, GatewayListenerInfo, []GatewayHost) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error)
+	Generate(xds_context.Context, GatewayListenerInfo, []GatewayHost) (*core_xds.ResourceSet, []*envoy_listeners.FilterChainBuilder, error)
 }
 
 // Generator generates xDS resources for an entire Gateway.
@@ -167,7 +171,7 @@ func GatewayListenerInfoFromProxy(
 			}
 		}
 
-		listener, hosts, err := MakeGatewayListener(ctx, gateway, listeners)
+		listener, hosts, err := MakeGatewayListener(ctx, gateway, proxy.Dataplane, listeners)
 		if err != nil {
 			return nil, err
 		}
@@ -212,7 +216,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 			return nil, errors.New("no support for protocol")
 		}
 
-		ldsResources, err := g.generateLDS(ctx.Mesh, info, info.HostInfos)
+		ldsResources, err := g.generateLDS(ctx, info, info.HostInfos)
 		if err != nil {
 			return nil, err
 		}
@@ -228,7 +232,7 @@ func (g Generator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*co
 	return resources, nil
 }
 
-func (g Generator) generateLDS(ctx xds_context.MeshContext, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
+func (g Generator) generateLDS(ctx xds_context.Context, info GatewayListenerInfo, hostInfos []GatewayHostInfo) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	listenerBuilder := GenerateListener(info)
 
@@ -237,7 +241,11 @@ func (g Generator) generateLDS(ctx xds_context.MeshContext, info GatewayListener
 		gatewayHosts = append(gatewayHosts, hostInfo.Host)
 	}
 
-	res, filterChainBuilders, err := g.FilterChainGenerators.FilterChainGenerators[info.Listener.Protocol].Generate(ctx, info, gatewayHosts)
+	protocol := info.Listener.Protocol
+	if info.Listener.CrossMesh {
+		protocol = mesh_proto.MeshGateway_Listener_HTTPS
+	}
+	res, filterChainBuilders, err := g.FilterChainGenerators.FilterChainGenerators[protocol].Generate(ctx, info, gatewayHosts)
 	if err != nil {
 		return nil, err
 	}
@@ -290,6 +298,7 @@ func (g Generator) generateRDS(ctx xds_context.Context, info GatewayListenerInfo
 func MakeGatewayListener(
 	meshContext xds_context.MeshContext,
 	gateway *core_mesh.MeshGatewayResource,
+	dataplane *core_mesh.DataplaneResource,
 	listeners []*mesh_proto.MeshGateway_Listener,
 ) (GatewayListener, []GatewayHost, error) {
 	hostsByName := map[string]GatewayHost{}
@@ -302,6 +311,8 @@ func MakeGatewayListener(
 			listeners[0].GetProtocol().String(),
 			listeners[0].GetPort(),
 		),
+		Tags:      mesh_proto.Merge(gateway.Spec.GetTags(), dataplane.Spec.Networking.Gateway.Tags, listeners[0].GetTags()),
+		CrossMesh: listeners[0].CrossMesh,
 	}
 
 	// Hostnames must be unique to a listener to remove ambiguity
@@ -335,7 +346,7 @@ func MakeGatewayListener(
 		for _, t := range ConnectionPolicyTypes {
 			matches := match.ConnectionPoliciesBySource(
 				l.GetTags(),
-				match.ToConnectionPolicies(meshContext.Resources[t]))
+				match.ToConnectionPolicies(meshContext.Resources.MeshLocalResources[t]))
 			host.Policies[t] = matches
 		}
 

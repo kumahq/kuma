@@ -5,6 +5,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,11 +24,21 @@ import (
 
 var log = core.Log.WithName("xds").WithName("secrets")
 
+type MeshCa struct {
+	Mesh     string
+	CaSecret *core_xds.CaSecret
+}
+
 type Secrets interface {
-	GetForDataPlane(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
-	GetForZoneEgress(zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, *core_xds.CaSecret, error)
+	GetForDataPlane(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, []MeshCa, error)
+	GetForGatewayListener(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, listenerTags map[string]string, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, MeshCa, error)
+	GetForZoneEgress(zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, []MeshCa, error)
 	Info(dpKey model.ResourceKey) *Info
 	Cleanup(dpKey model.ResourceKey)
+}
+
+type MeshInfo struct {
+	MTLS *mesh_proto.Mesh_Mtls
 }
 
 type Info struct {
@@ -34,10 +46,11 @@ type Info struct {
 	Generation time.Time
 
 	Tags mesh_proto.MultiValueTagSet
-	MTLS *mesh_proto.Mesh_Mtls
 
 	IssuedBackend     string
 	SupportedBackends []string
+
+	MeshInfos []MeshInfo
 }
 
 func (c *Info) CertLifetime() time.Duration {
@@ -85,9 +98,10 @@ func (s *secrets) Info(dpKey model.ResourceKey) *Info {
 }
 
 type certs struct {
-	identity *core_xds.IdentitySecret
-	ca       *core_xds.CaSecret
-	info     *Info
+	identity   *core_xds.IdentitySecret
+	cas        []MeshCa
+	allInOneCa MeshCa
+	info       *Info
 }
 
 func (c *certs) Info() *Info {
@@ -107,30 +121,52 @@ func (s *secrets) certs(dpKey model.ResourceKey) *certs {
 func (s *secrets) GetForDataPlane(
 	dataplane *core_mesh.DataplaneResource,
 	mesh *core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
-	return s.get(dataplane, dataplane.Spec.TagSet(), mesh)
+	otherMeshes []*core_mesh.MeshResource,
+) (*core_xds.IdentitySecret, []MeshCa, error) {
+	identity, cas, _, err := s.get(dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
+	return identity, cas, err
+}
+
+func (s *secrets) GetForGatewayListener(
+	mesh *core_mesh.MeshResource,
+	dataplane *core_mesh.DataplaneResource,
+	// TODO do we need a TagSet?
+	listenerTags map[string]string,
+	otherMeshes []*core_mesh.MeshResource,
+) (*core_xds.IdentitySecret, MeshCa, error) {
+	multiTags := mesh_proto.MultiValueTagSet{}
+	for k, v := range listenerTags {
+		multiTags[k] = map[string]bool{
+			v: true,
+		}
+	}
+
+	identity, _, allInOne, err := s.get(dataplane, multiTags, mesh, otherMeshes)
+	return identity, allInOne, err
 }
 
 func (s *secrets) GetForZoneEgress(
 	zoneEgress *core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
+) (*core_xds.IdentitySecret, []MeshCa, error) {
 	tags := mesh_proto.MultiValueTagSetFrom(map[string][]string{
 		mesh_proto.ServiceTag: {
 			mesh_proto.ZoneEgressServiceName,
 		},
 	})
 
-	return s.get(zoneEgress, tags, mesh)
+	identity, cas, _, err := s.get(zoneEgress, tags, mesh, nil)
+	return identity, cas, err
 }
 
 func (s *secrets) get(
 	resource model.Resource,
 	tags mesh_proto.MultiValueTagSet,
 	mesh *core_mesh.MeshResource,
-) (*core_xds.IdentitySecret, *core_xds.CaSecret, error) {
+	otherMeshes []*core_mesh.MeshResource,
+) (*core_xds.IdentitySecret, []MeshCa, MeshCa, error) {
 	if !mesh.MTLSEnabled() {
-		return nil, nil, nil
+		return nil, nil, MeshCa{}, nil
 	}
 
 	meshName := mesh.GetMeta().GetName()
@@ -141,7 +177,7 @@ func (s *secrets) get(
 
 	if shouldGenerate, reason := s.shouldGenerateCerts(
 		certs.Info(),
-		mesh.Spec.Mtls,
+		append([]*core_mesh.MeshResource{mesh}, otherMeshes...),
 		tags,
 	); shouldGenerate {
 		log.Info(
@@ -149,23 +185,23 @@ func (s *secrets) get(
 			string(resource.Descriptor().Name), resourceKey, "reason", reason,
 		)
 
-		certs, err := s.generateCerts(meshName, tags, mesh)
+		certs, err := s.generateCerts(meshName, tags, mesh, otherMeshes)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "could not generate certificates")
+			return nil, nil, MeshCa{}, errors.Wrap(err, "could not generate certificates")
 		}
 
 		s.Lock()
 		s.cachedCerts[resourceKey] = certs
 		s.Unlock()
 
-		return certs.identity, certs.ca, nil
+		return certs.identity, certs.cas, certs.allInOneCa, nil
 	}
 
 	if certs == nil { // previous "if" should guarantee that the certs are always there
-		return nil, nil, errors.New("certificates were not generated")
+		return nil, nil, MeshCa{}, errors.New("certificates were not generated")
 	}
 
-	return certs.identity, certs.ca, nil
+	return certs.identity, certs.cas, certs.allInOneCa, nil
 }
 
 func (s *secrets) Cleanup(dpKey model.ResourceKey) {
@@ -174,13 +210,19 @@ func (s *secrets) Cleanup(dpKey model.ResourceKey) {
 	s.Unlock()
 }
 
-func (s *secrets) shouldGenerateCerts(info *Info, mtls *mesh_proto.Mesh_Mtls, tags mesh_proto.MultiValueTagSet) (bool, string) {
+func (s *secrets) shouldGenerateCerts(info *Info, meshInfos []*core_mesh.MeshResource, tags mesh_proto.MultiValueTagSet) (bool, string) {
 	if info == nil {
 		return true, "mTLS is enabled and DP hasn't received a certificate yet"
 	}
 
-	if !proto.Equal(info.MTLS, mtls) {
+	if len(info.MeshInfos) != len(meshInfos) {
 		return true, "Mesh mTLS settings have changed"
+	}
+
+	for i, mesh := range info.MeshInfos {
+		if !proto.Equal(mesh.MTLS, meshInfos[i].Spec.Mtls) {
+			return true, "Mesh mTLS settings have changed"
+		}
 	}
 
 	if tags.String() != info.Tags.String() {
@@ -198,6 +240,7 @@ func (s *secrets) generateCerts(
 	resourceMesh string,
 	tags mesh_proto.MultiValueTagSet,
 	mesh *core_mesh.MeshResource,
+	otherMeshes []*core_mesh.MeshResource,
 ) (*certs, error) {
 	requester := Identity{
 		Services: tags,
@@ -216,19 +259,60 @@ func (s *secrets) generateCerts(
 		return nil, errors.Wrap(err, "could not get mesh CA cert")
 	}
 
-	info, err := newCertInfo(identity, mesh.Spec.Mtls, tags, issuedBackend, supportedBackends)
+	meshInfos := []MeshInfo{{
+		MTLS: mesh.Spec.Mtls,
+	}}
+
+	cas := []MeshCa{{
+		Mesh:     mesh.GetMeta().GetName(),
+		CaSecret: ca,
+	}}
+	var bytes [][]byte
+	var names []string
+
+	for _, otherMesh := range otherMeshes {
+		otherCa, _, err := s.caProvider.Get(context.Background(), otherMesh)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get other mesh CA cert")
+		}
+
+		meshInfos = append(meshInfos, MeshInfo{
+			MTLS: otherMesh.Spec.Mtls,
+		})
+
+		meshName := otherMesh.GetMeta().GetName()
+
+		cas = append(cas, MeshCa{
+			Mesh:     meshName,
+			CaSecret: otherCa,
+		})
+
+		names = append(names, meshName)
+		bytes = append(bytes, otherCa.PemCerts...)
+	}
+
+	sort.Strings(names)
+	allInOneCa := MeshCa{
+		Mesh: strings.Join(names, ":"),
+		CaSecret: &core_xds.CaSecret{
+			PemCerts: bytes,
+		},
+	}
+
+	info, err := newCertInfo(identity, tags, issuedBackend, supportedBackends, meshInfos)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not extract info about certificate")
 	}
 
 	return &certs{
-		identity: identity,
-		ca:       ca,
-		info:     info,
+		identity:   identity,
+		cas:        cas,
+		allInOneCa: allInOneCa,
+		info:       info,
 	}, nil
 }
 
-func newCertInfo(identityCert *core_xds.IdentitySecret, mtls *mesh_proto.Mesh_Mtls, tags mesh_proto.MultiValueTagSet, issuedBackend string, supportedBackends []string) (*Info, error) {
+func newCertInfo(identityCert *core_xds.IdentitySecret, tags mesh_proto.MultiValueTagSet, issuedBackend string, supportedBackends []string, meshInfos []MeshInfo) (*Info, error) {
 	block, _ := pem.Decode(identityCert.PemCerts[0])
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -236,11 +320,11 @@ func newCertInfo(identityCert *core_xds.IdentitySecret, mtls *mesh_proto.Mesh_Mt
 	}
 	certInfo := &Info{
 		Tags:              tags,
-		MTLS:              mtls,
 		Expiration:        cert.NotAfter,
 		Generation:        core.Now(),
 		IssuedBackend:     issuedBackend,
 		SupportedBackends: supportedBackends,
+		MeshInfos:         meshInfos,
 	}
 	return certInfo, nil
 }

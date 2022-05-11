@@ -5,6 +5,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v3"
+	xds_secrets "github.com/kumahq/kuma/pkg/xds/secrets"
 )
 
 // OriginSecrets is a marker to indicate by which ProxyGenerator resources were generated.
@@ -15,16 +16,33 @@ type SecretsProxyGenerator struct {
 
 var _ ResourceGenerator = SecretsProxyGenerator{}
 
-func createSecretResources(
+type MeshCa struct {
+	Mesh     string
+	CaSecret *core_xds.CaSecret
+}
+
+func CreateSecretResources(
 	mesh *core_mesh.MeshResource,
 	identity *core_xds.IdentitySecret,
-	ca *core_xds.CaSecret,
+	cas []xds_secrets.MeshCa,
 ) *core_xds.ResourceSet {
 	resources := core_xds.NewResourceSet()
 
 	meshName := mesh.GetMeta().GetName()
 	identitySecret := envoy_secrets.CreateIdentitySecret(identity, meshName)
-	caSecret := envoy_secrets.CreateCaSecret(ca, meshName)
+
+	var caResources []*core_xds.Resource
+	for _, ca := range cas {
+		caSecret := envoy_secrets.CreateCaSecret(ca.CaSecret, ca.Mesh)
+		caResources = append(
+			caResources,
+			&core_xds.Resource{
+				Name:     caSecret.Name,
+				Origin:   OriginSecrets,
+				Resource: caSecret,
+			},
+		)
+	}
 
 	resources.Add(
 		&core_xds.Resource{
@@ -32,11 +50,9 @@ func createSecretResources(
 			Origin:   OriginSecrets,
 			Resource: identitySecret,
 		},
-		&core_xds.Resource{
-			Name:     caSecret.Name,
-			Origin:   OriginSecrets,
-			Resource: caSecret,
-		},
+	)
+	resources.Add(
+		caResources...,
 	)
 
 	return resources
@@ -52,15 +68,21 @@ func createDataPlaneProxySecrets(
 		return nil, nil
 	}
 
-	identity, ca, err := ctx.ControlPlane.Secrets.GetForDataPlane(
+	var otherMeshes []*core_mesh.MeshResource
+	for _, otherMesh := range ctx.Mesh.Resources.CrossMeshGateways() {
+		otherMeshes = append(otherMeshes, otherMesh.Mesh)
+	}
+
+	identity, cas, err := ctx.ControlPlane.Secrets.GetForDataPlane(
 		proxy.Dataplane,
 		mesh,
+		otherMeshes,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return createSecretResources(mesh, identity, ca), nil
+	return CreateSecretResources(mesh, identity, cas), nil
 }
 
 func createZoneEgressSecrets(
@@ -84,7 +106,7 @@ func createZoneEgressSecrets(
 			continue
 		}
 
-		identity, ca, err := ctx.ControlPlane.Secrets.GetForZoneEgress(
+		identity, cas, err := ctx.ControlPlane.Secrets.GetForZoneEgress(
 			proxy.ZoneEgressProxy.ZoneEgressResource,
 			meshResources.Mesh,
 		)
@@ -92,7 +114,7 @@ func createZoneEgressSecrets(
 			return nil, err
 		}
 
-		resources.AddSet(createSecretResources(meshResources.Mesh, identity, ca))
+		resources.AddSet(CreateSecretResources(meshResources.Mesh, identity, cas))
 	}
 
 	return resources, nil

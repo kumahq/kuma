@@ -18,10 +18,16 @@ type ServerSideMTLSWithCPConfigurer struct {
 var _ FilterChainConfigurer = &ServerSideMTLSWithCPConfigurer{}
 
 func (c *ServerSideMTLSWithCPConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	tlsContext, err := tls.CreateDownstreamTlsContext(c.Ctx.Mesh.Resource)
-	if err != nil {
-		return err
+	var tlsContext *envoy_extensions_transport_sockets_tls_v3.DownstreamTlsContext
+
+	if c.Ctx.Mesh.Resource != nil {
+		var err error
+		tlsContext, err = tls.CreateDownstreamTlsContext(c.Ctx.Mesh.Resource.GetMeta().GetName(), c.Ctx.Mesh.Resource)
+		if err != nil {
+			return err
+		}
 	}
+
 	if tlsContext == nil { // if mTLS is not enabled, fallback on self-signed certs
 		tlsContext = tls.StaticDownstreamTlsContext(c.Ctx.ControlPlane.AdminProxyKeyPair)
 	}
