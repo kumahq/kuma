@@ -89,6 +89,10 @@ which will be applied in the order specified.
 
 We will include a configuration option to Kuma CP
 to specify a default list of `ContainerPatch` patches to apply.
+In KumaCP configuration, there are `sidecarContainer` and `initContainer` sections.
+We will add an option under each named `containerPatch`,
+which will hold the name of a `ContainerPatch` CRD instance. This will be applied
+to any workload which is not annotated with `kuma.io/container-patches`.
 
 ### Example
 
@@ -180,3 +184,5 @@ Other options we considered but have decided against for now.
   These seemed overly complicated compared to simply matching a jsonpatch string to a container.
   * https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/#customizing-injection
   * https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/#custom-templates-experimental
+* Apply default patch, followed by annotated patches on the same container. Decided that annotation will have override
+  semantics, to make the overall configuration easier to follow.
