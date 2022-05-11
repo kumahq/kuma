@@ -90,21 +90,6 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 
 var _ = Describe("CreateUpstreamTlsContext()", func() {
 
-	Context("when mTLS is disabled on a given Mesh", func() {
-
-		It("should return `nil`", func() {
-			// given
-			mesh := core_mesh.NewMeshResource()
-
-			// when
-			snippet, err := v3.CreateUpstreamTlsContext(mesh, "backend", "backend")
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(snippet).To(BeNil())
-		})
-	})
-
 	Context("when mTLS is enabled on a given Mesh", func() {
 
 		type testCase struct {
@@ -115,25 +100,10 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 		DescribeTable("should generate proper Envoy config",
 			func(given testCase) {
 				// given
-				mesh := &core_mesh.MeshResource{
-					Meta: &test_model.ResourceMeta{
-						Name: "default",
-					},
-					Spec: &mesh_proto.Mesh{
-						Mtls: &mesh_proto.Mesh_Mtls{
-							EnabledBackend: "builtin",
-							Backends: []*mesh_proto.CertificateAuthorityBackend{
-								{
-									Name: "builtin",
-									Type: "builtin",
-								},
-							},
-						},
-					},
-				}
+				mesh := "default"
 
 				// when
-				snippet, err := v3.CreateUpstreamTlsContext(mesh, given.upstreamService, "")
+				snippet, err := v3.CreateUpstreamTlsContext(mesh, mesh, given.upstreamService, "")
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when

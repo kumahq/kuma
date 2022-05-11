@@ -23,7 +23,19 @@ func CircuitBreaker(circuitBreaker *core_mesh.CircuitBreakerResource) ClusterBui
 func ClientSideMTLS(mesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
-			Mesh:             mesh,
+			UpstreamMesh:     mesh,
+			UpstreamService:  upstreamService,
+			Tags:             tags,
+			UpstreamTLSReady: upstreamTLSReady,
+		})
+	})
+}
+
+func CrossMeshClientSideMTLS(localMesh string, upstreamMesh *core_mesh.MeshResource, upstreamService string, upstreamTLSReady bool, tags []envoy.Tags) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV3(&v3.ClientSideMTLSConfigurer{
+			UpstreamMesh:     upstreamMesh,
+			LocalMesh:        localMesh,
 			UpstreamService:  upstreamService,
 			Tags:             tags,
 			UpstreamTLSReady: upstreamTLSReady,
@@ -35,7 +47,7 @@ func ClientSideMTLS(mesh *core_mesh.MeshResource, upstreamService string, upstre
 func UnknownDestinationClientSideMTLS(mesh *core_mesh.MeshResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
-			Mesh:             mesh,
+			UpstreamMesh:     mesh,
 			UpstreamService:  "*",
 			Tags:             nil,
 			UpstreamTLSReady: true,

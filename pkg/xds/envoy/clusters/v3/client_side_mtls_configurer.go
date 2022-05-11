@@ -15,8 +15,9 @@ import (
 )
 
 type ClientSideMTLSConfigurer struct {
-	Mesh             *core_mesh.MeshResource
+	UpstreamMesh     *core_mesh.MeshResource
 	UpstreamService  string
+	LocalMesh        string
 	Tags             []envoy.Tags
 	UpstreamTLSReady bool
 }
@@ -24,15 +25,15 @@ type ClientSideMTLSConfigurer struct {
 var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 
 func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	if !c.Mesh.MTLSEnabled() {
+	if !c.UpstreamMesh.MTLSEnabled() {
 		return nil
 	}
-	if c.Mesh.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE &&
+	if c.UpstreamMesh.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_PERMISSIVE &&
 		!c.UpstreamTLSReady {
 		return nil
 	}
 
-	meshName := c.Mesh.GetMeta().GetName()
+	meshName := c.UpstreamMesh.GetMeta().GetName()
 	// there might be a situation when there are multiple sam tags passed here for example two outbound listeners with the same tags, therefore we need to distinguish between them.
 	distinctTags := envoy.DistinctTags(c.Tags)
 	switch {
@@ -43,7 +44,8 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 		}
 		cluster.TransportSocket = transportSocket
 	case len(distinctTags) == 1:
-		transportSocket, err := c.createTransportSocket(tls.SNIFromTags(c.Tags[0].WithTags("mesh", meshName)))
+		sni := tls.SNIFromTags(c.Tags[0].WithTags("mesh", meshName))
+		transportSocket, err := c.createTransportSocket(sni)
 		if err != nil {
 			return err
 		}
@@ -68,7 +70,14 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 }
 
 func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_core.TransportSocket, error) {
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.Mesh, c.UpstreamService, sni)
+	if !c.UpstreamMesh.MTLSEnabled() {
+		return nil, nil
+	}
+	localMeshName := c.UpstreamMesh.GetMeta().GetName()
+	if c.LocalMesh != "" {
+		localMeshName = c.LocalMesh
+	}
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(localMeshName, c.UpstreamMesh.GetMeta().GetName(), c.UpstreamService, sni)
 	if err != nil {
 		return nil, err
 	}

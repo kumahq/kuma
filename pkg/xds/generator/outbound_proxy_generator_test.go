@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
@@ -25,6 +26,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 	meta := &test_model.ResourceMeta{
 		Name: "mesh1",
+	}
+	mesh2Meta := &test_model.ResourceMeta{
+		Name: "mesh2",
 	}
 	logging := &mesh_proto.Logging{
 		Backends: []*mesh_proto.LoggingBackend{
@@ -75,6 +79,98 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					Logging: logging,
 				},
 				Meta: meta,
+			},
+		},
+	}
+
+	crossMeshCtx := xds_context.Context{
+		ControlPlane: &xds_context.ControlPlaneContext{
+			Secrets: &xds.TestSecrets{},
+		},
+		Mesh: xds_context.MeshContext{
+			Resource: &core_mesh.MeshResource{
+				Spec: &mesh_proto.Mesh{
+					Mtls: &mesh_proto.Mesh_Mtls{
+						EnabledBackend: "builtin",
+						Backends: []*mesh_proto.CertificateAuthorityBackend{
+							{
+								Name: "builtin",
+								Type: "builtin",
+							},
+						},
+					},
+					Logging: logging,
+				},
+				Meta: meta,
+			},
+			Resources: xds_context.Resources{
+				MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+					core_mesh.MeshType: &core_mesh.MeshResourceList{
+						Items: []*core_mesh.MeshResource{{
+							Spec: &mesh_proto.Mesh{
+								Mtls: &mesh_proto.Mesh_Mtls{
+									EnabledBackend: "builtin",
+									Backends: []*mesh_proto.CertificateAuthorityBackend{
+										{
+											Name: "builtin",
+											Type: "builtin",
+										},
+									},
+								},
+								Logging: logging,
+							},
+							Meta: mesh2Meta,
+						}},
+					}},
+				CrossMeshResources: map[string]map[core_model.ResourceType]core_model.ResourceList{
+					"mesh-2": {
+						core_mesh.MeshGatewayType: &core_mesh.MeshGatewayResourceList{
+							Items: []*core_mesh.MeshGatewayResource{{
+								Meta: &test_model.ResourceMeta{
+									Name: "mesh2",
+								},
+								Spec: &mesh_proto.MeshGateway{
+									Conf: &mesh_proto.MeshGateway_Conf{
+										Listeners: []*mesh_proto.MeshGateway_Listener{{
+											Hostname: "gateway1.mesh",
+											Port:     80,
+											Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+											Tags: map[string]string{
+												"listener": "internal",
+											},
+										}, {
+											Hostname: "*",
+											Port:     80,
+											Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+											Tags: map[string]string{
+												"listener": "wildcard",
+											},
+										}},
+									},
+									Selectors: []*mesh_proto.Selector{{
+										Match: map[string]string{
+											mesh_proto.ServiceTag: "gateway",
+										},
+									}},
+									Tags: map[string]string{
+										"gateway": "prod",
+									},
+								},
+							}},
+						},
+					}},
+			},
+			CrossMeshEndpoints: map[model.MeshName]model.EndpointMap{
+				"mesh2": {
+					"api-http": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: http`
+						{
+							Target: "192.168.0.6",
+							Port:   8086,
+							Tags:   map[string]string{"kuma.io/service": "api-http", "kuma.io/protocol": "http", "region": "eu"},
+							Weight: 1,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -364,6 +460,22 @@ var _ = Describe("OutboundProxyGenerator", func() {
 								},
 							},
 						},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 30001,
+						}: &core_mesh.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Destination: mesh_proto.MatchTags(map[string]string{
+										mesh_proto.ServiceTag: "api-http",
+										"kuma.io/mesh":        "mesh2",
+									}),
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+									},
+								},
+							},
+						},
 					},
 					OutboundTargets: outboundTargets,
 				},
@@ -576,6 +688,23 @@ var _ = Describe("OutboundProxyGenerator", func() {
                 redirectPortInbound: 15006
 `,
 			expected: "08.envoy.golden.yaml",
+		}),
+		Entry("cross-mesh", testCase{
+			ctx: crossMeshCtx,
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              inbound:
+              - port: 8080
+                tags:
+                  kuma.io/service: web
+              outbound:
+              - port: 30001
+                service: api-http
+                tags:
+                  kuma.io/mesh: mesh2
+`,
+			expected: "09.envoy.golden.yaml",
 		}),
 	)
 

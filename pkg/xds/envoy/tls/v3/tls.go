@@ -19,8 +19,9 @@ func CreateDownstreamTlsContext(mesh *core_mesh.MeshResource) (*envoy_tls.Downst
 	if !mesh.MTLSEnabled() {
 		return nil, nil
 	}
-	validationSANMatcher := MeshSpiffeIDPrefixMatcher(mesh.Meta.GetName())
-	commonTlsContext := createCommonTlsContext(mesh, validationSANMatcher)
+	meshName := mesh.Meta.GetName()
+	validationSANMatcher := MeshSpiffeIDPrefixMatcher(meshName)
+	commonTlsContext := createCommonTlsContext(meshName, meshName, validationSANMatcher)
 	return &envoy_tls.DownstreamTlsContext{
 		CommonTlsContext:         commonTlsContext,
 		RequireClientCertificate: util_proto.Bool(true),
@@ -34,18 +35,14 @@ func CreateDownstreamTlsContext(mesh *core_mesh.MeshResource) (*envoy_tls.Downst
 // There is no way to correlate incoming request to "web" or "web-api" with outgoing request to "backend" to expose only one URI SAN.
 //
 // Pass "*" for upstreamService to validate that upstream service is a service that is part of the mesh (but not specific one)
-func CreateUpstreamTlsContext(mesh *core_mesh.MeshResource, upstreamService string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
-	if !mesh.MTLSEnabled() {
-		return nil, nil
-	}
+func CreateUpstreamTlsContext(meshName, upstreamMeshName string, upstreamService string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
 	var validationSANMatcher *envoy_type_matcher.StringMatcher
-	meshName := mesh.Meta.GetName()
 	if upstreamService == "*" {
-		validationSANMatcher = MeshSpiffeIDPrefixMatcher(meshName)
+		validationSANMatcher = MeshSpiffeIDPrefixMatcher(upstreamMeshName)
 	} else {
-		validationSANMatcher = ServiceSpiffeIDMatcher(meshName, upstreamService)
+		validationSANMatcher = ServiceSpiffeIDMatcher(upstreamMeshName, upstreamService)
 	}
-	commonTlsContext := createCommonTlsContext(mesh, validationSANMatcher)
+	commonTlsContext := createCommonTlsContext(meshName, upstreamMeshName, validationSANMatcher)
 	commonTlsContext.AlpnProtocols = xds_tls.KumaALPNProtocols
 	return &envoy_tls.UpstreamTlsContext{
 		CommonTlsContext: commonTlsContext,
@@ -53,10 +50,9 @@ func CreateUpstreamTlsContext(mesh *core_mesh.MeshResource, upstreamService stri
 	}, nil
 }
 
-func createCommonTlsContext(mesh *core_mesh.MeshResource, validationSANMatcher *envoy_type_matcher.StringMatcher) *envoy_tls.CommonTlsContext {
-	meshName := mesh.GetMeta().GetName()
-	meshCaSecret := NewSecretConfigSource(names.GetSecretName(xds_tls.MeshCaResource, "secret", meshName))
-	identitySecret := NewSecretConfigSource(names.GetSecretName(xds_tls.IdentityCertResource, "secret", meshName))
+func createCommonTlsContext(ownMeshName, targetMeshName string, validationSANMatcher *envoy_type_matcher.StringMatcher) *envoy_tls.CommonTlsContext {
+	meshCaSecret := NewSecretConfigSource(names.GetSecretName(xds_tls.MeshCaResource, "secret", targetMeshName))
+	identitySecret := NewSecretConfigSource(names.GetSecretName(xds_tls.IdentityCertResource, "secret", ownMeshName))
 
 	return &envoy_tls.CommonTlsContext{
 		ValidationContextType: &envoy_tls.CommonTlsContext_CombinedValidationContext{
