@@ -24,7 +24,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/containers"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
@@ -120,7 +119,7 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, client k
 	}
 
 	if ref != nil {
-		tags = match.MergeSelectors(
+		tags = mesh_proto.Merge(
 			tags,
 			ref.Spec.Tags,
 		)

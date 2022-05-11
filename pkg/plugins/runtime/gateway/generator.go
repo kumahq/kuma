@@ -19,7 +19,7 @@ import (
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-	"github.com/kumahq/kuma/pkg/xds/topology"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 const WildcardHostname = "*"
@@ -102,7 +102,7 @@ func GatewayListenerInfoFromProxy(
 ) (
 	[]GatewayListenerInfo, error,
 ) {
-	gateway := match.Gateway(ctx.Resources.Gateways(), proxy.Dataplane.Spec.Matches)
+	gateway := xds_topology.SelectGateway(ctx.Resources.Gateways(), proxy.Dataplane.Spec.Matches)
 
 	if gateway == nil {
 		log.V(1).Info("no matching gateway for dataplane",
@@ -120,7 +120,7 @@ func GatewayListenerInfoFromProxy(
 	// Canonicalize the tags on each listener to be the merged resources
 	// of dataplane, gateway and listener tags.
 	for _, listener := range gateway.Spec.GetConf().GetListeners() {
-		listener.Tags = match.MergeSelectors(
+		listener.Tags = mesh_proto.Merge(
 			proxy.Dataplane.Spec.GetNetworking().GetGateway().GetTags(),
 			gateway.Spec.GetTags(),
 			listener.GetTags(),
@@ -146,7 +146,7 @@ func GatewayListenerInfoFromProxy(
 		return nil, errors.Wrap(err, "unable to find external services matched by traffic permissions")
 	}
 
-	outboundEndpoints := topology.BuildEndpointMap(
+	outboundEndpoints := xds_topology.BuildEndpointMap(
 		ctx.Resource,
 		zone,
 		ctx.Resources.Dataplanes().Items,
