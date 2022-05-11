@@ -247,6 +247,83 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 	}),
+	Entry("meshgateways of all meshes", outboundViewTestCase{
+		givenResources: map[model.ResourceKey]model.Resource{
+			model.WithMesh("mesh1", "gateway"): &mesh.MeshGatewayResource{
+				Spec: &mesh_proto.MeshGateway{
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{{
+							Hostname: "gateway1.mesh",
+							Port:     80,
+							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+							Tags: map[string]string{
+								"listener": "internal",
+							},
+						}, {
+							Hostname: "*",
+							Port:     80,
+							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+							Tags: map[string]string{
+								"listener": "wildcard",
+							},
+						}},
+					},
+					Selectors: []*mesh_proto.Selector{{
+						Match: map[string]string{
+							mesh_proto.ServiceTag: "gateway",
+						},
+					}},
+					Tags: map[string]string{
+						"gateway": "prod",
+					},
+				},
+			},
+			model.WithMesh("mesh2", "gateway"): &mesh.MeshGatewayResource{
+				Spec: &mesh_proto.MeshGateway{
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{{
+							Hostname:  "gateway2.mesh",
+							Port:      80,
+							CrossMesh: true,
+							Protocol:  mesh_proto.MeshGateway_Listener_HTTP,
+							Tags: map[string]string{
+								"listener": "internal",
+							},
+						}, {
+							Hostname: "*",
+							Port:     80,
+							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+							Tags: map[string]string{
+								"listener": "wildcard",
+							},
+						}},
+					},
+					Selectors: []*mesh_proto.Selector{{
+						Match: map[string]string{
+							mesh_proto.ServiceTag: "gateway",
+						},
+					}},
+					Tags: map[string]string{
+						"gateway": "prod",
+					},
+				},
+			},
+		},
+		whenMesh:            "mesh1",
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewHostEntry("gateway2.mesh")},
+		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
+			vips.NewHostEntry("gateway2.mesh"): {{
+				TagSet: map[string]string{
+					"listener":            "internal",
+					"gateway":             "prod",
+					mesh_proto.ServiceTag: "gateway",
+					"kuma.io/mesh":        "mesh2",
+				},
+				Origin: "mesh-gateway:mesh2:gateway:gateway2.mesh",
+				Port:   80,
+			}},
+		},
+	}),
 	Entry("external service", outboundViewTestCase{
 		givenResources: map[model.ResourceKey]model.Resource{
 			model.WithMesh("mesh", "es-1"): &mesh.ExternalServiceResource{
