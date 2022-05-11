@@ -50,6 +50,7 @@ func NewCallbacks(
 	config *dp_server.HdsConfig,
 	hasher util_xds_v3.NodeHash,
 	metrics *hds_metrics.Metrics,
+	defaultAdminPort uint32,
 ) hds_callbacks.Callbacks {
 	return &tracker{
 		resourceManager:    resourceManager,
@@ -62,7 +63,7 @@ func NewCallbacks(
 			cache:     cache,
 			hasher:    hasher,
 			versioner: util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID},
-			generator: NewSnapshotGenerator(readOnlyResourceManager, config),
+			generator: NewSnapshotGenerator(readOnlyResourceManager, config, defaultAdminPort),
 		},
 	}
 }
@@ -153,6 +154,10 @@ func (t *tracker) newWatchdog(node *envoy_core.Node) watchdog.Watchdog {
 
 func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_service_health.EndpointHealthResponse) error {
 	t.metrics.ResponsesReceivedMetric.Inc()
+
+	healthMap := map[uint32]bool{}
+	envoyHealth := true // if there is no Envoy HC, assume it's healthy
+
 	for _, clusterHealth := range resp.GetClusterEndpointsHealth() {
 		if len(clusterHealth.LocalityEndpointsHealth) == 0 {
 			continue
@@ -162,18 +167,24 @@ func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_se
 		}
 		status := clusterHealth.LocalityEndpointsHealth[0].EndpointsHealth[0].HealthStatus
 		health := status == envoy_core.HealthStatus_HEALTHY || status == envoy_core.HealthStatus_UNKNOWN
-		port, err := names.GetPortForLocalClusterName(clusterHealth.ClusterName)
-		if err != nil {
-			return err
+
+		if clusterHealth.ClusterName == names.GetEnvoyAdminClusterName() {
+			envoyHealth = health
+		} else {
+			port, err := names.GetPortForLocalClusterName(clusterHealth.ClusterName)
+			if err != nil {
+				return err
+			}
+			healthMap[port] = health
 		}
-		if err := t.updateDataplane(streamID, port, health); err != nil {
-			return err
-		}
+	}
+	if err := t.updateDataplane(streamID, healthMap, envoyHealth); err != nil {
+		return err
 	}
 	return nil
 }
 
-func (t *tracker) updateDataplane(streamID xds.StreamID, port uint32, ready bool) error {
+func (t *tracker) updateDataplane(streamID xds.StreamID, healthMap map[uint32]bool, envoyHealth bool) error {
 	t.RLock()
 	defer t.RUnlock()
 	dataplaneKey, hasAssociation := t.streamsAssociation[streamID]
@@ -189,12 +200,15 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, port uint32, ready bool
 	changed := false
 	for _, inbound := range dp.Spec.Networking.Inbound {
 		intf := dp.Spec.Networking.ToInboundInterface(inbound)
-		if intf.WorkloadPort != port {
-			continue
+		workloadHealth, exist := healthMap[intf.WorkloadPort]
+		if exist {
+			workloadHealth = workloadHealth && envoyHealth
+		} else {
+			workloadHealth = envoyHealth
 		}
-		if inbound.Health == nil || inbound.Health.Ready != ready {
+		if inbound.Health == nil || inbound.Health.Ready != workloadHealth {
 			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{
-				Ready: ready,
+				Ready: workloadHealth,
 			}
 			changed = true
 		}
