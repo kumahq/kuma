@@ -36,6 +36,8 @@ func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
 // ServiceName is a convenience type alias to clarify the meaning of string value.
 type ServiceName = string
 
+type MeshName = string
+
 // RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
 type RouteMap map[mesh_proto.OutboundInterface]*core_mesh.TrafficRouteResource
 
