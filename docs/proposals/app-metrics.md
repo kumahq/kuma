@@ -161,7 +161,7 @@ a default configuration and disable default value if it's necessary.
 ## Use existing prometheus tags
 
 Prometheus on K8s uses annotation `prometheus.io/{path/port/scrapping}`, we might use it to map them for kuma specifc 
-annotations that are going to be used to scrap endpoints. At the begging we might not implement this feature but in future we might get this.
+annotations that are going to be used to scrap endpoints. To start we will not implement this feature but in future we might get this.
 
 ## Labels
 
