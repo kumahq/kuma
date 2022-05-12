@@ -395,8 +395,8 @@ kumactl:
     tag:
 
 kubectl:
-  # rancher maintains an image for all k8s versions */ } }
-  # see: https://hub.docker.com/r/rancher/kubectl */ } }
+  # kuma image that support v1.20.15 image */ } }
+  # see: https://hub.docker.com/r/kumahq/kubectl */ } }
   image:
     # -- The kubectl image registry
     registry: kumahq
