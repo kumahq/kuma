@@ -64,6 +64,7 @@ type RootRuntime struct {
 }
 
 // RootContext contains variables, functions and components that can be overridden when extending kumactl or running the test.
+// To create one for tests use helper functions in pkg/test/kumactl/context.go
 // Example:
 //
 // rootCtx := kumactl_cmd.DefaultRootContext()
