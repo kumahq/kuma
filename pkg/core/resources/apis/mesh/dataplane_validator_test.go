@@ -668,7 +668,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.gateway.tags["kuma.io/protocol"]'
-                  message: other values than TCP are not allowed`,
+                  message: other values than tcp are not allowed, provided value "http"`,
 		}),
 		Entry("networking.outbound: empty service tag", testCase{
 			dataplane: `
