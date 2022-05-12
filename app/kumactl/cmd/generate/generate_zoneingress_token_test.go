@@ -13,10 +13,8 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/test/kumactl"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
-	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type staticZoneIngressTokenGenerator struct {
@@ -41,20 +39,9 @@ var _ = Describe("kumactl generate zone-ingress-token", func() {
 
 	BeforeEach(func() {
 		generator = &staticZoneIngressTokenGenerator{}
-		ctx = &kumactl_cmd.RootContext{
-			Args: kumactl_cmd.RootArgs{
-				ConfigType: kumactl_cmd.InMemory,
-			},
-			Runtime: kumactl_cmd.RootRuntime{
-				Registry: registry.NewTypeRegistry(),
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
-					return nil, nil
-				},
-				NewZoneIngressTokenClient: func(util_http.Client) tokens.ZoneIngressTokenClient {
-					return generator
-				},
-				NewAPIServerClient: test.GetMockNewAPIServerClient(),
-			},
+		ctx = kumactl.MakeMinimalRootContext()
+		ctx.Runtime.NewZoneIngressTokenClient = func(util_http.Client) tokens.ZoneIngressTokenClient {
+			return generator
 		}
 
 		rootCmd = cmd.NewRootCmd(ctx)
