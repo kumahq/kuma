@@ -13,14 +13,6 @@ reusable:
     - &ubuntu_vm_image "ubuntu-2004:202111-01"
 
   snippets:
-    work_branch_or_tags_workflow_filter: &work_branch_or_tags_workflow_filter
-      filters:
-        branches:
-          only:
-           - master
-           - /^release-.*/
-        tags:
-          only: /.*/
     # on branches master or release-*
     work_branch_workflow_filter: &work_branch_workflow_filter
       filters:
@@ -78,6 +70,9 @@ commands:
         command: |
           curl -s --fail --location https://dl.google.com/go/go<<parameters.go_version>>.<<parameters.go_os>>-<<parameters.go_arch>>.tar.gz | tar -xz -C $HOME
           echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
+          # if GOPATH is not set, `golang-ci` fails with an obscure message
+          # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
+          echo 'export GOPATH=$HOME/.go-kuma-go' >> $BASH_ENV
     - run:
         name: "Update runc"
         # See https://github.com/rancher/k3d/issues/807 (runc's default version on the instance fails k3d)
@@ -94,15 +89,13 @@ executors:
     - image: *golang_image
     environment:
       GO_VERSION: *go_version
-      GO111MODULE: "on"
 
-  vm:
+  vm-amd64:
     resource_class: large
     machine:
       image: *ubuntu_vm_image
     environment:
       GO_VERSION: *go_version
-      GO111MODULE: "on"
 
   vm-arm64:
     resource_class: arm.large
@@ -110,58 +103,46 @@ executors:
       image: *ubuntu_vm_image
     environment:
       GO_VERSION: *go_version
-      GO111MODULE: "on"
 
-  mac:
+  linux:
+    resource_class: large
+    machine:
+      image: *ubuntu_vm_image
+    environment:
+      GO_VERSION: *go_version
+
+  darwin:
     resource_class: medium
     macos:
       xcode: "12.5.1"
     environment:
       GO_VERSION: *go_version
-      GO111MODULE: "on"
 
 jobs:
-  dev_ubuntu:
-    docker:
-    - image: ubuntu:20.04
+  dev:
+    executor: << parameters.executor >>
+    parameters:
+      executor:
+        description: The env in which we execute.
+        type: string
+        default: linux
     environment:
-      GO_VERSION: *go_version
-      GO111MODULE: "on"
       CLANG_FORMAT_PATH: clang-format-13
-      # if GOPATH is not set, `golang-ci` fails with an obscure message
-      # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
-      GOPATH: /root/.go-kuma-go
-    steps:
-    - install_build_tools
-    - checkout
-    - run:
-        name: "Install all development tools"
-        command: |
-          make dev/tools
-    - run:
-        name: "Build all binaries"
-        command: |
-          make build
-    - run:
-        name: "Run unit tests"
-        command: |
-          GO_TEST_OPTS='-p 2' make test
-
-  dev_mac:
-    executor: mac
-    environment:
-      # if GOPATH is not set, `golang-ci` fails with an obscure message
-      # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
-      GOPATH: /Users/distiller/.go-kuma-go
     steps:
     - checkout
     - install_build_tools:
-        go_os: darwin
+        go_os: << parameters.executor >>
     - run:
         name: "Install all development tools"
         command: |
           make dev/tools
-    # Do NOT install `clang-format` on Mac since it takes unreasonable amount of time
+    - unless:
+        # Do NOT install `clang-format` on Mac since it takes unreasonable amount of time
+        condition: {equal: [ darwin, << parameters.executor >>]}
+        steps:
+        - run:
+            name: "Install check tools (clang-format, ...)"
+            command: sudo apt update && sudo apt install -y clang-format
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: |
@@ -176,8 +157,23 @@ jobs:
           make test
 
   go_cache:
-    executor: golang
+    executor: << parameters.executor >>
+    parameters:
+      executor:
+        description: the executor to run on
+        type: string
+        default: golang
     steps:
+    - when:
+        condition: {equal: [vm-amd64, << parameters.executor >>]}
+        steps:
+          - install_build_tools:
+              go_arch: amd64
+    - when:
+        condition: {equal: [vm-arm64, << parameters.executor >>]}
+        steps:
+          - install_build_tools:
+              go_arch: arm64
     - checkout
     - run:
         name: "Download Go modules"
@@ -185,9 +181,10 @@ jobs:
           go mod download
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
-        key: go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        key: << parameters.executor >>-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
         paths:
         - "/go/pkg/mod"
+        - "/root/.go-kuma-go"
 
   check:
     executor: golang
@@ -196,7 +193,7 @@ jobs:
     - restore_cache:
         keys:
         # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        - golang-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
         name: "Install all development tools"
         command: make dev/tools
@@ -213,34 +210,21 @@ jobs:
         description: The test make target.
         type: string
         default: test
-      go_arch:
+      arch:
         description: The golang arch.
         type: string
         default: amd64
-      workflow_executor:
-        type: string
-        default: vm
     executor:
-      name: << parameters.workflow_executor >>
-    environment:
-      GOPATH: /home/circleci/.go-kuma-go
+      name: vm-<< parameters.arch >>
     steps:
     - install_build_tools:
-        go_arch: << parameters.go_arch >>
+        go_arch: << parameters.arch >>
+        go_os: linux
     - checkout
     - restore_cache:
         keys:
         # prefer the exact match
-        - <<parameters.workflow_executor>>-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-    - run:
-        name: "Download Go modules"
-        command: |
-          go mod download
-    # since execution of go commands might change contents of "go.sum", we have to save cache immediately
-    - save_cache:
-        key: <<parameters.workflow_executor>>-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        paths:
-          - "/home/circleci/.go-kuma-go"
+        - vm-<< parameters.arch >>-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
         name: "Install all development tools"
         command: |
@@ -274,16 +258,12 @@ jobs:
 
   e2e:
     parameters:
-      api:
-        description: XDS API version
-        type: string
-        default: v3
       ipv6:
         description: use IPv6
         type: boolean
         default: false
-      k3sVersion:
-        description: version of k3s to use
+      k8sVersion:
+        description: version of k3s to use or "kind" to use kind or "none" if no kubernetes needed
         type: string
         default: v1.21.7-k3s1
       parallelism:
@@ -294,139 +274,151 @@ jobs:
         description: makefile target
         type: string
         default: "test/e2e"
-      go_arch:
+      arch:
         description: The golang arch
         type: string
         default: amd64
-      workflow_executor:
-        type: string
-        default: vm
-      make_parameters:
-        type: string
-        default: -j2
-      ginkgo_flags:
-        type: string
-        default: ""
     executor:
-      name: << parameters.workflow_executor >>
+      name: vm-<< parameters.arch >>
     parallelism: << parameters.parallelism >>
-    environment:
-      GOPATH: /home/circleci/.go-kuma-go
     steps:
-      - install_build_tools:
-          go_arch: << parameters.go_arch >>
-      - checkout
-      - restore_cache:
-          keys:
-            # prefer the exact match
-            - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
       - run:
-          name: "Download Go modules"
+          name: dump params
           command: |
-            go mod download
-      # since execution of go commands might change contents of "go.sum", we have to save cache immediately
-      - save_cache:
-          key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-          paths:
-            - "/home/circleci/.go-kuma-go"
-      # Mount files from the upstream jobs
-      - attach_workspace:
-          at: build
-      - run:
-          name: "Install all development tools"
-          command: |
-            make dev/tools
-      - run:
-          name: "Setup Helm"
-          command: |
-            helm repo add kuma https://kumahq.github.io/charts
-      - when:
-          condition: << parameters.ipv6 >>
-          steps:
-            - run:
-                name: Enable IPV6 and change DNS # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
-                command: |
-                  cat \<<'EOF' | sudo tee /etc/docker/daemon.json
-                  {
-                    "ipv6": true,
-                    "fixed-cidr-v6": "2001:db8:1::/64",
-                    "dns": ["8.8.8.8"],
-                    "dns-search": ["."]
-                  }
-                  EOF
-                  sudo service docker restart
-            - run:
-                name: "Run IPv6 E2E tests"
-                command: |
-                  export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
-                  export API_VERSION=<< parameters.api >>
-                  export IPV6=true
-                  export KUMA_DEFAULT_RETRIES=60
-                  export KUMA_DEFAULT_TIMEOUT="6s"
-                  export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
-                  export GINKGO_E2E_FLAGS=<<parameters.ginkgo_flags>>
-                  make -j2 << parameters.target >>
-            - store_test_results:
-                path: /tmp/ginkgo-test-results
+            echo "Running with: \
+              ipv6:<< parameters.ipv6>> \
+              k8s:<< parameters.k8sVersion >> \
+              target:<< parameters.target >> \
+              parallelism:<< parameters.parallelism >> \
+              arch:<< parameters.arch >> \
+            "
+
+            echo "some combinations may run nothing"
       - unless:
-          condition: << parameters.ipv6 >>
+          # This works around circleci limitation by skipping tests for combinations that don't make sense
+          # See: https://discuss.circleci.com/t/matrix-exclude-entire-subset/43879
+          condition:
+            or:
+              - and:
+                  # On PRs only run some base tests (only 1 k8s version, no ipv6, no arm64)
+                  - or:
+                      - not: {matches: {pattern: "^release-.*", value: << pipeline.git.branch >>}}
+                      - not: {equal: [master, << pipeline.git.branch >>]}
+                  - or:
+                      - << parameters.ipv6 >>
+                      - equal: ["v1.19.16-k3s1", << parameters.k8sVersion >>]
+                      - equal: ["arm64", << parameters.arch >>]
+              - and:
+                # Ipv6 only works with kind
+                - << parameters.ipv6 >>
+                - not: {equal: [kind, << parameters.k8sVersion >>]}
+              - and:
+                # disallow running tests on kind except if it's ipv6 or it's universal
+                - equal: [kind, << parameters.k8sVersion >> ]
+                - not:
+                    or:
+                      - << parameters.ipv6 >>
+                      - equal: [test/e2e-universal, << parameters.target >>]
           steps:
+            - install_build_tools:
+                go_arch: << parameters.arch >>
+            - checkout
+            - restore_cache:
+                keys:
+                  # prefer the exact match
+                  - vm-<< parameters.arch >>-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+            # Mount files from the upstream jobs
+            - attach_workspace:
+                at: build
             - run:
-                name: "Run IPv4 E2E tests"
+                name: "Install all development tools"
                 command: |
-                  echo "DEBUGING VAR $E2E_PKG_LIST"
-                  echo "DEBUGING VAR GINKGO_E2E_FLAGS"
-                  export CI_K3S_VERSION=<< parameters.k3sVersion >>
-                  export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
-                  export API_VERSION=<< parameters.api >>
+                  make dev/tools
+            - run:
+                name: "Setup Helm"
+                command: |
+                  helm repo add kuma https://kumahq.github.io/charts
+            - when: # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
+                condition: << parameters.ipv6 >>
+                steps:
+                  - run:
+                      name: Enable IPV6 and change DNS
+                      command: |
+                        cat \<<'EOF' | sudo tee /etc/docker/daemon.json
+                        {
+                          "ipv6": true,
+                          "fixed-cidr-v6": "2001:db8:1::/64",
+                          "dns": ["8.8.8.8"],
+                          "dns-search": ["."]
+                        }
+                        EOF
+                        sudo service docker restart
+            - run:
+                name: "Run E2E tests"
+                command: |
                   export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
-                  export GINKGO_E2E_FLAGS=<<parameters.ginkgo_flags>>
-                  export K3D=true
-                  make <<parameters.make_parameters>> << parameters.target >>
+                  if [[ "<< parameters.ipv6 >>" == "true" ]]; then
+                    export IPV6=true
+                    export KUMA_DEFAULT_RETRIES=60
+                    export KUMA_DEFAULT_TIMEOUT="6s"
+                  fi
+                  if [[ "<< parameters.k8sVersion >>" != "kind" ]] && [[ "<< parameters.k8sVersion >>" != "none" ]]; then
+                    export CI_K3S_VERSION=<< parameters.k8sVersion >>
+                    export K3D=true
+                  fi
+                  if [[ "<< parameters.arch >>" == "arm64" ]]; then
+                    export GINKGO_E2E_FLAGS="${GINKGO_FLAGS} --label-filter=\"!arm-not-supported\""
+                    export MAKE_PARAMETERS="-j1"
+                  else
+                    export MAKE_PARAMETERS="-j2"
+                  fi
+
+                  if [[ "<< parameters.target >>" == "test/e2e" ]]; then
+                    export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
+                  fi
+                  env
+                  make ${MAKE_PARAMETERS} << parameters.target >>
             - store_test_results:
                 path: /tmp/ginkgo-test-results
 
   build:
     parameters:
-      go_arch:
-        description: The golang arch.
+      arch:
+        description: The golang arch
         type: string
         default: amd64
-      workflow_executor:
-        type: string
-        default: vm
     executor: # we are using linux/arm64 and linux/amd64 vm's for build
-      name: << parameters.workflow_executor >>
+      name: vm-<< parameters.workflow_executor >>
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
-      - install_build_tools:
-          go_arch: << parameters.go_arch >>
-      - checkout
-      - restore_cache:
-          keys:
-          # prefer the exact match
-          - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-      - run:
-          name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
-          command: make build
-      - run:
-          name: Build Docker images
-          command: |
-            make images
-      - run:
-          name: Save Docker images into TAR archives
-          command: |
-            make docker/save
-      # Persist the specified paths into the workspace for use in downstream jobs
-      - persist_to_workspace:
-          root: build
-          paths:
-          - docker-images-<<parameters.go_arch>>
-          - artifacts-linux-<<parameters.go_arch>>
+    - install_build_tools:
+        go_arch: << parameters.arch >>
+    - checkout
+    - restore_cache:
+        keys:
+        # prefer the exact match
+        - golang-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+    - run:
+        name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
+        command: GOARCH=<<parameters.arch>> make build
+    - run:
+        name: Build Docker images
+        command: |
+          GOARCH=<<parameters.arch>> make images
+    - run:
+        name: Save Docker images into TAR archives
+        command: |
+          GOARCH=<<parameters.arch>> make docker/save
+    # Persist the specified paths into the workspace for use in downstream jobs
+    - persist_to_workspace:
+        root: build
+        paths:
+        - docker-images-<<parameters.arch>>
+        - artifacts-linux-<<parameters.arch>>
 
   release:
-    executor: vm
+    executor: vm-amd64
     steps:
     - install_build_tools
     - checkout
@@ -464,140 +456,63 @@ workflows:
 
   kuma-commit:
     jobs:
-      - dev_mac:
+      - dev:
           # Avoids running expensive workflow on PRs
-          <<: *work_branch_or_tags_workflow_filter
-      - dev_ubuntu:
-          # Avoids running expensive workflow on PRs
-          <<: *work_branch_or_tags_workflow_filter
-      - go_cache
-      - check:
-          requires:
-            - go_cache
-      - build:
-          requires:
-            - go_cache
-      - build:
-          name: build-arm64
-          workflow_executor: vm-arm64
-          go_arch: arm64
-          requires:
-            - go_cache
-      - test:
-          requires:
-            - check
-      - test:
-          name: test-arm64
-          workflow_executor: vm-arm64
-          go_arch: arm64
-          requires:
-            - check
-      - e2e:
-          name: test/e2e-ipv4-arm64
-          workflow_executor: vm-arm64
-          go_arch: arm64
-          make_parameters: "-j1"
-          ginkgo_flags: "--label-filter=\"!arm-not-supported\""
-          requires:
-            - build-arm64
-            - check
-      - e2e:
-          name: e2e-kubernetes-arm64
-          target: test/e2e-kubernetes
-          workflow_executor: vm-arm64
-          go_arch: arm64
-          requires:
-            - build-arm64
-            - check
-          parallelism: 1
-      - e2e:
-          name: e2e-universal-arm64
-          target: test/e2e-universal
-          workflow_executor: vm-arm64
-          go_arch: arm64
-          requires:
-            - build-arm64
-            - check
-          parallelism: 1
-      - e2e:
-          name: test/e2e-ipv4
-          requires:
-            - build
-            - check
-      - e2e:
-          name: e2e-kubernetes
-          target: test/e2e-kubernetes
-          requires:
-            - build
-            - check
-          parallelism: 1
-      - e2e:
-          name: e2e-universal
-          target: test/e2e-universal
-          requires:
-            - build
-            - check
-          parallelism: 1
-      - e2e:
-          name: e2e-multizone
-          target: test/e2e-multizone
-          requires:
-            - build
-            - check
-          parallelism: 1
-      - e2e:
-          <<: *work_branch_or_tags_workflow_filter
-          name: e2e-universal-ipv6
-          target: test/e2e-universal
-          ipv6: true
-          requires:
-            - build
-            - check
-          parallelism: 1
-      - e2e:
-          # Avoids running expensive workflow on PRs
-          <<: *work_branch_or_tags_workflow_filter
-          name: e2e-env
+          <<: *work_branch_workflow_filter
+          name: dev-<< matrix.executor >>
           matrix:
+            alias: dev
             parameters:
-              k3sVersion: [v1.19.16-k3s1, v1.21.7-k3s1]
+              executor: [linux, darwin]
+      - go_cache:
+          name: go_cache-<< matrix.executor >>
+          matrix:
+            alias: go_cache
+            parameters:
+              executor: [golang, vm-amd64, vm-arm64 ]
+      - check:
+          requires: [go_cache]
+      - build:
+          name: build-<< matrix.arch >>
+          matrix:
+            alias: build
+            parameters:
+              arch: [amd64, arm64]
+          requires: [go_cache-golang]
+      - test:
+          name: test-<< matrix.arch >>
+          matrix:
+            alias: test
+            parameters:
+              arch: [amd64, arm64]
+          requires: [check]
+      - e2e:
+          name: test/e2e-legacy-k8s:<< matrix.k8sVersion >>-<< matrix.arch >>-v6:<< matrix.ipv6 >>
+          matrix:
+            alias: test/e2e-legacy
+            parameters:
+              k8sVersion: [v1.19.16-k3s1, v1.21.7-k3s1, kind]
               ipv6: [true, false]
-              target: [test/e2e-kubernetes, test/e2e-multizone]
-          requires:
-            - build
-            - check
+              arch: [amd64, arm64]
+          parallelism: 8
+          target: test/e2e
+          requires: [build-<< matrix.arch >>, check]
+      - e2e:
+          name: << matrix.target >>:<< matrix.k8sVersion >>-<< matrix.arch >>-v6:<< matrix.ipv6 >>
+          matrix:
+            alias: test/e2e
+            parameters:
+              k8sVersion: [v1.19.16-k3s1, v1.21.7-k3s1, kind]
+              ipv6: [true, false]
+              target: [test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone]
+              arch: [amd64, arm64]
           parallelism: 1
-      - e2e:
-          # Avoids running expensive workflow on PRs
-          <<: *work_branch_or_tags_workflow_filter
-          name: test/e2e-ipv6
-          requires:
-            - build
-            - check
-          # custom parameters
-          ipv6: true
-      - e2e:
-          # Avoids running expensive workflow on PRs
-          <<: *work_branch_or_tags_workflow_filter
-          name: test/e2e-ipv4-oldk8s
-          k3sVersion: v1.19.16-k3s1
-          requires:
-            - build
-            - check
+          requires: [build-<< matrix.arch >>, check]
       - release:
           # publish artifacts speculatively for normal commits
           <<: *work_branch_workflow_filter
-          requires:
-            - build
+          requires: [build]
       - release:
           # only publish tagged artifacts if everything passes
           <<: *tags_workflow_filter
-          requires:
-            - dev_mac
-            - dev_ubuntu
-            - test
-            - test-arm64
-            - test/e2e-ipv4
-            - test/e2e-ipv4-arm64
-            - test/e2e-ipv6
-            - test/e2e-ipv4-oldk8s
+          requires: [dev, test, test/e2e, test/e2e-legacy]
