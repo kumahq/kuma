@@ -4,21 +4,21 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ContainerPatch stores a list of patches to apply to init and sidecar containers.
+//
+// +k8s:deepcopy-gen=true
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-
-// ContainerPatch represents a managed instance of a dataplane proxy for a Kuma
-// Gateway.
+// +kubebuilder:resource:scope=Namespaced
 type ContainerPatch struct {
 	kube_meta.TypeMeta   `json:",inline"`
 	kube_meta.ObjectMeta `json:"metadata,omitempty"`
 
+	Mesh string             `json:"mesh,omitempty"`
 	Spec ContainerPatchSpec `json:"spec,omitempty"`
 }
 
+// ContainerPatchSpec specifies the options available for a ContainerPatch
 // +k8s:deepcopy-gen=true
-
-// ContainerPatchSpec specifies the options available for a GatewayDataplane.
 type ContainerPatchSpec struct {
 	// SidecarPatch specifies jsonpatch to apply to a sidecar container.
 	SidecarPatch []JsonPatchBlock `json:"sidecarPatch,omitempty"`
@@ -45,10 +45,10 @@ type JsonPatchBlock struct {
 	From string `json:"from,omitempty"`
 }
 
-// +k8s:deepcopy-gen=true
-// ContainerPatchList contains a list of GatewayInstances.
+// ContainerPatchList contains a list of ContainerPatch instances
 //
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Cluster
 type ContainerPatchList struct {
 	kube_meta.TypeMeta `json:",inline"`
 	kube_meta.ListMeta `json:"metadata,omitempty"`

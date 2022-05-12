@@ -236,12 +236,13 @@ func (i *KumaInjector) loadCustomPatches(pod *kube_core.Pod, ns *kube_core.Names
 	}
 
 	if patchNames == "" {
-		// Avoid Split returning empty string
+		// Avoid Split returning slice containing empty string
 		return []mesh_k8s.JsonPatchBlock{}, []mesh_k8s.JsonPatchBlock{}, nil
 	}
 
 	for _, patchName := range strings.Split(patchNames, ",") {
 		containerPatch := &mesh_k8s.ContainerPatch{}
+		log.Info("Loading patch " + ns.GetName() + ", " + patchName)
 		if err := i.client.Get(context.Background(), kube_types.NamespacedName{Namespace: ns.GetName(), Name: patchName}, containerPatch); err != nil {
 			log.Error(err, "invalid ContainerPatch", "podName", pod.Name, "namespace", pod.Namespace, "name", patchName)
 			return nil, nil, err
@@ -249,7 +250,6 @@ func (i *KumaInjector) loadCustomPatches(pod *kube_core.Pod, ns *kube_core.Names
 		sidecarPatches = append(sidecarPatches, containerPatch.Spec.SidecarPatch...)
 		initPatches = append(initPatches, containerPatch.Spec.InitPatch...)
 	}
-
 	return sidecarPatches, initPatches, nil
 }
 
