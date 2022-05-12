@@ -54,3 +54,7 @@ type ContainerPatchList struct {
 	kube_meta.ListMeta `json:"metadata,omitempty"`
 	Items              []ContainerPatch `json:"items"`
 }
+
+func init() {
+	SchemeBuilder.Register(&ContainerPatch{}, &ContainerPatchList{})
+}

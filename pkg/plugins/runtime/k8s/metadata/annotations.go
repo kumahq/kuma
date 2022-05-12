@@ -84,6 +84,9 @@ const (
 
 	// KumaSidecarDrainTime allows to specify drain time of Kuma DP sidecar.
 	KumaSidecarDrainTime = "kuma.io/sidecar-drain-time"
+
+	// KumaContainerPatches is a comma-separated list of ContainerPatch names to be applied to injected containers on a given workload
+	KumaContainerPatches = "kuma.io/container-patches"
 )
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.

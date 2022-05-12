@@ -113,6 +113,9 @@ type Injector struct {
 	SidecarContainer SidecarContainer `yaml:"sidecarContainer,omitempty"`
 	// InitContainer defines configuration of the Kuma init container.
 	InitContainer InitContainer `yaml:"initContainer,omitempty"`
+	// ContainerPatches is an optional list of ContainerPatch names which will be applied
+	// to init and sidecar containers if workload is not annotated with a patch list.
+	ContainerPatches string `yaml:"containerPatches,omitempty"`
 	// CNIEnabled if true runs kuma-cp in CNI compatible mode
 	CNIEnabled bool `yaml:"cniEnabled" envconfig:"kuma_runtime_kubernetes_injector_cni_enabled"`
 	// VirtualProbesEnabled enables automatic converting HttpGet probes to virtual. Virtual probe

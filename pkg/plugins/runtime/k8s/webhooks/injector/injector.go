@@ -2,6 +2,7 @@ package injector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -76,6 +78,10 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		return nil
 	}
 	log.Info("injecting Kuma", "name", pod.GenerateName, "namespace", pod.Namespace)
+	sidecarPatches, initPatches, err := i.loadCustomPatches(pod, ns)
+	if err != nil {
+		return err
+	}
 	// sidecar container
 	if pod.Spec.Containers == nil {
 		pod.Spec.Containers = []kube_core.Container{}
@@ -84,7 +90,8 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	if err != nil {
 		return err
 	}
-	pod.Spec.Containers = append(pod.Spec.Containers, container)
+	patchedContainer, err := i.applyCustomPatches(container, sidecarPatches)
+	pod.Spec.Containers = append(pod.Spec.Containers, patchedContainer)
 
 	mesh, err := i.meshFor(pod, ns)
 	if err != nil {
@@ -113,7 +120,11 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		if err != nil {
 			return err
 		}
-		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ic)
+		patchedIc, err := i.applyCustomPatches(ic, initPatches)
+		if err != nil {
+			return err
+		}
+		pod.Spec.InitContainers = append(pod.Spec.InitContainers, patchedIc)
 	}
 
 	if err := i.overrideHTTPProbes(pod); err != nil {
@@ -211,6 +222,66 @@ func (i *KumaInjector) meshFor(pod *kube_core.Pod, ns *kube_core.Namespace) (*co
 		return nil, err
 	}
 	return meshResource, nil
+}
+
+// loadCustomPatches loads the ContainerPatch CRDs associated with the given pod, divides out
+// the sidecar and init patches, and concatinates each type into its own list for return.
+func (i *KumaInjector) loadCustomPatches(pod *kube_core.Pod, ns *kube_core.Namespace) (sidecarPatches []mesh_k8s.JsonPatchBlock, initPatches []mesh_k8s.JsonPatchBlock, err error) {
+	patchNames := i.cfg.ContainerPatches
+	if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaContainerPatches); exist {
+		patchNames = val
+	}
+
+	for _, patchName := range strings.Split(patchNames, ",") {
+		containerPatch := &mesh_k8s.ContainerPatch{}
+		if err := i.client.Get(context.Background(), kube_types.NamespacedName{Namespace: ns.GetName(), Name: patchName}, containerPatch); err != nil {
+			log.Error(err, "invalid ContainerPatch", "podName", pod.Name, "namespace", pod.Namespace, "name", patchName)
+			return nil, nil, err
+		}
+		sidecarPatches = append(sidecarPatches, containerPatch.Spec.SidecarPatch...)
+		initPatches = append(initPatches, containerPatch.Spec.InitPatch...)
+	}
+
+	return sidecarPatches, initPatches, nil
+}
+
+// applyCustomPatches applies the block of patches to the given container and returns a new,
+// patched container. If patch list is empty, the same unaltered container is returned.
+func (i *KumaInjector) applyCustomPatches(container kube_core.Container, patches []mesh_k8s.JsonPatchBlock) (kube_core.Container, error) {
+	if patches == nil {
+		return container, nil
+	}
+
+	var patchedContainer kube_core.Container
+	containerJson, err := json.Marshal(&container)
+	if err != nil {
+		return kube_core.Container{}, err
+	}
+	for _, patch := range patches {
+		patchStr := `[{"op": "` + patch.Op + `", "path": "` + patch.Path + `" `
+		if patch.Value != "" {
+			// Value needs to be actual json string.
+			patchStr = patchStr + `, "value": ` + patch.Value
+		}
+		if patch.From != "" {
+			// Value needs to be actual json string.
+			patchStr = patchStr + `, "from": "` + patch.Value + `" `
+		}
+		patchStr = patchStr + `}]`
+		log.Info("Patching", "patch string", patchStr)
+
+		patchObj, err := jsonpatch.DecodePatch([]byte(patchStr))
+		if err != nil {
+			return kube_core.Container{}, err
+		}
+
+		containerJson, err = patchObj.Apply(containerJson)
+	}
+	err = json.Unmarshal([]byte(containerJson), &patchedContainer)
+	if err != nil {
+		return kube_core.Container{}, err
+	}
+	return patchedContainer, nil
 }
 
 func (i *KumaInjector) namespaceFor(pod *kube_core.Pod) (*kube_core.Namespace, error) {
