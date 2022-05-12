@@ -13,7 +13,23 @@ import (
 	universal_gateway "github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
 )
+
+func MTLSMeshUniversalEgress(name string) InstallFunc {
+	mesh := fmt.Sprintf(`
+type: Mesh
+name: %s
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+routing:
+  zoneEgress: true
+`, name)
+	return YamlUniversal(mesh)
+}
 
 func CrossMeshGatewayOnMultizone() {
 	const gatewayClientNamespaceOtherMesh = "cross-mesh-kuma-client-other"
@@ -60,8 +76,8 @@ func CrossMeshGatewayOnMultizone() {
 
 	BeforeAll(func() {
 		globalSetup := NewClusterSetup().
-			Install(MTLSMeshUniversal(gatewayMesh)).
-			Install(MTLSMeshUniversal(gatewayOtherMesh)).
+			Install(MTLSMeshUniversalEgress(gatewayMesh)).
+			Install(MTLSMeshUniversalEgress(gatewayOtherMesh)).
 			Install(YamlUniversal(crossMeshGatewayYaml)).
 			Install(YamlUniversal(edgeGatewayYaml))
 		Expect(globalSetup.Setup(env.Global)).To(Succeed())
@@ -99,29 +115,55 @@ func CrossMeshGatewayOnMultizone() {
 	})
 
 	Context("when mTLS is enabled", func() {
-		It("should proxy HTTP requests from a different mesh in the same zone", func() {
-			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			k8s_gateway.SuccessfullyProxyRequestToGateway(
-				env.KubeZone1, gatewayMesh,
-				gatewayAddr,
-				gatewayClientNamespaceOtherMesh,
-			)
+		gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
+		Context("Intrazone", func() {
+			zone := &env.KubeZone1
+			It("proxies HTTP requests from a different mesh", func() {
+				k8s_gateway.SuccessfullyProxyRequestToGateway(
+					*zone, gatewayMesh,
+					gatewayAddr,
+					gatewayClientNamespaceOtherMesh,
+				)
+			})
+			It("proxies HTTP requests from the same mesh", func() {
+				k8s_gateway.SuccessfullyProxyRequestToGateway(
+					*zone, gatewayMesh,
+					gatewayAddr,
+					gatewayClientNamespaceSameMesh,
+				)
+			})
 		})
-		It("should proxy HTTP requests from the same mesh in the same zone", func() {
-			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			k8s_gateway.SuccessfullyProxyRequestToGateway(
-				env.KubeZone1, gatewayMesh,
-				gatewayAddr,
-				gatewayClientNamespaceSameMesh,
+		Context("Crosszone", func() {
+			zone := &env.KubeZone2
+			filter := fmt.Sprintf(
+				"cluster.%s_%s.upstream_rq_total",
+				gatewayMesh,
+				crossMeshGatewayName,
 			)
-		})
-		It("doesn't proxy HTTP requests from another zone yet", func() {
-			gatewayAddr := net.JoinHostPort(crossMeshHostname, strconv.Itoa(crossMeshGatewayPort))
-			Consistently(k8s_gateway.FailToProxyRequestToGateway(
-				env.KubeZone2,
-				gatewayAddr,
-				gatewayClientNamespaceOtherMesh,
-			), "10s", "1s").Should(Succeed())
+			It("proxies HTTP requests from a different mesh", func() {
+				egress := (*zone).GetZoneEgressEnvoyTunnel()
+				Expect(egress.ResetCounters()).To(Succeed())
+
+				k8s_gateway.SuccessfullyProxyRequestToGateway(
+					*zone, gatewayMesh,
+					gatewayAddr,
+					gatewayClientNamespaceOtherMesh,
+				)
+
+				Expect(egress.GetStats(filter)).To(stats.BeGreaterThanZero())
+			})
+			It("proxies HTTP requests from the same mesh", func() {
+				egress := (*zone).GetZoneEgressEnvoyTunnel()
+				Expect(egress.ResetCounters()).To(Succeed())
+
+				k8s_gateway.SuccessfullyProxyRequestToGateway(
+					*zone, gatewayMesh,
+					gatewayAddr,
+					gatewayClientNamespaceSameMesh,
+				)
+
+				Expect(egress.GetStats(filter)).To(stats.BeGreaterThanZero())
+			})
 		})
 	})
 }

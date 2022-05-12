@@ -49,6 +49,7 @@ var _ = SynchronizedBeforeSuite(
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithIngress(),
 				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
 				WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 			))).To(Succeed())
 			wg.Done()
@@ -61,6 +62,7 @@ var _ = SynchronizedBeforeSuite(
 				WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 				WithIngress(),
 				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
 				WithGlobalAddress(env.Global.GetKuma().GetKDSServerAddress()),
 			))).To(Succeed())
 			wg.Done()

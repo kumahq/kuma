@@ -5,6 +5,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 func BuildEndpointMap(
@@ -12,6 +13,7 @@ func BuildEndpointMap(
 	dataplanes []*core_mesh.DataplaneResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
+	gateways []*core_mesh.MeshGatewayResource,
 ) core_xds.EndpointMap {
 	if len(destinations) == 0 {
 		return nil
@@ -36,6 +38,29 @@ func BuildEndpointMap(
 				Tags:   withMesh,
 				Weight: 1,
 			})
+		}
+		if dataplane.Spec.IsBuiltinGateway() {
+			gateway := topology.SelectGateway(gateways, dataplane.Spec.Matches)
+			dpSpec := dataplane.Spec
+			dpNetworking := dpSpec.GetNetworking()
+
+			dpGateway := dpNetworking.GetGateway()
+			dpTags := dpGateway.GetTags()
+			serviceName := dpTags[mesh_proto.ServiceTag]
+
+			for _, listener := range gateway.Spec.Conf.Listeners {
+				if !listener.CrossMesh {
+					continue
+				}
+				outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
+					Target: dpNetworking.GetAddress(),
+					Port:   listener.GetPort(),
+					Tags: envoy.Tags(mesh_proto.Merge(
+						dpTags, gateway.Spec.GetTags(), listener.GetTags(),
+					)).WithTags("mesh", dataplane.GetMeta().GetMesh()),
+					Weight: 1,
+				})
+			}
 		}
 	}
 

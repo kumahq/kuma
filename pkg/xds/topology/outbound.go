@@ -53,7 +53,7 @@ func BuildRemoteEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	fillIngressOutbounds(outbound, zoneIngresses, nil, zone, mesh)
+	fillIngressOutbounds(outbound, zoneIngresses, nil, zone, mesh, nil)
 
 	if mesh.ZoneEgressEnabled() {
 		fillExternalServicesReachableFromZone(outbound, externalServices, mesh, loader, zone)
@@ -90,6 +90,7 @@ func BuildEdsEndpointMap(
 		zoneEgresses,
 		zone,
 		mesh,
+		nil,
 	)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
@@ -156,10 +157,29 @@ func fillDataplaneOutbounds(
 
 func BuildCrossMeshEndpointMap(
 	mesh *core_mesh.MeshResource,
+	otherMesh *core_mesh.MeshResource,
+	zone string,
 	gateways []*core_mesh.MeshGatewayResource,
 	dataplanes []*core_mesh.DataplaneResource,
+	zoneIngresses []*core_mesh.ZoneIngressResource,
+	zoneEgresses []*core_mesh.ZoneEgressResource,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
+
+	ingressInstances := fillIngressOutbounds(
+		outbound,
+		zoneIngresses,
+		zoneEgresses,
+		zone,
+		mesh,
+		otherMesh,
+	)
+
+	endpointWeight := uint32(1)
+	if ingressInstances > 0 {
+		endpointWeight = ingressInstances
+	}
+
 	for _, dataplane := range dataplanes {
 		if !dataplane.Spec.IsBuiltinGateway() {
 			continue
@@ -185,11 +205,12 @@ func BuildCrossMeshEndpointMap(
 				Target:   dpNetworking.GetAddress(),
 				Port:     listener.GetPort(),
 				Tags:     mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()),
-				Weight:   1,
+				Weight:   endpointWeight,
 				Locality: localityFromTags(mesh, priorityLocal, dpTags),
 			})
 		}
 	}
+
 	return outbound
 }
 
@@ -206,6 +227,7 @@ func fillIngressOutbounds(
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	zone string,
 	mesh *core_mesh.MeshResource,
+	otherMesh *core_mesh.MeshResource, // otherMesh is set if we are looking for specific crossmesh connections
 ) uint32 {
 	ziInstances := map[string]struct{}{}
 
@@ -254,9 +276,20 @@ func fillIngressOutbounds(
 		}
 
 		for _, service := range zi.Spec.GetAvailableServices() {
-			if service.Mesh != mesh.GetMeta().GetName() {
+			relevantMesh := mesh
+			if otherMesh != nil {
+				relevantMesh = otherMesh
+			}
+
+			if service.Mesh != relevantMesh.GetMeta().GetName() {
 				continue
 			}
+			if _, hasMeshTag := service.Tags[mesh_proto.MeshTag]; otherMesh != nil && !hasMeshTag {
+				// If the mesh tag is set, we assume the service should be available
+				// crossMesh but only if we're looking for this other mesh
+				continue
+			}
+
 			serviceTags := service.GetTags()
 			serviceName := serviceTags[mesh_proto.ServiceTag]
 			serviceInstances := service.GetInstances()

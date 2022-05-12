@@ -266,7 +266,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				},
 			},
 		}
-		err := ingress.UpdateAvailableServices(ctx, mgr, ing, others, externalServices)
+		err := ingress.UpdateAvailableServices(ctx, mgr, ing, others, nil, externalServices)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(mgr.updCounter).To(Equal(0))
 	})
