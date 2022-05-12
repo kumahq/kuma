@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"strings"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
-	jsonpatch "github.com/evanphx/json-patch"
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -91,6 +91,9 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		return err
 	}
 	patchedContainer, err := i.applyCustomPatches(container, sidecarPatches)
+	if err != nil {
+		return err
+	}
 	pod.Spec.Containers = append(pod.Spec.Containers, patchedContainer)
 
 	mesh, err := i.meshFor(pod, ns)
@@ -232,6 +235,11 @@ func (i *KumaInjector) loadCustomPatches(pod *kube_core.Pod, ns *kube_core.Names
 		patchNames = val
 	}
 
+	if patchNames == "" {
+		// Avoid Split returning empty string
+		return []mesh_k8s.JsonPatchBlock{}, []mesh_k8s.JsonPatchBlock{}, nil
+	}
+
 	for _, patchName := range strings.Split(patchNames, ",") {
 		containerPatch := &mesh_k8s.ContainerPatch{}
 		if err := i.client.Get(context.Background(), kube_types.NamespacedName{Namespace: ns.GetName(), Name: patchName}, containerPatch); err != nil {
@@ -267,7 +275,7 @@ func (i *KumaInjector) applyCustomPatches(container kube_core.Container, patches
 			// Value needs to be actual json string.
 			patchStr = patchStr + `, "from": "` + patch.Value + `" `
 		}
-		patchStr = patchStr + `}]`
+		patchStr += `}]`
 		log.Info("Patching", "patch string", patchStr)
 
 		patchObj, err := jsonpatch.DecodePatch([]byte(patchStr))
@@ -276,8 +284,11 @@ func (i *KumaInjector) applyCustomPatches(container kube_core.Container, patches
 		}
 
 		containerJson, err = patchObj.Apply(containerJson)
+		if err != nil {
+			return kube_core.Container{}, err
+		}
 	}
-	err = json.Unmarshal([]byte(containerJson), &patchedContainer)
+	err = json.Unmarshal(containerJson, &patchedContainer)
 	if err != nil {
 		return kube_core.Container{}, err
 	}
