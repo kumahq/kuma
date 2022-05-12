@@ -57,10 +57,12 @@ func New(opts Opts) (*Envoy, error) {
 	return &Envoy{opts: opts}, nil
 }
 
-var _ component.Component = &Envoy{}
+var _ component.GracefulComponent = &Envoy{}
 
 type Envoy struct {
 	opts Opts
+
+	finalizer component.Finalizer
 }
 
 type EnvoyVersion struct {
@@ -82,6 +84,8 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 }
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
+	e.finalizer.Running()
+
 	configFile, err := GenerateBootstrapFile(e.opts.Config.DataplaneRuntime, e.opts.BootstrapConfig)
 	if err != nil {
 		return err
@@ -137,6 +141,9 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	done := make(chan error, 1)
 	go func() {
 		done <- command.Wait()
+		// Component should only be considered done after Envoy exists.
+		// Otherwise, we may not propagate SIGTERM on time.
+		e.finalizer.Done()
 	}()
 
 	select {
@@ -156,6 +163,10 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 
 		return err
 	}
+}
+
+func (e *Envoy) WaitForDone() {
+	e.finalizer.WaitForDone()
 }
 
 func (e *Envoy) DrainConnections() error {

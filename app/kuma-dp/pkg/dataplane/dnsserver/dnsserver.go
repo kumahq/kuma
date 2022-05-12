@@ -13,6 +13,7 @@ import (
 	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/util/files"
 )
 
@@ -23,7 +24,11 @@ var (
 type DNSServer struct {
 	opts *Opts
 	path string
+
+	finalizer component.Finalizer
 }
+
+var _ component.GracefulComponent = &DNSServer{}
 
 type Opts struct {
 	Config kuma_dp.Config
@@ -87,6 +92,7 @@ func (s *DNSServer) NeedLeaderElection() bool {
 }
 
 func (s *DNSServer) Start(stop <-chan struct{}) error {
+	s.finalizer.Running()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -140,6 +146,9 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 
 	go func() {
 		done <- command.Wait()
+		// Component should only be considered done after CoreDNS exists.
+		// Otherwise, we may not propagate SIGTERM on time.
+		s.finalizer.Done()
 	}()
 
 	select {
@@ -160,4 +169,8 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 
 		return err
 	}
+}
+
+func (s *DNSServer) WaitForDone() {
+	s.finalizer.WaitForDone()
 }
