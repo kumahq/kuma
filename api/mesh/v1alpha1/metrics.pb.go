@@ -249,8 +249,8 @@ type PrometheusAggregateMetricsConfig struct {
 	Port uint32 `protobuf:"varint,1,opt,name=port,proto3" json:"port,omitempty"`
 	// Path on which a service expose HTTP endpoint with Prometheus metrics.
 	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
-	// If false then the application won't be scrapped. If nil, then it is treated as true
-	// and kuma-dp scrapes metrics from the service.
+	// If false then the application won't be scrapped. If nil, then it is treated
+	// as true and kuma-dp scrapes metrics from the service.
 	Enabled *wrapperspb.BoolValue `protobuf:"bytes,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
 }
 

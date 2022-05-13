@@ -62,7 +62,7 @@ message PrometheusAggregateMetricsConfig {
   // Path on which a service expose HTTP endpoint with Prometheus metrics.
   string path = 2;
 
-  // If false then the application won't be scrapped. If nil, then it is treated as true
-  // and kuma-dp scrapes metrics from the service.
+  // If false then the application won't be scrapped. If nil, then it is treated
+  // as true and kuma-dp scrapes metrics from the service.
   google.protobuf.BoolValue enabled = 3;
 }
