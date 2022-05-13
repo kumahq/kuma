@@ -29,6 +29,10 @@ func E2EAfterEach(fn func()) bool {
 	return ginkgo.AfterEach(doIfNoSkipCleanup(fn))
 }
 
+func E2EAfterAll(fn func()) bool {
+	return ginkgo.AfterAll(doIfNoSkipCleanup(fn))
+}
+
 func E2EAfterSuite(fn func()) bool {
 	return ginkgo.AfterSuite(doIfNoSkipCleanup(fn))
 }
