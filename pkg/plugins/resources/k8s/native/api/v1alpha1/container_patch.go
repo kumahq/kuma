@@ -28,10 +28,11 @@ type ContainerPatchSpec struct {
 	InitPatch []JsonPatchBlock `json:"initPatch,omitempty"`
 }
 
-// JsonPatchBLock is one json patch operation block.
+// JsonPatchBlock is one json patch operation block.
 type JsonPatchBlock struct {
 	// Op is a jsonpatch operation string.
 	// +required
+	// +kubebuilder:validation:Enum=add;remove;replace;move;copy
 	Op string `json:"op"`
 
 	// Path is a jsonpatch path string.

@@ -241,7 +241,7 @@ func (i *KumaInjector) loadCustomPatches(pod *kube_core.Pod, ns *kube_core.Names
 
 	for _, patchName := range strings.Split(patchNames, ",") {
 		containerPatch := &mesh_k8s.ContainerPatch{}
-		log.Info("Loading patch " + ns.GetName() + ", " + patchName)
+		log.Info("loading patch", "namespace", ns.GetName(), "containerpatch", patchName)
 		if err := i.client.Get(context.Background(), kube_types.NamespacedName{Namespace: ns.GetName(), Name: patchName}, containerPatch); err != nil {
 			log.Error(err, "invalid ContainerPatch", "podName", pod.Name, "namespace", pod.Namespace, "name", patchName)
 			return nil, nil, err
@@ -255,7 +255,7 @@ func (i *KumaInjector) loadCustomPatches(pod *kube_core.Pod, ns *kube_core.Names
 // applyCustomPatches applies the block of patches to the given container and returns a new,
 // patched container. If patch list is empty, the same unaltered container is returned.
 func (i *KumaInjector) applyCustomPatches(container kube_core.Container, patches []mesh_k8s.JsonPatchBlock) (kube_core.Container, error) {
-	if patches == nil {
+	if len(patches) == 0 {
 		return container, nil
 	}
 
