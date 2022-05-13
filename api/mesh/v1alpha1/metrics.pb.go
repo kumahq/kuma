@@ -167,7 +167,8 @@ type PrometheusMetricsBackendConfig struct {
 	// If true then endpoints for scraping metrics won't require mTLS even if mTLS
 	// is enabled in Mesh. If nil, then it is treated as false.
 	SkipMTLS *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=skipMTLS,proto3" json:"skipMTLS,omitempty"`
-	// Map with the configuration of applications which metrics are going to be scrapped by kuma-dp.
+	// Map with the configuration of applications which metrics are going to be
+	// scrapped by kuma-dp.
 	Aggregate map[string]*PrometheusAggregateMetricsConfig `protobuf:"bytes,5,rep,name=aggregate,proto3" json:"aggregate,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
