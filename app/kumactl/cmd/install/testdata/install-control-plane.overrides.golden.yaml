@@ -98,8 +98,8 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ContainerPatch represents a managed instance of a dataplane proxy
-          for a Kuma Gateway.
+        description: ContainerPatch stores a list of patches to apply to init and
+          sidecar containers.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -111,11 +111,13 @@ spec:
               object represents. Servers may infer this from the endpoint the client
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
+          mesh:
+            type: string
           metadata:
             type: object
           spec:
             description: ContainerPatchSpec specifies the options available for a
-              GatewayDataplane.
+              ContainerPatch
             properties:
               initPatch:
                 description: InitPatch specifies jsonpatch to apply to an init container.
@@ -170,8 +172,6 @@ spec:
         type: object
     served: true
     storage: true
-    subresources:
-      status: {}
 status:
   acceptedNames:
     kind: ""
@@ -1874,6 +1874,7 @@ rules:
       - retries
       - circuitbreakers
       - virtualoutbounds
+      - containerpatches
     verbs:
       - get
       - list
