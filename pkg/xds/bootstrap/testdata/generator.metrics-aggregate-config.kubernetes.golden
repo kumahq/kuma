@@ -1,0 +1,115 @@
+dynamicResources:
+  adsConfig:
+    apiType: GRPC
+    grpcServices:
+    - envoyGrpc:
+        clusterName: ads_cluster
+      initialMetadata:
+      - key: authorization
+        value: token
+    setNodeOnFirstMessageOnly: true
+    transportApiVersion: V3
+  cdsConfig:
+    ads: {}
+    resourceApiVersion: V3
+  ldsConfig:
+    ads: {}
+    resourceApiVersion: V3
+layeredRuntime:
+  layers:
+  - name: kuma
+    staticLayer:
+      envoy.restart_features.use_apple_api_for_dns_lookups: false
+      re2.max_program_size.error_level: 4294967295
+      re2.max_program_size.warn_level: 1000
+node:
+  cluster: backend
+  id: metrics.name.namespace
+  metadata:
+    dataplane.applications.metrics:
+    - name: opa
+      path: ""
+      port: 1
+    - name: app
+      path: /stats
+      port: 12
+    dataplane.proxyType: dataplane
+    version:
+      dependencies: {}
+      envoy:
+        build: hash/1.15.0/RELEASE
+        kumaDpCompatible: false
+        version: 1.15.0
+      kumaDp:
+        buildDate: "2019-08-07T11:26:06Z"
+        gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+        gitTag: v0.0.1
+        version: 0.0.1
+staticResources:
+  clusters:
+  - connectTimeout: 1s
+    http2ProtocolOptions: {}
+    loadAssignment:
+      clusterName: access_log_sink
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-al-name.namespace-metrics.sock
+    name: access_log_sink
+    type: STATIC
+    upstreamConnectionOptions:
+      tcpKeepalive:
+        keepaliveInterval: 10
+        keepaliveProbes: 3
+        keepaliveTime: 10
+  - connectTimeout: 1s
+    http2ProtocolOptions: {}
+    loadAssignment:
+      clusterName: ads_cluster
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: localhost
+                portValue: 5678
+    name: ads_cluster
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          tlsParams:
+            tlsMinimumProtocolVersion: TLSv1_2
+          validationContextSdsSecretConfig:
+            name: cp_validation_ctx
+        sni: localhost
+    type: STRICT_DNS
+    upstreamConnectionOptions:
+      tcpKeepalive:
+        keepaliveInterval: 10
+        keepaliveProbes: 3
+        keepaliveTime: 10
+  secrets:
+  - name: cp_validation_ctx
+    validationContext:
+      matchSubjectAltNames:
+      - exact: localhost
+      trustedCa:
+        inlineBytes: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURNekNDQWh1Z0F3SUJBZ0lRRGhsSW5mc1hZSGFtS04rMjlxblF2ekFOQmdrcWhraUc5dzBCQVFzRkFEQVAKTVEwd0N3WURWUVFERXdScmRXMWhNQjRYRFRJeE1EUXdNakV3TWpJeU5sb1hEVE14TURNek1URXdNakl5TmxvdwpEekVOTUFzR0ExVUVBeE1FYTNWdFlUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCCkFMNEdHZytlMk83ZUExMkYwRjZ2MnJyOGoyaVZTRktlcG5adEwxNWxyQ2RzNmxxSzUwc1hXT3c4UEtacDJpaEEKWEpWVFNaekthc3lMRFRBUjlWWVFqVHBFNTI2RXp2dGR0aFNhZ2YzMlFXVyt3WTZMTXBFZGV4S09PQ3gyc2U1NQpSZDk3TDMzeVlQZmdYMTVPWWxpSFBEMDU2ampob3RITGROMmxweTcrU1REdlF5Um5YQXU3M1lrWTM3RWQ0aEk0CnQvVjZzb0h5RUdOY0RobTlwNWZCR3F6MG5qQmJRa3AybFRZNS9rajQycUI3UTZyQ00ydGJQc0VNb29lQUF3NW0KaHlZNHhqMHRQOXVjcWxVejhnYys2bzhIRE5zdDhOZUpYWmt0V24rQ095dGpyL056R2dTMjJrdlNEcGhpc0pvdApvMEZ5b0lPZEF0eEMxcXhYWFIrWHVVVUNBd0VBQWFPQmlqQ0JoekFPQmdOVkhROEJBZjhFQkFNQ0FxUXdIUVlEClZSMGxCQll3RkFZSUt3WUJCUVVIQXdFR0NDc0dBUVVGQndNQk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0hRWUQKVlIwT0JCWUVGS1JMa2dJelgvT2pLdzlpZGVwdVEvUk10VCtBTUNZR0ExVWRFUVFmTUIyQ0NXeHZZMkZzYUc5egpkSWNRL1FDaEl3QUFBQUFBQUFBQUFBQUFBVEFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBUHM1eUpaaG9ZbEdXCkNwQThkU0lTaXZNOC84aUJOUTNmVndQNjNmdDBFSkxNVkd1MlJGWjQvVUFKL3JVUFNHTjh4aFhTazUrMWQ1NmEKL2thSDlyWDBIYVJJSEhseEE3aVBVS3hBajQ0eDlMS21xUEhUb0wzWGxXWTFBWHp2aWNXOWQrR00yRmFRZWUrSQpsZWFxTGJ6MEFadmxudTI3MVoxQ2VhQUN1VTlHbGp1anZ5aVRURTluYUhVRXF2SGdTcFB0aWxKYWx5SjUveklsClo5RjArVVd0M1RPWU1zNWcrU0N0ME13SFROYmlzYm1ld3BjRkZKemp0Mmt2dHJjOXQ5ZGtGODF4aGNTMTl3N3EKaDFBZVAzUlJsTGw3YnY5RUFWWEVtSWF2aWgvMjlQQTNaU3krcGJZTlc3ak5KSGpNUTRoUTBFK3hjQ2F6VS9PNAp5cFdHYWFudlBnPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+statsConfig:
+  statsTags:
+  - regex: ^grpc\.((.+)\.)
+    tagName: name
+  - regex: ^grpc.*streams_closed(_([0-9]+))
+    tagName: status
+  - regex: ^kafka(\.(\S*[0-9]))\.
+    tagName: kafka_name
+  - regex: ^kafka\..*\.(.*)
+    tagName: kafka_type
+  - regex: (worker_([0-9]+)\.)
+    tagName: worker
+  - regex: ((.+?)\.)rbac\.
+    tagName: listener

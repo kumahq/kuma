@@ -22,12 +22,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works in tests (normally it is imported in root.go)
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type BootstrapGenerator interface {
-	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error)
+	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, *configParameters, error)
 }
 
 func NewDefaultBootstrapGenerator(
@@ -66,9 +67,9 @@ type bootstrapGenerator struct {
 	defaultAdminPort uint32
 }
 
-func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
+func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, *configParameters, error) {
 	if err := b.validateRequest(request); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
@@ -119,7 +120,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	case mesh_proto.IngressProxyType:
 		zoneIngress, err := b.zoneIngressFor(ctx, request, proxyId)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		params.Service = "ingress"
@@ -127,7 +128,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	case mesh_proto.EgressProxyType:
 		zoneEgress, err := b.zoneEgressFor(ctx, request, proxyId)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		params.Service = "egress"
 		setAdminPort(zoneEgress.Spec.GetNetworking().GetAdmin().GetPort())
@@ -135,28 +136,51 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		params.HdsEnabled = b.hdsEnabled
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		params.Service = dataplane.Spec.GetIdentifyingService()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
+
+		meshResource := core_mesh.NewMeshResource()
+		err = b.resManager.Get(ctx, meshResource, core_store.GetByKey(dataplane.Meta.GetMesh(), core_model.NoMesh))
+		if err != nil {
+			return nil, nil, err
+		}
+		config, err := dataplane.GetPrometheusEndpoint(meshResource)
+		if err != nil {
+			return nil, nil, err
+		}
+		if config != nil && len(config.GetAggregate()) > 0 {
+			aggregateConfig := map[string]AggregateMetricsConfig{}
+			for key, appConfig := range config.GetAggregate() {
+				if appConfig.GetEnabled() != nil && !appConfig.GetEnabled().GetValue() {
+					continue
+				}
+				aggregateConfig[key] = AggregateMetricsConfig{
+					Port: appConfig.Port,
+					Path: appConfig.Path,
+				}
+			}
+			params.AggregateMetricsConfig = aggregateConfig
+		}
+
 	default:
-		return nil, errors.Errorf("unknown proxy type %v", params.ProxyType)
+		return nil, nil, errors.Errorf("unknown proxy type %v", params.ProxyType)
 	}
 	var err error
 	if params.CertBytes, err = b.caCert(request); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	log.WithValues("params", params).Info("Generating bootstrap config")
 	config, err := genConfig(params)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed creating bootstrap conf")
+		return nil, nil, errors.Wrap(err, "failed creating bootstrap conf")
 	}
 	if err = config.Validate(); err != nil {
-		return nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
+		return nil, nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
 	}
-	return config, nil
+	return config, &params, nil
 }
 
 var DpTokenRequired = errors.New("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")

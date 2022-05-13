@@ -48,4 +48,21 @@ message PrometheusMetricsBackendConfig {
   // If true then endpoints for scraping metrics won't require mTLS even if mTLS
   // is enabled in Mesh. If nil, then it is treated as false.
   google.protobuf.BoolValue skipMTLS = 4;
+
+  // Map with the configuration of applications which metrics are going to be scrapped by kuma-dp.
+  map<string, PrometheusAggregateMetricsConfig> aggregate= 5;
+}
+
+// PrometheusAggregateMetricsConfig defines endpoints that should be scrapped 
+// by kuma-dp for prometheus metrics.
+message PrometheusAggregateMetricsConfig {
+  // Port on which a service expose HTTP endpoint with Prometheus metrics.
+  uint32 port = 1;
+
+  // Path on which a service expose HTTP endpoint with Prometheus metrics.
+  string path = 2;
+
+  // If false then the application won't be scrapped. If nil, then it is treated as true
+  // and kuma-dp scrapes metrics from the service.
+  google.protobuf.BoolValue enabled = 3;
 }

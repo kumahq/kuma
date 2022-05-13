@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	pkg_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/files"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var (
@@ -36,7 +37,7 @@ type BootstrapParams struct {
 	DynamicMetadata map[string]string
 }
 
-type BootstrapConfigFactoryFunc func(ctx context.Context, url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error)
+type BootstrapConfigFactoryFunc func(ctx context.Context, url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error)
 
 type Opts struct {
 	Config          kuma_dp.Config

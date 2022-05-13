@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -18,7 +20,8 @@ import (
 )
 
 var (
-	converterLog = core.Log.WithName("discovery").WithName("k8s").WithName("pod-to-dataplane-converter")
+	converterLog          = core.Log.WithName("discovery").WithName("k8s").WithName("pod-to-dataplane-converter")
+	metricsAggregateRegex = regexp.MustCompile(metadata.KumaMetricsPrometheusAggregatePattern)
 )
 
 type PodConverter struct {
@@ -186,13 +189,20 @@ func MetricsFor(pod *kube_core.Pod) (*mesh_proto.MetricsBackend, error) {
 	if err != nil {
 		return nil, err
 	}
-	if path == "" && !exist {
+
+	aggregate, err := MetricsAggregateFor(pod)
+	if err != nil {
+		return nil, err
+	}
+	if path == "" && !exist && aggregate == nil {
 		return nil, nil
 	}
 	cfg := &mesh_proto.PrometheusMetricsBackendConfig{
-		Path: path,
-		Port: port,
+		Path:      path,
+		Port:      port,
+		Aggregate: aggregate,
 	}
+
 	str, err := util_proto.ToStruct(cfg)
 	if err != nil {
 		return nil, err
@@ -201,4 +211,46 @@ func MetricsFor(pod *kube_core.Pod) (*mesh_proto.MetricsBackend, error) {
 		Type: mesh_proto.MetricsPrometheusType,
 		Conf: str,
 	}, nil
+}
+
+func MetricsAggregateFor(pod *kube_core.Pod) (map[string]*mesh_proto.PrometheusAggregateMetricsConfig, error) {
+	aggregateConfigNames := make(map[string]bool)
+	for key := range pod.Annotations {
+		matchedGroups := metricsAggregateRegex.FindStringSubmatch(key)
+		if matchedGroups != nil && len(matchedGroups) == 3 {
+			// first group is service name and second one of (port|path|enabled)
+			aggregateConfigNames[matchedGroups[1]] = true
+		}
+	}
+	if len(aggregateConfigNames) == 0 {
+		return nil, nil
+	}
+
+	aggregateConfig := make(map[string]*mesh_proto.PrometheusAggregateMetricsConfig)
+	for app := range aggregateConfigNames {
+		enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregateEnabled, app))
+		if err != nil {
+			return nil, err
+		}
+		if exist && !enabled {
+			enabled = false
+		} else {
+			enabled = true
+		}
+		path, _ := metadata.Annotations(pod.Annotations).GetString(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePath, app))
+		port, exist, err := metadata.Annotations(pod.Annotations).GetUint32(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePort, app))
+		if err != nil {
+			return nil, err
+		}
+		if (path == "" || !exist) && enabled {
+			return nil, errors.New("path and port need to be specified for metrics scraping")
+		}
+
+		aggregateConfig[app] = &mesh_proto.PrometheusAggregateMetricsConfig{
+			Path:    path,
+			Port:    port,
+			Enabled: util_proto.Bool(enabled),
+		}
+	}
+	return aggregateConfig, nil
 }
