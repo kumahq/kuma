@@ -33,6 +33,9 @@ var _ = Describe("Injector", func() {
 	BeforeEach(func() {
 		err := k8sClient.DeleteAllOf(context.Background(), &v1alpha1.Mesh{})
 		Expect(err).ToNot(HaveOccurred())
+		// XXX The client can't find the resource type for some reason.
+		//err = k8sClient.DeleteAllOf(context.Background(), &v1alpha1.ContainerPatch{})
+		//Expect(err).ToNot(HaveOccurred())
 	})
 
 	DescribeTable("should inject Kuma into a Pod",
@@ -57,6 +60,25 @@ var _ = Describe("Injector", func() {
 			Expect(errNs).ToNot(HaveOccurred())
 			errUpd := k8sClient.Update(context.Background(), ns.(kube_client.Object))
 			Expect(errUpd).ToNot(HaveOccurred())
+
+			cPatch := `
+apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  namespace: default
+  name: container-patch-1
+spec:
+  sidecarPatch:
+    - op: add
+      path: /securityContext/privileged
+      value: "true"
+  initPatch:
+    - op: remove
+      path: /securityContext/runAsUser`
+			pobj, _, errCPatch := decoder.Decode([]byte(cPatch), nil, nil)
+			Expect(errCPatch).ToNot(HaveOccurred())
+			errCPatchCreate := k8sClient.Create(context.Background(), pobj.(kube_client.Object))
+			Expect(errCPatchCreate).ToNot(HaveOccurred())
 
 			// given
 			pod := &kube_core.Pod{}
@@ -565,8 +587,25 @@ var _ = Describe("Injector", func() {
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("28. sidecar with specified drain time", testCase{
+		Entry("29. sidecar with specified drain time", testCase{
 			num: "29",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+		// XXX Can only run one until the DeleteAll issue is fixed.
+		FEntry("30. sidecar with patch", testCase{
+			num: "30",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
