@@ -12,10 +12,10 @@ import (
 )
 
 type PolicyReference struct {
-	from        gatewayapi.ReferencePolicyFrom
+	from        gatewayapi.ReferenceGrantFrom
 	toNamespace gatewayapi.Namespace
 	// always set when created via the exported functions
-	to gatewayapi.ReferencePolicyTo
+	to gatewayapi.ReferenceGrantTo
 }
 
 func (pr *PolicyReference) NamespacedNameReferredTo() kube_types.NamespacedName {
@@ -26,30 +26,30 @@ func (pr *PolicyReference) GroupKindReferredTo() kube_schema.GroupKind {
 	return kube_schema.GroupKind{Kind: string(pr.to.Kind), Group: string(pr.to.Group)}
 }
 
-func FromGatewayIn(namespace string) gatewayapi.ReferencePolicyFrom {
-	return gatewayapi.ReferencePolicyFrom{
+func FromGatewayIn(namespace string) gatewayapi.ReferenceGrantFrom {
+	return gatewayapi.ReferenceGrantFrom{
 		Kind:      gatewayapi.Kind("Gateway"),
 		Group:     gatewayapi.Group(gatewayapi.GroupName),
 		Namespace: gatewayapi.Namespace(namespace),
 	}
 }
 
-func FromHTTPRouteIn(namespace string) gatewayapi.ReferencePolicyFrom {
-	return gatewayapi.ReferencePolicyFrom{
+func FromHTTPRouteIn(namespace string) gatewayapi.ReferenceGrantFrom {
+	return gatewayapi.ReferenceGrantFrom{
 		Kind:      gatewayapi.Kind("HTTPRoute"),
 		Group:     gatewayapi.Group(gatewayapi.GroupName),
 		Namespace: gatewayapi.Namespace(namespace),
 	}
 }
 
-func PolicyReferenceBackend(from gatewayapi.ReferencePolicyFrom, to gatewayapi.BackendObjectReference) PolicyReference {
+func PolicyReferenceBackend(from gatewayapi.ReferenceGrantFrom, to gatewayapi.BackendObjectReference) PolicyReference {
 	ns := from.Namespace
 	if to.Namespace != nil {
 		ns = *to.Namespace
 	}
 	return PolicyReference{
 		from: from,
-		to: gatewayapi.ReferencePolicyTo{
+		to: gatewayapi.ReferenceGrantTo{
 			Kind:  *to.Kind,
 			Group: *to.Group,
 			Name:  &to.Name,
@@ -58,14 +58,14 @@ func PolicyReferenceBackend(from gatewayapi.ReferencePolicyFrom, to gatewayapi.B
 	}
 }
 
-func PolicyReferenceSecret(from gatewayapi.ReferencePolicyFrom, to gatewayapi.SecretObjectReference) PolicyReference {
+func PolicyReferenceSecret(from gatewayapi.ReferenceGrantFrom, to gatewayapi.SecretObjectReference) PolicyReference {
 	ns := from.Namespace
 	if to.Namespace != nil {
 		ns = *to.Namespace
 	}
 	return PolicyReference{
 		from: from,
-		to: gatewayapi.ReferencePolicyTo{
+		to: gatewayapi.ReferenceGrantTo{
 			Kind:  *to.Kind,
 			Group: *to.Group,
 			Name:  &to.Name,
@@ -85,7 +85,7 @@ func IsReferencePermitted(
 		return true, nil
 	}
 
-	policies := &gatewayapi.ReferencePolicyList{}
+	policies := &gatewayapi.ReferenceGrantList{}
 	if err := client.List(ctx, policies, kube_client.InNamespace(reference.toNamespace)); err != nil {
 		return false, errors.Wrap(err, "failed to list ReferencePolicies")
 	}
@@ -103,7 +103,7 @@ func IsReferencePermitted(
 	return false, nil
 }
 
-func someFromMatches(from gatewayapi.ReferencePolicyFrom, permitted []gatewayapi.ReferencePolicyFrom) bool {
+func someFromMatches(from gatewayapi.ReferenceGrantFrom, permitted []gatewayapi.ReferenceGrantFrom) bool {
 	for _, permittedFrom := range permitted {
 		if reflect.DeepEqual(permittedFrom, from) {
 			return true
@@ -112,7 +112,7 @@ func someFromMatches(from gatewayapi.ReferencePolicyFrom, permitted []gatewayapi
 	return false
 }
 
-func someToMatches(to gatewayapi.ReferencePolicyTo, permitted []gatewayapi.ReferencePolicyTo) bool {
+func someToMatches(to gatewayapi.ReferenceGrantTo, permitted []gatewayapi.ReferenceGrantTo) bool {
 	for _, permittedTo := range permitted {
 		if permittedTo.Group == to.Group &&
 			permittedTo.Kind == to.Kind &&

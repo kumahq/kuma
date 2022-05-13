@@ -29,20 +29,20 @@ const (
 )
 
 var (
-	simplePolicy = gatewayapi.ReferencePolicy{
+	simplePolicy = gatewayapi.ReferenceGrant{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Name:      "basic",
 			Namespace: otherNs,
 		},
-		Spec: gatewayapi.ReferencePolicySpec{
-			From: []gatewayapi.ReferencePolicyFrom{
+		Spec: gatewayapi.ReferenceGrantSpec{
+			From: []gatewayapi.ReferenceGrantFrom{
 				{
 					Group:     gatewayapi.Group(gatewayapi.GroupName),
 					Kind:      gatewayapi.Kind("HTTPRoute"),
 					Namespace: gatewayapi.Namespace(defaultNs),
 				},
 			},
-			To: []gatewayapi.ReferencePolicyTo{
+			To: []gatewayapi.ReferenceGrantTo{
 				{
 					Group: gatewayapi.Group(""),
 					Kind:  gatewayapi.Kind("Service"),
@@ -82,7 +82,7 @@ var (
 	}
 )
 
-var _ = Describe("ReferencePolicy support", func() {
+var _ = Describe("ReferenceGrant support", func() {
 	It("permits same namespace references", func() {
 		kubeClient := kube_client_fake.NewClientBuilder().WithScheme(k8sScheme).WithObjects(
 			&simplePolicy,
@@ -130,7 +130,7 @@ var _ = Describe("ReferencePolicy support", func() {
 			policyWithName := simplePolicy.DeepCopy()
 			permittedToExtSvcName := gatewayapi.ObjectName("specific-permitted-ext-svc")
 			policyWithName.Spec.To = append(policyWithName.Spec.To,
-				gatewayapi.ReferencePolicyTo{
+				gatewayapi.ReferenceGrantTo{
 					Group: kumaGroup,
 					Kind:  externalSvcKind,
 					Name:  &permittedToExtSvcName,

@@ -107,16 +107,16 @@ func (r *HTTPRouteReconciler) gapiToKumaRouteConf(
 
 	conditions := []kube_meta.Condition{
 		{
-			Type:   string(gatewayapi.ConditionRouteResolvedRefs),
+			Type:   string(gatewayapi.RouteConditionResolvedRefs),
 			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.ConditionRouteResolvedRefs),
+			Reason: string(gatewayapi.RouteConditionResolvedRefs),
 		},
 		// TODO: reflect the true state from the actual gateway of this
 		// route
 		{
-			Type:   string(gatewayapi.ConditionRouteAccepted),
+			Type:   string(gatewayapi.RouteConditionAccepted),
 			Status: kube_meta.ConditionTrue,
-			Reason: string(gatewayapi.ConditionRouteAccepted),
+			Reason: string(gatewayapi.RouteConditionAccepted),
 		},
 	}
 
@@ -146,7 +146,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	} else if !permitted {
 		return nil,
 			&kube_meta.Condition{
-				Type:    string(gatewayapi.ConditionRouteResolvedRefs),
+				Type:    string(gatewayapi.RouteConditionResolvedRefs),
 				Status:  kube_meta.ConditionFalse,
 				Reason:  RefNotPermitted,
 				Message: fmt.Sprintf("reference to %s %q not permitted by any ReferencePolicy", gk, namespacedName),
@@ -162,7 +162,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 		if ref.Port == nil {
 			return nil,
 				&kube_meta.Condition{
-					Type:    string(gatewayapi.ConditionRouteResolvedRefs),
+					Type:    string(gatewayapi.RouteConditionResolvedRefs),
 					Status:  kube_meta.ConditionFalse,
 					Reason:  RefInvalid,
 					Message: "backend reference must include port",
@@ -176,7 +176,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 			if kube_apierrs.IsNotFound(err) {
 				return nil,
 					&kube_meta.Condition{
-						Type:    string(gatewayapi.ConditionRouteResolvedRefs),
+						Type:    string(gatewayapi.RouteConditionResolvedRefs),
 						Status:  kube_meta.ConditionFalse,
 						Reason:  ObjectNotFound,
 						Message: fmt.Sprintf("backend reference references a non-existent Service %q", namespacedName.String()),
@@ -195,7 +195,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 			if store.IsResourceNotFound(err) {
 				return nil,
 					&kube_meta.Condition{
-						Type:    string(gatewayapi.ConditionRouteResolvedRefs),
+						Type:    string(gatewayapi.RouteConditionResolvedRefs),
 						Status:  kube_meta.ConditionFalse,
 						Reason:  ObjectNotFound,
 						Message: fmt.Sprintf("backend reference references a non-existent ExternalService %q", namespacedName.Name),
@@ -212,7 +212,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 
 	return nil,
 		&kube_meta.Condition{
-			Type:    string(gatewayapi.ConditionRouteResolvedRefs),
+			Type:    string(gatewayapi.RouteConditionResolvedRefs),
 			Status:  kube_meta.ConditionFalse,
 			Reason:  ObjectTypeUnknownOrInvalid,
 			Message: "backend reference must be Service or externalservice.kuma.io",
