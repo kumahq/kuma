@@ -4,12 +4,13 @@ import (
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
-	. "github.com/kumahq/kuma/test/framework"
-	testserver "github.com/kumahq/kuma/test/framework/deployments/testserver"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
+	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
 func MeshKubernetesAndMetricsAggregate(name string) InstallFunc {
