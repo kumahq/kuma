@@ -51,7 +51,7 @@ message PrometheusMetricsBackendConfig {
 
   // Map with the configuration of applications which metrics are going to be
   // scrapped by kuma-dp.
-  map<string, PrometheusAggregateMetricsConfig> aggregate= 5;
+  map<string, PrometheusAggregateMetricsConfig> aggregate = 5;
 }
 
 // PrometheusAggregateMetricsConfig defines endpoints that should be scrapped
