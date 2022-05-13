@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	jsonpatch "github.com/evanphx/json-patch"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -57,4 +58,19 @@ type ContainerPatchList struct {
 
 func init() {
 	SchemeBuilder.Register(&ContainerPatch{}, &ContainerPatchList{})
+}
+
+func JsonPatchBlockToPatch(patchBlock JsonPatchBlock) (jsonpatch.Patch, error) {
+	patchStr := `[{"op": "` + patchBlock.Op + `", "path": "` + patchBlock.Path + `" `
+	if patchBlock.Value != "" {
+		// Value needs to be actual json string.
+		patchStr = patchStr + `, "value": ` + patchBlock.Value
+	}
+	if patchBlock.From != "" {
+		// Value needs to be actual json string.
+		patchStr = patchStr + `, "from": "` + patchBlock.Value + `" `
+	}
+	patchStr += `}]`
+
+	return jsonpatch.DecodePatch([]byte(patchStr))
 }

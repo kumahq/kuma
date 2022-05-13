@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
@@ -266,19 +265,8 @@ func (i *KumaInjector) applyCustomPatches(container kube_core.Container, patches
 		return kube_core.Container{}, err
 	}
 	for _, patch := range patches {
-		patchStr := `[{"op": "` + patch.Op + `", "path": "` + patch.Path + `" `
-		if patch.Value != "" {
-			// Value needs to be actual json string.
-			patchStr = patchStr + `, "value": ` + patch.Value
-		}
-		if patch.From != "" {
-			// Value needs to be actual json string.
-			patchStr = patchStr + `, "from": "` + patch.Value + `" `
-		}
-		patchStr += `}]`
-		log.Info("Patching", "patch string", patchStr)
 
-		patchObj, err := jsonpatch.DecodePatch([]byte(patchStr))
+		patchObj, err := mesh_k8s.JsonPatchBlockToPatch(patch)
 		if err != nil {
 			return kube_core.Container{}, err
 		}
