@@ -265,7 +265,6 @@ func (i *KumaInjector) applyCustomPatches(container kube_core.Container, patches
 		return kube_core.Container{}, err
 	}
 	for _, patch := range patches {
-
 		patchObj, err := mesh_k8s.JsonPatchBlockToPatch(patch)
 		if err != nil {
 			return kube_core.Container{}, err

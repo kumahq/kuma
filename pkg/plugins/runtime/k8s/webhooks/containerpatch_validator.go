@@ -4,14 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/core"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	v1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
-
-var log = core.Log.WithName("cntrptchvalid8r")
 
 type ContainerPatchValidator struct {
 	decoder *admission.Decoder
@@ -92,7 +89,5 @@ func (h *ContainerPatchValidator) ValidateUpdate(ctx context.Context, req admiss
 
 func (h *ContainerPatchValidator) Supports(req admission.Request) bool {
 	gvk := mesh_k8s.GroupVersion.WithKind("ContainerPatch")
-	log.Info("supports.. " + gvk.Group + ", " + gvk.Version + ", " + gvk.Kind)
-	log.Info("got.. " + req.Kind.Group + ", " + req.Kind.Version + ", " + req.Kind.Kind)
 	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
 }
