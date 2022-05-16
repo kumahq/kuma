@@ -62,6 +62,8 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
                   statPrefix: localhost_8080
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 `,
 		}),
 	)
