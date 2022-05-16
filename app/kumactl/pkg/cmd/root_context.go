@@ -27,8 +27,16 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
+type ConfigType int
+
+const (
+	FileConfig ConfigType = iota
+	InMemory
+)
+
 type RootArgs struct {
 	ConfigFile string
+	ConfigType ConfigType
 	Mesh       string
 	ApiTimeout time.Duration
 }
@@ -56,6 +64,7 @@ type RootRuntime struct {
 }
 
 // RootContext contains variables, functions and components that can be overridden when extending kumactl or running the test.
+// To create one for tests use helper functions in pkg/test/kumactl/context.go
 // Example:
 //
 // rootCtx := kumactl_cmd.DefaultRootContext()
@@ -127,6 +136,10 @@ func (rc *RootContext) SaveConfig() error {
 
 func (rc *RootContext) Config() *config_proto.Configuration {
 	return &rc.Runtime.Config
+}
+
+func (rc *RootContext) LoadInMemoryConfig() {
+	rc.Runtime.Config = config.DefaultConfiguration()
 }
 
 func (rc *RootContext) CurrentContext() (*config_proto.Context, error) {

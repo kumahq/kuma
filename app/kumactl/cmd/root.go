@@ -62,11 +62,11 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 				}
 			}
 
-			if err := root.LoadConfig(); err != nil {
-				return err
+			if root.Args.ConfigType == kumactl_cmd.InMemory {
+				root.LoadInMemoryConfig()
 			}
 
-			return nil
+			return root.LoadConfig()
 		},
 	}
 
