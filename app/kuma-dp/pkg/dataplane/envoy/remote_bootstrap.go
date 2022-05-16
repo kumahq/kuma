@@ -95,13 +95,11 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 	if err := json.Unmarshal(respBytes, bootstrap); err != nil {
 		return nil, nil, err
 	}
-	log.Info("test ", "bootstrap", bootstrap)
 
 	envoyBootstrap := &envoy_bootstrap_v3.Bootstrap{}
 	if err := util_proto.FromYAML(bootstrap.Bootstrap, envoyBootstrap); err != nil {
 		return nil, nil, err
 	}
-	log.Info("test ", "envoy", envoyBootstrap)
 	return envoyBootstrap, &bootstrap.KumaSidecarConfiguration, nil
 }
 

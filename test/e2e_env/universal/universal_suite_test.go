@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
+	"github.com/kumahq/kuma/test/e2e_env/universal/metrics"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -24,7 +25,7 @@ func TestE2E(t *testing.T) {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		env.Cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		E2EDeferCleanup(env.Cluster.DismissCluster)
+		// E2EDeferCleanup(env.Cluster.DismissCluster)
 		Expect(env.Cluster.Install(Kuma(core.Standalone,
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithEnv("KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL", "1s"), // speed up some tests by flushing stats quicker than default 10s
@@ -41,7 +42,7 @@ var _ = SynchronizedBeforeSuite(
 		networking := UniversalCPNetworking{}
 		Expect(json.Unmarshal(bytes, &networking)).To(Succeed())
 		env.Cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		E2EDeferCleanup(env.Cluster.DismissCluster) // clean up any containers if needed
+		// E2EDeferCleanup(env.Cluster.DismissCluster) // clean up any containers if needed
 		cp, err := NewUniversalControlPlane(
 			env.Cluster.GetTesting(),
 			core.Standalone,
@@ -60,3 +61,4 @@ var _ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThre
 var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
 var _ = Describe("External Services", externalservices.ExternalServiceHostHeader, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
+var _ = Describe("Applications Metrics", metrics.ApplicationsMetrics, Ordered)

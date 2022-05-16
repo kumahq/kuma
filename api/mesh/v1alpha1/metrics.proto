@@ -56,6 +56,7 @@ message PrometheusMetricsBackendConfig {
 
 // PrometheusAggregateMetricsConfig defines endpoints that should be scrapped
 // by kuma-dp for prometheus metrics.
+// Any configuration change here require sidecar restart.
 message PrometheusAggregateMetricsConfig {
   // Port on which a service expose HTTP endpoint with Prometheus metrics.
   uint32 port = 1;

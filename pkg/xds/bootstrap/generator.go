@@ -22,12 +22,13 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
+
 	// import Envoy protobuf definitions so (un)marshaling Envoy protobuf works in tests (normally it is imported in root.go)
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type BootstrapGenerator interface {
-	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, *configParameters, error)
+	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, *KumaDpBootstrap, error)
 }
 
 func NewDefaultBootstrapGenerator(
@@ -66,7 +67,7 @@ type bootstrapGenerator struct {
 	defaultAdminPort uint32
 }
 
-func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, *configParameters, error) {
+func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, *KumaDpBootstrap, error) {
 	if err := b.validateRequest(request); err != nil {
 		return nil, nil, err
 	}
@@ -94,6 +95,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		EmptyDNSPort:          request.EmptyDNSPort,
 		ProxyType:             request.ProxyType,
 	}
+	kumaDpBootstrap := KumaDpBootstrap{}
 	if params.ProxyType == "" {
 		params.ProxyType = string(mesh_proto.DataplaneProxyType)
 	}
@@ -161,7 +163,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 					Path: appConfig.Path,
 				}
 			}
-			params.AggregateMetricsConfig = aggregateConfig
+			kumaDpBootstrap.AggregateMetricsConfig = aggregateConfig
 		}
 
 	default:
@@ -179,7 +181,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if err = config.Validate(); err != nil {
 		return nil, nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
 	}
-	return config, &params, nil
+	return config, &kumaDpBootstrap, nil
 }
 
 var DpTokenRequired = errors.New("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")

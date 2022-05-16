@@ -49,7 +49,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 	reqParams.Host = hostname
 	logger := log.WithValues("params", reqParams)
 
-	config, params, err := b.Generator.Generate(req.Context(), reqParams)
+	config, kumaDpBootstrap, err := b.Generator.Generate(req.Context(), reqParams)
 	if err != nil {
 		handleError(resp, err, logger)
 		return
@@ -65,7 +65,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 	var responseBytes []byte
 	if req.Header.Get("accept") == "application/json" {
 		resp.Header().Set("content-type", "application/json")
-		response := createBootstrapResponse(bootstrapBytes, params)
+		response := createBootstrapResponse(bootstrapBytes, kumaDpBootstrap)
 		responseBytes, err = json.Marshal(response)
 		if err != nil {
 			logger.Error(err, "Could not convert to json")
@@ -73,6 +73,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 			return
 		}
 	} else {
+		// backwards compatibility
 		resp.Header().Set("content-type", "text/x-yaml")
 		responseBytes = bootstrapBytes
 	}
@@ -109,12 +110,12 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 	resp.WriteHeader(http.StatusInternalServerError)
 }
 
-func createBootstrapResponse(bootstrap []byte, params *configParameters) *types.BootstrapResponse {
+func createBootstrapResponse(bootstrap []byte, config *KumaDpBootstrap) *types.BootstrapResponse {
 	bootstrapConfig := types.BootstrapResponse{
 		Bootstrap: bootstrap,
 	}
 	aggregate := []types.Aggregate{}
-	for key, value := range params.AggregateMetricsConfig {
+	for key, value := range config.AggregateMetricsConfig {
 		aggregate = append(aggregate, types.Aggregate{
 			Name: key,
 			Port: value.Port,

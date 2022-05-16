@@ -17,11 +17,6 @@ dynamicResources:
 node:
   cluster: backend
   id: dp-1.default.default
-  metadata:
-    dataplane.applications.metrics:
-    - name: app
-      port: 123
-      path: "/stats"
 staticResources:
   clusters:
     - connectTimeout: 0.250s

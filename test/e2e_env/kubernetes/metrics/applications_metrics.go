@@ -3,10 +3,8 @@ package metrics
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	. "github.com/kumahq/kuma/test/framework"
@@ -98,7 +96,7 @@ func ApplicationsMetrics() {
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
-				testserver.WithName("test-server-override"),
+				testserver.WithName("test-server-override-mesh"),
 				testserver.WithPodAnnotations(map[string]string{
 					"prometheus.metrics.kuma.io/aggregate-path-stats-enabled":       "false",
 					"prometheus.metrics.kuma.io/aggregate-app-path":                 "/my-app",
@@ -112,19 +110,13 @@ func ApplicationsMetrics() {
 
 	It("should scrape metrics defined in mesh and not fail when defined service doesn't exist", func() {
 		// given
-		pods, err := k8s.ListPodsE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "test-server"),
-			},
-		)
+		podName, err := PodNameOfApp(env.Cluster, "test-server", namespace)
 		Expect(err).ToNot(HaveOccurred())
-		clientPodName := pods[0].Name
-		podIp := pods[0].Status.PodIP
+		podIp, err := PodIPOfApp(env.Cluster, "test-server", namespace)
+		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := env.Cluster.Exec(namespace, clientPodName, "test-server",
+		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server",
 			"curl", "-v", "-m", "3", "--fail", "http://"+podIp+":1234/metrics?filter=concurrency")
 
 		// then
@@ -138,21 +130,15 @@ func ApplicationsMetrics() {
 		Expect(stdout).ToNot(ContainSubstring("not-working-service"))
 	})
 
-	It("should override mesh configuration by annotation", func() {
+	It("should override mesh configuration with annotation", func() {
 		// given
-		pods, err := k8s.ListPodsE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "test-server-override"),
-			},
-		)
+		podName, err := PodNameOfApp(env.Cluster, "test-server-override-mesh", namespace)
 		Expect(err).ToNot(HaveOccurred())
-		clientPodName := pods[0].Name
-		podIp := pods[0].Status.PodIP
+		podIp, err := PodIPOfApp(env.Cluster, "test-server-override-mesh", namespace)
+		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := env.Cluster.Exec(namespace, clientPodName, "test-server-override",
+		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-override-mesh",
 			"curl", "-v", "-m", "3", "--fail", "http://"+podIp+":1234/metrics?filter=concurrency")
 
 		// then
@@ -178,19 +164,13 @@ func ApplicationsMetrics() {
 
 	It("should use only configuration from dataplane", func() {
 		// given
-		pods, err := k8s.ListPodsE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(namespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "test-server-dp-metrics"),
-			},
-		)
+		podName, err := PodNameOfApp(env.Cluster, "test-server-dp-metrics", namespace)
 		Expect(err).ToNot(HaveOccurred())
-		clientPodName := pods[0].Name
-		podIp := pods[0].Status.PodIP
+		podIp, err := PodIPOfApp(env.Cluster, "test-server-dp-metrics", namespace)
+		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		stdout, _, err := env.Cluster.Exec(namespace, clientPodName, "test-server-dp-metrics",
+		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-dp-metrics",
 			"curl", "-v", "-m", "3", "--fail", "http://"+podIp+":1234/metrics?filter=concurrency")
 
 		// then
