@@ -6,6 +6,7 @@ import (
 	"io"
 	"os/exec"
 	"regexp"
+	"sync"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -25,7 +26,7 @@ type DNSServer struct {
 	opts *Opts
 	path string
 
-	finalizer component.Finalizer
+	wg sync.WaitGroup
 }
 
 var _ component.GracefulComponent = &DNSServer{}
@@ -92,7 +93,7 @@ func (s *DNSServer) NeedLeaderElection() bool {
 }
 
 func (s *DNSServer) Start(stop <-chan struct{}) error {
-	s.finalizer.Running()
+	s.wg.Add(1)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -148,7 +149,7 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 		done <- command.Wait()
 		// Component should only be considered done after CoreDNS exists.
 		// Otherwise, we may not propagate SIGTERM on time.
-		s.finalizer.Done()
+		s.wg.Done()
 	}()
 
 	select {
@@ -172,5 +173,5 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 }
 
 func (s *DNSServer) WaitForDone() {
-	s.finalizer.WaitForDone()
+	s.wg.Wait()
 }
