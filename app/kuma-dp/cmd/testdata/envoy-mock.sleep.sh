@@ -17,4 +17,10 @@ fi
 
 echo $$ >"${ENVOY_MOCK_PID_FILE}"
 
-sleep 86400
+# Send logs for Cmd#Wait to finish
+while true;
+do
+  echo "Log"
+  sleep 0.1
+done
+

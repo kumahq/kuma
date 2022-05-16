@@ -7,9 +7,6 @@ Resources:
     enableReusePort: true
     filterChains:
     - filterChainMatch:
-        applicationProtocols:
-        - h2
-        - http/1.1
         serverNames:
         - foo.example.com
         transportProtocol: tls
@@ -71,9 +68,6 @@ Resources:
               tlsMinimumProtocolVersion: TLSv1_2
           requireClientCertificate: false
     - filterChainMatch:
-        applicationProtocols:
-        - h2
-        - http/1.1
         serverNames:
         - bar.example.com
         transportProtocol: tls
@@ -135,9 +129,6 @@ Resources:
               tlsMinimumProtocolVersion: TLSv1_2
           requireClientCertificate: false
     - filterChainMatch:
-        applicationProtocols:
-        - h2
-        - http/1.1
         serverNames:
         - '*.example.com'
         transportProtocol: tls
@@ -199,9 +190,6 @@ Resources:
               tlsMinimumProtocolVersion: TLSv1_2
           requireClientCertificate: false
     - filterChainMatch:
-        applicationProtocols:
-        - h2
-        - http/1.1
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager

@@ -4,7 +4,7 @@ BUILD_INFO_BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ" || echo unknown)
 BUILD_INFO_VERSION ?= $(shell $(TOOLS_DIR)/releases/version.sh)
 
 build_info_fields := \
-	version=$(BUILD_INFO_VERSION) \
+	version=$(BUILD_INFO_VERSION)-${GOARCH} \
 	gitTag=$(BUILD_INFO_GIT_TAG) \
 	gitCommit=$(BUILD_INFO_GIT_COMMIT) \
 	buildDate=$(BUILD_INFO_BUILD_DATE)

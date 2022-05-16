@@ -98,9 +98,6 @@ Listeners:
       enableReusePort: true
       filterChains:
       - filterChainMatch:
-          applicationProtocols:
-          - h2
-          - http/1.1
           serverNames:
           - echo.example.com
           transportProtocol: tls

@@ -3,6 +3,7 @@ package containers
 import (
 	"sort"
 	"strconv"
+	"time"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
@@ -70,6 +71,14 @@ func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (u
 		return 0, err
 	}
 	return adminPort, nil
+}
+
+func (i *DataplaneProxyFactory) drainTime(annotations map[string]string) (time.Duration, error) {
+	drainTime, exists := metadata.Annotations(annotations).GetString(metadata.KumaSidecarDrainTime)
+	if !exists {
+		return i.ContainerConfig.DrainTime, nil
+	}
+	return time.ParseDuration(drainTime)
 }
 
 func (i *DataplaneProxyFactory) NewContainer(
@@ -161,6 +170,11 @@ func (i *DataplaneProxyFactory) NewContainer(
 }
 
 func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[string]string) ([]kube_core.EnvVar, error) {
+	drainTime, err := i.drainTime(podAnnotations)
+	if err != nil {
+		return nil, err
+	}
+
 	envVars := map[string]kube_core.EnvVar{
 		"KUMA_CONTROL_PLANE_URL": {
 			Name:  "KUMA_CONTROL_PLANE_URL",
@@ -178,7 +192,7 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		},
 		"KUMA_DATAPLANE_DRAIN_TIME": {
 			Name:  "KUMA_DATAPLANE_DRAIN_TIME",
-			Value: i.ContainerConfig.DrainTime.String(),
+			Value: drainTime.String(),
 		},
 		"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH": {
 			Name:  "KUMA_DATAPLANE_RUNTIME_TOKEN_PATH",

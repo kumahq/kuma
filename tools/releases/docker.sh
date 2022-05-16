@@ -9,14 +9,23 @@ KUMA_DOCKER_REPO="${KUMA_DOCKER_REPO:-docker.io}"
 KUMA_DOCKER_REPO_ORG="${KUMA_DOCKER_REPO_ORG:-${KUMA_DOCKER_REPO}/kumahq}"
 KUMA_COMPONENTS="${KUMA_COMPONENTS:-kuma-cp kuma-dp kumactl kuma-init kuma-prometheus-sd}"
 ENVOY_VERSION="${ENVOY_VERSION:-1.22.0}"
+BUILD_ARCH="${BUILD_ARCH:-amd64 arm64}"
 
 function build() {
   for component in ${KUMA_COMPONENTS}; do
-    msg "Building $component..."
-    docker build --build-arg ARCH="amd64" --build-arg ENVOY_VERSION="${ENVOY_VERSION}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}" \
-      -f tools/releases/dockerfiles/Dockerfile."${component}" .
-    docker tag "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}" "${KUMA_DOCKER_REPO_ORG}/${component}:latest"
-    msg_green "... done!"
+    for arch in ${BUILD_ARCH}; do
+      msg "Building $component..."
+      base_image_arch=$arch
+      # ARM base images have different tags
+      if [ "$component" != "kuma-dp" ] && [ "$arch" == "arm64" ]; then
+        base_image_arch="arm64v8"
+      fi
+      echo $base_image_arch
+      docker build --build-arg ARCH="$arch" --build-arg BASE_IMAGE_ARCH="$base_image_arch" --build-arg ENVOY_VERSION="${ENVOY_VERSION}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
+        -f tools/releases/dockerfiles/Dockerfile."${component}" .
+      docker tag "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" "${KUMA_DOCKER_REPO_ORG}/${component}:latest-${arch}"
+      msg_green "... done!"
+    done
   done
 }
 
@@ -32,9 +41,31 @@ function push() {
   docker_login
 
   for component in ${KUMA_COMPONENTS}; do
-    msg "Pushing $component:$KUMA_VERSION ..."
-    docker push "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}"
-    msg_green "... done!"
+    for arch in ${BUILD_ARCH}; do
+      msg "Pushing $component:$KUMA_VERSION-$arch ..."
+      docker push "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}"
+      msg_green "... done!"
+    done
+  done
+
+  docker_logout
+}
+
+# allows to push many arch types as one tag
+function manifest() {
+  docker_login
+
+  for component in ${KUMA_COMPONENTS}; do
+    images=()
+    for arch in ${BUILD_ARCH}; do
+      images+=("--amend ${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}")
+    done
+    command="docker manifest create ${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION} ${images[*]}"
+    msg "Creating manifest for ${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}..."
+    eval "$command"
+    msg "Pushing manifest ${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION} ..."
+    docker manifest push "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}"
+    msg ".. done!"
   done
 
   docker_logout
@@ -60,6 +91,9 @@ function main() {
     --push)
       op="push"
       ;;
+    --manifest)
+      op="manifest"
+      ;;
     *)
       usage
       break
@@ -77,6 +111,9 @@ function main() {
     ;;
   push)
     push
+    ;;
+  manifest)
+    manifest
     ;;
   esac
 }

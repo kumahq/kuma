@@ -120,7 +120,6 @@ func (g *HTTPSFilterChainGenerator) Generate(
 		builder.Configure(
 			envoy_listeners.MatchTransportProtocol("tls"),
 			envoy_listeners.MatchServerNames(host.Hostname),
-			envoy_listeners.MatchApplicationProtocols("h2", "http/1.1"),
 		)
 
 		downstream := newDownstreamTypedConfig()

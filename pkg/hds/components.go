@@ -63,8 +63,16 @@ func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) 
 			Backoff:  1 * time.Second,
 			MaxTimes: 30,
 		}),
-		tracker.NewCallbacks(hdsServerLog, rt.ResourceManager(), rt.ReadOnlyResourceManager(),
-			cache, rt.Config().DpServer.Hds, hasher{}, metrics),
+		tracker.NewCallbacks(
+			hdsServerLog,
+			rt.ResourceManager(),
+			rt.ReadOnlyResourceManager(),
+			cache,
+			rt.Config().DpServer.Hds,
+			hasher{},
+			metrics,
+			rt.Config().GetEnvoyAdminPort(),
+		),
 	}, nil
 }
 

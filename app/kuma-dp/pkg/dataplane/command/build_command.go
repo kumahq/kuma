@@ -1,5 +1,4 @@
-//go:build !linux
-// +build !linux
+//go:build !linux && !windows
 
 package command
 
@@ -7,6 +6,7 @@ import (
 	"context"
 	"io"
 	"os/exec"
+	"syscall"
 )
 
 func BuildCommand(
@@ -19,6 +19,11 @@ func BuildCommand(
 	command := exec.CommandContext(ctx, name, args...)
 	command.Stdout = stdout
 	command.Stderr = stderr
+	command.SysProcAttr = &syscall.SysProcAttr{
+		// Set those attributes so the new process won't receive the signals from a parent automatically.
+		Setpgid: true,
+		Pgid:    0,
+	}
 
 	return command
 }

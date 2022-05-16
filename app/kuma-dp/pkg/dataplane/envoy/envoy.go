@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os/exec"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -35,11 +37,12 @@ type BootstrapParams struct {
 	DynamicMetadata map[string]string
 }
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error)
+type BootstrapConfigFactoryFunc func(ctx context.Context, url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error)
 
 type Opts struct {
 	Config          kuma_dp.Config
 	BootstrapConfig []byte
+	AdminPort       uint32
 	Dataplane       *rest.Resource
 	Stdout          io.Writer
 	Stderr          io.Writer
@@ -55,10 +58,12 @@ func New(opts Opts) (*Envoy, error) {
 	return &Envoy{opts: opts}, nil
 }
 
-var _ component.Component = &Envoy{}
+var _ component.GracefulComponent = &Envoy{}
 
 type Envoy struct {
 	opts Opts
+
+	wg sync.WaitGroup
 }
 
 type EnvoyVersion struct {
@@ -80,6 +85,8 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 }
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
+	e.wg.Add(1)
+
 	configFile, err := GenerateBootstrapFile(e.opts.Config.DataplaneRuntime, e.opts.BootstrapConfig)
 	if err != nil {
 		return err
@@ -135,6 +142,9 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	done := make(chan error, 1)
 	go func() {
 		done <- command.Wait()
+		// Component should only be considered done after Envoy exists.
+		// Otherwise, we may not propagate SIGTERM on time.
+		e.wg.Done()
 	}()
 
 	select {
@@ -154,6 +164,22 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 
 		return err
 	}
+}
+
+func (e *Envoy) WaitForDone() {
+	e.wg.Wait()
+}
+
+func (e *Envoy) DrainConnections() error {
+	resp, err := http.Post(fmt.Sprintf("http://127.0.0.1:%d/healthcheck/fail", e.opts.AdminPort), "", nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return errors.Errorf("expected 200 status code, got %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func GetEnvoyVersion(binaryPath string) (*EnvoyVersion, error) {
