@@ -6,4 +6,10 @@ then
     exit 0
 fi
 
-sleep 86400
+# Send logs for Cmd#Wait to finish
+while true;
+do
+  echo "Log"
+  sleep 0.1
+done
+
