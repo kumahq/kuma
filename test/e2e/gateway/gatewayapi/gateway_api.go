@@ -14,16 +14,10 @@ import (
 )
 
 func GatewayAPICRDs(cluster Cluster) error {
-	out, err := k8s.RunKubectlAndGetOutputE(
+	return k8s.RunKubectlE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(),
-		"kustomize", "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.0",
-	)
-	if err != nil {
-		return err
-	}
-
-	return k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), out)
+		"apply", "-k", "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.3")
 }
 
 const GatewayClass = `
