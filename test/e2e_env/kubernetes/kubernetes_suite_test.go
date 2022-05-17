@@ -64,4 +64,4 @@ var _ = SynchronizedBeforeSuite(
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
-var _ = Describe("Membership", membership.Membership)
+var _ = Describe("Membership", membership.Membership, Ordered)
