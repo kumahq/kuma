@@ -119,7 +119,7 @@ var _ = Describe("run", func() {
 			cmd.SetErr(writer)
 
 			// when
-			By("starting the dataplane manager")
+			By("starting the Kuma DP")
 			errCh := make(chan error)
 			go func() {
 				defer close(errCh)
@@ -159,6 +159,8 @@ var _ = Describe("run", func() {
 
 			// when
 			By("signaling the dataplane manager to stop")
+			// we need to close writer, otherwise Cmd#Wait will never finish.
+			Expect(writer.Close()).To(Succeed())
 			cancel()
 
 			// then

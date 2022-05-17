@@ -12,15 +12,13 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/types"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -38,26 +36,11 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 	var rootCmd *cobra.Command
 	var outbuf *bytes.Buffer
 	var store core_store.ResourceStore
-	var testClient *testApiServerClient
 	rootTime, _ := time.Parse(time.RFC3339, "2008-04-01T16:05:36.995Z")
 	var _ resources.ApiServerClient = &testApiServerClient{}
 	BeforeEach(func() {
-		rootCtx := &kumactl_cmd.RootContext{
-			Runtime: kumactl_cmd.RootRuntime{
-				Registry: registry.Global(),
-				Now:      func() time.Time { return rootTime },
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
-					return nil, nil
-				},
-				NewResourceStore: func(util_http.Client) core_store.ResourceStore {
-					return store
-				},
-				NewAPIServerClient: func(util_http.Client) resources.ApiServerClient {
-					return testClient
-				},
-			},
-		}
-
+		rootCtx, _ := test_kumactl.MakeRootContext(rootTime, store)
+		rootCtx.Runtime.Registry = registry.Global()
 		store = core_store.NewPaginationStore(memory_resources.NewStore())
 		rootCmd = cmd.NewRootCmd(rootCtx)
 

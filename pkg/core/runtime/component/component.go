@@ -20,6 +20,17 @@ type Component interface {
 	NeedLeaderElection() bool
 }
 
+// GracefulComponent is a component that supports waiting until it's finished.
+// It's useful if there is cleanup logic that has to be executed before the process exits
+// (i.e. sending SIGTERM signals to subprocesses started by this component).
+type GracefulComponent interface {
+	Component
+
+	// WaitForDone blocks until all components are done.
+	// If a component was not started (i.e. leader components on non-leader CP) it returns immediately.
+	WaitForDone()
+}
+
 // Component of Kuma, i.e. gRPC Server, HTTP server, reconciliation loop.
 var _ Component = ComponentFunc(nil)
 
@@ -52,6 +63,7 @@ type Manager interface {
 
 	// Start starts registered components and blocks until the Stop channel is closed.
 	// Returns an error if there is an error starting any component.
+	// If there are any GracefulComponent, it waits until all components are done.
 	Start(<-chan struct{}) error
 }
 
@@ -73,12 +85,21 @@ func (cm *manager) Add(c ...Component) error {
 	return nil
 }
 
+func (cm *manager) waitForDone() {
+	for _, c := range cm.components {
+		if gc, ok := c.(GracefulComponent); ok {
+			gc.WaitForDone()
+		}
+	}
+}
+
 func (cm *manager) Start(stop <-chan struct{}) error {
 	errCh := make(chan error)
 
 	cm.startNonLeaderComponents(stop, errCh)
 	cm.startLeaderComponents(stop, errCh)
 
+	defer cm.waitForDone()
 	select {
 	case <-stop:
 		return nil

@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -58,10 +59,12 @@ func New(opts Opts) (*Envoy, error) {
 	return &Envoy{opts: opts}, nil
 }
 
-var _ component.Component = &Envoy{}
+var _ component.GracefulComponent = &Envoy{}
 
 type Envoy struct {
 	opts Opts
+
+	wg sync.WaitGroup
 }
 
 type EnvoyVersion struct {
@@ -83,6 +86,8 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 }
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
+	e.wg.Add(1)
+
 	configFile, err := GenerateBootstrapFile(e.opts.Config.DataplaneRuntime, e.opts.BootstrapConfig)
 	if err != nil {
 		return err
@@ -138,6 +143,9 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	done := make(chan error, 1)
 	go func() {
 		done <- command.Wait()
+		// Component should only be considered done after Envoy exists.
+		// Otherwise, we may not propagate SIGTERM on time.
+		e.wg.Done()
 	}()
 
 	select {
@@ -157,6 +165,10 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 
 		return err
 	}
+}
+
+func (e *Envoy) WaitForDone() {
+	e.wg.Wait()
 }
 
 func (e *Envoy) DrainConnections() error {

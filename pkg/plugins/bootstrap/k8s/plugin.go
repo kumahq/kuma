@@ -201,6 +201,7 @@ type kubeComponentManager struct {
 	*kubeManagerWrapper
 	oldLeaderElectionNamespace string
 	leaderComponents           []component.Component
+	gracefulComponents         []component.GracefulComponent
 }
 
 var _ component.Manager = &kubeComponentManager{}
@@ -328,6 +329,8 @@ func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 		<-done
 	}()
 
+	defer cm.waitForDone()
+
 	eg, ctx := errgroup.WithContext(baseCtx)
 
 	eg.Go(func() error {
@@ -367,6 +370,10 @@ var _ kube_manager.LeaderElectionRunnable = component.ComponentFunc(func(i <-cha
 
 func (k *kubeComponentManager) Add(components ...component.Component) error {
 	for _, c := range components {
+		if gc, ok := c.(component.GracefulComponent); ok {
+			k.gracefulComponents = append(k.gracefulComponents, gc)
+		}
+
 		if c.NeedLeaderElection() {
 			k.leaderComponents = append(k.leaderComponents, c)
 		} else if err := k.Manager.Add(&componentRunnableAdaptor{Component: c}); err != nil {
@@ -374,6 +381,12 @@ func (k *kubeComponentManager) Add(components ...component.Component) error {
 		}
 	}
 	return nil
+}
+
+func (k *kubeComponentManager) waitForDone() {
+	for _, gc := range k.gracefulComponents {
+		gc.WaitForDone()
+	}
 }
 
 // This adaptor is required unless component.Component takes a context as input
