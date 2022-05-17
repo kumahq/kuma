@@ -113,13 +113,6 @@ metrics:
 				WithServiceName("test-server-dp-metrics"),
 				WithAppendDataplaneYaml(dpAggregateConfig),
 			)).
-			// TODO(lukidzi): figure out why application doesnt start in previous
-			// container if there is no other application deployed after
-			Install(TestServerUniversal("trap", meshNoAggregate,
-				WithTransparentProxy(true),
-				WithArgs([]string{"echo", "--instance", "trap"}),
-				WithServiceName("trap"),
-			)).
 			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -129,7 +122,7 @@ metrics:
 		ip := env.Cluster.GetApp("test-server").GetIP()
 
 		// when
-		stdout, _, err := env.Cluster.Exec("", "", "test-server",
+		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server",
 			"curl", "-v", "-m", "3", "--fail", "http://"+ip+":1234/metrics?filter=concurrency")
 
 		// then
@@ -148,7 +141,7 @@ metrics:
 		ip := env.Cluster.GetApp("test-server-override-mesh").GetIP()
 
 		// when
-		stdout, _, err := env.Cluster.Exec("", "", "test-server-override-mesh",
+		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server-override-mesh",
 			"curl", "-v", "-m", "3", "--fail", "http://"+ip+":1234/metrics/overridden?filter=concurrency")
 
 		// then
@@ -177,7 +170,7 @@ metrics:
 		ip := env.Cluster.GetApp("test-server-dp-metrics").GetIP()
 
 		// when
-		stdout, _, err := env.Cluster.Exec("", "", "test-server-dp-metrics",
+		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server-dp-metrics",
 			"curl", "-v", "-m", "3", "--fail", "http://"+ip+":5555/stats?filter=concurrency")
 
 		// then
