@@ -241,6 +241,7 @@ func (x *PrometheusMetricsBackendConfig) GetAggregate() map[string]*PrometheusAg
 
 // PrometheusAggregateMetricsConfig defines endpoints that should be scrapped
 // by kuma-dp for prometheus metrics.
+// Any configuration change require sidecar restart.
 type PrometheusAggregateMetricsConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
