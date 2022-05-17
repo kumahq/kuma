@@ -25,7 +25,7 @@ func TestE2E(t *testing.T) {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		env.Cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		// E2EDeferCleanup(env.Cluster.DismissCluster)
+		E2EDeferCleanup(env.Cluster.DismissCluster)
 		Expect(env.Cluster.Install(Kuma(core.Standalone,
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithEnv("KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL", "1s"), // speed up some tests by flushing stats quicker than default 10s
@@ -42,7 +42,7 @@ var _ = SynchronizedBeforeSuite(
 		networking := UniversalCPNetworking{}
 		Expect(json.Unmarshal(bytes, &networking)).To(Succeed())
 		env.Cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		// E2EDeferCleanup(env.Cluster.DismissCluster) // clean up any containers if needed
+		E2EDeferCleanup(env.Cluster.DismissCluster) // clean up any containers if needed
 		cp, err := NewUniversalControlPlane(
 			env.Cluster.GetTesting(),
 			core.Standalone,

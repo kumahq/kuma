@@ -87,12 +87,12 @@ metrics:
         port: 8080`
 
 	BeforeAll(func() {
-		// E2EDeferCleanup(func() {
-		// 	Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
-		// 	Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
-		// 	Expect(env.Cluster.DeleteMeshApps(meshNoAggregate)).To(Succeed())
-		// 	Expect(env.Cluster.DeleteMesh(meshNoAggregate)).To(Succeed())
-		// })
+		E2EDeferCleanup(func() {
+			Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
+			Expect(env.Cluster.DeleteMeshApps(meshNoAggregate)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(meshNoAggregate)).To(Succeed())
+		})
 		err := NewClusterSetup().
 			Install(MeshWithMetricsEnabeld(meshNoAggregate)).
 			Install(MeshKubernetesAndMetricsAggregate(mesh)).
@@ -114,7 +114,7 @@ metrics:
 				WithAppendDataplaneYaml(dpAggregateConfig),
 			)).
 			// TODO(lukidzi): figure out why application doesnt start in previous
-			// step if there is no other application deployed
+			// container if there is no other application deployed after
 			Install(TestServerUniversal("trap", meshNoAggregate,
 				WithTransparentProxy(true),
 				WithArgs([]string{"echo", "--instance", "trap"}),
