@@ -25,14 +25,14 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma-net v0.1.3
 	github.com/kumahq/protoc-gen-kumadoc v0.2.0
-	github.com/lib/pq v1.10.5
-	github.com/miekg/dns v1.1.48
+	github.com/lib/pq v1.10.6
+	github.com/miekg/dns v1.1.49
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
 	github.com/operator-framework/operator-lib v0.10.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.12.1
+	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.34.0
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
