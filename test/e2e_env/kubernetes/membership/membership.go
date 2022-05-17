@@ -67,21 +67,23 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then the client is not allowed to do it
-		Eventually(func() (string, error) {
-			return env.Cluster.GetKumaCPLogs()
-		}, "30s", "1s").Should(ContainSubstring("dataplane cannot be a member of mesh"))
-		out, err := env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh2)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(out).ToNot(ContainSubstring("test-server"))
+		// then it's not allowed
+		// todo(jakubdyszkiewicz) uncomment once we can handle CP logs across all parallel executions
+		// Eventually(func() (string, error) {
+		//	return env.Cluster.GetKumaCPLogs()
+		// }, "30s", "1s").Should(ContainSubstring("dataplane cannot be a member of mesh"))
+		Consistently(func() (string, error) {
+			return env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh2)
+		}, "10s", "5s").ShouldNot(ContainSubstring("test-server"))
 
 		// when a new client is deployed in demo namespace in demo mesh
 		err = testserver.Install(
 			testserver.WithNamespace(ns2),
 			testserver.WithMesh(mesh2),
 		)(env.Cluster)
+		Expect(err).ToNot(HaveOccurred())
 
 		// then it's allowed
-		Expect(err).ToNot(HaveOccurred())
 		Eventually(func() (string, error) {
 			return env.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh2)
 		}, "30s", "1s").Should(ContainSubstring("test-server"))
