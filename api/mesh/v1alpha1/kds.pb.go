@@ -82,19 +82,22 @@ func (x *KumaResource) GetSpec() *anypb.Any {
 	return nil
 }
 
-// XDSConfigRequest is a request for XDS Config Dump that is executed on Zone CP.
+// XDSConfigRequest is a request for XDS Config Dump that is executed on Zone
+// CP.
 type XDSConfigRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// RequestID is a UUID of a request so we can correlate requests with response on one stream.
+	// RequestID is a UUID of a request so we can correlate requests with response
+	// on one stream.
 	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// Type of resource (Dataplane, ZoneIngress, ZoneEgress)
 	ResourceType string `protobuf:"bytes,2,opt,name=resource_type,json=resourceType,proto3" json:"resource_type,omitempty"`
 	// Name of the resource on which we execute config dump.
 	ResourceName string `protobuf:"bytes,3,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"`
-	// Mesh of the resource on which we execute config dump. Should be empty for ZoneIngress, ZoneEgress.
+	// Mesh of the resource on which we execute config dump. Should be empty for
+	// ZoneIngress, ZoneEgress.
 	ResourceMesh string `protobuf:"bytes,4,opt,name=resource_mesh,json=resourceMesh,proto3" json:"resource_mesh,omitempty"`
 }
 
@@ -158,7 +161,8 @@ func (x *XDSConfigRequest) GetResourceMesh() string {
 	return ""
 }
 
-// XDSConfigRequest is a response containing result of XDS Config Dump execution on Zone CP.
+// XDSConfigRequest is a response containing result of XDS Config Dump execution
+// on Zone CP.
 type XDSConfigResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -636,8 +640,9 @@ var _KumaDiscoveryService_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type GlobalKDSServiceClient interface {
-	// StreamXDSConfigs is logically a service exposed by Zone CP so Global CP can execute Config Dumps.
-	// It is however represented by bi-directional streaming to leverage existing connection from Zone CP to Global CP.
+	// StreamXDSConfigs is logically a service exposed by Zone CP so Global CP can
+	// execute Config Dumps. It is however represented by bi-directional streaming
+	// to leverage existing connection from Zone CP to Global CP.
 	StreamXDSConfigs(ctx context.Context, opts ...grpc.CallOption) (GlobalKDSService_StreamXDSConfigsClient, error)
 }
 
@@ -682,8 +687,9 @@ func (x *globalKDSServiceStreamXDSConfigsClient) Recv() (*XDSConfigRequest, erro
 
 // GlobalKDSServiceServer is the server API for GlobalKDSService service.
 type GlobalKDSServiceServer interface {
-	// StreamXDSConfigs is logically a service exposed by Zone CP so Global CP can execute Config Dumps.
-	// It is however represented by bi-directional streaming to leverage existing connection from Zone CP to Global CP.
+	// StreamXDSConfigs is logically a service exposed by Zone CP so Global CP can
+	// execute Config Dumps. It is however represented by bi-directional streaming
+	// to leverage existing connection from Zone CP to Global CP.
 	StreamXDSConfigs(GlobalKDSService_StreamXDSConfigsServer) error
 }
 
