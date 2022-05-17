@@ -26,7 +26,6 @@ import (
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
-	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/events"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -153,6 +152,6 @@ func (d *DummyEnvoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource)
 	return nil
 }
 
-func (d *DummyEnvoyAdminClient) ConfigDump(proxy admin.ResourceWithAddress, defaultAdminPort uint32) ([]byte, error) {
-	return []byte(fmt.Sprintf(`{"envoyAdminAddress": "%s"}`, proxy.AdminAddress(defaultAdminPort))), nil
+func (d *DummyEnvoyAdminClient) ConfigDump(proxy core_model.ResourceWithAddress) ([]byte, error) {
+	return []byte(fmt.Sprintf(`{"envoyAdminAddress": "%s"}`, proxy.AdminAddress(9901))), nil
 }

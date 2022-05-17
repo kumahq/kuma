@@ -24,3 +24,35 @@ message KumaResource {
   Meta meta = 1;
   google.protobuf.Any spec = 2;
 }
+
+service GlobalKDSService {
+  // StreamXDSConfigs is logically a service exposed by Zone CP so Global CP can execute Config Dumps.
+  // It is however represented by bi-directional streaming to leverage existing connection from Zone CP to Global CP.
+  rpc StreamXDSConfigs(stream XDSConfigResponse) returns (stream XDSConfigRequest);
+}
+
+// XDSConfigRequest is a request for XDS Config Dump that is executed on Zone CP.
+message XDSConfigRequest {
+  // RequestID is a UUID of a request so we can correlate requests with response on one stream.
+  string request_id = 1;
+
+  // Type of resource (Dataplane, ZoneIngress, ZoneEgress)
+  string resource_type = 2;
+  // Name of the resource on which we execute config dump.
+  string resource_name = 3;
+  // Mesh of the resource on which we execute config dump. Should be empty for ZoneIngress, ZoneEgress.
+  string resource_mesh = 4;
+}
+
+// XDSConfigRequest is a response containing result of XDS Config Dump execution on Zone CP.
+message XDSConfigResponse {
+  // RequestID is a UUID that was set by the Global CP.
+  string request_id = 1;
+
+  oneof result {
+    // Error that was captured by the Zone CP when executing XDS Config Dump.
+    string error = 2;
+    // The XDS Config that is a successful result of XDS Config DUMP execution.
+    bytes config = 3;
+  }
+}

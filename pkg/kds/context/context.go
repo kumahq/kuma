@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
@@ -40,6 +41,8 @@ type Context struct {
 
 	GlobalResourceMapper reconcile.ResourceMapper
 	ZoneResourceMapper   reconcile.ResourceMapper
+
+	XdsConfigStreams service.XDSConfigStreams
 }
 
 func DefaultContext(manager manager.ResourceManager, zone string) *Context {
@@ -56,6 +59,7 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 		Configs:              configs,
 		GlobalResourceMapper: MapZoneTokenSigningKeyGlobalToPublicKey(ctx, manager),
 		ZoneResourceMapper:   MapInsightResourcesZeroGeneration,
+		XdsConfigStreams:     service.NewXdsConfigStreams(),
 	}
 }
 

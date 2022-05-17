@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"net"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -102,17 +103,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
-	envoyAdminClient, err := admin.NewEnvoyAdminClient(
-		builder.ResourceManager(),
-		builder.CaManagers(),
-		builder.Config().DpServer.TlsCertFile,
-		builder.Config().DpServer.TlsKeyFile,
-		builder.Config().GetEnvoyAdminPort(),
-	)
-	if err != nil {
-		return nil, err
-	}
-	builder.WithEnvoyAdminClient(envoyAdminClient)
 	builder.WithAPIManager(customization.NewAPIList())
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), builder.Metrics())
@@ -122,6 +112,25 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithCAProvider(caProvider)
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
+
+	if cfg.Mode == config_core.Global {
+		builder.WithEnvoyAdminClient(admin.NewKDSEnvoyAdminClient(
+			builder.KDSContext().XdsConfigStreams,
+			10*time.Second,
+		))
+	} else {
+		envoyAdminClient, err := admin.NewEnvoyAdminClient(
+			builder.ResourceManager(),
+			builder.CaManagers(),
+			builder.Config().DpServer.TlsCertFile,
+			builder.Config().DpServer.TlsKeyFile,
+			builder.Config().GetEnvoyAdminPort(),
+		)
+		if err != nil {
+			return nil, err
+		}
+		builder.WithEnvoyAdminClient(envoyAdminClient)
+	}
 
 	builder.WithAccess(core_runtime.Access{
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
