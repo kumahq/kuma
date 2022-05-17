@@ -29,20 +29,23 @@ spec:
       - tags:
           k8s.kuma.io/namespace: %s`, mesh, ns)
 	}
+	BeforeAll(func() {
+		err := NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(ns1)).
+			Install(YamlK8s(meshAllowingNamespace(mesh1, ns1))).
+			Install(NamespaceWithSidecarInjection(ns2)).
+			Install(YamlK8s(meshAllowingNamespace(mesh2, ns2))).
+			Setup(env.Cluster)
+		Expect(err).ToNot(HaveOccurred())
+	})
+	E2EAfterAll(func() {
+		Expect(env.Cluster.TriggerDeleteNamespace(ns1)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(mesh1)).To(Succeed())
+		Expect(env.Cluster.TriggerDeleteNamespace(ns2)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(mesh2)).To(Succeed())
+	})
 
 	It("should take into account membership when dp is connecting to the CP", func() {
-		E2EDeferCleanup(func() {
-			Expect(env.Cluster.TriggerDeleteNamespace(ns1)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(mesh1)).To(Succeed())
-			Expect(env.Cluster.TriggerDeleteNamespace(ns2)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(mesh2)).To(Succeed())
-		})
-		// given
-		Expect(NamespaceWithSidecarInjection(ns1)(env.Cluster)).To(Succeed())
-		Expect(YamlK8s(meshAllowingNamespace(mesh1, ns1))(env.Cluster)).To(Succeed())
-		Expect(NamespaceWithSidecarInjection(ns2)(env.Cluster)).To(Succeed())
-		Expect(YamlK8s(meshAllowingNamespace(mesh2, ns2))(env.Cluster)).To(Succeed())
-
 		// when
 		err := testserver.Install(
 			testserver.WithNamespace(ns1),

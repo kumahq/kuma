@@ -40,11 +40,7 @@ conf:
     expectedStatuses: 
     - %s`, mesh, method, status)
 		}
-		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
-			DeferCleanup(func() {
-				Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-				Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
-			})
+		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
@@ -54,7 +50,14 @@ conf:
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}))).
 				Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
+		})
 
+		E2EAfterAll(func() {
+			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		})
+
+		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 			// check that test-server is healthy
 			cmd := []string{"curl", "--fail", "test-server.mesh/content"}
 			stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
@@ -80,7 +83,7 @@ conf:
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stdout).To(ContainSubstring("no healthy upstream"))
 		})
-	})
+	}, Ordered)
 
 	Describe("TCP", func() {
 		healthCheck := func(mesh, send, recv string) string {
@@ -111,13 +114,8 @@ conf:
     receive:
     - %s`, mesh, sendBase64, recvBase64)
 		}
-
-		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
-			meshName := "healthcheck-tcp"
-			DeferCleanup(func() {
-				Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-				Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
-			})
+		meshName := "healthcheck-tcp"
+		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
 				Install(YamlUniversal(healthCheck(meshName, "foo", "bar"))).
@@ -130,7 +128,13 @@ conf:
 				).
 				Setup(env.Cluster)
 			Expect(err).ToNot(HaveOccurred())
+		})
+		E2EAfterAll(func() {
+			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+		})
 
+		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 			// check that test-server is healthy
 			cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
 			stdout, _, err := env.Cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
@@ -157,5 +161,5 @@ conf:
 			// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
 			Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
 		})
-	})
+	}, Ordered)
 }

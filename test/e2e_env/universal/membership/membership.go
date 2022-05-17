@@ -12,8 +12,7 @@ import (
 
 func Membership() {
 	meshName := "membership"
-	It("should take into account membership when dp is connecting to the CP", func() {
-		mesh := `
+	mesh := `
 type: Mesh
 name: %s
 constraints:
@@ -25,12 +24,15 @@ constraints:
     - tags:
         kuma.io/service: test-server
 `
-		DeferCleanup(func() {
-			Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
-		})
-		Expect(YamlUniversal(fmt.Sprintf(mesh, meshName))(env.Cluster)).To(Succeed())
 
+	BeforeAll(func() {
+		Expect(YamlUniversal(fmt.Sprintf(mesh, meshName))(env.Cluster)).To(Succeed())
+	})
+	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(meshName)).To(Succeed())
+	})
+	It("should take into account membership when dp is connecting to the CP", func() {
 		// when demo client is trying to connect
 		err := DemoClientUniversal(AppModeDemoClient, meshName)(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
