@@ -1,4 +1,4 @@
-package virtual_probes
+package healthcheck
 
 import (
 	. "github.com/onsi/ginkgo/v2"
