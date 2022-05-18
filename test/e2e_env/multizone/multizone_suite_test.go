@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/env"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficroute"
@@ -181,4 +182,5 @@ var _ = SynchronizedBeforeSuite(
 
 var _ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 var _ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
+var _ = Describe("Healtcheck", healthcheck.ApplicationOnUniversalClientOnK8s, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
