@@ -15,11 +15,15 @@ function build() {
   for component in ${KUMA_COMPONENTS}; do
     for arch in ${BUILD_ARCH}; do
       msg "Building $component..."
-      build_args="--build-arg ARCH=${arch} --build-arg ENVOY_VERSION=${ENVOY_VERSION} --build-arg BASE_IMAGE_ARCH=${arch}"
+      build_args=(
+        --build-arg ARCH="${arch}"
+        --build-arg ENVOY_VERSION="${ENVOY_VERSION}"
+        --build-arg BASE_IMAGE_ARCH="${arch}"
+      )
       if [ "$arch" == "arm64" ]; then
-        build_args+=" ${ARM64_BUILD_ARGS}"
+        build_args+=("${ARM64_BUILD_ARGS[@]}")
       fi
-      docker build $build_args -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
+      docker build "${build_args[@]}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
         -f tools/releases/dockerfiles/Dockerfile."${component}" .
       docker tag "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" "${KUMA_DOCKER_REPO_ORG}/${component}:latest-${arch}"
       msg_green "... done!"
