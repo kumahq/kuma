@@ -47,6 +47,9 @@ spec:
       {{ toYaml .Values.controlPlane.podSecurityContext | trim | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
+      {{- if (hasKey .Values.controlPlane "automountServiceAccountToken") }} {{- if (eq .Values.controlPlane.automountServiceAccountToken false) }}
+      automountServiceAccountToken: false
+      {{- end }} {{- end }}
       {{- with .Values.controlPlane.nodeSelector }}
       nodeSelector:
         {{ toYaml . | nindent 8 }}
@@ -124,6 +127,11 @@ spec:
             {{ .Values.controlPlane.resources.limits | toYaml | nindent 14 }}
             {{- end }}
           volumeMounts:
+            {{- if (hasKey .Values.controlPlane "automountServiceAccountToken") }} {{- if (eq .Values.controlPlane.automountServiceAccountToken false) }}
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: serviceaccount-token
+              readOnly: true
+            {{- end }} {{- end }}
             - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt
               subPath: tls.crt
@@ -174,6 +182,26 @@ spec:
               readOnly: {{ $extraSecret.readOnly }}
           {{- end }}
       volumes:
+        {{- if (hasKey .Values.controlPlane "automountServiceAccountToken") }} {{- if (eq .Values.controlPlane.automountServiceAccountToken false) }}
+        - name: serviceaccount-token
+          projected:
+            defaultMode: 420
+            sources:
+            - serviceAccountToken:
+                 expirationSeconds: 3600
+                 path: token
+            - configMap:
+                 name: kube-root-ca.crt
+                 items:
+                   - key: ca.crt
+                     path: ca.crt
+            - downwardAPI:
+                 items:
+                   - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                     path: namespace
+        {{- end }} {{- end }}
         {{- if .Values.controlPlane.tls.general.secretName }}
         - name: general-tls-cert
           secret:

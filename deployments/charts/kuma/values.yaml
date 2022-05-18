@@ -106,6 +106,9 @@ controlPlane:
     # -- Whether to skip creating the default Mesh
     skipMeshCreation: false
 
+  # -- Optional- For teams that want to set automountServiceAccountToken = false on control plane
+  #automountServiceAccountToken: false
+ 
   # -- Optionally override the resource spec
   # @default -- the resources will be chosen based on the mode
   resources:
