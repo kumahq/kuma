@@ -13,7 +13,7 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-var _ = Describe("kumactl install metrics", func() {
+var _ = Describe("kumactl install observability", func() {
 
 	var stdout *bytes.Buffer
 	var stderr *bytes.Buffer
@@ -43,7 +43,7 @@ var _ = Describe("kumactl install metrics", func() {
 			rootCtx := kumactl_cmd.DefaultRootContext()
 			rootCtx.Runtime.NewAPIServerClient = test.GetMockNewAPIServerClient()
 			rootCmd := cmd.NewRootCmd(rootCtx)
-			rootCmd.SetArgs(append([]string{"install", "metrics"}, given.extraArgs...))
+			rootCmd.SetArgs(append([]string{"install", "observability"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
 
@@ -60,7 +60,7 @@ var _ = Describe("kumactl install metrics", func() {
 		},
 		Entry("should generate Kubernetes resources with default settings", testCase{
 			extraArgs:  nil,
-			goldenFile: "install-metrics.defaults.golden.yaml",
+			goldenFile: "install-observability.defaults.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources with custom settings", testCase{
 			extraArgs: []string{
@@ -68,19 +68,19 @@ var _ = Describe("kumactl install metrics", func() {
 				"--mesh", "mesh-1",
 				"--kuma-cp-address", "http://kuma.local:5681",
 			},
-			goldenFile: "install-metrics.overrides.golden.yaml",
+			goldenFile: "install-observability.overrides.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources without prometheus", testCase{
 			extraArgs: []string{
 				"--without-prometheus",
 			},
-			goldenFile: "install-metrics.no-prometheus.golden.yaml",
+			goldenFile: "install-observability.no-prometheus.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources without grafana", testCase{
 			extraArgs: []string{
 				"--without-grafana",
 			},
-			goldenFile: "install-metrics.no-grafana.golden.yaml",
+			goldenFile: "install-observability.no-grafana.golden.yaml",
 		}),
 	)
 })

@@ -3,17 +3,17 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma
+  name: kuma-metrics
   labels:
     kuma.io/sidecar-injection: enabled
   annotations:
-    kuma.io/mesh: mesh-1
+    kuma.io/mesh: default
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   name: grafana
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
   annotations:
@@ -65,7 +65,7 @@ metadata:
     component: "alertmanager"
     app: prometheus
   name: prometheus-alertmanager
-  namespace: kuma
+  namespace: kuma-metrics
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -74,7 +74,7 @@ metadata:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
-  namespace: kuma
+  namespace: kuma-metrics
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -83,16 +83,7 @@ metadata:
     component: "node-exporter"
     app: prometheus
   name: prometheus-node-exporter
-  namespace: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    component: "pushgateway"
-    app: prometheus
-  name: prometheus-pushgateway
-  namespace: kuma
+  namespace: kuma-metrics
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -101,7 +92,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma
+  namespace: kuma-metrics
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -109,13 +100,13 @@ metadata:
   labels:
     app: grafana
   name: grafana
-  namespace: kuma
+  namespace: kuma-metrics
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 data:
@@ -142,7 +133,7 @@ metadata:
     component: "alertmanager"
     app: prometheus
   name: prometheus-alertmanager
-  namespace: kuma
+  namespace: kuma-metrics
 data:
   alertmanager.yml: |
     global: {}
@@ -158,7 +149,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-datasource
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 data:
@@ -184,7 +175,7 @@ data:
         # <int> org id. will default to orgId 1 if not specified
         orgId: 1
         # <string> url
-        url: http://prometheus-server.kuma
+        url: http://prometheus-server.kuma-metrics
         # <string> database password, if used
         password:
         # <string> database user, if used
@@ -248,7 +239,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 data:
@@ -272,7 +263,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma
+  namespace: kuma-metrics
 data:
   alerting_rules.yml: |
     {}
@@ -549,7 +540,7 @@ data:
       - action: labelmap
         regex: __meta_kuma_label_(.+)
       kuma_sd_configs:
-      - server: http://kuma.local:5681
+      - server: http://kuma-control-plane.kuma-system:5676
     alerting:
       alertmanagers:
       - kubernetes_sd_configs:
@@ -582,7 +573,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards-0
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 data:
@@ -3414,7 +3405,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards-1
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 data:
@@ -4682,7 +4673,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards-2
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 data:
@@ -6072,7 +6063,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards-3
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 data:
@@ -9872,7 +9863,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards-4
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 data:
@@ -10930,7 +10921,7 @@ metadata:
     component: "alertmanager"
     app: prometheus
   name: prometheus-alertmanager
-  namespace: kuma
+  namespace: kuma-metrics
 spec:
   accessModes:
     - ReadWriteOnce
@@ -10945,7 +10936,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma
+  namespace: kuma-metrics
 spec:
   accessModes:
     - ReadWriteOnce
@@ -11076,16 +11067,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    component: "pushgateway"
-    app: prometheus
-  name: prometheus-pushgateway
-rules:
-  []
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
     component: "server"
     app: prometheus
   name: prometheus-server
@@ -11128,7 +11109,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: grafana
-    namespace: kuma
+    namespace: kuma-metrics
 roleRef:
   kind: ClusterRole
   name: grafana-clusterrole
@@ -11144,7 +11125,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: prometheus-alertmanager
-    namespace: kuma
+    namespace: kuma-metrics
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -11160,27 +11141,11 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: prometheus-kube-state-metrics
-    namespace: kuma
+    namespace: kuma-metrics
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: prometheus-kube-state-metrics
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  labels:
-    component: "pushgateway"
-    app: prometheus
-  name: prometheus-pushgateway
-subjects:
-  - kind: ServiceAccount
-    name: prometheus-pushgateway
-    namespace: kuma
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: prometheus-pushgateway
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -11192,7 +11157,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: prometheus-server
-    namespace: kuma
+    namespace: kuma-metrics
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -11202,7 +11167,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: grafana
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 rules:
@@ -11225,13 +11190,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: grafana
-    namespace: kuma
+    namespace: kuma-metrics
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: grafana
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 spec:
@@ -11251,7 +11216,7 @@ metadata:
     component: "alertmanager"
     app: prometheus
   name: prometheus-alertmanager
-  namespace: kuma
+  namespace: kuma-metrics
 spec:
   ports:
     - name: http
@@ -11273,7 +11238,7 @@ metadata:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
-  namespace: kuma
+  namespace: kuma-metrics
 spec:
   clusterIP: None
   ports:
@@ -11299,7 +11264,7 @@ metadata:
     component: "node-exporter"
     app: prometheus
   name: prometheus-node-exporter
-  namespace: kuma
+  namespace: kuma-metrics
 spec:
   clusterIP: None
   ports:
@@ -11315,32 +11280,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    prometheus.io/probe: pushgateway
-  labels:
-    component: "pushgateway"
-    app: prometheus
-  name: prometheus-pushgateway
-  namespace: kuma
-spec:
-  ports:
-    - name: http
-      port: 9091
-      protocol: TCP
-      targetPort: 9091
-  selector:
-    component: "pushgateway"
-    app: prometheus
-  type: "ClusterIP"
----
-apiVersion: v1
-kind: Service
-metadata:
   labels:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma
+  namespace: kuma-metrics
 spec:
   ports:
     - name: http
@@ -11360,7 +11304,7 @@ metadata:
     component: "node-exporter"
     app: prometheus
   name: prometheus-node-exporter
-  namespace: kuma
+  namespace: kuma-metrics
 spec:
   selector:
     matchLabels:
@@ -11410,7 +11354,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
-  namespace: kuma
+  namespace: kuma-metrics
   labels:
     app: grafana
 spec:
@@ -11522,7 +11466,7 @@ metadata:
     component: "alertmanager"
     app: prometheus
   name: prometheus-alertmanager
-  namespace: kuma
+  namespace: kuma-metrics
 spec:
   selector:
     matchLabels:
@@ -11592,7 +11536,7 @@ metadata:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
-  namespace: kuma
+  namespace: kuma-metrics
 spec:
   selector:
     matchLabels:
@@ -11624,43 +11568,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    component: "pushgateway"
-    app: prometheus
-  name: prometheus-pushgateway
-  namespace: kuma
-spec:
-  selector:
-    matchLabels:
-      component: "pushgateway"
-      app: prometheus
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        component: "pushgateway"
-        app: prometheus
-    spec:
-      serviceAccountName: prometheus-pushgateway
-      containers:
-        - name: prometheus-pushgateway
-          image: "prom/pushgateway:v1.4.2"
-          imagePullPolicy: "IfNotPresent"
-          args:
-          ports:
-            - containerPort: 9091
-          resources:
-            {}
-      securityContext:
-        runAsUser: 65534
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma
+  namespace: kuma-metrics
 spec:
   selector:
     matchLabels:
@@ -11721,3 +11632,912 @@ spec:
         - name: storage-volume
           persistentVolumeClaim:
             claimName: prometheus-server
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kuma-metrics
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kuma-metrics
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: loki
+  namespace: kuma-metrics
+  labels:
+    app: loki
+    release: loki
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'persistentVolumeClaim'
+    - 'secret'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1
+        max: 65535
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1
+        max: 65535
+  readOnlyRootFilesystem: true
+  requiredDropCapabilities:
+    - ALL
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: loki-promtail
+  namespace: kuma-metrics
+  labels:
+    app: promtail
+    release: loki
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  volumes:
+    - 'secret'
+    - 'configMap'
+    - 'hostPath'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'RunAsAny'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: true
+  requiredDropCapabilities:
+    - ALL
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: loki
+    release: loki
+  annotations:
+    {}
+  name: loki
+  namespace: kuma-metrics
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: promtail
+    release: loki
+  name: loki-promtail
+  namespace: kuma-metrics
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: loki
+  namespace: kuma-metrics
+  labels:
+    app: loki
+    release: loki
+data:
+  loki.yaml: YXV0aF9lbmFibGVkOiBmYWxzZQpjaHVua19zdG9yZV9jb25maWc6CiAgbWF4X2xvb2tfYmFja19wZXJpb2Q6IDBzCmluZ2VzdGVyOgogIGNodW5rX2Jsb2NrX3NpemU6IDI2MjE0NAogIGNodW5rX2lkbGVfcGVyaW9kOiAzbQogIGNodW5rX3JldGFpbl9wZXJpb2Q6IDFtCiAgbGlmZWN5Y2xlcjoKICAgIHJpbmc6CiAgICAgIGt2c3RvcmU6CiAgICAgICAgc3RvcmU6IGlubWVtb3J5CiAgICAgIHJlcGxpY2F0aW9uX2ZhY3RvcjogMQogIHdhbDoKICAgIGVuYWJsZWQ6IGZhbHNlCmxpbWl0c19jb25maWc6CiAgZW5mb3JjZV9tZXRyaWNfbmFtZTogZmFsc2UKc2NoZW1hX2NvbmZpZzoKICBjb25maWdzOgogIC0gZnJvbTogIjIwMTgtMDQtMTUiCiAgICBpbmRleDoKICAgICAgcGVyaW9kOiAxNjhoCiAgICAgIHByZWZpeDogaW5kZXhfCiAgICBvYmplY3Rfc3RvcmU6IGZpbGVzeXN0ZW0KICAgIHNjaGVtYTogdjkKICAgIHN0b3JlOiBib2x0ZGIKc2VydmVyOgogIGh0dHBfbGlzdGVuX3BvcnQ6IDMxMDAKc3RvcmFnZV9jb25maWc6CiAgYm9sdGRiOgogICAgZGlyZWN0b3J5OiAvZGF0YS9sb2tpL2luZGV4CiAgZmlsZXN5c3RlbToKICAgIGRpcmVjdG9yeTogL2RhdGEvbG9raS9jaHVua3MKdGFibGVfbWFuYWdlcjoKICByZXRlbnRpb25fZGVsZXRlc19lbmFibGVkOiBmYWxzZQogIHJldGVudGlvbl9wZXJpb2Q6IDBzCg==
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-promtail
+  namespace: kuma-metrics
+  labels:
+    app: promtail
+    release: loki
+data:
+  promtail.yaml: |
+    client:
+      backoff_config:
+        max_period: 5s
+        max_retries: 20
+        min_period: 100ms
+      batchsize: 102400
+      batchwait: 1s
+      external_labels: {}
+      timeout: 10s
+    positions:
+      filename: /run/promtail/positions.yaml
+    server:
+      http_listen_port: 3101
+    target_config:
+      sync_period: 10s
+    scrape_configs:
+    - job_name: kubernetes-pods-name
+      pipeline_stages:
+        - docker: {}
+        - match:
+            selector: '{container="kuma-sidecar"}'
+            stages:
+              - regex:
+                  expression: '([\S]*) stdout ([\S]*) \[(?P<timestamp>[\S]*)\] (?P<mesh>[\S]*)'
+              - labels:
+                  mesh: mesh
+              - timestamp:
+                  format: RFC3339Nano
+                  source: timestamp
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - action: replace
+        separator: '.'
+        replacement: "$1"
+        source_labels:
+        - __meta_kubernetes_pod_annotation_kuma_io_mesh
+        - __meta_kubernetes_pod_name
+        - __meta_kubernetes_namespace
+        target_label: node_id
+      - source_labels:
+        - __meta_kubernetes_pod_label_name
+        target_label: __service__
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: __host__
+      - action: drop
+        regex: ''
+        source_labels:
+        - __service__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __service__
+        target_label: job
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: pod
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container
+      - replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+        - __meta_kubernetes_pod_uid
+        - __meta_kubernetes_pod_container_name
+        target_label: __path__
+    - job_name: kubernetes-pods-app
+      pipeline_stages:
+        - docker: {}
+        - match:
+            selector: '{container="kuma-sidecar"}'
+            stages:
+              - regex:
+                  expression: '([\S]*) stdout ([\S]*) \[(?P<timestamp>[\S]*)\] (?P<mesh>[\S]*)'
+              - labels:
+                  mesh: mesh
+              - timestamp:
+                  format: RFC3339Nano
+                  source: timestamp
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - action: replace
+        separator: '.'
+        replacement: "$1"
+        source_labels:
+        - __meta_kubernetes_pod_annotation_kuma_io_mesh
+        - __meta_kubernetes_pod_name
+        - __meta_kubernetes_namespace
+        target_label: node_id
+      - action: drop
+        regex: .+
+        source_labels:
+        - __meta_kubernetes_pod_label_name
+      - source_labels:
+        - __meta_kubernetes_pod_label_app
+        target_label: __service__
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: __host__
+      - action: drop
+        regex: ''
+        source_labels:
+        - __service__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __service__
+        target_label: job
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: pod
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container
+      - replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+        - __meta_kubernetes_pod_uid
+        - __meta_kubernetes_pod_container_name
+        target_label: __path__
+    - job_name: kubernetes-pods-direct-controllers
+      pipeline_stages:
+        - docker: {}
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - action: drop
+        regex: .+
+        separator: ''
+        source_labels:
+        - __meta_kubernetes_pod_label_name
+        - __meta_kubernetes_pod_label_app
+      - action: drop
+        regex: '[0-9a-z-.]+-[0-9a-f]{8,10}'
+        source_labels:
+        - __meta_kubernetes_pod_controller_name
+      - source_labels:
+        - __meta_kubernetes_pod_controller_name
+        target_label: __service__
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: __host__
+      - action: drop
+        regex: ''
+        source_labels:
+        - __service__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __service__
+        target_label: job
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: pod
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container
+      - replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+        - __meta_kubernetes_pod_uid
+        - __meta_kubernetes_pod_container_name
+        target_label: __path__
+    - job_name: kubernetes-pods-indirect-controller
+      pipeline_stages:
+        - docker: {}
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - action: drop
+        regex: .+
+        separator: ''
+        source_labels:
+        - __meta_kubernetes_pod_label_name
+        - __meta_kubernetes_pod_label_app
+      - action: keep
+        regex: '[0-9a-z-.]+-[0-9a-f]{8,10}'
+        source_labels:
+        - __meta_kubernetes_pod_controller_name
+      - action: replace
+        regex: '([0-9a-z-.]+)-[0-9a-f]{8,10}'
+        source_labels:
+        - __meta_kubernetes_pod_controller_name
+        target_label: __service__
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: __host__
+      - action: drop
+        regex: ''
+        source_labels:
+        - __service__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __service__
+        target_label: job
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: pod
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container
+      - replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+        - __meta_kubernetes_pod_uid
+        - __meta_kubernetes_pod_container_name
+        target_label: __path__
+    - job_name: kubernetes-pods-static
+      pipeline_stages:
+        - docker: {}
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - action: drop
+        regex: ''
+        source_labels:
+        - __meta_kubernetes_pod_annotation_kubernetes_io_config_mirror
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_label_component
+        target_label: __service__
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        target_label: __host__
+      - action: drop
+        regex: ''
+        source_labels:
+        - __service__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __service__
+        target_label: job
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: pod
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container
+      - replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+        - __meta_kubernetes_pod_annotation_kubernetes_io_config_mirror
+        - __meta_kubernetes_pod_container_name
+        target_label: __path__
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    app: promtail
+    release: loki
+  name: loki-promtail-clusterrole
+  namespace: kuma-metrics
+rules:
+  - apiGroups: [""] # "" indicates the core API group
+    resources:
+      - nodes
+      - nodes/proxy
+      - services
+      - endpoints
+      - pods
+    verbs: ["get", "watch", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: loki-promtail-clusterrolebinding
+  labels:
+    app: promtail
+    release: loki
+subjects:
+  - kind: ServiceAccount
+    name: loki-promtail
+    namespace: kuma-metrics
+roleRef:
+  kind: ClusterRole
+  name: loki-promtail-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: loki-promtail
+  namespace: kuma-metrics
+  labels:
+    app: promtail
+    release: loki
+rules:
+  - apiGroups:      ['extensions']
+    resources:      ['podsecuritypolicies']
+    verbs:          ['use']
+    resourceNames:  [loki-promtail]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: loki
+  namespace: kuma-metrics
+  labels:
+    app: loki
+    release: loki
+rules:
+  - apiGroups:      ['extensions']
+    resources:      ['podsecuritypolicies']
+    verbs:          ['use']
+    resourceNames:  [loki]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: loki
+  namespace: kuma-metrics
+  labels:
+    app: loki
+    release: loki
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: loki
+subjects:
+  - kind: ServiceAccount
+    name: loki
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: loki-promtail
+  namespace: kuma-metrics
+  labels:
+    app: promtail
+    release: loki
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: loki-promtail
+subjects:
+  - kind: ServiceAccount
+    name: loki-promtail
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki-headless
+  namespace: kuma-metrics
+  labels:
+    app: loki
+    release: loki
+    variant: headless
+spec:
+  clusterIP: None
+  ports:
+    - port: 3100
+      protocol: TCP
+      name: http-metrics
+      targetPort: http-metrics
+  selector:
+    app: loki
+    release: loki
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: kuma-metrics
+  labels:
+    app: loki
+    release: loki
+  annotations:
+    {}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3100
+      protocol: TCP
+      name: http-metrics
+      targetPort: http-metrics
+  selector:
+    app: loki
+    release: loki
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: loki-promtail
+  namespace: kuma-metrics
+  labels:
+    app: promtail
+    release: loki
+  annotations:
+    {}
+spec:
+  selector:
+    matchLabels:
+      app: promtail
+      release: loki
+  updateStrategy:
+    {}
+  template:
+    metadata:
+      labels:
+        app: promtail
+        release: loki
+      annotations:
+        checksum/config: bce7daf9d5acc773342c4f42e700668ef8bdc8f34fa1499c766263fa0c1944e0
+        prometheus.io/port: http-metrics
+        prometheus.io/scrape: "true"
+    spec:
+      serviceAccountName: loki-promtail
+      containers:
+        - name: promtail
+          image: "grafana/promtail:2.4.1"
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-config.file=/etc/promtail/promtail.yaml"
+            - "-client.url=http://loki.kuma-metrics:3100/loki/api/v1/push"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/promtail
+            - name: run
+              mountPath: /run/promtail
+            - mountPath: /var/lib/docker/containers
+              name: docker
+              readOnly: true
+            - mountPath: /var/log/pods
+              name: pods
+              readOnly: true
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          ports:
+            - containerPort: 3101
+              name: http-metrics
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsGroup: 0
+            runAsUser: 0
+          readinessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            {}
+      nodeSelector:
+        {}
+      affinity:
+        {}
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists
+      volumes:
+        - name: config
+          configMap:
+            name: loki-promtail
+        - name: run
+          hostPath:
+            path: /run/promtail
+        - hostPath:
+            path: /var/lib/docker/containers
+          name: docker
+        - hostPath:
+            path: /var/log/pods
+          name: pods
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+  namespace: kuma-metrics
+  labels:
+    app: loki
+    release: loki
+  annotations:
+    {}
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+      release: loki
+  serviceName: loki-headless
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: loki
+        name: loki
+        release: loki
+      annotations:
+        checksum/config: d4c94f4c6a73353362c10d2f844340cec8999b291ca88481ac162fbb5942617d
+        prometheus.io/port: http-metrics
+        prometheus.io/scrape: "true"
+    spec:
+      serviceAccountName: loki
+      securityContext:
+        fsGroup: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+      initContainers:
+        []
+      containers:
+        - name: loki
+          image: "grafana/loki:2.4.1"
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-config.file=/etc/loki/loki.yaml"
+            - "-target=all,table-manager"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/loki
+            - name: storage
+              mountPath: "/data"
+          ports:
+            - name: http-metrics
+              containerPort: 3100
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 45
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 45
+          resources:
+            {}
+          securityContext:
+            readOnlyRootFilesystem: true
+      nodeSelector:
+        {}
+      affinity:
+        {}
+      tolerations:
+        []
+      terminationGracePeriodSeconds: 4800
+      volumes:
+        - name: config
+          secret:
+            secretName: loki
+        - name: storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kuma-metrics
+---
+# Based on https://github.com/jaegertracing/jaeger-kubernetes/blob/master/all-in-one/jaeger-all-in-one-template.yml
+
+#
+# Copyright 2017-2019 The Jaeger Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied. See the License for the specific language governing permissions and limitations under
+# the License.
+#
+
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: jaeger
+      namespace: kuma-metrics
+      labels:
+        app: jaeger
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: all-in-one
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: jaeger
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            app: jaeger
+            app.kubernetes.io/name: jaeger
+            app.kubernetes.io/component: all-in-one
+          annotations:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "16686"
+        spec:
+          containers:
+            -   env:
+                  - name: COLLECTOR_ZIPKIN_HOST_PORT
+                    value: "9411"
+                image: jaegertracing/all-in-one:1.24
+                name: jaeger
+                ports:
+                  - containerPort: 5775
+                    protocol: UDP
+                  - containerPort: 6831
+                    protocol: UDP
+                  - containerPort: 6832
+                    protocol: UDP
+                  - containerPort: 5778
+                    protocol: TCP
+                  - containerPort: 16686
+                    protocol: TCP
+                  - containerPort: 9411
+                    protocol: TCP
+                readinessProbe:
+                  httpGet:
+                    path: "/"
+                    port: 14269
+                  initialDelaySeconds: 5
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: jaeger-query
+      namespace: kuma-metrics
+      labels:
+        app: jaeger
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: query
+    spec:
+      selector:
+        matchLabels:
+          app: jaeger-query
+      ports:
+        - name: query-http
+          port: 80
+          protocol: TCP
+          targetPort: 16686
+      selector:
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: all-in-one
+      type: ClusterIP
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: jaeger-collector
+      namespace: kuma-metrics
+      labels:
+        app: jaeger
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: collector
+    spec:
+      selector:
+        matchLabels:
+          app: jaeger-collector
+      ports:
+        - name: jaeger-collector-tchannel
+          port: 14267
+          protocol: TCP
+          targetPort: 14267
+        - name: jaeger-collector-http
+          port: 14268
+          protocol: TCP
+          targetPort: 14268
+        - name: jaeger-collector-zipkin
+          port: 9411
+          protocol: TCP
+          targetPort: 9411
+      selector:
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: all-in-one
+      type: ClusterIP
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: jaeger-agent
+      namespace: kuma-metrics
+      labels:
+        app: jaeger
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: agent
+    spec:
+      selector:
+        matchLabels:
+          app: jaeger-agent
+      ports:
+        - name: agent-zipkin-thrift
+          port: 5775
+          protocol: UDP
+          targetPort: 5775
+        - name: agent-compact
+          port: 6831
+          protocol: UDP
+          targetPort: 6831
+        - name: agent-binary
+          port: 6832
+          protocol: UDP
+          targetPort: 6832
+        - name: agent-configs
+          port: 5778
+          protocol: TCP
+          targetPort: 5778
+      clusterIP: None
+      selector:
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: all-in-one
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: zipkin
+      namespace: kuma-metrics
+      labels:
+        app: jaeger
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: zipkin
+    spec:
+      selector:
+        matchLabels:
+          app: zipkin
+      ports:
+        - name: jaeger-collector-zipkin
+          port: 9411
+          protocol: TCP
+          targetPort: 9411
+      clusterIP: None
+      selector:
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: all-in-one
