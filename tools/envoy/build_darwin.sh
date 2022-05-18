@@ -26,6 +26,7 @@ BAZEL_BUILD_OPTIONS=(
 
 CONTRIB_ENABLED_ARGS=$(python "${CONTRIB_ENABLED_MATRIX_SCRIPT}")
 
+# shellcheck disable=SC2086
 bazel build "${BAZEL_BUILD_OPTIONS[@]}" -c opt //contrib/exe:envoy-static ${CONTRIB_ENABLED_ARGS}
 
 popd
