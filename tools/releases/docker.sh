@@ -20,10 +20,11 @@ function build() {
         --build-arg ENVOY_VERSION="${ENVOY_VERSION}"
         --build-arg BASE_IMAGE_ARCH="${arch}"
       )
+      additional_args=()
       if [ "$arch" == "arm64" ]; then
-        build_args+=("${ARM64_BUILD_ARGS[@]}")
+        read -ra additional_args <<< "${ARM64_BUILD_ARGS[@]}"
       fi
-      docker build "${build_args[@]}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
+      docker build "${build_args[@]}" "${additional_args[@]}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
         -f tools/releases/dockerfiles/Dockerfile."${component}" .
       docker tag "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" "${KUMA_DOCKER_REPO_ORG}/${component}:latest-${arch}"
       msg_green "... done!"
@@ -104,8 +105,8 @@ function main() {
     shift
   done
 
-#  [ -z "$DOCKER_USERNAME" ] && msg_err "\$DOCKER_USERNAME required"
-  #[ -z "$DOCKER_API_KEY" ] && msg_err "\$DOCKER_API_KEY required"
+  [ -z "$DOCKER_USERNAME" ] && msg_err "\$DOCKER_USERNAME required"
+  [ -z "$DOCKER_API_KEY" ] && msg_err "\$DOCKER_API_KEY required"
 
   case $op in
   build)
