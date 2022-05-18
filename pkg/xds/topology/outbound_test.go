@@ -338,18 +338,10 @@ var _ = Describe("TrafficRoute", func() {
 								AdvertisedAddress: "192.168.0.100",
 								AdvertisedPort:    12345,
 							},
-							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
-								{
-									Instances: 2,
-									Mesh:      defaultMeshName,
-									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.ZoneTag: "eu"},
-								},
-								{
-									Instances: 3,
-									Mesh:      defaultMeshName,
-									Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
-								},
-							},
+							// when AvailableServices are not computed for the instance of the ingress behind the same
+							// load balancer (advertised address + port), available services from an instance that has them
+							// is preferred.
+							AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{},
 						},
 					},
 					{

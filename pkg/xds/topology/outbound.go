@@ -204,7 +204,15 @@ func fillIngressOutbounds(
 			continue
 		}
 
-		ziInstances[ziCoordinates] = struct{}{}
+		if len(zi.Spec.GetAvailableServices()) > 0 {
+			// Consider squashing instances only if available services are reconciled.
+			// This is necessary to perform graceful join of new instances of ZoneIngress.
+			// When a new instance of ZoneIngress is up, it's immediately synced to all zones.
+			// Only after a short period of time (first XDS reconciliation) it will be updated with AvailableServices.
+			// If we just take any instance, we may choose an instance without AvailableServices as a representation
+			// of all ZoneIngress instances behind one load balancer.
+			ziInstances[ziCoordinates] = struct{}{}
+		}
 
 		for _, service := range zi.Spec.GetAvailableServices() {
 			if service.Mesh != mesh.GetMeta().GetName() {
