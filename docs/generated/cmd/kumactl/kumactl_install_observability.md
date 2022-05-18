@@ -1,19 +1,19 @@
-## kumactl install metrics
+## kumactl install observability
 
-Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
+Install Observability (Metrics, Logging, Tracing) backend in Kubernetes cluster (Prometheus + Grafana + Loki + Jaeger + Zipkin)
 
 ### Synopsis
 
-Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in its own namespace.
+Install Observability (Metrics, Logging, Tracing) backend in Kubernetes cluster (Prometheus + Grafana + Loki + Jaeger + Zipkin) in its own namespace.
 
 ```
-kumactl install metrics [flags]
+kumactl install observability [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help                     help for metrics
+  -h, --help                     help for observability
       --jaeger-address string    the address of jaeger to query (default "http://jaeger-query.kuma-tracing")
       --kuma-cp-address string   the address of Kuma CP (default "http://kuma-control-plane.kuma-system:5676")
       --loki-address string      the address of the loki to query (default "http://loki.kuma-logging:3100")
