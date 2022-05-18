@@ -28,7 +28,9 @@ func (x *xdsConfigStreams) ResponseReceived(zone string, resp *mesh_proto.XDSCon
 	if err != nil {
 		return err
 	}
+	stream.Lock()
 	ch, ok := stream.watchForRequestId[resp.RequestId]
+	stream.Unlock()
 	if !ok {
 		return errors.Errorf("callback for request Id %s not found", resp.RequestId)
 	}
