@@ -10,10 +10,12 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/multizone"
@@ -165,6 +167,11 @@ func (c *client) startXDSConfigs(ctx context.Context, log logr.Logger, conn *grp
 			log.Error(err, "CloseSend returned an error")
 		}
 	case err = <-processingErrorsCh:
+		if status.Code(err) == codes.Unimplemented {
+			log.Error(err, "XDSConfigDumps stream failed, because Global CP does not implement XDS Config. Upgrade Global CP.")
+			// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
+			return
+		}
 		log.Error(err, "XDSConfigDumps stream failed prematurely, will restart in background")
 		if err := stream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
