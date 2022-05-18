@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # file in format CONTRIB_EXTENSIONS = {...}
-execfile('contrib/contrib_build_config.bzl')
+exec(open('contrib/contrib_build_config.bzl').read())
 
 enabled = [
     "envoy.filters.network.kafka_broker"
