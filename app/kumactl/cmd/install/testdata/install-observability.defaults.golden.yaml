@@ -62,27 +62,9 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    component: "alertmanager"
-    app: prometheus
-  name: prometheus-alertmanager
-  namespace: kuma-metrics
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
-  namespace: kuma-metrics
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    component: "node-exporter"
-    app: prometheus
-  name: prometheus-node-exporter
   namespace: kuma-metrics
 ---
 apiVersion: v1
@@ -125,25 +107,6 @@ data:
     [plugins]
     # Required until we have grafana sign our plugin.
     allow_loading_unsigned_plugins = "kumahq-kuma-datasource"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  labels:
-    component: "alertmanager"
-    app: prometheus
-  name: prometheus-alertmanager
-  namespace: kuma-metrics
-data:
-  alertmanager.yml: |
-    global: {}
-    receivers:
-    - name: default-receiver
-    route:
-      group_interval: 5m
-      group_wait: 10s
-      receiver: default-receiver
-      repeat_interval: 3h
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -234,27 +197,6 @@ data:
               matcherRegex: '"([0-9a-f]{16})"'
               name: "traceId"
               url: '$${__value.raw}'
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: provisioning-dashboards
-  namespace: kuma-metrics
-  labels:
-    app: grafana
-data:
-  dashboards.yaml: |
-    apiVersion: 1
-
-    providers:
-    - name: 'Prometheus'
-      orgId: 1
-      folder: ''
-      type: file
-      disableDeletion: false
-      editable: true
-      options:
-        path: /etc/grafana/provisioning/dashboards
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -568,6 +510,27 @@ data:
     {}
   rules: |
     {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: provisioning-dashboards
+  namespace: kuma-metrics
+  labels:
+    app: grafana
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+
+    providers:
+    - name: 'Prometheus'
+      orgId: 1
+      folder: ''
+      type: file
+      disableDeletion: false
+      editable: true
+      options:
+        path: /etc/grafana/provisioning/dashboards
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -10918,21 +10881,6 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   labels:
-    component: "alertmanager"
-    app: prometheus
-  name: prometheus-alertmanager
-  namespace: kuma-metrics
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: "2Gi"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  labels:
     component: "server"
     app: prometheus
   name: prometheus-server
@@ -10951,16 +10899,6 @@ metadata:
     app: grafana
   name: grafana-clusterrole
 rules: []
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    component: "alertmanager"
-    app: prometheus
-  name: prometheus-alertmanager
-rules:
-  []
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -11119,22 +11057,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    component: "alertmanager"
-    app: prometheus
-  name: prometheus-alertmanager
-subjects:
-  - kind: ServiceAccount
-    name: prometheus-alertmanager
-    namespace: kuma-metrics
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: prometheus-alertmanager
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  labels:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
@@ -11212,26 +11134,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    component: "alertmanager"
-    app: prometheus
-  name: prometheus-alertmanager
-  namespace: kuma-metrics
-spec:
-  ports:
-    - name: http
-      port: 80
-      protocol: TCP
-      targetPort: 9093
-  selector:
-    component: alertmanager
-    app: prometheus
-  sessionAffinity: None
-  type: "ClusterIP"
----
-apiVersion: v1
-kind: Service
-metadata:
   annotations:
     prometheus.io/scrape: "true"
   labels:
@@ -11258,28 +11160,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    prometheus.io/scrape: "true"
-  labels:
-    component: "node-exporter"
-    app: prometheus
-  name: prometheus-node-exporter
-  namespace: kuma-metrics
-spec:
-  clusterIP: None
-  ports:
-    - name: metrics
-      port: 9100
-      protocol: TCP
-      targetPort: 9100
-  selector:
-    component: "node-exporter"
-    app: prometheus
-  type: "ClusterIP"
----
-apiVersion: v1
-kind: Service
-metadata:
   labels:
     component: "server"
     app: prometheus
@@ -11296,59 +11176,6 @@ spec:
     app: prometheus
   sessionAffinity: None
   type: "ClusterIP"
----
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  labels:
-    component: "node-exporter"
-    app: prometheus
-  name: prometheus-node-exporter
-  namespace: kuma-metrics
-spec:
-  selector:
-    matchLabels:
-      component: "node-exporter"
-      app: prometheus
-  updateStrategy:
-    type: RollingUpdate
-  template:
-    metadata:
-      labels:
-        component: "node-exporter"
-        app: prometheus
-        kuma.io/sidecar-injection: "disabled" # disabled for now, injecting DP crashes K8S cluster
-    spec:
-      serviceAccountName: prometheus-node-exporter
-      containers:
-        - name: prometheus-node-exporter
-          image: "prom/node-exporter:v1.3.1"
-          imagePullPolicy: "IfNotPresent"
-          args:
-            - --path.procfs=/host/proc
-            - --path.sysfs=/host/sys
-          ports:
-            - name: metrics
-              containerPort: 9100
-              hostPort: 9100
-          resources:
-            {}
-          volumeMounts:
-            - name: proc
-              mountPath: /host/proc
-              readOnly:  true
-            - name: sys
-              mountPath: /host/sys
-              readOnly: true
-      hostNetwork: true
-      hostPID: true
-      volumes:
-        - name: proc
-          hostPath:
-            path: /proc
-        - name: sys
-          hostPath:
-            path: /sys
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -11387,7 +11214,7 @@ spec:
               mountPath: /var/lib/grafana/plugins
       containers:
         - name: grafana
-          image: "grafana/grafana:8.3.3"
+          image: "grafana/grafana:8.5.2"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -11457,77 +11284,6 @@ spec:
           emptyDir: {}
         - name: plugins-volume
           emptyDir: {}
----
-# Source: prometheus/templates/alertmanager-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    component: "alertmanager"
-    app: prometheus
-  name: prometheus-alertmanager
-  namespace: kuma-metrics
-spec:
-  selector:
-    matchLabels:
-      component: "alertmanager"
-      app: prometheus
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        component: "alertmanager"
-        app: prometheus
-    spec:
-      serviceAccountName: prometheus-alertmanager
-      containers:
-        - name: prometheus-alertmanager
-          image: "prom/alertmanager:v0.23.0"
-          imagePullPolicy: "IfNotPresent"
-          env:
-            - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: status.podIP
-          args:
-            - --config.file=/etc/config/alertmanager.yml
-            - --storage.path=/data
-            - --cluster.advertise-address=$(POD_IP):6783
-            - --web.external-url=http://localhost:9093
-          ports:
-            - containerPort: 9093
-          resources:
-            {}
-          volumeMounts:
-            - name: config-volume
-              mountPath: /etc/config
-            - name: storage-volume
-              mountPath: "/data"
-              subPath: ""
-        - name: prometheus-alertmanager-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.6.1"
-          imagePullPolicy: "IfNotPresent"
-          args:
-            - --volume-dir=/etc/config
-            - --webhook-url=http://127.0.0.1:9093/-/reload
-          resources:
-            {}
-          volumeMounts:
-            - name: config-volume
-              mountPath: /etc/config
-              readOnly: true
-      securityContext:
-        fsGroup: 65534
-        runAsGroup: 65534
-        runAsUser: 65534
-      volumes:
-        - name: config-volume
-          configMap:
-            name: prometheus-alertmanager
-        - name: storage-volume
-          persistentVolumeClaim:
-            claimName: prometheus-alertmanager
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -11601,7 +11357,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v2.32.1"
+          image: "prom/prometheus:v2.35.0"
           imagePullPolicy: "IfNotPresent"
           args:
             - --storage.tsdb.retention.time=15d
@@ -12317,7 +12073,7 @@ spec:
         []
       containers:
         - name: loki
-          image: "grafana/loki:2.4.1"
+          image: "grafana/loki:2.5.0"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/loki/loki.yaml"
@@ -12413,7 +12169,7 @@ items:
             -   env:
                   - name: COLLECTOR_ZIPKIN_HOST_PORT
                     value: "9411"
-                image: jaegertracing/all-in-one:1.24
+                image: jaegertracing/all-in-one:1.34.1
                 name: jaeger
                 ports:
                   - containerPort: 5775
