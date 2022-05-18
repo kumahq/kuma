@@ -15,13 +15,11 @@ function build() {
   for component in ${KUMA_COMPONENTS}; do
     for arch in ${BUILD_ARCH}; do
       msg "Building $component..."
-      base_image_arch=$arch
-      # ARM base images have different tags
-      if [ "$component" != "kuma-dp" ] && [ "$arch" == "arm64" ]; then
-        base_image_arch="arm64v8"
+      build_args="--build-arg ARCH=${arch} --build-arg ENVOY_VERSION=${ENVOY_VERSION} --build-arg BASE_IMAGE_ARCH=${arch}"
+      if [ "$arch" == "arm64" ]; then
+        build_args+=" ${ARM64_BUILD_ARGS}"
       fi
-      echo $base_image_arch
-      docker build --build-arg ARCH="$arch" --build-arg BASE_IMAGE_ARCH="$base_image_arch" --build-arg ENVOY_VERSION="${ENVOY_VERSION}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
+      docker build $build_args -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
         -f tools/releases/dockerfiles/Dockerfile."${component}" .
       docker tag "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" "${KUMA_DOCKER_REPO_ORG}/${component}:latest-${arch}"
       msg_green "... done!"
@@ -102,8 +100,8 @@ function main() {
     shift
   done
 
-  [ -z "$DOCKER_USERNAME" ] && msg_err "\$DOCKER_USERNAME required"
-  [ -z "$DOCKER_API_KEY" ] && msg_err "\$DOCKER_API_KEY required"
+#  [ -z "$DOCKER_USERNAME" ] && msg_err "\$DOCKER_USERNAME required"
+  #[ -z "$DOCKER_API_KEY" ] && msg_err "\$DOCKER_API_KEY required"
 
   case $op in
   build)
