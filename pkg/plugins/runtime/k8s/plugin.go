@@ -264,9 +264,6 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator, rt.Config().Store.UnsafeDelete)
 	composite.AddValidator(k8sZoneValidator)
 
-	k8sContainerPatchValidator := k8s_webhooks.NewContainerPatchValidatorWebhook()
-	composite.AddValidator(k8sContainerPatchValidator)
-
 	for _, validator := range gatewayValidators(rt, converter) {
 		composite.AddValidator(validator)
 	}

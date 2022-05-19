@@ -56,6 +56,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 					},
 				},
 			},
+			ContainerPatches: []string{},
 			InitContainer: InitContainer{
 				Image: "kuma/kuma-init:latest",
 			},
@@ -115,7 +116,7 @@ type Injector struct {
 	InitContainer InitContainer `yaml:"initContainer,omitempty"`
 	// ContainerPatches is an optional list of ContainerPatch names which will be applied
 	// to init and sidecar containers if workload is not annotated with a patch list.
-	ContainerPatches string `yaml:"containerPatches,omitempty"`
+	ContainerPatches []string `yaml:"containerPatches" envconfig:"kuma_runtime_kubernetes_injector_container_patches"`
 	// CNIEnabled if true runs kuma-cp in CNI compatible mode
 	CNIEnabled bool `yaml:"cniEnabled" envconfig:"kuma_runtime_kubernetes_injector_cni_enabled"`
 	// VirtualProbesEnabled enables automatic converting HttpGet probes to virtual. Virtual probe

@@ -30,12 +30,36 @@ var _ = Describe("Injector", func() {
 		namespace string
 	}
 
+	BeforeAll(func() {
+		cPatch := `
+apiVersion: kuma.io/v1alpha1
+kind: ContainerPatch
+metadata:
+  namespace: default
+  name: container-patch-1
+spec:
+  sidecarPatch:
+    - op: add
+      path: /securityContext/privileged
+      value: "true"
+  initPatch:
+    - op: remove
+      path: /securityContext/runAsUser`
+		decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()
+		pobj, _, errCPatch := decoder.Decode([]byte(cPatch), nil, nil)
+		Expect(errCPatch).ToNot(HaveOccurred())
+		errCPatchCreate := k8sClient.Create(context.Background(), pobj.(kube_client.Object))
+		Expect(errCPatchCreate).ToNot(HaveOccurred())
+	})
+
+	AfterAll(func() {
+		err := k8sClient.DeleteAllOf(context.Background(), &v1alpha1.ContainerPatch{}, kube_client.InNamespace("default"))
+		Expect(err).ToNot(HaveOccurred())
+	})
+
 	BeforeEach(func() {
 		err := k8sClient.DeleteAllOf(context.Background(), &v1alpha1.Mesh{})
 		Expect(err).ToNot(HaveOccurred())
-		// XXX The client can't find the resource type for some reason.
-		//err = k8sClient.DeleteAllOf(context.Background(), &v1alpha1.ContainerPatch{})
-		//Expect(err).ToNot(HaveOccurred())
 	})
 
 	DescribeTable("should inject Kuma into a Pod",
@@ -61,25 +85,6 @@ var _ = Describe("Injector", func() {
 			errUpd := k8sClient.Update(context.Background(), ns.(kube_client.Object))
 			Expect(errUpd).ToNot(HaveOccurred())
 
-			cPatch := `
-apiVersion: kuma.io/v1alpha1
-kind: ContainerPatch
-metadata:
-  namespace: default
-  name: container-patch-1
-spec:
-  sidecarPatch:
-    - op: add
-      path: /securityContext/privileged
-      value: "true"
-  initPatch:
-    - op: remove
-      path: /securityContext/runAsUser`
-			pobj, _, errCPatch := decoder.Decode([]byte(cPatch), nil, nil)
-			Expect(errCPatch).ToNot(HaveOccurred())
-			errCPatchCreate := k8sClient.Create(context.Background(), pobj.(kube_client.Object))
-			Expect(errCPatchCreate).ToNot(HaveOccurred())
-
 			// given
 			pod := &kube_core.Pod{}
 
@@ -95,7 +100,7 @@ spec:
 
 			By("injecting Kuma")
 			// when
-			err = injector.InjectKuma(pod)
+			err = injector.InjectKuma(context.Background(), pod)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -603,8 +608,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		// XXX Can only run one until the DeleteAll issue is fixed.
-		FEntry("30. sidecar with patch", testCase{
+		Entry("30. sidecar with patch", testCase{
 			num: "30",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -621,4 +625,4 @@ spec:
 			cfgFile: "inject.config.yaml",
 		}),
 	)
-})
+}, Ordered)

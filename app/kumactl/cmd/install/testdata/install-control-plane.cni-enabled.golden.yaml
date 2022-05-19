@@ -158,7 +158,7 @@ spec:
               initPatch:
                 description: InitPatch specifies jsonpatch to apply to an init container.
                 items:
-                  description: JsonPatchBLock is one json patch operation block.
+                  description: JsonPatchBlock is one json patch operation block.
                   properties:
                     from:
                       description: From is a jsonpatch from string, used by move and
@@ -166,13 +166,20 @@ spec:
                       type: string
                     op:
                       description: Op is a jsonpatch operation string.
+                      enum:
+                      - add
+                      - remove
+                      - replace
+                      - move
+                      - copy
                       type: string
                     path:
                       description: Path is a jsonpatch path string.
                       type: string
                     value:
                       description: Value must be a string representing a valid json
-                        object used by replace and add operations.
+                        object used by replace and add operations. String has to be
+                        escaped with " to be valid a json object.
                       type: string
                   required:
                   - op
@@ -183,7 +190,7 @@ spec:
                 description: SidecarPatch specifies jsonpatch to apply to a sidecar
                   container.
                 items:
-                  description: JsonPatchBLock is one json patch operation block.
+                  description: JsonPatchBlock is one json patch operation block.
                   properties:
                     from:
                       description: From is a jsonpatch from string, used by move and
@@ -191,13 +198,20 @@ spec:
                       type: string
                     op:
                       description: Op is a jsonpatch operation string.
+                      enum:
+                      - add
+                      - remove
+                      - replace
+                      - move
+                      - copy
                       type: string
                     path:
                       description: Path is a jsonpatch path string.
                       type: string
                     value:
                       description: Value must be a string representing a valid json
-                        object used by replace and add operations.
+                        object used by replace and add operations. String has to be
+                        escaped with " to be valid a json object.
                       type: string
                   required:
                   - op

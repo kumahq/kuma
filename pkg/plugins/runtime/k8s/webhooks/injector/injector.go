@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
@@ -65,19 +66,20 @@ type KumaInjector struct {
 	defaultAdminPort uint32
 }
 
-func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
-	ns, err := i.namespaceFor(pod)
+func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error {
+	ns, err := i.namespaceFor(ctx, pod)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve namespace for pod")
 	}
+	logger := log.WithValues("name", pod.GenerateName, "namespace", pod.Namespace)
 	if inject, err := i.needInject(pod, ns); err != nil {
 		return err
 	} else if !inject {
-		log.V(1).Info("skip injecting Kuma", "name", pod.Name, "namespace", pod.Namespace)
+		logger.V(1).Info("skip injecting Kuma")
 		return nil
 	}
-	log.Info("injecting Kuma", "name", pod.GenerateName, "namespace", pod.Namespace)
-	sidecarPatches, initPatches, err := i.loadCustomPatches(pod, ns)
+	logger.Info("injecting Kuma")
+	sidecarPatches, initPatches, err := i.loadContainerPatches(ctx, logger, pod, ns)
 	if err != nil {
 		return err
 	}
@@ -89,13 +91,13 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	if err != nil {
 		return err
 	}
-	patchedContainer, err := i.applyCustomPatches(container, sidecarPatches)
+	patchedContainer, err := i.applyCustomPatches(logger, container, sidecarPatches)
 	if err != nil {
 		return err
 	}
 	pod.Spec.Containers = append(pod.Spec.Containers, patchedContainer)
 
-	mesh, err := i.meshFor(pod, ns)
+	mesh, err := i.meshFor(ctx, pod, ns)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve mesh for pod")
 	}
@@ -122,7 +124,7 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		if err != nil {
 			return err
 		}
-		patchedIc, err := i.applyCustomPatches(ic, initPatches)
+		patchedIc, err := i.applyCustomPatches(logger, ic, initPatches)
 		if err != nil {
 			return err
 		}
@@ -213,10 +215,14 @@ func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
 	return false
 }
 
-func (i *KumaInjector) meshFor(pod *kube_core.Pod, ns *kube_core.Namespace) (*core_mesh.MeshResource, error) {
+func (i *KumaInjector) meshFor(
+	ctx context.Context,
+	pod *kube_core.Pod,
+	ns *kube_core.Namespace,
+) (*core_mesh.MeshResource, error) {
 	meshName := k8s_util.MeshOf(pod, ns)
 	mesh := &mesh_k8s.Mesh{}
-	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
+	if err := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
 		return nil, err
 	}
 	meshResource := core_mesh.NewMeshResource()
@@ -226,36 +232,55 @@ func (i *KumaInjector) meshFor(pod *kube_core.Pod, ns *kube_core.Namespace) (*co
 	return meshResource, nil
 }
 
-// loadCustomPatches loads the ContainerPatch CRDs associated with the given pod, divides out
-// the sidecar and init patches, and concatinates each type into its own list for return.
-func (i *KumaInjector) loadCustomPatches(pod *kube_core.Pod, ns *kube_core.Namespace) (sidecarPatches []mesh_k8s.JsonPatchBlock, initPatches []mesh_k8s.JsonPatchBlock, err error) {
+type namedContainerPatches struct {
+	names   []string
+	patches []mesh_k8s.JsonPatchBlock
+}
+
+// loadContainerPatches loads the ContainerPatch CRDs associated with the given pod, divides out
+// the sidecar and init patches, and concatenates each type into its own list for return.
+func (i *KumaInjector) loadContainerPatches(
+	ctx context.Context,
+	logger logr.Logger,
+	pod *kube_core.Pod,
+	ns *kube_core.Namespace,
+) (sidecarPatches namedContainerPatches, initPatches namedContainerPatches, err error) {
 	patchNames := i.cfg.ContainerPatches
 	if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaContainerPatches); exist {
-		patchNames = val
-	}
-
-	if patchNames == "" {
-		// Avoid Split returning slice containing empty string
-		return []mesh_k8s.JsonPatchBlock{}, []mesh_k8s.JsonPatchBlock{}, nil
-	}
-
-	for _, patchName := range strings.Split(patchNames, ",") {
-		containerPatch := &mesh_k8s.ContainerPatch{}
-		log.Info("loading patch", "namespace", ns.GetName(), "containerpatch", patchName)
-		if err := i.client.Get(context.Background(), kube_types.NamespacedName{Namespace: ns.GetName(), Name: patchName}, containerPatch); err != nil {
-			log.Error(err, "invalid ContainerPatch", "podName", pod.Name, "namespace", pod.Namespace, "name", patchName)
-			return nil, nil, err
+		for _, patchName := range strings.Split(val, ",") {
+			if patchName != "" {
+				patchNames = append(patchNames, patchName)
+			}
 		}
-		sidecarPatches = append(sidecarPatches, containerPatch.Spec.SidecarPatch...)
-		initPatches = append(initPatches, containerPatch.Spec.InitPatch...)
+	}
+
+	for _, patchName := range patchNames {
+		containerPatch := &mesh_k8s.ContainerPatch{}
+		if err := i.client.Get(ctx, kube_types.NamespacedName{Namespace: ns.GetName(), Name: patchName}, containerPatch); err != nil {
+			// skip the patch rather than fail.
+			logger.Error(err, "invalid ContainerPatch, skipping.", "name", patchName)
+			continue
+		}
+		if len(containerPatch.Spec.SidecarPatch) > 0 {
+			sidecarPatches.names = append(sidecarPatches.names, patchName)
+			sidecarPatches.patches = append(sidecarPatches.patches, containerPatch.Spec.SidecarPatch...)
+		}
+		if len(containerPatch.Spec.InitPatch) > 0 {
+			initPatches.names = append(initPatches.names, patchName)
+			initPatches.patches = append(initPatches.patches, containerPatch.Spec.InitPatch...)
+		}
 	}
 	return sidecarPatches, initPatches, nil
 }
 
 // applyCustomPatches applies the block of patches to the given container and returns a new,
 // patched container. If patch list is empty, the same unaltered container is returned.
-func (i *KumaInjector) applyCustomPatches(container kube_core.Container, patches []mesh_k8s.JsonPatchBlock) (kube_core.Container, error) {
-	if len(patches) == 0 {
+func (i *KumaInjector) applyCustomPatches(
+	logger logr.Logger,
+	container kube_core.Container,
+	patches namedContainerPatches,
+) (kube_core.Container, error) {
+	if len(patches.patches) == 0 {
 		return container, nil
 	}
 
@@ -264,17 +289,12 @@ func (i *KumaInjector) applyCustomPatches(container kube_core.Container, patches
 	if err != nil {
 		return kube_core.Container{}, err
 	}
-	for _, patch := range patches {
-		patchObj, err := mesh_k8s.JsonPatchBlockToPatch(patch)
-		if err != nil {
-			return kube_core.Container{}, err
-		}
-
-		containerJson, err = patchObj.Apply(containerJson)
-		if err != nil {
-			return kube_core.Container{}, err
-		}
+	log.Info("applying a patches to the container", "patches", patches.names)
+	containerJson, err = mesh_k8s.ToJsonPatch(patches.patches).Apply(containerJson)
+	if err != nil {
+		return kube_core.Container{}, errors.Wrapf(err, "could not apply patches %q", patches.names)
 	}
+
 	err = json.Unmarshal(containerJson, &patchedContainer)
 	if err != nil {
 		return kube_core.Container{}, err
@@ -282,13 +302,13 @@ func (i *KumaInjector) applyCustomPatches(container kube_core.Container, patches
 	return patchedContainer, nil
 }
 
-func (i *KumaInjector) namespaceFor(pod *kube_core.Pod) (*kube_core.Namespace, error) {
+func (i *KumaInjector) namespaceFor(ctx context.Context, pod *kube_core.Pod) (*kube_core.Namespace, error) {
 	ns := &kube_core.Namespace{}
 	nsName := "default"
 	if pod.GetNamespace() != "" {
 		nsName = pod.GetNamespace()
 	}
-	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: nsName}, ns); err != nil {
+	if err := i.client.Get(ctx, kube_types.NamespacedName{Name: nsName}, ns); err != nil {
 		return nil, err
 	}
 	return ns, nil

@@ -1,6 +1,9 @@
 package v1alpha1
 
 import (
+	"encoding/json"
+	"fmt"
+
 	jsonpatch "github.com/evanphx/json-patch"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,7 +43,7 @@ type JsonPatchBlock struct {
 	Path string `json:"path"`
 
 	// Value must be a string representing a valid json object used
-	// by replace and add operations.
+	// by replace and add operations. String has to be escaped with " to be valid a json object.
 	Value string `json:"value,omitempty"`
 
 	// From is a jsonpatch from string, used by move and copy operations.
@@ -61,17 +64,19 @@ func init() {
 	SchemeBuilder.Register(&ContainerPatch{}, &ContainerPatchList{})
 }
 
-func JsonPatchBlockToPatch(patchBlock JsonPatchBlock) (jsonpatch.Patch, error) {
-	patchStr := `[{"op": "` + patchBlock.Op + `", "path": "` + patchBlock.Path + `" `
-	if patchBlock.Value != "" {
-		// Value needs to be actual json string.
-		patchStr = patchStr + `, "value": ` + patchBlock.Value
+func ToJsonPatch(in []JsonPatchBlock) jsonpatch.Patch {
+	var res []jsonpatch.Operation
+	for _, o := range in {
+		op := json.RawMessage(fmt.Sprintf(`"%s"`, o.Op))
+		path := json.RawMessage(fmt.Sprintf(`"%s"`, o.Path))
+		from := json.RawMessage(fmt.Sprintf(`"%s"`, o.From))
+		value := json.RawMessage(o.Value)
+		res = append(res, jsonpatch.Operation{
+			"op":    &op,
+			"path":  &path,
+			"from":  &from,
+			"value": &value,
+		})
 	}
-	if patchBlock.From != "" {
-		// Value needs to be actual json string.
-		patchStr = patchStr + `, "from": "` + patchBlock.Value + `" `
-	}
-	patchStr += `}]`
-
-	return jsonpatch.DecodePatch([]byte(patchStr))
+	return res
 }
