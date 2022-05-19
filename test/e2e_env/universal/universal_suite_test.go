@@ -14,7 +14,11 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/test/e2e_env/universal/metrics"
+=======
+	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
+>>>>>>> master
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -58,7 +62,12 @@ var _ = SynchronizedBeforeSuite(
 var _ = Describe("User Auth", auth.UserAuth)
 var _ = Describe("DP Auth", auth.DpAuth, Ordered)
 var _ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
+var _ = Describe("HealthCheck", healthcheck.Policy)
 var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
 var _ = Describe("External Services", externalservices.ExternalServiceHostHeader, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
+<<<<<<< HEAD
 var _ = Describe("Applications Metrics", metrics.ApplicationsMetrics, Ordered)
+=======
+var _ = Describe("Membership", membership.Membership, Ordered)
+>>>>>>> master

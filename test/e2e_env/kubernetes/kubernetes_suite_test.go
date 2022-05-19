@@ -11,9 +11,13 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
-	healthcheck "github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/metrics"
+=======
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
+>>>>>>> master
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -61,7 +65,15 @@ var _ = SynchronizedBeforeSuite(
 	},
 )
 
+// SynchronizedAfterSuite keeps the main process alive until all other processes finish.
+// Otherwise, we would close port-forward to the CP and remaining tests executed in different processes may fail.
+var _ = SynchronizedAfterSuite(func() {}, func() {})
+
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
+<<<<<<< HEAD
 var _ = Describe("Metrics", metrics.ApplicationsMetrics, Ordered)
+=======
+var _ = Describe("Membership", membership.Membership, Ordered)
+>>>>>>> master
