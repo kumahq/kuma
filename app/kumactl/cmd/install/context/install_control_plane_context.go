@@ -101,7 +101,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			Cni_conf_name:                           "kuma-cni.conf",
 			Cni_image_registry:                      "docker.io/kumahq",
 			Cni_image_repository:                    "install-cni",
-			Cni_image_tag:                           "0.0.9",
+			Cni_image_tag:                           "0.0.10",
 			ControlPlane_mode:                       core.Standalone,
 			ControlPlane_zone:                       "",
 			ControlPlane_globalZoneSyncService_type: "LoadBalancer",

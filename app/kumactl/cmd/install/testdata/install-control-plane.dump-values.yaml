@@ -242,7 +242,7 @@ cni:
     # -- CNI image repository
     repository: "kumahq/install-cni"
     # -- CNI image tag
-    tag: "0.0.9"
+    tag: "0.0.10"
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
@@ -395,8 +395,8 @@ kumactl:
     tag:
 
 kubectl:
-  # rancher maintains an image for all k8s versions */ } }
-  # see: https://hub.docker.com/r/rancher/kubectl */ } }
+  # kuma image that support v1.20.15 image */ } }
+  # see: https://hub.docker.com/r/kumahq/kubectl */ } }
   image:
     # -- The kubectl image registry
     registry: kumahq
