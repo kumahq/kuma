@@ -1,6 +1,7 @@
 package admin_test
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,9 +17,8 @@ import (
 
 var _ = Describe("KDS client", func() {
 
-	timeout := 1 * time.Second
 	streams := service.NewXdsConfigStreams()
-	client := admin.NewKDSEnvoyAdminClient(streams, timeout)
+	client := admin.NewKDSEnvoyAdminClient(streams)
 
 	zoneName := "zone-1"
 	var stream *mockStream
@@ -43,7 +43,7 @@ var _ = Describe("KDS client", func() {
 		respCh := make(chan []byte)
 		go func() {
 			defer GinkgoRecover()
-			resp, err := client.ConfigDump(dpRes)
+			resp, err := client.ConfigDump(context.Background(), dpRes)
 			Expect(err).To(Succeed())
 			respCh <- resp
 		}()
@@ -72,7 +72,7 @@ var _ = Describe("KDS client", func() {
 		})
 
 		// when
-		_, err := client.ConfigDump(dpRes)
+		_, err := client.ConfigDump(context.Background(), dpRes)
 
 		// then
 		Expect(err).To(MatchError("could not send XDSConfigRequest: zone not-connected is not connected"))
@@ -86,11 +86,14 @@ var _ = Describe("KDS client", func() {
 			Name: zoneName + ".dp-1",
 		})
 
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
 		// when
-		_, err := client.ConfigDump(dpRes)
+		_, err := client.ConfigDump(ctx, dpRes)
 
 		// then
-		Expect(err).To(MatchError("timeout. Did not receive the response within 1s"))
+		Expect(err).To(MatchError("timeout"))
 	})
 
 	It("should rethrow error from zone CP", func() {
@@ -105,7 +108,7 @@ var _ = Describe("KDS client", func() {
 		errCh := make(chan error)
 		go func() {
 			defer GinkgoRecover()
-			_, err := client.ConfigDump(dpRes)
+			_, err := client.ConfigDump(context.Background(), dpRes)
 			errCh <- err
 		}()
 

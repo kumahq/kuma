@@ -354,7 +354,7 @@ func inspectDataplaneXDS(
 			return
 		}
 
-		configDump, err := envoyAdminClient.ConfigDump(dp)
+		configDump, err := envoyAdminClient.ConfigDump(ctx, dp)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
 			return
@@ -396,7 +396,7 @@ func inspectZoneIngressXDS(
 			return
 		}
 
-		configDump, err := envoyAdminClient.ConfigDump(zi)
+		configDump, err := envoyAdminClient.ConfigDump(ctx, zi)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
 			return
@@ -430,7 +430,7 @@ func inspectZoneEgressXDS(
 			return
 		}
 
-		configDump, err := envoyAdminClient.ConfigDump(ze)
+		configDump, err := envoyAdminClient.ConfigDump(ctx, ze)
 		if err != nil {
 			rest_errors.HandleError(response, err, "Could not get config_dump")
 			return

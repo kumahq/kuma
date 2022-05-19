@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"context"
 	"net"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -114,10 +113,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 
 	if cfg.Mode == config_core.Global {
-		builder.WithEnvoyAdminClient(admin.NewKDSEnvoyAdminClient(
-			builder.KDSContext().XdsConfigStreams,
-			10*time.Second,
-		))
+		builder.WithEnvoyAdminClient(admin.NewKDSEnvoyAdminClient(builder.KDSContext().XdsConfigStreams))
 	} else {
 		envoyAdminClient, err := admin.NewEnvoyAdminClient(
 			builder.ResourceManager(),

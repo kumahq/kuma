@@ -144,7 +144,7 @@ func (d *DummyEnvoyAdminClient) GenerateAPIToken(dp *core_mesh.DataplaneResource
 	return "token", nil
 }
 
-func (d *DummyEnvoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) error {
+func (d *DummyEnvoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.DataplaneResource) error {
 	if d.PostQuitCalled != nil {
 		*d.PostQuitCalled++
 	}
@@ -152,6 +152,6 @@ func (d *DummyEnvoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource)
 	return nil
 }
 
-func (d *DummyEnvoyAdminClient) ConfigDump(proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (d *DummyEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
 	return []byte(fmt.Sprintf(`{"envoyAdminAddress": "%s"}`, proxy.AdminAddress(9901))), nil
 }

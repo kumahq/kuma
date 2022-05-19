@@ -1,8 +1,8 @@
 package admin
 
 import (
+	"context"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -14,24 +14,22 @@ import (
 )
 
 type kdsEnvoyAdminClient struct {
-	streams          service.XDSConfigStreams
-	operationTimeout time.Duration
+	streams service.XDSConfigStreams
 }
 
-func NewKDSEnvoyAdminClient(streams service.XDSConfigStreams, operationTimeout time.Duration) EnvoyAdminClient {
+func NewKDSEnvoyAdminClient(streams service.XDSConfigStreams) EnvoyAdminClient {
 	return &kdsEnvoyAdminClient{
-		streams:          streams,
-		operationTimeout: operationTimeout,
+		streams: streams,
 	}
 }
 
 var _ EnvoyAdminClient = &kdsEnvoyAdminClient{}
 
-func (k *kdsEnvoyAdminClient) PostQuit(*core_mesh.DataplaneResource) error {
+func (k *kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneResource) error {
 	panic("not implemented")
 }
 
-func (k *kdsEnvoyAdminClient) ConfigDump(proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
 	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName())
 	if err != nil {
 		return nil, err
@@ -54,8 +52,8 @@ func (k *kdsEnvoyAdminClient) ConfigDump(proxy core_model.ResourceWithAddress) (
 	}
 
 	select {
-	case <-time.After(k.operationTimeout):
-		return nil, errors.Errorf("timeout. Did not receive the response within %v", k.operationTimeout)
+	case <-ctx.Done():
+		return nil, errors.New("timeout")
 	case resp := <-ch:
 		if resp.GetError() != "" {
 			return nil, errors.Errorf("error response from Zone CP: %s", resp.GetError())

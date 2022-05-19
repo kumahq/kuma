@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -16,7 +17,7 @@ type XDSConfigProcessor interface {
 	StartProcessing(stream mesh_proto.GlobalKDSService_StreamXDSConfigsClient, errorCh chan error)
 }
 
-type ConfigDumpFn = func(proxy core_model.ResourceWithAddress) ([]byte, error)
+type ConfigDumpFn = func(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error)
 
 type xdsConfigDumpProcessor struct {
 	resManager   core_manager.ReadOnlyResourceManager
@@ -46,7 +47,7 @@ func (s *xdsConfigDumpProcessor) StartProcessing(
 			return
 		}
 		go func() { // schedule in the background to be able to quickly process more requests
-			config, err := s.executeConfigDump(req)
+			config, err := s.executeConfigDump(stream.Context(), req)
 
 			resp := &mesh_proto.XDSConfigResponse{
 				RequestId: req.RequestId,
@@ -69,12 +70,15 @@ func (s *xdsConfigDumpProcessor) StartProcessing(
 	}
 }
 
-func (s *xdsConfigDumpProcessor) executeConfigDump(req *mesh_proto.XDSConfigRequest) ([]byte, error) {
+func (s *xdsConfigDumpProcessor) executeConfigDump(ctx context.Context, req *mesh_proto.XDSConfigRequest) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	res, err := registry.Global().NewObject(core_model.ResourceType(req.ResourceType))
 	if err != nil {
 		return nil, err
 	}
-	if err := s.resManager.Get(context.Background(), res, core_store.GetByKey(req.ResourceName, req.ResourceMesh)); err != nil {
+	if err := s.resManager.Get(ctx, res, core_store.GetByKey(req.ResourceName, req.ResourceMesh)); err != nil {
 		return nil, err
 	}
 
@@ -83,5 +87,5 @@ func (s *xdsConfigDumpProcessor) executeConfigDump(req *mesh_proto.XDSConfigRequ
 		return nil, errors.Errorf("invalid type %T", resWithAddr)
 	}
 
-	return s.configDumpFn(resWithAddr)
+	return s.configDumpFn(ctx, resWithAddr)
 }

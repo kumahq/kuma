@@ -26,8 +26,8 @@ import (
 )
 
 type EnvoyAdminClient interface {
-	PostQuit(dataplane *core_mesh.DataplaneResource) error
-	ConfigDump(proxy core_model.ResourceWithAddress) ([]byte, error)
+	PostQuit(ctx context.Context, dataplane *core_mesh.DataplaneResource) error
+	ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error)
 }
 
 type envoyAdminClient struct {
@@ -141,14 +141,14 @@ const (
 	quitquitquit = "quitquitquit"
 )
 
-func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) error {
+func (a *envoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.DataplaneResource) error {
 	httpClient, err := a.buildHTTPClient(dataplane.Meta.GetMesh(), dataplane.Spec.GetIdentifyingService())
 	if err != nil {
 		return err
 	}
 
 	url := fmt.Sprintf("https://%s/%s", dataplane.AdminAddress(a.defaultAdminPort), quitquitquit)
-	request, err := http.NewRequest("POST", url, nil)
+	request, err := http.NewRequestWithContext(ctx, "POST", url, nil)
 	if err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) erro
 	return nil
 }
 
-func (a *envoyAdminClient) ConfigDump(proxy core_model.ResourceWithAddress) ([]byte, error) {
+func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
 	var httpClient *http.Client
 	var err error
 	u := &url.URL{}
@@ -201,7 +201,7 @@ func (a *envoyAdminClient) ConfigDump(proxy core_model.ResourceWithAddress) ([]b
 
 	u.Host = proxy.AdminAddress(a.defaultAdminPort)
 	u.Path = "config_dump"
-	request, err := http.NewRequest("GET", u.String(), nil)
+	request, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
