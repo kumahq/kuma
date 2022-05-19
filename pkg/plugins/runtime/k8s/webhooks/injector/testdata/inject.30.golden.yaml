@@ -106,7 +106,7 @@ spec:
         cpu: 150m
         memory: 164Mi
     securityContext:
-      privileged: true
+      privileged: false
       runAsGroup: 5678
       runAsUser: 5678
   initContainers:

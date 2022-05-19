@@ -41,7 +41,7 @@ spec:
   sidecarPatch:
     - op: add
       path: /securityContext/privileged
-      value: "true"
+      value: "false"
   initPatch:
     - op: remove
       path: /securityContext/runAsUser`
