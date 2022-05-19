@@ -1,9 +1,11 @@
 package graceful
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -31,7 +33,8 @@ func Graceful() {
 
 	// Set up a gateway to be able to send requests constantly.
 	// The alternative was to exec to the container, but this introduces a latency of getting into container for every curl
-	gateway := `
+	gatewayInstnace := func(replicas int) string {
+		return fmt.Sprintf(`
 ---
 apiVersion: kuma.io/v1alpha1
 kind: MeshGatewayInstance
@@ -41,10 +44,14 @@ metadata:
   annotations:
     kuma.io/mesh: graceful
 spec:
-  replicas: 1
+  replicas: %d
   serviceType: LoadBalancer
   tags:
     kuma.io/service: edge-gateway
+`, replicas)
+	}
+
+	gateway := `
 ---
 apiVersion: kuma.io/v1alpha1
 kind: MeshGateway
@@ -99,6 +106,7 @@ spec:
 			Install(MeshKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(YamlK8s(gateway)).
+			Install(YamlK8s(gatewayInstnace(1))).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(mesh),
@@ -117,6 +125,14 @@ spec:
 			g.Expect(out).ToNot(BeEmpty())
 			gatewayIP = out
 		}, "60s", "1s").Should(Succeed(), "could not get a LoadBalancer IP of the Gateway")
+
+		// remove retries to avoid covering failed request
+		err = k8s.RunKubectlE(
+			env.Cluster.GetTesting(),
+			env.Cluster.GetKubectlOptions(),
+			"delete", "retry", "retry-all-graceful",
+		)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	requestThroughGateway := func() error {
@@ -132,60 +148,65 @@ spec:
 		return err
 	}
 
-	It("should not drop a request when scaling up and down", func() {
-		// given no retries
-		err := k8s.RunKubectlE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(),
-			"delete", "retry", "retry-all-graceful",
-		)
-		Expect(err).ToNot(HaveOccurred())
+	type testCase struct {
+		deploymentName string
+		scaleFn        func(int) error
+	}
 
-		// and constant traffic between client and server
-		Eventually(requestThroughGateway, "30s", "1s").Should(Succeed())
-		var failedErr error
-		closeCh := make(chan struct{})
-		defer close(closeCh)
-		go func() {
-			for {
-				if err := requestThroughGateway(); err != nil {
-					failedErr = err
-					return
+	DescribeTable("should not drop a request when scaling up and down",
+		func(given testCase) {
+			// given constant traffic between client and server
+			Eventually(requestThroughGateway, "30s", "1s").Should(Succeed())
+			var failedErr error
+			closeCh := make(chan struct{})
+			defer close(closeCh)
+			go func() {
+				for {
+					if err := requestThroughGateway(); err != nil {
+						failedErr = err
+						return
+					}
+					if channels.IsClosed(closeCh) {
+						return
+					}
 				}
-				if channels.IsClosed(closeCh) {
-					return
-				}
-			}
-		}()
+			}()
 
-		// when
-		err = k8s.RunKubectlE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(namespace),
-			"scale", "deployment", name, "--replicas", "2",
-		)
-		Expect(err).ToNot(HaveOccurred())
+			// when
+			Expect(given.scaleFn(2)).To(Succeed())
 
-		// then
-		Eventually(func(g Gomega) {
-			g.Expect(WaitNumPods(namespace, 2, name)(env.Cluster)).To(Succeed())
-			g.Expect(WaitPodsAvailable(namespace, name)(env.Cluster)).To(Succeed())
-		}, "30s", "1s").Should(Succeed())
-		Expect(failedErr).ToNot(HaveOccurred())
+			// then
+			Eventually(func(g Gomega) {
+				g.Expect(WaitNumPods(namespace, 2, given.deploymentName)(env.Cluster)).To(Succeed())
+				g.Expect(WaitPodsAvailable(namespace, given.deploymentName)(env.Cluster)).To(Succeed())
+			}, "30s", "1s").Should(Succeed())
+			Expect(failedErr).ToNot(HaveOccurred())
 
-		// when
-		err = k8s.RunKubectlE(
-			env.Cluster.GetTesting(),
-			env.Cluster.GetKubectlOptions(namespace),
-			"scale", "deployment", name, "--replicas", "1",
-		)
-		Expect(err).ToNot(HaveOccurred())
+			// when
+			Expect(given.scaleFn(1)).To(Succeed())
 
-		// then
-		Eventually(func(g Gomega) {
-			g.Expect(WaitNumPods(namespace, 1, name)(env.Cluster)).To(Succeed())
-		}, "60s", "1s").Should(Succeed())
+			// then
+			Eventually(func(g Gomega) {
+				g.Expect(WaitNumPods(namespace, 1, given.deploymentName)(env.Cluster)).To(Succeed())
+			}, "60s", "1s").Should(Succeed())
 
-		Expect(failedErr).ToNot(HaveOccurred())
-	})
+			Expect(failedErr).ToNot(HaveOccurred())
+		},
+		Entry("a service", testCase{
+			deploymentName: name,
+			scaleFn: func(replicas int) error {
+				return k8s.RunKubectlE(
+					env.Cluster.GetTesting(),
+					env.Cluster.GetKubectlOptions(namespace),
+					"scale", "deployment", name, "--replicas", strconv.Itoa(replicas),
+				)
+			},
+		}),
+		Entry("a gateway", testCase{
+			deploymentName: "edge-gateway",
+			scaleFn: func(replicas int) error {
+				return env.Cluster.Install(YamlK8s(gatewayInstnace(replicas)))
+			},
+		}),
+	)
 }
