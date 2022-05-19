@@ -68,12 +68,6 @@ func ApplicationsMetrics() {
 	const meshNoAggregate = "applications-metrics-no-aggregeate"
 
 	BeforeAll(func() {
-		E2EDeferCleanup(func() {
-			Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(mesh))
-			Expect(env.Cluster.DeleteMesh(meshNoAggregate))
-		})
-
 		err := NewClusterSetup().
 			Install(MeshKubernetesAndMetricsAggregate(mesh)).
 			Install(MeshKubernetesAndMetricsEnabled(meshNoAggregate)).
@@ -106,6 +100,11 @@ func ApplicationsMetrics() {
 				}))).
 			Setup(env.Cluster)
 		Expect(err).To(Succeed())
+	})
+	E2EAfterAll(func() {
+		Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(mesh))
+		Expect(env.Cluster.DeleteMesh(meshNoAggregate))
 	})
 
 	It("should scrape metrics defined in mesh and not fail when defined service doesn't exist", func() {

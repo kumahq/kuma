@@ -13,11 +13,8 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
-<<<<<<< HEAD
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/metrics"
-=======
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
->>>>>>> master
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/metrics"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -72,8 +69,5 @@ var _ = SynchronizedAfterSuite(func() {}, func() {})
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
-<<<<<<< HEAD
 var _ = Describe("Metrics", metrics.ApplicationsMetrics, Ordered)
-=======
 var _ = Describe("Membership", membership.Membership, Ordered)
->>>>>>> master

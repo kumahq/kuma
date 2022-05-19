@@ -685,15 +685,16 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 		}),
 		Entry("few services", testCase{
 			annotations: map[string]string{
-				"prometheus.metrics.kuma.io/aggregate-my-app-path":      "/stats",
-				"prometheus.metrics.kuma.io/aggregate-my-app-port":      "123",
-				"prometheus.metrics.kuma.io/aggregate-my-app-2-path":    "/stats/2",
-				"prometheus.metrics.kuma.io/aggregate-my-app-2-port":    "1234",
-				"prometheus.metrics.kuma.io/aggregate-my-app-2-enabled": "true",
-				"prometheus.metrics.kuma.io/aggregate-sidecar-path":     "/metrics",
-				"prometheus.metrics.kuma.io/aggregate-sidecar-port":     "12345",
-				"prometheus.metrics.kuma.io/aggregate-sidecar-enabled":  "false",
-				"prometheus.metrics.kuma.io/aggregate-disabled-enabled": "false",
+				"prometheus.metrics.kuma.io/aggregate-my-app-path":       "/stats",
+				"prometheus.metrics.kuma.io/aggregate-my-app-port":       "123",
+				"prometheus.metrics.kuma.io/aggregate-my-app-2-path":     "/stats/2",
+				"prometheus.metrics.kuma.io/aggregate-my-app-2-port":     "1234",
+				"prometheus.metrics.kuma.io/aggregate-my-app-2-enabled":  "true",
+				"prometheus.metrics.kuma.io/aggregate-sidecar-path":      "/metrics",
+				"prometheus.metrics.kuma.io/aggregate-sidecar-port":      "12345",
+				"prometheus.metrics.kuma.io/aggregate-sidecar-enabled":   "false",
+				"prometheus.metrics.kuma.io/aggregate-disabled-enabled":  "false",
+				"prometheus.metrics.kuma.io/aggregate-default-path-port": "11111",
 			},
 			expected: map[string]*mesh_proto.PrometheusAggregateMetricsConfig{
 				"my-app": {
@@ -713,6 +714,12 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 				},
 				"disabled": {
 					Enabled: util_proto.Bool(false),
+					Path:    "/metrics",
+				},
+				"default-path": {
+					Port:    11111,
+					Path:    "/metrics",
+					Enabled: util_proto.Bool(true),
 				},
 			},
 		}),
@@ -745,7 +752,7 @@ var _ = Describe("MetricsAggregateFor(..)", func() {
 				"prometheus.metrics.kuma.io/aggregate-my-app-path":   "/stats",
 				"prometheus.metrics.kuma.io/aggregate-my-app-2-port": "123",
 			},
-			expected: "path and port need to be specified for metrics scraping",
+			expected: "port needs to be specified for metrics scraping",
 		}),
 		Entry("parsing integer", testCase{
 			annotations: map[string]string{

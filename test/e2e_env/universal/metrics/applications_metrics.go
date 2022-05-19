@@ -87,12 +87,6 @@ metrics:
         port: 8080`
 
 	BeforeAll(func() {
-		E2EDeferCleanup(func() {
-			Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
-			Expect(env.Cluster.DeleteMeshApps(meshNoAggregate)).To(Succeed())
-			Expect(env.Cluster.DeleteMesh(meshNoAggregate)).To(Succeed())
-		})
 		err := NewClusterSetup().
 			Install(MeshWithMetricsEnabeld(meshNoAggregate)).
 			Install(MeshKubernetesAndMetricsAggregate(mesh)).
@@ -115,6 +109,12 @@ metrics:
 			)).
 			Setup(env.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+	})
+	E2EAfterAll(func() {
+		Expect(env.Cluster.DeleteMeshApps(mesh)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
+		Expect(env.Cluster.DeleteMeshApps(meshNoAggregate)).To(Succeed())
+		Expect(env.Cluster.DeleteMesh(meshNoAggregate)).To(Succeed())
 	})
 
 	It("should scrape metrics defined in mesh and not fail when defined service doesn't exist", func() {

@@ -20,7 +20,7 @@ func AdditionalInbounds(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.
 }
 
 func PrometheusInbound(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource) (*mesh_proto.Dataplane_Networking_Inbound, error) {
-	cfg, err := dataplane.GetPrometheusEndpoint(mesh)
+	cfg, err := dataplane.GetPrometheusConfig(mesh)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse prometheus config")
 	} else if cfg != nil { // metrics are on

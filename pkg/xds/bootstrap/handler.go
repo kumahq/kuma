@@ -65,7 +65,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 	var responseBytes []byte
 	if req.Header.Get("accept") == "application/json" {
 		resp.Header().Set("content-type", "application/json")
-		response := createBootstrapResponse(bootstrapBytes, kumaDpBootstrap)
+		response := createBootstrapResponse(bootstrapBytes, &kumaDpBootstrap)
 		responseBytes, err = json.Marshal(response)
 		if err != nil {
 			logger.Error(err, "Could not convert to json")

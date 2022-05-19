@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -34,12 +35,14 @@ type ApplicationToScrape struct {
 
 type Hijacker struct {
 	socketPath           string
-	applicationsToScrape []*ApplicationToScrape
+	httpClient           http.Client
+	applicationsToScrape []ApplicationToScrape
 }
 
-func New(dataplane kumadp.Dataplane, applicationsToScrape []*ApplicationToScrape) *Hijacker {
+func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape) *Hijacker {
 	return &Hijacker{
 		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		httpClient:           http.Client{Timeout: 10 * time.Second},
 		applicationsToScrape: applicationsToScrape,
 	}
 }
@@ -116,30 +119,29 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	}()
 
 	for _, app := range s.applicationsToScrape {
-		go func(app *ApplicationToScrape) {
+		go func(app ApplicationToScrape) {
 			defer wg.Done()
-			s.getStats(req.URL, out, app)
+			out <- s.getStats(req.URL, app)
 		}(app)
 	}
-	buf := new(bytes.Buffer)
 	for resp := range out {
-		if _, err := buf.Write(resp); err != nil {
+		if _, err := writer.Write(resp); err != nil {
 			logger.Error(err, "error while writing the response")
 		}
-		if _, err := buf.Write([]byte("\n")); err != nil {
+		if _, err := writer.Write([]byte("\n")); err != nil {
 			logger.Error(err, "error while writing the response")
 		}
 	}
-	if _, err := writer.Write(buf.Bytes()); err != nil {
-		logger.Error(err, "error while writing the response")
-	}
+	// if _, err := writer.Write(buf.Bytes()); err != nil {
+	// 	logger.Error(err, "error while writing the response")
+	// }
 }
 
-func (s *Hijacker) getStats(url *url.URL, out chan []byte, app *ApplicationToScrape) {
-	resp, err := http.Get(rewriteMetricsURL(app.Path, app.Port, url))
+func (s *Hijacker) getStats(url *url.URL, app ApplicationToScrape) []byte {
+	resp, err := s.httpClient.Get(rewriteMetricsURL(app.Path, app.Port, url))
 	if err != nil {
 		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
-		return
+		return nil
 	}
 	defer resp.Body.Close()
 
@@ -148,17 +150,17 @@ func (s *Hijacker) getStats(url *url.URL, out chan []byte, app *ApplicationToScr
 		buf := new(bytes.Buffer)
 		if err := app.Mutator(resp.Body, buf); err != nil {
 			logger.Error(err, "failed while mutating data", "name", app.Name, "path", app.Path, "port", app.Port)
-			return
+			return nil
 		}
 		bodyBytes = buf.Bytes()
 	} else {
 		bodyBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			logger.Error(err, "failed while writing", "name", app.Name, "path", app.Path, "port", app.Port)
-			return
+			return nil
 		}
 	}
-	out <- bodyBytes
+	return bodyBytes
 }
 
 func (s *Hijacker) NeedLeaderElection() bool {

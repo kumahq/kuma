@@ -249,7 +249,7 @@ var _ = Describe("Dataplane", func() {
 		})
 	})
 
-	Describe("GetPrometheusEndpoint()", func() {
+	Describe("GetPrometheusConfig()", func() {
 
 		type testCase struct {
 			dataplaneName string
@@ -288,7 +288,7 @@ var _ = Describe("Dataplane", func() {
 				}
 
 				// then
-				endpoint, err := dataplane.GetPrometheusEndpoint(mesh)
+				endpoint, err := dataplane.GetPrometheusConfig(mesh)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(endpoint).To(MatchProto(given.expected))
 			},

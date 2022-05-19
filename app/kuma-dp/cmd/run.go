@@ -300,11 +300,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	return cmd
 }
 
-func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32) []*metrics.ApplicationToScrape {
-	applicationsToScrape := []*metrics.ApplicationToScrape{}
-	if kumaSidecarConfiguration != nil && len(kumaSidecarConfiguration.Metrics.Aggregate) > 0 {
+func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32) []metrics.ApplicationToScrape {
+	applicationsToScrape := []metrics.ApplicationToScrape{}
+	if kumaSidecarConfiguration != nil {
 		for _, item := range kumaSidecarConfiguration.Metrics.Aggregate {
-			applicationsToScrape = append(applicationsToScrape, &metrics.ApplicationToScrape{
+			applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
 				Name: item.Name,
 				Path: item.Path,
 				Port: item.Port,
@@ -312,7 +312,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 		}
 	}
 	// by default add envoy configuration
-	applicationsToScrape = append(applicationsToScrape, &metrics.ApplicationToScrape{
+	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
 		Name:    "envoy",
 		Path:    "/stats/prometheus",
 		Port:    envoyAdminPort,

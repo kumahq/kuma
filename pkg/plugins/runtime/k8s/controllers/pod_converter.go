@@ -237,13 +237,16 @@ func MetricsAggregateFor(pod *kube_core.Pod) (map[string]*mesh_proto.PrometheusA
 		} else {
 			enabled = true
 		}
-		path, _ := metadata.Annotations(pod.Annotations).GetString(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePath, app))
+		path, exist := metadata.Annotations(pod.Annotations).GetString(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePath, app))
+		if !exist {
+			path = "/metrics"
+		}
 		port, exist, err := metadata.Annotations(pod.Annotations).GetUint32(fmt.Sprintf(metadata.KumaMetricsPrometheusAggregatePort, app))
 		if err != nil {
 			return nil, err
 		}
-		if (path == "" || !exist) && enabled {
-			return nil, errors.New("path and port need to be specified for metrics scraping")
+		if !exist && enabled {
+			return nil, errors.New("port needs to be specified for metrics scraping")
 		}
 
 		aggregateConfig[app] = &mesh_proto.PrometheusAggregateMetricsConfig{
