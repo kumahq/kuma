@@ -20,7 +20,7 @@ kumactl install observability [flags]
       --loki-address string         the address of the loki to query (default "http://loki.mesh-observability:3100")
   -m, --mesh string                 mesh to use (default "default")
       --namespace string            namespace to install observability to (default "mesh-observability")
-      --prometheus-address string   the address of the prometheus server (default "http://prometheus-server.kesh-observability")
+      --prometheus-address string   the address of the prometheus server (default "http://prometheus-server.mesh-observability")
 ```
 
 ### Options inherited from parent commands
