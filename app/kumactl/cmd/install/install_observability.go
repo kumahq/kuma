@@ -13,6 +13,8 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 )
 
+var components = []string{"prometheus", "grafana", "loki", "jaeger"}
+
 func newInstallObservability(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	args := pctx.InstallObservabilityContext.TemplateArgs
 	cmd := &cobra.Command{
@@ -20,6 +22,11 @@ func newInstallObservability(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install Observability (Metrics, Logging, Tracing) backend in Kubernetes cluster (Prometheus + Grafana + Loki + Jaeger + Zipkin)",
 		Long:  `Install Observability (Metrics, Logging, Tracing) backend in Kubernetes cluster (Prometheus + Grafana + Loki + Jaeger + Zipkin) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			componentsMap := map[string]bool{}
+			for _, component := range args.Components {
+				componentsMap[component] = true
+			}
+			args.ComponentsMap = componentsMap
 			metrics, err := getMetrics(&args)
 			if err != nil {
 				return err
@@ -51,10 +58,7 @@ func newInstallObservability(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.JaegerAddress, "jaeger-address", args.JaegerAddress, "the address of jaeger to query")
 	cmd.Flags().StringVar(&args.LokiAddress, "loki-address", args.LokiAddress, "the address of the loki to query")
 	cmd.Flags().StringVar(&args.PrometheusAddress, "prometheus-address", args.PrometheusAddress, "the address of the prometheus server")
-	cmd.Flags().BoolVar(&args.WithoutPrometheus, "without-prometheus", args.WithoutPrometheus, "disable Prometheus resources generation")
-	cmd.Flags().BoolVar(&args.WithoutGrafana, "without-grafana", args.WithoutGrafana, "disable Grafana resources generation")
-	cmd.Flags().BoolVar(&args.WithoutJaeger, "without-jaeger", args.WithoutJaeger, "disable Jaeger resources generation")
-	cmd.Flags().BoolVar(&args.WithoutLoki, "without-loki", args.WithoutLoki, "disable Loki resources generation")
+	cmd.Flags().StringSliceVar(&args.Components, "components", args.Components, "list of components")
 	return cmd
 }
 
@@ -166,20 +170,11 @@ func getTracing(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 
 func getExcludePrefixesFilter(args *context.ObservabilityTemplateArgs) ExcludePrefixesFilter {
 	prefixes := []string{}
-
-	if args.WithoutPrometheus {
-		prefixes = append(prefixes, "prometheus")
+	for _, key := range components {
+		if !args.ComponentsMap[key] {
+			prefixes = append(prefixes, key)
+		}
 	}
-	if args.WithoutGrafana {
-		prefixes = append(prefixes, "grafana")
-	}
-	if args.WithoutLoki {
-		prefixes = append(prefixes, "loki")
-	}
-	if args.WithoutJaeger {
-		prefixes = append(prefixes, "jaeger")
-	}
-
 	return ExcludePrefixesFilter{
 		Prefixes: prefixes,
 	}

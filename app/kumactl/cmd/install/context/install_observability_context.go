@@ -13,10 +13,8 @@ type ObservabilityTemplateArgs struct {
 	LokiAddress       string
 	PrometheusAddress string
 	KumaCpApiAddress  string
-	WithoutPrometheus bool
-	WithoutGrafana    bool
-	WithoutLoki       bool
-	WithoutJaeger     bool
+	Components        []string
+	ComponentsMap     map[string]bool
 	Dashboards        []Dashboard
 }
 
@@ -27,16 +25,13 @@ type InstallObservabilityContext struct {
 func DefaultInstallObservabilityContext() InstallObservabilityContext {
 	return InstallObservabilityContext{
 		TemplateArgs: ObservabilityTemplateArgs{
-			Namespace:         "kuma-observability",
+			Namespace:         "mesh-observability",
 			KumaCpAddress:     "http://kuma-control-plane.kuma-system:5676",
 			KumaCpApiAddress:  "http://kuma-control-plane.kuma-system:5681",
-			JaegerAddress:     "http://jaeger-query.kuma-observability",
-			LokiAddress:       "http://loki.kuma-observability:3100",
-			PrometheusAddress: "http://prometheus-server.kuma-observability",
-			WithoutPrometheus: false,
-			WithoutGrafana:    false,
-			WithoutLoki:       false,
-			WithoutJaeger:     false,
+			JaegerAddress:     "http://jaeger-query.mesh-observability",
+			LokiAddress:       "http://loki.mesh-observability:3100",
+			PrometheusAddress: "http://prometheus-server.kesh-observability",
+			Components:        []string{"grafana", "prometheus", "loki", "jaeger"},
 		},
 	}
 }

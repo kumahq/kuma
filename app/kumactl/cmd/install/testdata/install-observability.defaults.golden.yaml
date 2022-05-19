@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma-observability
+  name: mesh-observability
   labels:
     kuma.io/sidecar-injection: enabled
   annotations:
@@ -13,7 +13,7 @@ apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   name: grafana
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
   annotations:
@@ -65,7 +65,7 @@ metadata:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
-  namespace: kuma-observability
+  namespace: mesh-observability
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -74,7 +74,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma-observability
+  namespace: mesh-observability
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -82,13 +82,13 @@ metadata:
   labels:
     app: grafana
   name: grafana
-  namespace: kuma-observability
+  namespace: mesh-observability
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 data:
@@ -112,7 +112,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-datasource
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 data:
@@ -138,7 +138,7 @@ data:
         # <int> org id. will default to orgId 1 if not specified
         orgId: 1
         # <string> url
-        url: http://prometheus-server.kuma-observability
+        url: http://prometheus-server.kesh-observability
         # <string> database password, if used
         password:
         # <string> database user, if used
@@ -180,7 +180,7 @@ data:
         access: proxy
         editable: true
         uid: jaeger
-        url: http://jaeger-query.kuma-observability
+        url: http://jaeger-query.mesh-observability
         jsonData:
           tracesToLogs:
             datasourceUid: loki
@@ -190,7 +190,7 @@ data:
         access: proxy
         editable: true
         uid: loki
-        url: http://loki.kuma-observability:3100
+        url: http://loki.mesh-observability:3100
         jsonData:
           derivedFields:
             - datasourceUid: jaeger
@@ -205,7 +205,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma-observability
+  namespace: mesh-observability
 data:
   alerting_rules.yml: |
     {}
@@ -515,7 +515,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 data:
@@ -536,7 +536,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards-0
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 data:
@@ -3368,7 +3368,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards-1
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 data:
@@ -4636,7 +4636,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards-2
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 data:
@@ -6026,7 +6026,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards-3
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 data:
@@ -9826,7 +9826,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: provisioning-dashboards-4
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 data:
@@ -10884,7 +10884,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma-observability
+  namespace: mesh-observability
 spec:
   accessModes:
     - ReadWriteOnce
@@ -11047,7 +11047,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: grafana
-    namespace: kuma-observability
+    namespace: mesh-observability
 roleRef:
   kind: ClusterRole
   name: grafana-clusterrole
@@ -11063,7 +11063,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: prometheus-kube-state-metrics
-    namespace: kuma-observability
+    namespace: mesh-observability
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -11079,7 +11079,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: prometheus-server
-    namespace: kuma-observability
+    namespace: mesh-observability
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -11089,7 +11089,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: grafana
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 rules:
@@ -11112,13 +11112,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: grafana
-    namespace: kuma-observability
+    namespace: mesh-observability
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: grafana
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 spec:
@@ -11140,7 +11140,7 @@ metadata:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
-  namespace: kuma-observability
+  namespace: mesh-observability
 spec:
   clusterIP: None
   ports:
@@ -11164,7 +11164,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma-observability
+  namespace: mesh-observability
 spec:
   ports:
     - name: http
@@ -11181,7 +11181,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: grafana
 spec:
@@ -11292,7 +11292,7 @@ metadata:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
-  namespace: kuma-observability
+  namespace: mesh-observability
 spec:
   selector:
     matchLabels:
@@ -11327,7 +11327,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma-observability
+  namespace: mesh-observability
 spec:
   selector:
     matchLabels:
@@ -11392,18 +11392,18 @@ spec:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma-observability
+  name: mesh-observability
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma-observability
+  name: mesh-observability
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   name: loki
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: loki
     release: loki
@@ -11440,7 +11440,7 @@ apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   name: loki-promtail
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: promtail
     release: loki
@@ -11475,7 +11475,7 @@ metadata:
   annotations:
     {}
   name: loki
-  namespace: kuma-observability
+  namespace: mesh-observability
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -11484,13 +11484,13 @@ metadata:
     app: promtail
     release: loki
   name: loki-promtail
-  namespace: kuma-observability
+  namespace: mesh-observability
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: loki
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: loki
     release: loki
@@ -11501,7 +11501,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: loki-promtail
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: promtail
     release: loki
@@ -11813,7 +11813,7 @@ metadata:
     app: promtail
     release: loki
   name: loki-promtail-clusterrole
-  namespace: kuma-observability
+  namespace: mesh-observability
 rules:
   - apiGroups: [""] # "" indicates the core API group
     resources:
@@ -11834,7 +11834,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: loki-promtail
-    namespace: kuma-observability
+    namespace: mesh-observability
 roleRef:
   kind: ClusterRole
   name: loki-promtail-clusterrole
@@ -11844,7 +11844,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: loki-promtail
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: promtail
     release: loki
@@ -11858,7 +11858,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: loki
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: loki
     release: loki
@@ -11872,7 +11872,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: loki
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: loki
     release: loki
@@ -11888,7 +11888,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: loki-promtail
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: promtail
     release: loki
@@ -11904,7 +11904,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: loki-headless
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: loki
     release: loki
@@ -11924,7 +11924,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: loki
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: loki
     release: loki
@@ -11945,7 +11945,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: loki-promtail
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: promtail
     release: loki
@@ -11975,7 +11975,7 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
-            - "-client.url=http://loki.kuma-observability:3100/loki/api/v1/push"
+            - "-client.url=http://loki.mesh-observability:3100/loki/api/v1/push"
           volumeMounts:
             - name: config
               mountPath: /etc/promtail
@@ -12036,7 +12036,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: loki
-  namespace: kuma-observability
+  namespace: mesh-observability
   labels:
     app: loki
     release: loki
@@ -12118,7 +12118,7 @@ spec:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma-observability
+  name: mesh-observability
 ---
 # Based on https://github.com/jaegertracing/jaeger-kubernetes/blob/master/all-in-one/jaeger-all-in-one-template.yml
 
@@ -12143,7 +12143,7 @@ items:
     kind: Deployment
     metadata:
       name: jaeger
-      namespace: kuma-observability
+      namespace: mesh-observability
       labels:
         app: jaeger
         app.kubernetes.io/name: jaeger
@@ -12193,7 +12193,7 @@ items:
     kind: Service
     metadata:
       name: jaeger-query
-      namespace: kuma-observability
+      namespace: mesh-observability
       labels:
         app: jaeger
         app.kubernetes.io/name: jaeger
@@ -12215,7 +12215,7 @@ items:
     kind: Service
     metadata:
       name: jaeger-collector
-      namespace: kuma-observability
+      namespace: mesh-observability
       labels:
         app: jaeger
         app.kubernetes.io/name: jaeger
@@ -12245,7 +12245,7 @@ items:
     kind: Service
     metadata:
       name: jaeger-agent
-      namespace: kuma-observability
+      namespace: mesh-observability
       labels:
         app: jaeger
         app.kubernetes.io/name: jaeger
@@ -12279,7 +12279,7 @@ items:
     kind: Service
     metadata:
       name: zipkin
-      namespace: kuma-observability
+      namespace: mesh-observability
       labels:
         app: jaeger
         app.kubernetes.io/name: jaeger

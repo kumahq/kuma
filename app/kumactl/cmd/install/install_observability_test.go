@@ -72,25 +72,25 @@ var _ = Describe("kumactl install observability", func() {
 		}),
 		Entry("should generate Kubernetes resources without prometheus", testCase{
 			extraArgs: []string{
-				"--without-prometheus",
+				"--components", "grafana,jaeger,loki",
 			},
 			goldenFile: "install-observability.no-prometheus.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources without grafana", testCase{
 			extraArgs: []string{
-				"--without-grafana",
+				"--components", "prometheus,jaeger,loki",
 			},
 			goldenFile: "install-observability.no-grafana.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources without loki", testCase{
 			extraArgs: []string{
-				"--without-loki",
+				"--components", "prometheus,jaeger,grafana",
 			},
 			goldenFile: "install-observability.no-loki.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources without jaeger", testCase{
 			extraArgs: []string{
-				"--without-jaeger",
+				"--components", "prometheus,grafana,loki",
 			},
 			goldenFile: "install-observability.no-jaeger.golden.yaml",
 		}),

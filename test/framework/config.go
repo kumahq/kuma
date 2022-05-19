@@ -149,7 +149,7 @@ var defaultConf = E2eConfig{
 	KumaNamespace:                 "kuma-system",
 	KumaServiceName:               "kuma-control-plane",
 	KumaGlobalZoneSyncServiceName: "kuma-global-zone-sync",
-	DefaultObservabilityNamespace: "kuma-observability",
+	DefaultObservabilityNamespace: "mesh-observability",
 	DefaultGatewayNamespace:       "kuma-gateway",
 	CNIApp:                        "kuma-cni",
 	CNINamespace:                  "kube-system",
