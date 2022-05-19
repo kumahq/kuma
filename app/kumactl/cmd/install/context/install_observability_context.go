@@ -30,7 +30,7 @@ func DefaultInstallObservabilityContext() InstallObservabilityContext {
 			KumaCpApiAddress:  "http://kuma-control-plane.kuma-system:5681",
 			JaegerAddress:     "http://jaeger-query.mesh-observability",
 			LokiAddress:       "http://loki.mesh-observability:3100",
-			PrometheusAddress: "http://prometheus-server.kesh-observability",
+			PrometheusAddress: "http://prometheus-server.mesh-observability",
 			Components:        []string{"grafana", "prometheus", "loki", "jaeger"},
 		},
 	}
