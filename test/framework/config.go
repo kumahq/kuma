@@ -30,7 +30,7 @@ type E2eConfig struct {
 	KumaZoneUniversalEnvVars      map[string]string `yaml:"universalZoneEnvVars,omitempty"`
 	KumaK8sCtlFlags               map[string]string `yaml:"k8sCtlFlags,omitempty"`
 	KumaZoneK8sCtlFlags           map[string]string `yaml:"k8sZoneCtlFlags,omitempty"`
-	DefaultTracingNamespace       string            `yaml:"tracingNamespace,omitempty"`
+	DefaultObservabilityNamespace string            `yaml:"observabilityNamespace,omitempty"`
 	DefaultGatewayNamespace       string            `yaml:"gatewayNamespace,omitempty"`
 	KumaCPImageRepo               string            `yaml:"cpImageRepo,omitempty" envconfig:"KUMA_CP_IMAGE_REPOSITORY"`
 	KumaDPImageRepo               string            `yaml:"dpImageRepo,omitempty" envconfig:"KUMA_DP_IMAGE_REPOSITORY"`
@@ -149,7 +149,7 @@ var defaultConf = E2eConfig{
 	KumaNamespace:                 "kuma-system",
 	KumaServiceName:               "kuma-control-plane",
 	KumaGlobalZoneSyncServiceName: "kuma-global-zone-sync",
-	DefaultTracingNamespace:       "kuma-tracing",
+	DefaultObservabilityNamespace: "kuma-observability",
 	DefaultGatewayNamespace:       "kuma-gateway",
 	CNIApp:                        "kuma-cni",
 	CNINamespace:                  "kube-system",

@@ -13,29 +13,22 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 )
 
-type observabilityTemplateArgs struct {
-	Namespace string
-}
-
 func newInstallObservability(pctx *kumactl_cmd.RootContext) *cobra.Command {
-	args := pctx.InstallMetricsContext.TemplateArgs
+	args := pctx.InstallObservabilityContext.TemplateArgs
 	cmd := &cobra.Command{
 		Use:   "observability",
 		Short: "Install Observability (Metrics, Logging, Tracing) backend in Kubernetes cluster (Prometheus + Grafana + Loki + Jaeger + Zipkin)",
 		Long:  `Install Observability (Metrics, Logging, Tracing) backend in Kubernetes cluster (Prometheus + Grafana + Loki + Jaeger + Zipkin) in its own namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			templateArgs := observabilityTemplateArgs{
-				Namespace: args.Namespace,
-			}
 			metrics, err := getMetrics(&args)
 			if err != nil {
 				return err
 			}
-			logging, err := getLogging(templateArgs)
+			logging, err := getLogging(&args)
 			if err != nil {
 				return err
 			}
-			tracing, err := getTracing(templateArgs)
+			tracing, err := getTracing(&args)
 			if err != nil {
 				return err
 			}
@@ -52,17 +45,20 @@ func newInstallObservability(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install metrics to")
+	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install observability to")
 	cmd.PersistentFlags().StringVarP(&args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.Flags().StringVar(&args.KumaCpAddress, "kuma-cp-address", args.KumaCpAddress, "the address of Kuma CP")
 	cmd.Flags().StringVar(&args.JaegerAddress, "jaeger-address", args.JaegerAddress, "the address of jaeger to query")
 	cmd.Flags().StringVar(&args.LokiAddress, "loki-address", args.LokiAddress, "the address of the loki to query")
+	cmd.Flags().StringVar(&args.PrometheusAddress, "prometheus-address", args.PrometheusAddress, "the address of the prometheus server")
 	cmd.Flags().BoolVar(&args.WithoutPrometheus, "without-prometheus", args.WithoutPrometheus, "disable Prometheus resources generation")
 	cmd.Flags().BoolVar(&args.WithoutGrafana, "without-grafana", args.WithoutGrafana, "disable Grafana resources generation")
+	cmd.Flags().BoolVar(&args.WithoutJaeger, "without-jaeger", args.WithoutJaeger, "disable Jaeger resources generation")
+	cmd.Flags().BoolVar(&args.WithoutLoki, "without-loki", args.WithoutLoki, "disable Loki resources generation")
 	return cmd
 }
 
-func getMetrics(args *context.MetricsTemplateArgs) ([]data.File, error) {
+func getMetrics(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 	installMetricsFS := kumactl_data.InstallMetricsFS()
 	templateFiles, err := data.ReadFiles(installMetricsFS)
 	if err != nil {
@@ -117,8 +113,7 @@ func getMetrics(args *context.MetricsTemplateArgs) ([]data.File, error) {
 		Content:  dashboard.String(),
 	})
 
-	filter := getExcludePrefixesFilter(args.WithoutPrometheus, args.WithoutGrafana)
-
+	filter := getExcludePrefixesFilter(args)
 	renderedFiles, err := renderFilesWithFilter(yamlTemplateFiles, args, simpleTemplateRenderer, filter)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to render template files")
@@ -131,13 +126,14 @@ func getMetrics(args *context.MetricsTemplateArgs) ([]data.File, error) {
 	return sortedResources, nil
 }
 
-func getLogging(args observabilityTemplateArgs) ([]data.File, error) {
+func getLogging(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 	templateFiles, err := data.ReadFiles(kumactl_data.InstallLoggingFS())
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to read template files")
 	}
 
-	renderedFiles, err := renderFiles(templateFiles, args, simpleTemplateRenderer)
+	filter := getExcludePrefixesFilter(args)
+	renderedFiles, err := renderFilesWithFilter(templateFiles, args, simpleTemplateRenderer, filter)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to render template files")
 	}
@@ -149,13 +145,14 @@ func getLogging(args observabilityTemplateArgs) ([]data.File, error) {
 	return sortedResources, nil
 }
 
-func getTracing(args observabilityTemplateArgs) ([]data.File, error) {
+func getTracing(args *context.ObservabilityTemplateArgs) ([]data.File, error) {
 	templateFiles, err := data.ReadFiles(kumactl_data.InstallTracingFS())
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to read template files")
 	}
 
-	renderedFiles, err := renderFiles(templateFiles, args, simpleTemplateRenderer)
+	filter := getExcludePrefixesFilter(args)
+	renderedFiles, err := renderFilesWithFilter(templateFiles, args, simpleTemplateRenderer, filter)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to render template files")
 	}
@@ -166,15 +163,21 @@ func getTracing(args observabilityTemplateArgs) ([]data.File, error) {
 	}
 	return sortedResources, nil
 }
-func getExcludePrefixesFilter(withoutPrometheus, withoutGrafana bool) ExcludePrefixesFilter {
+
+func getExcludePrefixesFilter(args *context.ObservabilityTemplateArgs) ExcludePrefixesFilter {
 	prefixes := []string{}
 
-	if withoutPrometheus {
+	if args.WithoutPrometheus {
 		prefixes = append(prefixes, "prometheus")
 	}
-
-	if withoutGrafana {
+	if args.WithoutGrafana {
 		prefixes = append(prefixes, "grafana")
+	}
+	if args.WithoutLoki {
+		prefixes = append(prefixes, "loki")
+	}
+	if args.WithoutJaeger {
+		prefixes = append(prefixes, "jaeger")
 	}
 
 	return ExcludePrefixesFilter{

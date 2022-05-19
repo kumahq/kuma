@@ -82,5 +82,17 @@ var _ = Describe("kumactl install observability", func() {
 			},
 			goldenFile: "install-observability.no-grafana.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources without loki", testCase{
+			extraArgs: []string{
+				"--without-loki",
+			},
+			goldenFile: "install-observability.no-loki.golden.yaml",
+		}),
+		Entry("should generate Kubernetes resources without jaeger", testCase{
+			extraArgs: []string{
+				"--without-jaeger",
+			},
+			goldenFile: "install-observability.no-jaeger.golden.yaml",
+		}),
 	)
 })

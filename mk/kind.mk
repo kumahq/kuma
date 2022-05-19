@@ -124,10 +124,10 @@ kind/deploy/kuma/global: kind/deploy/kuma
 kind/deploy/kuma/local: KUMA_MODE=local
 kind/deploy/kuma/local: kind/deploy/kuma
 
-.PHONY: kind/deploy/metrics
-kind/deploy/metrics: build/kumactl
-	@KUBECONFIG=$(KIND_KUBECONFIG) ${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install metrics | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f -
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-metrics pods -l app=prometheus
+.PHONY: kind/deploy/observability
+kind/deploy/observability: build/kumactl
+	@KUBECONFIG=$(KIND_KUBECONFIG) ${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install observability | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f -
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-observability pods -l app=prometheus
 
 .PHONY: kind/deploy/metrics-server
 kind/deploy/metrics-server:

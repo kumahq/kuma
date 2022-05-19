@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma-metrics
+  name: kuma-observability
   labels:
     kuma.io/sidecar-injection: enabled
   annotations:
@@ -16,7 +16,7 @@ metadata:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
-  namespace: kuma-metrics
+  namespace: kuma-observability
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -25,7 +25,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma-metrics
+  namespace: kuma-observability
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -34,7 +34,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma-metrics
+  namespace: kuma-observability
 data:
   alerting_rules.yml: |
     {}
@@ -347,7 +347,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma-metrics
+  namespace: kuma-observability
 spec:
   accessModes:
     - ReadWriteOnce
@@ -503,7 +503,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: prometheus-server
-    namespace: kuma-metrics
+    namespace: kuma-observability
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -519,7 +519,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: prometheus-kube-state-metrics
-    namespace: kuma-metrics
+    namespace: kuma-observability
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -532,7 +532,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma-metrics
+  namespace: kuma-observability
 spec:
   ports:
     - name: http
@@ -554,7 +554,7 @@ metadata:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
-  namespace: kuma-metrics
+  namespace: kuma-observability
 spec:
   clusterIP: None
   ports:
@@ -578,7 +578,7 @@ metadata:
     component: "server"
     app: prometheus
   name: prometheus-server
-  namespace: kuma-metrics
+  namespace: kuma-observability
 spec:
   selector:
     matchLabels:
@@ -647,7 +647,7 @@ metadata:
     component: "kube-state-metrics"
     app: prometheus
   name: prometheus-kube-state-metrics
-  namespace: kuma-metrics
+  namespace: kuma-observability
 spec:
   selector:
     matchLabels:
@@ -678,18 +678,18 @@ spec:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma-metrics
+  name: kuma-observability
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma-metrics
+  name: kuma-observability
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   name: loki
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: loki
     release: loki
@@ -726,7 +726,7 @@ apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   name: loki-promtail
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: promtail
     release: loki
@@ -761,7 +761,7 @@ metadata:
   annotations:
     {}
   name: loki
-  namespace: kuma-metrics
+  namespace: kuma-observability
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -770,13 +770,13 @@ metadata:
     app: promtail
     release: loki
   name: loki-promtail
-  namespace: kuma-metrics
+  namespace: kuma-observability
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: loki
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: loki
     release: loki
@@ -787,7 +787,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: loki-promtail
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: promtail
     release: loki
@@ -1099,7 +1099,7 @@ metadata:
     app: promtail
     release: loki
   name: loki-promtail-clusterrole
-  namespace: kuma-metrics
+  namespace: kuma-observability
 rules:
   - apiGroups: [""] # "" indicates the core API group
     resources:
@@ -1120,7 +1120,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: loki-promtail
-    namespace: kuma-metrics
+    namespace: kuma-observability
 roleRef:
   kind: ClusterRole
   name: loki-promtail-clusterrole
@@ -1130,7 +1130,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: loki-promtail
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: promtail
     release: loki
@@ -1144,7 +1144,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: loki
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: loki
     release: loki
@@ -1158,7 +1158,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: loki
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: loki
     release: loki
@@ -1174,7 +1174,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: loki-promtail
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: promtail
     release: loki
@@ -1190,7 +1190,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: loki-headless
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: loki
     release: loki
@@ -1210,7 +1210,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: loki
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: loki
     release: loki
@@ -1231,7 +1231,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: loki-promtail
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: promtail
     release: loki
@@ -1261,7 +1261,7 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
-            - "-client.url=http://loki.kuma-metrics:3100/loki/api/v1/push"
+            - "-client.url=http://loki.kuma-observability:3100/loki/api/v1/push"
           volumeMounts:
             - name: config
               mountPath: /etc/promtail
@@ -1322,7 +1322,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: loki
-  namespace: kuma-metrics
+  namespace: kuma-observability
   labels:
     app: loki
     release: loki
@@ -1404,7 +1404,7 @@ spec:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: kuma-metrics
+  name: kuma-observability
 ---
 # Based on https://github.com/jaegertracing/jaeger-kubernetes/blob/master/all-in-one/jaeger-all-in-one-template.yml
 
@@ -1429,7 +1429,7 @@ items:
     kind: Deployment
     metadata:
       name: jaeger
-      namespace: kuma-metrics
+      namespace: kuma-observability
       labels:
         app: jaeger
         app.kubernetes.io/name: jaeger
@@ -1479,7 +1479,7 @@ items:
     kind: Service
     metadata:
       name: jaeger-query
-      namespace: kuma-metrics
+      namespace: kuma-observability
       labels:
         app: jaeger
         app.kubernetes.io/name: jaeger
@@ -1501,7 +1501,7 @@ items:
     kind: Service
     metadata:
       name: jaeger-collector
-      namespace: kuma-metrics
+      namespace: kuma-observability
       labels:
         app: jaeger
         app.kubernetes.io/name: jaeger
@@ -1531,7 +1531,7 @@ items:
     kind: Service
     metadata:
       name: jaeger-agent
-      namespace: kuma-metrics
+      namespace: kuma-observability
       labels:
         app: jaeger
         app.kubernetes.io/name: jaeger
@@ -1565,7 +1565,7 @@ items:
     kind: Service
     metadata:
       name: zipkin
-      namespace: kuma-metrics
+      namespace: kuma-observability
       labels:
         app: jaeger
         app.kubernetes.io/name: jaeger

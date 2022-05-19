@@ -13,14 +13,17 @@ kumactl install observability [flags]
 ### Options
 
 ```
-  -h, --help                     help for observability
-      --jaeger-address string    the address of jaeger to query (default "http://jaeger-query.kuma-tracing")
-      --kuma-cp-address string   the address of Kuma CP (default "http://kuma-control-plane.kuma-system:5676")
-      --loki-address string      the address of the loki to query (default "http://loki.kuma-logging:3100")
-  -m, --mesh string              mesh to use (default "default")
-      --namespace string         namespace to install metrics to (default "kuma-metrics")
-      --without-grafana          disable Grafana resources generation
-      --without-prometheus       disable Prometheus resources generation
+  -h, --help                        help for observability
+      --jaeger-address string       the address of jaeger to query (default "http://jaeger-query.kuma-observability")
+      --kuma-cp-address string      the address of Kuma CP (default "http://kuma-control-plane.kuma-system:5676")
+      --loki-address string         the address of the loki to query (default "http://loki.kuma-observability:3100")
+  -m, --mesh string                 mesh to use (default "default")
+      --namespace string            namespace to install observability to (default "kuma-observability")
+      --prometheus-address string   the address of the prometheus server (default "http://prometheus-server.kuma-observability")
+      --without-grafana             disable Grafana resources generation
+      --without-jaeger              disable Jaeger resources generation
+      --without-loki                disable Loki resources generation
+      --without-prometheus          disable Prometheus resources generation
 ```
 
 ### Options inherited from parent commands

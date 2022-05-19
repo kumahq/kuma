@@ -138,7 +138,7 @@ data:
         # <int> org id. will default to orgId 1 if not specified
         orgId: 1
         # <string> url
-        url: http://prometheus-server.kuma
+        url: http://prometheus-server.kuma-observability
         # <string> database password, if used
         password:
         # <string> database user, if used
@@ -180,7 +180,7 @@ data:
         access: proxy
         editable: true
         uid: jaeger
-        url: http://jaeger-query.kuma-tracing
+        url: http://jaeger-query.kuma-observability
         jsonData:
           tracesToLogs:
             datasourceUid: loki
@@ -190,7 +190,7 @@ data:
         access: proxy
         editable: true
         uid: loki
-        url: http://loki.kuma-logging:3100
+        url: http://loki.kuma-observability:3100
         jsonData:
           derivedFields:
             - datasourceUid: jaeger
