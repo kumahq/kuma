@@ -132,9 +132,6 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 			logger.Error(err, "error while writing the response")
 		}
 	}
-	// if _, err := writer.Write(buf.Bytes()); err != nil {
-	// 	logger.Error(err, "error while writing the response")
-	// }
 }
 
 func (s *Hijacker) getStats(url *url.URL, app ApplicationToScrape) []byte {
