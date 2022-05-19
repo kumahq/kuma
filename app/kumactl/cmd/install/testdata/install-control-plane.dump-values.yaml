@@ -239,7 +239,7 @@ cni:
     # -- CNI image repository
     repository: "kumahq/install-cni"
     # -- CNI image tag
-    tag: "0.0.9"
+    tag: "0.0.10"
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
@@ -392,8 +392,13 @@ kumactl:
     tag:
 
 kubectl:
+<<<<<<< HEAD
   # bitnami maintains an image for all k8s versions */ } }
   # see: https://hub.docker.com/r/bitnami/kubectl */ } }
+=======
+  # kuma image that support v1.20.15 image */ } }
+  # see: https://hub.docker.com/r/kumahq/kubectl */ } }
+>>>>>>> bb4e42b31 (chore(kuma-cni): upgrade to 0.0.10 (#4313))
   image:
     # -- The kubectl image registry
     registry: bitnami
