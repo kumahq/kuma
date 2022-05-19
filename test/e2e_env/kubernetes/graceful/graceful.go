@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -84,6 +85,10 @@ spec:
 
 	var gatewayIP string
 
+	httpClient := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
 	BeforeAll(func() {
 		E2EDeferCleanup(func() {
 			Expect(env.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
@@ -115,7 +120,7 @@ spec:
 	})
 
 	requestThroughGateway := func() error {
-		resp, err := http.Get("http://" + gatewayIP + ":8080")
+		resp, err := httpClient.Get("http://" + gatewayIP + ":8080")
 		if err != nil {
 			return err
 		}

@@ -61,6 +61,10 @@ var _ = SynchronizedBeforeSuite(
 	},
 )
 
+// SynchronizedAfterSuite keeps the main process alive until all other processes finish.
+// Otherwise, we would close port-forward to the CP and remaining tests executed in different processes may fail.
+var _ = SynchronizedAfterSuite(func() {}, func() {})
+
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
