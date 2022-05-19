@@ -14,10 +14,8 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
-	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 type staticDataplaneTokenGenerator struct {
@@ -41,17 +39,9 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 
 	BeforeEach(func() {
 		generator = &staticDataplaneTokenGenerator{}
-		ctx = &kumactl_cmd.RootContext{
-			Runtime: kumactl_cmd.RootRuntime{
-				Registry: registry.NewTypeRegistry(),
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
-					return nil, nil
-				},
-				NewDataplaneTokenClient: func(util_http.Client) tokens.DataplaneTokenClient {
-					return generator
-				},
-				NewAPIServerClient: test.GetMockNewAPIServerClient(),
-			},
+		ctx = test_kumactl.MakeMinimalRootContext()
+		ctx.Runtime.NewDataplaneTokenClient = func(util_http.Client) tokens.DataplaneTokenClient {
+			return generator
 		}
 
 		rootCmd = cmd.NewRootCmd(ctx)

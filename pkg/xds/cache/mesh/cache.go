@@ -18,7 +18,7 @@ type Cache struct {
 	cache              *once.Cache
 	meshContextBuilder xds_context.MeshContextBuilder
 
-	latestMeshContext *xds_context.MeshContext
+	latestMeshContext map[string]*xds_context.MeshContext
 }
 
 func NewCache(
@@ -33,27 +33,28 @@ func NewCache(
 	return &Cache{
 		cache:              c,
 		meshContextBuilder: meshContextBuilder,
+		latestMeshContext:  map[string]*xds_context.MeshContext{},
 	}, nil
 }
 
 func (c *Cache) GetMeshContext(ctx context.Context, syncLog logr.Logger, mesh string) (xds_context.MeshContext, error) {
 	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
-		if c.latestMeshContext == nil {
+		if c.latestMeshContext[mesh] == nil {
 			meshCtx, err := c.meshContextBuilder.Build(ctx, mesh)
 			if err != nil {
 				return xds_context.MeshContext{}, err
 			}
-			c.latestMeshContext = &meshCtx
+			c.latestMeshContext[mesh] = &meshCtx
 		} else {
-			meshCtx, err := c.meshContextBuilder.BuildIfChanged(ctx, mesh, c.latestMeshContext.Hash)
+			meshCtx, err := c.meshContextBuilder.BuildIfChanged(ctx, mesh, c.latestMeshContext[mesh].Hash)
 			if err != nil {
 				return xds_context.MeshContext{}, err
 			}
 			if meshCtx != nil {
-				c.latestMeshContext = meshCtx
+				c.latestMeshContext[mesh] = meshCtx
 			}
 		}
-		return *c.latestMeshContext, nil
+		return *c.latestMeshContext[mesh], nil
 	}))
 	if err != nil {
 		return xds_context.MeshContext{}, err

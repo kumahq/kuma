@@ -13,6 +13,7 @@ SHELLCHECK_VERSION := v0.8.0
 YQ_VERSION := v4.24.2
 ETCD_VERSION := v3.5.3
 HELM_VERSION := v3.8.2
+KUBE_LINTER_VERSION := v0.0.0-20220513142942-846f273ed465
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_KUBECTL_VERSION ?= v1.23.5
@@ -101,7 +102,8 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/helm-docs \
 	dev/install/data-plane-api \
 	dev/install/shellcheck \
-	dev/install/yq
+	dev/install/yq \
+	dev/install/kube-lint
 
 .PHONY: dev/install/protoc-gen-kumadoc
 dev/install/protoc-gen-kumadoc:
@@ -309,6 +311,10 @@ dev/install/helm-docs: ## Bootstrap: Install helm-docs
 		&& mv helm-docs $(HELM_DOCS_PATH) \
 		&& set +x \
 		&& echo "helm-docs $(HELM_DOCS_VERSION) has been installed at $(HELM_DOCS_PATH)" ; fi
+
+.PHONY: dev/install/kube-lint
+dev/install/kube-lint:
+	go install golang.stackrox.io/kube-linter/cmd/kube-linter@$(KUBE_LINTER_VERSION)
 
 $(KUBECONFIG_DIR):
 	@mkdir -p $(KUBECONFIG_DIR)

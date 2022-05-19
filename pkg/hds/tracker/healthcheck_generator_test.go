@@ -2,8 +2,6 @@ package tracker
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"time"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -17,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/hds/cache"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -40,22 +39,22 @@ var _ = Describe("HDS Snapshot generator", func() {
 
 	DescribeTable("should generate HDS response",
 		func(given testCase) {
+			// given
 			dp := mesh.NewDataplaneResource()
 			err := util_proto.FromYAML([]byte(given.dataplane), dp.Spec)
 			Expect(err).ToNot(HaveOccurred())
 			err = resourceManager.Create(context.Background(), dp, store.CreateByKey("dp-1", "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
+			generator := NewSnapshotGenerator(resourceManager, given.hdsConfig, 9901)
 
-			generator := NewSnapshotGenerator(resourceManager, given.hdsConfig)
+			// when
 			snapshot, err := generator.GenerateSnapshot(&envoy_config_core_v3.Node{Id: "mesh-1.dp-1"})
-			Expect(err).ToNot(HaveOccurred())
 
-			yml, err := util_proto.ToYAML(snapshot.GetResources(cache.HealthCheckSpecifierType)["hcs"])
+			// then
 			Expect(err).ToNot(HaveOccurred())
-
-			golden, err := os.ReadFile(filepath.Join("testdata", given.goldenFile))
+			actual, err := util_proto.ToYAML(snapshot.GetResources(cache.HealthCheckSpecifierType)["hcs"])
 			Expect(err).ToNot(HaveOccurred())
-			Expect(golden).To(MatchYAML(yml))
+			Expect(actual).To(matchers.MatchGoldenYAML("testdata", given.goldenFile))
 		},
 		Entry("should generate HealthCheckSpecifier", testCase{
 			goldenFile: "hds.1.yaml",

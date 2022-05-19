@@ -1,3 +1,5 @@
+//go:build linux
+
 package command
 
 import (
@@ -19,6 +21,9 @@ func BuildCommand(
 	command.Stderr = stderr
 	command.SysProcAttr = &syscall.SysProcAttr{
 		Pdeathsig: syscall.SIGKILL,
+		// Set those attributes so the new process won't receive the signals from a parent automatically.
+		Setpgid: true,
+		Pgid:    0,
 	}
 
 	return command
