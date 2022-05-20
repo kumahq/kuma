@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/client"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+	"github.com/kumahq/kuma/pkg/kds/service"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -71,7 +72,13 @@ func Setup(rt runtime.Runtime) (err error) {
 		}()
 		return nil
 	})
-	return rt.Add(mux.NewServer(onSessionStarted, rt.KDSContext().GlobalServerFilters, *rt.Config().Multizone.Global.KDS, rt.Metrics()))
+	return rt.Add(mux.NewServer(
+		onSessionStarted,
+		rt.KDSContext().GlobalServerFilters,
+		*rt.Config().Multizone.Global.KDS,
+		rt.Metrics(),
+		service.NewGlobalKDSServiceServer(rt.KDSContext().XdsConfigStreams),
+	))
 }
 
 func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
