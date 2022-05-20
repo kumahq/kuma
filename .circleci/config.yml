@@ -258,12 +258,8 @@ jobs:
 
   e2e:
     parameters:
-      ipv6:
-        description: use IPv6
-        type: boolean
-        default: false
       k8sVersion:
-        description: version of k3s to use or "kind" to use kind or "none" if no kubernetes needed
+        description: version of k3s to use or "kind" and "kindv6"
         type: string
         default: v1.21.7-k3s1
       parallelism:
@@ -288,7 +284,6 @@ jobs:
           name: "Check if skip"
           command: |
             echo "Running with: \
-              ipv6:<< parameters.ipv6>> \
               k8s:<< parameters.k8sVersion >> \
               target:<< parameters.target >> \
               parallelism:<< parameters.parallelism >> \
@@ -299,17 +294,12 @@ jobs:
               circleci-agent step halt
               exit 0
             }
-            if [[ "<< parameters.arch >>" == "arm64" && "<< parameters.ipv6 >>" == "true" ]]; then
-              skip "don't run v6 tests on arm64"
-            fi
-            if [[ "<< parameters.k8sVersion >>" == "kind" ]]; then
-              if [[ "<< parameters.ipv6 >>" != "true" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
-                skip "kind should only be used when testing ipv6 or with test/e2e-universal"
-              fi
+            if [[ "<< parameters.k8sVersion >>" == "kind" && << parameters.target >>" != "test/e2e-universal" ]]; then
+              skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi
             if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-*" ]]; then
-              if [[ "<< parameters.ipv6 >>" == "true" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
-                skip "Not running tests on PRs with ipv6, oldK8s and arm64"
+              if [[ "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
+                skip "Not running tests on PRs with kindIpv6, oldK8s and arm64"
               fi
             fi
             echo "Continuing tests"
@@ -332,7 +322,8 @@ jobs:
           command: |
             helm repo add kuma https://kumahq.github.io/charts
       - when: # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
-          condition: << parameters.ipv6 >>
+          condition:
+            equal: [<< parameters.k8sVersion >>, "kindIpv6"]
           steps:
             - run:
                 name: Enable IPV6 and change DNS
@@ -350,12 +341,12 @@ jobs:
           name: "Run E2E tests"
           command: |
             export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
-            if [[ "<< parameters.ipv6 >>" == "true" ]]; then
+            if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
               export IPV6=true
               export KUMA_DEFAULT_RETRIES=60
               export KUMA_DEFAULT_TIMEOUT="6s"
             fi
-            if [[ "<< parameters.k8sVersion >>" != "kind" ]] && [[ "<< parameters.k8sVersion >>" != "none" ]]; then
+            if [[ "<< parameters.k8sVersion >>" != "kind*" ]]; then
               export CI_K3S_VERSION=<< parameters.k8sVersion >>
               export K3D=true
             fi
@@ -478,23 +469,21 @@ workflows:
               arch: [ amd64, arm64 ]
           requires: [ check ]
       - e2e:
-          name: test/e2e-legacy-k8s:<< matrix.k8sVersion >>-v6:<< matrix.ipv6 >>-<< matrix.arch >>
+          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e-legacy
             parameters:
-              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind ]
-              ipv6: [ true, false ]
+              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               arch: [ amd64, arm64 ]
           parallelism: 8
           target: test/e2e
           requires: [ build-<< matrix.arch >>, check ]
       - e2e:
-          name: << matrix.target >>:<< matrix.k8sVersion >>-v6:<< matrix.ipv6 >>-<< matrix.arch >>
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e
             parameters:
-              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind ]
-              ipv6: [ true, false ]
+              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
               target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
               arch: [ amd64, arm64 ]
           parallelism: 1
