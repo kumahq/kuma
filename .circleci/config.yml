@@ -18,8 +18,8 @@ reusable:
       filters:
         branches:
           only:
-           - master
-           - /^release-.*/
+            - master
+            - /^release-.*/
         tags:
           ignore: /.*/
     # on tags
@@ -258,12 +258,8 @@ jobs:
 
   e2e:
     parameters:
-      ipv6:
-        description: use IPv6
-        type: boolean
-        default: false
       k8sVersion:
-        description: version of k3s to use or "kind" to use kind or "none" if no kubernetes needed
+        description: version of k3s to use or "kind" and "kindv6"
         type: string
         default: v1.21.7-k3s1
       parallelism:
@@ -283,103 +279,91 @@ jobs:
     parallelism: << parameters.parallelism >>
     steps:
       - run:
-          name: dump params
+          # This works around circleci limitation by skipping tests for combinations that don't make sense
+          # See: https://discuss.circleci.com/t/matrix-exclude-entire-subset/43879
+          name: "Check if skip"
           command: |
             echo "Running with: \
-              ipv6:<< parameters.ipv6>> \
               k8s:<< parameters.k8sVersion >> \
               target:<< parameters.target >> \
               parallelism:<< parameters.parallelism >> \
               arch:<< parameters.arch >> \
             "
-
-            echo "some combinations may run nothing"
-      - unless:
-          # This works around circleci limitation by skipping tests for combinations that don't make sense
-          # See: https://discuss.circleci.com/t/matrix-exclude-entire-subset/43879
+            function skip() {
+              echo "Non valid job combination halting job reason: $1"
+              circleci-agent step halt
+              exit 0
+            }
+            if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
+              skip "kind should only be used when testing ipv6 or with test/e2e-universal"
+            fi
+            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-*" ]]; then
+              if [[ "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
+                skip "Not running tests on PRs with kindIpv6, oldK8s and arm64"
+              fi
+            fi
+            echo "Continuing tests"
+      - install_build_tools:
+          go_arch: << parameters.arch >>
+      - checkout
+      - restore_cache:
+          keys:
+            # prefer the exact match
+            - vm-<< parameters.arch >>-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+      # Mount files from the upstream jobs
+      - attach_workspace:
+          at: build
+      - run:
+          name: "Install all development tools"
+          command: |
+            make dev/tools
+      - run:
+          name: "Setup Helm"
+          command: |
+            helm repo add kuma https://kumahq.github.io/charts
+      - when: # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
           condition:
-            or:
-              - and:
-                  # On PRs only run some base tests (only 1 k8s version, no ipv6, no arm64)
-                  - or:
-                      - not: {matches: {pattern: "^release-.*", value: << pipeline.git.branch >>}}
-                      - not: {equal: [master, << pipeline.git.branch >>]}
-                  - or:
-                      - << parameters.ipv6 >>
-                      - equal: ["v1.19.16-k3s1", << parameters.k8sVersion >>]
-                      - equal: ["arm64", << parameters.arch >>]
-              - and:
-                # Ipv6 only works with kind
-                - << parameters.ipv6 >>
-                - not: {equal: [kind, << parameters.k8sVersion >>]}
-              - and:
-                # disallow running tests on kind except if it's ipv6 or it's universal
-                - equal: [kind, << parameters.k8sVersion >> ]
-                - not:
-                    or:
-                      - << parameters.ipv6 >>
-                      - equal: [test/e2e-universal, << parameters.target >>]
+            equal: [<< parameters.k8sVersion >>, "kindIpv6"]
           steps:
-            - install_build_tools:
-                go_arch: << parameters.arch >>
-            - checkout
-            - restore_cache:
-                keys:
-                  # prefer the exact match
-                  - vm-<< parameters.arch >>-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-            # Mount files from the upstream jobs
-            - attach_workspace:
-                at: build
             - run:
-                name: "Install all development tools"
+                name: Enable IPV6 and change DNS
                 command: |
-                  make dev/tools
-            - run:
-                name: "Setup Helm"
-                command: |
-                  helm repo add kuma https://kumahq.github.io/charts
-            - when: # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
-                condition: << parameters.ipv6 >>
-                steps:
-                  - run:
-                      name: Enable IPV6 and change DNS
-                      command: |
-                        cat \<<'EOF' | sudo tee /etc/docker/daemon.json
-                        {
-                          "ipv6": true,
-                          "fixed-cidr-v6": "2001:db8:1::/64",
-                          "dns": ["8.8.8.8"],
-                          "dns-search": ["."]
-                        }
-                        EOF
-                        sudo service docker restart
-            - run:
-                name: "Run E2E tests"
-                command: |
-                  export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
-                  if [[ "<< parameters.ipv6 >>" == "true" ]]; then
-                    export IPV6=true
-                    export KUMA_DEFAULT_RETRIES=60
-                    export KUMA_DEFAULT_TIMEOUT="6s"
-                  fi
-                  if [[ "<< parameters.k8sVersion >>" != "kind" ]] && [[ "<< parameters.k8sVersion >>" != "none" ]]; then
-                    export CI_K3S_VERSION=<< parameters.k8sVersion >>
-                    export K3D=true
-                  fi
-                  if [[ "<< parameters.arch >>" == "arm64" ]]; then
-                    export GINKGO_E2E_FLAGS="${GINKGO_FLAGS} --label-filter=\"!arm-not-supported\""
-                    export MAKE_PARAMETERS="-j1"
-                  else
-                    export MAKE_PARAMETERS="-j2"
-                  fi
+                  cat \<<'EOF' | sudo tee /etc/docker/daemon.json
+                  {
+                    "ipv6": true,
+                    "fixed-cidr-v6": "2001:db8:1::/64",
+                    "dns": ["8.8.8.8"],
+                    "dns-search": ["."]
+                  }
+                  EOF
+                  sudo service docker restart
+      - run:
+          name: "Run E2E tests"
+          command: |
+            export GINKGO_TEST_RESULTS_DIR=/tmp/ginkgo-test-results
+            if [[ "<< parameters.k8sVersion >>" == "kindIpv6" ]]; then
+              export IPV6=true
+              export KUMA_DEFAULT_RETRIES=60
+              export KUMA_DEFAULT_TIMEOUT="6s"
+            fi
+            if [[ "<< parameters.k8sVersion >>" != "kind*" ]]; then
+              export CI_K3S_VERSION=<< parameters.k8sVersion >>
+              export K3D=true
+            fi
+            if [[ "<< parameters.arch >>" == "arm64" ]]; then
+              export GINKGO_E2E_FLAGS="${GINKGO_FLAGS} --label-filter=\"!arm-not-supported\""
+              export MAKE_PARAMETERS="-j1"
+            else
+              export MAKE_PARAMETERS="-j2"
+            fi
 
-                  if [[ "<< parameters.target >>" == "test/e2e" ]]; then
-                    export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
-                  fi
-                  env
-                  make ${MAKE_PARAMETERS} << parameters.target >>
-            - store_test_results:
-                path: /tmp/ginkgo-test-results
+            if [[ "<< parameters.target >>" == "test/e2e" ]]; then
+              export E2E_PKG_LIST=${E2E_PKG_LIST:-$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")}
+            fi
+            env
+            make ${MAKE_PARAMETERS} << parameters.target >>
+      - store_test_results:
+          path: /tmp/ginkgo-test-results
 
   build:
     parameters:
@@ -461,56 +445,54 @@ workflows:
           matrix:
             alias: dev
             parameters:
-              executor: [linux, darwin]
+              executor: [ linux, darwin]
       - go_cache:
           name: go_cache-<< matrix.executor >>
           matrix:
             alias: go_cache
             parameters:
-              executor: [golang, vm-amd64, vm-arm64 ]
+              executor: [ golang, vm-amd64, vm-arm64 ]
       - check:
-          requires: [go_cache]
+          requires: [ go_cache ]
       - build:
           name: build-<< matrix.arch >>
           matrix:
             alias: build
             parameters:
-              arch: [amd64, arm64]
-          requires: [go_cache-golang]
+              arch: [ amd64, arm64 ]
+          requires: [ go_cache-golang ]
       - test:
           name: test-<< matrix.arch >>
           matrix:
             alias: test
             parameters:
-              arch: [amd64, arm64]
-          requires: [check]
+              arch: [ amd64, arm64 ]
+          requires: [ check ]
       - e2e:
-          name: test/e2e-legacy-k8s:<< matrix.k8sVersion >>-<< matrix.arch >>-v6:<< matrix.ipv6 >>
+          name: test/e2e-legacy-k8s:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e-legacy
             parameters:
-              k8sVersion: [v1.19.16-k3s1, v1.21.7-k3s1, kind]
-              ipv6: [true, false]
-              arch: [amd64, arm64]
+              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              arch: [ amd64, arm64 ]
           parallelism: 8
           target: test/e2e
-          requires: [build-<< matrix.arch >>, check]
+          requires: [ build-<< matrix.arch >>, check ]
       - e2e:
-          name: << matrix.target >>:<< matrix.k8sVersion >>-<< matrix.arch >>-v6:<< matrix.ipv6 >>
+          name: << matrix.target >>:<< matrix.arch >>-<< matrix.k8sVersion >>
           matrix:
             alias: test/e2e
             parameters:
-              k8sVersion: [v1.19.16-k3s1, v1.21.7-k3s1, kind]
-              ipv6: [true, false]
-              target: [test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone]
-              arch: [amd64, arm64]
+              k8sVersion: [ v1.19.16-k3s1, v1.21.7-k3s1, kind, kindIpv6 ]
+              target: [ test/e2e-kubernetes, test/e2e-universal, test/e2e-multizone ]
+              arch: [ amd64, arm64 ]
           parallelism: 1
-          requires: [build-<< matrix.arch >>, check]
+          requires: [ build-<< matrix.arch >>, check ]
       - release:
           # publish artifacts speculatively for normal commits
           <<: *work_branch_workflow_filter
-          requires: [build]
+          requires: [ build ]
       - release:
           # only publish tagged artifacts if everything passes
           <<: *tags_workflow_filter
-          requires: [dev, test, test/e2e, test/e2e-legacy]
+          requires: [ dev, test, test/e2e, test/e2e-legacy ]
