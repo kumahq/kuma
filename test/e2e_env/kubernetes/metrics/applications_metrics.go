@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"net"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -116,7 +117,7 @@ func ApplicationsMetrics() {
 
 		// when
 		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server",
-			"curl", "-v", "-m", "3", "--fail", "http://"+podIp+":1234/metrics?filter=concurrency")
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics?filter=concurrency")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -138,7 +139,7 @@ func ApplicationsMetrics() {
 
 		// when
 		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-override-mesh",
-			"curl", "-v", "-m", "3", "--fail", "http://"+podIp+":1234/metrics?filter=concurrency")
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics?filter=concurrency")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -170,7 +171,7 @@ func ApplicationsMetrics() {
 
 		// when
 		stdout, _, err := env.Cluster.Exec(namespace, podName, "test-server-dp-metrics",
-			"curl", "-v", "-m", "3", "--fail", "http://"+podIp+":1234/metrics?filter=concurrency")
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(podIp, "1234")+"/metrics?filter=concurrency")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
