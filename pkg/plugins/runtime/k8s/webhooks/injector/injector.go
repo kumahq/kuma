@@ -257,9 +257,7 @@ func (i *KumaInjector) loadContainerPatches(
 	for _, patchName := range patchNames {
 		containerPatch := &mesh_k8s.ContainerPatch{}
 		if err := i.client.Get(ctx, kube_types.NamespacedName{Namespace: ns.GetName(), Name: patchName}, containerPatch); err != nil {
-			// skip the patch rather than fail.
-			logger.Error(err, "invalid ContainerPatch, skipping.", "name", patchName)
-			continue
+			return namedContainerPatches{}, namedContainerPatches{}, errors.Wrap(err, "could not get a ContainerPatch")
 		}
 		if len(containerPatch.Spec.SidecarPatch) > 0 {
 			sidecarPatches.names = append(sidecarPatches.names, patchName)
