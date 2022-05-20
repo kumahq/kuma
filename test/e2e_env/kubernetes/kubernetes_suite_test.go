@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
@@ -69,3 +70,4 @@ var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
 var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
 var _ = Describe("Membership", membership.Membership, Ordered)
+var _ = FDescribe("Container Patch", container_patch.ContainerPatch, Ordered)
