@@ -68,9 +68,9 @@ spec:
 		Expect(env.Cluster.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	It("should apply container patch to kubernetes configuartion", func() {
+	It("should apply container patch to kubernetes configuration", func() {
 		// when
-		// container without container patch
+		// pod without container patch
 		podName, err := PodNameOfApp(env.Cluster, appName, namespace)
 		Expect(err).ToNot(HaveOccurred())
 		pod, err := k8s.GetPodE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), podName)
@@ -81,11 +81,11 @@ spec:
 		Expect(len(pod.Spec.Containers)).To(Equal(2))
 		// should have default value *int64 = 0
 		Expect(pod.Spec.InitContainers[0].SecurityContext.RunAsUser).To(Equal(new(int64)))
-		// should have Nil value
+		// kuma-sidecar container have Nil value
 		Expect(pod.Spec.Containers[1].SecurityContext.Privileged).To(BeNil())
 
 		// when
-		// container with patch
+		// pod with patch
 		podName, err = PodNameOfApp(env.Cluster, appNameWithPatch, namespace)
 		Expect(err).ToNot(HaveOccurred())
 		pod, err = k8s.GetPodE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(namespace), podName)
@@ -98,7 +98,7 @@ spec:
 		Expect(len(pod.Spec.Containers)).To(Equal(2))
 		// should doesn't have defined RunAsUser
 		Expect(pod.Spec.InitContainers[0].SecurityContext.RunAsUser).To(BeNil())
-		// should have value *true
+		// kuma-sidecar container should have value *true
 		Expect(pod.Spec.Containers[1].SecurityContext.Privileged).To(Equal(pointerTrue))
 	})
 }
