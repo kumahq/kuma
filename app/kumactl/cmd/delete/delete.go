@@ -17,6 +17,10 @@ import (
 func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	register.RegisterGatewayTypes() // allow applying experimental Gateway types
 
+	var (
+		resourceTypeArg string
+		name            string
+	)
 	byName := map[string]model.ResourceTypeDescriptor{}
 	allNames := []string{}
 	for _, desc := range pctx.Runtime.Registry.ObjectDescriptors(model.HasKumactlEnabled()) {
@@ -28,14 +32,18 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Use:   "delete TYPE NAME",
 		Short: "Delete Kuma resources",
 		Long:  `Delete Kuma resources.`,
-		Args:  cobra.ExactArgs(2),
+		// Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := pctx.CheckServerVersionCompatibility(); err != nil {
 				cmd.PrintErrln(err)
 			}
 
-			resourceTypeArg := args[0]
-			name := args[1]
+			if len(args) > 1 {
+				resourceTypeArg = args[0]
+				name = args[1]
+			} else {
+				return cmd.Help()
+			}
 
 			desc, ok := byName[resourceTypeArg]
 			if !ok {
