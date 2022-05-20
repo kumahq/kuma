@@ -31,10 +31,11 @@ Chosen option: MADR, because of familiarity and simplicity.
 
 - if a ticket is marked as `kind/design` during triage it means that it was decided a design document was required.
 - if anything touches the public api it should have a document as well. This includes:
-  - Kuma admin api 
+  - Kuma api
   - Kubernetes CRDs
   - Metrics
   - Upgrade path
+  - kumactl args and options
 
 > You should be opening a MADR if you are not thinking of shortly working on implementing it.
 > If you have an idea but no time to implement it open an issue instead.
