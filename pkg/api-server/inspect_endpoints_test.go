@@ -1106,12 +1106,32 @@ var _ = Describe("Inspect WS", func() {
 		Entry("inspect xds for zone ingress on global", testCase{
 			global:     true,
 			path:       "/zoneingresses/zi-1/xds",
-			goldenFile: "inspect_xds_global_zoneingress.json",
+			goldenFile: "inspect_xds_local_zoneingress.json",
+			resources: []core_model.Resource{
+				newZoneIngress().
+					meta("zi-1").
+					zone(""). // local zone ingress has empty "zone" field
+					admin(2201).
+					address("2.2.2.2").port(8080).
+					advertisedAddress("3.3.3.3").advertisedPort(80).
+					build(),
+			},
 		}),
 		Entry("inspect xds for dataplane on global", testCase{
 			global:     true,
-			path:       "/meshes/default/dataplanes/dp-1/xds",
-			goldenFile: "inspect_xds_global_dataplane.json",
+			path:       "/meshes/mesh-1/dataplanes/backend-1/xds",
+			goldenFile: "inspect_xds_dataplane.json",
+			resources: []core_model.Resource{
+				newMesh("mesh-1"),
+				newDataplane().
+					meta("backend-1", "mesh-1").
+					admin(3301).
+					inbound80to81("backend", "192.168.0.1").
+					outbound8080("redis", "192.168.0.2").
+					outbound8080("gateway", "192.168.0.3").
+					outbound8080("web", "192.168.0.4").
+					build(),
+			},
 		}),
 		Entry("inspect xds for zone egress", testCase{
 			path:       "/zoneegresses/ze-1/xds",
