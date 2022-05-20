@@ -9,9 +9,8 @@ kumactl install crds [flags]
 ### Options
 
 ```
-      --experimental-meshgateway   install experimental built-in MeshGateway support
-  -h, --help                       help for crds
-      --only-missing               install only resources which are not already present in a cluster
+  -h, --help           help for crds
+      --only-missing   install only resources which are not already present in a cluster
 ```
 
 ### Options inherited from parent commands

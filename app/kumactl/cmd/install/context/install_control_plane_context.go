@@ -55,7 +55,6 @@ type InstallControlPlaneArgs struct {
 	Egress_nodeSelector                          map[string]string `helm:"egress.nodeSelector"`
 	Hooks_nodeSelector                           map[string]string `helm:"hooks.nodeSelector"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
-	ExperimentalMeshGateway                      bool              `helm:"experimental.meshGateway"`
 	ExperimentalGatewayAPI                       bool              `helm:"experimental.gatewayAPI"`
 	ValueFiles                                   []string
 	Values                                       []string
@@ -118,17 +117,8 @@ func DefaultInstallCpContext() InstallCpContext {
 			if err != nil {
 				return nil, err
 			}
-			if !args.ExperimentalMeshGateway {
-				files = files.Filter(ExcludeGatewayCRDs)
-			}
 			return files, nil
 		},
 		HELMValuesPrefix: "",
 	}
-}
-
-func ExcludeGatewayCRDs(file data.File) bool {
-	return file.Name != "kuma.io_meshgateways.yaml" &&
-		file.Name != "kuma.io_meshgatewayroutes.yaml" &&
-		file.Name != "kuma.io_meshgatewayinstances.yaml"
 }

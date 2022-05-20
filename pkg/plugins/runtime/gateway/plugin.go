@@ -29,11 +29,6 @@ type plugin struct{}
 var _ core_plugins.BootstrapPlugin = &plugin{}
 
 func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
-	if !context.Config().Experimental.MeshGateway {
-		log.V(1).Info("gateway plugin is disabled")
-		return nil
-	}
-
 	register.RegisterGatewayTypes()
 	if context.Config().Environment == config_core.KubernetesEnvironment {
 		mesh_k8s.RegisterK8SGatewayTypes()
@@ -42,11 +37,6 @@ func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, con
 }
 
 func (p *plugin) AfterBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
-	if !context.Config().Experimental.MeshGateway {
-		log.V(1).Info("gateway plugin is disabled")
-		return nil
-	}
-
 	// Insert our resolver before the default so that we can intercept
 	// builtin gateway dataplanes.
 	generator.DefaultTemplateResolver = template.SequentialResolver(

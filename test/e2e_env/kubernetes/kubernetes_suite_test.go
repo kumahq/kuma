@@ -26,7 +26,6 @@ var _ = SynchronizedBeforeSuite(
 		env.Cluster = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
 		Expect(env.Cluster.Install(Kuma(core.Standalone,
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
-			WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
 		))).To(Succeed())
 		portFwd := env.Cluster.GetKuma().(*K8sControlPlane).PortFwd()
 

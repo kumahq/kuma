@@ -344,7 +344,6 @@ var _ = Describe("Config WS", func() {
             }
           },
           "experimental": {
-            "meshGateway": false,
             "gatewayAPI": false,
             "kubeOutboundsAsVIPs": false
           }

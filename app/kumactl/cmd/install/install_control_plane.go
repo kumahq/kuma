@@ -50,10 +50,8 @@ func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Com
 		Long: `Install Kuma Control Plane on Kubernetes in its own namespace.
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if args.ExperimentalMeshGateway {
-				register.RegisterGatewayTypes()
-				mesh_k8s.RegisterK8SGatewayTypes()
-			}
+			register.RegisterGatewayTypes()
+			mesh_k8s.RegisterK8SGatewayTypes()
 
 			templateFiles, err := ctx.InstallCpTemplateFiles(&args)
 			if err != nil {
@@ -203,7 +201,6 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringToStringVar(&args.Egress_nodeSelector, "egress-node-selector", args.Egress_nodeSelector, "node selector for Zone Egress")
 	cmd.Flags().StringToStringVar(&args.Hooks_nodeSelector, "hooks-node-selector", args.Hooks_nodeSelector, "node selector for Helm hooks")
 	cmd.Flags().BoolVar(&args.WithoutKubernetesConnection, "without-kubernetes-connection", false, "install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades")
-	cmd.Flags().BoolVar(&args.ExperimentalMeshGateway, "experimental-meshgateway", false, "install experimental built-in MeshGateway support")
 	cmd.Flags().BoolVar(&args.ExperimentalGatewayAPI, "experimental-gatewayapi", false, "install experimental Gateway API support")
 	cmd.Flags().StringSliceVarP(&args.ValueFiles, "values", "f", []string{}, "specify values in a YAML file or '-' for stdin. This is similar to `helm template <chart> -f ...`")
 	cmd.Flags().StringArrayVar(&args.Values, "set", []string{}, "set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2), This is similar to `helm template <chart> --set ...` to use set-file or set-string just use helm instead")

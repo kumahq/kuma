@@ -33,7 +33,6 @@ rules:
       - get
       - list
       - watch
-{{ if .Values.experimental.meshGateway }}
   - apiGroups:
       - "apps"
     resources:
@@ -71,7 +70,6 @@ rules:
       - get
       - patch
       - update
-{{- end }}
   - apiGroups:
       - coordination.k8s.io
     resources:
@@ -140,7 +138,6 @@ rules:
       - update
       - patch
       - delete
-{{ if .Values.experimental.meshGateway }}
   - apiGroups:
       - kuma.io
     resources:
@@ -175,7 +172,6 @@ rules:
       - get
       - patch
       - update
-{{- end }}
   - apiGroups:
       - kuma.io
     resources:
