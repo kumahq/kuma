@@ -23,11 +23,12 @@ CTL_NAME="kumactl"
 function get_envoy() {
   local distro=$1
   local envoy_distro=$2
+  local arch=$3
 
   local status
   status=$(curl -L -o build/envoy-"$distro" \
     --write-out '%{http_code}' --silent --output /dev/null \
-    "https://download.konghq.com/mesh-alpine/envoy-$ENVOY_VERSION-$envoy_distro")
+    "https://download.konghq.com/mesh-alpine/envoy-$ENVOY_VERSION-$envoy_distro-$arch")
 
   if [ "$status" -ne "200" ]; then msg_err "Error: failed downloading Envoy"; fi
 }
@@ -81,7 +82,7 @@ function create_tarball() {
   mkdir "$kuma_dir/bin"
   mkdir "$kuma_dir/conf"
 
-  get_envoy "$distro" "$envoy_distro"
+  get_envoy "$distro" "$envoy_distro" "$arch"
   chmod 755 build/envoy-"$distro"
 
   artifact_dir=$(artifact_dir "$arch" "$system")
