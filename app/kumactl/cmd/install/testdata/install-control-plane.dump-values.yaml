@@ -242,7 +242,7 @@ cni:
     # -- CNI image repository
     repository: "kumahq/install-cni"
     # -- CNI image tag
-    tag: "0.0.9"
+    tag: "0.0.10"
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
