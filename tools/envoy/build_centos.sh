@@ -9,6 +9,7 @@ echo "Building Envoy for CentOS 7"
 mkdir -p "$(dirname "${BINARY_PATH}")"
 
 SOURCE_DIR="${SOURCE_DIR}" "${KUMA_DIR:-.}/tools/envoy/fetch_sources.sh"
+CONTRIB_ENABLED_MATRIX_SCRIPT=$(realpath "${KUMA_DIR:-.}/tools/envoy/contrib_enabled_matrix.py")
 
 BAZEL_BUILD_EXTRA_OPTIONS=${BAZEL_BUILD_EXTRA_OPTIONS:-""}
 read -ra BAZEL_BUILD_EXTRA_OPTIONS <<< "${BAZEL_BUILD_EXTRA_OPTIONS}"
@@ -17,7 +18,12 @@ BAZEL_BUILD_OPTIONS=(
     "--verbose_failures"
     "${BAZEL_BUILD_EXTRA_OPTIONS[@]+"${BAZEL_BUILD_EXTRA_OPTIONS[@]}"}")
 BUILD_TARGET=${BUILD_TARGET:-"//contrib/exe:envoy-static"}
-BUILD_CMD=${BUILD_CMD:-"bazel build ${BAZEL_BUILD_OPTIONS[@]} -c opt ${BUILD_TARGET} --//source/extensions/transport_sockets/tcp_stats:enabled=false"}
+
+pushd "${SOURCE_DIR}"
+CONTRIB_ENABLED_ARGS=$(python "${CONTRIB_ENABLED_MATRIX_SCRIPT}")
+popd
+
+BUILD_CMD=${BUILD_CMD:-"bazel build ${BAZEL_BUILD_OPTIONS[@]} -c opt ${BUILD_TARGET} ${CONTRIB_ENABLED_ARGS} --//source/extensions/transport_sockets/tcp_stats:enabled=false"}
 
 ENVOY_BUILD_SHA=$(curl --fail --location --silent https://raw.githubusercontent.com/envoyproxy/envoy/"${ENVOY_TAG}"/.bazelrc | grep envoyproxy/envoy-build-ubuntu | sed -e 's#.*envoyproxy/envoy-build-ubuntu:\(.*\)#\1#'| uniq)
 ENVOY_BUILD_IMAGE="envoyproxy/envoy-build-centos:${ENVOY_BUILD_SHA}"

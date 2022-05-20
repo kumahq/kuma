@@ -9,12 +9,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
-	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/kds/service"
+	"github.com/kumahq/kuma/pkg/kds/util"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -41,22 +42,30 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 }
 
 type server struct {
-	config    multizone.KdsServerConfig
-	callbacks Callbacks
-	filters   []Filter
-	metrics   core_metrics.Metrics
+	config        multizone.KdsServerConfig
+	callbacks     Callbacks
+	filters       []Filter
+	metrics       core_metrics.Metrics
+	serviceServer *service.GlobalKDSServiceServer
 }
 
 var (
 	_ component.Component = &server{}
 )
 
-func NewServer(callbacks Callbacks, filters []Filter, config multizone.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
+func NewServer(
+	callbacks Callbacks,
+	filters []Filter,
+	config multizone.KdsServerConfig,
+	metrics core_metrics.Metrics,
+	serviceServer *service.GlobalKDSServiceServer,
+) component.Component {
 	return &server{
-		callbacks: callbacks,
-		filters:   filters,
-		config:    config,
-		metrics:   metrics,
+		callbacks:     callbacks,
+		filters:       filters,
+		config:        config,
+		metrics:       metrics,
+		serviceServer: serviceServer,
 	}
 }
 
@@ -87,6 +96,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 
 	// register services
 	mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	mesh_proto.RegisterGlobalKDSServiceServer(grpcServer, s.serviceServer)
 	s.metrics.RegisterGRPC(grpcServer)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
@@ -117,14 +127,10 @@ func (s *server) Start(stop <-chan struct{}) error {
 }
 
 func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageServer) error {
-	md, ok := metadata.FromIncomingContext(stream.Context())
-	if !ok {
-		return errors.New("metadata is not provided")
+	clientID, err := util.ClientIDFromIncomingCtx(stream.Context())
+	if err != nil {
+		return err
 	}
-	if len(md["client-id"]) == 0 {
-		return errors.New("'client-id' is not present in metadata")
-	}
-	clientID := md["client-id"][0]
 	log := muxServerLog.WithValues("client-id", clientID)
 	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
 	session := NewSession(clientID, stream)
@@ -138,7 +144,7 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 		log.Error(err, "closing KDS stream following a callback error")
 		return err
 	}
-	err := <-session.Error()
+	err = <-session.Error()
 	log.Info("KDS stream is closed", "reason", err.Error())
 	return nil
 }

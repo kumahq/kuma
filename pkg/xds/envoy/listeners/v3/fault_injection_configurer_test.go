@@ -72,6 +72,8 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                         googleRe2: {}
                         regex: '.*&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*'
                 - name: envoy.filters.http.router
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                 statPrefix: stats`,
 		}),
 		Entry("2 policy selectors", testCase{
@@ -118,6 +120,8 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                         googleRe2: {}
                         regex: '(.*&tag1=[^&]*value1m1[,&].*&tag2=[^&]*value2m1[,&].*|.*&tag1=[^&]*value1m2[,&].*&tag2=[^&]*value2m2[,&].*)'
                 - name: envoy.filters.http.router
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                 statPrefix: stats`,
 		}),
 		Entry("should preserve the order of passed policies", testCase{
@@ -221,6 +225,8 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                          googleRe2: {}
                          regex: .*&tag1=.*&tag2=.*
                  - name: envoy.filters.http.router
+                   typedConfig:
+                     '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                  statPrefix: stats`,
 		}),
 	)

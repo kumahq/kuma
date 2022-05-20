@@ -25,14 +25,9 @@ import (
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-type ResourceWithAddress interface {
-	core_model.Resource
-	AdminAddress(defaultAdminPort uint32) string
-}
-
 type EnvoyAdminClient interface {
-	PostQuit(dataplane *core_mesh.DataplaneResource) error
-	ConfigDump(proxy ResourceWithAddress, defaultAdminPort uint32) ([]byte, error)
+	PostQuit(ctx context.Context, dataplane *core_mesh.DataplaneResource) error
+	ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error)
 }
 
 type envoyAdminClient struct {
@@ -146,14 +141,14 @@ const (
 	quitquitquit = "quitquitquit"
 )
 
-func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) error {
+func (a *envoyAdminClient) PostQuit(ctx context.Context, dataplane *core_mesh.DataplaneResource) error {
 	httpClient, err := a.buildHTTPClient(dataplane.Meta.GetMesh(), dataplane.Spec.GetIdentifyingService())
 	if err != nil {
 		return err
 	}
 
 	url := fmt.Sprintf("https://%s/%s", dataplane.AdminAddress(a.defaultAdminPort), quitquitquit)
-	request, err := http.NewRequest("POST", url, nil)
+	request, err := http.NewRequestWithContext(ctx, "POST", url, nil)
 	if err != nil {
 		return err
 	}
@@ -175,7 +170,7 @@ func (a *envoyAdminClient) PostQuit(dataplane *core_mesh.DataplaneResource) erro
 	return nil
 }
 
-func (a *envoyAdminClient) ConfigDump(proxy ResourceWithAddress, defaultAdminAddress uint32) ([]byte, error) {
+func (a *envoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
 	var httpClient *http.Client
 	var err error
 	u := &url.URL{}
@@ -197,16 +192,16 @@ func (a *envoyAdminClient) ConfigDump(proxy ResourceWithAddress, defaultAdminAdd
 		return nil, errors.New("unsupported proxy type")
 	}
 
-	if host, _, err := net.SplitHostPort(proxy.AdminAddress(defaultAdminAddress)); err == nil && host == "127.0.0.1" {
+	if host, _, err := net.SplitHostPort(proxy.AdminAddress(a.defaultAdminPort)); err == nil && host == "127.0.0.1" {
 		httpClient = &http.Client{
 			Timeout: 5 * time.Second,
 		}
 		u.Scheme = "http"
 	}
 
-	u.Host = proxy.AdminAddress(defaultAdminAddress)
+	u.Host = proxy.AdminAddress(a.defaultAdminPort)
 	u.Path = "config_dump"
-	request, err := http.NewRequest("GET", u.String(), nil)
+	request, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
