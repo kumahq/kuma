@@ -44,8 +44,8 @@ spec:
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(YamlK8s(containerPatch(namespace))).
-			Install(YamlK8s(containerPatch2(namespace))).
+			Install(YamlK8s(containerPatch(Config.KumaNamespace))).
+			Install(YamlK8s(containerPatch2(Config.KumaNamespace))).
 			Install(MeshKubernetes(mesh)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
@@ -100,5 +100,13 @@ spec:
 		Expect(pod.Spec.InitContainers[0].SecurityContext.RunAsUser).To(BeNil())
 		// kuma-sidecar container should have value *true
 		Expect(pod.Spec.Containers[1].SecurityContext.Privileged).To(Equal(pointerTrue))
+	})
+
+	It("should reject ContainerPatch in non-system namespace", func() {
+		// when
+		err := k8s.KubectlApplyFromStringE(env.Cluster.GetTesting(), env.Cluster.GetKubectlOptions(), containerPatch(namespace))
+
+		// then
+		Expect(err).To(HaveOccurred())
 	})
 }

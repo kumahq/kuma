@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -23,6 +24,8 @@ import (
 
 var _ = Describe("Injector", func() {
 
+	systemNamespace := "kuma-system"
+
 	type testCase struct {
 		num       string
 		mesh      string
@@ -31,11 +34,14 @@ var _ = Describe("Injector", func() {
 	}
 
 	BeforeAll(func() {
+		err := k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: systemNamespace}})
+		Expect(err).ToNot(HaveOccurred())
+
 		cPatch := `
 apiVersion: kuma.io/v1alpha1
 kind: ContainerPatch
 metadata:
-  namespace: default
+  namespace: kuma-system
   name: container-patch-1
 spec:
   sidecarPatch:
@@ -71,7 +77,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = filepath.Join("..", "..", "..", "..", "..", "..", "test", "certs", "server-cert.pem")
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901, systemNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh

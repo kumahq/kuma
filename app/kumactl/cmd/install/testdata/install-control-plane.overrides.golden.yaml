@@ -2113,7 +2113,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 652c0fee8359addb5b565f00943a4c64a5511bb208b041d6cdcca177d2772e61
-        checksum/tls-secrets: b8deca59ac509c99819cfab78ff0fe69ca375602f1eae5273153cff35ef8c2bc
+        checksum/tls-secrets: bed3f5682dc788625d4ddb36a4760691c53df7f50619cc6dabff49707dd4ae0a
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -2452,6 +2452,7 @@ webhooks:
           - traffictraces
           - virtualoutbounds
           - zones
+          - containerpatches
     
       
     sideEffects: None

@@ -39,6 +39,7 @@ func New(
 	client kube_client.Client,
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
+	systemNamespace string,
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
@@ -55,6 +56,7 @@ func New(
 		defaultAdminPort: envoyAdminPort,
 		proxyFactory: containers.NewDataplaneProxyFactory(controlPlaneURL, caCert, envoyAdminPort,
 			cfg.SidecarContainer.DataplaneContainer, cfg.BuiltinDNS),
+		systemNamespace: systemNamespace,
 	}, nil
 }
 
@@ -64,6 +66,7 @@ type KumaInjector struct {
 	converter        k8s_common.Converter
 	proxyFactory     *containers.DataplaneProxyFactory
 	defaultAdminPort uint32
+	systemNamespace  string
 }
 
 func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error {
@@ -256,7 +259,7 @@ func (i *KumaInjector) loadContainerPatches(
 
 	for _, patchName := range patchNames {
 		containerPatch := &mesh_k8s.ContainerPatch{}
-		if err := i.client.Get(ctx, kube_types.NamespacedName{Namespace: ns.GetName(), Name: patchName}, containerPatch); err != nil {
+		if err := i.client.Get(ctx, kube_types.NamespacedName{Namespace: i.systemNamespace, Name: patchName}, containerPatch); err != nil {
 			return namedContainerPatches{}, namedContainerPatches{}, errors.Wrap(err, "could not get a ContainerPatch")
 		}
 		if len(containerPatch.Spec.SidecarPatch) > 0 {
