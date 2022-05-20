@@ -49,22 +49,37 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 	reqParams.Host = hostname
 	logger := log.WithValues("params", reqParams)
 
-	config, err := b.Generator.Generate(req.Context(), reqParams)
+	config, kumaDpBootstrap, err := b.Generator.Generate(req.Context(), reqParams)
 	if err != nil {
 		handleError(resp, err, logger)
 		return
 	}
 
-	bytes, err = proto.ToYAML(config)
+	bootstrapBytes, err := proto.ToYAML(config)
 	if err != nil {
 		logger.Error(err, "Could not convert to json")
 		resp.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	resp.Header().Set("content-type", "text/x-yaml")
+	var responseBytes []byte
+	if req.Header.Get("accept") == "application/json" {
+		resp.Header().Set("content-type", "application/json")
+		response := createBootstrapResponse(bootstrapBytes, &kumaDpBootstrap)
+		responseBytes, err = json.Marshal(response)
+		if err != nil {
+			logger.Error(err, "Could not convert to json")
+			resp.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// backwards compatibility
+		resp.Header().Set("content-type", "text/x-yaml")
+		responseBytes = bootstrapBytes
+	}
+
 	resp.WriteHeader(http.StatusOK)
-	_, err = resp.Write(bytes)
+	_, err = resp.Write(responseBytes)
 	if err != nil {
 		logger.Error(err, "Error while writing the response")
 		return
@@ -93,4 +108,24 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 	}
 	logger.Error(err, "Could not generate a bootstrap configuration")
 	resp.WriteHeader(http.StatusInternalServerError)
+}
+
+func createBootstrapResponse(bootstrap []byte, config *KumaDpBootstrap) *types.BootstrapResponse {
+	bootstrapConfig := types.BootstrapResponse{
+		Bootstrap: bootstrap,
+	}
+	aggregate := []types.Aggregate{}
+	for key, value := range config.AggregateMetricsConfig {
+		aggregate = append(aggregate, types.Aggregate{
+			Name: key,
+			Port: value.Port,
+			Path: value.Path,
+		})
+	}
+	bootstrapConfig.KumaSidecarConfiguration = types.KumaSidecarConfiguration{
+		Metrics: types.MetricsConfiguration{
+			Aggregate: aggregate,
+		},
+	}
+	return &bootstrapConfig
 }

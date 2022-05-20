@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -21,15 +24,26 @@ var logger = core.Log.WithName("metrics-hijacker")
 
 var _ component.Component = &Hijacker{}
 
-type Hijacker struct {
-	envoyAdminPort uint32
-	socketPath     string
+type MetricsMutator func(in io.Reader, out io.Writer) error
+
+type ApplicationToScrape struct {
+	Name    string
+	Path    string
+	Port    uint32
+	Mutator MetricsMutator
 }
 
-func New(dataplane kumadp.Dataplane, envoyAdminPort uint32) *Hijacker {
+type Hijacker struct {
+	socketPath           string
+	httpClient           http.Client
+	applicationsToScrape []ApplicationToScrape
+}
+
+func New(dataplane kumadp.Dataplane, applicationsToScrape []ApplicationToScrape) *Hijacker {
 	return &Hijacker{
-		envoyAdminPort: envoyAdminPort,
-		socketPath:     envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		socketPath:           envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		httpClient:           http.Client{Timeout: 10 * time.Second},
+		applicationsToScrape: applicationsToScrape,
 	}
 }
 
@@ -59,7 +73,6 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 
 	logger.Info("starting Metrics Hijacker Server",
 		"socketPath", fmt.Sprintf("unix://%s", s.socketPath),
-		"adminPort", s.envoyAdminPort,
 	)
 
 	server := &http.Server{
@@ -85,11 +98,11 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 // The Envoy stats endpoint recognizes the "used_only" and "filter" query
 // parameters. We squash the path to enforce Prometheus metrics format, but
 // forward the query parameters so that the scraper can do partial scrapes.
-func rewriteMetricsURL(port uint32, in *url.URL) string {
+func rewriteMetricsURL(path string, port uint32, in *url.URL) string {
 	u := url.URL{
 		Scheme:   "http",
 		Host:     fmt.Sprintf("127.0.0.1:%d", port),
-		Path:     "/stats/prometheus",
+		Path:     path,
 		RawQuery: in.RawQuery,
 	}
 
@@ -97,22 +110,54 @@ func rewriteMetricsURL(port uint32, in *url.URL) string {
 }
 
 func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
-	resp, err := http.Get(rewriteMetricsURL(s.envoyAdminPort, req.URL))
+	out := make(chan []byte, len(s.applicationsToScrape))
+	var wg sync.WaitGroup
+	wg.Add(len(s.applicationsToScrape))
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	for _, app := range s.applicationsToScrape {
+		go func(app ApplicationToScrape) {
+			defer wg.Done()
+			out <- s.getStats(req.URL, app)
+		}(app)
+	}
+	for resp := range out {
+		if _, err := writer.Write(resp); err != nil {
+			logger.Error(err, "error while writing the response")
+		}
+		if _, err := writer.Write([]byte("\n")); err != nil {
+			logger.Error(err, "error while writing the response")
+		}
+	}
+}
+
+func (s *Hijacker) getStats(url *url.URL, app ApplicationToScrape) []byte {
+	resp, err := s.httpClient.Get(rewriteMetricsURL(app.Path, app.Port, url))
 	if err != nil {
-		http.Error(writer, err.Error(), 500)
-		return
+		logger.Error(err, "failed call", "name", app.Name, "path", app.Path, "port", app.Port)
+		return nil
 	}
 	defer resp.Body.Close()
 
-	buf := new(bytes.Buffer)
-	if err := MergeClusters(resp.Body, buf); err != nil {
-		http.Error(writer, err.Error(), 500)
-		return
+	var bodyBytes []byte
+	if app.Mutator != nil {
+		buf := new(bytes.Buffer)
+		if err := app.Mutator(resp.Body, buf); err != nil {
+			logger.Error(err, "failed while mutating data", "name", app.Name, "path", app.Path, "port", app.Port)
+			return nil
+		}
+		bodyBytes = buf.Bytes()
+	} else {
+		bodyBytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			logger.Error(err, "failed while writing", "name", app.Name, "path", app.Path, "port", app.Port)
+			return nil
+		}
 	}
-
-	if _, err := writer.Write(buf.Bytes()); err != nil {
-		logger.Error(err, "error while writing the response")
-	}
+	return bodyBytes
 }
 
 func (s *Hijacker) NeedLeaderElection() bool {

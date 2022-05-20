@@ -2,6 +2,15 @@ package bootstrap
 
 import "time"
 
+type KumaDpBootstrap struct {
+	AggregateMetricsConfig map[string]AggregateMetricsConfig
+}
+
+type AggregateMetricsConfig struct {
+	Path string
+	Port uint32
+}
+
 type configParameters struct {
 	Id                    string
 	Service               string
