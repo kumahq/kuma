@@ -85,6 +85,9 @@ const (
 	// KumaSidecarDrainTime allows to specify drain time of Kuma DP sidecar.
 	KumaSidecarDrainTime = "kuma.io/sidecar-drain-time"
 
+	// KumaContainerPatches is a comma-separated list of ContainerPatch names to be applied to injected containers on a given workload
+	KumaContainerPatches = "kuma.io/container-patches"
+
 	// KumaMetricsPrometheusAggregatePath allows to specify which path for specific app should request for metrics
 	KumaMetricsPrometheusAggregatePath = "prometheus.metrics.kuma.io/aggregate-%s-path"
 	// KumaMetricsPrometheusAggregatePort allows to specify which port for specific app should request for metrics
