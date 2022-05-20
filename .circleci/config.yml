@@ -294,7 +294,7 @@ jobs:
               circleci-agent step halt
               exit 0
             }
-            if [[ "<< parameters.k8sVersion >>" == "kind" && << parameters.target >>" != "test/e2e-universal" ]]; then
+            if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi
             if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-*" ]]; then
