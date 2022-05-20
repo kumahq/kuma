@@ -297,7 +297,7 @@ jobs:
             if [[ "<< parameters.k8sVersion >>" == "kind" && "<< parameters.target >>" != "test/e2e-universal" ]]; then
               skip "kind should only be used when testing ipv6 or with test/e2e-universal"
             fi
-            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-*" ]]; then
+            if [[ "<< pipeline.git.branch >>" != "master" && "<< pipeline.git.branch >>" != "release-"* ]]; then
               if [[ "<< parameters.k8sVersion >>" == "kindIpv6" || "<< parameters.k8sVersion >>" == "v1.19.16-k3s1" || "<< parameters.arch >>" == "arm64" ]]; then
                 skip "Not running tests on PRs with kindIpv6, oldK8s and arm64"
               fi
@@ -346,7 +346,7 @@ jobs:
               export KUMA_DEFAULT_RETRIES=60
               export KUMA_DEFAULT_TIMEOUT="6s"
             fi
-            if [[ "<< parameters.k8sVersion >>" != "kind*" ]]; then
+            if [[ "<< parameters.k8sVersion >>" != "kind"* ]]; then
               export CI_K3S_VERSION=<< parameters.k8sVersion >>
               export K3D=true
             fi
