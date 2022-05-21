@@ -16,6 +16,7 @@ import (
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+	"github.com/kumahq/kuma/pkg/kds/service"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -72,12 +73,13 @@ func Setup(rt core_runtime.Runtime) error {
 		return nil
 	})
 	muxClient := mux.NewClient(
+		rt.KDSContext().ZoneClientCtx,
 		rt.Config().Multizone.Zone.GlobalAddress,
 		zone,
 		onSessionStarted,
 		*rt.Config().Multizone.Zone.KDS,
 		rt.Metrics(),
-		rt.KDSContext().ZoneClientCtx,
+		service.NewXDSConfigProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient().ConfigDump),
 	)
 	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("kds-mux-client"), muxClient))
 }

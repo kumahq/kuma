@@ -5,6 +5,7 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -65,6 +66,11 @@ func (b *FilterChainBuilder) Build() (envoy_types.Resource, error) {
 		_ = v3.UpdateHTTPConnectionManager(&filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
 			router := &envoy_hcm.HttpFilter{
 				Name: "envoy.filters.http.router",
+				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+					TypedConfig: &anypb.Any{
+						TypeUrl: "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router",
+					},
+				},
 			}
 			hcm.HttpFilters = append(hcm.HttpFilters, router)
 			return nil

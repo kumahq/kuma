@@ -288,6 +288,10 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		mgr.GetWebhookServer().Register("/validate-v1alpha2-gateway-upstream", &upstreamValidatorHandler{})
 	}
 
+	composite.AddValidator(&k8s_webhooks.ContainerPatchValidator{
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+	})
+
 	return nil
 }
 
@@ -307,6 +311,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 			mgr.GetClient(),
 			converter,
 			rt.Config().GetEnvoyAdminPort(),
+			rt.Config().Store.Kubernetes.SystemNamespace,
 		)
 		if err != nil {
 			return err

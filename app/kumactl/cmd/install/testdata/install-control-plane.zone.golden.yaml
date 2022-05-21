@@ -85,15 +85,129 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: dataplaneinsights.kuma.io
+  name: containerpatches.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: DataplaneInsight
-    listKind: DataplaneInsightList
-    plural: dataplaneinsights
-    singular: dataplaneinsight
+    kind: ContainerPatch
+    listKind: ContainerPatchList
+    plural: containerpatches
+    singular: containerpatch
   scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ContainerPatch stores a list of patches to apply to init and
+          sidecar containers.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ContainerPatchSpec specifies the options available for a
+              ContainerPatch
+            properties:
+              initPatch:
+                description: InitPatch specifies jsonpatch to apply to an init container.
+                items:
+                  description: JsonPatchBlock is one json patch operation block.
+                  properties:
+                    from:
+                      description: From is a jsonpatch from string, used by move and
+                        copy operations.
+                      type: string
+                    op:
+                      description: Op is a jsonpatch operation string.
+                      enum:
+                      - add
+                      - remove
+                      - replace
+                      - move
+                      - copy
+                      type: string
+                    path:
+                      description: Path is a jsonpatch path string.
+                      type: string
+                    value:
+                      description: Value must be a string representing a valid json
+                        object used by replace and add operations. String has to be
+                        escaped with " to be valid a json object.
+                      type: string
+                  required:
+                  - op
+                  - path
+                  type: object
+                type: array
+              sidecarPatch:
+                description: SidecarPatch specifies jsonpatch to apply to a sidecar
+                  container.
+                items:
+                  description: JsonPatchBlock is one json patch operation block.
+                  properties:
+                    from:
+                      description: From is a jsonpatch from string, used by move and
+                        copy operations.
+                      type: string
+                    op:
+                      description: Op is a jsonpatch operation string.
+                      enum:
+                      - add
+                      - remove
+                      - replace
+                      - move
+                      - copy
+                      type: string
+                    path:
+                      description: Path is a jsonpatch path string.
+                      type: string
+                    value:
+                      description: Value must be a string representing a valid json
+                        object used by replace and add operations. String has to be
+                        escaped with " to be valid a json object.
+                      type: string
+                  required:
+                  - op
+                  - path
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  name: proxytemplates.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: ProxyTemplate
+    listKind: ProxyTemplateList
+    plural: proxytemplates
+    singular: proxytemplate
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:
@@ -115,8 +229,8 @@ spec:
             type: string
           metadata:
             type: object
-          status:
-            description: Status is the status the Kuma resource.
+          spec:
+            description: Spec is the specification of the Kuma ProxyTemplate resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -575,6 +689,55 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
+  name: dataplaneinsights.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: DataplaneInsight
+    listKind: DataplaneInsightList
+    plural: dataplaneinsights
+    singular: dataplaneinsight
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          status:
+            description: Status is the status the Kuma resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
@@ -607,55 +770,6 @@ spec:
             type: object
           spec:
             description: Spec is the specification of the Kuma ZoneEgress resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
-  creationTimestamp: null
-  name: dataplanes.kuma.io
-spec:
-  group: kuma.io
-  names:
-    kind: Dataplane
-    listKind: DataplaneList
-    plural: dataplanes
-    singular: dataplane
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma Dataplane resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -902,6 +1016,55 @@ spec:
             type: object
           spec:
             description: Spec is the specification of the Kuma Zone resource.
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  name: dataplanes.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: Dataplane
+    listKind: DataplaneList
+    plural: dataplanes
+    singular: dataplane
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          mesh:
+            description: Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma Dataplane resource.
             x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
@@ -1268,55 +1431,6 @@ status:
   conditions: []
   storedVersions: []
 ---
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
-  creationTimestamp: null
-  name: proxytemplates.kuma.io
-spec:
-  group: kuma.io
-  names:
-    kind: ProxyTemplate
-    listKind: ProxyTemplateList
-    plural: proxytemplates
-    singular: proxytemplate
-  scope: Cluster
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          mesh:
-            description: Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma ProxyTemplate resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -1397,6 +1511,7 @@ rules:
       - retries
       - circuitbreakers
       - virtualoutbounds
+      - containerpatches
     verbs:
       - get
       - list
@@ -1589,7 +1704,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 47f8e00f6916a54e5c2c5c1f0369b8107436c15171abc1167b1fa35bd9afad5f
-        checksum/tls-secrets: cf73e8628484dfed58bd012abd61502d41e6c343ec4b248e3928db75d0166373
+        checksum/tls-secrets: 953b796aba8525a1a8557b0432b64ce88c9ddd0a97c490753fe978bfd95d823c
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -1885,6 +2000,7 @@ webhooks:
           - traffictraces
           - virtualoutbounds
           - zones
+          - containerpatches
     
       
     sideEffects: None

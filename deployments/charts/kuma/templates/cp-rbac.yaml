@@ -132,6 +132,7 @@ rules:
       - retries
       - circuitbreakers
       - virtualoutbounds
+      - containerpatches
     verbs:
       - get
       - list

@@ -33,14 +33,8 @@ function download_envoy() {
     [ -f "${BINARY_PATH}" ] && chmod +x "${BINARY_PATH}"
 }
 
-if [[ "${GOARCH}" == "arm64" ]]; then
-  ARCH="-arm64"
-else
-  ARCH=""
-fi
-
 if [[ -n "${ENVOY_VERSION}" ]]; then
-  BINARY_NAME="envoy-${ENVOY_VERSION}-${ENVOY_DISTRO}${ARCH}"
+  BINARY_NAME="envoy-${ENVOY_VERSION}-${ENVOY_DISTRO}-${GOARCH}"
   download_envoy "${BINARY_NAME}"
   exit 0
 fi

@@ -58,6 +58,8 @@ var _ = Describe("TracingConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: localhost_8080
                   tracing:
                     overallSampling:
@@ -94,6 +96,8 @@ var _ = Describe("TracingConfigurer", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: localhost_8080
                   tracing:
                     provider:
@@ -129,6 +133,8 @@ var _ = Describe("TracingConfigurer", func() {
               '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
               httpFilters:
               - name: envoy.filters.http.router
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
               tracing:
                 provider:
@@ -159,6 +165,8 @@ var _ = Describe("TracingConfigurer", func() {
                   statPrefix: localhost_8080
                   httpFilters:
                   - name: envoy.filters.http.router
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 `,
 		}),
 	)

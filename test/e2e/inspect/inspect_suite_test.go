@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("Test Inspect API on Kubernetes Standalone", inspect.KubernetesStandalone)
-var _ = Describe("Test Inspect API on Kubernetes Multizone", inspect.KubernetesMultizone)
 
 func TestE2EInspectAPI(t *testing.T) {
 	test.RunSpecs(t, "E2E Inspect API Suite")

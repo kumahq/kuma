@@ -63,6 +63,8 @@ var _ = Describe("RateLimitConfigurer", func() {
                     '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
                     statPrefix: rate_limit
                 - name: envoy.filters.http.router
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                 statPrefix: stats`,
 		}),
 	)

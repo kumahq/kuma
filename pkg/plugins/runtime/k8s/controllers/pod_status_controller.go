@@ -65,7 +65,7 @@ func (r *PodStatusReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	}
 
 	var errs error
-	err := r.EnvoyAdminClient.PostQuit(dp)
+	err := r.EnvoyAdminClient.PostQuit(ctx, dp)
 	if err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, "envoy admin client failed. Most probably the pod is already going down."))
 	}

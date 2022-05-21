@@ -86,26 +86,27 @@ type appDeploymentOptions struct {
 	verbose *bool
 
 	// app specific
-	namespace         string
-	appname           string
-	name              string
-	appYaml           string
-	appArgs           []string
-	token             string
-	transparent       bool
-	builtindns        *bool // true by default
-	protocol          string
-	serviceName       string
-	serviceVersion    string
-	serviceInstance   string
-	mesh              string
-	dpVersion         string
-	kumactlFlow       bool
-	concurrency       int
-	omitDataplane     bool
-	proxyOnly         bool
-	serviceProbe      bool
-	reachableServices []string
+	namespace             string
+	appname               string
+	name                  string
+	appYaml               string
+	appArgs               []string
+	token                 string
+	transparent           bool
+	builtindns            *bool // true by default
+	protocol              string
+	serviceName           string
+	serviceVersion        string
+	serviceInstance       string
+	mesh                  string
+	dpVersion             string
+	kumactlFlow           bool
+	concurrency           int
+	omitDataplane         bool
+	proxyOnly             bool
+	serviceProbe          bool
+	reachableServices     []string
+	appendDataplaneConfig string
 }
 
 func (d *appDeploymentOptions) apply(opts ...AppDeploymentOption) {
@@ -358,6 +359,12 @@ func WithArgs(appArgs []string) AppDeploymentOption {
 func WithServiceName(name string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.serviceName = name
+	})
+}
+
+func WithAppendDataplaneYaml(config string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.appendDataplaneConfig = config
 	})
 }
 
