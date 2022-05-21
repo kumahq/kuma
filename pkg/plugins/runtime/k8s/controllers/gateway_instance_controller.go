@@ -35,6 +35,11 @@ import (
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
+const (
+	// lastAppliedAnnotation is the annotation used to record the last kubectl apply
+	lastAppliedAnnotation = "kubectl.kubernetes.io/last-applied-configuration"
+)
+
 // GatewayInstanceReconciler reconciles a MeshGatewayInstance object.
 type GatewayInstanceReconciler struct {
 	kube_client.Client
@@ -113,13 +118,21 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 				return nil, nil
 			}
 
+			svcAnnotations := map[string]string{metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin}
+			// Copy annotations from the gateway to the created service (except last-applied-configuration)
+			// Temporary solution for https://github.com/kumahq/kuma/issues/4075
+			for k, v := range gatewayInstance.Annotations {
+				if k == lastAppliedAnnotation {
+					continue
+				}
+				svcAnnotations[k] = v
+			}
+
 			service := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: gatewayInstance.Namespace,
-					Name:      gatewayInstance.Name,
-					Annotations: map[string]string{
-						metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
-					},
+					Namespace:   gatewayInstance.Namespace,
+					Name:        gatewayInstance.Name,
+					Annotations: svcAnnotations,
 				},
 			}
 			if obj != nil {
