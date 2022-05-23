@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"net"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -123,7 +124,7 @@ metrics:
 
 		// when
 		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server",
-			"curl", "-v", "-m", "3", "--fail", "http://"+ip+":1234/metrics?filter=concurrency")
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics?filter=concurrency")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -142,7 +143,7 @@ metrics:
 
 		// when
 		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server-override-mesh",
-			"curl", "-v", "-m", "3", "--fail", "http://"+ip+":1234/metrics/overridden?filter=concurrency")
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "1234")+"/metrics/overridden?filter=concurrency")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -171,7 +172,7 @@ metrics:
 
 		// when
 		stdout, _, err := env.Cluster.ExecWithRetries("", "", "test-server-dp-metrics",
-			"curl", "-v", "-m", "3", "--fail", "http://"+ip+":5555/stats?filter=concurrency")
+			"curl", "-v", "-m", "3", "--fail", "http://"+net.JoinHostPort(ip, "5555")+"/stats?filter=concurrency")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
