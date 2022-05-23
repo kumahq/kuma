@@ -19,7 +19,7 @@ var _ = Describe("dnsLookupFamilyFromXdsHost", func() {
 		// when
 		result := dnsLookupFamilyFromXdsHost("example.com", lookupFn)
 
-		//
+		// then
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
 	})
 
@@ -32,7 +32,7 @@ var _ = Describe("dnsLookupFamilyFromXdsHost", func() {
 		// when
 		result := dnsLookupFamilyFromXdsHost("localhost", lookupFn)
 
-		//
+		// then
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
 	})
 
@@ -45,7 +45,7 @@ var _ = Describe("dnsLookupFamilyFromXdsHost", func() {
 		// when
 		result := dnsLookupFamilyFromXdsHost("example.com", lookupFn)
 
-		//
+		// then
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
 	})
 
@@ -58,7 +58,7 @@ var _ = Describe("dnsLookupFamilyFromXdsHost", func() {
 		// when
 		result := dnsLookupFamilyFromXdsHost("example.com", lookupFn)
 
-		//
+		// then
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_V4_ONLY))
 	})
 
@@ -71,7 +71,7 @@ var _ = Describe("dnsLookupFamilyFromXdsHost", func() {
 		// when
 		result := dnsLookupFamilyFromXdsHost("example.com", lookupFn)
 
-		//
+		// then
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
 	})
 
@@ -84,7 +84,7 @@ var _ = Describe("dnsLookupFamilyFromXdsHost", func() {
 		// when
 		result := dnsLookupFamilyFromXdsHost("example.com", lookupFn)
 
-		//
+		// then
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
 	})
 })
