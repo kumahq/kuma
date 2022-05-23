@@ -77,6 +77,19 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 		)
 	}
 
+	var redirectInboundPortIPv6 uint64
+
+	if tpConfig.RedirectPortInBoundV6 != "" {
+		redirectInboundPortIPv6, err = strconv.ParseUint(tpConfig.RedirectPortInBoundV6, 10, 16)
+		if err != nil {
+			return "", errors.Wrapf(
+				err,
+				"inbound redirect port IPv6 (%s), is not valid uint16",
+				tpConfig.RedirectPortInBound,
+			)
+		}
+	}
+
 	redirectOutboundPort, err := strconv.ParseUint(tpConfig.RedirectPortOutBound, 10, 16)
 	if err != nil {
 		return "", errors.Wrapf(
@@ -124,6 +137,7 @@ func (tp *ExperimentalTransparentProxy) Setup(tpConfig *config.TransparentProxyC
 			NamePrefix: "KUMA_",
 			Inbound: kumanet_config.TrafficFlow{
 				Port:         uint16(redirectInboundPort),
+				PortIPv6:     uint16(redirectInboundPortIPv6),
 				ExcludePorts: excludeInboundPorts,
 			},
 			Outbound: kumanet_config.TrafficFlow{
