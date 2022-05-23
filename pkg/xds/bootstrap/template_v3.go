@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"net"
 	"strconv"
 
 	"github.com/asaskevich/govalidator"
@@ -171,6 +172,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 						},
 					},
 					ClusterDiscoveryType: &envoy_cluster_v3.Cluster_Type{Type: clusterTypeFromHost(parameters.XdsHost)},
+					DnsLookupFamily:      dnsLookupFamilyFromXdsHost(parameters.XdsHost, net.LookupIP),
 					LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
 						ClusterName: "ads_cluster",
 						Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
@@ -293,6 +295,29 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 		res.Node.Metadata.Fields["dynamicMetadata"] = util_proto.MustNewValueForStruct(md)
 	}
 	return res, nil
+}
+
+func dnsLookupFamilyFromXdsHost(host string, lookupFn func(host string) ([]net.IP, error)) envoy_cluster_v3.Cluster_DnsLookupFamily {
+	if govalidator.IsDNSName(host) && host != "localhost" {
+		ips, err := lookupFn(host)
+		if err != nil {
+			log.Info("[WARNING] error looking up XDS host to determine DnsLookupFamily, falling back to AUTO", "hostname", host)
+			return envoy_cluster_v3.Cluster_AUTO
+		}
+		hasIPv6 := false
+
+		for _, ip := range ips {
+			if ip.To4() == nil {
+				hasIPv6 = true
+			}
+		}
+
+		if !hasIPv6 && len(ips) > 0 {
+			return envoy_cluster_v3.Cluster_V4_ONLY
+		}
+	}
+
+	return envoy_cluster_v3.Cluster_AUTO // default
 }
 
 func clusterTypeFromHost(host string) envoy_cluster_v3.Cluster_DiscoveryType {
