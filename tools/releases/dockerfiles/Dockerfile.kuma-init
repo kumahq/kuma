@@ -1,5 +1,5 @@
-ARG BASE_IMAGE_ARCH
-FROM $BASE_IMAGE_ARCH/ubuntu:focal
+ARG BASE_IMAGE_ARCH=amd64
+FROM --platform=linux/$BASE_IMAGE_ARCH ubuntu:focal
 
 ARG ARCH
 
