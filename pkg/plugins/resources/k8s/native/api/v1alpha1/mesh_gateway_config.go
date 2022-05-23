@@ -49,6 +49,27 @@ type MeshGatewayCommonConfig struct {
 	//
 	// +optional
 	Resources *kube_core.ResourceRequirements `json:"resources,omitempty"`
+
+	// ServiceTemplate configures the Service owned by this config.
+	//
+	// +optional
+	ServiceTemplate MeshGatewayServiceTemplate `json:"serviceTemplate,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// MeshGatewayServiceTemplate holds configuration for a Service.
+type MeshGatewayServiceTemplate struct {
+	// Metadata holds metadata configuration for a Service.
+	Metadata MeshGatewayServiceMetadata `json:"metadata,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+
+// MeshGatewayServiceMetadata holds Service metadata.
+type MeshGatewayServiceMetadata struct {
+	// Annotations holds annotations to be set on a Service.
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
