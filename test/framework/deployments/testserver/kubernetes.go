@@ -140,8 +140,8 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Args:    append([]string{"echo", "--port", "80", "--probes"}, k.opts.Args...),
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
-							"cpu":    resource.MustParse("500m"),
-							"memory": resource.MustParse("128Mi"),
+							"cpu":    resource.MustParse("50m"),
+							"memory": resource.MustParse("64Mi"),
 						},
 					},
 					Lifecycle: &corev1.Lifecycle{
