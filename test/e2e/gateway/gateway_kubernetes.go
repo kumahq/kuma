@@ -87,7 +87,7 @@ spec:
 	// gateway and a client container to send HTTP requests.
 	DeployCluster := func(opt ...KumaDeploymentOption) {
 		cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		opt = append(opt, WithVerbose(), WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}))
+		opt = append(opt, WithVerbose())
 
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, opt...)).

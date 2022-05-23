@@ -23,7 +23,6 @@ var _ = E2EBeforeSuite(func() {
 
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Global,
-			WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
 			gateway.OptEnableMeshMTLS),
 		).
 		Setup(global)).To(Succeed())
@@ -34,7 +33,6 @@ var _ = E2EBeforeSuite(func() {
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Zone,
 			WithIngress(),
-			WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
 			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
 		)).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).
@@ -53,7 +51,6 @@ var _ = E2EBeforeSuite(func() {
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Zone,
 			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
-			WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
 		)).
 		Install(gateway.EchoServerApp("echo-server", serviceName, Kuma2)).
 		Install(gateway.GatewayProxyUniversal("gateway-proxy")).
@@ -67,7 +64,6 @@ var _ = E2EBeforeSuite(func() {
 	Expect(NewClusterSetup().
 		Install(Kuma(config_core.Zone,
 			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
-			WithEnv("KUMA_EXPERIMENTAL_MESHGATEWAY", "true"),
 		)).
 		Install(gateway.EchoServerApp("echo-server", serviceName, Kuma3)).
 		Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).

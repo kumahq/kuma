@@ -438,7 +438,5 @@ hooks:
 #    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 experimental:
-  # -- If true, it installs experimental built-in Gateway support
-  meshGateway: false
   # -- If true, it installs experimental Gateway API support
   gatewayAPI: false

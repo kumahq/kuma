@@ -56,7 +56,6 @@ spec:
 	err := NewClusterSetup().
 		Install(GatewayAPICRDs).
 		Install(Kuma(config_core.Standalone,
-			WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
 			WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
 		)).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).

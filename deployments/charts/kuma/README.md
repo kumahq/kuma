@@ -116,7 +116,6 @@ A Helm chart for the Kuma Control Plane
 | hooks.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.podSecurityContext | object | `{}` | Security context at the pod level for crd/webhook/ns |
 | hooks.containerSecurityContext | object | `{}` | Security context at the container level for crd/webhook/ns |
-| experimental.meshGateway | bool | `false` | If true, it installs experimental built-in Gateway support |
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 
 ## Custom Resource Definitions
