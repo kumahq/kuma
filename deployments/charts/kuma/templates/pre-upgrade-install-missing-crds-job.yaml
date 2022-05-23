@@ -81,7 +81,7 @@ data:
   save_missing_crds.sh: |
     #!/usr/bin/env sh
 
-    missing_crds="$(kumactl install crds --only-missing)"
+    missing_crds="$(kumactl install crds --only-missing {{ if .Values.experimental.gatewayAPI }}--experimental-gatewayapi{{end}})"
 
     if [ -n "${missing_crds}" ]; then
       echo "found missing crds - saving to /kuma/missing/crds.yaml"

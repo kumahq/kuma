@@ -25,7 +25,11 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 		Short: "Install Kuma Custom Resource Definitions on Kubernetes",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			register.RegisterGatewayTypes()
-			mesh_k8s.RegisterK8SGatewayTypes()
+			mesh_k8s.RegisterK8sGatewayTypes()
+
+			if args.ExperimentalGatewayAPI {
+				mesh_k8s.RegisterK8sGatewayAPITypes()
+			}
 
 			wantCrdFiles, err := ctx.InstallCrdTemplateFiles(args)
 			if err != nil {
@@ -84,6 +88,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&args.OnlyMissing, "only-missing", false, "install only resources which are not already present in a cluster")
+	cmd.Flags().BoolVar(&args.ExperimentalGatewayAPI, "experimental-gatewayapi", false, "install experimental Gateway API support")
 
 	return cmd
 }

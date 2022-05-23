@@ -31,7 +31,11 @@ var _ core_plugins.BootstrapPlugin = &plugin{}
 func (p *plugin) BeforeBootstrap(context *core_plugins.MutablePluginContext, config core_plugins.PluginConfig) error {
 	register.RegisterGatewayTypes()
 	if context.Config().Environment == config_core.KubernetesEnvironment {
-		mesh_k8s.RegisterK8SGatewayTypes()
+		mesh_k8s.RegisterK8sGatewayTypes()
+
+		if context.Config().Experimental.GatewayAPI {
+			mesh_k8s.RegisterK8sGatewayAPITypes()
+		}
 	}
 	return nil
 }

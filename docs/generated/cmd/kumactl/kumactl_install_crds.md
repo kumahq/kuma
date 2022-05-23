@@ -9,8 +9,9 @@ kumactl install crds [flags]
 ### Options
 
 ```
-  -h, --help           help for crds
-      --only-missing   install only resources which are not already present in a cluster
+      --experimental-gatewayapi   install experimental Gateway API support
+  -h, --help                      help for crds
+      --only-missing              install only resources which are not already present in a cluster
 ```
 
 ### Options inherited from parent commands

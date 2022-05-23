@@ -51,7 +51,11 @@ func newInstallControlPlaneCmd(ctx *install_context.InstallCpContext) *cobra.Com
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			register.RegisterGatewayTypes()
-			mesh_k8s.RegisterK8SGatewayTypes()
+			mesh_k8s.RegisterK8sGatewayTypes()
+
+			if args.ExperimentalGatewayAPI {
+				mesh_k8s.RegisterK8sGatewayAPITypes()
+			}
 
 			templateFiles, err := ctx.InstallCpTemplateFiles(&args)
 			if err != nil {

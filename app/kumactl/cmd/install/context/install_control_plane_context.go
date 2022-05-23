@@ -117,8 +117,15 @@ func DefaultInstallCpContext() InstallCpContext {
 			if err != nil {
 				return nil, err
 			}
+			if !args.ExperimentalGatewayAPI {
+				files = files.Filter(ExcludeGatewayAPICRDs)
+			}
+
 			return files, nil
 		},
 		HELMValuesPrefix: "",
 	}
+}
+func ExcludeGatewayAPICRDs(file data.File) bool {
+	return file.Name != "kuma.io_meshgatewayconfigs.yaml"
 }
