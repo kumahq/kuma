@@ -1723,6 +1723,7 @@ spec:
                   - kuma-control-plane
               topologyKey: kubernetes.io/hostname
       serviceAccountName: kuma-control-plane
+      automountServiceAccountToken: true
       nodeSelector:
         
         kubernetes.io/arch: amd64
