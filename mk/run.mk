@@ -29,7 +29,6 @@ run/universal/postgres: ## Dev: Run Control Plane locally in universal mode with
 	$(GO_RUN) ./app/kuma-cp/main.go migrate up --log-level=debug
 
 	KUMA_ENVIRONMENT=universal \
-	KUMA_EXPERIMENTAL_MESHGATEWAY=true \
 	KUMA_STORE_TYPE=postgres \
 	KUMA_STORE_POSTGRES_HOST=localhost \
 	KUMA_STORE_POSTGRES_PORT=15432 \
@@ -62,7 +61,6 @@ config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 run/universal/memory: ## Dev: Run Control Plane locally in universal mode with in-memory store
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=memory \
-	KUMA_EXPERIMENTAL_MESHGATEWAY=true \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
 
 .PHONY: start/postgres

@@ -438,8 +438,6 @@ access:
 
 # Configuration of experimental features of Kuma
 experimental:
-  # If true, experimental built-in gateway is enabled
-  meshGateway: false # ENV: KUMA_EXPERIMENTAL_MESHGATEWAY
   # If true, experimental Gateway API is enabled
   gatewayAPI: false # ENV: KUMA_EXPERIMENTAL_GATEWAY_API
   # If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap

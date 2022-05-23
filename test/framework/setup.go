@@ -310,7 +310,7 @@ spec:
           resources:
             limits:
               cpu: 50m
-              memory: 128Mi
+              memory: 64Mi
 `
 	return Combine(
 		YamlK8s(fmt.Sprintf(deployment, namespace, mesh, Config.GetUniversalImage())),

@@ -48,14 +48,6 @@ func meshGatewayCRDsPresent() bool {
 }
 
 func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	if !rt.Config().Experimental.MeshGateway {
-		return nil
-	}
-	if !meshGatewayCRDsPresent() {
-		log.Info("[WARNING] Experimental MeshGateway feature is enabled, but CRDs are not registered. Disabling support")
-		return nil
-	}
-
 	cpURL := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
 
 	// TODO don't use injector config

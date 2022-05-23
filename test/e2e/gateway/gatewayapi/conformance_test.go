@@ -43,7 +43,6 @@ func TestConformance(t *testing.T) {
 	err := NewClusterSetup().
 		Install(gatewayapi.GatewayAPICRDs).
 		Install(Kuma(config_core.Standalone,
-			WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
 			WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
 		)).
 		Install(YamlK8s(gatewayapi.GatewayClass)).

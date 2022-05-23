@@ -41,7 +41,6 @@ kumactl install control-plane [flags]
       --egress-service-type string                   the type for the Egress Service (ie. ClusterIP, NodePort, LoadBalancer) (default "ClusterIP")
       --env-var stringToString                       environment variables that will be passed to the control plane (default [])
       --experimental-gatewayapi                      install experimental Gateway API support
-      --experimental-meshgateway                     install experimental built-in MeshGateway support
   -h, --help                                         help for control-plane
       --hooks-node-selector stringToString           node selector for Helm hooks (default [])
       --image-pull-policy string                     image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")

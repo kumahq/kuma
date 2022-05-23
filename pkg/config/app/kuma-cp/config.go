@@ -199,7 +199,6 @@ var DefaultConfig = func() Config {
 		DpServer:    dp_server.DefaultDpServerConfig(),
 		Access:      access.DefaultAccessConfig(),
 		Experimental: ExperimentalConfig{
-			MeshGateway:         false,
 			GatewayAPI:          false,
 			KubeOutboundsAsVIPs: false,
 		},
@@ -318,8 +317,6 @@ func DefaultGeneralConfig() *GeneralConfig {
 }
 
 type ExperimentalConfig struct {
-	// If true, experimental built-in gateway is enabled.
-	MeshGateway bool `yaml:"meshGateway" envconfig:"KUMA_EXPERIMENTAL_MESHGATEWAY"`
 	// If true, experimental Gateway API is enabled
 	GatewayAPI bool `yaml:"gatewayAPI" envconfig:"KUMA_EXPERIMENTAL_GATEWAY_API"`
 	// If true, instead of embedding kubernetes outbounds into Dataplane object, they are persisted next to VIPs in ConfigMap
@@ -328,8 +325,5 @@ type ExperimentalConfig struct {
 }
 
 func (e ExperimentalConfig) Validate() error {
-	if e.GatewayAPI && !e.MeshGateway {
-		return errors.New("GatewayAPI cannot be enabled without MeshGateway")
-	}
 	return nil
 }
