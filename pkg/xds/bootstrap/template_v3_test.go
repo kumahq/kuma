@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("DnsLookupFamilyFromXdsHost", func() {
+var _ = Describe("dnsLookupFamilyFromXdsHost", func() {
 	It("should return AUTO when IPv6 found", func() {
 		// given
 		lookupFn := func(host string) ([]net.IP, error) {
@@ -17,7 +17,7 @@ var _ = Describe("DnsLookupFamilyFromXdsHost", func() {
 		}
 
 		// when
-		result := DnsLookupFamilyFromXdsHost("example.com", lookupFn)
+		result := dnsLookupFamilyFromXdsHost("example.com", lookupFn)
 
 		//
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
@@ -30,7 +30,7 @@ var _ = Describe("DnsLookupFamilyFromXdsHost", func() {
 		}
 
 		// when
-		result := DnsLookupFamilyFromXdsHost("localhost", lookupFn)
+		result := dnsLookupFamilyFromXdsHost("localhost", lookupFn)
 
 		//
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
@@ -43,7 +43,7 @@ var _ = Describe("DnsLookupFamilyFromXdsHost", func() {
 		}
 
 		// when
-		result := DnsLookupFamilyFromXdsHost("example.com", lookupFn)
+		result := dnsLookupFamilyFromXdsHost("example.com", lookupFn)
 
 		//
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
@@ -56,7 +56,7 @@ var _ = Describe("DnsLookupFamilyFromXdsHost", func() {
 		}
 
 		// when
-		result := DnsLookupFamilyFromXdsHost("example.com", lookupFn)
+		result := dnsLookupFamilyFromXdsHost("example.com", lookupFn)
 
 		//
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_V4_ONLY))
@@ -69,7 +69,7 @@ var _ = Describe("DnsLookupFamilyFromXdsHost", func() {
 		}
 
 		// when
-		result := DnsLookupFamilyFromXdsHost("example.com", lookupFn)
+		result := dnsLookupFamilyFromXdsHost("example.com", lookupFn)
 
 		//
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
@@ -82,7 +82,7 @@ var _ = Describe("DnsLookupFamilyFromXdsHost", func() {
 		}
 
 		// when
-		result := DnsLookupFamilyFromXdsHost("example.com", lookupFn)
+		result := dnsLookupFamilyFromXdsHost("example.com", lookupFn)
 
 		//
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
