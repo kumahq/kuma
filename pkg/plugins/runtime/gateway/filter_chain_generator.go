@@ -151,7 +151,7 @@ func (g *HTTPSFilterChainGenerator) Generate(
 			otherMeshes := ctx.Mesh.Resources.OtherMeshes().Items
 
 			// We include all mesh certificates concatenated together
-			identity, ca, err := ctx.ControlPlane.Secrets.GetForGatewayListener(ctx.Mesh.Resource, info.Proxy.Dataplane, info.Listener.Tags, otherMeshes)
+			identity, ca, err := ctx.ControlPlane.Secrets.GetForGatewayListener(ctx.Mesh.Resource, info.Proxy.Dataplane, otherMeshes)
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "couldn't generate mesh cert for gateway")
 			}

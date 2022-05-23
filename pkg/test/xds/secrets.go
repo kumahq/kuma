@@ -81,7 +81,9 @@ func (*TestSecrets) GetForDataPlane(
 }
 
 func (*TestSecrets) GetForGatewayListener(
-	mesh *core_mesh.MeshResource, _ *core_mesh.DataplaneResource, _ map[string]string, meshes []*core_mesh.MeshResource,
+	mesh *core_mesh.MeshResource,
+	_ *core_mesh.DataplaneResource,
+	meshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, secrets.MeshCa, error) {
 	identity, _, allInOne, err := get(append([]*core_mesh.MeshResource{mesh}, meshes...))
 	return identity, allInOne, err

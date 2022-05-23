@@ -57,7 +57,6 @@ type GatewayListener struct {
 	Port         uint32
 	Protocol     mesh_proto.MeshGateway_Listener_Protocol
 	ResourceName string
-	Tags         map[string]string
 	// CrossMesh is important because for generation we need to treat such a
 	// listener as if we have HTTPS with the Mesh cert for this Dataplane
 	CrossMesh bool
@@ -311,7 +310,6 @@ func MakeGatewayListener(
 			listeners[0].GetProtocol().String(),
 			listeners[0].GetPort(),
 		),
-		Tags:      mesh_proto.Merge(gateway.Spec.GetTags(), dataplane.Spec.Networking.Gateway.Tags, listeners[0].GetTags()),
 		CrossMesh: listeners[0].CrossMesh,
 	}
 

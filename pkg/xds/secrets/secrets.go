@@ -31,7 +31,7 @@ type MeshCa struct {
 
 type Secrets interface {
 	GetForDataPlane(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, []MeshCa, error)
-	GetForGatewayListener(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, listenerTags map[string]string, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, MeshCa, error)
+	GetForGatewayListener(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, MeshCa, error)
 	GetForZoneEgress(zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, []MeshCa, error)
 	Info(dpKey model.ResourceKey) *Info
 	Cleanup(dpKey model.ResourceKey)
@@ -130,18 +130,9 @@ func (s *secrets) GetForDataPlane(
 func (s *secrets) GetForGatewayListener(
 	mesh *core_mesh.MeshResource,
 	dataplane *core_mesh.DataplaneResource,
-	// TODO do we need a TagSet?
-	listenerTags map[string]string,
 	otherMeshes []*core_mesh.MeshResource,
 ) (*core_xds.IdentitySecret, MeshCa, error) {
-	multiTags := mesh_proto.MultiValueTagSet{}
-	for k, v := range listenerTags {
-		multiTags[k] = map[string]bool{
-			v: true,
-		}
-	}
-
-	identity, _, allInOne, err := s.get(dataplane, multiTags, mesh, otherMeshes)
+	identity, _, allInOne, err := s.get(dataplane, dataplane.Spec.TagSet(), mesh, otherMeshes)
 	return identity, allInOne, err
 }
 
