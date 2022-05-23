@@ -55,6 +55,20 @@ conf:
     port: 443
     protocol: HTTP`,
 		),
+		Entry("crossMesh, HTTP, with hostname", `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+conf:
+  listeners:
+  - hostname: www-1.example.com
+    port: 443
+    crossMesh: true
+    protocol: HTTP`,
+		),
 	)
 
 	DescribeErrorCases(
@@ -271,6 +285,51 @@ conf:
     port: 99
     tags:
       name: https
+`),
+
+		ErrorCase("crossMesh and HTTPS",
+			validators.Violation{
+				Field:   "conf.listeners[0].protocol",
+				Message: "protocol is not supported with crossMesh",
+			}, `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  product: edge
+conf:
+  listeners:
+  - hostname: "foo.example.com"
+    protocol: HTTPS
+    port: 99
+    crossMesh: true
+    tags:
+      name: https
+`),
+
+		ErrorCase("crossMesh and no hostname",
+			validators.Violation{
+				Field:   "conf.listeners[0].hostname",
+				Message: "cannot be empty with crossMesh",
+			}, `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  product: edge
+conf:
+  listeners:
+  - protocol: HTTP
+    port: 99
+    crossMesh: true
+    tags:
+      name: http
 `),
 	)
 })
