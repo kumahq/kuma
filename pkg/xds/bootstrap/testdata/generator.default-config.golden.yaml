@@ -77,7 +77,6 @@ staticResources:
         keepaliveProbes: 3
         keepaliveTime: 10
   - connectTimeout: 1s
-    dnsLookupFamily: V4_ONLY
     http2ProtocolOptions: {}
     loadAssignment:
       clusterName: ads_cluster

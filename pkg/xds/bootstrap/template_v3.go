@@ -298,7 +298,7 @@ func genConfig(parameters configParameters) (*envoy_bootstrap_v3.Bootstrap, erro
 }
 
 func dnsLookupFamilyFromXdsHost(host string, lookupFn func(host string) ([]net.IP, error)) envoy_cluster_v3.Cluster_DnsLookupFamily {
-	if govalidator.IsHost(host) {
+	if govalidator.IsDNSName(host) && host != "localhost" {
 		ips, err := lookupFn(host)
 		if err != nil {
 			log.Info("[WARNING] error looking up XDS host to determine DnsLookupFamily, falling back to AUTO", "hostname", host)

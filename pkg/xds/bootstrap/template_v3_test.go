@@ -23,6 +23,19 @@ var _ = Describe("DnsLookupFamilyFromXdsHost", func() {
 		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
 	})
 
+	It("should return AUTO for localhost", func() {
+		// given
+		lookupFn := func(host string) ([]net.IP, error) {
+			return []net.IP{net.IPv4(127, 0, 0, 1)}, nil
+		}
+
+		// when
+		result := DnsLookupFamilyFromXdsHost("localhost", lookupFn)
+
+		//
+		Expect(result).To(Equal(envoy_cluster_v3.Cluster_AUTO))
+	})
+
 	It("should return AUTO when both IPv6 and IPv4 found", func() {
 		// given
 		lookupFn := func(host string) ([]net.IP, error) {
