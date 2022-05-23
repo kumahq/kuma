@@ -305,19 +305,14 @@ func dnsLookupFamilyFromXdsHost(host string, lookupFn func(host string) ([]net.I
 			return envoy_cluster_v3.Cluster_AUTO
 		}
 		hasIPv6 := false
-		hasIPv4 := false
 
 		for _, ip := range ips {
-			if ip.To4() != nil {
-				hasIPv4 = true
-			} else {
+			if ip.To4() == nil {
 				hasIPv6 = true
 			}
 		}
 
-		if hasIPv6 {
-			return envoy_cluster_v3.Cluster_AUTO
-		} else if hasIPv4 {
+		if !hasIPv6 && len(ips) > 0 {
 			return envoy_cluster_v3.Cluster_V4_ONLY
 		}
 	}
