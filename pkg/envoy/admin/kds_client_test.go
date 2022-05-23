@@ -50,17 +50,17 @@ var _ = Describe("KDS client", func() {
 
 		// and
 		request := <-stream.receivedRequests
-		err := streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
-			RequestId: request.RequestId,
-			Result: &mesh_proto.XDSConfigResponse_Config{
-				Config: configContent,
-			},
-		})
+		Eventually(func() error {
+			return streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
+				RequestId: request.RequestId,
+				Result: &mesh_proto.XDSConfigResponse_Config{
+					Config: configContent,
+				},
+			})
+		}, "10s", "100ms").Should(Succeed())
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		resp := <-respCh
-		Expect(resp).To(Equal(configContent))
+		Eventually(respCh).Should(Receive(Equal(configContent)))
 	})
 
 	It("should fail when zone is not connected", func() {
@@ -114,17 +114,17 @@ var _ = Describe("KDS client", func() {
 
 		// and
 		request := <-stream.receivedRequests
-		err := streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
-			RequestId: request.RequestId,
-			Result: &mesh_proto.XDSConfigResponse_Error{
-				Error: "failed",
-			},
-		})
+		Eventually(func() error {
+			return streams.ResponseReceived(zoneName, &mesh_proto.XDSConfigResponse{
+				RequestId: request.RequestId,
+				Result: &mesh_proto.XDSConfigResponse_Error{
+					Error: "failed",
+				},
+			})
+		}, "10s", "100ms").Should(Succeed())
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
-		err = <-errCh
-		Expect(err).To(MatchError("error response from Zone CP: failed"))
+		Eventually(errCh).Should(Receive(MatchError("error response from Zone CP: failed")))
 	})
 
 })
