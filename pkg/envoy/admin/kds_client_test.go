@@ -60,8 +60,7 @@ var _ = Describe("KDS client", func() {
 		}, "10s", "100ms").Should(Succeed())
 
 		// then
-		resp := <-respCh
-		Expect(resp).To(Equal(configContent))
+		Eventually(respCh).Should(Receive(Equal(configContent)))
 	})
 
 	It("should fail when zone is not connected", func() {
@@ -125,8 +124,7 @@ var _ = Describe("KDS client", func() {
 		}, "10s", "100ms").Should(Succeed())
 
 		// then
-		err := <-errCh
-		Expect(err).To(MatchError("error response from Zone CP: failed"))
+		Eventually(errCh).Should(Receive(MatchError("error response from Zone CP: failed")))
 	})
 
 })
