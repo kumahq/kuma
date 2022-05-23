@@ -3625,6 +3625,8 @@ _kumactl_install_crds()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--experimental-gatewayapi")
+    local_nonpersistent_flags+=("--experimental-gatewayapi")
     flags+=("--only-missing")
     local_nonpersistent_flags+=("--only-missing")
     flags+=("--api-timeout=")
