@@ -102,7 +102,7 @@ data:
         # <int> org id. will default to orgId 1 if not specified
         orgId: 1
         # <string> url
-        url: http://prometheus-server.{{ .Namespace }}
+        url: {{.PrometheusAddress}}
         # <string> database password, if used
         password:
         # <string> database user, if used
@@ -311,7 +311,7 @@ spec:
               mountPath: /var/lib/grafana/plugins
       containers:
         - name: grafana
-          image: "grafana/grafana:8.3.3"
+          image: "grafana/grafana:8.5.2"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config

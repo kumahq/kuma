@@ -1,0 +1,24 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    version: "0.1"
+  annotations:
+    kuma.io/gateway: enabled
+    prometheus.metrics.kuma.io/aggregate-my-app-path: /stats
+    prometheus.metrics.kuma.io/aggregate-my-app-port: 1234
+    prometheus.metrics.kuma.io/aggregate-other-container-1-path: /metrics
+    prometheus.metrics.kuma.io/aggregate-other-container-1-port: 1111
+    prometheus.metrics.kuma.io/aggregate-other-container-1-enabled: false
+    prometheus.metrics.kuma.io/aggregate-sidecar-path: /stats/test
+    prometheus.metrics.kuma.io/aggregate-sidecar-port: 12345
+    prometheus.metrics.kuma.io/aggregate-sidecar-enabled: true
+spec:
+  containers:
+    - ports:
+        - containerPort: 7070
+        - containerPort: 6060
+          name: metrics
+status:
+  podIP: 192.168.0.1

@@ -41,6 +41,8 @@ var _ = Describe("gRPCStatsConfigurer", func() {
                     emitFilterState: true
                     statsForAllMethods: true
                 - name: envoy.filters.http.router
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                 statPrefix: stats`,
 		}),
 	)

@@ -106,6 +106,9 @@ controlPlane:
     # -- Whether to skip creating the default Mesh
     skipMeshCreation: false
 
+  # -- Whether to automountServiceAccountToken for cp. Optionally set to false
+  automountServiceAccountToken: true
+  
   # -- Optionally override the resource spec
   # @default -- the resources will be chosen based on the mode
   resources:
@@ -242,7 +245,7 @@ cni:
     # -- CNI image repository
     repository: "kumahq/install-cni"
     # -- CNI image tag
-    tag: "0.0.9"
+    tag: "0.0.10"
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}

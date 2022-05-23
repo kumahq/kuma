@@ -262,3 +262,8 @@ func (p *Pagination) SetNextOffset(nextOffset string) {
 func ErrorInvalidItemType(expected, actual interface{}) error {
 	return fmt.Errorf("Invalid argument type: expected=%q got=%q", reflect.TypeOf(expected), reflect.TypeOf(actual))
 }
+
+type ResourceWithAddress interface {
+	Resource
+	AdminAddress(defaultAdminPort uint32) string
+}

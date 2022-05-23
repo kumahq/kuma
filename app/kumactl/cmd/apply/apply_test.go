@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -19,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -27,10 +25,10 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	test_store "github.com/kumahq/kuma/pkg/test/store"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
-	"github.com/kumahq/kuma/pkg/util/test"
 )
 
 var _ = Describe("kumactl apply", func() {
@@ -39,17 +37,10 @@ var _ = Describe("kumactl apply", func() {
 	var rootCmd *cobra.Command
 	var store core_store.ResourceStore
 	BeforeEach(func() {
-		rootCtx = &kumactl_cmd.RootContext{
-			Runtime: kumactl_cmd.RootRuntime{
-				Registry: registry.Global(),
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
-					return nil, nil
-				},
-				NewResourceStore: func(util_http.Client) core_store.ResourceStore {
-					return store
-				},
-				NewAPIServerClient: test.GetMockNewAPIServerClient(),
-			},
+		rootCtx = test_kumactl.MakeMinimalRootContext()
+		rootCtx.Runtime.Registry = registry.Global()
+		rootCtx.Runtime.NewResourceStore = func(util_http.Client) core_store.ResourceStore {
+			return store
 		}
 		store = core_store.NewPaginationStore(memory_resources.NewStore())
 		rootCmd = cmd.NewRootCmd(rootCtx)
