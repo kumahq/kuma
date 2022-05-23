@@ -27,7 +27,7 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 			continue
 		}
 
-		prometheusEndpoint, err := dataplane.GetPrometheusEndpoint(mesh)
+		prometheusEndpoint, err := dataplane.GetPrometheusConfig(mesh)
 		if err != nil {
 			log.Info("could not get prometheus endpoint from the dataplane", err)
 			// does not return error to not break MADS for other dataplanes

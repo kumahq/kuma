@@ -17,7 +17,7 @@ type k8SDeployment struct {
 var _ Deployment = &k8SDeployment{}
 
 func (t *k8SDeployment) ZipkinCollectorURL() string {
-	return fmt.Sprintf("http://jaeger-collector.%s:9411/api/v2/spans", framework.Config.DefaultTracingNamespace)
+	return fmt.Sprintf("http://jaeger-collector.%s:9411/api/v2/spans", framework.Config.DefaultObservabilityNamespace)
 }
 
 func (t *k8SDeployment) TracedServices() ([]string, error) {
@@ -30,7 +30,7 @@ func (t *k8SDeployment) Name() string {
 
 func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	kumactl := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
-	yaml, err := kumactl.KumactlInstallTracing()
+	yaml, err := kumactl.KumactlInstallObservability()
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	}
 
 	k8s.WaitUntilNumPodsCreated(cluster.GetTesting(),
-		cluster.GetKubectlOptions(framework.Config.DefaultTracingNamespace),
+		cluster.GetKubectlOptions(framework.Config.DefaultObservabilityNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=jaeger",
 		},
@@ -51,7 +51,7 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		framework.DefaultTimeout)
 
 	pods := k8s.ListPods(cluster.GetTesting(),
-		cluster.GetKubectlOptions(framework.Config.DefaultTracingNamespace),
+		cluster.GetKubectlOptions(framework.Config.DefaultObservabilityNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=jaeger",
 		},
@@ -61,19 +61,19 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	}
 
 	k8s.WaitUntilPodAvailable(cluster.GetTesting(),
-		cluster.GetKubectlOptions(framework.Config.DefaultTracingNamespace),
+		cluster.GetKubectlOptions(framework.Config.DefaultObservabilityNamespace),
 		pods[0].Name,
 		framework.DefaultRetries,
 		framework.DefaultTimeout)
 
-	t.jaegerApiTunnel = k8s.NewTunnel(cluster.GetKubectlOptions(framework.Config.DefaultTracingNamespace), k8s.ResourceTypePod, pods[0].Name, 0, 16686)
+	t.jaegerApiTunnel = k8s.NewTunnel(cluster.GetKubectlOptions(framework.Config.DefaultObservabilityNamespace), k8s.ResourceTypePod, pods[0].Name, 0, 16686)
 	t.jaegerApiTunnel.ForwardPort(cluster.GetTesting())
 	return nil
 }
 
 func (t *k8SDeployment) Delete(cluster framework.Cluster) error {
 	kumactl := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
-	yaml, err := kumactl.KumactlInstallTracing()
+	yaml, err := kumactl.KumactlInstallObservability()
 	if err != nil {
 		return err
 	}
@@ -84,6 +84,6 @@ func (t *k8SDeployment) Delete(cluster framework.Cluster) error {
 	if err != nil {
 		return err
 	}
-	cluster.(*framework.K8sCluster).WaitNamespaceDelete(framework.Config.DefaultTracingNamespace)
+	cluster.(*framework.K8sCluster).WaitNamespaceDelete(framework.Config.DefaultObservabilityNamespace)
 	return nil
 }

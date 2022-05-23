@@ -104,7 +104,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 	spec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      map[string]string{"app": k.Name()},
-			Annotations: map[string]string{"kuma.io/mesh": k.opts.Mesh},
+			Annotations: k.getAnnotations(),
 		},
 		Spec: corev1.PodSpec{
 			ServiceAccountName: k.opts.ServiceAccount,
@@ -159,6 +159,15 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 		spec.ObjectMeta.Annotations["kuma.io/transparent-proxying-reachable-services"] = strings.Join(k.opts.ReachableServices, ",")
 	}
 	return spec
+}
+
+func (k *k8SDeployment) getAnnotations() map[string]string {
+	annotations := make(map[string]string)
+	annotations["kuma.io/mesh"] = k.opts.Mesh
+	for key, value := range k.opts.PodAnnotations {
+		annotations[key] = value
+	}
+	return annotations
 }
 
 func meta(namespace string, name string) metav1.ObjectMeta {

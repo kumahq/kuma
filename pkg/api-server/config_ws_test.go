@@ -198,6 +198,7 @@ var _ = Describe("Config WS", func() {
 					"openshift.io/deployer-pod-for.name": "*"
 				  }
 				},
+                "containerPatches": [],
 				"initContainer": {
 				  "image": "kuma/kuma-init:latest"
 				},

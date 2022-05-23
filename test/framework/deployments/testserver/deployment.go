@@ -16,6 +16,7 @@ type DeploymentOpts struct {
 	Args              []string
 	Replicas          int32
 	WaitingToBeReady  bool
+	PodAnnotations    map[string]string
 }
 
 func DefaultDeploymentOpts() DeploymentOpts {
@@ -26,6 +27,7 @@ func DefaultDeploymentOpts() DeploymentOpts {
 		Namespace:        framework.TestNamespace,
 		Replicas:         1,
 		WaitingToBeReady: true,
+		PodAnnotations:   map[string]string{},
 	}
 }
 
@@ -82,6 +84,12 @@ func WithoutWaitingToBeReady() DeploymentOptsFn {
 func WithArgs(args ...string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.Args = args
+	}
+}
+
+func WithPodAnnotations(annotations map[string]string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		opts.PodAnnotations = annotations
 	}
 }
 

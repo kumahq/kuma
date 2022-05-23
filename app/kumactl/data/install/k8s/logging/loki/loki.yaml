@@ -677,7 +677,7 @@ spec:
         []
       containers:
         - name: loki
-          image: "grafana/loki:2.4.1"
+          image: "grafana/loki:2.5.0"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/loki/loki.yaml"

@@ -246,6 +246,9 @@ runtime:
       initContainer:
         # Image name.
         image: kuma/kuma-init:latest # ENV: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+      # ContainerPatches is an optional list of ContainerPatch names which will be applied
+      # to init and sidecar containers if workload is not annotated with a patch list.
+      containerPatches: [ ] # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES
       # Configuration for a traffic that is intercepted by sidecar
       sidecarTraffic:
         # List of inbound ports that will be excluded from interception.

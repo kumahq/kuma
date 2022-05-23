@@ -153,6 +153,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.VirtualProbesEnabled).To(BeFalse())
 			Expect(cfg.Runtime.Kubernetes.Injector.VirtualProbesPort).To(Equal(uint32(1111)))
 			Expect(cfg.Runtime.Kubernetes.Injector.CNIEnabled).To(BeTrue())
+			Expect(cfg.Runtime.Kubernetes.Injector.ContainerPatches).To(Equal([]string{"patch1", "patch2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.Image).To(Equal("test-image:test"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.EnvVars).To(Equal(map[string]string{"a": "b", "c": "d"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.RedirectPortInbound).To(Equal(uint32(2020)))
@@ -339,6 +340,7 @@ runtime:
       caCertFile: /tmp/ca.crt
       virtualProbesEnabled: false
       virtualProbesPort: 1111
+      containerPatches: ["patch1", "patch2"]
       initContainer:
         image: test-image:test
       sidecarContainer:
@@ -532,6 +534,7 @@ experimental:
 				"KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU":                                   "123m",
 				"KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY":                                  "8Gi",
 				"KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU":                                     "100m",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CONTAINER_PATCHES":                                       "patch1,patch2",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND":                 "2020",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND_V6":              "2021",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_OUTBOUND":                "1010",

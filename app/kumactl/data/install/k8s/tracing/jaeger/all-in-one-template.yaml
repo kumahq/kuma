@@ -47,7 +47,7 @@ items:
             -   env:
                   - name: COLLECTOR_ZIPKIN_HOST_PORT
                     value: "9411"
-                image: jaegertracing/all-in-one:1.24
+                image: jaegertracing/all-in-one:1.34.1
                 name: jaeger
                 ports:
                   - containerPort: 5775

@@ -163,6 +163,8 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
               statPrefix: rate_limit
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
             name: inbound:backend1
             requestHeadersToRemove:
@@ -283,6 +285,8 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
               statPrefix: rate_limit
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
             name: inbound:backend1
             requestHeadersToRemove:
@@ -405,6 +409,8 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
               statPrefix: rate_limit
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
             name: inbound:backend1
             requestHeadersToRemove:
@@ -616,6 +622,8 @@ resources:
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
             name: inbound:backend3
             requestHeadersToRemove:
@@ -648,6 +656,8 @@ resources:
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
             name: inbound:backend3
             requestHeadersToRemove:
@@ -682,6 +692,8 @@ resources:
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
             name: inbound:backend3
             requestHeadersToRemove:

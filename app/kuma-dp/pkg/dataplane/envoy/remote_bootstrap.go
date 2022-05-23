@@ -45,7 +45,7 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error) {
+func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
 		return nil, nil, err
@@ -91,11 +91,16 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 		return nil, nil, err
 	}
 
-	bootstrap := &envoy_bootstrap_v3.Bootstrap{}
-	if err := util_proto.FromYAML(respBytes, bootstrap); err != nil {
+	bootstrap := &types.BootstrapResponse{}
+	if err := json.Unmarshal(respBytes, bootstrap); err != nil {
 		return nil, nil, err
 	}
-	return bootstrap, respBytes, nil
+
+	envoyBootstrap := &envoy_bootstrap_v3.Bootstrap{}
+	if err := util_proto.FromYAML(bootstrap.Bootstrap, envoyBootstrap); err != nil {
+		return nil, nil, err
+	}
+	return envoyBootstrap, &bootstrap.KumaSidecarConfiguration, nil
 }
 
 func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
@@ -154,6 +159,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, url *net_url.
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("accept", "application/json")
 	req.Header.Set("content-type", "application/json")
 	resp, err := b.client.Do(req)
 	if err != nil {
