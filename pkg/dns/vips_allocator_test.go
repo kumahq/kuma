@@ -310,9 +310,9 @@ var _ = DescribeTable("outboundView",
 			},
 		},
 		whenMesh:            "mesh1",
-		thenHostnameEntries: []vips.HostnameEntry{vips.NewHostEntry("gateway2.mesh")},
+		thenHostnameEntries: []vips.HostnameEntry{vips.NewFqdnEntry("gateway2.mesh")},
 		thenOutbounds: map[vips.HostnameEntry][]vips.OutboundEntry{
-			vips.NewHostEntry("gateway2.mesh"): {{
+			vips.NewFqdnEntry("gateway2.mesh"): {{
 				TagSet: map[string]string{
 					"listener":            "internal",
 					"gateway":             "prod",
