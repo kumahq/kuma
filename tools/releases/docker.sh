@@ -24,7 +24,7 @@ function build() {
       if [ "$arch" == "arm64" ]; then
         read -ra additional_args <<< "${ARM64_BUILD_ARGS[@]}"
       fi
-      docker build "${build_args[@]}" "${additional_args[@]}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
+      docker build --pull "${build_args[@]}" "${additional_args[@]}" -t "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" \
         -f tools/releases/dockerfiles/Dockerfile."${component}" .
       docker tag "${KUMA_DOCKER_REPO_ORG}/${component}:${KUMA_VERSION}-${arch}" "${KUMA_DOCKER_REPO_ORG}/${component}:latest-${arch}"
       msg_green "... done!"
