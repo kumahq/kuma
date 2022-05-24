@@ -4,9 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "kuma.name" . }}-egress
   namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "kuma.labels" . | nindent 4 }}
-    app: {{ include "kuma.name" . }}-egress
+  labels: {{ include "kuma.egressLabels" . | nindent 4 }}
 spec:
   strategy:
     rollingUpdate:
@@ -26,26 +24,14 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      labels:
+      labels: {{ include "kuma.egressLabels" . | nindent 8 }}
         {{- include "kuma.selectorLabels" . | nindent 8 }}
-        app: {{ include "kuma.name" . }}-egress
     spec:
       {{- with .Values.egress.affinity }}
-      affinity:
-        {{ toYaml . | nindent 8 }}
-      {{- else }}
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - {{ include "kuma.name" . }}-egress
-              topologyKey: kubernetes.io/hostname
+      affinity: {{ tpl (toYaml . | nindent 8) $ }}
+      {{- end }}
+      {{- with .Values.egress.topologySpreadConstraints }}
+      topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
       {{- if .Values.egress.podSecurityContext }}
       securityContext:

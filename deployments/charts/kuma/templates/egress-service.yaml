@@ -2,13 +2,14 @@
 {{- if eq .Values.controlPlane.mode "global" }}
 {{ fail "You shouldn't run zoneEgress when running the CP in global" }}
 {{- end }}
+{{- end }}
+{{- if and .Values.egress.enabled .Values.egress.service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "kuma.egress.serviceName" . }}
   namespace: {{ .Release.Namespace }}
-  labels:
-  {{- include "kuma.labels" . | nindent 4 }}
+  labels: {{ include "kuma.egressLabels" . | nindent 4 }}
   annotations:
     {{- range $key, $value := .Values.egress.service.annotations }}
       {{ $key }}: {{ $value | quote }}

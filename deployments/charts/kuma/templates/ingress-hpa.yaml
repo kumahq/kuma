@@ -1,0 +1,24 @@
+{{- if .Values.ingress.autoscaling.enabled }}
+{{ if .Capabilities.APIVersions.Has "autoscaling/v2beta2" }}
+apiVersion: "autoscaling/v2beta2"
+{{ else }}
+apiVersion: "autoscaling/v1"
+{{ end }}
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "kuma.name" . }}-ingress
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.ingressLabels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "kuma.name" . }}-ingress
+  minReplicas: {{ .Values.ingress.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.ingress.autoscaling.maxReplicas }}
+  {{ if .Capabilities.APIVersions.Has "autoscaling/v2beta2" }}
+  metrics: {{- toYaml .Values.ingress.autoscaling.metrics | nindent 4 }}
+  {{ else }}
+  targetCPUUtilizationPercentage: {{ .Values.ingress.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+{{- end }}

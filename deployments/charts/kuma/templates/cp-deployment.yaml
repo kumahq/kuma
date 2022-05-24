@@ -1,11 +1,25 @@
+{{ $kdsGlobalServerTLSSecretName := "" }}
+{{ if eq .Values.controlPlane.mode "global" }}
+  {{ $kdsGlobalServerTLSSecretName = .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+  {{ if and .Values.controlPlane.tls.kdsGlobalServer.create (not $kdsGlobalServerTLSSecretName) }}
+    {{ $kdsGlobalServerTLSSecretName = print (include "kuma.name" .) "-kds-global-server-tls" }}
+  {{ end }}
+{{ end }}
+
+{{ $kdsZoneClientTLSSecretName := "" }}
+{{ if eq .Values.controlPlane.mode "zone" }}
+  {{ $kdsZoneClientTLSSecretName = .Values.controlPlane.tls.kdsZoneClient.secretName }}
+  {{ if and .Values.controlPlane.tls.kdsZoneClient.create (not $kdsZoneClientTLSSecretName) }}
+    {{ $kdsZoneClientTLSSecretName = print (include "kuma.name" .) "-kds-zone-client-tls" }}
+  {{ end }}
+{{ end }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "kuma.name" . }}-control-plane
   namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "kuma.labels" . | nindent 4 }}
-    app: {{ include "kuma.name" . }}-control-plane
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.controlPlane.replicas }}
   strategy:
@@ -21,26 +35,13 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cp-configmap.yaml") . | sha256sum }}
         checksum/tls-secrets: {{ include (print $.Template.BasePath "/cp-webhooks-and-secrets.yaml") . | sha256sum }}
-      labels:
-        {{- include "kuma.selectorLabels" . | nindent 8 }}
-        app: {{ include "kuma.name" . }}-control-plane
+      labels: {{ include "kuma.cpLabels" . | nindent 8 }}
     spec:
       {{- with .Values.controlPlane.affinity }}
-      affinity:
-        {{ toYaml . | nindent 8 }}
-      {{- else }}
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - {{ include "kuma.name" . }}-control-plane
-              topologyKey: kubernetes.io/hostname
+      affinity: {{ tpl (toYaml . | nindent 8) $ }}
+      {{- end }}
+      {{- with .Values.controlPlane.topologySpreadConstraints }}
+      topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
       {{- if .Values.controlPlane.podSecurityContext }}
       securityContext:
@@ -53,6 +54,7 @@ spec:
         {{ toYaml . | nindent 8 }}
       {{- end }}
       hostNetwork: {{ .Values.controlPlane.hostNetwork }}
+      terminationGracePeriodSeconds: {{ .Values.controlPlane.terminationGracePeriodSeconds }}
       containers:
         - name: control-plane
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
@@ -124,6 +126,9 @@ spec:
             limits:
             {{ .Values.controlPlane.resources.limits | toYaml | nindent 14 }}
             {{- end }}
+          {{ with .Values.controlPlane.lifecycle }}
+          lifecycle: {{ . | toYaml | nindent 14 }}
+          {{ end }}
           volumeMounts:
             {{- if not .Values.controlPlane.automountServiceAccountToken }}
             - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
@@ -159,12 +164,12 @@ spec:
               mountPath: /var/run/secrets/kuma.io/api-server-client-certs
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+          {{- if $kdsGlobalServerTLSSecretName }}
             - name: kds-server-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-server-tls-cert
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
+          {{- if $kdsZoneClientTLSSecretName }}
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
@@ -224,15 +229,15 @@ spec:
           secret:
             secretName: {{ .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
         {{- end }}
-        {{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+        {{- if $kdsGlobalServerTLSSecretName }}
         - name: kds-server-tls-cert
           secret:
-            secretName: {{ .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+            secretName: {{ $kdsGlobalServerTLSSecretName }}
         {{- end }}
-        {{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
+        {{- if $kdsZoneClientTLSSecretName }}
         - name: kds-client-tls-cert
           secret:
-            secretName: {{ .Values.controlPlane.tls.kdsZoneClient.secretName }}
+            secretName: {{ $kdsZoneClientTLSSecretName }}
         {{- end }}
         - name: {{ include "kuma.name" . }}-control-plane-config
           configMap:

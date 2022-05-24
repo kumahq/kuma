@@ -4,8 +4,7 @@ kind: ServiceAccount
 metadata:
   name: {{ include "kuma.name" . }}-ingress
   namespace: {{ .Release.Namespace }}
-  labels:
-  {{- include "kuma.labels" . | nindent 4 }}
+  labels: {{ include "kuma.ingressLabels" . | nindent 4 }}
 {{- with .Values.global.imagePullSecrets }}
 imagePullSecrets:
   {{- range . }}

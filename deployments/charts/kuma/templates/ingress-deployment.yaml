@@ -4,9 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "kuma.name" . }}-ingress
   namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "kuma.labels" . | nindent 4 }}
-    app: {{ include "kuma.name" . }}-ingress
+  labels: {{ include "kuma.ingressLabels" . | nindent 4 }}
 spec:
   strategy:
     rollingUpdate:
@@ -26,26 +24,14 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      labels:
+      labels: {{ include "kuma.ingressLabels" . | nindent 8 }}
         {{- include "kuma.selectorLabels" . | nindent 8 }}
-        app: {{ include "kuma.name" . }}-ingress
     spec:
       {{- with .Values.ingress.affinity }}
-      affinity:
-        {{ toYaml . | nindent 8 }}
-      {{- else }}
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - {{ include "kuma.name" . }}-ingress
-              topologyKey: kubernetes.io/hostname
+      affinity: {{ tpl (toYaml . | nindent 8) $ }}
+      {{- end }}
+      {{- with .Values.ingress.topologySpreadConstraints }}
+      topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
       {{- if .Values.ingress.podSecurityContext }}
       securityContext:
@@ -56,6 +42,7 @@ spec:
       nodeSelector:
       {{ toYaml . | nindent 8 }}
       {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.ingress.terminationGracePeriodSeconds }}
       containers:
         - name: ingress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
@@ -108,13 +95,10 @@ spec:
             periodSeconds: 5
             successThreshold: 1
             timeoutSeconds: 3
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 1000m
-              memory: 512Mi
+          resources: {{ toYaml .Values.ingress.resources | nindent 12 }}
+          {{ with .Values.ingress.lifecycle}}
+          lifecycle: {{ . | toYaml | nindent 12 }}
+          {{ end }}
           volumeMounts:
             - name: {{ include "kuma.name" . }}-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert

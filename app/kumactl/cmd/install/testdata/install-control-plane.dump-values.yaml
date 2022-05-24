@@ -18,6 +18,9 @@ installCrdsOnUpgrade:
   imagePullSecrets: []
 
 controlPlane:
+  # -- Labels to add to resources in addition to default labels
+  extraLabels: {}
+
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
 
@@ -58,13 +61,47 @@ controlPlane:
   nodeSelector:
     kubernetes.io/os: linux
 
-  # -- Affinity placement rule for the Kuma Control Plane pods
-  affinity: {}
+  podDisruptionBudget:
+    # -- Whether to create a pod disruption budget
+    enabled: false
+    # -- The maximum number of unavailable pods allowed by the budget
+    maxUnavailable: 1
+
+  # -- Affinity placement rule for the Kuma Control Plane pods.
+  # This is rendered as a template, so you can reference other helm variables or includes.
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            # These match the selector labels used on the deployment.
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}'
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - '{{ .Release.Name }}'
+              - key: app
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}-control-plane'
+          topologyKey: kubernetes.io/hostname
+
+  # -- Topology spread constraints rule for the Kuma Control Plane pods.
+  # This is rendered as a template, so you can use variables to generate match labels.
+  topologySpreadConstraints:
 
   # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
   injectorFailurePolicy: Fail
 
   service:
+    # -- Whether to create a service resource.
+    enabled: true
+
     # -- (string) Optionally override of the Kuma Control Plane Service's name
     name:
 
@@ -90,8 +127,11 @@ controlPlane:
     # -- Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix)
     pathType: ImplementationSpecific
 
-  # -- URL of Global Kuma CP
   globalZoneSyncService:
+    # -- Whether to create a k8s service for the global zone sync
+    # service. It will only be created when enabled and deploying the global
+    # control plane.
+    enabled: true
     # -- Service type of the Global-zone sync
     type: LoadBalancer
     # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
@@ -118,6 +158,14 @@ controlPlane:
   #    cpu: 250m
   #    memory: 512Mi
 
+  # -- Pod lifecycle settings (useful for adding a preStop hook, when
+  # using AWS ALB or NLB)
+  lifecycle: {}
+
+  # -- Number of seconds to wait before force killing the pod. Make sure to
+  # update this if you add a preStop hook.
+  terminationGracePeriodSeconds: 30
+
   # TLS for various servers
   tls:
     general:
@@ -136,12 +184,35 @@ controlPlane:
       secretName: ""
       # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
       clientCertsSecretName: ""
+    # - if not creating the global control plane, then do nothing
+    # - if secretName is empty and create is false, then do nothing
+    # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
+    # - if secretName is empty and create is true, then create a secret with a default name and use it
+    # - if secretName is non-empty and create is true, then create the secret using the provided name
     kdsGlobalServer:
-      # -- Secret that contains tls.crt, tls.key for protecting cross cluster communication
+      # -- Name of the K8s TLS Secret resource. If you set this and don't set
+      # create=true, you have to create the secret manually.
       secretName: ""
+      # -- Whether to create the TLS secret in helm.
+      create: false
+      # -- The TLS certificate to offer.
+      cert: ""
+      # -- The TLS key to use.
+      key: ""
+    # - if not creating the zonal control plane, then do nothing
+    # - if secretName is empty and create is false, then do nothing
+    # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
+    # - if secretName is empty and create is true, then create a secret with a default name and use it
+    # - if secretName is non-empty and create is true, then create the secret using the provided name
     kdsZoneClient:
-      # -- Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
+      # -- Name of the K8s Secret resource that contains ca.crt which was
+      # used to sign the certificate of KDS Global Server. If you set this
+      # and don't set create=true, you have to create the secret manually.
       secretName: ""
+      # -- Whether to create the TLS secret in helm.
+      create: false
+      # -- CA bundle that was used to sign the certificate of KDS Global Server.
+      cert: ""
 
   image:
     # -- Kuma CP ImagePullPolicy
@@ -150,6 +221,7 @@ controlPlane:
     repository: "kuma-cp"
     # -- Kuma CP Image tag. When not specified, the value is copied from global.tag
     tag:
+
   # -- (list of { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
   # where `Env` is the name of the env variable,
   # `Secret` is the name of the Secret,
@@ -287,11 +359,57 @@ dataPlane:
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
   enabled: false
+
+  # -- Labels to add to resources, in addition to default labels
+  extraLabels: {}
+
   # -- Time for which old listener will still be active as draining
   drainTime: 30s
-  # -- Number of replicas of the Ingress
+
+  # -- Number of replicas of the Ingress. Ignored when autoscaling is enabled.
   replicas: 1
+
+  # -- Define the resources to allocate to mesh ingress
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+
+  # -- Pod lifecycle settings (useful for adding a preStop hook, when
+  # using AWS ALB or NLB)
+  lifecycle: {}
+
+  # -- Number of seconds to wait before force killing the pod. Make sure to
+  # update this if you add a preStop hook.
+  terminationGracePeriodSeconds: 30
+
+  # Horizontal Pod Autoscaling configuration
+  autoscaling:
+    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
+    enabled: false
+
+    # -- The minimum CP pods to allow
+    minReplicas: 2
+    # -- The max CP pods to scale to
+    maxReplicas: 5
+
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    targetCPUUtilizationPercentage: 80
+    # -- For clusters that do support autoscaling/v2beta, use metrics
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+
   service:
+    # -- Whether to create a Service resource.
+    enabled: true
     # -- Service type of the Ingress
     type: LoadBalancer
     # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
@@ -308,8 +426,40 @@ ingress:
   nodeSelector:
     kubernetes.io/os: linux
 
+  podDisruptionBudget:
+    # -- Whether to create a pod disruption budget
+    enabled: false
+    # -- The maximum number of unavailable pods allowed by the budget
+    maxUnavailable: 1
+
   # -- Affinity placement rule for the Kuma Ingress pods
-  affinity: {}
+  # This is rendered as a template, so you can reference other helm variables
+  # or includes.
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            # These match the selector labels used on the deployment.
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}'
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - '{{ .Release.Name }}'
+              - key: app
+                operator: In
+                values:
+                  - kuma-ingress
+          topologyKey: kubernetes.io/hostname
+
+  # -- Topology spread constraints rule for the Kuma Mesh Ingress pods.
+  # This is rendered as a template, so you can use variables to generate match labels.
+  topologySpreadConstraints:
 
   # -- Security context at the pod level for ingress
   podSecurityContext: {}
@@ -338,11 +488,37 @@ ingress:
 egress:
   # -- If true, it deploys Egress for cross cluster communication
   enabled: false
+  # -- Labels to add to resources, in addition to the default labels.
+  extraLabels: {}
   # -- Time for which old listener will still be active as draining
   drainTime: 30s
-  # -- Number of replicas of the Egress
+  # -- Number of replicas of the Egress. Ignored when autoscaling is enabled.
   replicas: 1
+
+  # Horizontal Pod Autoscaling configuration
+  autoscaling:
+    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
+    enabled: false
+
+    # -- The minimum CP pods to allow
+    minReplicas: 2
+    # -- The max CP pods to scale to
+    maxReplicas: 5
+
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    targetCPUUtilizationPercentage: 80
+    # -- For clusters that do support autoscaling/v2beta, use metrics
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+
   service:
+    # -- Whether to create the service object
+    enabled: true
     # -- Service type of the Egress
     type: ClusterIP
     # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
@@ -359,8 +535,39 @@ egress:
   nodeSelector:
     kubernetes.io/os: linux
 
-  # -- Affinity placement rule for the Kuma Ingress pods
-  affinity: {}
+  podDisruptionBudget:
+    # -- Whether to create a pod disruption budget
+    enabled: false
+    # -- The maximum number of unavailable pods allowed by the budget
+    maxUnavailable: 1
+
+  # -- Affinity placement rule for the Kuma Egress pods.
+  # This is rendered as a template, so you can reference other helm variables or includes.
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            # These match the selector labels used on the deployment.
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}'
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - '{{ .Release.Name }}'
+              - key: app
+                operator: In
+                values:
+                  - kuma-egress
+          topologyKey: kubernetes.io/hostname
+
+  # -- Topology spread constraints rule for the Kuma Egress pods.
+  # This is rendered as a template, so you can use variables to generate match labels.
+  topologySpreadConstraints:
 
   # -- Security context at the pod level for egress
   podSecurityContext: {}

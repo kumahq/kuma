@@ -4,8 +4,7 @@ apiVersion: apps/v1
 metadata:
   name: {{ include "kuma.name" . }}-cni-node
   namespace: kube-system
-  labels:
-  {{- include "kuma.cniLabels" . | nindent 4 }}
+  labels: {{- include "kuma.cniLabels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:

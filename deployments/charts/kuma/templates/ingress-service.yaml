@@ -2,13 +2,14 @@
 {{- if or (eq .Values.controlPlane.mode "global") (eq .Values.controlPlane.mode "standalone") }}
 {{ fail "You shouldn't run zoneIngress when running the CP in global or standalone" }}
 {{- end }}
+{{- end }}
+{{- if and .Values.ingress.enabled .Values.ingress.service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "kuma.ingress.serviceName" . }}
   namespace: {{ .Release.Namespace }}
-  labels:
-  {{- include "kuma.labels" . | nindent 4 }}
+  labels: {{ include "kuma.ingressLabels" . | nindent 4 }}
   annotations:
     {{- range $key, $value := .Values.ingress.service.annotations }}
       {{ $key }}: {{ $value | quote }}

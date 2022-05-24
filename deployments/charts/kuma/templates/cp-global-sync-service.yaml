@@ -1,4 +1,4 @@
-{{- if eq .Values.controlPlane.mode "global" }}
+{{- if and (eq .Values.controlPlane.mode "global") .Values.controlPlane.globalZoneSyncService.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -8,6 +8,7 @@ metadata:
     {{- range $key, $value := .Values.controlPlane.globalZoneSyncService.annotations }}
       {{ $key }}: {{ $value | quote }}
     {{- end }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 spec:
   type: {{ .Values.controlPlane.globalZoneSyncService.type }}
   {{- if .Values.controlPlane.globalZoneSyncService.loadBalancerIP }}
@@ -22,4 +23,4 @@ spec:
   selector:
     app: {{ include "kuma.name" . }}-control-plane
   {{ include "kuma.selectorLabels" . | nindent 4 }}
-  {{- end }}
+{{- end }}

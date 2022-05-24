@@ -4,8 +4,7 @@ apiVersion: v1
 metadata:
   name: {{ include "kuma.name" . }}-cni-config
   namespace: kube-system
-  labels:
-  {{ include "kuma.cniLabels" . | nindent 4 }}
+  labels: {{ include "kuma.cniLabels" . | nindent 4 }}
 data:
   # The CNI network configuration to add to the plugin chain on each node.
   cni_network_config: |-

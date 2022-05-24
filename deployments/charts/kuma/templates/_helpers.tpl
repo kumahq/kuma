@@ -101,6 +101,39 @@ app: {{ include "kuma.name" . }}-cni
 {{- end }}
 
 {{/*
+control plane labels
+*/}}
+{{- define "kuma.cpLabels" -}}
+app: {{ include "kuma.name" . }}-control-plane
+{{ range $key, $value := $.Values.controlPlane.extraLabels }}
+{{ $key | quote }}: {{ $value | quote }}
+{{ end }}
+{{- include "kuma.labels" . }}
+{{- end }}
+
+{{/*
+ingress labels
+*/}}
+{{- define "kuma.ingressLabels" -}}
+app: {{ include "kuma.name" . }}-ingress
+{{ range $key, $value := .Values.ingress.extraLabels }}
+{{ $key | quote }}: {{ $value | quote }}
+{{ end }}
+{{- include "kuma.labels" . }}
+{{- end }}
+
+{{/*
+egress labels
+*/}}
+{{- define "kuma.egressLabels" -}}
+app: {{ include "kuma.name" . }}-egress
+{{ range $key, $value := .Values.egress.extraLabels }}
+{{ $key | quote }}: {{ $value | quote }}
+{{ end }}
+{{- include "kuma.labels" . }}
+{{- end }}
+
+{{/*
 CNI selector labels
 */}}
 {{- define "kuma.cniSelectorLabels" -}}
@@ -213,13 +246,13 @@ env:
 - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   value: /var/run/secrets/kuma.io/api-server-client-certs/
 {{- end }}
-{{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+{{- if and (eq .Values.controlPlane.mode "global") (or .Values.controlPlane.tls.kdsGlobalServer.secretName .Values.controlPlane.tls.kdsGlobalServer.create) }}
 - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
   value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
 - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
 {{- end }}
-{{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
+{{- if and (eq .Values.controlPlane.mode "zone") (or .Values.controlPlane.tls.kdsZoneClient.secretName .Values.controlPlane.tls.kdsZoneClient.create) }}
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
 {{- end }}
