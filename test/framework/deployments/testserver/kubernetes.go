@@ -104,7 +104,7 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 	spec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:      map[string]string{"app": k.Name()},
-			Annotations: map[string]string{"kuma.io/mesh": k.opts.Mesh},
+			Annotations: k.getAnnotations(),
 		},
 		Spec: corev1.PodSpec{
 			ServiceAccountName: k.opts.ServiceAccount,
@@ -140,8 +140,15 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 					Args:    append([]string{"echo", "--port", "80", "--probes"}, k.opts.Args...),
 					Resources: corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
-							"cpu":    resource.MustParse("500m"),
-							"memory": resource.MustParse("128Mi"),
+							"cpu":    resource.MustParse("50m"),
+							"memory": resource.MustParse("64Mi"),
+						},
+					},
+					Lifecycle: &corev1.Lifecycle{
+						PreStop: &corev1.LifecycleHandler{
+							Exec: &corev1.ExecAction{ // test-server does not handle graceful shutdown itself
+								Command: []string{"/usr/bin/sleep", "30"},
+							},
 						},
 					},
 				},
@@ -152,6 +159,15 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 		spec.ObjectMeta.Annotations["kuma.io/transparent-proxying-reachable-services"] = strings.Join(k.opts.ReachableServices, ",")
 	}
 	return spec
+}
+
+func (k *k8SDeployment) getAnnotations() map[string]string {
+	annotations := make(map[string]string)
+	annotations["kuma.io/mesh"] = k.opts.Mesh
+	for key, value := range k.opts.PodAnnotations {
+		annotations[key] = value
+	}
+	return annotations
 }
 
 func meta(namespace string, name string) metav1.ObjectMeta {

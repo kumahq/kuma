@@ -120,7 +120,6 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--zone", "zone-1",
 				"--use-node-port",
 				"--without-kubernetes-connection",
-				"--experimental-meshgateway",
 				"--experimental-gatewayapi",
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",

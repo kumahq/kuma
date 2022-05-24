@@ -9,9 +9,9 @@ import (
 	"github.com/kumahq/kuma/test/e2e/gateway"
 )
 
-var _ = Describe("Test Gateway on Universal", gateway.GatewayOnUniversal)
-var _ = Describe("Test Gateway on Kubernetes", gateway.GatewayOnKubernetes)
-var _ = Describe("Test Gateway on Kubernetes with HELM", gateway.GatewayHELM)
+var _ = Describe("Test Gateway on Universal", Label("arm-not-supported"), gateway.GatewayOnUniversal)
+var _ = Describe("Test Gateway on Kubernetes", Label("arm-not-supported"), gateway.GatewayOnKubernetes)
+var _ = Describe("Test Gateway on Kubernetes with HELM", Label("arm-not-supported"), gateway.GatewayHELM)
 
 func TestE2E(t *testing.T) {
 	test.RunSpecs(t, "E2E Gateway Suite")

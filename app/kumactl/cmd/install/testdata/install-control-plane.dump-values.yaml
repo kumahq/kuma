@@ -106,6 +106,9 @@ controlPlane:
     # -- Whether to skip creating the default Mesh
     skipMeshCreation: false
 
+  # -- Whether to automountServiceAccountToken for cp. Optionally set to false
+  automountServiceAccountToken: true
+  
   # -- Optionally override the resource spec
   # @default -- the resources will be chosen based on the mode
   resources:
@@ -242,7 +245,7 @@ cni:
     # -- CNI image repository
     repository: "kumahq/install-cni"
     # -- CNI image tag
-    tag: "0.0.9"
+    tag: "0.0.10"
 
   # -- Security context at the pod level for cni
   podSecurityContext: {}
@@ -395,15 +398,15 @@ kumactl:
     tag:
 
 kubectl:
-  # bitnami maintains an image for all k8s versions */ } }
-  # see: https://hub.docker.com/r/bitnami/kubectl */ } }
+  # kuma image that support v1.20.15 image */ } }
+  # see: https://hub.docker.com/r/kumahq/kubectl */ } }
   image:
     # -- The kubectl image registry
-    registry: bitnami
+    registry: kumahq
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: "1.20"
+    tag: "v1.20.15"
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
@@ -435,7 +438,5 @@ hooks:
 #    # to support additional container level securityContext parameters, please check:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#securitycontext-v1-core
 
 experimental:
-  # -- If true, it installs experimental built-in Gateway support
-  meshGateway: false
   # -- If true, it installs experimental Gateway API support
   gatewayAPI: false

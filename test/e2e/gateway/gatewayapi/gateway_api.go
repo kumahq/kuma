@@ -14,16 +14,10 @@ import (
 )
 
 func GatewayAPICRDs(cluster Cluster) error {
-	out, err := k8s.RunKubectlAndGetOutputE(
+	return k8s.RunKubectlE(
 		cluster.GetTesting(),
 		cluster.GetKubectlOptions(),
-		"kustomize", "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.0",
-	)
-	if err != nil {
-		return err
-	}
-
-	return k8s.KubectlApplyFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), out)
+		"apply", "-k", "github.com/kubernetes-sigs/gateway-api/config/crd?ref=v0.4.3")
 }
 
 const GatewayClass = `
@@ -62,7 +56,6 @@ spec:
 	err := NewClusterSetup().
 		Install(GatewayAPICRDs).
 		Install(Kuma(config_core.Standalone,
-			WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
 			WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
 		)).
 		Install(NamespaceWithSidecarInjection(TestNamespace)).

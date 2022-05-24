@@ -141,9 +141,6 @@ Listeners:
       enableReusePort: true
       filterChains:
       - filterChainMatch:
-          applicationProtocols:
-          - h2
-          - http/1.1
           serverNames:
           - two.example.com
           transportProtocol: tls
@@ -174,6 +171,8 @@ Listeners:
                 responseDirectionConfig:
                   disableOnEtagHeader: true
             - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
             mergeSlashes: true
             normalizePath: true
             rds:
@@ -203,9 +202,6 @@ Listeners:
                 tlsMinimumProtocolVersion: TLSv1_2
             requireClientCertificate: false
       - filterChainMatch:
-          applicationProtocols:
-          - h2
-          - http/1.1
           serverNames:
           - three.example.com
           transportProtocol: tls
@@ -236,6 +232,8 @@ Listeners:
                 responseDirectionConfig:
                   disableOnEtagHeader: true
             - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
             mergeSlashes: true
             normalizePath: true
             rds:
@@ -265,9 +263,6 @@ Listeners:
                 tlsMinimumProtocolVersion: TLSv1_2
             requireClientCertificate: false
       - filterChainMatch:
-          applicationProtocols:
-          - h2
-          - http/1.1
           serverNames:
           - one.example.com
           transportProtocol: tls
@@ -298,6 +293,8 @@ Listeners:
                 responseDirectionConfig:
                   disableOnEtagHeader: true
             - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
             mergeSlashes: true
             normalizePath: true
             rds:

@@ -144,6 +144,9 @@ message KumaDpVersion {
 
   // Build date of Kuma Dataplane version
   string buildDate = 4;
+
+  // True iff Kuma DP version is compatible with Kuma CP version
+  bool kumaCpCompatible = 5;
 }
 
 // EnvoyVersion describes details of Envoy version

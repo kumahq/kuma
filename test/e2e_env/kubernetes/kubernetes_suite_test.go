@@ -9,9 +9,13 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/env"
-	healthcheck "github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/graceful"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/jobs"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/membership"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/metrics"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -22,7 +26,9 @@ func TestE2E(t *testing.T) {
 var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		env.Cluster = NewK8sCluster(NewTestingT(), Kuma1, Verbose)
-		Expect(env.Cluster.Install(Kuma(core.Standalone, WithEnv("KUMA_STORE_UNSAFE_DELETE", "true")))).To(Succeed())
+		Expect(env.Cluster.Install(Kuma(core.Standalone,
+			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+		))).To(Succeed())
 		portFwd := env.Cluster.GetKuma().(*K8sControlPlane).PortFwd()
 
 		bytes, err := json.Marshal(portFwd)
@@ -56,5 +62,13 @@ var _ = SynchronizedBeforeSuite(
 	},
 )
 
+// SynchronizedAfterSuite keeps the main process alive until all other processes finish.
+// Otherwise, we would close port-forward to the CP and remaining tests executed in different processes may fail.
+var _ = SynchronizedAfterSuite(func() {}, func() {})
+
 var _ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
+var _ = Describe("Graceful", graceful.Graceful, Ordered)
 var _ = Describe("Jobs", jobs.Jobs)
+var _ = Describe("Metrics", metrics.ApplicationsMetrics, Ordered)
+var _ = Describe("Membership", membership.Membership, Ordered)
+var _ = Describe("Container Patch", container_patch.ContainerPatch, Ordered)

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
@@ -19,6 +20,10 @@ import (
 )
 
 var _ = Describe("PrometheusEndpointGenerator", func() {
+
+	core.TempDir = func() string {
+		return "/tmp"
+	}
 
 	type testCase struct {
 		ctx      xds_context.Context

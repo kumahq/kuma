@@ -7,7 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-func RegisterK8SGatewayTypes() {
+func RegisterK8sGatewayTypes() {
 	SchemeBuilder.Register(&MeshGateway{}, &MeshGatewayList{})
 	// RegisterObjectTypeIfAbsent is used because it's not deterministic in testing that RegisterMeshGatewayTypes is called only once.
 	registry.RegisterObjectTypeIfAbsent(&mesh_proto.MeshGateway{}, &MeshGateway{
@@ -38,5 +38,8 @@ func RegisterK8SGatewayTypes() {
 	})
 
 	SchemeBuilder.Register(&MeshGatewayInstance{}, &MeshGatewayInstanceList{})
+}
+
+func RegisterK8sGatewayAPITypes() {
 	SchemeBuilder.Register(&MeshGatewayConfig{}, &MeshGatewayConfigList{})
 }

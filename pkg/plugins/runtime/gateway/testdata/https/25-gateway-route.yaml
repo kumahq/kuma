@@ -77,9 +77,6 @@ Listeners:
       enableReusePort: true
       filterChains:
       - filterChainMatch:
-          applicationProtocols:
-          - h2
-          - http/1.1
           serverNames:
           - echo.example.com
           transportProtocol: tls
@@ -110,6 +107,8 @@ Listeners:
                 responseDirectionConfig:
                   disableOnEtagHeader: true
             - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
             mergeSlashes: true
             normalizePath: true
             rds:

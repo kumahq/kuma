@@ -23,6 +23,7 @@ import (
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/test"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("run", func() {
@@ -30,8 +31,8 @@ var _ = Describe("run", func() {
 	var cancel func()
 	var ctx context.Context
 	opts := kuma_cmd.RunCmdOpts{
-		SetupSignalHandler: func() context.Context {
-			return ctx
+		SetupSignalHandler: func() (context.Context, context.Context) {
+			return ctx, ctx
 		},
 	}
 
@@ -95,14 +96,14 @@ var _ = Describe("run", func() {
 
 			// given
 			rootCtx := DefaultRootContext()
-			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, []byte, error) {
+			rootCtx.BootstrapGenerator = func(_ context.Context, _ string, cfg kumadp.Config, _ envoy.BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
 				respBytes, err := os.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
 				bootstrap := &envoy_bootstrap_v3.Bootstrap{}
 				if err := util_proto.FromYAML(respBytes, bootstrap); err != nil {
 					return nil, nil, err
 				}
-				return bootstrap, respBytes, nil
+				return bootstrap, &types.KumaSidecarConfiguration{}, nil
 			}
 
 			reader, writer := io.Pipe()
@@ -118,7 +119,7 @@ var _ = Describe("run", func() {
 			cmd.SetErr(writer)
 
 			// when
-			By("starting the dataplane manager")
+			By("starting the Kuma DP")
 			errCh := make(chan error)
 			go func() {
 				defer close(errCh)
@@ -158,6 +159,8 @@ var _ = Describe("run", func() {
 
 			// when
 			By("signaling the dataplane manager to stop")
+			// we need to close writer, otherwise Cmd#Wait will never finish.
+			Expect(writer.Close()).To(Succeed())
 			cancel()
 
 			// then

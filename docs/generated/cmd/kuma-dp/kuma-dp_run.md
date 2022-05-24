@@ -31,6 +31,7 @@ kuma-dp run [flags]
       --dns-envoy-port uint32                     A port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one (default 15054)
       --dns-prometheus-port uint32                A port for exposing Prometheus stats (default 19153)
       --dns-server-config-dir string              Directory in which DNS Server config will be generated
+      --drain-time duration                       drain time for Envoy connections on Kuma DP shutdown (default 30s)
   -h, --help                                      help for run
       --mesh string                               Mesh that Dataplane belongs to
       --name string                               Name of the Dataplane

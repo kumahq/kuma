@@ -8,8 +8,8 @@ import (
 )
 
 type InstallCrdsArgs struct {
-	OnlyMissing             bool
-	ExperimentalMeshGateway bool
+	OnlyMissing            bool
+	ExperimentalGatewayAPI bool
 }
 
 type InstallCrdsContext struct {
@@ -21,7 +21,8 @@ type InstallCrdsContext struct {
 func DefaultInstallCrdsContext() InstallCrdsContext {
 	return InstallCrdsContext{
 		Args: InstallCrdsArgs{
-			OnlyMissing: false,
+			OnlyMissing:            false,
+			ExperimentalGatewayAPI: false,
 		},
 		InstallCrdTemplateFiles: func(args InstallCrdsArgs) (data.FileList, error) {
 			helmFiles, err := data.ReadFiles(deployments.KumaChartFS())
@@ -33,8 +34,8 @@ func DefaultInstallCrdsContext() InstallCrdsContext {
 				return strings.Contains(file.FullPath, "crds/")
 			})
 
-			if !args.ExperimentalMeshGateway {
-				crdFiles = crdFiles.Filter(ExcludeGatewayCRDs)
+			if !args.ExperimentalGatewayAPI {
+				crdFiles = crdFiles.Filter(ExcludeGatewayAPICRDs)
 			}
 
 			return crdFiles, nil

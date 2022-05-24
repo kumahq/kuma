@@ -1,4 +1,5 @@
-FROM gcr.io/distroless/base-debian11:debug-nonroot
+ARG BASE_IMAGE_ARCH=amd64
+FROM --platform=linux/$BASE_IMAGE_ARCH gcr.io/distroless/base-debian11:debug-nonroot
 
 ARG ENVOY_VERSION
 ARG ARCH

@@ -18,7 +18,7 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			u, err := url.Parse(given.input)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(rewriteMetricsURL(given.adminPort, u)).Should(Equal(given.expected))
+			Expect(rewriteMetricsURL("/stats/prometheus", given.adminPort, u)).Should(Equal(given.expected))
 		},
 		Entry("use the admin port", testCase{
 			input:     "http://foo/bar",

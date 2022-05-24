@@ -109,7 +109,7 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	return address1.Equal(address2)
 }
 
-func (d *DataplaneResource) GetPrometheusEndpoint(mesh *MeshResource) (*mesh_proto.PrometheusMetricsBackendConfig, error) {
+func (d *DataplaneResource) GetPrometheusConfig(mesh *MeshResource) (*mesh_proto.PrometheusMetricsBackendConfig, error) {
 	if d == nil || mesh == nil || mesh.Meta.GetName() != d.Meta.GetMesh() || !mesh.HasPrometheusMetricsEnabled() {
 		return nil, nil
 	}
@@ -158,9 +158,16 @@ func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {
 		return ""
 	}
 	ip := d.GetIP()
-	adminPort := d.Spec.GetNetworking().GetAdmin().GetPort()
-	if adminPort == 0 {
-		adminPort = defaultAdminPort
-	}
+	adminPort := d.AdminPort(defaultAdminPort)
 	return net.JoinHostPort(ip, strconv.FormatUint(uint64(adminPort), 10))
+}
+
+func (d *DataplaneResource) AdminPort(defaultAdminPort uint32) uint32 {
+	if d == nil {
+		return 0
+	}
+	if adminPort := d.Spec.GetNetworking().GetAdmin().GetPort(); adminPort != 0 {
+		return adminPort
+	}
+	return defaultAdminPort
 }

@@ -310,7 +310,7 @@ spec:
           resources:
             limits:
               cpu: 50m
-              memory: 128Mi
+              memory: 64Mi
 `
 	return Combine(
 		YamlK8s(fmt.Sprintf(deployment, namespace, mesh, Config.GetUniversalImage())),
@@ -478,7 +478,8 @@ networking:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
     redirectPortOutbound: %s
-`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+%s
+`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, serviceProbe, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound, opts.appendDataplaneConfig)
 
 		opt = append(opt,
 			WithName(name),

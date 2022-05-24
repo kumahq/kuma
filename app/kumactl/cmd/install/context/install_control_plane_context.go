@@ -55,7 +55,6 @@ type InstallControlPlaneArgs struct {
 	Egress_nodeSelector                          map[string]string `helm:"egress.nodeSelector"`
 	Hooks_nodeSelector                           map[string]string `helm:"hooks.nodeSelector"`
 	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
-	ExperimentalMeshGateway                      bool              `helm:"experimental.meshGateway"`
 	ExperimentalGatewayAPI                       bool              `helm:"experimental.gatewayAPI"`
 	ValueFiles                                   []string
 	Values                                       []string
@@ -101,7 +100,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			Cni_conf_name:                           "kuma-cni.conf",
 			Cni_image_registry:                      "docker.io/kumahq",
 			Cni_image_repository:                    "install-cni",
-			Cni_image_tag:                           "0.0.9",
+			Cni_image_tag:                           "0.0.10",
 			ControlPlane_mode:                       core.Standalone,
 			ControlPlane_zone:                       "",
 			ControlPlane_globalZoneSyncService_type: "LoadBalancer",
@@ -118,17 +117,15 @@ func DefaultInstallCpContext() InstallCpContext {
 			if err != nil {
 				return nil, err
 			}
-			if !args.ExperimentalMeshGateway {
-				files = files.Filter(ExcludeGatewayCRDs)
+			if !args.ExperimentalGatewayAPI {
+				files = files.Filter(ExcludeGatewayAPICRDs)
 			}
+
 			return files, nil
 		},
 		HELMValuesPrefix: "",
 	}
 }
-
-func ExcludeGatewayCRDs(file data.File) bool {
-	return file.Name != "kuma.io_meshgateways.yaml" &&
-		file.Name != "kuma.io_meshgatewayroutes.yaml" &&
-		file.Name != "kuma.io_meshgatewayinstances.yaml"
+func ExcludeGatewayAPICRDs(file data.File) bool {
+	return file.Name != "kuma.io_meshgatewayconfigs.yaml"
 }

@@ -2,18 +2,13 @@ package cmd_test
 
 import (
 	"os"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	util_http "github.com/kumahq/kuma/pkg/util/http"
-	"github.com/kumahq/kuma/pkg/util/test"
+	test_kumactl "github.com/kumahq/kuma/pkg/test/kumactl"
 )
 
 var _ = Describe("kumactl root cmd", func() {
@@ -35,15 +30,7 @@ var _ = Describe("kumactl root cmd", func() {
 
 	It("should create default config at startup", func() {
 		// given
-		rootCtx := &kumactl_cmd.RootContext{
-			Runtime: kumactl_cmd.RootRuntime{
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
-					return nil, nil
-				},
-				Registry:           registry.NewTypeRegistry(),
-				NewAPIServerClient: test.GetMockNewAPIServerClient(),
-			},
-		}
+		rootCtx := test_kumactl.MakeMinimalRootContext()
 		rootCmd := cmd.NewRootCmd(rootCtx)
 
 		// when
@@ -72,15 +59,7 @@ currentContext: local
 
 	It("shouldn't create config file when --no-config flag is set", func() {
 		// given
-		rootCtx := &kumactl_cmd.RootContext{
-			Runtime: kumactl_cmd.RootRuntime{
-				NewBaseAPIServerClient: func(server *config_proto.ControlPlaneCoordinates_ApiServer, _ time.Duration) (util_http.Client, error) {
-					return nil, nil
-				},
-				Registry:           registry.NewTypeRegistry(),
-				NewAPIServerClient: test.GetMockNewAPIServerClient(),
-			},
-		}
+		rootCtx := test_kumactl.MakeMinimalRootContext()
 		rootCmd := cmd.NewRootCmd(rootCtx)
 
 		// when

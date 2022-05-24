@@ -5,29 +5,39 @@ set -e
 SCRIPT_DIR="$(dirname -- "${BASH_SOURCE[0]}")"
 source "${SCRIPT_DIR}/../common.sh"
 
-GOARCH=(amd64)
-
 # first component is the system - must map to valid $GOOS values
 # if present, second is the distribution and third is the envoy distribution
 # without a distribution we package only kumactl as a static binary
-DISTRIBUTIONS=(linux:debian:alpine linux:ubuntu:alpine linux:rhel:centos linux:centos:centos darwin:darwin:darwin linux)
+DISTRIBUTIONS=(
+  linux:debian:alpine:amd64
+  linux:ubuntu:alpine:amd64
+  linux:rhel:centos:amd64
+  linux:centos:centos:amd64
+  darwin:darwin:darwin:amd64
+  linux:::amd64
+  linux:debian:alpine:arm64
+  linux:ubuntu:alpine:arm64
+  darwin:darwin:darwin:arm64
+  linux:::arm64
+)
 
 PULP_HOST="https://api.pulp.konnect-prod.konghq.com"
 PULP_PACKAGE_TYPE="mesh"
 PULP_DIST_NAME="alpine"
 [ -z "$RELEASE_NAME" ] && RELEASE_NAME="kuma"
-ENVOY_VERSION=1.21.1
+ENVOY_VERSION=1.22.0
 [ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 CTL_NAME="kumactl"
 
 function get_envoy() {
   local distro=$1
   local envoy_distro=$2
+  local arch=$3
 
   local status
   status=$(curl -L -o build/envoy-"$distro" \
     --write-out '%{http_code}' --silent --output /dev/null \
-    "https://download.konghq.com/mesh-alpine/envoy-$ENVOY_VERSION-$envoy_distro")
+    "https://download.konghq.com/mesh-alpine/envoy-$ENVOY_VERSION-$envoy_distro-$arch")
 
   if [ "$status" -ne "200" ]; then msg_err "Error: failed downloading Envoy"; fi
 }
@@ -81,7 +91,7 @@ function create_tarball() {
   mkdir "$kuma_dir/bin"
   mkdir "$kuma_dir/conf"
 
-  get_envoy "$distro" "$envoy_distro"
+  get_envoy "$distro" "$envoy_distro" "$arch"
   chmod 755 build/envoy-"$distro"
 
   artifact_dir=$(artifact_dir "$arch" "$system")
@@ -108,19 +118,18 @@ function package() {
     distro=$(echo "$os" | awk '{split($0,parts,":"); print parts[2]}')
     local envoy_distro
     envoy_distro=$(echo "$os" | awk '{split($0,parts,":"); print parts[3]}')
+    local arch
+    arch=$(echo "$os" | awk '{split($0,parts,":"); print parts[4]}')
 
-    for arch in "${GOARCH[@]}"; do
+    if [[ -n $distro ]]; then
+      create_tarball "$arch" "$system" "$distro" "$envoy_distro"
+    else
+      create_kumactl_tarball "$arch" "$system"
+    fi
 
-      if [[ -n $distro ]]; then
-        create_tarball "$arch" "$system" "$distro" "$envoy_distro"
-      else
-        create_kumactl_tarball "$arch" "$system"
-      fi
-
-      msg
-      msg_green "... success!"
-      msg
-    done
+    msg
+    msg_green "... success!"
+    msg
   done
 }
 
@@ -149,25 +158,25 @@ function release() {
     system=$(echo "$os" | awk '{split($0,parts,":"); print parts[1]}')
     local distro
     distro=$(echo "$os" | awk '{split($0,parts,":"); print parts[2]}')
+    local arch
+    arch=$(echo "$os" | awk '{split($0,parts,":"); print parts[4]}')
 
-    for arch in "${GOARCH[@]}"; do
-      local artifact
-      artifact="$(archive_path "$arch" "$system" "$distro")"
-      [ ! -f "$artifact" ] && msg_yellow "Package '$artifact' not found, skipping..." && continue
+    local artifact
+    artifact="$(archive_path "$arch" "$system" "$distro")"
+    [ ! -f "$artifact" ] && msg_yellow "Package '$artifact' not found, skipping..." && continue
 
-      if [[ -n $distro ]]; then
-        msg_green ">>> Releasing ${RELEASE_NAME} $KUMA_VERSION for $distro ($system-$arch)..."
-      else
-        msg_green ">>> Releasing ${RELEASE_NAME} $KUMA_VERSION static kumactl binary for $system-$arch..."
-      fi
+    if [[ -n $distro ]]; then
+      msg_green ">>> Releasing ${RELEASE_NAME} $KUMA_VERSION for $distro ($system-$arch)..."
+    else
+      msg_green ">>> Releasing ${RELEASE_NAME} $KUMA_VERSION static kumactl binary for $system-$arch..."
+    fi
 
-      docker run --rm \
-        -e PULP_USERNAME="${PULP_USERNAME}" -e PULP_PASSWORD="${PULP_PASSWORD}" \
-        -e PULP_HOST=${PULP_HOST} \
-        -v "${PWD}":/files:ro -it kong/release-script \
-        --file /files/"$artifact" \
-        --package-type ${PULP_PACKAGE_TYPE} --dist-name ${PULP_DIST_NAME} --publish
-    done
+    docker run --rm \
+      -e PULP_USERNAME="${PULP_USERNAME}" -e PULP_PASSWORD="${PULP_PASSWORD}" \
+      -e PULP_HOST=${PULP_HOST} \
+      -v "${PWD}":/files:ro -it kong/release-script \
+      --file /files/"$artifact" \
+      --package-type ${PULP_PACKAGE_TYPE} --dist-name ${PULP_DIST_NAME} --publish
   done
 }
 

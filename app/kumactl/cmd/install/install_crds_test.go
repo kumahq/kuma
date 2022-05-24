@@ -47,9 +47,9 @@ var _ = Describe("kumactl install crds", func() {
 			extraArgs:  nil,
 			goldenFile: "install-crds.all.golden.yaml",
 		}),
-		Entry("should generate all Kuma's CRD resources including experimental meshgateway", testCase{
-			extraArgs:  []string{"--experimental-meshgateway"},
-			goldenFile: "install-crds.experimental-meshgateway.golden.yaml",
+		Entry("should generate all Kuma's CRD resources and Gateway API resources", testCase{
+			extraArgs:  []string{"--experimental-gatewayapi"},
+			goldenFile: "install-crds.experimental-gatewayapi.golden.yaml",
 		}),
 	)
 })

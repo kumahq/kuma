@@ -58,6 +58,12 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 			}
 		}
 
+		if pod.DeletionTimestamp != nil { // pod is in Termination state
+			health = &mesh_proto.Dataplane_Networking_Inbound_Health{
+				Ready: false,
+			}
+		}
+
 		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 			Port:   uint32(containerPort),
 			Tags:   tags,
@@ -182,9 +188,9 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 		protocolValue = core_mesh.ProtocolTCP
 	}
 	// if `appProtocol` or `<port>.service.kuma.io/protocol` field is present but has an invalid value
-	// we still want Dataplane to have a `protocol: <value as is>` tag in order to make it clear
+	// we still want Dataplane to have a `protocol: <lowercase value>` tag in order to make it clear
 	// to a user that at least `appProtocol` or `<port>.service.kuma.io/protocol` has an effect
-	return protocolValue
+	return strings.ToLower(protocolValue)
 }
 
 func InboundTagsForPod(zone string, pod *kube_core.Pod) map[string]string {

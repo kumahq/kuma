@@ -1,6 +1,7 @@
 package gatewayapi_test
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -26,6 +27,9 @@ func TestConformance(t *testing.T) {
 	if Config.IPV6 {
 		t.Skip("On IPv6 we run on kind which doesn't support load balancers")
 	}
+	if runtime.GOARCH == "arm64" {
+		t.Skip("On ARM64 it's not supported yet")
+	}
 
 	g := NewWithT(t)
 
@@ -39,7 +43,6 @@ func TestConformance(t *testing.T) {
 	err := NewClusterSetup().
 		Install(gatewayapi.GatewayAPICRDs).
 		Install(Kuma(config_core.Standalone,
-			WithCtlOpts(map[string]string{"--experimental-meshgateway": "true"}),
 			WithCtlOpts(map[string]string{"--experimental-gatewayapi": "true"}),
 		)).
 		Install(YamlK8s(gatewayapi.GatewayClass)).

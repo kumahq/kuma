@@ -14,6 +14,8 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/test/e2e_env/universal/inspect"
+	"github.com/kumahq/kuma/test/e2e_env/universal/membership"
+	"github.com/kumahq/kuma/test/e2e_env/universal/metrics"
 	. "github.com/kumahq/kuma/test/framework"
 )
 
@@ -25,7 +27,10 @@ var _ = SynchronizedBeforeSuite(
 	func() []byte {
 		env.Cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 		E2EDeferCleanup(env.Cluster.DismissCluster)
-		Expect(env.Cluster.Install(Kuma(core.Standalone, WithEnv("KUMA_STORE_UNSAFE_DELETE", "true")))).To(Succeed())
+		Expect(env.Cluster.Install(Kuma(core.Standalone,
+			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
+			WithEnv("KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL", "1s"), // speed up some tests by flushing stats quicker than default 10s
+		))).To(Succeed())
 		pf := env.Cluster.GetKuma().(*UniversalControlPlane).Networking()
 		bytes, err := json.Marshal(pf)
 		Expect(err).ToNot(HaveOccurred())
@@ -54,5 +59,9 @@ var _ = SynchronizedBeforeSuite(
 var _ = Describe("User Auth", auth.UserAuth)
 var _ = Describe("DP Auth", auth.DpAuth, Ordered)
 var _ = Describe("HealthCheck panic threshold", healthcheck.HealthCheckPanicThreshold, Ordered)
+var _ = Describe("HealthCheck", healthcheck.Policy)
+var _ = Describe("Service Probes", healthcheck.ServiceProbes, Ordered)
 var _ = Describe("External Services", externalservices.ExternalServiceHostHeader, Ordered)
 var _ = Describe("Inspect", inspect.Inspect, Ordered)
+var _ = Describe("Applications Metrics", metrics.ApplicationsMetrics, Ordered)
+var _ = Describe("Membership", membership.Membership, Ordered)

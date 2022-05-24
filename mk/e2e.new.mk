@@ -62,7 +62,7 @@ test/e2e/k8s/start/cluster/$1:
 
 .PHONY: test/e2e/k8s/load/images/$1
 test/e2e/k8s/load/images/$1:
-	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/load/images
+	KIND_CLUSTER_NAME=$1 $(MAKE) $(K8S_CLUSTER_TOOL)/load
 
 .PHONY: test/e2e/k8s/wait/$1
 test/e2e/k8s/wait/$1:
@@ -94,7 +94,7 @@ test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 .PHONY: test/e2e/test
 test/e2e/test:
 	for t in $(E2E_PKG_LIST); do \
-		$(E2E_ENV_VARS) $(GO_TEST_E2E) -v -timeout=45m $$t || exit; \
+		$(E2E_ENV_VARS) $(GO_TEST_E2E) -v -timeout=60m $$t || exit; \
 	done
 
 # test/e2e/debug is used for quicker feedback of E2E tests (ex. debugging flaky tests)

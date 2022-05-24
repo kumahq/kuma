@@ -206,7 +206,6 @@ func StoreFixture(mgr manager.ResourceManager, r core_model.Resource) error {
 // the gateway plugin is registered.
 func BuildRuntime() (runtime.Runtime, error) {
 	config := kuma_cp.DefaultConfig()
-	config.Experimental.MeshGateway = true
 	builder, err := test_runtime.BuilderFor(context.Background(), config)
 	if err != nil {
 		return nil, err

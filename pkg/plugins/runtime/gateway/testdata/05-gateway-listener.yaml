@@ -7,9 +7,6 @@ Resources:
     enableReusePort: true
     filterChains:
     - filterChainMatch:
-        applicationProtocols:
-        - h2
-        - http/1.1
         serverNames:
         - foo.example.com
         transportProtocol: tls
@@ -40,6 +37,8 @@ Resources:
               responseDirectionConfig:
                 disableOnEtagHeader: true
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           mergeSlashes: true
           normalizePath: true
           rds:
@@ -69,9 +68,6 @@ Resources:
               tlsMinimumProtocolVersion: TLSv1_2
           requireClientCertificate: false
     - filterChainMatch:
-        applicationProtocols:
-        - h2
-        - http/1.1
         serverNames:
         - bar.example.com
         transportProtocol: tls
@@ -102,6 +98,8 @@ Resources:
               responseDirectionConfig:
                 disableOnEtagHeader: true
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           mergeSlashes: true
           normalizePath: true
           rds:
@@ -131,9 +129,6 @@ Resources:
               tlsMinimumProtocolVersion: TLSv1_2
           requireClientCertificate: false
     - filterChainMatch:
-        applicationProtocols:
-        - h2
-        - http/1.1
         serverNames:
         - '*.example.com'
         transportProtocol: tls
@@ -164,6 +159,8 @@ Resources:
               responseDirectionConfig:
                 disableOnEtagHeader: true
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           mergeSlashes: true
           normalizePath: true
           rds:
@@ -193,9 +190,6 @@ Resources:
               tlsMinimumProtocolVersion: TLSv1_2
           requireClientCertificate: false
     - filterChainMatch:
-        applicationProtocols:
-        - h2
-        - http/1.1
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -224,6 +218,8 @@ Resources:
               responseDirectionConfig:
                 disableOnEtagHeader: true
           - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           mergeSlashes: true
           normalizePath: true
           rds:

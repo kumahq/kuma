@@ -50,6 +50,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.globalZoneSyncService.annotations | object | `{}` | Additional annotations to put on the Global Zone Sync Service |
 | controlPlane.globalZoneSyncService.port | int | `5685` | Port on which Global Zone Sync Service is exposed |
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
+| controlPlane.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | controlPlane.resources | object | the resources will be chosen based on the mode | Optionally override the resource spec |
 | controlPlane.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | controlPlane.terminationGracePeriodSeconds | int | `30` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
@@ -87,7 +88,7 @@ A Helm chart for the Kuma Control Plane
 | cni.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
 | cni.image.registry | string | `"docker.io"` | CNI image registry |
 | cni.image.repository | string | `"kumahq/install-cni"` | CNI image repository |
-| cni.image.tag | string | `"0.0.9"` | CNI image tag |
+| cni.image.tag | string | `"0.0.10"` | CNI image tag |
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
 | cni.containerSecurityContext | object | `{}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
@@ -146,13 +147,12 @@ A Helm chart for the Kuma Control Plane
 | egress.containerSecurityContext | object | `{}` | Security context at the container level for egress |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
-| kubectl.image.registry | string | `"bitnami"` | The kubectl image registry |
+| kubectl.image.registry | string | `"kumahq"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"1.20"` | The kubectl image tag |
+| kubectl.image.tag | string | `"v1.20.15"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.podSecurityContext | object | `{}` | Security context at the pod level for crd/webhook/ns |
 | hooks.containerSecurityContext | object | `{}` | Security context at the container level for crd/webhook/ns |
-| experimental.meshGateway | bool | `false` | If true, it installs experimental built-in Gateway support |
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
 
 ## Custom Resource Definitions

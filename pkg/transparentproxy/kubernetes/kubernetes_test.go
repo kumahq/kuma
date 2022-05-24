@@ -69,6 +69,7 @@ var _ = Describe("kubernetes", func() {
 				"--redirect-dns-port", "25053",
 			},
 		}),
+
 		Entry("should generate no builtin DNS", testCaseKumactl{
 			pod: &kube_core.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -92,6 +93,33 @@ var _ = Describe("kubernetes", func() {
 				"--exclude-outbound-ports", "11000",
 				"--verbose",
 				"--skip-resolv-conf",
+			},
+		}),
+		Entry("should generate experimental engine", testCaseKumactl{
+			pod: &kube_core.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
+						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
+						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
+						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
+						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
+						metadata.KumaSidecarUID:                                 "12345",
+						metadata.KumaTransparentProxyingExperimentalEngine:      metadata.AnnotationEnabled,
+					},
+				},
+			},
+			commandLine: []string{
+				"--redirect-outbound-port", "25100",
+				"--redirect-inbound=" + "true",
+				"--redirect-inbound-port", "25204",
+				"--redirect-inbound-port-v6", "25206",
+				"--kuma-dp-uid", "12345",
+				"--exclude-inbound-ports", "12000",
+				"--exclude-outbound-ports", "11000",
+				"--verbose",
+				"--skip-resolv-conf",
+				"--experimental-transparent-proxy-engine",
 			},
 		}),
 		Entry("should generate for Gateway", testCaseKumactl{
@@ -168,6 +196,38 @@ var _ = Describe("kubernetes", func() {
 				RedirectAllDNSTraffic:  false,
 				AgentDNSListenerPort:   "25053",
 				DNSUpstreamTargetChain: "",
+			},
+		}),
+		Entry("should generate experimental engine", testCaseTransparentProxyConfig{
+			pod: &kube_core.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						metadata.KumaTrafficExcludeOutboundPorts:                "11000",
+						metadata.KumaTransparentProxyingOutboundPortAnnotation:  "25100",
+						metadata.KumaTrafficExcludeInboundPorts:                 "12000",
+						metadata.KumaTransparentProxyingInboundPortAnnotation:   "25204",
+						metadata.KumaTransparentProxyingInboundPortAnnotationV6: "25206",
+						metadata.KumaSidecarUID:                                 "12345",
+						metadata.KumaTransparentProxyingExperimentalEngine:      metadata.AnnotationEnabled,
+					},
+				},
+			},
+			tpConfig: &config.TransparentProxyConfig{
+				DryRun:                 false,
+				Verbose:                true,
+				RedirectPortOutBound:   "25100",
+				RedirectInBound:        true,
+				RedirectPortInBound:    "25204",
+				RedirectPortInBoundV6:  "25206",
+				ExcludeInboundPorts:    "12000",
+				ExcludeOutboundPorts:   "11000",
+				UID:                    "12345",
+				GID:                    "12345",
+				RedirectDNS:            false,
+				RedirectAllDNSTraffic:  false,
+				AgentDNSListenerPort:   "0",
+				DNSUpstreamTargetChain: "",
+				ExperimentalEngine:     true,
 			},
 		}),
 		Entry("should generate no builtin DNS", testCaseTransparentProxyConfig{

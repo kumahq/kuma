@@ -31,7 +31,7 @@ type PrometheusEndpointGenerator struct {
 }
 
 func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusEndpoint(ctx.Mesh.Resource)
+	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusConfig(ctx.Mesh.Resource)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get prometheus endpoint")
 	}
