@@ -2025,8 +2025,6 @@ spec:
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: kuma
     spec:
       affinity: 
         podAntiAffinity:
