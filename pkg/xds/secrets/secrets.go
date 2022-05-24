@@ -31,6 +31,9 @@ type MeshCa struct {
 
 type Secrets interface {
 	GetForDataPlane(dataplane *core_mesh.DataplaneResource, mesh *core_mesh.MeshResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, []MeshCa, error)
+	// GetForGatewayListener creates an identity cert only dependent on the
+	// `Dataplane` tags, meaning the certificate cannot be used to distinguish
+	// between listeners.
 	GetForGatewayListener(mesh *core_mesh.MeshResource, dataplane *core_mesh.DataplaneResource, otherMeshes []*core_mesh.MeshResource) (*core_xds.IdentitySecret, MeshCa, error)
 	GetForZoneEgress(zoneEgress *core_mesh.ZoneEgressResource, mesh *core_mesh.MeshResource) (*core_xds.IdentitySecret, []MeshCa, error)
 	Info(dpKey model.ResourceKey) *Info
