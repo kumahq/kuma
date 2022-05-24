@@ -2118,7 +2118,6 @@ spec:
       automountServiceAccountToken: true
       nodeSelector:
         
-        kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       hostNetwork: false
       terminationGracePeriodSeconds: 30
@@ -2274,7 +2273,6 @@ spec:
       serviceAccountName: kuma-egress
       nodeSelector:
       
-        kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
         - name: egress
@@ -2394,7 +2392,6 @@ spec:
       serviceAccountName: kuma-ingress
       nodeSelector:
       
-        kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       terminationGracePeriodSeconds: 30
       containers:

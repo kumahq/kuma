@@ -2118,7 +2118,6 @@ spec:
     spec:
       nodeSelector:
       
-        kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       hostNetwork: true
       tolerations:
@@ -2225,7 +2224,6 @@ spec:
       automountServiceAccountToken: true
       nodeSelector:
         
-        kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       hostNetwork: false
       terminationGracePeriodSeconds: 30

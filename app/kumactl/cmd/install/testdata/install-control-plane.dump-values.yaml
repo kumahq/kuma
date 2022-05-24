@@ -60,7 +60,6 @@ controlPlane:
   # -- Node selector for the Kuma Control Plane pods
   nodeSelector:
     kubernetes.io/os: linux
-    kubernetes.io/arch: amd64
 
   podDisruptionBudget:
     # -- Whether to create a pod disruption budget
@@ -318,7 +317,6 @@ cni:
   # -- Node Selector for the CNI pods
   nodeSelector:
     kubernetes.io/os: linux
-    kubernetes.io/arch: amd64
 
   image:
     # -- CNI image registry
@@ -436,7 +434,6 @@ ingress:
   # -- Node Selector for the Ingress pods
   nodeSelector:
     kubernetes.io/os: linux
-    kubernetes.io/arch: amd64
 
   podDisruptionBudget:
     # -- Whether to create a pod disruption budget
@@ -546,7 +543,6 @@ egress:
   # -- Node Selector for the Egress pods
   nodeSelector:
     kubernetes.io/os: linux
-    kubernetes.io/arch: amd64
 
   podDisruptionBudget:
     # -- Whether to create a pod disruption budget
@@ -627,7 +623,6 @@ hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
     kubernetes.io/os: linux
-    kubernetes.io/arch: amd64
 
   # -- Security context at the pod level for crd/webhook/ns
   podSecurityContext: {}
