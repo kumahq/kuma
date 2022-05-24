@@ -28,12 +28,12 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | controlPlane.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
 | controlPlane.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
-| controlPlane.podDisruptionBudget.enabled | bool | `false` | Whether or not to create a pod disruption budget |
+| controlPlane.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
 | controlPlane.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | controlPlane.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["{{ include \"kuma.name\" . }}-control-plane"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Control Plane pods. This is rendered as a template, so you can reference other helm variables or includes. |
-| controlPlane.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Control Plane pods. This is rendered as a template so you can use variables to generate match labels. |
+| controlPlane.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Control Plane pods. This is rendered as a template, so you can use variables to generate match labels. |
 | controlPlane.injectorFailurePolicy | string | `"Fail"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
-| controlPlane.service.enabled | bool | `true` | Whether or not to create a service resource. |
+| controlPlane.service.enabled | bool | `true` | Whether to create a service resource. |
 | controlPlane.service.name | string | `nil` | Optionally override of the Kuma Control Plane Service's name |
 | controlPlane.service.type | string | `"ClusterIP"` | Service type of the Kuma Control Plane |
 | controlPlane.service.annotations | object | `{}` | Additional annotations to put on the Kuma Control Plane |
@@ -43,8 +43,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.ingress.annotations | object | `{}` | Map of ingress annotations. |
 | controlPlane.ingress.path | string | `"/"` | Ingress path. |
 | controlPlane.ingress.pathType | string | `"ImplementationSpecific"` | Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix) |
-| controlPlane.globalZoneSyncService | object | `{"annotations":{},"enabled":true,"loadBalancerIP":null,"port":5685,"type":"LoadBalancer"}` | URL of Global Kuma CP |
-| controlPlane.globalZoneSyncService.enabled | bool | `true` | Whether or not to create a k8s service for the global zone sync service. It will only be created when enabled and deploying the global control plane. |
+| controlPlane.globalZoneSyncService.enabled | bool | `true` | Whether to create a k8s service for the global zone sync service. It will only be created when enabled and deploying the global control plane. |
 | controlPlane.globalZoneSyncService.type | string | `"LoadBalancer"` | Service type of the Global-zone sync |
 | controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
 | controlPlane.globalZoneSyncService.annotations | object | `{}` | Additional annotations to put on the Global Zone Sync Service |
@@ -60,12 +59,12 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.tls.apiServer.secretName | string | `""` | Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS |
 | controlPlane.tls.apiServer.clientCertsSecretName | string | `""` | Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS |
 | controlPlane.tls.kdsGlobalServer.secretName | string | `""` | Name of the K8s TLS Secret resource. If you set this and don't set create=true, you have to create the secret manually. |
-| controlPlane.tls.kdsGlobalServer.create | bool | `false` | Whether or not to create the TLS secret in helm. |
+| controlPlane.tls.kdsGlobalServer.create | bool | `false` | Whether to create the TLS secret in helm. |
 | controlPlane.tls.kdsGlobalServer.cert | string | `""` | The TLS certificate to offer. |
 | controlPlane.tls.kdsGlobalServer.key | string | `""` | The TLS key to use. |
-| controlPlane.tls.kdsZoneClient.secretName | string | `""` | Name of the K8s TLS Secret resource. If you set this and don't set create=true, you have to create the secret manually. |
-| controlPlane.tls.kdsZoneClient.create | bool | `false` | Whether or not to create the TLS secret in helm. |
-| controlPlane.tls.kdsZoneClient.cert | string | `""` | The TLS certificate to expect. |
+| controlPlane.tls.kdsZoneClient.secretName | string | `""` | Name of the K8s Secret resource that contains ca.crt which was used to sign the certificate of KDS Global Server. If you set this and don't set create=true, you have to create the secret manually. |
+| controlPlane.tls.kdsZoneClient.create | bool | `false` | Whether to create the TLS secret in helm. |
+| controlPlane.tls.kdsZoneClient.cert | string | `""` | CA bundle that was used to sign the certificate of KDS Global Server. |
 | controlPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma CP ImagePullPolicy |
 | controlPlane.image.repository | string | `"kuma-cp"` | Kuma CP image repository |
 | controlPlane.image.tag | string | `nil` | Kuma CP Image tag. When not specified, the value is copied from global.tag |
@@ -108,7 +107,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
 | ingress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | ingress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
-| ingress.service.enabled | bool | `true` | Whether or not to create a Service resource. |
+| ingress.service.enabled | bool | `true` | Whether to create a Service resource. |
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
 | ingress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
@@ -116,10 +115,10 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
 | ingress.annotations | object | `{}` | Additional deployment annotation |
 | ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
-| ingress.podDisruptionBudget.enabled | bool | `false` | Whether or not to create a pod disruption budget |
+| ingress.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
 | ingress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | ingress.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["kuma-ingress"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Ingress pods This is rendered as a template, so you can reference other helm variables or includes. |
-| ingress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Mesh Ingress pods. This is rendered as a template so you can use variables to generate match labels. |
+| ingress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Mesh Ingress pods. This is rendered as a template, so you can use variables to generate match labels. |
 | ingress.podSecurityContext | object | `{}` | Security context at the pod level for ingress |
 | ingress.containerSecurityContext | object | `{}` | Security context at the container level for ingress |
 | egress.enabled | bool | `false` | If true, it deploys Egress for cross cluster communication |
@@ -131,7 +130,7 @@ A Helm chart for the Kuma Control Plane
 | egress.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
 | egress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | egress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
-| egress.service.enabled | bool | `true` | Whether or not to create the service object |
+| egress.service.enabled | bool | `true` | Whether to create the service object |
 | egress.service.type | string | `"ClusterIP"` | Service type of the Egress |
 | egress.service.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
 | egress.service.annotations | object | `{}` | Additional annotations to put on the Egress service |
@@ -139,10 +138,10 @@ A Helm chart for the Kuma Control Plane
 | egress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
 | egress.annotations | object | `{}` | Additional deployment annotation |
 | egress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
-| egress.podDisruptionBudget.enabled | bool | `false` | Whether or not to create a pod disruption budget |
+| egress.podDisruptionBudget.enabled | bool | `false` | Whether to create a pod disruption budget |
 | egress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | egress.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["kuma-egress"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Egress pods. This is rendered as a template, so you can reference other helm variables or includes. |
-| egress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Egress pods. This is rendered as a template so you can use variables to generate match labels. |
+| egress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Egress pods. This is rendered as a template, so you can use variables to generate match labels. |
 | egress.podSecurityContext | object | `{}` | Security context at the pod level for egress |
 | egress.containerSecurityContext | object | `{}` | Security context at the container level for egress |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
