@@ -18,6 +18,8 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
+
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 type componentVersion struct {
