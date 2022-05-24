@@ -26,7 +26,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.autoscaling.maxReplicas | int | `5` | The max CP pods to scale to |
 | controlPlane.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | controlPlane.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
-| controlPlane.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
+| controlPlane.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
 | controlPlane.affinity | object | `{}` | Affinity placement rule for the Kuma Control Plane pods |
 | controlPlane.injectorFailurePolicy | string | `"Fail"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
 | controlPlane.service.name | string | `nil` | Optionally override of the Kuma Control Plane Service's name |
@@ -71,7 +71,7 @@ A Helm chart for the Kuma Control Plane
 | cni.binDir | string | `"/var/lib/cni/bin"` | Set the CNI bin directory |
 | cni.confName | string | `"kuma-cni.conf"` | Set the CNI configuration name |
 | cni.logLevel | string | `"info"` | CNI log level: one of off,info,debug |
-| cni.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
+| cni.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
 | cni.image.registry | string | `"docker.io"` | CNI image registry |
 | cni.image.repository | string | `"kumahq/install-cni"` | CNI image repository |
 | cni.image.tag | string | `"0.0.10"` | CNI image tag |
@@ -91,7 +91,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
 | ingress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
 | ingress.annotations | object | `{}` | Additional deployment annotation |
-| ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
+| ingress.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
 | ingress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
 | ingress.podSecurityContext | object | `{}` | Security context at the pod level for ingress |
 | ingress.containerSecurityContext | object | `{}` | Security context at the container level for ingress |
@@ -104,7 +104,7 @@ A Helm chart for the Kuma Control Plane
 | egress.service.port | int | `10002` | Port on which Egress is exposed |
 | egress.service.nodePort | string | `nil` | Port on which service is exposed on Node for service of type NodePort |
 | egress.annotations | object | `{}` | Additional deployment annotation |
-| egress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
+| egress.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the Egress pods |
 | egress.affinity | object | `{}` | Affinity placement rule for the Kuma Ingress pods |
 | egress.podSecurityContext | object | `{}` | Security context at the pod level for egress |
 | egress.containerSecurityContext | object | `{}` | Security context at the container level for egress |
@@ -113,7 +113,7 @@ A Helm chart for the Kuma Control Plane
 | kubectl.image.registry | string | `"kumahq"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
 | kubectl.image.tag | string | `"v1.20.15"` | The kubectl image tag |
-| hooks.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
+| hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.podSecurityContext | object | `{}` | Security context at the pod level for crd/webhook/ns |
 | hooks.containerSecurityContext | object | `{}` | Security context at the container level for crd/webhook/ns |
 | experimental.gatewayAPI | bool | `false` | If true, it installs experimental Gateway API support |
