@@ -144,8 +144,7 @@ var _ = Describe("Secrets", func() {
 			info := secrets.Info(core_model.MetaToResourceKey(newDataplane().Meta))
 			Expect(info.Generation).To(Equal(now))
 			Expect(info.Expiration.Unix()).To(Equal(now.Add(1 * time.Hour).Unix()))
-			Expect(info.MeshInfos).To(HaveLen(1))
-			Expect(info.MeshInfos[0].MTLS.EnabledBackend).To(Equal("ca-1"))
+			Expect(info.OwnMesh.MTLS.EnabledBackend).To(Equal("ca-1"))
 			Expect(info.Tags).To(Equal(mesh_proto.MultiValueTagSet{
 				"kuma.io/service": map[string]bool{
 					"web": true,
@@ -265,8 +264,7 @@ var _ = Describe("Secrets", func() {
 			info := secrets.Info(core_model.MetaToResourceKey(newZoneEgress().Meta))
 			Expect(info.Generation).To(Equal(now))
 			Expect(info.Expiration.Unix()).To(Equal(now.Add(1 * time.Hour).Unix()))
-			Expect(info.MeshInfos).To(HaveLen(1))
-			Expect(info.MeshInfos[0].MTLS.EnabledBackend).To(Equal("ca-1"))
+			Expect(info.OwnMesh.MTLS.EnabledBackend).To(Equal("ca-1"))
 			Expect(info.Tags).To(Equal(mesh_proto.MultiValueTagSet{
 				"kuma.io/service": map[string]bool{
 					mesh_proto.ZoneEgressServiceName: true,

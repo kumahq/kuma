@@ -18,12 +18,12 @@ var TestSecretsInfo = &secrets.Info{
 			"web": true,
 		},
 	},
-	MeshInfos: []secrets.MeshInfo{{
+	OwnMesh: secrets.MeshInfo{
 		MTLS: &mesh_proto.Mesh_Mtls{
 			EnabledBackend: "ca-1",
 			Backends:       nil,
 		},
-	}},
+	},
 	IssuedBackend:     "ca-1",
 	SupportedBackends: []string{"ca-1"},
 }

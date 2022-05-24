@@ -53,7 +53,8 @@ type Info struct {
 	IssuedBackend     string
 	SupportedBackends []string
 
-	MeshInfos []MeshInfo
+	OwnMesh        MeshInfo
+	OtherMeshInfos []MeshInfo
 }
 
 func (c *Info) CertLifetime() time.Duration {
@@ -102,7 +103,8 @@ func (s *secrets) Info(dpKey model.ResourceKey) *Info {
 
 type certs struct {
 	identity   *core_xds.IdentitySecret
-	cas        []MeshCa
+	ownCa      MeshCa
+	otherCas   []MeshCa
 	allInOneCa MeshCa
 	info       *Info
 }
@@ -169,17 +171,18 @@ func (s *secrets) get(
 	resourceKey.Mesh = meshName
 	certs := s.certs(resourceKey)
 
-	if shouldGenerate, reason := s.shouldGenerateCerts(
+	if updateKinds, debugReason := s.shouldGenerateCerts(
 		certs.Info(),
-		append([]*core_mesh.MeshResource{mesh}, otherMeshes...),
 		tags,
-	); shouldGenerate {
+		mesh,
+		otherMeshes,
+	); len(updateKinds) > 0 {
 		log.Info(
 			"generating certificate",
-			string(resource.Descriptor().Name), resourceKey, "reason", reason,
+			string(resource.Descriptor().Name), resourceKey, "reason", debugReason,
 		)
 
-		certs, err := s.generateCerts(meshName, tags, mesh, otherMeshes)
+		certs, err := s.generateCerts(tags, mesh, otherMeshes, certs, updateKinds)
 		if err != nil {
 			return nil, nil, MeshCa{}, errors.Wrap(err, "could not generate certificates")
 		}
@@ -188,14 +191,14 @@ func (s *secrets) get(
 		s.cachedCerts[resourceKey] = certs
 		s.Unlock()
 
-		return certs.identity, certs.cas, certs.allInOneCa, nil
+		return certs.identity, append([]MeshCa{certs.ownCa}, certs.otherCas...), certs.allInOneCa, nil
 	}
 
 	if certs == nil { // previous "if" should guarantee that the certs are always there
 		return nil, nil, MeshCa{}, errors.New("certificates were not generated")
 	}
 
-	return certs.identity, certs.cas, certs.allInOneCa, nil
+	return certs.identity, append([]MeshCa{certs.ownCa}, certs.otherCas...), certs.allInOneCa, nil
 }
 
 func (s *secrets) Cleanup(dpKey model.ResourceKey) {
@@ -204,121 +207,153 @@ func (s *secrets) Cleanup(dpKey model.ResourceKey) {
 	s.Unlock()
 }
 
-func (s *secrets) shouldGenerateCerts(info *Info, meshInfos []*core_mesh.MeshResource, tags mesh_proto.MultiValueTagSet) (bool, string) {
+func (s *secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagSet, ownMesh *core_mesh.MeshResource, otherMeshInfos []*core_mesh.MeshResource) (UpdateKinds, string) {
 	if info == nil {
-		return true, "mTLS is enabled and DP hasn't received a certificate yet"
+		return UpdateEverything(), "mTLS is enabled and DP hasn't received a certificate yet"
 	}
 
-	if len(info.MeshInfos) != len(meshInfos) {
-		return true, "Mesh mTLS settings have changed"
+	var reason string
+	updates := UpdateKinds{}
+
+	if !proto.Equal(info.OwnMesh.MTLS, ownMesh.Spec.Mtls) {
+		updates.AddKind(OwnMeshChange)
+		reason = "Mesh mTLS settings have changed"
 	}
 
-	for i, mesh := range info.MeshInfos {
-		if !proto.Equal(mesh.MTLS, meshInfos[i].Spec.Mtls) {
-			return true, "Mesh mTLS settings have changed"
+	if len(info.OtherMeshInfos) != len(otherMeshInfos) {
+		updates.AddKind(OtherMeshChange)
+		reason = "Another mesh has been added or removed"
+	} else {
+		for i, mesh := range info.OtherMeshInfos {
+			if !proto.Equal(mesh.MTLS, otherMeshInfos[i].Spec.Mtls) {
+				updates.AddKind(OtherMeshChange)
+				reason = "Another Mesh's mTLS settings have changed"
+				break
+			}
 		}
 	}
 
 	if tags.String() != info.Tags.String() {
-		return true, "DP tags have changed"
+		updates.AddKind(IdentityChange)
+		reason = "DP tags have changed"
 	}
 
 	if info.ExpiringSoon() {
-		return true, fmt.Sprintf("the certificate expiring soon. Generated at %q, expiring at %q", info.Generation, info.Expiration)
+		updates.AddKind(IdentityChange)
+		reason = fmt.Sprintf("the certificate expiring soon. Generated at %q, expiring at %q", info.Generation, info.Expiration)
 	}
 
-	return false, ""
+	return updates, reason
 }
 
 func (s *secrets) generateCerts(
-	resourceMesh string,
 	tags mesh_proto.MultiValueTagSet,
 	mesh *core_mesh.MeshResource,
 	otherMeshes []*core_mesh.MeshResource,
+	oldCerts *certs,
+	updateKinds UpdateKinds,
 ) (*certs, error) {
-	requester := Identity{
-		Services: tags,
-		Mesh:     resourceMesh,
+	var identity *core_xds.IdentitySecret
+	var ownCa MeshCa
+	var otherCas []MeshCa
+	var allInOneCa MeshCa
+	info := &Info{}
+
+	if oldCerts != nil {
+		identity = oldCerts.identity
+		ownCa = oldCerts.ownCa
+		otherCas = oldCerts.otherCas
+		allInOneCa = oldCerts.allInOneCa
+		info = oldCerts.Info()
 	}
 
-	identity, issuedBackend, err := s.identityProvider.Get(context.Background(), requester, mesh)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get Dataplane cert pair")
-	}
+	meshName := mesh.GetMeta().GetName()
 
-	s.certGenerationsMetric.WithLabelValues(requester.Mesh).Inc()
-
-	ca, supportedBackends, err := s.caProvider.Get(context.Background(), mesh)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get mesh CA cert")
-	}
-
-	meshInfos := []MeshInfo{{
-		MTLS: mesh.Spec.Mtls,
-	}}
-
-	cas := []MeshCa{{
-		Mesh:     mesh.GetMeta().GetName(),
-		CaSecret: ca,
-	}}
-	var bytes [][]byte
-	var names []string
-
-	for _, otherMesh := range otherMeshes {
-		otherCa, _, err := s.caProvider.Get(context.Background(), otherMesh)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not get other mesh CA cert")
+	if updateKinds.HasType(IdentityChange) || updateKinds.HasType(OwnMeshChange) {
+		requester := Identity{
+			Services: tags,
+			Mesh:     meshName,
 		}
 
-		meshInfos = append(meshInfos, MeshInfo{
-			MTLS: otherMesh.Spec.Mtls,
-		})
+		identitySecret, issuedBackend, err := s.identityProvider.Get(context.Background(), requester, mesh)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get Dataplane cert pair")
+		}
 
-		meshName := otherMesh.GetMeta().GetName()
+		s.certGenerationsMetric.WithLabelValues(requester.Mesh).Inc()
 
-		cas = append(cas, MeshCa{
+		block, _ := pem.Decode(identitySecret.PemCerts[0])
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not extract info about certificate")
+		}
+
+		info.Tags = tags
+		info.IssuedBackend = issuedBackend
+		info.Expiration = cert.NotAfter
+		info.Generation = core.Now()
+		identity = identitySecret
+	}
+
+	if updateKinds.HasType(OwnMeshChange) {
+		caSecret, supportedBackends, err := s.caProvider.Get(context.Background(), mesh)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get mesh CA cert")
+		}
+
+		ownCa = MeshCa{
 			Mesh:     meshName,
-			CaSecret: otherCa,
-		})
-
-		names = append(names, meshName)
-		bytes = append(bytes, otherCa.PemCerts...)
+			CaSecret: caSecret,
+		}
+		info.SupportedBackends = supportedBackends
+		info.OwnMesh = MeshInfo{
+			MTLS: mesh.Spec.Mtls,
+		}
 	}
 
-	sort.Strings(names)
-	allInOneCa := MeshCa{
-		Mesh: strings.Join(names, ":"),
-		CaSecret: &core_xds.CaSecret{
-			PemCerts: bytes,
-		},
-	}
+	if updateKinds.HasType(OtherMeshChange) {
+		var otherMeshInfos []MeshInfo
+		var bytes [][]byte
+		var names []string
+		otherCas = []MeshCa{}
 
-	info, err := newCertInfo(identity, tags, issuedBackend, supportedBackends, meshInfos)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not extract info about certificate")
+		for _, otherMesh := range otherMeshes {
+			otherCa, _, err := s.caProvider.Get(context.Background(), otherMesh)
+			if err != nil {
+				return nil, errors.Wrap(err, "could not get other mesh CA cert")
+			}
+
+			otherMeshInfos = append(otherMeshInfos, MeshInfo{
+				MTLS: otherMesh.Spec.Mtls,
+			})
+
+			meshName := otherMesh.GetMeta().GetName()
+
+			otherCas = append(otherCas, MeshCa{
+				Mesh:     meshName,
+				CaSecret: otherCa,
+			})
+
+			names = append(names, meshName)
+			bytes = append(bytes, otherCa.PemCerts...)
+		}
+
+		sort.Strings(names)
+		allInOneCa = MeshCa{
+			Mesh: strings.Join(names, ":"),
+			CaSecret: &core_xds.CaSecret{
+				PemCerts: bytes,
+			},
+		}
+
+		info.OtherMeshInfos = otherMeshInfos
 	}
 
 	return &certs{
 		identity:   identity,
-		cas:        cas,
+		ownCa:      ownCa,
+		otherCas:   otherCas,
 		allInOneCa: allInOneCa,
 		info:       info,
 	}, nil
-}
-
-func newCertInfo(identityCert *core_xds.IdentitySecret, tags mesh_proto.MultiValueTagSet, issuedBackend string, supportedBackends []string, meshInfos []MeshInfo) (*Info, error) {
-	block, _ := pem.Decode(identityCert.PemCerts[0])
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-	certInfo := &Info{
-		Tags:              tags,
-		Expiration:        cert.NotAfter,
-		Generation:        core.Now(),
-		IssuedBackend:     issuedBackend,
-		SupportedBackends: supportedBackends,
-		MeshInfos:         meshInfos,
-	}
-	return certInfo, nil
 }
