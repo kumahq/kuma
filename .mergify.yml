@@ -6,7 +6,7 @@ pull_request_rules:
   actions:
     backport:
       branches:
-      - release-1.6
+      - release-1.7
 
 - name: automatically merge backport PRs
   conditions:

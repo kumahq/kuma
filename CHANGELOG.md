@@ -1,5 +1,91 @@
 # CHANGELOG
 
+## [1.7.0]
+
+### New features:
+
+Gateway:
+* add `GatewayClass.Spec.ParametersRef` support [#4157](https://github.com/kumahq/kuma/pull/4157) @michaelbeaumont
+* cp annotations from gateway to svc [#4327](https://github.com/kumahq/kuma/pull/4327) @johnharris85
+* only reconcile Gateway when GatewayClass is Ready [#4162](https://github.com/kumahq/kuma/pull/4162) @michaelbeaumont
+
+Observability:
+* hijack application metrics [#4286](https://github.com/kumahq/kuma/pull/4286) @lukidzi
+* unified installation of `metrics/logging/tracing` into one command `observability` [#4308](https://github.com/kumahq/kuma/pull/4308) @lukidzi
+
+Helm:
+* set host network var in helm/cp-deployment.yaml [#4209](https://github.com/kumahq/kuma/pull/4209) @SallyBlichWalkMe
+* add resource management for jobs [#4254](https://github.com/kumahq/kuma/pull/4254) @gdasson
+* option for automountSAT=false on cp [#4309](https://github.com/kumahq/kuma/pull/4309) @gdasson
+* helm chart improvements [#4337](https://github.com/kumahq/kuma/pull/4337) @bartsmykla
+
+CP:
+* experimental transparent proxy annotation [#4240](https://github.com/kumahq/kuma/pull/4240) @parkanzky
+* graceful shutdown on Universal using HDS [#4246](https://github.com/kumahq/kuma/pull/4246) @jakubdyszkiewicz
+* intercept signal for different platforms [#4283](https://github.com/kumahq/kuma/pull/4283) @jakubdyszkiewicz
+* XDS config dump on Global CP [#4301](https://github.com/kumahq/kuma/pull/4301) @jakubdyszkiewicz
+* validate DP compat on kuma backend [#4236](https://github.com/kumahq/kuma/pull/4236) @parkanzky
+
+DP:
+* graceful shutdown of kuma-dp [#4229](https://github.com/kumahq/kuma/pull/4229) @jakubdyszkiewicz
+
+Other:
+* allow custom sidecar config [#4280](https://github.com/kumahq/kuma/pull/4280) @parkanzky
+
+### Other notable changes:
+
+Gateway:
+* add /finalizers permission for OwnerReferencesPermissionEnforcement plugin [#4239](https://github.com/kumahq/kuma/pull/4239) @michaelbeaumont
+* don't match on ALPN in gateway (#4198) [#4272](https://github.com/kumahq/kuma/pull/4272) @wjrbetts
+
+Helm:
+* delete 'kubernetes.io/arch' node selector [#4335](https://github.com/kumahq/kuma/pull/4335) @lobkovilya
+
+CP:
+* don't always recompute mesh contexts [#4267](https://github.com/kumahq/kuma/pull/4267) @michaelbeaumont
+* don't run dataplane gc in global [#4184](https://github.com/kumahq/kuma/pull/4184) @lahabana
+* graceful components [#4277](https://github.com/kumahq/kuma/pull/4277) @jakubdyszkiewicz
+* memory store cannot delete a parent [#4194](https://github.com/kumahq/kuma/pull/4194) @jakubdyszkiewicz
+* protocol check should be case-insensitive [#4248](https://github.com/kumahq/kuma/pull/4248) @lukidzi
+* remove dns server from control plane [#4192](https://github.com/kumahq/kuma/pull/4192) @lahabana
+* fix: automatically detect dns lookup family for cp cluster [#4275](https://github.com/kumahq/kuma/pull/4275) @slonka
+
+ZoneIngress:
+* graceful start of many ZoneIngresses [#4305](https://github.com/kumahq/kuma/pull/4305) @jakubdyszkiewicz
+
+ZoneEgress:
+* resolve zone-ingress advertized address [#4219](https://github.com/kumahq/kuma/pull/4219) @lahabana
+* do not change ip to ZoneEgress address [#4193](https://github.com/kumahq/kuma/pull/4193) @lukidzi
+
+Kumactl:
+* remove flag '--experimental-meshgateway' [#4315](https://github.com/kumahq/kuma/pull/4315) @lobkovilya
+
+Other:
+* release for arm64 now publish correct arch image [#4276](https://github.com/kumahq/kuma/pull/4276) @lukidzi
+* support ARM Linux/Darwin for dev/tools [#4199](https://github.com/kumahq/kuma/pull/4199) @lukidzi
+
+### Dependency upgrades:
+
+* upgrade envoy to 1.22.0 [#4288](https://github.com/kumahq/kuma/pull/4288) @lobkovilya
+* upgrade kuma-cni to 0.0.10 [#4313](https://github.com/kumahq/kuma/pull/4313) @lobkovilya
+* upgrade tproxy iptables to v0.2.2 [#4328](https://github.com/kumahq/kuma/pull/4328) @bartsmykla
+* upgrade GUI to the latest version [#4316](https://github.com/kumahq/kuma/pull/4316) [#4338](https://github.com/kumahq/kuma/pull/4338) @jakubdyszkiewicz, @lahabana
+* upgrade kubectl to version with ARM support [#4180](https://github.com/kumahq/kuma/pull/4180) @lukidzi
+* upgrade protoc and regenerate files [#4169](https://github.com/kumahq/kuma/pull/4169) @lukidzi
+* bump github.com/golang-migrate/migrate/v4 from 4.15.1 to 4.15.2 [#4234](https://github.com/kumahq/kuma/pull/4234) @dependabot
+* bump github.com/gruntwork-io/terratest from 0.40.6 to 0.40.7 [#4178](https://github.com/kumahq/kuma/pull/4178) @dependabot
+* bump github.com/gruntwork-io/terratest from 0.40.7 to 0.40.8 [#4260](https://github.com/kumahq/kuma/pull/4260) @dependabot
+* bump github.com/gruntwork-io/terratest from 0.40.8 to 0.40.10 [#4322](https://github.com/kumahq/kuma/pull/4322) @dependabot
+* bump github.com/lib/pq from 1.10.5 to 1.10.6 [#4299](https://github.com/kumahq/kuma/pull/4299) @dependabot
+* bump github.com/miekg/dns from 1.1.48 to 1.1.49 [#4291](https://github.com/kumahq/kuma/pull/4291) @dependabot
+* bump github.com/onsi/ginkgo/v2 from 2.1.3 to 2.1.4 [#4233](https://github.com/kumahq/kuma/pull/4233) @dependabot
+* bump github.com/prometheus/client_golang from 1.12.1 to 1.12.2 [#4290](https://github.com/kumahq/kuma/pull/4290) @dependabot
+* bump github.com/prometheus/common from 0.33.0 to 0.34.0 [#4235](https://github.com/kumahq/kuma/pull/4235) @dependabot
+* bump github.com/spf13/viper from 1.10.0 to 1.11.0 [#4177](https://github.com/kumahq/kuma/pull/4177) @dependabot
+* bump google.golang.org/grpc from 1.45.0 to 1.46.0 [#4213](https://github.com/kumahq/kuma/pull/4213) @dependabot
+* bump google.golang.org/grpc from 1.46.0 to 1.46.2 [#4289](https://github.com/kumahq/kuma/pull/4289) @dependabot
+* bump k8s.io/apiextensions-apiserver from 0.23.5 to 0.23.6 [#4216](https://github.com/kumahq/kuma/pull/4216) @dependabot
+
 ## [1.6.0]
 
 ### New features:
