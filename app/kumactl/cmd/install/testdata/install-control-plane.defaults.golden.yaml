@@ -12,7 +12,8 @@ kind: ServiceAccount
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels:
+  labels: 
+    app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -21,7 +22,8 @@ kind: ConfigMap
 metadata:
   name: kuma-control-plane-config
   namespace: kuma-system
-  labels:
+  labels: 
+    app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 data:
@@ -1679,7 +1681,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kuma-control-plane
-  labels:
+  labels: 
+    app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1891,7 +1894,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kuma-control-plane
-  labels:
+  labels: 
+    app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
@@ -1908,7 +1912,8 @@ kind: Role
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels:
+  labels: 
+    app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
@@ -1942,6 +1947,10 @@ kind: RoleBinding
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -1956,7 +1965,8 @@ kind: Service
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels:
+  labels: 
+    app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
@@ -1991,10 +2001,10 @@ kind: Deployment
 metadata:
   name: kuma-control-plane
   namespace: kuma-system
-  labels:
+  labels: 
+    app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app: kuma-control-plane
 spec:
   replicas: 1
   strategy:
@@ -2009,25 +2019,35 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 47f8e00f6916a54e5c2c5c1f0369b8107436c15171abc1167b1fa35bd9afad5f
-        checksum/tls-secrets: 953b796aba8525a1a8557b0432b64ce88c9ddd0a97c490753fe978bfd95d823c
-      labels:
+        checksum/config: 956af479c8173abfff0f4f347886177e189c0e3582b718fa3c3ce2aab7237edd
+        checksum/tls-secrets: 7b4fe1cbf70c6e93eea11f4a23c4bb990af16553b3f673c8c031996339fcb29e
+      labels: 
+        app: kuma-control-plane
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
-        app: kuma-control-plane
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
     spec:
-      affinity:
+      affinity: 
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
+          - podAffinityTerm:
               labelSelector:
                 matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                  - 'kuma'
                 - key: app
                   operator: In
                   values:
-                  - kuma-control-plane
+                  - 'kuma-control-plane'
               topologyKey: kubernetes.io/hostname
+            weight: 100
       serviceAccountName: kuma-control-plane
       automountServiceAccountToken: true
       nodeSelector:
@@ -2035,6 +2055,7 @@ spec:
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       hostNetwork: false
+      terminationGracePeriodSeconds: 30
       containers:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
@@ -2104,6 +2125,7 @@ spec:
             requests:
               cpu: 100m
               memory: 256Mi
+          
           volumeMounts:
             - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt
@@ -2133,8 +2155,8 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: kuma-admission-mutating-webhook-configuration
   namespace: kuma-system
-  labels:
-  
+  labels: 
+    app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -2261,8 +2283,8 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: kuma-validating-webhook-configuration
   namespace: kuma-system
-  labels:
-  
+  labels: 
+    app: kuma-control-plane
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
