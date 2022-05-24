@@ -2061,7 +2061,6 @@ spec:
       automountServiceAccountToken: true
       nodeSelector:
         
-        kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       hostNetwork: false
       containers:
@@ -2201,7 +2200,6 @@ spec:
       serviceAccountName: kuma-egress
       nodeSelector:
       
-        kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
         - name: egress
