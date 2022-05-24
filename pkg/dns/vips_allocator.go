@@ -151,11 +151,12 @@ func addFromMeshGateway(outboundSet *vips.VirtualOutboundMeshView, mesh string, 
 			hostname := listener.Hostname
 			origin := fmt.Sprintf("mesh-gateway:%s:%s:%s", mesh, gateway.GetMeta().GetName(), hostname)
 
-			if err := outboundSet.Add(vips.NewFqdnEntry(hostname), vips.OutboundEntry{
+			entry := vips.OutboundEntry{
 				Port:   listener.Port,
 				TagSet: tags,
 				Origin: origin,
-			}); err != nil {
+			}
+			if err := outboundSet.Add(vips.NewFqdnEntry(hostname), entry); err != nil {
 				Log.WithValues("mesh", mesh, "gateway", gateway.GetMeta().GetName(), "listener", i).
 					Info("failed to add MeshGateway-generated outbound", "reason", err.Error())
 			}

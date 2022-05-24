@@ -365,6 +365,9 @@ func (OutboundProxyGenerator) determineRoutes(
 				envoy_common.WithService(service),
 				envoy_common.WithName(name),
 				envoy_common.WithWeight(destination.GetWeight().GetValue()),
+				// The mesh tag is set here if this destination is generated
+				// from a MeshGateway virtual outbound and is not part of the
+				// service tags
 				envoy_common.WithTags(envoy_common.Tags(destination.Destination).WithoutTags("kuma.io/mesh")),
 				envoy_common.WithTimeout(timeoutConf),
 				envoy_common.WithLB(route.Spec.GetConf().GetLoadBalancer()),

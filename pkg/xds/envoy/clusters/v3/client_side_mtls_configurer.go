@@ -73,11 +73,7 @@ func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_cor
 	if !c.UpstreamMesh.MTLSEnabled() {
 		return nil, nil
 	}
-	localMeshName := c.UpstreamMesh.GetMeta().GetName()
-	if c.LocalMesh != "" {
-		localMeshName = c.LocalMesh
-	}
-	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(localMeshName, c.UpstreamMesh.GetMeta().GetName(), c.UpstreamService, sni)
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.LocalMesh, c.UpstreamMesh.GetMeta().GetName(), c.UpstreamService, sni)
 	if err != nil {
 		return nil, err
 	}

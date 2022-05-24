@@ -25,6 +25,7 @@ func ClientSideMTLS(mesh *core_mesh.MeshResource, upstreamService string, upstre
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
 			UpstreamMesh:     mesh,
 			UpstreamService:  upstreamService,
+			LocalMesh:        mesh.GetMeta().GetName(),
 			Tags:             tags,
 			UpstreamTLSReady: upstreamTLSReady,
 		})
@@ -35,8 +36,8 @@ func CrossMeshClientSideMTLS(localMesh string, upstreamMesh *core_mesh.MeshResou
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV3(&v3.ClientSideMTLSConfigurer{
 			UpstreamMesh:     upstreamMesh,
-			LocalMesh:        localMesh,
 			UpstreamService:  upstreamService,
+			LocalMesh:        localMesh,
 			Tags:             tags,
 			UpstreamTLSReady: upstreamTLSReady,
 		})
