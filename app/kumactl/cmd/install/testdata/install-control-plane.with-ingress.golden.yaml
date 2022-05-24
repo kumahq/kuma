@@ -1976,9 +1976,6 @@ spec:
       name: mads-server
     - port: 5678
       name: dp-server
-    - port: 5653
-      name: dns-server
-      protocol: UDP
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
