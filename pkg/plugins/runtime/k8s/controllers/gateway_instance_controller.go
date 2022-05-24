@@ -113,13 +113,16 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 				return nil, nil
 			}
 
+			svcAnnotations := map[string]string{metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin}
+			for k, v := range gatewayInstance.Spec.ServiceTemplate.Metadata.Annotations {
+				svcAnnotations[k] = v
+			}
+
 			service := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: gatewayInstance.Namespace,
-					Name:      gatewayInstance.Name,
-					Annotations: map[string]string{
-						metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
-					},
+					Namespace:   gatewayInstance.Namespace,
+					Name:        gatewayInstance.Name,
+					Annotations: svcAnnotations,
 				},
 			}
 			if obj != nil {

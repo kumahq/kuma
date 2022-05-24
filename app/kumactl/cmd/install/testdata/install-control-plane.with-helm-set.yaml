@@ -1461,6 +1461,21 @@ spec:
                       to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                     type: object
                 type: object
+              serviceTemplate:
+                description: ServiceTemplate configures the Service owned by this
+                  config.
+                properties:
+                  metadata:
+                    description: Metadata holds metadata configuration for a Service.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: Annotations holds annotations to be set on a
+                          Service.
+                        type: object
+                    type: object
+                type: object
               serviceType:
                 default: LoadBalancer
                 description: ServiceType specifies the type of managed Service that
