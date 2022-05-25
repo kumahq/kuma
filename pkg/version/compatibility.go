@@ -66,11 +66,17 @@ var CompatibilityMatrix = Compatibility{
 		"~1.6.0": {
 			Envoy: "~1.21.1",
 		},
+		"~1.7.0": {
+			Envoy: "~1.22.0",
+		},
 		// This includes all dev versions branched from the first release
 		// candidate (i.e. both master and release-1.x)
 		// and all 1.x releases and RCs. See Masterminds/semver#21
 		"~1.6.1-anyprerelease": {
 			Envoy: "~1.21.1",
+		},
+		"~1.7.0-anyprerelease": {
+			Envoy: "~1.22.0",
 		},
 	},
 }
