@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	status "google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -127,7 +127,6 @@ var _ = Describe("DataplaneStatusTracker", func() {
 					GitTag:           "v0.0.1",
 					GitCommit:        "91ce236824a9d875601679aa80c63783fb0e8725",
 					BuildDate:        "2019-08-07T11:26:06Z",
-					KumaCpCompatible: true,
 				},
 				Envoy: &mesh_proto.EnvoyVersion{
 					Version: "1.15.0",
@@ -175,6 +174,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			By("ensuring that initial xDS request does not increment stats")
 			// when
 			key, subscription := accessor.GetStatus()
+
 			// then
 			Expect(key).To(Equal(core_model.ResourceKey{
 				Mesh: "default",
@@ -182,7 +182,20 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			}))
 			Expect(subscription.Status).To(MatchProto(&zeroStatus))
 			Expect(subscription.ConnectTime.AsTime().UnixNano()).NotTo(BeZero())
-			Expect(subscription.Version).To(MatchProto(&version))
+			// and
+			// We don't want to validate KumaDpVersion.KumaCpCompatible
+			// as compatibility checks are currently checked in insights
+			// ref: https://github.com/kumahq/kuma/issues/4203
+			Expect(subscription.GetVersion().GetEnvoy()).
+				To(MatchProto(version.GetEnvoy()))
+			Expect(subscription.GetVersion().GetKumaDp().GetVersion()).
+				To(Equal(version.GetKumaDp().GetVersion()))
+			Expect(subscription.GetVersion().GetKumaDp().GetBuildDate()).
+				To(Equal(version.GetKumaDp().GetBuildDate()))
+			Expect(subscription.GetVersion().GetKumaDp().GetGitCommit()).
+				To(Equal(version.GetKumaDp().GetGitCommit()))
+			Expect(subscription.GetVersion().GetKumaDp().GetGitTag()).
+				To(Equal(version.GetKumaDp().GetGitTag()))
 
 			By("simulating initial xDS response")
 			// when
