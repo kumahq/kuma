@@ -83,14 +83,14 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 		// given
 		version := &mesh_proto.Version{
 			KumaDp: &mesh_proto.KumaDpVersion{
-				Version:          "0.0.1",
-				GitTag:           "v0.0.1",
-				GitCommit:        "91ce236824a9d875601679aa80c63783fb0e8725",
-				BuildDate:        "2019-08-07T11:26:06Z",
+				Version:   "0.0.1",
+				GitTag:    "v0.0.1",
+				GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+				BuildDate: "2019-08-07T11:26:06Z",
 			},
 			Envoy: &mesh_proto.EnvoyVersion{
-				Version:          "1.15.0",
-				Build:            "hash/1.15.0/RELEASE",
+				Version: "1.15.0",
+				Build:   "hash/1.15.0/RELEASE",
 			},
 		}
 
