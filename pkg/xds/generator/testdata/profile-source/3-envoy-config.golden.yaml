@@ -131,6 +131,8 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         commonHttpProtocolOptions:
           idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment

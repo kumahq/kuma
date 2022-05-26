@@ -41,6 +41,8 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 			Configure(envoy_clusters.Timeout(nil, protocol))
 
 		switch protocol {
+		case core_mesh.ProtocolHTTP:
+			clusterBuilder.Configure(envoy_clusters.Http())
 		case core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 			clusterBuilder.Configure(envoy_clusters.Http2())
 		}

@@ -143,6 +143,8 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         commonHttpProtocolOptions:
           idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
 - name: outbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

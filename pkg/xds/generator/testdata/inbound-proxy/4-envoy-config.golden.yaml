@@ -20,6 +20,8 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         commonHttpProtocolOptions:
           idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
 - name: localhost:8443
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
