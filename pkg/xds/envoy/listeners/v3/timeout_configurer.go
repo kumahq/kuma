@@ -18,10 +18,6 @@ type TimeoutConfigurer struct {
 }
 
 func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	if c.Conf == nil {
-		return nil
-	}
-
 	switch c.Protocol {
 	case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
 		return UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {

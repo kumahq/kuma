@@ -336,6 +336,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
+          idleTimeout: 0s
           statPrefix: backend
     metadata:
       filterMetadata:
@@ -365,6 +366,8 @@ resources:
                   inlineString: |
                     [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-b3-traceid?x-datadog-traceid)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
               path: /var/log
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
           httpFilters:
           - name: envoy.filters.http.router
             typedConfig:
@@ -387,6 +390,7 @@ resources:
                   cluster: api-http
                   timeout: 0s
           statPrefix: api-http
+          streamIdleTimeout: 0s
     metadata:
       filterMetadata:
         io.kuma.tags:
@@ -439,6 +443,7 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          idleTimeout: 0s
           statPrefix: db
           weightedClusters:
             clusters:

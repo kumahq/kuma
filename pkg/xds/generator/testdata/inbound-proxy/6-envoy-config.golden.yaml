@@ -15,6 +15,11 @@ resources:
                 portValue: 8080
     name: localhost:8080
     type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
 - name: localhost:8443
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

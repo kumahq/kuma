@@ -195,7 +195,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 
 		for _, cluster := range service.Clusters() {
 			edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-				Configure(envoy_clusters.Timeout(protocol, cluster.Timeout())).
+				Configure(envoy_clusters.Timeout(cluster.Timeout(), protocol)).
 				Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
 				Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 				Configure(envoy_clusters.HealthCheck(protocol, healthCheck))

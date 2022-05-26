@@ -71,6 +71,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
+          idleTimeout: 0s
           statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -131,6 +132,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8080
+          idleTimeout: 0s
           statPrefix: localhost_8080
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -178,6 +180,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
+          idleTimeout: 0s
           statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -225,6 +228,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8080
+          idleTimeout: 0s
           statPrefix: localhost_8080
       transportSocket:
         name: envoy.transport_sockets.tls

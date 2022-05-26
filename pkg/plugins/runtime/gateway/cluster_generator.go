@@ -172,7 +172,7 @@ func newClusterBuilder(
 	dest *route.Destination,
 ) *clusters.ClusterBuilder {
 	builder := clusters.NewClusterBuilder(version).Configure(
-		clusters.Timeout(protocol, timeoutPolicyFor(dest)),
+		clusters.Timeout(timeoutPolicyFor(dest), protocol),
 		clusters.CircuitBreaker(circuitBreakerPolicyFor(dest)),
 		clusters.OutlierDetection(circuitBreakerPolicyFor(dest)),
 		clusters.HealthCheck(protocol, healthCheckPolicyFor(dest)),

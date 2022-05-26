@@ -138,6 +138,11 @@ resources:
                 portValue: 8080
     name: localhost:8080
     type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
 - name: outbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -439,6 +444,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: db
+          idleTimeout: 0s
           statPrefix: db
     metadata:
       filterMetadata:
@@ -460,6 +466,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: elastic
+          idleTimeout: 0s
           statPrefix: elastic
     metadata:
       filterMetadata:
