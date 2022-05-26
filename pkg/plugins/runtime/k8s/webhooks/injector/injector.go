@@ -82,7 +82,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		return nil
 	}
 	logger.Info("injecting Kuma")
-	sidecarPatches, initPatches, err := i.loadContainerPatches(ctx, logger, pod, ns)
+	sidecarPatches, initPatches, err := i.loadContainerPatches(ctx, logger, pod)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,6 @@ func (i *KumaInjector) loadContainerPatches(
 	ctx context.Context,
 	logger logr.Logger,
 	pod *kube_core.Pod,
-	ns *kube_core.Namespace,
 ) (sidecarPatches namedContainerPatches, initPatches namedContainerPatches, err error) {
 	patchNames := i.cfg.ContainerPatches
 	if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaContainerPatches); exist {
@@ -260,7 +259,8 @@ func (i *KumaInjector) loadContainerPatches(
 	for _, patchName := range patchNames {
 		containerPatch := &mesh_k8s.ContainerPatch{}
 		if err := i.client.Get(ctx, kube_types.NamespacedName{Namespace: i.systemNamespace, Name: patchName}, containerPatch); err != nil {
-			return namedContainerPatches{}, namedContainerPatches{}, errors.Wrap(err, "could not get a ContainerPatch")
+			logger.Error(err, "could not get a ContainerPatch")
+			continue
 		}
 		if len(containerPatch.Spec.SidecarPatch) > 0 {
 			sidecarPatches.names = append(sidecarPatches.names, patchName)
@@ -290,7 +290,7 @@ func (i *KumaInjector) applyCustomPatches(
 	if err != nil {
 		return kube_core.Container{}, err
 	}
-	log.Info("applying a patches to the container", "patches", patches.names)
+	logger.Info("applying a patches to the container", "patches", patches.names)
 	containerJson, err = mesh_k8s.ToJsonPatch(patches.patches).Apply(containerJson)
 	if err != nil {
 		return kube_core.Container{}, errors.Wrapf(err, "could not apply patches %q", patches.names)
@@ -372,7 +372,7 @@ func (i *KumaInjector) FindServiceAccountToken(podSpec *kube_core.PodSpec) *kube
 	// Notice that we consider valid a use case where a ServiceAccount token
 	// is not mounted into Pod, e.g. due to Pod.Spec.AutomountServiceAccountToken == false
 	// or ServiceAccount.Spec.AutomountServiceAccountToken == false.
-	// In that case a side car should still be able to start and join a mesh with disabled mTLS.
+	// In that case a sidecar should still be able to start and join a mesh with disabled mTLS.
 	return nil
 }
 
@@ -393,8 +393,8 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 			RunAsGroup: new(int64),
 			Capabilities: &kube_core.Capabilities{
 				Add: []kube_core.Capability{
-					kube_core.Capability("NET_ADMIN"),
-					kube_core.Capability("NET_RAW"),
+					"NET_ADMIN",
+					"NET_RAW",
 				},
 			},
 		},
