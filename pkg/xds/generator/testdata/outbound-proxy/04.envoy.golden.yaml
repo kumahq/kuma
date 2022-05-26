@@ -47,7 +47,7 @@ resources:
 - name: api-tcp
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
+    connectTimeout: 100s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -418,6 +418,7 @@ resources:
                   logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                 transportApiVersion: V3
           cluster: api-tcp
+          idleTimeout: 101s
           statPrefix: api-tcp
     metadata:
       filterMetadata:

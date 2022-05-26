@@ -53,6 +53,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
+          idleTimeout: 0s
           statPrefix: localhost_8443
     - filterChainMatch:
         transportProtocol: tls
@@ -66,6 +67,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
+          idleTimeout: 0s
           statPrefix: localhost_8443
     - filterChainMatch:
         applicationProtocols:
@@ -81,6 +83,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
+          idleTimeout: 0s
           statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -146,6 +149,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.fault
@@ -244,6 +249,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
+          streamIdleTimeout: 0s
     - filterChainMatch:
         transportProtocol: tls
       filters:
@@ -268,6 +274,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.fault
@@ -366,6 +374,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
+          streamIdleTimeout: 0s
     - filterChainMatch:
         applicationProtocols:
         - kuma
@@ -392,6 +401,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.fault
@@ -490,6 +501,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
+          streamIdleTimeout: 0s
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -543,6 +555,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
+          idleTimeout: 0s
           statPrefix: localhost_8443
     - filterChainMatch:
         transportProtocol: tls
@@ -556,6 +569,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
+          idleTimeout: 0s
           statPrefix: localhost_8443
     - filterChainMatch:
         applicationProtocols:
@@ -571,6 +585,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
+          idleTimeout: 0s
           statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -623,6 +638,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
@@ -646,6 +663,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
+          streamIdleTimeout: 0s
     - filterChainMatch:
         transportProtocol: tls
       filters:
@@ -657,6 +675,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
@@ -680,6 +700,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
+          streamIdleTimeout: 0s
     - filterChainMatch:
         applicationProtocols:
         - kuma
@@ -693,6 +714,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
@@ -716,6 +739,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
+          streamIdleTimeout: 0s
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:

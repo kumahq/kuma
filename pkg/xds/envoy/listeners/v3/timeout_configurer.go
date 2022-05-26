@@ -33,6 +33,7 @@ func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 			manager.CommonHttpProtocolOptions = &envoy_config_core_v3.HttpProtocolOptions{
 				IdleTimeout: util_proto.Duration(0),
 			}
+			manager.StreamIdleTimeout = util_proto.Duration(0)
 			return nil
 		})
 	case core_mesh.ProtocolGRPC:

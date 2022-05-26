@@ -195,6 +195,8 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
@@ -218,6 +220,7 @@ resources:
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
+          streamIdleTimeout: 0s
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:

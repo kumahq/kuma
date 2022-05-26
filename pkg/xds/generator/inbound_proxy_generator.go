@@ -110,6 +110,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds
 					Configure(envoy_listeners.ServerSideMTLS(ctx.Mesh.Resource))
 			}
 			return filterChainBuilder.
+				Configure(envoy_listeners.Timeout(&mesh_proto.Timeout_Conf{}, protocol)).
 				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(),
 					proxy.Policies.TrafficPermissions[endpoint]))
 		}
