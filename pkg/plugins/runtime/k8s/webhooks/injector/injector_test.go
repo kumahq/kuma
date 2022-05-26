@@ -630,5 +630,21 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
+		Entry("31. Pod non-existing patch in annotation", testCase{
+			num: "31",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
 	)
 }, Ordered)
