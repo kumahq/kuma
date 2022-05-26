@@ -58,7 +58,6 @@ func NewCluster(opts ...NewClusterOpt) Cluster {
 
 func (c *Cluster) validate() error {
 	if c.service == "" || c.name == "" {
-		fmt.Println(c)
 		return errors.New("either WithService() or WithName() should be called")
 	}
 	return nil
