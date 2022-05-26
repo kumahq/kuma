@@ -414,9 +414,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						},
 					},
 					Timeouts: map[mesh_proto.OutboundInterface]*core_mesh.TimeoutResource{
-						mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: 40002}: {Spec: timeout},
-						mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: 40003}: {Spec: timeout},
-						mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: 40004}: {Spec: timeout},
+						{DataplaneIP: "127.0.0.1", DataplanePort: 40002}: {Spec: timeout},
+						{DataplaneIP: "127.0.0.1", DataplanePort: 40003}: {Spec: timeout},
+						{DataplaneIP: "127.0.0.1", DataplanePort: 40004}: {Spec: timeout},
 					},
 				},
 				Metadata: &model.DataplaneMetadata{},
