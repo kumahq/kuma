@@ -318,14 +318,18 @@ func (s *secrets) generateCerts(
 		otherCas = []MeshCa{}
 
 		for _, otherMesh := range otherMeshes {
+			// We need to track this mesh but we don't do anything with certs
+			otherMeshInfos = append(otherMeshInfos, MeshInfo{
+				MTLS: otherMesh.Spec.GetMtls(),
+			})
+
+			if !otherMesh.MTLSEnabled() {
+				continue
+			}
 			otherCa, _, err := s.caProvider.Get(context.Background(), otherMesh)
 			if err != nil {
 				return nil, errors.Wrap(err, "could not get other mesh CA cert")
 			}
-
-			otherMeshInfos = append(otherMeshInfos, MeshInfo{
-				MTLS: otherMesh.Spec.Mtls,
-			})
 
 			meshName := otherMesh.GetMeta().GetName()
 
