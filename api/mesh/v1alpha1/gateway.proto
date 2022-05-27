@@ -30,7 +30,6 @@ message MeshGateway {
   option (kuma.mesh.resource).type = "MeshGateway";
   option (kuma.mesh.resource).package = "mesh";
 
-  option (kuma.mesh.resource).skip_registration = true;
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "meshgateway";
 
