@@ -21,7 +21,6 @@ import (
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	"github.com/kumahq/kuma/pkg/util/template"
 	"github.com/kumahq/kuma/pkg/util/yaml"
 )
@@ -41,8 +40,6 @@ type applyContext struct {
 }
 
 func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
-	register.RegisterGatewayTypes() // allow applying experimental Gateway types
-
 	ctx := &applyContext{RootContext: pctx}
 	cmd := &cobra.Command{
 		Use:   "apply",

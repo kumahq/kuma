@@ -708,6 +708,10 @@ type MeshGatewayList struct {
 	Items           []MeshGateway `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&MeshGateway{}, &MeshGatewayList{})
+}
+
 func (cb *MeshGateway) GetObjectMeta() *metav1.ObjectMeta {
 	return &cb.ObjectMeta
 }
@@ -760,6 +764,21 @@ func (l *MeshGatewayList) GetItems() []model.KubernetesObject {
 	return result
 }
 
+func init() {
+	registry.RegisterObjectType(&mesh_proto.MeshGateway{}, &MeshGateway{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshGateway",
+		},
+	})
+	registry.RegisterListType(&mesh_proto.MeshGateway{}, &MeshGatewayList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshGatewayList",
+		},
+	})
+}
+
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:scope=Cluster
 type MeshGatewayRoute struct {
@@ -782,6 +801,10 @@ type MeshGatewayRouteList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []MeshGatewayRoute `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&MeshGatewayRoute{}, &MeshGatewayRouteList{})
 }
 
 func (cb *MeshGatewayRoute) GetObjectMeta() *metav1.ObjectMeta {
@@ -834,6 +857,21 @@ func (l *MeshGatewayRouteList) GetItems() []model.KubernetesObject {
 		result[i] = &l.Items[i]
 	}
 	return result
+}
+
+func init() {
+	registry.RegisterObjectType(&mesh_proto.MeshGatewayRoute{}, &MeshGatewayRoute{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshGatewayRoute",
+		},
+	})
+	registry.RegisterListType(&mesh_proto.MeshGatewayRoute{}, &MeshGatewayRouteList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshGatewayRouteList",
+		},
+	})
 }
 
 // +kubebuilder:object:root=true

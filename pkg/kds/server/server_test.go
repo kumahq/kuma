@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/register"
 	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
 	kds_verifier "github.com/kumahq/kuma/pkg/test/kds/verifier"
@@ -57,8 +56,6 @@ var _ = Describe("KDS Server", func() {
 
 	It("should support all existing resource types", func() {
 		ctx := context.Background()
-		register.RegisterGatewayTypes()
-
 		// Do not forget to update this test after updating protobuf `KumaKdsOptions`.
 		Expect(registry.Global().ObjectTypes(model.HasKdsEnabled())).
 			To(HaveLen(len([]proto.Message{
