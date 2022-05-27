@@ -223,23 +223,20 @@ func BuildVirtualOutboundMeshView(ctx context.Context, rm manager.ReadOnlyResour
 		}
 	}
 
-	otherMeshList := core_mesh.MeshResourceList{}
-	if err := rm.List(ctx, &otherMeshList); err != nil {
+	meshList := core_mesh.MeshResourceList{}
+	if err := rm.List(ctx, &meshList); err != nil {
 		return nil, err
 	}
 
-	for _, otherMesh := range otherMeshList.Items {
-		otherMeshName := otherMesh.GetMeta().GetName()
-		if otherMeshName == mesh {
-			continue
-		}
+	for _, mesh := range meshList.Items {
+		meshName := mesh.GetMeta().GetName()
 		gateways := core_mesh.MeshGatewayResourceList{}
-		if err := rm.List(ctx, &gateways, store.ListByMesh(otherMeshName)); err != nil {
+		if err := rm.List(ctx, &gateways, store.ListByMesh(meshName)); err != nil {
 			return nil, err
 		}
 
 		for _, gateway := range gateways.Items {
-			addFromMeshGateway(outboundSet, otherMeshName, gateway)
+			addFromMeshGateway(outboundSet, meshName, gateway)
 		}
 	}
 

@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/client"
 )
 
-func proxyCrossMeshRequest(cluster Cluster, instance string, gateway string, port int, opts ...client.CollectResponsesOptsFn) {
+func proxyRequestToGateway(cluster Cluster, instance string, gateway string, port int, opts ...client.CollectResponsesOptsFn) {
 	Logf("expecting 200 response from %q", gateway)
 	Eventually(func(g Gomega) {
 		target := fmt.Sprintf("http://%s:%d/%s",

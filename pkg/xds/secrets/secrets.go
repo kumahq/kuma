@@ -311,7 +311,7 @@ func (s *secrets) generateCerts(
 		}
 	}
 
-	if updateKinds.HasType(OtherMeshChange) {
+	if updateKinds.HasType(OtherMeshChange) || updateKinds.HasType(OwnMeshChange) {
 		var otherMeshInfos []MeshInfo
 		var bytes [][]byte
 		var names []string
@@ -326,6 +326,7 @@ func (s *secrets) generateCerts(
 			if !otherMesh.MTLSEnabled() {
 				continue
 			}
+
 			otherCa, _, err := s.caProvider.Get(context.Background(), otherMesh)
 			if err != nil {
 				return nil, errors.Wrap(err, "could not get other mesh CA cert")
@@ -341,6 +342,9 @@ func (s *secrets) generateCerts(
 			names = append(names, meshName)
 			bytes = append(bytes, otherCa.PemCerts...)
 		}
+
+		names = append(names, meshName)
+		bytes = append(bytes, ownCa.CaSecret.PemCerts...)
 
 		sort.Strings(names)
 		allInOneCa = MeshCa{

@@ -69,8 +69,10 @@ func createDataPlaneProxySecrets(
 	}
 
 	var otherMeshes []*core_mesh.MeshResource
-	for _, otherMesh := range ctx.Mesh.Resources.CrossMeshGateways() {
-		otherMeshes = append(otherMeshes, otherMesh.Mesh)
+	for _, otherMesh := range ctx.Mesh.Resources.CrossMeshGateways(mesh) {
+		if otherMesh.Mesh.GetMeta().GetName() != mesh.GetMeta().GetName() {
+			otherMeshes = append(otherMeshes, otherMesh.Mesh)
+		}
 	}
 
 	identity, cas, err := ctx.ControlPlane.Secrets.GetForDataPlane(

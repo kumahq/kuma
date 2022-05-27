@@ -117,7 +117,7 @@ type CrossMeshGateway struct {
 	Gateways *core_mesh.MeshGatewayResourceList
 }
 
-func (r Resources) CrossMeshGateways() map[xds.MeshName]CrossMeshGateway {
+func (r Resources) CrossMeshGateways(mesh *core_mesh.MeshResource) map[xds.MeshName]CrossMeshGateway {
 	meshes := r.ListOrEmpty(core_mesh.MeshType).(*core_mesh.MeshResourceList)
 
 	gatewaysByMesh := map[xds.MeshName]CrossMeshGateway{}
@@ -133,6 +133,11 @@ func (r Resources) CrossMeshGateways() map[xds.MeshName]CrossMeshGateway {
 		}
 	}
 
+	gatewaysByMesh[mesh.GetMeta().GetName()] = CrossMeshGateway{
+		Mesh:     mesh,
+		Gateways: r.Gateways(),
+	}
+
 	return gatewaysByMesh
 }
 
@@ -141,7 +146,7 @@ func (r Resources) gatewayDataplanesByMesh(name xds.MeshName) *core_mesh.Datapla
 
 	meshResources, ok := r.CrossMeshResources[name]
 	if !ok {
-		return gatewayDataplanes
+		meshResources = r.MeshLocalResources
 	}
 
 	allDataplanes, ok := meshResources[core_mesh.DataplaneType]

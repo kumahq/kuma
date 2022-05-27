@@ -105,7 +105,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	endpointMap := xds_topology.BuildEdsEndpointMap(mesh, m.zone, dataplanes, zoneIngresses, zoneEgresses, externalServices)
 
 	crossMeshEndpointMap := map[string]xds.EndpointMap{}
-	for otherMeshName, gateways := range resources.CrossMeshGateways() {
+	for otherMeshName, gateways := range resources.CrossMeshGateways(mesh) {
 		dataplanes := resources.gatewayDataplanesByMesh(otherMeshName)
 		if len(dataplanes.Items) == 0 {
 			continue

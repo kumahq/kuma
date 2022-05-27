@@ -17,6 +17,7 @@ func CrossMeshGatewayOnKubernetes() {
 	// ClientNamespace is a namespace to deploy gateway client
 	// applications. Mesh sidecar injection is not enabled there.
 	const gatewayClientNamespace = "cross-mesh-kuma-client"
+	const gatewayClientNamespaceOtherMesh = "cross-mesh-kuma-client2"
 	const gatewayTestNamespace = "cross-mesh-kuma-test"
 
 	const echoServer = "cross-mesh-echo-server"
@@ -43,8 +44,10 @@ func CrossMeshGatewayOnKubernetes() {
 			Install(MTLSMeshKubernetes(gatewayOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespace)).
+			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
 			Install(echoServerApp).
-			Install(DemoClientK8s(gatewayOtherMesh, gatewayClientNamespace))
+			Install(DemoClientK8s(gatewayOtherMesh, gatewayClientNamespace)).
+			Install(DemoClientK8s(gatewayMesh, gatewayClientNamespaceOtherMesh))
 
 		Expect(setup.Setup(env.Cluster)).To(Succeed())
 	}
@@ -147,8 +150,9 @@ spec:
 		}, "60s", "1s").Should(Succeed())
 	})
 
-	E2EAfterEach(func() {
+	E2EAfterAll(func() {
 		Expect(env.Cluster.TriggerDeleteNamespace(gatewayClientNamespace)).To(Succeed())
+		Expect(env.Cluster.TriggerDeleteNamespace(gatewayClientNamespaceOtherMesh)).To(Succeed())
 		Expect(env.Cluster.TriggerDeleteNamespace(gatewayTestNamespace)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(gatewayMesh)).To(Succeed())
 		Expect(env.Cluster.DeleteMesh(gatewayOtherMesh)).To(Succeed())
@@ -159,10 +163,16 @@ spec:
 			DeployCluster()
 		})
 
-		It("should proxy simple HTTP requests", func() {
-			proxyCrossMeshRequest(env.Cluster, "kubernetes",
+		It("should proxy simple HTTP requests from a different mesh", func() {
+			proxyRequestToGateway(env.Cluster, "kubernetes",
 				"gateway.mesh", gatewayPort,
 				client.FromKubernetesPod(gatewayClientNamespace, "demo-client"))
+		})
+
+		It("should proxy simple HTTP requests from the same mesh", func() {
+			proxyRequestToGateway(env.Cluster, "kubernetes",
+				"gateway.mesh", gatewayPort,
+				client.FromKubernetesPod(gatewayClientNamespaceOtherMesh, "demo-client"))
 		})
 	})
 }
