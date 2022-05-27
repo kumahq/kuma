@@ -9,11 +9,18 @@ import (
 func (g *MeshGatewayResource) Validate() error {
 	var err validators.ValidationError
 
+	var onlyOneSelector bool
+
+	for _, listener := range g.Spec.GetConf().GetListeners() {
+		onlyOneSelector = onlyOneSelector || listener.CrossMesh
+	}
+
 	err.Add(ValidateSelectors(
 		validators.RootedAt("selectors"),
 		g.Spec.GetSelectors(),
 		ValidateSelectorsOpts{
 			RequireAtLeastOneSelector: true,
+			RequireAtMostOneSelector:  onlyOneSelector,
 			ValidateTagsOpts: ValidateTagsOpts{
 				RequireAtLeastOneTag: true,
 				RequireService:       true,

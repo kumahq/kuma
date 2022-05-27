@@ -138,6 +138,7 @@ func addFromMeshGateway(outboundSet *vips.VirtualOutboundMeshView, mesh string, 
 			continue
 		}
 
+		// We only allow one selector with a crossMesh listener
 		for _, selector := range gateway.Spec.Selectors {
 			tags := mesh_proto.Merge(
 				gateway.Spec.GetTags(),
@@ -147,7 +148,6 @@ func addFromMeshGateway(outboundSet *vips.VirtualOutboundMeshView, mesh string, 
 				},
 				selector.GetMatch(),
 			)
-			// TODO validate only one selector
 			hostname := listener.Hostname
 			origin := fmt.Sprintf("mesh-gateway:%s:%s:%s", mesh, gateway.GetMeta().GetName(), hostname)
 

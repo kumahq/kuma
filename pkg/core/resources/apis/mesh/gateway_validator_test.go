@@ -331,5 +331,26 @@ conf:
     tags:
       name: http
 `),
+
+		ErrorCase("crossMesh and multiple services",
+			validators.Violation{
+				Field:   "selectors[1]",
+				Message: "there can be at most one selector",
+			}, `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+  - match:
+      kuma.io/service: other-gateway
+conf:
+  listeners:
+  - hostname: www-1.example.com
+    port: 443
+    crossMesh: true
+    protocol: HTTP
+`),
 	)
 })

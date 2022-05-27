@@ -30,6 +30,7 @@ type ValidateTagsOpts struct {
 
 type ValidateSelectorsOpts struct {
 	ValidateTagsOpts
+	RequireAtMostOneSelector  bool
 	RequireAtLeastOneSelector bool
 }
 
@@ -41,8 +42,12 @@ func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Select
 	if opts.RequireAtLeastOneSelector && len(sources) == 0 {
 		err.AddViolationAt(path, "must have at least one element")
 	}
+
 	for i, selector := range sources {
 		err.Add(ValidateSelector(path.Index(i).Field("match"), selector.GetMatch(), opts.ValidateTagsOpts))
+		if i > 0 && opts.RequireAtMostOneSelector {
+			err.AddViolationAt(path.Index(i), `there can be at most one selector`)
+		}
 	}
 	return
 }
