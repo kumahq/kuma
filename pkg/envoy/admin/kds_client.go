@@ -14,12 +14,14 @@ import (
 )
 
 type kdsEnvoyAdminClient struct {
-	streams service.XDSConfigStreams
+	streams  service.XDSConfigStreams
+	k8sStore bool
 }
 
-func NewKDSEnvoyAdminClient(streams service.XDSConfigStreams) EnvoyAdminClient {
+func NewKDSEnvoyAdminClient(streams service.XDSConfigStreams, k8sStore bool) EnvoyAdminClient {
 	return &kdsEnvoyAdminClient{
-		streams: streams,
+		streams:  streams,
+		k8sStore: k8sStore,
 	}
 }
 
@@ -30,7 +32,7 @@ func (k *kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneReso
 }
 
 func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress) ([]byte, error) {
-	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName())
+	zone, nameInZone, err := resNameInZone(proxy.GetMeta().GetName(), k.k8sStore)
 	if err != nil {
 		return nil, err
 	}
@@ -62,12 +64,20 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 	}
 }
 
-func resNameInZone(nameInGlobal string) (string, string, error) {
+func resNameInZone(nameInGlobal string, k8sStore bool) (string, string, error) {
 	parts := strings.Split(nameInGlobal, ".")
 	if len(parts) < 2 {
 		return "", "", errors.New("wrong name format. Expected {zone}.{name}")
 	}
 	zone := parts[0] // zone is added by Global CP as a prefix for Dataplane/ZoneIngress/ZoneEgress
-	nameInZone := strings.Join(parts[1:], ".")
+	var nameInZone string
+	if k8sStore {
+		// if the type of store is Kubernetes then DPP resources are stored in namespaces. Kuma core model
+		// is not aware of namespaces and that's why the name in the core model is equal to 'name + .<namespace>'.
+		// Before sending the request we should trim the namespace suffix
+		nameInZone = strings.Join(parts[1:len(parts)-1], ".")
+	} else {
+		nameInZone = strings.Join(parts[1:], ".")
+	}
 	return zone, nameInZone, nil
 }
