@@ -74,7 +74,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve namespace for pod")
 	}
-	logger := log.WithValues("name", pod.GenerateName, "namespace", pod.Namespace)
+	logger := log.WithValues("pod", pod.GenerateName, "namespace", pod.Namespace)
 	if inject, err := i.needInject(pod, ns); err != nil {
 		return err
 	} else if !inject {
@@ -256,10 +256,12 @@ func (i *KumaInjector) loadContainerPatches(
 		}
 	}
 
+	var missingPatches []string
+
 	for _, patchName := range patchNames {
 		containerPatch := &mesh_k8s.ContainerPatch{}
 		if err := i.client.Get(ctx, kube_types.NamespacedName{Namespace: i.systemNamespace, Name: patchName}, containerPatch); err != nil {
-			logger.Error(err, "could not get a ContainerPatch")
+			missingPatches = append(missingPatches, patchName)
 			continue
 		}
 		if len(containerPatch.Spec.SidecarPatch) > 0 {
@@ -271,6 +273,22 @@ func (i *KumaInjector) loadContainerPatches(
 			initPatches.patches = append(initPatches.patches, containerPatch.Spec.InitPatch...)
 		}
 	}
+
+	if len(missingPatches) > 0 {
+		err := fmt.Errorf(
+			"it appears some expected container patches are missing: %q",
+			missingPatches,
+		)
+
+		logger.Error(err,
+			"loading container patches failed",
+			"expected", patchNames,
+			"missing", missingPatches,
+		)
+
+		return namedContainerPatches{}, namedContainerPatches{}, err
+	}
+
 	return sidecarPatches, initPatches, nil
 }
 
