@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	kube_errors "k8s.io/apimachinery/pkg/api/errors"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -261,8 +262,14 @@ func (i *KumaInjector) loadContainerPatches(
 	for _, patchName := range patchNames {
 		containerPatch := &mesh_k8s.ContainerPatch{}
 		if err := i.client.Get(ctx, kube_types.NamespacedName{Namespace: i.systemNamespace, Name: patchName}, containerPatch); err != nil {
-			missingPatches = append(missingPatches, patchName)
-			continue
+			if kube_errors.IsNotFound(err) {
+				missingPatches = append(missingPatches, patchName)
+				continue
+			}
+
+			logger.Error(err, "could not get ContainerPatch", "name", patchName)
+
+			return namedContainerPatches{}, namedContainerPatches{}, err
 		}
 		if len(containerPatch.Spec.SidecarPatch) > 0 {
 			sidecarPatches.names = append(sidecarPatches.names, patchName)
