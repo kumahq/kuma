@@ -6,7 +6,7 @@ metadata:
     run: busybox
   annotations:
     kuma.io/sidecar-drain-time: "10s"
-    kuma.io/container-patches: container-patch-1,non-existing-patch
+    kuma.io/container-patches: container-patch-1,missing-container-patch
 spec:
   containers:
   - name: busybox

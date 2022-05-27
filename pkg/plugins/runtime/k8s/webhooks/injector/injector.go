@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	kube_errors "k8s.io/apimachinery/pkg/api/errors"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -74,7 +75,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve namespace for pod")
 	}
-	logger := log.WithValues("name", pod.GenerateName, "namespace", pod.Namespace)
+	logger := log.WithValues("pod", pod.GenerateName, "namespace", pod.Namespace)
 	if inject, err := i.needInject(pod, ns); err != nil {
 		return err
 	} else if !inject {
@@ -256,11 +257,19 @@ func (i *KumaInjector) loadContainerPatches(
 		}
 	}
 
+	var missingPatches []string
+
 	for _, patchName := range patchNames {
 		containerPatch := &mesh_k8s.ContainerPatch{}
 		if err := i.client.Get(ctx, kube_types.NamespacedName{Namespace: i.systemNamespace, Name: patchName}, containerPatch); err != nil {
-			logger.Error(err, "could not get a ContainerPatch")
-			continue
+			if kube_errors.IsNotFound(err) {
+				missingPatches = append(missingPatches, patchName)
+				continue
+			}
+
+			logger.Error(err, "could not get ContainerPatch", "name", patchName)
+
+			return namedContainerPatches{}, namedContainerPatches{}, err
 		}
 		if len(containerPatch.Spec.SidecarPatch) > 0 {
 			sidecarPatches.names = append(sidecarPatches.names, patchName)
@@ -271,6 +280,22 @@ func (i *KumaInjector) loadContainerPatches(
 			initPatches.patches = append(initPatches.patches, containerPatch.Spec.InitPatch...)
 		}
 	}
+
+	if len(missingPatches) > 0 {
+		err := fmt.Errorf(
+			"it appears some expected container patches are missing: %q",
+			missingPatches,
+		)
+
+		logger.Error(err,
+			"loading container patches failed",
+			"expected", patchNames,
+			"missing", missingPatches,
+		)
+
+		return namedContainerPatches{}, namedContainerPatches{}, err
+	}
+
 	return sidecarPatches, initPatches, nil
 }
 
