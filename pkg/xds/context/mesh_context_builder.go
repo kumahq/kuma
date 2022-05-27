@@ -111,6 +111,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 			continue
 		}
 		crossMeshEndpointMap[otherMeshName] = xds_topology.BuildCrossMeshEndpointMap(
+			mesh,
 			gateways.Gateways,
 			dataplanes,
 		)

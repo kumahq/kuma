@@ -155,6 +155,7 @@ func fillDataplaneOutbounds(
 }
 
 func BuildCrossMeshEndpointMap(
+	mesh *core_mesh.MeshResource,
 	gateways *core_mesh.MeshGatewayResourceList,
 	dataplanes *core_mesh.DataplaneResourceList,
 ) core_xds.EndpointMap {
@@ -173,11 +174,11 @@ func BuildCrossMeshEndpointMap(
 
 		for _, listener := range gateway.Spec.Conf.Listeners {
 			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-				Target: dpNetworking.GetAddress(),
-				Port:   listener.GetPort(),
-				Tags:   mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()),
-				Weight: 1,
-				// TODO Locality: ,
+				Target:   dpNetworking.GetAddress(),
+				Port:     listener.GetPort(),
+				Tags:     mesh_proto.Merge(dpTags, gateway.Spec.GetTags(), listener.GetTags()),
+				Weight:   1,
+				Locality: localityFromTags(mesh, priorityLocal, dpTags),
 			})
 		}
 	}
