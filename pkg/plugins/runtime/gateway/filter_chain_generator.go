@@ -155,6 +155,9 @@ func (g *HTTPSFilterChainGenerator) Generate(
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "couldn't generate mesh cert for gateway")
 			}
+			if identity == nil {
+				return nil, nil, errors.New("mTLS must be enabled for crossMesh-enabled MeshGateways")
+			}
 
 			resources := xds_generator.CreateSecretResources(ctx.Mesh.Resource, identity, []xds_secrets.MeshCa{ca})
 
