@@ -26,6 +26,11 @@ var _ = Describe("Injector", func() {
 
 	systemNamespace := "kuma-system"
 
+	caCertPath := filepath.Join(
+		"..", "..", "..", "..", "..", "..",
+		"test", "certs", "server-cert.pem",
+	)
+
 	type testCase struct {
 		num       string
 		mesh      string
@@ -76,7 +81,7 @@ spec:
 
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
-			cfg.CaCertFile = filepath.Join("..", "..", "..", "..", "..", "..", "test", "certs", "server-cert.pem")
+			cfg.CaCertFile = caCertPath
 			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter(), 9901, systemNamespace)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -630,21 +635,77 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("31. Pod non-existing patch in annotation", testCase{
-			num: "31",
-			mesh: `
+	)
+
+	Describe("should fail", func() {
+		It("when pod is annotated with the name of non-existing patch", func() {
+			// setup
+			ctx := context.Background()
+			configFile := "testdata/inject.config.yaml"
+			inputFile := "testdata/inject.shouldfail.1.input.yaml"
+
+			var cfg conf.Injector
+			Expect(config.Load(configFile, &cfg)).To(Succeed())
+
+			cfg.CaCertFile = caCertPath
+
+			injector, err := inject.New(
+				cfg,
+				"http://kuma-control-plane.kuma-system:5681",
+				k8sClient,
+				k8s.NewSimpleConverter(),
+				9901,
+				systemNamespace,
+			)
+			Expect(err).To(Succeed())
+
+			mesh := []byte(`
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
               metadata:
-                name: default`,
-			namespace: `
+                name: default`)
+
+			namespace := []byte(`
               apiVersion: v1
               kind: Namespace
               metadata:
                 name: default
                 annotations:
-                  kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.config.yaml",
-		}),
-	)
+                  kuma.io/sidecar-injection: enabled`)
+
+			// and create mesh
+			decoder := serializer.
+				NewCodecFactory(k8sClientScheme).
+				UniversalDeserializer()
+
+			obj, _, errMesh := decoder.Decode(mesh, nil, nil)
+			Expect(errMesh).To(Succeed())
+
+			Expect(k8sClient.Create(ctx, obj.(kube_client.Object))).To(Succeed())
+
+			ns, _, errNs := decoder.Decode(namespace, nil, nil)
+			Expect(errNs).To(Succeed())
+
+			Expect(k8sClient.Update(ctx, ns.(kube_client.Object))).To(Succeed())
+
+			// given
+			pod := &kube_core.Pod{}
+
+			By("loading input Pod")
+			// when
+			input, err := os.ReadFile(inputFile)
+			// then
+			Expect(err).To(Succeed())
+			// when
+			err = yaml.Unmarshal(input, pod)
+			// then
+			Expect(err).To(Succeed())
+
+			By("injecting Kuma")
+			// when
+			err = injector.InjectKuma(ctx, pod)
+			// then
+			Expect(err).ToNot(Succeed())
+		})
+	})
 }, Ordered)
