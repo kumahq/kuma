@@ -161,10 +161,15 @@ func BuildCrossMeshEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes.Items {
-		gateway := SelectGateway(gateways, dataplane.Spec.Matches)
 		if !dataplane.Spec.IsBuiltinGateway() {
 			continue
 		}
+
+		gateway := SelectGateway(gateways, dataplane.Spec.Matches)
+		if gateway == nil {
+			continue
+		}
+
 		dpSpec := dataplane.Spec
 		dpNetworking := dpSpec.GetNetworking()
 
@@ -172,7 +177,7 @@ func BuildCrossMeshEndpointMap(
 		dpTags := dpGateway.GetTags()
 		serviceName := dpTags[mesh_proto.ServiceTag]
 
-		for _, listener := range gateway.Spec.Conf.Listeners {
+		for _, listener := range gateway.Spec.GetConf().GetListeners() {
 			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
 				Target:   dpNetworking.GetAddress(),
 				Port:     listener.GetPort(),
